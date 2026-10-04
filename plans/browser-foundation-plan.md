@@ -10,6 +10,15 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 7 delivered: HarfBuzzSharp with Linux/Windows native assets, owned fonts
+  and Latin/LTR shaping; finite horizontal block/inline layout with sizing,
+  whitespace, space wrapping and baseline geometry. The user approved deferring
+  advanced bidi/Unicode breaks, margin collapse, floats, inline-block and replaced
+  elements with explicit failure. Native shaping uses a pinned licensed test font.
+  Linux x64 validation: all 33 projects build and all 11,545 tests pass,
+  including 17 Text and 39 Layout tests with actual native shaping. Formatting
+  and editor diagnostics are clean; independently, all 41 references are fresh.
+  See the [text/layout guide](../docs/text-layout.md) for restrictions and evidence.
 - Phase 6 delivered: first-party static CSS syntax, HTML selectors and
   UA/user/author/inline cascade with typed computed styles. The user approved
   a finite block/inline property set, CSS-wide keywords and inheritance;

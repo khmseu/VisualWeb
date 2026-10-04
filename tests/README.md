@@ -17,6 +17,10 @@ and static parser/limit regressions. No HTML test invokes scripts or fetches res
 The [CSS suite](Engine.Css.Tests/) tests syntax, selectors, cascade/computed
 styles, exact limits and all [pinned WPT An+B cases](Engine.Css.Tests/Data/README.md).
 CSS tests neither run JavaScript nor fetch/import resources.
+The [text suite](Engine.Text.Tests/) uses a [pinned OFL font](Engine.Text.Tests/Data/README.md)
+for native HarfBuzz metrics, ligatures, clustering and ownership/GC tests.
+The [layout suite](Engine.Layout.Tests/) combines exact deterministic geometry
+with native text integration. No text/layout test initializes a display.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -47,6 +51,8 @@ dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
 dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
 dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
 dotnet test tests/Engine.Css.Tests/Engine.Css.Tests.csproj
+dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
+dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

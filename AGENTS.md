@@ -5,7 +5,7 @@
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
    read its README. Platform services, Core URL/Encoding/MIME and developer
-   tooling and Engine.Net/Html/Dom/Css are implemented; Core.Primitives, other
+   tooling and Engine.Net/Html/Dom/Css/Text/Layout are implemented; Core.Primitives, other
    Engine projects, IPC and App remain placeholders.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
@@ -43,7 +43,13 @@
   property set are implemented; unsupported features must produce diagnostics,
   not approximate matches/values. Preserve whole fixture families and exact
   limit tests. Styles are snapshots; callers order sources and recompute after
-  mutations. Engine.Content loading and layout remain later-phase work.
+  mutations. Engine.Content loading remains later-phase work; layout is a finite subset.
+- Read the [text/layout guide](docs/text-layout.md) before formatting pages.
+  Fonts use owned native blobs and creating-thread-affine disposal. Register
+  actual faces explicitly; no fallback/synthetic styles are implied. Layout
+  requires zero CSS diagnostics, zero non-root vertical margins and supported
+  Latin/LTR content. Unsupported layouts must throw, not silently approximate.
+  Preserve the licensed pinned font, native GC regression and exact geometry tests.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; future process communication uses IPC contracts.
@@ -63,6 +69,8 @@ dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
 dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
 dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
 dotnet test tests/Engine.Css.Tests/Engine.Css.Tests.csproj
+dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
+dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
 dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party
 ```

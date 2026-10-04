@@ -36,7 +36,9 @@
     <Project Path="tests/Engine.Css.Tests/Engine.Css.Tests.csproj" />
     <Project Path="tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj" />
     <Project Path="tests/Engine.Html.Tests/Engine.Html.Tests.csproj" />
+    <Project Path="tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj" />
     <Project Path="tests/Engine.Net.Tests/Engine.Net.Tests.csproj" />
+    <Project Path="tests/Engine.Text.Tests/Engine.Text.Tests.csproj" />
     <Project Path="tests/Platform.Tests/Platform.Tests.csproj" />
     <Project Path="tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj" />
   </Folder>

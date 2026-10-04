@@ -35,6 +35,8 @@ entry (it still uses conditional requests where possible).
 | `html`, `dom` | HTML parser, DOM, navigation, event loop |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |
 | `css-color`, `css-sizing`, `css-backgrounds` | Initial computed colors, dimensions and physical borders |
+| `css2-visual`, `css2-sizing` | Initial block/inline formatting and geometry constraints |
+| `harfbuzz-shaping`, `harfbuzz-font` | Native shaping and font APIs |
 | `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
 | `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
 | `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |
@@ -56,6 +58,8 @@ the compatibility translation for three obsolete tokenizer error names.
 CSS has separate [pinned WPT An+B data](../tests/Engine.Css.Tests/Data/README.md);
 the [CSS guide](css.md) identifies finite property/value support and the
 current Selectors Level 4 whitespace rule for `:empty`.
+Text/layout uses a separate [pinned OFL Noto Sans font](../tests/Engine.Text.Tests/Data/README.md)
+for offline native shaping evidence, not a standards-document download.
 
 ## Interface citation convention
 

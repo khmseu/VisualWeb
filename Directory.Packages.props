@@ -3,6 +3,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="HarfBuzzSharp" Version="14.2.1.301" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="14.2.1.301" />
     <PackageVersion Include="SDL3-CS" Version="3.4.2" />
     <PackageVersion Include="SDL3-CS.Native" Version="3.4.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

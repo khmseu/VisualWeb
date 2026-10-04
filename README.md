@@ -2,7 +2,7 @@
 
 A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
 on x64 and arm64. Repository tooling, platform services, core standards
-utilities, resource loading, static HTML parsing/DOM and phase-6 CSS are implemented;
+utilities, resource loading, static HTML/DOM/CSS and initial text/layout are implemented;
 there is no runnable browser yet.
 
 ## Getting started
@@ -27,6 +27,8 @@ The [HTML and DOM guide](docs/html-dom.md) describes the tokenizer, supported
 tree-construction subset, renderer-local mutations and explicit limitations.
 The [CSS guide](docs/css.md) covers static selectors, cascade, computed styles,
 the initial property set and integration/validation boundaries.
+The [text/layout guide](docs/text-layout.md) covers native HarfBuzz shaping,
+font ownership and the finite LTR block/inline geometry subset.
 
 The last command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately

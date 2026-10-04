@@ -2,6 +2,46 @@
   "version": 1,
   "documents": [
     {
+      "id": "harfbuzz-shaping",
+      "title": "HarfBuzz shaping API",
+      "url": "https://harfbuzz.github.io/harfbuzz-hb-shape.html",
+      "file": "harfbuzz-shaping.html",
+      "fetchedAt": "2026-10-04T22:33:49.7223229+00:00",
+      "checkedAt": "2026-10-04T22:33:49.7223229+00:00",
+      "eTag": "\u00226abd9e2c-2eaa\u0022",
+      "lastModified": "2026-09-30T23:41:32+00:00"
+    },
+    {
+      "id": "harfbuzz-font",
+      "title": "HarfBuzz font API",
+      "url": "https://harfbuzz.github.io/harfbuzz-hb-font.html",
+      "file": "harfbuzz-font.html",
+      "fetchedAt": "2026-10-04T22:33:50.122449+00:00",
+      "checkedAt": "2026-10-04T22:33:50.122449+00:00",
+      "eTag": "\u00226abd9e2c-5b528\u0022",
+      "lastModified": "2026-09-30T23:41:32+00:00"
+    },
+    {
+      "id": "css2-visual",
+      "title": "CSS 2.2 visual formatting model",
+      "url": "https://www.w3.org/TR/CSS22/visuren.html",
+      "file": "css2-visual.html",
+      "fetchedAt": "2026-10-04T22:33:50.5386087+00:00",
+      "checkedAt": "2026-10-04T22:33:50.5386087+00:00",
+      "eTag": null,
+      "lastModified": "2016-04-08T13:44:59+00:00"
+    },
+    {
+      "id": "css2-sizing",
+      "title": "CSS 2.2 visual formatting model details",
+      "url": "https://www.w3.org/TR/CSS22/visudet.html",
+      "file": "css2-sizing.html",
+      "fetchedAt": "2026-10-04T22:33:50.69482+00:00",
+      "checkedAt": "2026-10-04T22:33:50.69482+00:00",
+      "eTag": null,
+      "lastModified": "2016-04-08T12:57:18+00:00"
+    },
+    {
       "id": "css-color",
       "title": "CSS Color Module Level 4",
       "url": "https://drafts.csswg.org/css-color-4/",

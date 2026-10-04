@@ -14,7 +14,8 @@ check actual initialization, not only environment variables. Do not bake X11
 window handles into portable surface/input contracts.
 
 SDL3 now handles windowing/input and software pixel presentation through
-Platform.Sdl. SkiaSharp rasterization and HarfBuzzSharp shaping remain planned.
+Platform.Sdl. Engine.Text now uses HarfBuzzSharp with Linux/Windows native assets;
+SkiaSharp rasterization remains planned.
 V8 is the planned ECMAScript/WebAssembly runtime; its binding, native
 distribution, sandbox compatibility and supported architectures are decided
 and tested at the scripting phase.
@@ -52,6 +53,12 @@ in document order; the style engine also handles inline attributes and an
 optional minimal UA sheet. Computed styles are snapshots, not live DOM observers.
 Unsupported CSS surfaces produce explicit diagnostics; no import/resource
 loading or layout runs. See the [CSS guide](../css.md).
+Engine.Text references Platform.Abstractions for explicit OS font enumeration,
+not OS backends. Fonts are renderer-local native owners with managed run output.
+Engine.Layout references DOM/CSS/Text and returns finite block/inline geometry,
+rejecting unsupported formatting algorithms. See the
+[text/layout guide](../text-layout.md). Neither project fetches resources or
+initializes a display; painting remains phase 8.
 
 ## Windows, tabs and processes
 
