@@ -1,9 +1,16 @@
 # Platform.Linux
 
-Phase-1 placeholder for Linux OS dependencies. Must support both X11 and
-Wayland through SDL3, with tested initialization/fallback and explicit override.
-Future process confinement uses Linux-specific facilities.
+Linux composition of SDL3 windows, file-based font discovery, .NET process
+launching and XDG app paths. Supports X11 and Wayland: prefer advertised
+Wayland, then try advertised X11 if initialization fails. Explicit overrides
+do not silently fall back. Previous failed attempts are exposed by the SDL
+window system's InitializationFailures.
 
-Implement Platform.Abstractions; keep Linux code here, not in engine libraries.
-See the [architecture](../../../docs/architecture/overview.md). No native
-backend or sandbox is implemented yet.
+Override with OpenWindows("x11"/"wayland") or VISUALWEB_VIDEO_BACKEND.
+No display is an explicit failure, not an implicit headless mode. Dummy mode
+is available only directly through shared SDL services for validation.
+
+Fonts are enumerated from conventional system/user directories; custom
+Fontconfig configuration and CSS family matching are not implemented.
+Native process confinement remains deferred; RequireSandbox is rejected.
+See the [platform guide](../../../docs/platform.md).

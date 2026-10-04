@@ -1,14 +1,15 @@
 # Project map
 
-All source projects below are empty library placeholders in phase 1; app
-projects become executables when their real entry points are implemented.
-Do not add dummy entry points that imply a working browser.
+Platform projects and developer tools are implemented. Core, Engine, IPC and
+App projects remain library placeholders; app projects become executables when
+their real entry points are implemented. Do not add dummy browser entry points.
 
 | Project | Responsibility | Planned dependencies / official sources |
 | --- | --- | --- |
 | [Platform.Abstractions](../src/Platform/Platform.Abstractions/) | OS-neutral windows, input, surfaces, fonts, process capabilities | Official platform APIs; not web interfaces |
-| [Platform.Linux](../src/Platform/Platform.Linux/) | Linux implementation, X11 and Wayland via SDL3, confinement | Platform.Abstractions |
-| [Platform.Windows](../src/Platform/Platform.Windows/) | Windows implementation and confinement | Platform.Abstractions |
+| [Platform.Sdl](../src/Platform/Platform.Sdl/) | Shared SDL windows/input/pixels and managed process/font services | Platform.Abstractions, SDL3-CS + Native |
+| [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and processes; confinement deferred | Platform.Sdl |
+| [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and processes; confinement deferred | Platform.Sdl |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
 | [Core.Url](../src/Core/Core.Url/) | WHATWG URL parsing and serialization | Core.Primitives; `url` |
 | [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, decoders and sniffing | Core.Primitives; `encoding` |
@@ -27,7 +28,9 @@ Do not add dummy entry points that imply a working browser.
 | [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Windows, tabs, chrome, privileged brokers | Platform composition, IPC |
 | [VisualWeb.Renderer](../src/Apps/VisualWeb.Renderer/) | One-tab renderer process | Engine.Content, IPC, restricted platform capabilities |
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
+| [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |
 
-The sole active test project is [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/).
+Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/) and the
+shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service suite.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).

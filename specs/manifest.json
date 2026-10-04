@@ -170,6 +170,126 @@
       "checkedAt": "2026-10-04T14:43:34.4066113+00:00",
       "eTag": "\u00226ac0c150-746b0d\u0022",
       "lastModified": "2026-10-03T08:48:16+00:00"
+    },
+    {
+      "id": "sdl-video",
+      "title": "SDL3 Video API",
+      "url": "https://wiki.libsdl.org/SDL3/CategoryVideo",
+      "file": "sdl-video.html",
+      "fetchedAt": "2026-10-04T15:08:20.2277372+00:00",
+      "checkedAt": "2026-10-04T15:08:20.2277372+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "sdl-init",
+      "title": "SDL3 Video Initialization",
+      "url": "https://wiki.libsdl.org/SDL3/SDL_InitSubSystem",
+      "file": "sdl-init.html",
+      "fetchedAt": "2026-10-04T15:08:20.5938087+00:00",
+      "checkedAt": "2026-10-04T15:08:20.5938087+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "sdl-create-window",
+      "title": "SDL3 Window Creation",
+      "url": "https://wiki.libsdl.org/SDL3/SDL_CreateWindow",
+      "file": "sdl-create-window.html",
+      "fetchedAt": "2026-10-04T15:08:20.8129764+00:00",
+      "checkedAt": "2026-10-04T15:08:20.8129764+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "sdl-window-surface",
+      "title": "SDL3 Window Surface",
+      "url": "https://wiki.libsdl.org/SDL3/SDL_GetWindowSurface",
+      "file": "sdl-window-surface.html",
+      "fetchedAt": "2026-10-04T15:08:20.8710898+00:00",
+      "checkedAt": "2026-10-04T15:08:20.8710898+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "sdl-events",
+      "title": "SDL3 Event Polling",
+      "url": "https://wiki.libsdl.org/SDL3/SDL_PollEvent",
+      "file": "sdl-events.html",
+      "fetchedAt": "2026-10-04T15:08:20.9407558+00:00",
+      "checkedAt": "2026-10-04T15:08:20.9407558+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "sdl-text-input",
+      "title": "SDL3 Text Input",
+      "url": "https://wiki.libsdl.org/SDL3/SDL_StartTextInput",
+      "file": "sdl-text-input.html",
+      "fetchedAt": "2026-10-04T15:08:20.9904653+00:00",
+      "checkedAt": "2026-10-04T15:08:20.9904653+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "sdl-linux",
+      "title": "SDL Linux X11 and Wayland",
+      "url": "https://wiki.libsdl.org/SDL3/README-linux",
+      "file": "sdl-linux.html",
+      "fetchedAt": "2026-10-04T15:08:21.0384895+00:00",
+      "checkedAt": "2026-10-04T15:08:21.0384895+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "xdg-directories",
+      "title": "XDG Base Directory Specification",
+      "url": "https://specifications.freedesktop.org/basedir/0.8/",
+      "file": "xdg-directories.html",
+      "fetchedAt": "2026-10-04T15:12:31.8392042+00:00",
+      "checkedAt": "2026-10-04T15:12:31.8392042+00:00",
+      "eTag": "\u0022371e27ae0ec02b9abc3fcf5b5c339b62dd969cba31d519c0f36ec3dd0c8a4f69\u0022",
+      "lastModified": "2026-10-02T15:21:20+00:00"
+    },
+    {
+      "id": "dotnet-process",
+      "title": ".NET Process API",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process?view=net-10.0",
+      "file": "dotnet-process.html",
+      "fetchedAt": "2026-10-04T15:08:22.4238803+00:00",
+      "checkedAt": "2026-10-04T15:08:22.4238803+00:00",
+      "eTag": "\u0022acDbyW1Wfw1nhNAYUiLZ426P9ZM=\u0022",
+      "lastModified": "2026-09-15T14:56:34+00:00"
+    },
+    {
+      "id": "dotnet-process-start",
+      "title": ".NET ProcessStartInfo API",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo?view=net-10.0",
+      "file": "dotnet-process-start.html",
+      "fetchedAt": "2026-10-04T15:08:22.8822724+00:00",
+      "checkedAt": "2026-10-04T15:08:22.8822724+00:00",
+      "eTag": "\u0022AYuwDDXRqB5vL8IXpixjJgG4Knk=\u0022",
+      "lastModified": "2026-09-15T15:04:03+00:00"
+    },
+    {
+      "id": "windows-fonts",
+      "title": "Windows Font Management",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/gdi/about-fonts",
+      "file": "windows-fonts.html",
+      "fetchedAt": "2026-10-04T15:12:32.271233+00:00",
+      "checkedAt": "2026-10-04T15:12:32.271233+00:00",
+      "eTag": "\u00224Fn5hXYt7rUuV4mdPTbE3VbCLvU=\u0022",
+      "lastModified": "2026-08-26T21:43:37+00:00"
+    },
+    {
+      "id": "fontconfig",
+      "title": "Fontconfig",
+      "url": "https://www.freedesktop.org/wiki/Software/fontconfig/",
+      "file": "fontconfig.html",
+      "fetchedAt": "2026-10-04T15:08:24.1974952+00:00",
+      "checkedAt": "2026-10-04T15:08:24.1974952+00:00",
+      "eTag": "\u0022152a-656b3bf9daac9-gzip\u0022",
+      "lastModified": "2026-07-16T05:31:14+00:00"
     }
   ]
 }

@@ -13,9 +13,9 @@ and allow an explicit backend override. Availability detection must ultimately
 check actual initialization, not only environment variables. Do not bake X11
 window handles into portable surface/input contracts.
 
-SDL3 handles windowing/input, SkiaSharp handles rasterization, and
-HarfBuzzSharp handles text shaping. Native dependencies are not installed in
-phase 1. V8 is the planned ECMAScript/WebAssembly runtime; its binding, native
+SDL3 now handles windowing/input and software pixel presentation through
+Platform.Sdl. SkiaSharp rasterization and HarfBuzzSharp shaping remain planned.
+V8 is the planned ECMAScript/WebAssembly runtime; its binding, native
 distribution, sandbox compatibility and supported architectures are decided
 and tested at the scripting phase.
 
@@ -31,9 +31,10 @@ The shell selects platform backends at the composition root. IPC contracts are
 data-only, independent of DOM and native objects. The transport depends only on
 contracts. See the [project map](../project-map.md) for each project.
 
-References should be introduced when actually needed; empty phase-1 libraries
-intentionally have no speculative dependency graph. These boundaries are the
-design constraints for subsequent references.
+References are introduced when actually needed. Platform.Linux and
+Platform.Windows reference Platform.Sdl, which implements portable contracts
+and references Platform.Abstractions. Other empty libraries still have no
+speculative dependency graph. See the [platform guide](../platform.md).
 
 ## Windows, tabs and processes
 

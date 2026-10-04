@@ -1,8 +1,8 @@
 # VisualWeb
 
 A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
-on x64 and arm64. Phase 1 establishes the repository and developer tooling;
-there is no runnable browser or standards-conformant engine yet.
+on x64 and arm64. Repository tooling and the phase-2 platform layer are
+implemented; there is no runnable browser or standards-conformant engine yet.
 
 ## Getting started
 
@@ -15,6 +15,9 @@ dotnet build VisualWeb.slnx --no-restore
 dotnet test VisualWeb.slnx --no-build
 dotnet run --project tools/SpecCache -- specs/manifest.json
 ```
+
+The [platform guide](docs/platform.md) describes window/input/OS services and
+explicit [native smoke checks](tools/PlatformSmoke/README.md).
 
 The last command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately

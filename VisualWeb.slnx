@@ -28,12 +28,15 @@
   <Folder Name="/src/Platform/">
     <Project Path="src/Platform/Platform.Abstractions/Platform.Abstractions.csproj" />
     <Project Path="src/Platform/Platform.Linux/Platform.Linux.csproj" />
+    <Project Path="src/Platform/Platform.Sdl/Platform.Sdl.csproj" />
     <Project Path="src/Platform/Platform.Windows/Platform.Windows.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Platform.Tests/Platform.Tests.csproj" />
     <Project Path="tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/PlatformSmoke/PlatformSmoke.csproj" />
     <Project Path="tools/SpecCache/SpecCache.csproj" />
   </Folder>
 </Solution>

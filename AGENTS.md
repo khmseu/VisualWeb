@@ -4,7 +4,8 @@
 
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
-   read its README. Projects are currently placeholders except SpecCache.
+   read its README. Platform services and developer tooling are implemented;
+   Core/Engine/IPC/App projects remain placeholders.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
    maps document IDs to official sources, filenames, and last-check timestamps.
@@ -40,10 +41,13 @@
 ```sh
 dotnet build VisualWeb.slnx
 dotnet test tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj
+dotnet test tests/Platform.Tests/Platform.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
 dotnet format VisualWeb.slnx --verify-no-changes --no-restore
 ```
 
-The solution build is the all-project smoke check. Windows/native UI validation
-will need real Windows and Linux X11/Wayland environments once backends exist;
-a cross-platform managed build alone does not prove native portability.
+The solution build is the all-project smoke check. See the [platform guide](docs/platform.md)
+for thread-affinity rules, native smoke commands and target validation gaps.
+Platform.Tests shares contract/fake tests across the OS implementations.
+Ordinary tests never initialize a native display. Native Windows/arm64 and
+Wayland keyboard/IME checks still need suitable target environments.

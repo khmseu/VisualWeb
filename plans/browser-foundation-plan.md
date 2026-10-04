@@ -10,6 +10,12 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 2 delivered: portable contracts, shared Platform.Sdl implementation,
+  Linux/Windows composition roots, shared managed platform tests and explicit
+  native smoke tooling. SDL3-CS and SDL3-CS.Native are pinned to matching 3.4.2.
+  Linux x64 dummy/X11 and headless Wayland surfaces/lifecycle are validated;
+  Wayland IME, native Windows, high-DPI desktops and arm64 remain target checks.
+  OS confinement remains phase 10; sandbox-required launches are rejected.
 - Runtime: .NET 10 LTS, C# latest; targets Windows 10+ and Linux, x64 and arm64.
 - Windowing/input: SDL3 behind `Platform.Abstractions`, with both X11 and Wayland backends supported and selectable on Linux (auto-detect via `WAYLAND_DISPLAY`/`DISPLAY`, override via config/env).
 - Graphics/text: SkiaSharp for rasterization, HarfBuzzSharp for shaping.

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Platform.Abstractions/Platform.Abstractions.csproj" />
+    <PackageReference Include="SDL3-CS" />
+    <PackageReference Include="SDL3-CS.Native" />
+  </ItemGroup>
+</Project>

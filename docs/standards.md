@@ -34,6 +34,8 @@ entry (it still uses conditional requests where possible).
 | `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |
 | `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
 | `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
+| `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |
+| `xdg-directories`, `dotnet-process`, `dotnet-process-start`, `windows-fonts`, `fontconfig` | OS paths, process launch/lifecycle and font sources |
 
 Add further official standards and native API references as their interfaces
 are introduced. CSS drafts and living standards change: cite the exact section,
