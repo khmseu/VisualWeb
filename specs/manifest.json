@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "documents": [
+    {
+      "id": "url",
+      "title": "WHATWG URL",
+      "url": "https://url.spec.whatwg.org/",
+      "file": "url.html",
+      "fetchedAt": "2026-10-04T14:43:17.9442355+00:00",
+      "checkedAt": "2026-10-04T14:43:17.9442355+00:00",
+      "eTag": "\u00226aa26a50-b4b2f\u0022",
+      "lastModified": "2026-09-10T08:29:04+00:00"
+    },
+    {
+      "id": "encoding",
+      "title": "WHATWG Encoding",
+      "url": "https://encoding.spec.whatwg.org/",
+      "file": "encoding.html",
+      "fetchedAt": "2026-10-04T14:43:19.4078036+00:00",
+      "checkedAt": "2026-10-04T14:43:19.4078036+00:00",
+      "eTag": "\u00226a0e93f6-94d98\u0022",
+      "lastModified": "2026-05-21T05:11:18+00:00"
+    },
+    {
+      "id": "mime-sniffing",
+      "title": "WHATWG MIME Sniffing",
+      "url": "https://mimesniff.spec.whatwg.org/",
+      "file": "mime-sniffing.html",
+      "fetchedAt": "2026-10-04T14:43:20.9468423+00:00",
+      "checkedAt": "2026-10-04T14:43:20.9468423+00:00",
+      "eTag": "\u00226a5a2b82-3c002\u0022",
+      "lastModified": "2026-07-17T13:17:54+00:00"
+    },
+    {
+      "id": "fetch",
+      "title": "WHATWG Fetch",
+      "url": "https://fetch.spec.whatwg.org/",
+      "file": "fetch.html",
+      "fetchedAt": "2026-10-04T14:43:22.5598821+00:00",
+      "checkedAt": "2026-10-04T14:43:22.5598821+00:00",
+      "eTag": "\u00226ab0cb9c-1d72eb\u0022",
+      "lastModified": "2026-09-21T06:15:56+00:00"
+    },
+    {
+      "id": "html",
+      "title": "WHATWG HTML",
+      "url": "https://html.spec.whatwg.org/",
+      "file": "html.html",
+      "fetchedAt": "2026-10-04T14:43:25.8475765+00:00",
+      "checkedAt": "2026-10-04T14:43:25.8475765+00:00",
+      "eTag": "\u00226ac248f1-ee3246\u0022",
+      "lastModified": "2026-10-04T12:39:13+00:00"
+    },
+    {
+      "id": "dom",
+      "title": "WHATWG DOM",
+      "url": "https://dom.spec.whatwg.org/",
+      "file": "dom.html",
+      "fetchedAt": "2026-10-04T14:43:27.6214411+00:00",
+      "checkedAt": "2026-10-04T14:43:27.6214411+00:00",
+      "eTag": "\u00226ac21a07-3044a3\u0022",
+      "lastModified": "2026-10-04T09:19:03+00:00"
+    },
+    {
+      "id": "css-syntax",
+      "title": "CSS Syntax Level 3",
+      "url": "https://drafts.csswg.org/css-syntax-3/",
+      "file": "css-syntax.html",
+      "fetchedAt": "2026-10-04T14:43:28.0552577+00:00",
+      "checkedAt": "2026-10-04T14:43:28.0552577+00:00",
+      "eTag": "\u00226ac03aed-9edff\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-cascade",
+      "title": "CSS Cascading and Inheritance Level 5",
+      "url": "https://drafts.csswg.org/css-cascade-5/",
+      "file": "css-cascade.html",
+      "fetchedAt": "2026-10-04T14:43:28.3483303+00:00",
+      "checkedAt": "2026-10-04T14:43:28.3483303+00:00",
+      "eTag": "\u00226ac03aed-6ddc2\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "selectors",
+      "title": "Selectors Level 4",
+      "url": "https://drafts.csswg.org/selectors-4/",
+      "file": "selectors.html",
+      "fetchedAt": "2026-10-04T14:43:28.8545533+00:00",
+      "checkedAt": "2026-10-04T14:43:28.8545533+00:00",
+      "eTag": "\u00226ac03aed-1213e6\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-values",
+      "title": "CSS Values and Units Level 4",
+      "url": "https://drafts.csswg.org/css-values-4/",
+      "file": "css-values.html",
+      "fetchedAt": "2026-10-04T14:43:29.2516896+00:00",
+      "checkedAt": "2026-10-04T14:43:29.2516896+00:00",
+      "eTag": "\u00226ac03aed-f893a\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-box",
+      "title": "CSS Box Model Level 3",
+      "url": "https://drafts.csswg.org/css-box-3/",
+      "file": "css-box.html",
+      "fetchedAt": "2026-10-04T14:43:29.4244524+00:00",
+      "checkedAt": "2026-10-04T14:43:29.4244524+00:00",
+      "eTag": "\u00226ac03aed-2ebc6\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-display",
+      "title": "CSS Display Level 3",
+      "url": "https://drafts.csswg.org/css-display-3/",
+      "file": "css-display.html",
+      "fetchedAt": "2026-10-04T14:43:29.6447214+00:00",
+      "checkedAt": "2026-10-04T14:43:29.6447214+00:00",
+      "eTag": "\u00226ac03aed-91271\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-inline",
+      "title": "CSS Inline Layout Level 3",
+      "url": "https://drafts.csswg.org/css-inline-3/",
+      "file": "css-inline.html",
+      "fetchedAt": "2026-10-04T14:43:29.8949809+00:00",
+      "checkedAt": "2026-10-04T14:43:29.8949809+00:00",
+      "eTag": "\u00226ac03aec-a71e5\u0022",
+      "lastModified": "2026-10-02T23:14:52+00:00"
+    },
+    {
+      "id": "css-text",
+      "title": "CSS Text Level 3",
+      "url": "https://drafts.csswg.org/css-text-3/",
+      "file": "css-text.html",
+      "fetchedAt": "2026-10-04T14:43:30.5594558+00:00",
+      "checkedAt": "2026-10-04T14:43:30.5594558+00:00",
+      "eTag": "\u00226ac03aed-1dee44\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-fonts",
+      "title": "CSS Fonts Level 4",
+      "url": "https://drafts.csswg.org/css-fonts-4/",
+      "file": "css-fonts.html",
+      "fetchedAt": "2026-10-04T14:43:31.0147014+00:00",
+      "checkedAt": "2026-10-04T14:43:31.0147014+00:00",
+      "eTag": "\u00226ac03aed-16b964\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "webidl",
+      "title": "Web IDL",
+      "url": "https://webidl.spec.whatwg.org/",
+      "file": "webidl.html",
+      "fetchedAt": "2026-10-04T14:43:32.8570912+00:00",
+      "checkedAt": "2026-10-04T14:43:32.8570912+00:00",
+      "eTag": "\u00226abfd689-26daec\u0022",
+      "lastModified": "2026-10-02T16:06:33+00:00"
+    },
+    {
+      "id": "ecmascript",
+      "title": "ECMA-262 ECMAScript",
+      "url": "https://tc39.es/ecma262/",
+      "file": "ecmascript.html",
+      "fetchedAt": "2026-10-04T14:43:34.4066113+00:00",
+      "checkedAt": "2026-10-04T14:43:34.4066113+00:00",
+      "eTag": "\u00226ac0c150-746b0d\u0022",
+      "lastModified": "2026-10-03T08:48:16+00:00"
+    }
+  ]
+}

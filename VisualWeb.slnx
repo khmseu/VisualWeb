@@ -1,0 +1,39 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Apps/">
+    <Project Path="src/Apps/VisualWeb.Browser/VisualWeb.Browser.csproj" />
+    <Project Path="src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj" />
+  </Folder>
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/Core.Encoding/Core.Encoding.csproj" />
+    <Project Path="src/Core/Core.Mime/Core.Mime.csproj" />
+    <Project Path="src/Core/Core.Primitives/Core.Primitives.csproj" />
+    <Project Path="src/Core/Core.Url/Core.Url.csproj" />
+  </Folder>
+  <Folder Name="/src/Engine/">
+    <Project Path="src/Engine/Engine.Content/Engine.Content.csproj" />
+    <Project Path="src/Engine/Engine.Css/Engine.Css.csproj" />
+    <Project Path="src/Engine/Engine.Dom/Engine.Dom.csproj" />
+    <Project Path="src/Engine/Engine.Html/Engine.Html.csproj" />
+    <Project Path="src/Engine/Engine.Layout/Engine.Layout.csproj" />
+    <Project Path="src/Engine/Engine.Net/Engine.Net.csproj" />
+    <Project Path="src/Engine/Engine.Paint/Engine.Paint.csproj" />
+    <Project Path="src/Engine/Engine.Scripting/Engine.Scripting.csproj" />
+    <Project Path="src/Engine/Engine.Text/Engine.Text.csproj" />
+  </Folder>
+  <Folder Name="/src/Ipc/">
+    <Project Path="src/Ipc/Ipc.Contracts/Ipc.Contracts.csproj" />
+    <Project Path="src/Ipc/Ipc.Transport/Ipc.Transport.csproj" />
+  </Folder>
+  <Folder Name="/src/Platform/">
+    <Project Path="src/Platform/Platform.Abstractions/Platform.Abstractions.csproj" />
+    <Project Path="src/Platform/Platform.Linux/Platform.Linux.csproj" />
+    <Project Path="src/Platform/Platform.Windows/Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/SpecCache/SpecCache.csproj" />
+  </Folder>
+</Solution>

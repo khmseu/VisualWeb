@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>VisualWeb.Renderer</RootNamespace>
+    <AssemblyName>VisualWeb.Renderer</AssemblyName>
+  </PropertyGroup>
+</Project>

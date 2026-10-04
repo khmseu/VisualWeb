@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/TestResults/
+.vs/
+*.user
+*.suo
+specs/cache/
+specs/*.lock

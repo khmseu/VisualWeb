@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "dotnet",
+      "args": ["build", "VisualWeb.slnx"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "dotnet",
+      "args": ["test", "VisualWeb.slnx"],
+      "group": "test",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "refresh standards cache",
+      "type": "shell",
+      "command": "dotnet",
+      "args": ["run", "--project", "tools/SpecCache", "--", "specs/manifest.json"],
+      "problemMatcher": []
+    }
+  ]
+}

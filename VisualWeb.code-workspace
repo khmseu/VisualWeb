@@ -4,7 +4,13 @@
 			"path": "."
 		}
 	],
-	"settings": {},
+	"settings": {
+		"dotnet.defaultSolution": "VisualWeb.slnx",
+		"files.exclude": {
+			"**/bin": true,
+			"**/obj": true
+		}
+	},
 	"extensions": {
 		"recommendations": [
 			"ms-dotnettools.csdevkit"
