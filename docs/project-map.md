@@ -1,7 +1,8 @@
 # Project map
 
-Platform projects, Core URL/Encoding/MIME and developer tools are implemented. Core.Primitives, Engine, IPC and
-App projects remain library placeholders; app projects become executables when
+Platform projects, Core URL/Encoding/MIME, Engine.Net and developer tools are
+implemented. Core.Primitives, other Engine projects, IPC and App projects remain
+library placeholders; app projects become executables when
 their real entry points are implemented. Do not add dummy browser entry points.
 
 | Project | Responsibility | Planned dependencies / official sources |
@@ -14,7 +15,7 @@ their real entry points are implemented. Do not add dummy browser entry points.
 | [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
 | [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders and BOM sniffing | Embedded WHATWG indices; `encoding` |
 | [Core.Mime](../src/Core/Core.Mime/) | MIME parsing/serialization; context sniffing deferred | .NET BCL; `mime-sniffing` |
-| [Engine.Net](../src/Engine/Engine.Net/) | Resource loading/Fetch, later cookies and policies | Core utilities; `fetch`, `html` |
+| [Engine.Net](../src/Engine/Engine.Net/) | Bounded GET loading, redirects, opt-in host-only cookies; full Fetch policies deferred | Core.Url/Encoding/Mime, BCL HTTP/files/cookies; `fetch`, `http-cookies` |
 | [Engine.Html](../src/Engine/Engine.Html/) | Tokenization and tree construction | Engine.Dom, Core.Encoding; `html` |
 | [Engine.Dom](../src/Engine/Engine.Dom/) | Document tree and mutations | Core utilities; `dom`, `html` |
 | [Engine.Css](../src/Engine/Engine.Css/) | CSS parsing, selectors, cascade/computed values | Engine.Dom; CSS and selectors documents |
@@ -32,6 +33,8 @@ their real entry points are implemented. Do not add dummy browser entry points.
 
 Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/),
 shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service tests, and
-[Core.Tests](../tests/Core.Tests/) with pinned official data and regressions.
+[Core.Tests](../tests/Core.Tests/) with pinned official data and regressions, plus
+[Engine.Net.Tests](../tests/Engine.Net.Tests/) with fake handlers, WPT data URLs
+and owned loopback HTTP integration.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).

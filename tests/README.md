@@ -8,6 +8,9 @@ selection, process services and OS paths without initializing native displays.
 It groups both OS backends to avoid duplicating contract/fake tests.
 The [core suite](Core.Tests/) groups URL, encoding and MIME utilities with
 [pinned official fixtures](Core.Tests/Data/README.md) and offline regression tests.
+The [networking suite](Engine.Net.Tests/) uses fake transports and
+[pinned Fetch data URL fixtures](Engine.Net.Tests/Data/README.md). Its integration
+tests bind only owned, ephemeral loopback ports and never contact remote hosts.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -34,6 +37,7 @@ or network services.
 dotnet test tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj
 dotnet test tests/Platform.Tests/Platform.Tests.csproj
 dotnet test tests/Core.Tests/Core.Tests.csproj
+dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

@@ -38,6 +38,10 @@ speculative dependency graph. See the [platform guide](../platform.md).
 Core.Url references the vendored managed URL parser; its mutable URL objects
 never cross the immutable BrowserUrl facade. Core.Encoding embeds official
 tables; Core.Mime uses the BCL. See the [core guide](../core.md) for scope.
+Engine.Net references those three core libraries and portable BCL HTTP/file
+services. Its session cookie store belongs to a loader instance, not global
+renderer state. It has no platform-backend or browser-shell dependency.
+See the [networking guide](../networking.md) before integrating it with pages.
 
 ## Windows, tabs and processes
 

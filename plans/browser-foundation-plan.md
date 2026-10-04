@@ -10,6 +10,13 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 4 delivered: GET-only HTTP(S)/local file/data loader, explicit redirects,
+  bounded response buffering, cancellation/deadline, and opt-in session cookies.
+  The user approved defaults of 20 redirects and 32 MiB bodies; general methods,
+  request bodies, full Fetch policies and persistence remain deferred.
+  Cookies use a deliberately restrictive host-only BCL-backed subset.
+  All 28 projects build; all 4,067 tests pass, including 210 networking checks.
+  See the [networking guide](../docs/networking.md) for scope and validation.
 - Phase 3 delivered: immutable URL parsing/resolution/serialization, all
   Encoding Standard labels and whole-buffer decoders with BOM precedence,
   MIME parsing/serialization, and pinned offline conformance tests.

@@ -1,5 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <ProjectReference Include="../../Core/Core.Url/Core.Url.csproj" />
+    <ProjectReference Include="../../Core/Core.Mime/Core.Mime.csproj" />
+    <ProjectReference Include="../../Core/Core.Encoding/Core.Encoding.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

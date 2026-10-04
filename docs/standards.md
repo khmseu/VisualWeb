@@ -31,6 +31,7 @@ entry (it still uses conditional requests where possible).
 | `url`, `encoding`, `mime-sniffing` | Core URL, Encoding and MIME |
 | `unicode-idna`, `unicode-bidi` | URL internationalized domains and Unicode bidi defaults |
 | `fetch` | Networking and resource policies |
+| `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler` | Basic session cookies and HTTP transport, not full browser cookie policy |
 | `html`, `dom` | HTML parser, DOM, navigation, event loop |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |
 | `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
@@ -45,6 +46,7 @@ are test inputs managed separately, not substitutes for these documents.
 Core tests and embedded encoding tables have explicit
 [provenance and licensing](core.md#pinned-sources-and-licenses).
 The approved IDNA baseline is stable Unicode 17, not Unicode 18 preview.
+Networking has separate [pinned WPT data URL fixtures](../tests/Engine.Net.Tests/Data/README.md).
 
 ## Interface citation convention
 

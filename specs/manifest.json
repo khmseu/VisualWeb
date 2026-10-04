@@ -2,6 +2,36 @@
   "version": 1,
   "documents": [
     {
+      "id": "http-cookies",
+      "title": "RFC 6265: HTTP State Management Mechanism",
+      "url": "https://www.rfc-editor.org/rfc/rfc6265.html",
+      "file": "http-cookies.html",
+      "fetchedAt": "2026-10-04T17:44:37.190366+00:00",
+      "checkedAt": "2026-10-04T17:44:37.190366+00:00",
+      "eTag": "W/\u0022fc5c94cc40419c22078c0472eebc9f74\u0022",
+      "lastModified": null
+    },
+    {
+      "id": "dotnet-cookie-container",
+      "title": ".NET CookieContainer",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.net.cookiecontainer?view=net-10.0",
+      "file": "dotnet-cookie-container.html",
+      "fetchedAt": "2026-10-04T17:44:38.182799+00:00",
+      "checkedAt": "2026-10-04T17:44:38.182799+00:00",
+      "eTag": "\u0022KXMfMPr9LAf05TRUPAGSkWXTvwM=\u0022",
+      "lastModified": "2026-09-15T15:04:40+00:00"
+    },
+    {
+      "id": "dotnet-http-handler",
+      "title": ".NET SocketsHttpHandler",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler?view=net-10.0",
+      "file": "dotnet-http-handler.html",
+      "fetchedAt": "2026-10-04T17:44:38.3676907+00:00",
+      "checkedAt": "2026-10-04T17:44:38.3676907+00:00",
+      "eTag": "\u0022vnWWeMsCCaTsJnyQ9oZzly1D1EQ=\u0022",
+      "lastModified": "2026-09-15T15:04:29+00:00"
+    },
+    {
       "id": "unicode-idna",
       "title": "Unicode Technical Standard 46: IDNA Compatibility Processing",
       "url": "https://www.unicode.org/reports/tr46/",

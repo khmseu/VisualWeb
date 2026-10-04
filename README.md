@@ -1,8 +1,9 @@
 # VisualWeb
 
 A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
-on x64 and arm64. Repository tooling, platform services, and phase-3 URL,
-encoding and MIME utilities are implemented; there is no runnable browser yet.
+on x64 and arm64. Repository tooling, platform services, core standards
+utilities and the phase-4 resource loader are implemented; there is no runnable
+browser yet.
 
 ## Getting started
 
@@ -20,6 +21,8 @@ The [platform guide](docs/platform.md) describes window/input/OS services and
 explicit [native smoke checks](tools/PlatformSmoke/README.md).
 The [core guide](docs/core.md) documents the standards utilities, offline
 conformance fixtures, vendored URL parser and current limitations.
+The [networking guide](docs/networking.md) covers bounded GET loading,
+redirects, opt-in session cookies and the privileged-caller boundary.
 
 The last command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately
