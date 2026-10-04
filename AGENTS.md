@@ -4,8 +4,8 @@
 
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
-   read its README. Platform services and developer tooling are implemented;
-   Core/Engine/IPC/App projects remain placeholders.
+   read its README. Platform services, Core URL/Encoding/MIME and developer
+   tooling are implemented; Core.Primitives/Engine/IPC/App remain placeholders.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
    maps document IDs to official sources, filenames, and last-check timestamps.
@@ -28,6 +28,9 @@
   to implement a web standard.
 - Describe implemented subsets explicitly; a project name is not a conformance
   claim. Add a manifest entry when introducing a newly referenced standard.
+- Read the [core guide](docs/core.md) and [vendored parser notes](third_party/Dubzer.WhatwgUrl/README.md)
+  before changing URL/encoding/MIME. Preserve licenses and fixture pins;
+  Unicode 17 is the approved stable IDNA baseline. Do not suppress failures.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; future process communication uses IPC contracts.
@@ -42,8 +45,9 @@
 dotnet build VisualWeb.slnx
 dotnet test tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj
 dotnet test tests/Platform.Tests/Platform.Tests.csproj
+dotnet test tests/Core.Tests/Core.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
-dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party
 ```
 
 The solution build is the all-project smoke check. See the [platform guide](docs/platform.md)

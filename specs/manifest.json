@@ -2,6 +2,26 @@
   "version": 1,
   "documents": [
     {
+      "id": "unicode-idna",
+      "title": "Unicode Technical Standard 46: IDNA Compatibility Processing",
+      "url": "https://www.unicode.org/reports/tr46/",
+      "file": "unicode-idna.html",
+      "fetchedAt": "2026-10-04T17:07:21.9539744+00:00",
+      "checkedAt": "2026-10-04T17:07:21.9539744+00:00",
+      "eTag": null,
+      "lastModified": "2026-09-01T21:15:42+00:00"
+    },
+    {
+      "id": "unicode-bidi",
+      "title": "Unicode Standard Annex 9: Bidirectional Algorithm",
+      "url": "https://www.unicode.org/reports/tr9/",
+      "file": "unicode-bidi.html",
+      "fetchedAt": "2026-10-04T17:07:22.5914545+00:00",
+      "checkedAt": "2026-10-04T17:07:22.5914545+00:00",
+      "eTag": null,
+      "lastModified": "2026-09-01T21:00:40+00:00"
+    },
+    {
       "id": "url",
       "title": "WHATWG URL",
       "url": "https://url.spec.whatwg.org/",

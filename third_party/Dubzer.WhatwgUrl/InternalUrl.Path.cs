@@ -1,0 +1,206 @@
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+using Dubzer.WhatwgUrl.BclInternal;
+
+namespace Dubzer.WhatwgUrl;
+
+internal partial class InternalUrl
+{
+    private bool _triedFastPath;
+    protected List<UrlComponent> Path = [];
+
+    protected static List<UrlComponent> ClonePath(InternalUrl source)
+    {
+        var copy = new List<UrlComponent>(source.Path.Count);
+        foreach (var pathComponent in source.Path)
+            copy.Add(pathComponent.Materialize(source.Input));
+
+
+        return copy;
+    }
+
+    protected virtual void PathState(char c)
+    {
+        if (!_triedFastPath)
+        {
+            _triedFastPath = true;
+            PathStateFast();
+            return;
+        }
+
+        if (Pointer == Length || c is '/' or '?' or '#' || (c == '\\' && IsSpecial))
+        {
+            if (IsSpecial && c == '\\')
+                Debug.WriteLine("invalid-reverse-solidus");
+
+            var str = Buf.ToString();
+            if (Util.IsDoubleDot(str))
+            {
+                ShortenPath();
+
+                if (c != '/' && !(c == '\\' && IsSpecial))
+                    Path.Add(UrlComponent.Empty);
+            }
+            else if (Util.IsSingleDot(str) && c != '/' && !(c == '\\' && IsSpecial))
+            {
+                Path.Add(UrlComponent.Empty);
+            }
+            else if (!Util.IsSingleDot(str))
+            {
+                if (Scheme == Schemes.File
+                    && Path.Count == 0
+                    && str.Length == 2
+                    && char.IsAsciiLetter(str[0])
+                    && str[1] is '|')
+                {
+                    str = $"{str[0]}:";
+                }
+
+                Path.Add(new UrlComponent(str));
+            }
+
+            Buf.Clear();
+            switch (c)
+            {
+                case '?':
+                    State = InternalUrlParserState.Query;
+                    break;
+                case '#':
+                    Buf.EnsureCapacity(Length - Pointer);
+                    State = InternalUrlParserState.Fragment;
+                    break;
+            }
+        }
+        else
+        {
+            // add parse error here
+            if (c == '%' && !char.IsAsciiHexDigit(NextChar(1)) && !char.IsAsciiHexDigit(NextChar(2)))
+                Debug.WriteLine("invalid-URL-unit");
+
+            AppendCurrentEncoded(c, PercentEncoding.PathEncodeSetLookup);
+        }
+    }
+
+    private static readonly SearchValues<char> LastInPathSearchValues = SearchValues.Create("?#");
+
+    // This implementation handles the whole path in one state machine iteration
+    private void PathStateFast()
+    {
+        if (Path.Count != 0 || Scheme == Schemes.File)
+        {
+            Pointer--;
+            return;
+        }
+
+        var remainder = Remainder;
+
+        if (remainder.Length == 0)
+        {
+            Path.Add(UrlComponent.Empty);
+            return;
+        }
+
+        var lastInPath = remainder.IndexOfAny(LastInPathSearchValues);
+        var endsWithChar = '\u0000';
+        ReadOnlySpan<char> path;
+        // a trick to avoid a bound check
+        if ((uint)lastInPath >= (uint)remainder.Length)
+        {
+            lastInPath = remainder.Length;
+            path = remainder;
+        }
+        else
+        {
+            path = remainder[..lastInPath];
+            endsWithChar = remainder[lastInPath];
+        }
+
+        var vsb = new ValueStringBuilder(Consts.MaxLengthOnStack.Char);
+        try
+        {
+            var handled = PercentEncoding.AppendEncodedPath(path, ref vsb);
+
+            // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+            switch (handled)
+            {
+                case PercentEncoding.AppendEncodedPathResult.Handled:
+                    Path.Add(new UrlComponent(vsb.ToString()));
+                    break;
+                case PercentEncoding.AppendEncodedPathResult.NoProcessing:
+                    Path.Add(new UrlComponent(Pointer, path.Length));
+                    break;
+                case PercentEncoding.AppendEncodedPathResult.Fallback:
+                    Pointer--;
+                    return;
+            }
+
+            Pointer += lastInPath;
+
+            switch (endsWithChar)
+            {
+                case '?':
+                    State = InternalUrlParserState.Query;
+                    break;
+                case '#':
+                    Buf.EnsureCapacity(Length - Pointer);
+                    State = InternalUrlParserState.Fragment;
+                    break;
+            }
+        }
+        finally
+        {
+            vsb.Dispose();
+        }
+    }
+
+    // https://url.spec.whatwg.org/#shorten-a-urls-path
+    protected void ShortenPath()
+    {
+        // If url’s scheme is "file", path’s size is 1, and path[0] is a normalized Windows drive letter, then return.
+        if (Scheme == Schemes.File && Path.Count == 1 && IsNormalizedWindowDriveLetter(Path[0].AsSpan(Input)))
+            return;
+
+        // Remove path’s last item, if any.
+        if (Path.Count == 0)
+            return;
+
+        var lastPart = Path[^1];
+        var lastPartSpan = lastPart.AsSpan(Input);
+        var slashInPart = lastPartSpan.LastIndexOf('/');
+        if (slashInPart != -1)
+        {
+            Path[^1] = new UrlComponent(lastPartSpan[..slashInPart].ToString());
+        }
+        else
+        {
+            Path.RemoveAt(Path.Count - 1);
+        }
+    }
+
+    private void AppendSerializedPath(StringBuilder sb)
+    {
+        foreach (var pathComponent in Path)
+            AppendSerializedComponent(sb, pathComponent, Input, '/');
+    }
+
+    // https://url.spec.whatwg.org/#url-path-serializer
+    internal string SerializePathname()
+    {
+        if (_opaquePath != null)
+            return _opaquePath;
+
+        if (Path.Count == 0)
+            return "";
+
+        if (Path.Count == 1)
+            return SerializeComponent(Path[0], Input, '/');
+
+        var sb = new StringBuilder();
+        AppendSerializedPath(sb);
+
+        return sb.ToString();
+    }
+}

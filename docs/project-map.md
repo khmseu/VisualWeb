@@ -1,6 +1,6 @@
 # Project map
 
-Platform projects and developer tools are implemented. Core, Engine, IPC and
+Platform projects, Core URL/Encoding/MIME and developer tools are implemented. Core.Primitives, Engine, IPC and
 App projects remain library placeholders; app projects become executables when
 their real entry points are implemented. Do not add dummy browser entry points.
 
@@ -11,9 +11,9 @@ their real entry points are implemented. Do not add dummy browser entry points.
 | [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and processes; confinement deferred | Platform.Sdl |
 | [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and processes; confinement deferred | Platform.Sdl |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
-| [Core.Url](../src/Core/Core.Url/) | WHATWG URL parsing and serialization | Core.Primitives; `url` |
-| [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, decoders and sniffing | Core.Primitives; `encoding` |
-| [Core.Mime](../src/Core/Core.Mime/) | MIME parsing/sniffing | Core.Primitives; `mime-sniffing` |
+| [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
+| [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders and BOM sniffing | Embedded WHATWG indices; `encoding` |
+| [Core.Mime](../src/Core/Core.Mime/) | MIME parsing/serialization; context sniffing deferred | .NET BCL; `mime-sniffing` |
 | [Engine.Net](../src/Engine/Engine.Net/) | Resource loading/Fetch, later cookies and policies | Core utilities; `fetch`, `html` |
 | [Engine.Html](../src/Engine/Engine.Html/) | Tokenization and tree construction | Engine.Dom, Core.Encoding; `html` |
 | [Engine.Dom](../src/Engine/Engine.Dom/) | Document tree and mutations | Core utilities; `dom`, `html` |
@@ -30,7 +30,8 @@ their real entry points are implemented. Do not add dummy browser entry points.
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |
 
-Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/) and the
-shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service suite.
+Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/),
+shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service tests, and
+[Core.Tests](../tests/Core.Tests/) with pinned official data and regressions.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).

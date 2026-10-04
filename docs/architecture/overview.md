@@ -35,6 +35,9 @@ References are introduced when actually needed. Platform.Linux and
 Platform.Windows reference Platform.Sdl, which implements portable contracts
 and references Platform.Abstractions. Other empty libraries still have no
 speculative dependency graph. See the [platform guide](../platform.md).
+Core.Url references the vendored managed URL parser; its mutable URL objects
+never cross the immutable BrowserUrl facade. Core.Encoding embeds official
+tables; Core.Mime uses the BCL. See the [core guide](../core.md) for scope.
 
 ## Windows, tabs and processes
 

@@ -10,6 +10,15 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 3 delivered: immutable URL parsing/resolution/serialization, all
+  Encoding Standard labels and whole-buffer decoders with BOM precedence,
+  MIME parsing/serialization, and pinned offline conformance tests.
+  The user approved Dubzer.WhatwgUrl behind our API, then MIT source vendoring
+  and algorithm fixes after the package failed WPT cases. Unicode 17 and its
+  matching official IDNA corpus are the approved stable baseline.
+  Streaming/encoders/HTML charset prescan, URL mutation/security-origin identity
+  and context-sensitive MIME sniffing remain future work. All 27 projects build
+  and all 3,857 tests pass. See the [core guide](../docs/core.md).
 - Phase 2 delivered: portable contracts, shared Platform.Sdl implementation,
   Linux/Windows composition roots, shared managed platform tests and explicit
   native smoke tooling. SDL3-CS and SDL3-CS.Native are pinned to matching 3.4.2.

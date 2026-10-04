@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <ProjectReference Include="../../src/Core/Core.Url/Core.Url.csproj" />
+    <ProjectReference Include="../../src/Core/Core.Encoding/Core.Encoding.csproj" />
+    <ProjectReference Include="../../src/Core/Core.Mime/Core.Mime.csproj" />
+    <None Include="Data/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Data/*.js" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Core/Core.Encoding/Data/*.json" Link="Data/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

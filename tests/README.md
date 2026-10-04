@@ -6,6 +6,8 @@ The [cache tests](Tools.SpecCache.Tests/) are the phase-1 example.
 The [shared platform suite](Platform.Tests/) tests portable contracts, backend
 selection, process services and OS paths without initializing native displays.
 It groups both OS backends to avoid duplicating contract/fake tests.
+The [core suite](Core.Tests/) groups URL, encoding and MIME utilities with
+[pinned official fixtures](Core.Tests/Data/README.md) and offline regression tests.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -31,6 +33,7 @@ or network services.
 ```sh
 dotnet test tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj
 dotnet test tests/Platform.Tests/Platform.Tests.csproj
+dotnet test tests/Core.Tests/Core.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

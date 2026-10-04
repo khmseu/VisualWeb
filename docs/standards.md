@@ -29,6 +29,7 @@ entry (it still uses conditional requests where possible).
 | IDs | Used by |
 | --- | --- |
 | `url`, `encoding`, `mime-sniffing` | Core URL, Encoding and MIME |
+| `unicode-idna`, `unicode-bidi` | URL internationalized domains and Unicode bidi defaults |
 | `fetch` | Networking and resource policies |
 | `html`, `dom` | HTML parser, DOM, navigation, event loop |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |
@@ -41,6 +42,9 @@ Add further official standards and native API references as their interfaces
 are introduced. CSS drafts and living standards change: cite the exact section,
 record the checked date and state the implemented subset. WPT/html5lib datasets
 are test inputs managed separately, not substitutes for these documents.
+Core tests and embedded encoding tables have explicit
+[provenance and licensing](core.md#pinned-sources-and-licenses).
+The approved IDNA baseline is stable Unicode 17, not Unicode 18 preview.
 
 ## Interface citation convention
 
