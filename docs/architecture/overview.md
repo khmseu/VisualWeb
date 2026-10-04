@@ -42,6 +42,11 @@ Engine.Net references those three core libraries and portable BCL HTTP/file
 services. Its session cookie store belongs to a loader instance, not global
 renderer state. It has no platform-backend or browser-shell dependency.
 See the [networking guide](../networking.md) before integrating it with pages.
+Engine.Html consumes already-decoded strings and references Engine.Dom only.
+Engine.Dom is independent of parsing, networking, platform backends and chrome.
+The HTML parser uses a checked internal attribute path: HTML error recovery can
+produce names that public DOM setters reject. No script/event callbacks run
+during parsing or mutation. See the [HTML/DOM guide](../html-dom.md).
 
 ## Windows, tabs and processes
 

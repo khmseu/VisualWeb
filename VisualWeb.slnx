@@ -33,6 +33,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Core.Tests/Core.Tests.csproj" />
+    <Project Path="tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj" />
+    <Project Path="tests/Engine.Html.Tests/Engine.Html.Tests.csproj" />
     <Project Path="tests/Engine.Net.Tests/Engine.Net.Tests.csproj" />
     <Project Path="tests/Platform.Tests/Platform.Tests.csproj" />
     <Project Path="tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj" />

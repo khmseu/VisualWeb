@@ -47,6 +47,11 @@ Core tests and embedded encoding tables have explicit
 [provenance and licensing](core.md#pinned-sources-and-licenses).
 The approved IDNA baseline is stable Unicode 17, not Unicode 18 preview.
 Networking has separate [pinned WPT data URL fixtures](../tests/Engine.Net.Tests/Data/README.md).
+HTML uses pinned [html5lib token/tree fixtures](../tests/Engine.Html.Tests/Data/README.md)
+and [official named-reference data](../src/Engine/Engine.Html/Data/README.md).
+Data is independent of the monthly document cache. The current cached HTML
+Standard includes processing-instruction tokenization; the fixture guide records
+the compatibility translation for three obsolete tokenizer error names.
 
 ## Interface citation convention
 

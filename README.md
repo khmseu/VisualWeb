@@ -2,8 +2,8 @@
 
 A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
 on x64 and arm64. Repository tooling, platform services, core standards
-utilities and the phase-4 resource loader are implemented; there is no runnable
-browser yet.
+utilities, resource loading, and phase-5 static HTML parsing/DOM are implemented;
+there is no runnable browser yet.
 
 ## Getting started
 
@@ -23,6 +23,8 @@ The [core guide](docs/core.md) documents the standards utilities, offline
 conformance fixtures, vendored URL parser and current limitations.
 The [networking guide](docs/networking.md) covers bounded GET loading,
 redirects, opt-in session cookies and the privileged-caller boundary.
+The [HTML and DOM guide](docs/html-dom.md) describes the tokenizer, supported
+tree-construction subset, renderer-local mutations and explicit limitations.
 
 The last command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately

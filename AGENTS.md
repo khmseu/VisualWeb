@@ -5,8 +5,8 @@
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
    read its README. Platform services, Core URL/Encoding/MIME and developer
-   tooling and Engine.Net are implemented; Core.Primitives, other Engine
-   projects, IPC and App remain placeholders.
+   tooling and Engine.Net/Html/Dom are implemented; Core.Primitives, other
+   Engine projects, IPC and App remain placeholders.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
    maps document IDs to official sources, filenames, and last-check timestamps.
@@ -35,6 +35,10 @@
 - Read the [networking guide](docs/networking.md) before using Engine.Net.
   It is privileged GET-only loading, not script-visible Fetch or a sandbox.
   Cookies require explicit opt-in; do not silently weaken unsupported policy.
+- Read the [HTML and DOM guide](docs/html-dom.md) before changing parsing.
+  The tokenizer is first-party; tree building is an explicit static subset.
+  Unsupported algorithms must throw, not silently produce an approximate tree.
+  Preserve pinned entity data and whole fixture families; DOM stays renderer-local.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; future process communication uses IPC contracts.
@@ -51,6 +55,8 @@ dotnet test tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj
 dotnet test tests/Platform.Tests/Platform.Tests.csproj
 dotnet test tests/Core.Tests/Core.Tests.csproj
 dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
+dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
+dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
 dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party
 ```

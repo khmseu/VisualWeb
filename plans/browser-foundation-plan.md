@@ -10,6 +10,16 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 5 delivered: first-party whole-string HTML tokenizer, renderer-local
+  core DOM and an explicit static-document tree-building subset. The user chose
+  our own parser instead of an existing managed HTML parser.
+  Pinned html5lib token/tree fixtures and official named-reference data provide
+  offline evidence. Unsupported advanced tree algorithms throw explicitly;
+  scripting, fragment parsing and full HTML recovery remain future work.
+  Linux x64 validation: all 30 projects build and all 11,286 tests pass;
+  formatting and editor diagnostics are clean. Independently, all 34 cached
+  standards documents are fresh.
+  See the [HTML and DOM guide](../docs/html-dom.md) for limits and validation.
 - Phase 4 delivered: GET-only HTTP(S)/local file/data loader, explicit redirects,
   bounded response buffering, cancellation/deadline, and opt-in session cookies.
   The user approved defaults of 20 redirects and 32 MiB bodies; general methods,

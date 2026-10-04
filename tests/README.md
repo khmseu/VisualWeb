@@ -11,6 +11,9 @@ The [core suite](Core.Tests/) groups URL, encoding and MIME utilities with
 The [networking suite](Engine.Net.Tests/) uses fake transports and
 [pinned Fetch data URL fixtures](Engine.Net.Tests/Data/README.md). Its integration
 tests bind only owned, ephemeral loopback ports and never contact remote hosts.
+The [DOM suite](Engine.Dom.Tests/) checks tree mutation invariants and the
+[HTML suite](Engine.Html.Tests/) runs [pinned html5lib data](Engine.Html.Tests/Data/README.md)
+and static parser/limit regressions. No HTML test invokes scripts or fetches resources.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -38,6 +41,8 @@ dotnet test tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj
 dotnet test tests/Platform.Tests/Platform.Tests.csproj
 dotnet test tests/Core.Tests/Core.Tests.csproj
 dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
+dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
+dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

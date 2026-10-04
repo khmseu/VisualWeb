@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <ProjectReference Include="../../src/Engine/Engine.Html/Engine.Html.csproj" />
+    <None Include="Data/**/*.test" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Data/**/*.dat" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
