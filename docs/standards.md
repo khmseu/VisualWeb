@@ -34,6 +34,7 @@ entry (it still uses conditional requests where possible).
 | `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler` | Basic session cookies and HTTP transport, not full browser cookie policy |
 | `html`, `dom` | HTML parser, DOM, navigation, event loop |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |
+| `css-color`, `css-sizing`, `css-backgrounds` | Initial computed colors, dimensions and physical borders |
 | `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
 | `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
 | `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |
@@ -52,6 +53,9 @@ and [official named-reference data](../src/Engine/Engine.Html/Data/README.md).
 Data is independent of the monthly document cache. The current cached HTML
 Standard includes processing-instruction tokenization; the fixture guide records
 the compatibility translation for three obsolete tokenizer error names.
+CSS has separate [pinned WPT An+B data](../tests/Engine.Css.Tests/Data/README.md);
+the [CSS guide](css.md) identifies finite property/value support and the
+current Selectors Level 4 whitespace rule for `:empty`.
 
 ## Interface citation convention
 

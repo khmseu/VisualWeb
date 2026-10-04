@@ -2,6 +2,36 @@
   "version": 1,
   "documents": [
     {
+      "id": "css-color",
+      "title": "CSS Color Module Level 4",
+      "url": "https://drafts.csswg.org/css-color-4/",
+      "file": "css-color.html",
+      "fetchedAt": "2026-10-04T21:27:11.2042329+00:00",
+      "checkedAt": "2026-10-04T21:27:11.2042329+00:00",
+      "eTag": "\u00226ac03aed-132a9d\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-sizing",
+      "title": "CSS Box Sizing Module Level 3",
+      "url": "https://drafts.csswg.org/css-sizing-3/",
+      "file": "css-sizing.html",
+      "fetchedAt": "2026-10-04T21:27:11.4659578+00:00",
+      "checkedAt": "2026-10-04T21:27:11.4659578+00:00",
+      "eTag": "\u00226ac03aed-879c2\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
+      "id": "css-backgrounds",
+      "title": "CSS Backgrounds and Borders Module Level 3",
+      "url": "https://drafts.csswg.org/css-backgrounds-3/",
+      "file": "css-backgrounds.html",
+      "fetchedAt": "2026-10-04T21:38:18.1241236+00:00",
+      "checkedAt": "2026-10-04T21:38:18.1241236+00:00",
+      "eTag": "\u00226ac03aed-110992\u0022",
+      "lastModified": "2026-10-02T23:14:53+00:00"
+    },
+    {
       "id": "http-cookies",
       "title": "RFC 6265: HTTP State Management Mechanism",
       "url": "https://www.rfc-editor.org/rfc/rfc6265.html",

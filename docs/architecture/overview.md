@@ -47,6 +47,11 @@ Engine.Dom is independent of parsing, networking, platform backends and chrome.
 The HTML parser uses a checked internal attribute path: HTML error recovery can
 produce names that public DOM setters reject. No script/event callbacks run
 during parsing or mutation. See the [HTML/DOM guide](../html-dom.md).
+Engine.Css references Engine.Dom only. Callers supply decoded stylesheet sources
+in document order; the style engine also handles inline attributes and an
+optional minimal UA sheet. Computed styles are snapshots, not live DOM observers.
+Unsupported CSS surfaces produce explicit diagnostics; no import/resource
+loading or layout runs. See the [CSS guide](../css.md).
 
 ## Windows, tabs and processes
 

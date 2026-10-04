@@ -14,6 +14,9 @@ tests bind only owned, ephemeral loopback ports and never contact remote hosts.
 The [DOM suite](Engine.Dom.Tests/) checks tree mutation invariants and the
 [HTML suite](Engine.Html.Tests/) runs [pinned html5lib data](Engine.Html.Tests/Data/README.md)
 and static parser/limit regressions. No HTML test invokes scripts or fetches resources.
+The [CSS suite](Engine.Css.Tests/) tests syntax, selectors, cascade/computed
+styles, exact limits and all [pinned WPT An+B cases](Engine.Css.Tests/Data/README.md).
+CSS tests neither run JavaScript nor fetch/import resources.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -43,6 +46,7 @@ dotnet test tests/Core.Tests/Core.Tests.csproj
 dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
 dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
 dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
+dotnet test tests/Engine.Css.Tests/Engine.Css.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

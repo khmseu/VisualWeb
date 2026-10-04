@@ -1,6 +1,6 @@
 # Project map
 
-Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom and developer tools
+Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css and developer tools
 are implemented. Core.Primitives, other Engine projects, IPC and App projects remain
 library placeholders; app projects become executables when
 their real entry points are implemented. Do not add dummy browser entry points.
@@ -18,7 +18,7 @@ their real entry points are implemented. Do not add dummy browser entry points.
 | [Engine.Net](../src/Engine/Engine.Net/) | Bounded GET loading, redirects, opt-in host-only cookies; full Fetch policies deferred | Core.Url/Encoding/Mime, BCL HTTP/files/cookies; `fetch`, `http-cookies` |
 | [Engine.Html](../src/Engine/Engine.Html/) | First-party tokenizer and bounded static document tree building; advanced recovery deferred | Engine.Dom, embedded official entities; `html` |
 | [Engine.Dom](../src/Engine/Engine.Dom/) | Renderer-local HTML nodes, checked mutations/adoption and attributes | .NET BCL; `dom`, `html` |
-| [Engine.Css](../src/Engine/Engine.Css/) | CSS parsing, selectors, cascade/computed values | Engine.Dom; CSS and selectors documents |
+| [Engine.Css](../src/Engine/Engine.Css/) | First-party CSS syntax, static selectors, finite cascade/computed properties | Engine.Dom only; CSS and selectors documents; [scope](css.md) |
 | [Engine.Text](../src/Engine/Engine.Text/) | Fonts, shaping and text metrics | Platform.Abstractions, HarfBuzz; CSS Fonts/Text |
 | [Engine.Layout](../src/Engine/Engine.Layout/) | Layout tree, block/inline geometry | Engine.Css, Engine.Dom, Engine.Text; CSS layout |
 | [Engine.Paint](../src/Engine/Engine.Paint/) | Display lists and Skia rasterization | Engine.Layout, Platform.Abstractions |
@@ -38,5 +38,7 @@ shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service tests, and
 and owned loopback HTTP integration, [Engine.Dom.Tests](../tests/Engine.Dom.Tests/)
 for mutations, and [Engine.Html.Tests](../tests/Engine.Html.Tests/) for pinned
 html5lib token/tree corpora and explicit subset/limit regressions.
+The [Engine.Css.Tests](../tests/Engine.Css.Tests/) suite covers static styling,
+pinned WPT An+B cases and resource-limit regressions.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).

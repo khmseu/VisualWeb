@@ -5,7 +5,7 @@
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
    read its README. Platform services, Core URL/Encoding/MIME and developer
-   tooling and Engine.Net/Html/Dom are implemented; Core.Primitives, other
+   tooling and Engine.Net/Html/Dom/Css are implemented; Core.Primitives, other
    Engine projects, IPC and App remain placeholders.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
@@ -39,6 +39,11 @@
   The tokenizer is first-party; tree building is an explicit static subset.
   Unsupported algorithms must throw, not silently produce an approximate tree.
   Preserve pinned entity data and whole fixture families; DOM stays renderer-local.
+- Read the [CSS guide](docs/css.md) before styling. Static selectors and a finite
+  property set are implemented; unsupported features must produce diagnostics,
+  not approximate matches/values. Preserve whole fixture families and exact
+  limit tests. Styles are snapshots; callers order sources and recompute after
+  mutations. Engine.Content loading and layout remain later-phase work.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; future process communication uses IPC contracts.
@@ -57,6 +62,7 @@ dotnet test tests/Core.Tests/Core.Tests.csproj
 dotnet test tests/Engine.Net.Tests/Engine.Net.Tests.csproj
 dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj
 dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
+dotnet test tests/Engine.Css.Tests/Engine.Css.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
 dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party
 ```

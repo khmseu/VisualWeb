@@ -10,6 +10,16 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 6 delivered: first-party static CSS syntax, HTML selectors and
+  UA/user/author/inline cascade with typed computed styles. The user approved
+  a finite block/inline property set, CSS-wide keywords and inheritance;
+  custom properties, conditional rules, layers, flex/grid and animations remain
+  deferred with explicit diagnostics. No resource loading or layout is added.
+  Linux x64 validation: all 31 projects build and all 11,489 tests pass
+  (including 203 CSS tests and all 67 pinned WPT An+B cases). First-party
+  formatting/editor diagnostics are clean; independently, all 37 references
+  are fresh.
+  See the [CSS guide](../docs/css.md) for exact scope and offline evidence.
 - Phase 5 delivered: first-party whole-string HTML tokenizer, renderer-local
   core DOM and an explicit static-document tree-building subset. The user chose
   our own parser instead of an existing managed HTML parser.
