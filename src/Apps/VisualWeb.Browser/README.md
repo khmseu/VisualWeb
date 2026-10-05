@@ -13,7 +13,9 @@ unsupported targets fail closed. Neither mode is production-safe browsing.
 
 Requires explicit `--development-single-process` or `--development-multiprocess`
 acknowledgement and trusted `--font` path. Multiprocess mode also requires
-`--renderer`; confinement requires explicit `--require-sandbox`. See the
+`--renderer`; confinement requires explicit `--require-sandbox`.
+`--enable-inline-scripts` explicitly enables the finite post-parse inline subset
+in either mode; scripts stay inert by default. See the
 [process guide](../../../docs/renderer-processes.md) and
 [shell guide](../../../docs/browser-shell.md) for run
 commands, controls, limits and validation, and the

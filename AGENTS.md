@@ -7,7 +7,8 @@
    read its README. Platform services, Core URL/Encoding/MIME and developer
    tooling and Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content are implemented;
    Core.Primitives remains a placeholder; Engine.Scripting has a bounded
-   ClearScript/V8 host foundation, not page-script execution.
+   ClearScript/V8 host and live DOM foundation. PageRendering optionally executes
+   post-parse inline classics; browser page scripts are disabled by default.
    IPC and VisualWeb.Renderer are implemented.
    VisualWeb.Browser supports local or unsandboxed per-tab process rendering;
    shared static rendering policy lives in VisualWeb.PageRendering.
@@ -98,7 +99,11 @@
   Classic execution preserves native global lexical state; batches snapshot
   all source budgets before running in order under one shared deadline. Do not
   replace this with wrapped eval or imply rollback after script errors.
-  Script scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
+  Phase-11d page execution requires explicit `--enable-inline-scripts`, snapshots
+  inline classic sources after parsing and recomputes styles/paint after mutation.
+  Keep script errors transactional and committed DOM pinned for resize; never
+  rerun scripts to hide lost worker state. IPC v3 carries identities/policy only.
+  HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.
   Follow `tests/Tools.SpecCache.Tests/` for package references, project references,

@@ -26,12 +26,16 @@ try
         foreach (var failure in sdl.InitializationFailures) { Console.Error.WriteLine("Backend fallback: " + failure); }
     }
     if (launch.SkipTextInput) { Console.Error.WriteLine("Smoke text input explicitly skipped; keyboard/IME support is not certified."); }
+    if (launch.ExecuteInlineScripts) { Console.Error.WriteLine("WARNING: post-parse inline scripts enabled; no HTML scheduling, CSP, origin isolation or browser event loop."); }
     using var shell = new DevelopmentShell(system, launch.FontPath, hidden: launch.Smoke,
-        textInput: !launch.SkipTextInput, rendererPath: launch.RendererPath, requireSandbox: launch.RequireSandbox);
+        textInput: !launch.SkipTextInput, rendererPath: launch.RendererPath, requireSandbox: launch.RequireSandbox,
+        executeInlineScripts: launch.ExecuteInlineScripts);
     shell.OpenWindow(launch.Url);
     if (!launch.Smoke) { shell.Run(); return 0; }
-    BrowserSmoke.Run(shell, launch.RequireSandbox);
-    Console.WriteLine($"PASS: {system.Backend}; native page pixels, address focus, tabs, history, multiple windows and lifecycle; {shell.PresentedFrames} presented frames.");
+    BrowserSmoke.Run(shell, launch.RequireSandbox, launch.ExecuteInlineScripts);
+    Console.WriteLine($"PASS: {system.Backend}; native page pixels, address focus, tabs, history, multiple windows and lifecycle"
+        + (launch.ExecuteInlineScripts ? "; opt-in inline script mutations reach title and pixels" : "")
+        + $"; {shell.PresentedFrames} presented frames.");
     return 0;
 }
 catch (Exception exception) when (BrowserController.IsPageFailure(exception) || exception is ArgumentException
@@ -45,12 +49,12 @@ catch (Exception exception) when (BrowserController.IsPageFailure(exception) || 
 
 static void Usage() => Console.Error.WriteLine(
     "Usage: dotnet run --project src/Apps/VisualWeb.Browser -- (--development-single-process | --development-multiprocess --renderer /built/renderer.dll) --font /trusted/font.ttf "
-    + "[--require-sandbox] [--url ABSOLUTE_URL] [--backend x11|wayland|windows] [--smoke [--backend dummy] [--skip-text-input]]");
+    + "[--require-sandbox] [--enable-inline-scripts] [--url ABSOLUTE_URL] [--backend x11|wayland|windows] [--smoke [--backend dummy] [--skip-text-input]]");
 
 namespace VisualWeb.Browser
 {
     public sealed record BrowserLaunchOptions(string FontPath, string? Url, string? Backend, bool Smoke, bool SkipTextInput,
-        string? RendererPath = null, bool RequireSandbox = false)
+        string? RendererPath = null, bool RequireSandbox = false, bool ExecuteInlineScripts = false)
     {
         public static BrowserLaunchOptions Parse(IReadOnlyList<string> args)
         {
@@ -60,6 +64,7 @@ namespace VisualWeb.Browser
             var smoke = false;
             var skip = false;
             var sandbox = false;
+            var scripts = false;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             for (var index = 0; index < args.Count; index++)
             {
@@ -71,6 +76,7 @@ namespace VisualWeb.Browser
                     case "--development-multiprocess": multiprocess = true; break;
                     case "--renderer": renderer = Value(); break;
                     case "--require-sandbox": sandbox = true; break;
+                    case "--enable-inline-scripts": scripts = true; break;
                     case "--smoke": smoke = true; break;
                     case "--skip-text-input": skip = true; break;
                     case "--font": font = Value(); break;
@@ -102,13 +108,13 @@ namespace VisualWeb.Browser
             if (!smoke && (skip || backend == "dummy")) { throw new ArgumentException("Dummy backend and text-input exclusion are restricted to smoke checks."); }
             if (smoke && url is not null) { throw new ArgumentException("Smoke checks use offline fixtures, not --url."); }
             if (url is not null) { _ = Core.Url.BrowserUrl.Parse(url); }
-            return new(Path.GetFullPath(font), url, backend, smoke, skip, renderer is null ? null : Path.GetFullPath(renderer), sandbox);
+            return new(Path.GetFullPath(font), url, backend, smoke, skip, renderer is null ? null : Path.GetFullPath(renderer), sandbox, scripts);
         }
     }
 
     internal static class BrowserSmoke
     {
-        internal static void Run(DevelopmentShell shell, bool requireSandbox)
+        internal static void Run(DevelopmentShell shell, bool requireSandbox, bool executeInlineScripts)
         {
             Wait(shell, () => shell.Controller.Session.Windows.SelectMany(w => w.Tabs).All(t => !t.IsLoading));
             var first = shell.Controller.Session.Windows.Single();
@@ -128,12 +134,15 @@ namespace VisualWeb.Browser
             Wait(shell, () => first.Tabs.All(t => !t.IsLoading));
             Require(first.Tabs.Count == 2, "New tab shortcut failed.");
             var tab = first.ActiveTab!;
-            var blue = "data:text/html;charset=utf-8," + Uri.EscapeDataString("<!doctype html><style>body{margin:0;background-color:blue}</style>");
+            var blue = "data:text/html;charset=utf-8," + Uri.EscapeDataString(executeInlineScripts
+                ? "<!doctype html><style id='sheet'>body{margin:0;background-color:red}</style><script>document.title='Script blue'; document.getElementById('sheet').textContent='body{margin:0;background-color:blue}';</script>"
+                : "<!doctype html><style>body{margin:0;background-color:blue}</style>");
             shell.Controller.Navigate(tab.Id, blue);
             Wait(shell, () => !tab.IsLoading);
             Require(tab.Error is null && tab.History.Entries.Count == 2, "Navigation did not commit.");
             var pixel = shell.Controller.Page(tab.Id)!.Frame.Pixels.Span;
             Require(pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0 && pixel[3] == 255, "Page did not reach native BGRA pixels.");
+            if (executeInlineScripts) { Require(tab.Title == "Script blue", "Scripted title did not commit."); }
             Require(SDL.GetWindowSizeInPixels(window, out _, out var nativeHeight), SDL.GetError());
             var surface = SDL.GetWindowSurface(window);
             Require(SDL.ReadSurfacePixel(surface, 0, nativeHeight - 1, out var red, out var green, out var nativeBlue, out _), SDL.GetError());

@@ -1,12 +1,13 @@
-# V8 host, classic-script and DOM binding foundation (phases 11a–11c)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11d)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
 small renderer-local native host, not a web-browser JavaScript environment.
-**The static browser still does not execute page scripts.** Full DOM/Web IDL bindings,
+**Page scripts remain disabled by default.** Phase 11d explicitly opts into the
+post-parse inline subset below. Full DOM/Web IDL bindings,
 HTML script scheduling and event loops, modules, timers, workers and script-visible
-network/storage APIs are deferred. No renderer IPC shape or browser launch mode
-changes in this stage.
+network/storage APIs are deferred. IPC v3 carries only document identities and
+trusted script/repaint policy, never DOM or V8 objects.
 
 ## Ownership and values
 
@@ -117,7 +118,69 @@ reset per execution, but wrapper identities persist until host disposal.
 Caller conversion hooks run in V8 under the normal deadline. Host callbacks
 are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
-boundary. No production worker or browser mode installs these bindings yet.
+boundary. Phase 11d installs these bindings only for explicitly enabled inline
+page execution; this remains trusted-content development tooling.
+
+## Opt-in inline page execution (phase 11d)
+
+Add `--enable-inline-scripts` to either explicit development browser mode.
+It composes with `--require-sandbox` without changing OS profiles, mounts,
+syscall policy or resource quotas. The API equivalent is
+`executeInlineScripts: true` on the shared page renderer/process client.
+Without this option, script elements remain inert and existing static rendering
+behavior is preserved. Engine.Content itself remains offline and script-free.
+
+The page renderer parses the complete document, snapshots all eligible sources
+in connected tree order, validates their entire count/character budget, then
+executes one classic batch in a fresh document-bound V8 host. Later elements are
+already visible to earlier scripts. Sources modified or detached by an earlier
+script still run from the snapshot. This is deliberately **not parser-blocking
+HTML script preparation/scheduling**. Global lexical state persists between the
+batch's scripts, but not between navigations or tabs.
+
+After execution, the host is disposed. Stylesheets are collected from the
+mutated DOM, and style/layout/display lists/pixels are computed afresh. Live
+title changes become the page/tab/window title; a script may change an embedded
+style's `textContent` before stylesheet collection. All existing CSS/layout/paint
+subset failures remain enforced; scripts do not bypass them.
+
+Classification uses HTML's type/legacy-language selection and ASCII matching
+against the complete JavaScript MIME essence list. Missing/empty `type` and
+default/empty `language` select classic scripts. Type values strip only ASCII
+whitespace; MIME parameters do not match an essence. Other data-block types
+remain inert, and classic `nomodule` elements are skipped. Empty inline classic
+sources do not consume a source slot. Executable `src` attributes (including an
+empty value), modules/import maps/speculation rules and
+`async`/`defer`/legacy `for`/`event` scheduling attributes fail during preflight;
+no subresource is fetched. Rejecting inline async/defer rather than ignoring
+them is an explicit restriction of this foundation.
+
+The existing host limits apply unchanged: **64 sources, 65,536 UTF-16 characters
+per source, 262,144 aggregate source characters and one two-second batch
+deadline**, plus the live-binding budgets above. Caller cancellation, runtime/
+syntax errors, unsupported executable features and resource limits fail the
+navigation explicitly. Unlike HTML's error-report-and-continue behavior, later
+scripts do not run after an error and no partially mutated page is published.
+The previously committed frame/history/title remains intact.
+
+Each successful navigation/reload gets a new `LoadedPage.DocumentId` and fresh
+DOM/host. Successful page publication pins its DOM; the renderer retains at most
+the committed document and one successful unpublished candidate. Resizes use
+`RenderRetainedAsync` and recompute styles/layout/paint from that DOM without
+rerunning scripts or refetching. Failed/stale candidates cannot evict the pinned
+page. `IPageRenderer.CommitDocument` makes publication explicit; the process
+client conveys the acknowledgement on its next serialized request.
+
+If cancellation/crash terminates a worker, its DOM is lost. A later scripted
+resize fails with an explicit reload requirement instead of silently executing
+scripts again. Reload/new navigation may create a replacement worker/context.
+Static-mode resize behavior is unchanged. Retained DOM never crosses IPC.
+
+There is still no Window/global browser API, event-handler dispatch, timer,
+HTML event loop, module loader, origin/CSP enforcement or script-visible
+network/storage. Native ECMAScript built-ins are not an HTML task/microtask
+scheduler; there is no live host remaining after initial execution. Do not use
+this mode for hostile content, even with OS confinement.
 
 ## Bounds and failure
 
@@ -227,3 +290,24 @@ and no exposed CLR node/type or temporary callback global. Changed-file
 formatting, editor diagnostics and diff whitespace checks are clean; no owned
 V8/renderer workers or resource scopes remain. Browser page-script execution
 remains disabled. Native Windows/ARM execution was not performed on this host.
+
+## Phase-11d validation outcome
+
+On Linux x64, all **45 projects build** and **172 distinct selected tests pass**
+without failures or skips: 107 browser cases (including 32 inline-page cases),
+19 IPC cases and all 46 scripting cases. The final source-snapshot mutation case
+was added and validated separately after the complete regression run.
+Coverage includes disabled-by-default rendering, exact source budgets/type
+classification, live title/style mutations reaching pixels, fresh navigation
+contexts, retained DOM on resize, transactional errors, worker-loss reload
+requirements and deadline recovery inside unchanged required confinement.
+
+Opt-in single-process SDL dummy and required-confined multiprocess X11 browser
+smoke pass, checking actual native pixels, scripted titles, navigation history,
+tabs and multiple windows. Formatting, editor diagnostics and diff whitespace
+checks are clean; no owned renderer workers or resource scopes remain.
+Independently, all **58 official references** are cached/fresh with no network
+refresh needed. Native Windows/ARM checks are wired in target CI but were not
+executed on this Linux x64 host. Page scripts remain disabled unless explicitly
+enabled; external scripts, HTML scheduling/event loops and production web
+security remain unfinished.

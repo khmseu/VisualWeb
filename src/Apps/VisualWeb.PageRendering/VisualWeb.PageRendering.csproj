@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Engine/Engine.Content/Engine.Content.csproj" />
+    <ProjectReference Include="../../Engine/Engine.Scripting/Engine.Scripting.csproj" />
     <ProjectReference Include="../../Core/Core.Url/Core.Url.csproj" />
   </ItemGroup>
 </Project>

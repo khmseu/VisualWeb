@@ -188,6 +188,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Approved phase 11c adds a minimal live renderer-local title/ID/textContent
   binding foundation through private primitive-only callbacks with ownership,
   receiver/identity and resource-budget tests. Page execution remains disabled.
+  Approved phase 11d adds explicit opt-in post-parse inline classic execution
+  followed by style/layout/paint recomputation. Script errors fail navigation
+  transactionally; committed mutated DOM is retained for resize without
+  reexecution, with fresh DOM/host on navigation/reload. IPC v3 carries document
+  identity and trusted policy only. External scripts and event loops remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.
@@ -197,5 +202,5 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - WPT conformance runner in CI.
 
 **Open Questions**
-1. V8 embedding is now ClearScript; decide the first explicit DOM/HTML script
-   scheduling subset before enabling page scripting.
+1. Extend the finite post-parse inline subset toward standards-compliant HTML
+   script scheduling, error reporting and event-loop lifecycles.

@@ -34,4 +34,5 @@ jobs:
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- windows
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --smoke --backend windows
+      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf

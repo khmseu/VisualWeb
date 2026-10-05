@@ -13,6 +13,7 @@ public sealed class ProtocolTests
     private static RendererMessage Request => new()
     {
         Kind = "render",
+        DocumentId = Guid.Parse("70e33750-276f-48cb-9a3c-b5e4b51ecc49"),
         Id = 1,
         Url = "https://example.com",
         Html = "<!doctype html><p>café</p>",
@@ -28,7 +29,8 @@ public sealed class ProtocolTests
         using var wire = new MemoryStream();
         var writer = new RendererChannel(Stream.Null, wire);
         await writer.WriteAsync(new() { Kind = "hello", SandboxProfile = "linux-bwrap-seccomp-cgroup-v2" }, cancellationToken: Cancellation);
-        await writer.WriteAsync(Request, cancellationToken: Cancellation);
+        var input = Request with { ExecuteInlineScripts = true, ReuseDocument = true, CommittedDocumentId = Request.DocumentId };
+        await writer.WriteAsync(input, cancellationToken: Cancellation);
         var pixels = new byte[] { 1, 2, 3, 255, 4, 5, 6, 255 };
         var reply = new RendererMessage { Kind = "frame", Id = 1, PixelWidth = 2, PixelHeight = 1, Stride = 8, Title = "café", Status = "Ready" };
         await writer.WriteAsync(reply, pixels, Cancellation);
@@ -41,6 +43,9 @@ public sealed class ProtocolTests
         var request = (await reader.ReadAsync(Cancellation))!.Message;
         Assert.Equal(Request.Html, request.Html); Assert.Equal(Request.Url, request.Url);
         Assert.Equal(Request.Diagnostics, request.Diagnostics);
+        Assert.Equal(Request.DocumentId, request.DocumentId);
+        Assert.Equal(input.CommittedDocumentId, request.CommittedDocumentId);
+        Assert.True(request.ExecuteInlineScripts); Assert.True(request.ReuseDocument);
         var frame = (await reader.ReadAsync(Cancellation))!;
         Assert.Equal(pixels, frame.Pixels); Assert.Equal(reply.Title, frame.Message.Title);
         Assert.Equal("error", (await reader.ReadAsync(Cancellation))!.Message.Kind);
@@ -61,12 +66,13 @@ public sealed class ProtocolTests
     }
     [Theory]
     [InlineData("{\"Version\":1,\"Kind\":\"hello\"}")]
-    [InlineData("{\"Version\":2,\"Kind\":\"unknown\",\"Id\":1}")]
-    [InlineData("{\"Version\":2,\"Kind\":\"hello\",\"Unknown\":true}")]
+    [InlineData("{\"Version\":2,\"Kind\":\"hello\"}")]
+    [InlineData("{\"Version\":3,\"Kind\":\"unknown\",\"Id\":1}")]
+    [InlineData("{\"Version\":3,\"Kind\":\"hello\",\"Unknown\":true}")]
     [InlineData("null")]
     [InlineData("{invalid")]
     [InlineData("{\"Kind\":\"hello\"}")]
-    [InlineData("{\"Version\":2,\"Kind\":\"hello\",\"Kind\":\"hello\"}")]
+    [InlineData("{\"Version\":3,\"Kind\":\"hello\",\"Kind\":\"hello\"}")]
     public async Task VersionKindsUnknownMembersAndMalformedJsonFail(string json)
     {
         using var wire = Wire(json, []);
@@ -104,6 +110,10 @@ public sealed class ProtocolTests
         RendererProtocol.Validate(Request with { Html = new('x', RendererProtocol.MaxHtmlCharacters) }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Diagnostics = [null!] }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Id = 0 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { DocumentId = Guid.Empty }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ExecuteInlineScripts = true }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", DocumentId = Request.DocumentId }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "error", Id = 1, Error = "fixture", ReuseDocument = true }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
         {
             Kind = "frame",

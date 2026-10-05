@@ -26,6 +26,8 @@ try
     using var output = Console.OpenStandardOutput();
     var channel = new RendererChannel(input, output);
     using var renderer = new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels);
+    StaticPageRenderer? scriptedRenderer = null;
+    bool? scriptPolicy = null;
     channel.WriteAsync(new()
     {
         Kind = "hello",
@@ -33,35 +35,47 @@ try
         : windowsConfined ? WindowsRendererSandbox.Profile : null
     }).GetAwaiter().GetResult();
     long lastId = 0;
-    while (channel.ReadAsync().GetAwaiter().GetResult() is { } packet)
+    try
     {
-        var request = packet.Message;
-        if (request.Kind != "render" || request.Id <= lastId)
+        while (channel.ReadAsync().GetAwaiter().GetResult() is { } packet)
         {
-            throw new IpcProtocolException("Expected a new monotonically identified render request.");
-        }
-        lastId = request.Id;
-        try
-        {
-            var page = new LoadedPage(BrowserUrl.Parse(request.Url!), request.Html!, request.StatusCode, request.Diagnostics!);
-            var rendered = renderer.Render(page, new(request.Width, request.Height, request.Scale), CancellationToken.None);
-            var frame = rendered.Frame;
-            channel.WriteAsync(new()
+            var request = packet.Message;
+            if (request.Kind != "render" || request.Id <= lastId)
             {
-                Kind = "frame",
-                Id = request.Id,
-                PixelWidth = frame.Size.Width,
-                PixelHeight = frame.Size.Height,
-                Stride = frame.Stride,
-                Title = Bounded(rendered.Title),
-                Status = Bounded(rendered.Status)
-            }, frame.Pixels).GetAwaiter().GetResult();
-        }
-        catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)
-        {
-            channel.WriteAsync(new() { Kind = "error", Id = request.Id, Error = Bounded(exception.Message) }).GetAwaiter().GetResult();
+                throw new IpcProtocolException("Expected a new monotonically identified render request.");
+            }
+            if (scriptPolicy is { } policy && policy != request.ExecuteInlineScripts)
+            { throw new IpcProtocolException("Script opt-in policy cannot change within a tab channel."); }
+            scriptPolicy = request.ExecuteInlineScripts;
+            lastId = request.Id;
+            try
+            {
+                var active = request.ExecuteInlineScripts
+                    ? scriptedRenderer ??= new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels, executeInlineScripts: true)
+                    : renderer;
+                if (active.HasDocument(request.CommittedDocumentId)) { active.CommitDocument(request.CommittedDocumentId); }
+                var page = new LoadedPage(BrowserUrl.Parse(request.Url!), request.Html!, request.StatusCode, request.Diagnostics!)
+                { DocumentId = request.DocumentId };
+                var rendered = active.Render(page, new(request.Width, request.Height, request.Scale), CancellationToken.None, request.ReuseDocument);
+                var frame = rendered.Frame;
+                channel.WriteAsync(new()
+                {
+                    Kind = "frame",
+                    Id = request.Id,
+                    PixelWidth = frame.Size.Width,
+                    PixelHeight = frame.Size.Height,
+                    Stride = frame.Stride,
+                    Title = Bounded(rendered.Title),
+                    Status = Bounded(rendered.Status)
+                }, frame.Pixels).GetAwaiter().GetResult();
+            }
+            catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)
+            {
+                channel.WriteAsync(new() { Kind = "error", Id = request.Id, Error = Bounded(exception.Message) }).GetAwaiter().GetResult();
+            }
         }
     }
+    finally { scriptedRenderer?.Dispose(); }
     return 0;
 }
 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException

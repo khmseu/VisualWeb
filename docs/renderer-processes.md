@@ -53,14 +53,16 @@ says **NO SANDBOX** unless Linux confinement is explicitly required. Controls an
 - Main-thread pumps observe asynchronous load/render tasks without blocking
   on worker replies. Only successful, current-generation frames commit URL,
   history, title and content. Stale/canceled results cannot publish.
-- Resizing rerenders retained decoded HTML without a fetch. Superseded resizes
+- Static resizing rerenders retained decoded HTML without a fetch. Opt-in
+  inline scripting retains the committed mutated DOM for repainting without
+  repeating execution. Superseded resizes
   cannot publish; failed resizes clear wrong-sized frames. Moving tabs keeps
   their worker/state; closing tabs cancels their work and terminates their worker.
 
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v2
+## Private stream protocol v3
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -76,7 +78,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 2, explicitly present; v1 rejected |
+| Protocol version | 3, explicitly present; v1/v2 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -89,12 +91,20 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
 confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows
 confinement confirms `windows-appcontainer-job-v1`. This metadata requires
-protocol v2 because older receivers strictly reject unknown fields.
+protocol v2 originally; phase 11d advances to v3 for document/repaint/script policy
+because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/
-scale. A reply is `frame` (title/status/dimensions/stride/pixels) or `error`
+scale, a nonempty document GUID, the last committed document GUID, explicit
+inline-script opt-in and retained-document repaint intent. Script policy is
+fixed by the first request and cannot change within a tab channel. Publication
+acknowledgement pins the worker's prior candidate on the next request; another
+candidate cannot evict the committed DOM. These fields are rejected on replies
+and handshakes. A reply is `frame` (title/status/dimensions/stride/pixels) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
-worker. V8, input, persistent DOM/event loops and display-list IPC are deferred.
+worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
+the [finite scripting policy](scripting.md); input, event loops and display-list
+IPC are deferred.
 
 Receivers reject wrong magic/version, missing version/kind, duplicate or
 unknown JSON fields, malformed/truncated messages and excessive lengths.
@@ -113,7 +123,9 @@ These are per-message/stage budgets, **not** a whole-browser memory cap.
 Supported page-subset errors are explicit error replies and retain the worker
 for the next request. Disconnects, malformed/mismatched replies, startup/render
 deadlines and cancellation terminate only the client's owned worker. The next
-render starts a replacement. Queue timeouts do not kill an unrelated active
+navigation starts a replacement. Scripted resize after worker loss explicitly
+requires reload, rather than reconstructing the DOM by rerunning scripts.
+Queue timeouts do not kill an unrelated active
 exchange. Idle exits are reported once to the owning tab, preserving its last
 frame/history and any pending browser fetch; reload or that pending navigation
 can recover. EOF waits for exit and final stderr within the existing deadline.

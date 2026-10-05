@@ -6,6 +6,10 @@ and a trusted `--font` path; intended only for private browser-launched stdio IP
 Owns native fonts and HTML/CSS/layout/paint through VisualWeb.PageRendering
 and Engine.Content. No networking/window/chrome dependency; stdout is protocol
 only and diagnostics go to stderr. Native work stays on its creating main thread.
+IPC v3 optionally enables post-parse inline classic scripts before painting,
+with fresh navigation hosts and retained committed DOM for resize. Script policy
+is fixed per channel; script errors are explicit page failures. No DOM/V8 objects
+cross IPC and no external script is fetched.
 Normal user permissions remain in development-unsandboxed mode. The trusted
 `--linux-sandbox-bootstrap` reexecutes into required Linux confinement before
 receiving any page. Direct `--linux-sandbox-worker` requires verified status/

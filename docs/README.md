@@ -34,3 +34,6 @@ Phase 11b adds persistent classic-script global lexical state and bounded
 ordered batches; page execution and HTML script scheduling remain deferred.
 Phase 11c adds minimal live title/ID/textContent DOM facades and binding probes,
 without enabling browser page scripts.
+Phase 11d adds explicit opt-in post-parse inline classic page execution,
+transactional publication and retained scripted DOM repainting via IPC v3.
+External scripts, HTML scheduling and event loops remain deferred.

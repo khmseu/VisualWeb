@@ -52,12 +52,12 @@ font ownership and the finite LTR block/inline geometry subset.
 The [painting guide](docs/painting.md) covers immutable display lists, opaque
 BGRA frames, surface presentation and offline decoded-HTML-to-frame rendering.
 The [scripting guide](docs/scripting.md) covers the new bounded ClearScript/V8
-host and native confinement probes. Page scripts, DOM bindings and HTML event
-loops are still unsupported; static browsing behavior is unchanged.
-The host also supports persistent classic-script lexical state and bounded
-ordered batches, without adding page-script execution.
-Optional live title/ID/textContent bindings are a renderer-local foundation,
-not full DOM/Web IDL integration or browser page execution.
+host, classic batches, live title/ID/textContent bindings and native confinement
+probes. Page scripts remain disabled by default. `--enable-inline-scripts`
+explicitly enables a bounded post-parse inline classic subset in either
+development mode; mutations feed style/layout/paint, and resize retains the
+committed scripted DOM without reexecution. External scripts, HTML scheduling,
+full Web IDL, event loops and production web security remain deferred.
 
 The SpecCache command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately

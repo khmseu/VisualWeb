@@ -23,11 +23,15 @@ public sealed record RendererMessage
     public string? Status { get; init; }
     public string? Error { get; init; }
     public string? SandboxProfile { get; init; }
+    public Guid DocumentId { get; init; }
+    public Guid CommittedDocumentId { get; init; }
+    public bool ExecuteInlineScripts { get; init; }
+    public bool ReuseDocument { get; init; }
 }
 
 public static class RendererProtocol
 {
-    public const int Version = 2;
+    public const int Version = 3;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
     public const int MaxPayloadBytes = MaxPixels * 4;
@@ -38,6 +42,9 @@ public static class RendererProtocol
     {
         ArgumentNullException.ThrowIfNull(message);
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
+        if (message.Kind != "render" && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
+            || message.ExecuteInlineScripts || message.ReuseDocument))
+        { throw new IpcProtocolException("Document policy fields belong only to render requests."); }
         if (message.Kind == "hello")
         {
             if (message.Id != 0 || payloadLength != 0 || message.SandboxProfile is { Length: > MaxTextCharacters })
@@ -50,7 +57,7 @@ public static class RendererProtocol
         switch (message.Kind)
         {
             case "render":
-                if (payloadLength != 0 || message.Html is null || message.Html.Length > MaxHtmlCharacters
+                if (payloadLength != 0 || message.DocumentId == Guid.Empty || message.Html is null || message.Html.Length > MaxHtmlCharacters
                     || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters
                     || message.StatusCode is < 100 or > 599 || message.Diagnostics is null || message.Diagnostics.Length > 64
                     || message.Diagnostics.Any(d => d is null || d.Length > MaxTextCharacters))

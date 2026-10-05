@@ -66,13 +66,16 @@ public sealed class ProcessPageRenderer : IPageRenderer
     private bool disposed;
     private long nextId;
     private readonly bool requireSandbox;
+    private readonly bool executeInlineScripts;
+    private Guid committedDocumentId;
     private readonly string? requiredSandboxProfile;
     public int? ProcessId { get { lock (sync) { return connection?.Process.Id; } } }
     public string? ResourceUnit { get { lock (sync) { return connection?.Resources?.Unit; } } }
 
     public ProcessPageRenderer(string rendererPath, string fontPath, TimeSpan? timeout = null,
-        bool requireSandbox = false, string? dotnetPath = null)
+        bool requireSandbox = false, string? dotnetPath = null, bool executeInlineScripts = false)
     {
+        this.executeInlineScripts = executeInlineScripts;
         if (requireSandbox)
         {
             if (OperatingSystem.IsLinux())
@@ -98,13 +101,29 @@ public sealed class ProcessPageRenderer : IPageRenderer
         if (this.timeout <= TimeSpan.Zero || this.timeout.TotalMilliseconds > uint.MaxValue - 1) { throw new ArgumentOutOfRangeException(nameof(timeout)); }
         if (!File.Exists(this.rendererPath)) { throw new FileNotFoundException("Build the renderer project and provide its executable or DLL.", this.rendererPath); }
     }
-    public async Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
+    public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
+        RenderAsync(page, viewport, cancellationToken, reuseDocument: false);
+    public Task<BrowserPage> RenderRetainedAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
+        RenderAsync(page, viewport, cancellationToken, reuseDocument: true);
+    public void CommitDocument(Guid documentId)
+    {
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            committedDocumentId = documentId;
+        }
+    }
+    private async Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken,
+        bool reuseDocument)
     {
         ArgumentNullException.ThrowIfNull(page);
         lock (sync) { ObjectDisposedException.ThrowIf(disposed, this); }
         var request = new RendererMessage
         {
             Kind = "render",
+            DocumentId = page.DocumentId,
+            ExecuteInlineScripts = executeInlineScripts,
+            ReuseDocument = reuseDocument,
             Id = 1,
             Url = page.Url.Href,
             Html = page.Html,
@@ -137,6 +156,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             using var cancellationAbort = requireSandbox && OperatingSystem.IsWindows()
                 ? deadline.Token.Register(() => current?.Abort())
                 : default;
+            lock (sync) { request = request with { CommittedDocumentId = committedDocumentId }; }
             if (started)
             {
                 var hello = await Receive(current, deadline.Token).ConfigureAwait(false);

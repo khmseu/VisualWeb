@@ -18,8 +18,9 @@ Platform.Sdl. Engine.Text now uses HarfBuzzSharp with Linux/Windows native asset
 Engine.Paint uses SkiaSharp CPU rasterization with explicit exact-byte font resources.
 V8 is embedded through ClearScript with matching Linux/Windows x64/arm64 native
 assets. Phase 11a establishes private thread-owned isolates, copied primitive
-results and native confinement probes, not page script execution. DOM/Web IDL,
-HTML event loops and WebAssembly integration remain deferred; see the
+results and native confinement probes. Phase 11c adds minimal live DOM facades;
+phase 11d optionally executes inline classics after whole-document parsing.
+Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 
 ## Dependency direction
@@ -91,7 +92,10 @@ multiprocess development mode, one worker per tab, bounded private IPC,
 asynchronous publication, deadlines and tab-local crash/restart handling.
 GET/MIME/decoding remain browser-owned; shared VisualWeb.PageRendering owns
 stylesheet discovery and font/rendering policy, independent of chrome/networking.
-Engine.Content stays offline. See the [shell guide](../browser-shell.md) and
+Engine.Content stays offline and script-free. Opt-in inline scripts execute only
+in PageRendering; successful mutated DOM is retained for resize, while fresh
+navigation/reload uses a new isolate. Document publication identities/policy
+travel through IPC v3, not DOM/native objects. See the [shell guide](../browser-shell.md) and
 [process guide](../renderer-processes.md). Phase 10b adds optional required
 Linux x64 namespace/mount/seccomp confinement through the SDL-independent
 Platform.Linux.Sandbox bootstrap; see the [confinement guide](../linux-confinement.md).

@@ -52,7 +52,8 @@ public sealed class DevelopmentShell : IDisposable
         views.Select(pair => (pair.Key, pair.Value.Native.Id)).ToArray();
 
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
-        bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false)
+        bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false,
+        bool executeInlineScripts = false)
     {
         this.system = system;
         this.hidden = hidden;
@@ -64,7 +65,8 @@ public sealed class DevelopmentShell : IDisposable
         var multiprocess = rendererPath is not null;
         chrome = new(fontPath, settings.MaxFramePixels, multiprocess, requireSandbox);
         Controller = new(() => new GetPageSource(), () => rendererPath is null
-            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels) : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox), settings);
+            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts)
+            : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts), settings);
         Controller.Changed += id =>
         {
             foreach (var (key, view) in views)

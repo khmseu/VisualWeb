@@ -4,6 +4,7 @@ using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Html;
 using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Paint;
+using VisualWeb.Engine.Scripting;
 using VisualWeb.Engine.Text;
 
 namespace VisualWeb.PageRendering;
@@ -17,9 +18,14 @@ public sealed class StaticPageRenderer : IPageRenderer
     private readonly FontSet text = new();
     private readonly PaintFontRegistry paint;
     private readonly PageRenderOptions options;
+    private sealed record DocumentState(LoadedPage Source, HtmlParseResult Parsed, int Scripts);
+    private readonly bool executeInlineScripts;
+    private DocumentState? committed;
+    private DocumentState? candidate;
     private bool disposed;
-    public StaticPageRenderer(string fontPath, int maxPixels)
+    public StaticPageRenderer(string fontPath, int maxPixels, bool executeInlineScripts = false)
     {
+        this.executeInlineScripts = executeInlineScripts;
         options = new() { Paint = new() { MaxPixels = maxPixels } };
         font = new(fontPath);
         paint = new(options.Paint);
@@ -32,15 +38,50 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         Task.FromResult(Render(page, viewport, cancellationToken));
-    public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
+    public Task<BrowserPage> RenderRetainedAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
+        Task.FromResult(Render(page, viewport, cancellationToken, reuseDocument: true));
+    public bool HasDocument(Guid documentId) => committed?.Source.DocumentId == documentId || candidate?.Source.DocumentId == documentId;
+    public void CommitDocument(Guid documentId)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        var parsed = HtmlParser.Parse(page.Html, options.Html, cancellationToken);
+        if (!executeInlineScripts) { return; }
+        if (candidate?.Source.DocumentId == documentId) { committed = candidate; candidate = null; }
+        else if (committed?.Source.DocumentId != documentId) { throw new PageNavigationException("Scripted document is not retained."); }
+    }
+    public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken, bool reuseDocument = false)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(page);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (page.DocumentId == Guid.Empty) { throw new PageNavigationException("Document identity must be nonempty."); }
+        DocumentState state;
+        if (executeInlineScripts && reuseDocument)
+        {
+            state = committed?.Source.DocumentId == page.DocumentId ? committed
+                : candidate?.Source.DocumentId == page.DocumentId ? candidate
+                : throw new PageNavigationException("Scripted document was lost; reload explicitly rather than rerunning scripts on resize.");
+            if (state.Source.Html != page.Html || state.Source.Url.Href != page.Url.Href)
+            { throw new PageNavigationException("Retained document identity does not match its source."); }
+        }
+        else
+        {
+            var fresh = HtmlParser.Parse(page.Html, options.Html, cancellationToken);
+            var scripts = executeInlineScripts ? InlinePageScripts.Execute(fresh.Document, cancellationToken) : 0;
+            state = new(page, fresh, scripts);
+        }
+        var parsed = state.Parsed;
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale }, cancellationToken);
-        var title = parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
+        var title = executeInlineScripts ? parsed.Document.Title
+            : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
+        if (executeInlineScripts)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!reuseDocument) { candidate = state; }
+            status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
+        }
         return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status);
     }
     public static IReadOnlyList<CssStyleSource> CollectStyles(DomDocument document, CssOptions? options = null,
@@ -84,10 +125,11 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     public static bool IsRenderFailure(Exception exception) => exception is PageNavigationException or HtmlLimitException
         or UnsupportedHtmlException or CssLimitException or UnsupportedCssException or LayoutLimitException or UnsupportedLayoutException
-        or TextLimitException or UnsupportedTextException or FontLoadException or PaintLimitException or UnsupportedPaintException;
+        or TextLimitException or UnsupportedTextException or FontLoadException or PaintLimitException or UnsupportedPaintException
+        or ScriptExecutionException or ScriptLimitException;
     public void Dispose()
     {
         if (disposed) { return; }
-        paint.Dispose(); font.Dispose(); disposed = true;
+        paint.Dispose(); font.Dispose(); committed = null; candidate = null; disposed = true;
     }
 }

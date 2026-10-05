@@ -3,7 +3,8 @@
 Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content and developer tools
 and VisualWeb.Browser/PageRendering/Renderer plus IPC are implemented.
 Core.Primitives remains a library placeholder; Engine.Scripting supplies the
-bounded V8 host foundation, not browser page-script execution. The browser executable is
+bounded V8 host and minimal live DOM bindings. PageRendering supports explicit
+opt-in post-parse inline classics. The browser executable is
 explicitly development-only, not isolated production browsing.
 
 | Project | Responsibility | Planned dependencies / official sources |
@@ -30,7 +31,7 @@ explicitly development-only, not isolated production browsing.
 | [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages | No DOM/native object dependencies |
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | Private bounded framed streams, exact reads and pixel validation | Ipc.Contracts; [scope](renderer-processes.md) |
 | [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Development windows/tabs/chrome, broker GET/history, asynchronous worker supervision | Platform.Linux/Windows, Engine.Net, PageRendering, IPC; [scope](browser-shell.md) |
-| [VisualWeb.PageRendering](../src/Apps/VisualWeb.PageRendering/) | Shared explicit fonts, embedded CSS collection and static rendering policy | Engine.Content/Css/Text/Paint; no networking/backend/chrome |
+| [VisualWeb.PageRendering](../src/Apps/VisualWeb.PageRendering/) | Explicit fonts/CSS collection, optional inline classics and retained DOM repainting | Engine.Content/Scripting/Css/Text/Paint; no networking/backend/chrome |
 | [VisualWeb.Renderer](../src/Apps/VisualWeb.Renderer/) | One-tab static renderer executable, optionally Linux-confined | PageRendering, IPC, Platform.Linux.Sandbox; [scope](renderer-processes.md) |
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |

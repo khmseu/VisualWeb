@@ -144,12 +144,15 @@ public sealed class BrowserController : IDisposable
                 if (size is null) { finished = false; return; }
                 operation.Document = document;
                 operation.Viewport = size;
-                operation.Render = content[operation.Tab].Renderer.RenderAsync(document, size.Value, operation.Cancellation.Token);
+                operation.Render = operation.Resize
+                    ? content[operation.Tab].Renderer.RenderRetainedAsync(document, size.Value, operation.Cancellation.Token)
+                    : content[operation.Tab].Renderer.RenderAsync(document, size.Value, operation.Cancellation.Token);
                 if (!operation.Render.IsCompleted) { finished = false; return; }
             }
             var rendered = operation.Render.GetAwaiter().GetResult();
             var owner = content[operation.Tab];
             var tab = Session.Tab(operation.Tab);
+            owner.Renderer.CommitDocument(document.DocumentId);
             owner.Document = document; owner.Page = rendered; owner.Viewport = operation.Viewport;
             if (operation.Resize)
             {

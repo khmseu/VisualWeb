@@ -95,7 +95,10 @@ The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects c
 in document order, taking their child text. Inline attributes also participate.
 Named stylesheet sets, non-CSS type values, media other than empty/`all`,
 linked stylesheets and CSS imports fail explicitly rather than silently
-producing a partially styled page. No subresource is fetched and no script runs.
+producing a partially styled page. No subresource is fetched. Scripts are inert by default; the explicit
+`--enable-inline-scripts` phase-11d option executes a bounded inline classic batch
+after parsing and before stylesheet collection. See the
+[scripting guide](scripting.md) for exact classification, limits and deviations.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.
@@ -104,7 +107,7 @@ Existing HTML/CSS/text/layout/paint subsets remain enforced. **The shell
 does not override author CSS to make unsupported pages appear successful.**
 Pages should set non-root vertical margins to zero while collapse is deferred;
 the welcome page also overrides bold/italic UA defaults for the configured
-regular face. Unsupported scripts, layout algorithms, CSS diagnostics and
+regular face. Unsupported executable script features in opt-in mode, layout algorithms, CSS diagnostics and
 paint features remain errors. See [HTML](html-dom.md), [CSS](css.md),
 [text/layout](text-layout.md) and [painting](painting.md).
 
@@ -119,8 +122,10 @@ navigation, iframe history, History API or session persistence.
 New loads cancel previous loads/renders for that tab. Generation checks prevent late
 stale results from replacing newer content; closing a tab cancels its loads
 and disposes its loader and local font owner or worker process. Minimized/too-short windows defer
-completed page rendering until a usable viewport exists. Resizing rerenders
-the retained decoded HTML, without network refetch; unsupported resize output
+completed page rendering until a usable viewport exists. Static-mode resizing rerenders
+the retained decoded HTML; opt-in scripting retains the committed mutated DOM
+and never reruns scripts on resize. Neither refetches. Worker loss requires
+explicit reload for scripted pages; unsupported resize output
 is reported and stale-size frames are not presented.
 Oversize windows receive an explicit title/stderr framebuffer-limit error;
 they pause presentation/loading completion until resized smaller without

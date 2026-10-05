@@ -10,7 +10,9 @@ Plain hosts install no CLR objects or DOM bindings. Optional phase-11c live
 document.title/getElementById/element textContent facades use one privately
 captured primitive-only delegate, never CLR node/type/exception exposure.
 The static browser still
-does not execute page scripts; HTML scheduling, Web IDL and event loops are deferred.
+executes no page scripts by default. PageRendering's phase-11d opt-in composes
+these APIs for post-parse inline classics, not HTML scheduling. Full Web IDL
+and event loops remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

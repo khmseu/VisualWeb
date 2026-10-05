@@ -117,7 +117,9 @@ The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup
 and element textContent through private primitive-only callbacks, not CLR nodes.
-The browser still does not execute page scripts.
+The parser itself never executes scripts. PageRendering's optional phase-11d
+inline classic batch runs only after whole-document parsing; this is not
+parser-blocking script integration.
 
 ## Safety limits
 
