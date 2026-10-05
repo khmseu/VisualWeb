@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <RootNamespace>VisualWeb.Renderer</RootNamespace>
     <AssemblyName>VisualWeb.Renderer</AssemblyName>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../VisualWeb.PageRendering/VisualWeb.PageRendering.csproj" />
+    <ProjectReference Include="../../Ipc/Ipc.Transport/Ipc.Transport.csproj" />
+  </ItemGroup>
 </Project>

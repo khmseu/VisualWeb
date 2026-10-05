@@ -65,9 +65,10 @@ SystemProcessLauncher uses ProcessStartInfo.ArgumentList and UseShellExecute=fal
 Arguments are never concatenated into shell commands. It supports environment
 overrides/removals and a working directory. Waiting can be cancelled without
 killing the child. Termination is explicit; handle disposal alone leaves it
-running. Requested confinement fails before launch: there is **no OS sandbox**
-or tab isolation yet. Renderers must not load hostile content under a claim
-of sandboxing until phase 10.
+running. Requested confinement fails before launch: there is **no OS sandbox**.
+The [phase-10a browser client](renderer-processes.md) separately owns and
+terminates per-tab workers through private pipes; process separation is not
+confinement. Renderers must not load hostile content under a claim of sandboxing.
 
 ## Validation
 

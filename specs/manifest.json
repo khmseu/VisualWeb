@@ -2,6 +2,36 @@
   "version": 1,
   "documents": [
     {
+      "id": "dotnet-host-environment",
+      "title": ".NET runtime host environment variables",
+      "url": "https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables",
+      "file": "dotnet-host-environment.html",
+      "fetchedAt": "2026-10-05T03:57:13.5632658+00:00",
+      "checkedAt": "2026-10-05T03:57:13.5632658+00:00",
+      "eTag": "\u0022A\u002BymvqKpjTnKYRXHAp8IzJfbi/k=\u0022",
+      "lastModified": "2026-09-08T18:54:31+00:00"
+    },
+    {
+      "id": "dotnet-stream-read",
+      "title": ".NET exact-length stream reads",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.io.stream.readexactlyasync?view=net-10.0",
+      "file": "dotnet-stream-read.html",
+      "fetchedAt": "2026-10-05T01:48:28.7655921+00:00",
+      "checkedAt": "2026-10-05T01:48:28.7655921+00:00",
+      "eTag": "\u0022Z76rTRGwJxrp3xlxc6HWfVmimtw=\u0022",
+      "lastModified": "2026-09-15T14:56:24+00:00"
+    },
+    {
+      "id": "dotnet-process-pipes",
+      "title": ".NET redirected process output",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput?view=net-10.0",
+      "file": "dotnet-process-pipes.html",
+      "fetchedAt": "2026-10-05T01:48:29.1850857+00:00",
+      "checkedAt": "2026-10-05T01:48:29.1850857+00:00",
+      "eTag": "\u0022znm0M4/TsGxMS3Na8e8Bycwi3O4=\u0022",
+      "lastModified": "2026-09-15T15:03:58+00:00"
+    },
+    {
       "id": "skia-canvas",
       "title": "Skia canvas API",
       "url": "https://api.skia.org/classSkCanvas.html",

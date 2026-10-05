@@ -18,8 +18,10 @@ public sealed class ShellChrome : IDisposable
     private readonly TextFont font;
     private readonly PaintFontRegistry fonts = new();
     private readonly PaintOptions options;
-    public ShellChrome(string fontPath, int maxPixels)
+    private readonly bool multiprocess;
+    public ShellChrome(string fontPath, int maxPixels, bool multiprocess = false)
     {
+        this.multiprocess = multiprocess;
         options = new() { MaxPixels = maxPixels };
         font = new(fontPath);
         try { fonts.Register(font); }
@@ -54,7 +56,7 @@ public sealed class ShellChrome : IDisposable
         var white = new CssColor(255, 255, 255);
         Fill(new(0, 0, width, Math.Min(Height, height)), new(228, 232, 238));
         Fill(new(0, 0, width, 28), dark);
-        Label("VISUALWEB DEVELOPMENT - SINGLE PROCESS - NO SANDBOX", 8, 20, width - 16, white);
+        Label("VISUALWEB DEVELOPMENT - " + (multiprocess ? "MULTIPROCESS" : "SINGLE PROCESS") + " - NO SANDBOX", 8, 20, width - 16, white);
         Button("<", new(0, 28, 32, 32), ChromeAction.PreviousTab);
         Button(">", new(32, 28, 32, 32), ChromeAction.NextTab);
         var slots = Math.Max(0, (int)((width - 64) / 120));

@@ -1,8 +1,12 @@
 # Ipc.Transport
 
-Phase-1 placeholder for cross-process message transport and an explicit
-development-only in-process transport. Depends on Ipc.Contracts, not engine
-implementation details. Handle disconnects/cancellation without killing
-unrelated tabs.
+Bounded cross-process stream transport. Depends only on Ipc.Contracts, not
+engine implementation details. Borrowed input/output streams carry VWR1
+length-prefixed strict JSON metadata and raw opaque BGRA. Exact reads handle
+fragmentation and distinguish clean EOF from truncation; bounds are checked
+before payload allocation. Clients serialize complete exchanges and discard
+channels after cancellation or protocol faults. Single-process development
+uses the rendering API directly rather than serializing an in-process channel.
 
-See the [architecture](../../../docs/architecture/overview.md).
+See the [process guide](../../../docs/renderer-processes.md) and
+[IPC tests](../../../tests/Ipc.Tests/).

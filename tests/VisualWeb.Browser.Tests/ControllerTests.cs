@@ -136,6 +136,77 @@ public sealed class ControllerTests
         source.Requests[0].Completion.SetCanceled(TestContext.Current.CancellationToken);
         Assert.Throws<ObjectDisposedException>(() => controller.Pump(_ => Viewport));
     }
+    [Fact]
+    public void AsyncRenderDoesNotBlockPumpOrPublishAStaleNavigation()
+    {
+        var source = new Source(); var renderer = new AsyncRenderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, Document("a").Url.Href);
+        source.Requests[0].Completion.SetResult(Document("a"));
+        controller.Pump(_ => Viewport);
+        Assert.True(tab.IsLoading); Assert.Empty(tab.History.Entries);
+        controller.Navigate(tab.Id, Document("b").Url.Href);
+        Assert.True(renderer.Tokens[0].IsCancellationRequested);
+        source.Requests[1].Completion.SetResult(Document("b"));
+        controller.Pump(_ => Viewport);
+        renderer.Tasks[1].SetResult(Blank(Viewport));
+        controller.Pump(_ => Viewport);
+        Assert.Equal("/b", tab.History.Current!.Pathname);
+        renderer.Tasks[0].SetResult(Blank(Viewport));
+        controller.Pump(_ => Viewport);
+        Assert.Equal("/b", tab.History.Current!.Pathname);
+        Assert.Single(tab.History.Entries);
+    }
+    [Fact]
+    public void SupersededResizeAndClosedTabCannotPublishLateRenderResults()
+    {
+        var source = new Source(); var renderer = new AsyncRenderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        controller.Navigate(tab.Id, Document("a").Url.Href);
+        source.Requests[0].Completion.SetResult(Document("a"));
+        controller.Pump(_ => Viewport);
+        renderer.Tasks[0].SetResult(Blank(Viewport));
+        controller.Pump(_ => Viewport);
+        controller.Resize(tab.Id, new(12, 12, 1));
+        controller.Resize(tab.Id, new(15, 15, 1));
+        Assert.True(renderer.Tokens[1].IsCancellationRequested);
+        renderer.Tasks[2].SetResult(Blank(new(15, 15, 1)));
+        controller.Pump(_ => new(15, 15, 1));
+        renderer.Tasks[1].SetResult(Blank(new(12, 12, 1)));
+        controller.Pump(_ => new(15, 15, 1));
+        Assert.Equal(15, controller.Page(tab.Id)!.Frame.Size.Width);
+        Assert.Single(source.Requests); Assert.Single(tab.History.Entries);
+        controller.Resize(tab.Id, new(18, 18, 1));
+        controller.Resize(tab.Id, new(15, 15, 1));
+        Assert.True(renderer.Tokens[3].IsCancellationRequested);
+        renderer.Tasks[3].SetResult(Blank(new(18, 18, 1)));
+        controller.Pump(_ => new(15, 15, 1));
+        Assert.Equal(15, controller.Page(tab.Id)!.Frame.Size.Width);
+        Assert.Equal(4, renderer.Tasks.Count);
+        controller.Resize(tab.Id, new(19, 19, 1));
+        controller.CloseTab(tab.Id);
+        Assert.True(renderer.Tokens[4].IsCancellationRequested);
+        renderer.Tasks[4].SetException(new PageNavigationException("Late closed-tab render failure"));
+        controller.Pump(_ => Viewport);
+        Assert.False(controller.Session.Contains(tab.Id));
+        Assert.Empty(window.Tabs);
+    }
+    private sealed class AsyncRenderer : IPageRenderer
+    {
+        internal List<TaskCompletionSource<BrowserPage>> Tasks { get; } = [];
+        internal List<CancellationToken> Tokens { get; } = [];
+        public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
+        {
+            var task = new TaskCompletionSource<BrowserPage>();
+            Tasks.Add(task);
+            Tokens.Add(cancellationToken);
+            return task.Task;
+        }
+        public void Dispose() { }
+    }
     internal sealed class Source : IPageSource
     {
         internal sealed record Request(TaskCompletionSource<LoadedPage> Completion, CancellationToken Token);
@@ -160,6 +231,8 @@ public sealed class ControllerTests
             if (Fail) { throw new UnsupportedHtmlException("Unsupported page."); }
             return Blank(viewport);
         }
+        public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
+            Task.FromResult(Render(page, viewport, cancellationToken));
         public void Dispose() { }
     }
 }

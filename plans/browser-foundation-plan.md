@@ -160,6 +160,13 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
     - **Steps:** Red; implement; green.
 
 **Post-MVP Roadmap**
+- Approved phase 10a delivers explicit unsandboxed process separation first:
+  private bounded/versioned IPC, browser-owned GET, renderer-owned native page
+  stages, validated pixels, asynchronous publication, deadlines and per-tab
+  crash/restart behavior. Single-process development remains available and
+  sandbox-required launches refuse. See [process scope](../docs/renderer-processes.md).
+  This does **not** complete phase 10: Linux/Windows confinement and target
+  certification remain a separate unfinished stage.
 - V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

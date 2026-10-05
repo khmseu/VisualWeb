@@ -11,6 +11,16 @@
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <ProjectReference Include="../../src/Apps/VisualWeb.Browser/VisualWeb.Browser.csproj" />
+    <ProjectReference Include="../../src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../Renderer.TestPeer/Renderer.TestPeer.csproj" ReferenceOutputAssembly="false" />
     <None Include="../Engine.Text.Tests/Data/NotoSans.ttf" Link="Data/NotoSans.ttf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="CopyRendererFixture" AfterTargets="Build">
+    <ItemGroup>
+      <RendererFixture Include="../../src/Apps/VisualWeb.Renderer/bin/$(Configuration)/$(TargetFramework)/**/*" />
+      <PeerFixture Include="../Renderer.TestPeer/bin/$(Configuration)/$(TargetFramework)/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(RendererFixture)" DestinationFiles="@(RendererFixture->'$(OutDir)Renderer/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PeerFixture)" DestinationFiles="@(PeerFixture->'$(OutDir)Peer/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

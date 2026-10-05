@@ -42,6 +42,8 @@ entry (it still uses conditional requests where possible).
 | `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
 | `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |
 | `xdg-directories`, `dotnet-process`, `dotnet-process-start`, `windows-fonts`, `fontconfig` | OS paths, process launch/lifecycle and font sources |
+| `dotnet-process-pipes`, `dotnet-stream-read` | Private renderer pipes, continuous diagnostic draining and exact framed reads |
+| `dotnet-host-environment` | Runtime host/root selection and deployment configuration |
 
 Add further official standards and native API references as their interfaces
 are introduced. CSS drafts and living standards change: cite the exact section,

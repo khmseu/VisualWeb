@@ -69,6 +69,22 @@ public sealed class RasterFrame
     public int Stride { get; }
     public ReadOnlyMemory<byte> Pixels => pixels;
     internal RasterFrame(byte[] pixels, PixelSize size, int stride) { this.pixels = pixels; Size = size; Stride = stride; }
+    /// <summary>Copy a validated opaque, tightly packed BGRA frame received from an external producer.</summary>
+    public static RasterFrame CopyFrom(ReadOnlySpan<byte> pixels, PixelSize size, int stride, int maxPixels = 4_194_304)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxPixels);
+        PixelBuffer.Validate(pixels.Length, size, stride);
+        if ((long)size.Width * size.Height > maxPixels || (long)size.Width * 4 != stride
+            || (long)stride * size.Height != pixels.Length)
+        {
+            throw new PaintLimitException("External framebuffer dimensions, byte count or stride exceed the exact packed contract.");
+        }
+        for (var index = 3; index < pixels.Length; index += 4)
+        {
+            if (pixels[index] != 255) { throw new ArgumentException("External framebuffer must be opaque.", nameof(pixels)); }
+        }
+        return new(pixels.ToArray(), size, stride);
+    }
     public void Present(IPixelSurface surface)
     {
         ArgumentNullException.ThrowIfNull(surface);

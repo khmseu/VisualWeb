@@ -84,9 +84,13 @@ not assume every frame in a tab shares a trust principal.
 Phase 9 implements an **explicit development-only single-process mode** to test
 the shell. BrowserController uses independent tab loaders/renderers and URL-only
 history; asynchronous GET completion returns to the main thread for native
-rendering and SDL presentation. Engine.Content stays offline; stylesheet
-collection and MIME/decoding policy live in the shell. See the
-[shell guide](../browser-shell.md). Phase 10 introduces IPC, separate processes and OS confinement.
+rendering and SDL presentation. Phase 10a also supplies explicit unsandboxed
+multiprocess development mode, one worker per tab, bounded private IPC,
+asynchronous publication, deadlines and tab-local crash/restart handling.
+GET/MIME/decoding remain browser-owned; shared VisualWeb.PageRendering owns
+stylesheet discovery and font/rendering policy, independent of chrome/networking.
+Engine.Content stays offline. See the [shell guide](../browser-shell.md) and
+[process guide](../renderer-processes.md). Phase-10 OS confinement remains unfinished.
 The phase-1 project split is not itself process isolation or a sandbox.
 Linux namespaces/seccomp and Windows AppContainer/Job Objects are planned
 mechanisms, not interchangeable guarantees. Sandboxing must fail explicitly

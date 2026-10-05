@@ -5,7 +5,8 @@
     <AssemblyName>VisualWeb.Browser</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Engine/Engine.Content/Engine.Content.csproj" />
+    <ProjectReference Include="../VisualWeb.PageRendering/VisualWeb.PageRendering.csproj" />
+    <ProjectReference Include="../../Ipc/Ipc.Transport/Ipc.Transport.csproj" />
     <ProjectReference Include="../../Engine/Engine.Net/Engine.Net.csproj" />
     <ProjectReference Include="../../Platform/Platform.Linux/Platform.Linux.csproj" />
     <ProjectReference Include="../../Platform/Platform.Windows/Platform.Windows.csproj" />

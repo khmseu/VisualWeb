@@ -1,10 +1,13 @@
-# Phase-9 development browser shell
+# Development browser shell
 
 The approved implementation uses existing SDL portable windows/input/pixels
 instead of a second UI toolkit. It supplies drawn address/tab chrome, bounded
 session history, GET navigation, tab create/close/move and multiple windows.
-**It is single-process, unsandboxed development tooling for trusted content,
+**It is unsandboxed development tooling for trusted content,
 not a secure or standards-complete production browser.**
+Phase 9 supplies local rendering; phase 10a adds explicitly selected per-tab
+worker processes. See the [process guide](renderer-processes.md) for launch,
+wire limits, deadlines, crash/restart behavior and unfinished confinement.
 
 ## Run it
 
@@ -67,9 +70,11 @@ stderr. The native window title is bounded to 120 Unicode scalars.
 BrowserController owns independent per-tab IPageSource/IPageRenderer instances.
 GetPageSource uses a separate ResourceLoader per tab, with **4 MiB responses**,
 existing redirect/deadline limits and cookies **off**. Fetch is asynchronous;
-completion is observed in the main-thread pump. DOM/style/layout, HarfBuzz,
-Skia and SDL stay on their owning UI thread. Parsing/rendering is still
-synchronous and can pause UI responsiveness; this is not process isolation.
+completion is observed in the main-thread pump. In single-process mode,
+DOM/style/layout, HarfBuzz and Skia remain synchronous on the UI thread and can
+pause responsiveness. In multiprocess mode those operations run on each
+worker's main thread; the browser pumps asynchronous replies. SDL and chrome
+stay on the browser UI thread in both modes.
 
 Only `text/html` is accepted, except that explicitly selected local files
 without MIME metadata are treated as HTML. There is **no MIME sniffing**.
@@ -79,13 +84,14 @@ prescan; `<meta charset>` is not a decoding-policy implementation. Unknown
 charset labels and unsupported MIME fail visibly. HTTP error-status HTML
 can render; status codes and transport diagnostics remain visible.
 
-StaticPageRenderer parses once and collects connected embedded `style` blocks
+The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
 in document order, taking their child text. Inline attributes also participate.
 Named stylesheet sets, non-CSS type values, media other than empty/`all`,
 linked stylesheets and CSS imports fail explicitly rather than silently
 producing a partially styled page. No subresource is fetched and no script runs.
 Engine.Content's new RenderParsed entry point keeps this collection policy
-outside the engine pipeline and avoids parsing twice.
+outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
+browser-owned in both modes.
 
 Existing HTML/CSS/text/layout/paint subsets remain enforced. **The shell
 does not override author CSS to make unsupported pages appear successful.**
@@ -103,9 +109,9 @@ replaces the current entry rather than appending. A new successful navigation
 discards the forward branch. There is no bfcache, same-document fragment
 navigation, iframe history, History API or session persistence.
 
-New loads cancel previous loads for that tab. Generation checks prevent late
+New loads cancel previous loads/renders for that tab. Generation checks prevent late
 stale results from replacing newer content; closing a tab cancels its loads
-and disposes its loader/native font owners. Minimized/too-short windows defer
+and disposes its loader and local font owner or worker process. Minimized/too-short windows defer
 completed page rendering until a usable viewport exists. Resizing rerenders
 the retained decoded HTML, without network refetch; unsupported resize output
 is reported and stale-size frames are not presented.
@@ -142,10 +148,11 @@ are shell-level resources.
 
 Pages have no input/hit-testing, clickable links, controls, selection or
 scrolling; overflow is clipped to the viewport. There are no downloads, storage,
-automatic linked CSS, images/media, JavaScript/V8 or renderer processes yet.
-Native code crashes can terminate the entire development shell. Production
-origin/CORS/CSP/confinement policy and crash containment are **phase 10/future
-work**, not inferred from per-tab managed ownership.
+automatic linked CSS, images/media or JavaScript/V8 yet. Native page crashes
+can terminate the entire shell in single-process mode; multiprocess mode
+contains worker failures to their tab. Browser-native chrome/platform crashes
+remain shell failures. Production origin/CORS/CSP/confinement policy remains
+**unfinished phase 10/future work**, not inferred from process separation.
 
 ## Validation
 
@@ -192,3 +199,6 @@ SDL surface. Wayland shell keyboard/IME, Windows/arm64 native execution and
 real high-DPI desktop behavior still require suitable target environments;
 fractional-density frame composition is covered by deterministic tests, not
 claimed as desktop certification.
+
+Phase-10a process-separation results and current totals are recorded in the
+[renderer process guide](renderer-processes.md#phase-10a-validation-outcome).

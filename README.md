@@ -3,7 +3,7 @@
 A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
 on x64 and arm64. Repository tooling, platform services, core standards
 utilities, resource loading, static HTML/DOM/CSS, text/layout and CPU painting are implemented;
-a development-only single-process browser shell is now runnable. It is **not
+a development-only browser shell supports local or per-tab worker rendering. It is **not
 sandboxed or safe for hostile content**.
 
 ## Getting started
@@ -27,6 +27,9 @@ dotnet run --project src/Apps/VisualWeb.Browser -- \
 
 See the [browser shell guide](docs/browser-shell.md) for tabs, multiple windows,
 navigation controls, explicit font setup and the finite supported page subset.
+The [renderer process guide](docs/renderer-processes.md) describes launching
+the explicitly unsandboxed multiprocess mode, IPC validation and crash recovery.
+Phase 10a is process separation only; OS confinement remains unfinished.
 
 The [platform guide](docs/platform.md) describes window/input/OS services and
 explicit [native smoke checks](tools/PlatformSmoke/README.md).

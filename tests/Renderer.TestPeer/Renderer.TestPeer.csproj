@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VisualWeb.Renderer.TestPeer</RootNamespace>
+    <AssemblyName>VisualWeb.Renderer.TestPeer</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ipc/Ipc.Transport/Ipc.Transport.csproj" />
+  </ItemGroup>
+</Project>

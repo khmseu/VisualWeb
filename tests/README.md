@@ -29,6 +29,13 @@ Skia without displays, scripts or resource fetching.
 The [browser suite](VisualWeb.Browser.Tests/) checks window/tab/history models,
 transactional loading, MIME/encoding and embedded styles, address/shortcut
 events and native CPU chrome/page composition with fake window surfaces.
+It also checks asynchronous render publication and launches real per-tab
+workers for exact pixels, PID reuse, crash containment/reload, deadlines and
+cancellation. Its build copies the actual renderer and private
+[Renderer.TestPeer](Renderer.TestPeer/) fault executable with their runtime
+files; the latter simulates malformed replies and hangs, never remote traffic.
+The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
+budgets, strict JSON, opacity, truncation and cancellation.
 Native SDL browser smoke is explicit and separate from ordinary tests.
 
 ```xml
@@ -65,6 +72,7 @@ dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
 dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
 dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
+dotnet test tests/Ipc.Tests/Ipc.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

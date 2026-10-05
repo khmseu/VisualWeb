@@ -3,6 +3,7 @@
   <Folder Name="/src/Apps/">
     <Project Path="src/Apps/VisualWeb.Browser/VisualWeb.Browser.csproj" />
     <Project Path="src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj" />
+    <Project Path="src/Apps/VisualWeb.PageRendering/VisualWeb.PageRendering.csproj" />
   </Folder>
   <Folder Name="/src/Core/">
     <Project Path="src/Core/Core.Encoding/Core.Encoding.csproj" />
@@ -41,6 +42,8 @@
     <Project Path="tests/Engine.Net.Tests/Engine.Net.Tests.csproj" />
     <Project Path="tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj" />
     <Project Path="tests/Engine.Text.Tests/Engine.Text.Tests.csproj" />
+    <Project Path="tests/Ipc.Tests/Ipc.Tests.csproj" />
+    <Project Path="tests/Renderer.TestPeer/Renderer.TestPeer.csproj" />
     <Project Path="tests/Platform.Tests/Platform.Tests.csproj" />
     <Project Path="tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj" />
     <Project Path="tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj" />

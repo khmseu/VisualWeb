@@ -13,7 +13,8 @@ if (args is ["--help"])
 try
 {
     var launch = BrowserLaunchOptions.Parse(args);
-    Console.Error.WriteLine("WARNING: DEVELOPMENT SINGLE-PROCESS BROWSER. No sandbox, origin isolation or production web security. Use only trusted content.");
+    Console.Error.WriteLine("WARNING: DEVELOPMENT " + (launch.RendererPath is null ? "SINGLE-PROCESS" : "MULTIPROCESS")
+        + " BROWSER. No sandbox, origin isolation or production web security. Use only trusted content.");
     IPlatformServices platform = OperatingSystem.IsLinux() ? new LinuxPlatformServices()
         : OperatingSystem.IsWindows() ? new WindowsPlatformServices()
         : throw new PlatformNotSupportedException("VisualWeb supports Linux and Windows.");
@@ -23,7 +24,8 @@ try
         foreach (var failure in sdl.InitializationFailures) { Console.Error.WriteLine("Backend fallback: " + failure); }
     }
     if (launch.SkipTextInput) { Console.Error.WriteLine("Smoke text input explicitly skipped; keyboard/IME support is not certified."); }
-    using var shell = new DevelopmentShell(system, launch.FontPath, hidden: launch.Smoke, textInput: !launch.SkipTextInput);
+    using var shell = new DevelopmentShell(system, launch.FontPath, hidden: launch.Smoke,
+        textInput: !launch.SkipTextInput, rendererPath: launch.RendererPath);
     shell.OpenWindow(launch.Url);
     if (!launch.Smoke) { shell.Run(); return 0; }
     BrowserSmoke.Run(shell);
@@ -40,17 +42,19 @@ catch (Exception exception) when (BrowserController.IsPageFailure(exception) || 
 }
 
 static void Usage() => Console.Error.WriteLine(
-    "Usage: dotnet run --project src/Apps/VisualWeb.Browser -- --development-single-process --font /trusted/font.ttf "
+    "Usage: dotnet run --project src/Apps/VisualWeb.Browser -- (--development-single-process | --development-multiprocess --renderer /built/renderer.dll) --font /trusted/font.ttf "
     + "[--url ABSOLUTE_URL] [--backend x11|wayland|windows] [--smoke [--backend dummy] [--skip-text-input]]");
 
 namespace VisualWeb.Browser
 {
-    public sealed record BrowserLaunchOptions(string FontPath, string? Url, string? Backend, bool Smoke, bool SkipTextInput)
+    public sealed record BrowserLaunchOptions(string FontPath, string? Url, string? Backend, bool Smoke, bool SkipTextInput,
+        string? RendererPath = null)
     {
         public static BrowserLaunchOptions Parse(IReadOnlyList<string> args)
         {
-            string? font = null, url = null, backend = null;
+            string? font = null, url = null, backend = null, renderer = null;
             var development = false;
+            var multiprocess = false;
             var smoke = false;
             var skip = false;
             var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -61,6 +65,9 @@ namespace VisualWeb.Browser
                 switch (arg)
                 {
                     case "--development-single-process": development = true; break;
+                    case "--development-multiprocess": multiprocess = true; break;
+                    case "--renderer": renderer = Value(); break;
+                    case "--require-sandbox": throw new PlatformNotSupportedException("OS renderer confinement is not implemented. Refusing sandbox-required launch.");
                     case "--smoke": smoke = true; break;
                     case "--skip-text-input": skip = true; break;
                     case "--font": font = Value(); break;
@@ -77,13 +84,15 @@ namespace VisualWeb.Browser
                     return args[index];
                 }
             }
-            if (!development) { throw new ArgumentException("Explicit --development-single-process acknowledgement is required."); }
+            if (development == multiprocess) { throw new ArgumentException("Choose exactly one explicit development process mode."); }
+            if (multiprocess && string.IsNullOrWhiteSpace(renderer)) { throw new ArgumentException("Multiprocess mode requires an explicit built --renderer path."); }
+            if (development && renderer is not null) { throw new ArgumentException("--renderer requires multiprocess mode."); }
             if (string.IsNullOrWhiteSpace(font)) { throw new ArgumentException("An explicit trusted --font path is required."); }
             if (backend is not (null or "x11" or "wayland" or "windows" or "dummy")) { throw new ArgumentException("Unsupported video backend."); }
             if (!smoke && (skip || backend == "dummy")) { throw new ArgumentException("Dummy backend and text-input exclusion are restricted to smoke checks."); }
             if (smoke && url is not null) { throw new ArgumentException("Smoke checks use offline fixtures, not --url."); }
             if (url is not null) { _ = Core.Url.BrowserUrl.Parse(url); }
-            return new(Path.GetFullPath(font), url, backend, smoke, skip);
+            return new(Path.GetFullPath(font), url, backend, smoke, skip, renderer is null ? null : Path.GetFullPath(renderer));
         }
     }
 

@@ -3,7 +3,7 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-/// <summary>SDL-backed UI on the creating main thread, without process isolation.</summary>
+/// <summary>SDL-backed main-thread UI with explicit local or unsandboxed per-tab rendering.</summary>
 public sealed class DevelopmentShell : IDisposable
 {
     public const string HomeHtml = """
@@ -17,7 +17,7 @@ public sealed class DevelopmentShell : IDisposable
         p { line-height:28px }
         </style></head><body><h1>VisualWeb</h1>
         <p>Static HTML and CSS with native text and CPU painting.</p>
-        <p>Development only. No sandbox or renderer process isolation.</p>
+        <p>Development only. No sandbox or origin isolation.</p>
         <p>Use Ctrl L for an absolute HTTP, HTTPS, file or HTML data URL.</p>
         <p>Ctrl T creates a tab. Ctrl W closes it. Ctrl N opens a window.</p>
         <p>Ctrl M moves the active tab to another window.</p>
@@ -51,15 +51,17 @@ public sealed class DevelopmentShell : IDisposable
         views.Select(pair => (pair.Key, pair.Value.Native.Id)).ToArray();
 
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
-        bool hidden = false, bool textInput = true)
+        bool hidden = false, bool textInput = true, string? rendererPath = null)
     {
         this.system = system;
         this.hidden = hidden;
         this.textInput = textInput;
         var settings = options ?? new();
         settings.Validate();
-        chrome = new(fontPath, settings.MaxFramePixels);
-        Controller = new(() => new GetPageSource(), () => new StaticPageRenderer(fontPath, settings.MaxFramePixels), settings);
+        var multiprocess = rendererPath is not null;
+        chrome = new(fontPath, settings.MaxFramePixels, multiprocess);
+        Controller = new(() => new GetPageSource(), () => rendererPath is null
+            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels) : new ProcessPageRenderer(rendererPath, fontPath), settings);
         Controller.Changed += id =>
         {
             foreach (var (key, view) in views)
@@ -155,7 +157,8 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (window.ActiveTab is { } tab && ShellChrome.Viewport(size, density) is { } viewport)
             {
-                Controller.Resize(tab.Id, viewport);
+                try { Controller.Resize(tab.Id, viewport); }
+                catch (BrowserLimitException exception) { Controller.Report(tab.Id, exception.Message); }
             }
             if (!view.Dirty) { continue; }
             var frame = chrome.Render(window, window.ActiveTabId is { } active ? Controller.Page(active) : null,
