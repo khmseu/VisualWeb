@@ -87,12 +87,20 @@ Managed tests stay display-independent. Platform.Tests is one shared contract/
 selector/service suite, rather than duplicated per-backend suites. Native smoke
 is an explicit tool, separate from ordinary tests.
 
-Validated here on Linux x64: dummy and X11 (including text-input activation),
-headless Weston 13 Wayland (surfaces/events/lifecycle, **text-input check explicitly
-excluded** because that compositor lacks zwp_text_input_v3), automatic Wayland
-preference and real failure-to-X11 fallback. The temporary compositor was not
-installed system-wide. Windows, arm64, real Wayland keyboard/IME, and high-DPI
-desktop behavior still need their target environments.
+Linux CI runs on native x64 and arm64 runners, including native font, shaping,
+painting, platform and browser smoke checks. Linux arm64 required confinement
+remains unsupported; see the [Linux confinement guide](linux-confinement.md).
+The separately configured Windows x64/arm64 workflow exercises native platform,
+browser and Windows confinement paths. These workflows provide target-specific
+validation; their existence does not certify unobserved runs or high-DPI desktop
+behavior.
+
+Linux x64 has also been validated here with dummy and X11 (including text-input
+activation), headless Weston 13 Wayland (surfaces/events/lifecycle, **text-input
+check explicitly excluded** because that compositor lacks zwp_text_input_v3),
+automatic Wayland preference and real failure-to-X11 fallback. The temporary
+compositor was not installed system-wide. Real Wayland keyboard/IME and high-DPI
+desktop behavior still need suitable target environments.
 
 Official SDL, XDG and .NET/OS references are recorded in the
 [standards registry](../specs/manifest.json) and locally cached separately from tests.

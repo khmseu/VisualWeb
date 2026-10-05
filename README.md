@@ -30,7 +30,8 @@ navigation controls, explicit font setup and the finite supported page subset.
 The [renderer process guide](docs/renderer-processes.md) describes launching
 the explicitly unsandboxed multiprocess mode, IPC validation and crash recovery.
 Phase 10a provides process separation; phase 10b adds opt-in
-[Linux x64 renderer confinement](docs/linux-confinement.md). Windows/arm64,
+[Linux x64 renderer confinement](docs/linux-confinement.md). Linux ARM64 is
+covered by native build, test and smoke CI, but Linux ARM64 confinement,
 origin policy and production-safe browsing remain unfinished. Both modes are
 unsandboxed unless `--require-sandbox` is explicitly selected.
 Required Linux confinement includes per-worker hard cgroup memory/swap/task/CPU
