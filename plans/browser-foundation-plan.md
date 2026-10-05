@@ -86,7 +86,8 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Runtime: .NET 10 LTS, C# latest; targets Windows 10+ and Linux, x64 and arm64.
 - Windowing/input: SDL3 behind `Platform.Abstractions`, with both X11 and Wayland backends supported and selectable on Linux (auto-detect via `WAYLAND_DISPLAY`/`DISPLAY`, override via config/env).
 - Graphics/text: SkiaSharp for rasterization, HarfBuzzSharp for shaping.
-- JavaScript: V8 (planned; embedding approach — e.g. ClearScript or a custom native binding — decided when the scripting phase starts). Only the `Engine.Scripting` abstraction is created now.
+- JavaScript: V8 through ClearScript (approved phase 11a host foundation).
+  Page scripting, DOM/Web IDL and HTML event-loop integration remain deferred.
 - Tests: xUnit v3; WPT-derived data used where available.
 - Standards: every public interface documents the spec section it implements (URL + section anchor) in XML doc comments.
 - Standards cache: `specs/` holds local copies of the referenced specifications, with a manifest recording source URL and fetch date; a refresh tool re-downloads entries older than 30 days. This is independent of the test suites.
@@ -178,7 +179,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Approved phase 10d hardens Linux resource-exhaustion lifecycle with real
   confined IPC OOM/restart, task recovery and CPU-pressure deadline/cancellation
   tests, transactional history and unaffected-tab/tab-close verification.
-- V8 integration and WebIDL-generated DOM bindings; HTML event loop.
+- Approved phase 11a uses ClearScript/V8 for a bounded private-isolate host
+  foundation, native asset deployment and fail-closed confinement probes.
+  Browser page scripting is still deferred; no DOM/event-loop behavior is implied.
+- Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.
 - Images, media, canvas, WebGL/WebGPU, WebAssembly (via V8).
@@ -187,4 +191,5 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - WPT conformance runner in CI.
 
 **Open Questions**
-1. V8 embedding: ClearScript or a custom native binding? Decide at the scripting phase.
+1. V8 embedding is now ClearScript; decide the first explicit DOM/HTML script
+   scheduling subset before enabling page scripting.

@@ -40,6 +40,7 @@ entry (it still uses conditional requests where possible).
 | `css2-paint`, `skia-canvas` | Normal-flow display order and native CPU canvas API |
 | `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
 | `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
+| `clearscript-v8`, `clearscript-v8-constraints` | Pinned native host API, interruption, monitored heap/stack and ArrayBuffer limits |
 | `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |
 | `xdg-directories`, `dotnet-process`, `dotnet-process-start`, `windows-fonts`, `fontconfig` | OS paths, process launch/lifecycle and font sources |
 | `dotnet-process-pipes`, `dotnet-stream-read` | Private renderer pipes, continuous diagnostic draining and exact framed reads |

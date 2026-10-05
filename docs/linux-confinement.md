@@ -261,6 +261,11 @@ confinement remains unsupported. Origin/CORS/CSP and site isolation, full web
 standards and production-safe hostile browsing remain unfinished. Windows
 confinement is documented separately in [windows-confinement.md](windows-confinement.md).
 
+Phase 11a's [V8 host probe](scripting.md) runs actual ClearScript/V8 evaluation,
+heap invalidation and deadlines under this unchanged Linux x64 profile. No new
+syscalls, mounts or weaker launch fallback are enabled. This validates only the
+documented host-foundation probe, not page script/DOM/event-loop integration.
+
 ### Phase-10b validation outcome
 
 Validated on Linux x64: **41 projects** build, and **11,656 tests** pass without

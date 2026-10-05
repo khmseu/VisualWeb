@@ -9,6 +9,7 @@
 - [Static CSS syntax, selectors, cascade and computed styles](css.md)
 - [Native fonts/shaping and static LTR block/inline layout](text-layout.md)
 - [Display lists, CPU painting and offline HTML-to-frame rendering](painting.md)
+- [ClearScript/V8 host foundation, limits and native confinement probes](scripting.md)
 - [Development browser shell, navigation, tabs and multiple windows](browser-shell.md)
 - [Per-tab renderer processes, IPC, deadlines and unfinished confinement](renderer-processes.md)
 - [Linux x64 renderer confinement, exact guarantees and denial probes](linux-confinement.md)
@@ -27,3 +28,5 @@ Phase 10b adds opt-in Linux x64 confinement, strengthened by phase-10c hard
 per-worker resource accounting; Windows adds an AppContainer/Job Object
 development profile with native x64/arm64 validation. Production isolation
 and broader standards remain later work.
+Phase 11a adds the bounded ClearScript/V8 host and native confinement probes,
+without enabling page scripts or changing the static rendering pipeline.

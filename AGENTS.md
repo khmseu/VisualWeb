@@ -6,7 +6,8 @@
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
    read its README. Platform services, Core URL/Encoding/MIME and developer
    tooling and Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content are implemented;
-   Core.Primitives and Engine.Scripting remain placeholders.
+   Core.Primitives remains a placeholder; Engine.Scripting has a bounded
+   ClearScript/V8 host foundation, not page-script execution.
    IPC and VisualWeb.Renderer are implemented.
    VisualWeb.Browser supports local or unsandboxed per-tab process rendering;
    shared static rendering policy lives in VisualWeb.PageRendering.
@@ -87,6 +88,11 @@
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; process communication uses data-only IPC contracts.
+- Read the [scripting guide](docs/scripting.md) before V8 work. Preserve private
+  thread-owned isolates, exact primitive copying and invalidation on interruption;
+  never expose CLR host objects or weaken OS confinement for native startup.
+  Script scheduling/DOM/Web IDL bindings are deferred. Run V8Smoke explicitly;
+  Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.
   Follow `tests/Tools.SpecCache.Tests/` for package references, project references,
   injected HTTP/time dependencies, and test cancellation tokens.
@@ -107,6 +113,7 @@ dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
 dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
 dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
+dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj
 dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
 dotnet test tests/Ipc.Tests/Ipc.Tests.csproj
 dotnet test VisualWeb.slnx --no-build

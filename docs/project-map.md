@@ -2,7 +2,8 @@
 
 Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content and developer tools
 and VisualWeb.Browser/PageRendering/Renderer plus IPC are implemented.
-Core.Primitives and Engine.Scripting remain library placeholders. The browser executable is
+Core.Primitives remains a library placeholder; Engine.Scripting supplies the
+bounded V8 host foundation, not browser page-script execution. The browser executable is
 explicitly development-only, not isolated production browsing.
 
 | Project | Responsibility | Planned dependencies / official sources |
@@ -24,7 +25,7 @@ explicitly development-only, not isolated production browsing.
 | [Engine.Text](../src/Engine/Engine.Text/) | Owned fonts, explicit face registration, native Latin/LTR shaping/metrics | Platform.Abstractions, HarfBuzzSharp + Linux/Win32 native assets; [scope](text-layout.md) |
 | [Engine.Layout](../src/Engine/Engine.Layout/) | Finite block/inline geometry, space wrapping and baseline lines | Engine.Css, Engine.Dom, Engine.Text; [scope](text-layout.md) |
 | [Engine.Paint](../src/Engine/Engine.Paint/) | Immutable display lists, Skia CPU pixels and portable presentation | Engine.Layout, Platform.Abstractions, SkiaSharp; [scope](painting.md) |
-| [Engine.Scripting](../src/Engine/Engine.Scripting/) | V8 host boundary, future Web IDL bindings | `ecmascript`, `webidl`, HTML event loop |
+| [Engine.Scripting](../src/Engine/Engine.Scripting/) | Private thread-owned V8 host, primitive copying and bounded execution; DOM/Web IDL deferred | ClearScript + Linux/Windows x64/arm64 native assets; [scope](scripting.md) |
 | [Engine.Content](../src/Engine/Engine.Content/) | Offline decoded HTML/CSS-to-frame orchestration | Engine.Html/Paint, no loading/shell/backend dependency; [scope](painting.md) |
 | [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages | No DOM/native object dependencies |
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | Private bounded framed streams, exact reads and pixel validation | Ipc.Contracts; [scope](renderer-processes.md) |
@@ -35,6 +36,7 @@ explicitly development-only, not isolated production browsing.
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |
 | [LinuxSandboxSmoke](../tools/LinuxSandboxSmoke/) | Explicit measured file/network/process/namespace denial probe | Platform.Linux.Sandbox; no remote traffic/display |
 | [WindowsSandboxSmoke](../tools/WindowsSandboxSmoke/) | Explicit AppContainer/Job Object denial probe | Platform.Windows.Sandbox; no remote traffic/display |
+| [V8Smoke](../tools/V8Smoke/) | Explicit native V8 isolation/resource and required-confinement probe | Engine.Scripting, Linux/Windows sandbox composition; no page execution |
 
 Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/),
 shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service tests, and
@@ -57,5 +59,9 @@ composition with fake window events, real renderer processes, per-tab crash/rest
 deadlines and faulty peers. [Ipc.Tests](../tests/Ipc.Tests/) covers framing/bounds.
 The private [Renderer.TestPeer](../tests/Renderer.TestPeer/) is a protocol-fault
 fixture, not an application. Native shell smoke is separate.
+The [Engine.Scripting.Tests](../tests/Engine.Scripting.Tests/) suite verifies
+native primitive conversion, private context state, exact limits, interruption
+and ownership. [V8Smoke](../tools/V8Smoke/) separately verifies heap failure and
+native host compatibility under the existing renderer confinement policies.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).

@@ -36,6 +36,11 @@ cancellation. Its build copies the actual renderer and private
 files; the latter simulates malformed replies and hangs, never remote traffic.
 The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
 budgets, strict JSON, opacity, truncation and cancellation.
+The [scripting suite](Engine.Scripting.Tests/) runs native V8 primitive/type
+copying, intrinsic-tampering, isolate separation, source/result/stack/buffer
+limits, thread ownership and deadline/cancellation tests. The explicit
+[V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
+and native startup under unchanged Linux or Windows renderer confinement.
 Native SDL browser smoke is explicit and separate from ordinary tests.
 Linux x64 browser integration also runs required-confinement workers, so it
 requires bubblewrap/libseccomp, unprivileged namespaces and a systemd user manager

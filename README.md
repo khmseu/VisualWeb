@@ -51,6 +51,9 @@ The [text/layout guide](docs/text-layout.md) covers native HarfBuzz shaping,
 font ownership and the finite LTR block/inline geometry subset.
 The [painting guide](docs/painting.md) covers immutable display lists, opaque
 BGRA frames, surface presentation and offline decoded-HTML-to-frame rendering.
+The [scripting guide](docs/scripting.md) covers the new bounded ClearScript/V8
+host and native confinement probes. Page scripts, DOM bindings and HTML event
+loops are still unsupported; static browsing behavior is unchanged.
 
 The SpecCache command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately

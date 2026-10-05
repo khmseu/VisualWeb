@@ -43,6 +43,7 @@
     <Project Path="tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj" />
     <Project Path="tests/Engine.Net.Tests/Engine.Net.Tests.csproj" />
     <Project Path="tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj" />
+    <Project Path="tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj" />
     <Project Path="tests/Engine.Text.Tests/Engine.Text.Tests.csproj" />
     <Project Path="tests/Ipc.Tests/Ipc.Tests.csproj" />
     <Project Path="tests/Renderer.TestPeer/Renderer.TestPeer.csproj" />
@@ -57,6 +58,7 @@
     <Project Path="tools/PlatformSmoke/PlatformSmoke.csproj" />
     <Project Path="tools/LinuxSandboxSmoke/LinuxSandboxSmoke.csproj" />
     <Project Path="tools/WindowsSandboxSmoke/WindowsSandboxSmoke.csproj" />
+    <Project Path="tools/V8Smoke/V8Smoke.csproj" />
     <Project Path="tools/SpecCache/SpecCache.csproj" />
   </Folder>
 </Solution>

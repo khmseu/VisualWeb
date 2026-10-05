@@ -2,6 +2,26 @@
   "version": 1,
   "documents": [
     {
+      "id": "clearscript-v8",
+      "title": "ClearScript V8 host API and resource constraints",
+      "url": "https://github.com/microsoft/ClearScript/blob/7.5.1/ClearScript/V8/V8ScriptEngine.cs",
+      "file": "clearscript-v8.html",
+      "fetchedAt": "2026-10-05T22:17:09.0703151+00:00",
+      "checkedAt": "2026-10-05T22:17:09.0703151+00:00",
+      "eTag": "W/\u002212bcdbe1c1caa3c8d1f8579d0b9ec41b\u0022",
+      "lastModified": null
+    },
+    {
+      "id": "clearscript-v8-constraints",
+      "title": "ClearScript V8 heap and external allocation constraints",
+      "url": "https://github.com/microsoft/ClearScript/blob/7.5.1/ClearScript/V8/V8RuntimeConstraints.cs",
+      "file": "clearscript-v8-constraints.html",
+      "fetchedAt": "2026-10-05T22:17:09.8851014+00:00",
+      "checkedAt": "2026-10-05T22:17:09.8851014+00:00",
+      "eTag": "W/\u00229668382b8f5841103bc8713ea6be2ba0\u0022",
+      "lastModified": null
+    },
+    {
       "id": "linux-cgroup-v2",
       "title": "Linux kernel cgroup v2 resource controllers",
       "url": "https://docs.kernel.org/admin-guide/cgroup-v2.html",
@@ -526,30 +546,30 @@
       "title": "Implementing an AppContainer",
       "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer",
       "file": "windows-appcontainer.html",
-      "fetchedAt": null,
-      "checkedAt": null,
-      "eTag": null,
-      "lastModified": null
+      "fetchedAt": "2026-10-05T22:15:34.3168616+00:00",
+      "checkedAt": "2026-10-05T22:15:34.3168616+00:00",
+      "eTag": "\u0022yI2KtS2RvSKI6cC6pknEE1Z5u4s=\u0022",
+      "lastModified": "2026-08-26T21:43:13+00:00"
     },
     {
       "id": "windows-job-objects",
       "title": "Job Objects",
       "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects",
       "file": "windows-job-objects.html",
-      "fetchedAt": null,
-      "checkedAt": null,
-      "eTag": null,
-      "lastModified": null
+      "fetchedAt": "2026-10-05T22:15:34.717333+00:00",
+      "checkedAt": "2026-10-05T22:15:34.717333+00:00",
+      "eTag": "\u00225P74UVdjqINfM7EcIA446uq744k=\u0022",
+      "lastModified": "2026-08-26T21:43:31+00:00"
     },
     {
       "id": "windows-process-attributes",
       "title": "UpdateProcThreadAttribute",
       "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute",
       "file": "windows-process-attributes.html",
-      "fetchedAt": null,
-      "checkedAt": null,
-      "eTag": null,
-      "lastModified": null
+      "fetchedAt": "2026-10-05T22:15:34.9559135+00:00",
+      "checkedAt": "2026-10-05T22:15:34.9559135+00:00",
+      "eTag": "\u0022bSNDtKoIwIaKOLtQIzjmITK\u002Bf2w=\u0022",
+      "lastModified": "2026-08-05T07:36:20+00:00"
     },
     {
       "id": "fontconfig",

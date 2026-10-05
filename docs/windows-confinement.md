@@ -81,3 +81,7 @@ denial probe, these exercise native window presentation and the full confined
 browser launch path on both architectures. They do not certify high-DPI desktop
 behavior or production isolation; Linux builds and policy tests do not certify
 Windows targets.
+
+The phase-11a [V8 host probe](scripting.md) is also scheduled in native Windows
+x64/arm64 CI under this same profile; Linux host validation does not certify
+ClearScript compatibility with AppContainer. Page scripting remains deferred.

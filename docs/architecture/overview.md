@@ -16,9 +16,11 @@ window handles into portable surface/input contracts.
 SDL3 now handles windowing/input and software pixel presentation through
 Platform.Sdl. Engine.Text now uses HarfBuzzSharp with Linux/Windows native assets;
 Engine.Paint uses SkiaSharp CPU rasterization with explicit exact-byte font resources.
-V8 is the planned ECMAScript/WebAssembly runtime; its binding, native
-distribution, sandbox compatibility and supported architectures are decided
-and tested at the scripting phase.
+V8 is embedded through ClearScript with matching Linux/Windows x64/arm64 native
+assets. Phase 11a establishes private thread-owned isolates, copied primitive
+results and native confinement probes, not page script execution. DOM/Web IDL,
+HTML event loops and WebAssembly integration remain deferred; see the
+[scripting guide](../scripting.md) for scope and target evidence.
 
 ## Dependency direction
 
