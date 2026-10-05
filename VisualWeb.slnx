@@ -43,6 +43,7 @@
     <Project Path="tests/Engine.Text.Tests/Engine.Text.Tests.csproj" />
     <Project Path="tests/Platform.Tests/Platform.Tests.csproj" />
     <Project Path="tests/Tools.SpecCache.Tests/Tools.SpecCache.Tests.csproj" />
+    <Project Path="tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj" />
   </Folder>
   <Folder Name="/third_party/">
     <Project Path="third_party/Dubzer.WhatwgUrl/Dubzer.WhatwgUrl.csproj" />

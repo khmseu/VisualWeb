@@ -1,10 +1,15 @@
 # VisualWeb.Browser
 
-Phase-1 library placeholder for the future browser executable. No entry point
-or runnable UI exists yet.
+Runnable development-only single-process browser executable. Draws SDL
+address/tab chrome, navigates GET HTML into the static engine, and manages
+history, tabs and multiple windows.
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
-supervision. Composes the appropriate platform backend. Window and tab IDs
-must be distinct; a tab crash must not crash other tabs or windows.
+supervision in the future production architecture. Currently composes the
+platform backend with tab-local loaders/native fonts, but no renderer processes
+or OS sandbox: native crashes are not contained.
 
-See the [architecture](../../../docs/architecture/overview.md).
+Requires explicit `--development-single-process` acknowledgement and trusted
+`--font` path. See the [shell guide](../../../docs/browser-shell.md) for run
+commands, controls, limits and validation, and the
+[architecture](../../../docs/architecture/overview.md).

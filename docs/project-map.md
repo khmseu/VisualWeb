@@ -1,9 +1,9 @@
 # Project map
 
 Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content and developer tools
-are implemented. Core.Primitives, other Engine projects, IPC and App projects remain
-library placeholders; app projects become executables when
-their real entry points are implemented. Do not add dummy browser entry points.
+and VisualWeb.Browser are implemented. Core.Primitives, Engine.Scripting, IPC and
+VisualWeb.Renderer remain library placeholders. The browser executable is
+explicitly development-only, not isolated production browsing.
 
 | Project | Responsibility | Planned dependencies / official sources |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ their real entry points are implemented. Do not add dummy browser entry points.
 | [Engine.Content](../src/Engine/Engine.Content/) | Offline decoded HTML/CSS-to-frame orchestration | Engine.Html/Paint, no loading/shell/backend dependency; [scope](painting.md) |
 | [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages | No DOM/native object dependencies |
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | In-process development and cross-process transports | Ipc.Contracts |
-| [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Windows, tabs, chrome, privileged brokers | Platform composition, IPC |
+| [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Development windows/tabs/chrome, GET navigation and URL-only history | Platform.Linux/Windows, Engine.Content/Net; [scope](browser-shell.md); IPC deferred |
 | [VisualWeb.Renderer](../src/Apps/VisualWeb.Renderer/) | One-tab renderer process | Engine.Content, IPC, restricted platform capabilities |
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |
@@ -46,5 +46,8 @@ ownership/shaping, deterministic geometry and native integration without a displ
 The [Engine.Paint.Tests](../tests/Engine.Paint.Tests/) and
 [Engine.Content.Tests](../tests/Engine.Content.Tests/) suites add exact pixels,
 glyph command preservation, native Skia rendering and offline page integration.
+The [VisualWeb.Browser.Tests](../tests/VisualWeb.Browser.Tests/) suite covers
+shell state, transactional navigation, MIME/encoding/styles and CPU chrome/page
+composition with fake window events. Native shell smoke is separate.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).

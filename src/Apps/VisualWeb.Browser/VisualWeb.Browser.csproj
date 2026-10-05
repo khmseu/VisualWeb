@@ -1,6 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <RootNamespace>VisualWeb.Browser</RootNamespace>
     <AssemblyName>VisualWeb.Browser</AssemblyName>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Engine/Engine.Content/Engine.Content.csproj" />
+    <ProjectReference Include="../../Engine/Engine.Net/Engine.Net.csproj" />
+    <ProjectReference Include="../../Platform/Platform.Linux/Platform.Linux.csproj" />
+    <ProjectReference Include="../../Platform/Platform.Windows/Platform.Windows.csproj" />
+  </ItemGroup>
 </Project>

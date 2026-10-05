@@ -38,6 +38,8 @@ Engine.Content consumes an **already-decoded string** and caller-ordered CSS
 sources. Inline style attributes still participate in the cascade. Embedded
 `style` elements and linked stylesheets are **not automatically collected**.
 No links, images or imports are fetched, and no scripts or navigation run.
+RenderParsed accepts caller-parsed HTML for integrations such as the
+[development shell](browser-shell.md); it still does not discover styles.
 Networking/encoding/MIME policy and source discovery remain caller/future
 orchestration responsibilities. RenderedPage retains parse recovery diagnostics,
 computed styles, layout, commands and pixels. CSS diagnostics stop layout;

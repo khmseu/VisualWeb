@@ -81,8 +81,12 @@ frames and navigation process swaps, not merely one process per tab. Networking
 and storage can move behind broker/service processes. The architecture must
 not assume every frame in a tab shares a trust principal.
 
-Phase 9 may use an **explicit development-only single-process mode** to test
-the shell. Phase 10 introduces IPC, separate processes and OS confinement.
+Phase 9 implements an **explicit development-only single-process mode** to test
+the shell. BrowserController uses independent tab loaders/renderers and URL-only
+history; asynchronous GET completion returns to the main thread for native
+rendering and SDL presentation. Engine.Content stays offline; stylesheet
+collection and MIME/decoding policy live in the shell. See the
+[shell guide](../browser-shell.md). Phase 10 introduces IPC, separate processes and OS confinement.
 The phase-1 project split is not itself process isolation or a sandbox.
 Linux namespaces/seccomp and Windows AppContainer/Job Objects are planned
 mechanisms, not interchangeable guarantees. Sandboxing must fail explicitly

@@ -75,4 +75,18 @@ public sealed class ContentTests
         public ShapedRun Shape(string text, TextFontRequest request, CancellationToken cancellationToken = default)
             => throw new InvalidOperationException("This page should not shape text.");
     }
+
+    [Fact]
+    public void CallerParsedDocumentIsRetainedAndValidatesViewportBeforeStyleProcessing()
+    {
+        var parsed = VisualWeb.Engine.Html.HtmlParser.Parse("<!doctype html>", cancellationToken: Cancellation);
+        using var fonts = new PaintFontRegistry();
+        var page = OfflinePageRenderer.RenderParsed(parsed, [new("html{display:none}")], new EmptyShaper(), fonts,
+            2, 2, cancellationToken: Cancellation);
+        Assert.Same(parsed, page.Html);
+        Assert.Throws<ArgumentOutOfRangeException>(() => OfflinePageRenderer.RenderParsed(parsed, [],
+            new EmptyShaper(), fonts, double.NaN, 2, cancellationToken: Cancellation));
+        Assert.Throws<ArgumentNullException>(() => OfflinePageRenderer.RenderParsed(parsed, [],
+            new EmptyShaper(), fonts, 2, 2, new() { Css = null! }, Cancellation));
+    }
 }

@@ -26,6 +26,10 @@ commands, native glyph rendering, font resource ownership and portable fake
 presentation. The [content suite](Engine.Content.Tests/) checks the offline
 HTML/CSS-to-frame pipeline. Both link the existing font fixture and use CPU
 Skia without displays, scripts or resource fetching.
+The [browser suite](VisualWeb.Browser.Tests/) checks window/tab/history models,
+transactional loading, MIME/encoding and embedded styles, address/shortcut
+events and native CPU chrome/page composition with fake window surfaces.
+Native SDL browser smoke is explicit and separate from ordinary tests.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -60,6 +64,7 @@ dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
 dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
 dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
+dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

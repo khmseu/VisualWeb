@@ -10,6 +10,18 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 9 delivered: SDL-drawn address/tab chrome, GET static HTML navigation,
+  transactional URL-only history, tabs and multiple windows in an explicitly
+  development-only single process. The user approved embedded stylesheet
+  collection and an explicit trusted font file; linked stylesheets, interaction,
+  scrolling, persistence and sandboxing remain deferred. Each tab owns its
+  loader/native font resources; generation checks reject stale loads.
+  Linux x64 validation: all 36 projects build and all 11,616 tests pass
+  (42 Browser tests; Content grows to 5). Actual SDL dummy and X11 hidden-window
+  smoke checks pass, including composed native surface pixels. First-party
+  formatting/editor diagnostics are clean; all 43 cached references remain fresh.
+  Wayland keyboard/IME and Windows/arm64 shell execution remain target checks. See the
+  [shell guide](../docs/browser-shell.md) for commands, policy and validation.
 - Phase 8 delivered: immutable background/solid-border/glyph display lists,
   SkiaSharp CPU rasterization to opaque BGRA frames with explicit scale and
   viewport clipping, portable surface presentation and an offline decoded

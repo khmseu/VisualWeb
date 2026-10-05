@@ -35,20 +35,45 @@ public static class OfflinePageRenderer
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(fonts);
         var settings = options ?? new();
-        ArgumentNullException.ThrowIfNull(settings.Html);
-        ArgumentNullException.ThrowIfNull(settings.Css);
-        ArgumentNullException.ThrowIfNull(settings.Layout);
-        ArgumentNullException.ThrowIfNull(settings.Paint);
-        if (!double.IsFinite(settings.Scale) || settings.Scale <= 0) { throw new ArgumentOutOfRangeException(nameof(options), "Raster scale must be finite and positive."); }
-        if (!double.IsFinite(viewportWidth) || viewportWidth <= 0 || !double.IsFinite(viewportHeight) || viewportHeight <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(viewportWidth), "Viewport must be finite and positive.");
-        }
+        Validate(settings, viewportWidth, viewportHeight);
         var parsed = HtmlParser.Parse(html, settings.Html, cancellationToken);
+        return RenderParsed(parsed, sources, text, fonts, viewportWidth, viewportHeight, settings, cancellationToken);
+    }
+
+    /// <summary>Render a caller-parsed document without parsing its string a second time.</summary>
+    /// <remarks>Caller-provided ordered sources may be collected from the static DOM; no resource discovery runs here.</remarks>
+    public static RenderedPage RenderParsed(HtmlParseResult parsed, IEnumerable<CssStyleSource> sources, ITextShaper text,
+        PaintFontRegistry fonts, double viewportWidth, double viewportHeight, PageRenderOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(parsed);
+        ArgumentNullException.ThrowIfNull(parsed.Document);
+        ArgumentNullException.ThrowIfNull(sources);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(fonts);
+        var settings = options ?? new();
+        Validate(settings, viewportWidth, viewportHeight);
         var styles = CssStyleEngine.Compute(parsed.Document, sources, settings.IncludeUserAgentStyle, settings.Css, cancellationToken);
+        if (styles.Diagnostics.Count > 0)
+        {
+            throw new UnsupportedLayoutException("Resolve CSS diagnostics before rendering: "
+                + string.Join(" ", styles.Diagnostics.Take(5).Select(diagnostic => diagnostic.Code + ": " + diagnostic.Message)));
+        }
         var layout = StaticLayout.Layout(parsed.Document, styles, text, viewportWidth, viewportHeight, settings.Layout, cancellationToken);
         var list = DisplayListBuilder.Build(layout, styles, settings.Paint, cancellationToken);
         var frame = CpuRasterizer.Render(list, fonts, settings.Scale, options: settings.Paint, cancellationToken: cancellationToken);
         return new(parsed, styles, layout, list, frame);
+    }
+    private static void Validate(PageRenderOptions settings, double viewportWidth, double viewportHeight)
+    {
+        ArgumentNullException.ThrowIfNull(settings.Html);
+        ArgumentNullException.ThrowIfNull(settings.Css);
+        ArgumentNullException.ThrowIfNull(settings.Layout);
+        ArgumentNullException.ThrowIfNull(settings.Paint);
+        if (!double.IsFinite(settings.Scale) || settings.Scale <= 0) { throw new ArgumentOutOfRangeException(nameof(settings), "Raster scale must be finite and positive."); }
+        if (!double.IsFinite(viewportWidth) || viewportWidth <= 0 || !double.IsFinite(viewportHeight) || viewportHeight <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(viewportWidth), "Viewport must be finite and positive.");
+        }
     }
 }

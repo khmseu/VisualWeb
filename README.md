@@ -3,7 +3,8 @@
 A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
 on x64 and arm64. Repository tooling, platform services, core standards
 utilities, resource loading, static HTML/DOM/CSS, text/layout and CPU painting are implemented;
-there is no runnable browser yet.
+a development-only single-process browser shell is now runnable. It is **not
+sandboxed or safe for hostile content**.
 
 ## Getting started
 
@@ -16,6 +17,16 @@ dotnet build VisualWeb.slnx --no-restore
 dotnet test VisualWeb.slnx --no-build
 dotnet run --project tools/SpecCache -- specs/manifest.json
 ```
+
+Launch the offline welcome page with the pinned development font:
+
+```sh
+dotnet run --project src/Apps/VisualWeb.Browser -- \
+  --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf
+```
+
+See the [browser shell guide](docs/browser-shell.md) for tabs, multiple windows,
+navigation controls, explicit font setup and the finite supported page subset.
 
 The [platform guide](docs/platform.md) describes window/input/OS services and
 explicit [native smoke checks](tools/PlatformSmoke/README.md).
@@ -32,7 +43,7 @@ font ownership and the finite LTR block/inline geometry subset.
 The [painting guide](docs/painting.md) covers immutable display lists, opaque
 BGRA frames, surface presentation and offline decoded-HTML-to-frame rendering.
 
-The last command caches official standards locally and checks only missing
+The SpecCache command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately
 separate from builds and tests, which do not fetch standards.
 

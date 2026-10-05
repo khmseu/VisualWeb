@@ -6,7 +6,8 @@
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
    read its README. Platform services, Core URL/Encoding/MIME and developer
    tooling and Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content are implemented; Core.Primitives, other
-   Engine projects, IPC and App remain placeholders.
+   Engine projects, IPC and VisualWeb.Renderer remain placeholders.
+   VisualWeb.Browser is a runnable development-only single-process shell.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
    maps document IDs to official sources, filenames, and last-check timestamps.
@@ -55,6 +56,11 @@
   ordered anonymous layout flow. Pixels are opaque BGRA with explicit scale;
   offline Content never collects embedded CSS or fetches resources automatically.
   Unsupported paint must fail; preserve independent pixel and native glyph tests.
+- Read the [shell guide](docs/browser-shell.md) before navigation/chrome changes.
+  Require explicit development-mode acknowledgement and trusted font setup.
+  Keep asynchronous loading separate from main-thread native rendering, preserve
+  transactional history and stale-load cancellation, and do not claim isolation.
+  Shell stylesheet discovery must not leak into offline Engine.Content policy.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; future process communication uses IPC contracts.
@@ -78,6 +84,7 @@ dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
 dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
 dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
+dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
 dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party
 ```
