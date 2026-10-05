@@ -153,111 +153,120 @@ public static class WindowsRendererSandbox
         CreatePipePair(childReads: true, out var childInput, out var parentInput);
         CreatePipePair(childReads: false, out var parentOutput, out var childOutput);
         CreatePipePair(childReads: false, out var parentError, out var childError);
-        using (childInput)
-        using (childOutput)
-        using (childError)
-        using (parentInput)
-        using (parentOutput)
-        using (parentError)
+        var streamsOwnHandles = false;
+        try
         {
-            var handles = new[] { childInput.DangerousGetHandle(), childOutput.DangerousGetHandle(), childError.DangerousGetHandle() };
-            var capabilities = new Native.SecurityCapabilities { AppContainerSid = sid };
-            var attributeBytes = IntPtr.Zero;
-            var attributeListInitialized = false;
-            var size = IntPtr.Zero;
-            var jobHandle = job.DangerousGetHandle();
-            var jobHandles = Marshal.AllocHGlobal(IntPtr.Size);
-            var inheritedHandles = Marshal.AllocHGlobal(3 * IntPtr.Size);
-            var processInfo = default(Native.ProcessInformation);
-            try
+            using (childInput)
+            using (childOutput)
+            using (childError)
             {
-                Marshal.WriteIntPtr(jobHandles, jobHandle);
-                for (var index = 0; index < handles.Length; index++)
-                {
-                    Marshal.WriteIntPtr(inheritedHandles, index * IntPtr.Size, handles[index]);
-                }
-                _ = Native.InitializeProcThreadAttributeList(IntPtr.Zero, 3, 0, ref size);
-                if (size == IntPtr.Zero) { throw Native.Failure("size renderer process attributes"); }
-                attributeBytes = Marshal.AllocHGlobal(size);
-                if (!Native.InitializeProcThreadAttributeList(attributeBytes, 3, 0, ref size))
-                {
-                    throw Native.Failure("initialize renderer process attributes");
-                }
-                attributeListInitialized = true;
-                if (!Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeSecurityCapabilities,
-                        ref capabilities, (IntPtr)Marshal.SizeOf<Native.SecurityCapabilities>(), IntPtr.Zero, IntPtr.Zero)
-                    || !Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeJobList,
-                        jobHandles, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero)
-                    || !Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeHandleList,
-                        inheritedHandles, (IntPtr)(3 * IntPtr.Size), IntPtr.Zero, IntPtr.Zero))
-                {
-                    throw Native.Failure("configure renderer process attributes");
-                }
-
-                var startup = new Native.StartupInfoEx
-                {
-                    StartupInfo = new Native.StartupInfo
-                    {
-                        Cb = Marshal.SizeOf<Native.StartupInfoEx>(),
-                        Flags = StartfUseStdHandles,
-                        StandardInput = handles[0],
-                        StandardOutput = handles[1],
-                        StandardError = handles[2]
-                    },
-                    AttributeList = attributeBytes
-                };
-                var command = new List<string> { Path.Combine(runtime, "dotnet.exe"), Path.Combine(app, workerAssembly),
-                    "--windows-sandbox-worker", "--font", font };
-                if (workerArguments is not null) { command.AddRange(workerArguments); }
-                var commandLine = new System.Text.StringBuilder(string.Join(" ", command.Select(QuoteArgument)));
-                var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-                var environment = BuildEnvironment(runtime, temp, windows);
+                var handles = new[] { childInput.DangerousGetHandle(), childOutput.DangerousGetHandle(), childError.DangerousGetHandle() };
+                var capabilities = new Native.SecurityCapabilities { AppContainerSid = sid };
+                var attributeBytes = IntPtr.Zero;
+                var attributeListInitialized = false;
+                var size = IntPtr.Zero;
+                var jobHandle = job.DangerousGetHandle();
+                var jobHandles = Marshal.AllocHGlobal(IntPtr.Size);
+                var inheritedHandles = Marshal.AllocHGlobal(3 * IntPtr.Size);
+                var processInfo = default(Native.ProcessInformation);
                 try
                 {
-                    if (!Native.CreateProcessW(command[0], commandLine, IntPtr.Zero, IntPtr.Zero, true,
-                            CreateSuspended | CreateUnicodeEnvironment | ExtendedStartupInfoPresent | 0x08000000,
-                            environment, app, ref startup, out processInfo))
+                    Marshal.WriteIntPtr(jobHandles, jobHandle);
+                    for (var index = 0; index < handles.Length; index++)
                     {
-                        throw Native.Failure("start AppContainer renderer");
+                        Marshal.WriteIntPtr(inheritedHandles, index * IntPtr.Size, handles[index]);
                     }
+                    _ = Native.InitializeProcThreadAttributeList(IntPtr.Zero, 3, 0, ref size);
+                    if (size == IntPtr.Zero) { throw Native.Failure("size renderer process attributes"); }
+                    attributeBytes = Marshal.AllocHGlobal(size);
+                    if (!Native.InitializeProcThreadAttributeList(attributeBytes, 3, 0, ref size))
+                    {
+                        throw Native.Failure("initialize renderer process attributes");
+                    }
+                    attributeListInitialized = true;
+                    if (!Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeSecurityCapabilities,
+                            ref capabilities, (IntPtr)Marshal.SizeOf<Native.SecurityCapabilities>(), IntPtr.Zero, IntPtr.Zero)
+                        || !Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeJobList,
+                            jobHandles, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero)
+                        || !Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeHandleList,
+                            inheritedHandles, (IntPtr)(3 * IntPtr.Size), IntPtr.Zero, IntPtr.Zero))
+                    {
+                        throw Native.Failure("configure renderer process attributes");
+                    }
+
+                    var startup = new Native.StartupInfoEx
+                    {
+                        StartupInfo = new Native.StartupInfo
+                        {
+                            Cb = Marshal.SizeOf<Native.StartupInfoEx>(),
+                            Flags = StartfUseStdHandles,
+                            StandardInput = handles[0],
+                            StandardOutput = handles[1],
+                            StandardError = handles[2]
+                        },
+                        AttributeList = attributeBytes
+                    };
+                    var command = new List<string> { Path.Combine(runtime, "dotnet.exe"), Path.Combine(app, workerAssembly),
+                    "--windows-sandbox-worker", "--font", font };
+                    if (workerArguments is not null) { command.AddRange(workerArguments); }
+                    var commandLine = new System.Text.StringBuilder(string.Join(" ", command.Select(QuoteArgument)));
+                    var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                    var environment = BuildEnvironment(runtime, temp, windows);
+                    try
+                    {
+                        if (!Native.CreateProcessW(command[0], commandLine, IntPtr.Zero, IntPtr.Zero, true,
+                                CreateSuspended | CreateUnicodeEnvironment | ExtendedStartupInfoPresent | 0x08000000,
+                                environment, app, ref startup, out processInfo))
+                        {
+                            throw Native.Failure("start AppContainer renderer");
+                        }
+                    }
+                    finally { Marshal.FreeHGlobal(environment); }
+                    if (Native.ResumeThread(processInfo.Thread) == uint.MaxValue)
+                    {
+                        _ = Native.TerminateProcess(processInfo.Process, 1);
+                        throw Native.Failure("resume AppContainer renderer");
+                    }
+                    _ = Native.CloseHandle(processInfo.Thread);
+                    processInfo.Thread = IntPtr.Zero;
+                    var process = Process.GetProcessById(unchecked((int)processInfo.ProcessId));
+                    var input = new FileStream(parentInput, FileAccess.Write, 4096, isAsync: false);
+                    var output = new FileStream(parentOutput, FileAccess.Read, 4096, isAsync: false);
+                    var error = new FileStream(parentError, FileAccess.Read, 4096, isAsync: false);
+                    var worker = new WindowsRendererWorker(process, job, staging, profileName, sid, input, output, error);
+                    streamsOwnHandles = true;
+                    return worker;
                 }
-                finally { Marshal.FreeHGlobal(environment); }
-                if (Native.ResumeThread(processInfo.Thread) == uint.MaxValue)
+                catch
                 {
-                    _ = Native.TerminateProcess(processInfo.Process, 1);
-                    throw Native.Failure("resume AppContainer renderer");
+                    if (processInfo.Process != IntPtr.Zero)
+                    {
+                        _ = Native.TerminateProcess(processInfo.Process, 1);
+                        _ = Native.WaitForSingleObject(processInfo.Process, uint.MaxValue);
+                    }
+                    throw;
                 }
-                _ = Native.CloseHandle(processInfo.Thread);
-                processInfo.Thread = IntPtr.Zero;
-                var process = Process.GetProcessById(unchecked((int)processInfo.ProcessId));
-                var input = new FileStream(parentInput, FileAccess.Write, 4096, isAsync: false);
-                parentInput.SetHandleAsInvalid();
-                var output = new FileStream(parentOutput, FileAccess.Read, 4096, isAsync: false);
-                parentOutput.SetHandleAsInvalid();
-                var error = new FileStream(parentError, FileAccess.Read, 4096, isAsync: false);
-                parentError.SetHandleAsInvalid();
-                return new WindowsRendererWorker(process, job, staging, profileName, sid, input, output, error);
+                finally
+                {
+                    if (processInfo.Thread != IntPtr.Zero) { _ = Native.CloseHandle(processInfo.Thread); }
+                    if (processInfo.Process != IntPtr.Zero) { _ = Native.CloseHandle(processInfo.Process); }
+                    if (attributeBytes != IntPtr.Zero)
+                    {
+                        if (attributeListInitialized) { Native.DeleteProcThreadAttributeList(attributeBytes); }
+                        Marshal.FreeHGlobal(attributeBytes);
+                    }
+                    Marshal.FreeHGlobal(jobHandles);
+                    Marshal.FreeHGlobal(inheritedHandles);
+                }
             }
-            catch
+        }
+        finally
+        {
+            if (!streamsOwnHandles)
             {
-                if (processInfo.Process != IntPtr.Zero)
-                {
-                    _ = Native.TerminateProcess(processInfo.Process, 1);
-                    _ = Native.WaitForSingleObject(processInfo.Process, uint.MaxValue);
-                }
-                throw;
-            }
-            finally
-            {
-                if (processInfo.Thread != IntPtr.Zero) { _ = Native.CloseHandle(processInfo.Thread); }
-                if (processInfo.Process != IntPtr.Zero) { _ = Native.CloseHandle(processInfo.Process); }
-                if (attributeBytes != IntPtr.Zero)
-                {
-                    if (attributeListInitialized) { Native.DeleteProcThreadAttributeList(attributeBytes); }
-                    Marshal.FreeHGlobal(attributeBytes);
-                }
-                Marshal.FreeHGlobal(jobHandles);
-                Marshal.FreeHGlobal(inheritedHandles);
+                parentInput.Dispose();
+                parentOutput.Dispose();
+                parentError.Dispose();
             }
         }
     }
