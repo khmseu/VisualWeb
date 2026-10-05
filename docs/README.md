@@ -22,5 +22,6 @@
 Phases 1-9 provide scaffolding, tooling, platform services, core standards
 utilities, loading, static HTML/DOM/CSS, text/layout, CPU painting and a
 development-only browser shell. Phase 10a adds per-tab process separation;
-Phase 10b adds opt-in Linux x64 confinement; other targets, production isolation
+Phase 10b adds opt-in Linux x64 confinement, strengthened by phase-10c hard
+per-worker resource accounting; other targets, production isolation
 and broader standards remain later work.

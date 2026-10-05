@@ -93,7 +93,7 @@ namespace VisualWeb.Browser
             if (sandbox)
             {
                 if (!multiprocess) { throw new ArgumentException("--require-sandbox requires explicit multiprocess mode."); }
-                LinuxRendererSandbox.RequireSupport();
+                LinuxRendererResources.RequireSupport();
             }
             if (string.IsNullOrWhiteSpace(font)) { throw new ArgumentException("An explicit trusted --font path is required."); }
             if (backend is not (null or "x11" or "wayland" or "windows" or "dummy")) { throw new ArgumentException("Unsupported video backend."); }

@@ -86,7 +86,8 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Startup/render/exchange deadline | 30 seconds by default |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
-confinement must confirm `linux-bwrap-seccomp-v1`. This additive metadata
+confinement must confirm `linux-bwrap-seccomp-cgroup-v2`, including required hard
+resource accounting. This additive metadata
 requires protocol v2 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
+using VisualWeb.Platform.Linux.Sandbox;
 using Xunit;
 
 namespace VisualWeb.Browser.Tests;
@@ -148,6 +149,41 @@ public sealed class ProcessTests
         var options = BrowserLaunchOptions.Parse(["--development-multiprocess", "--require-sandbox", "--font", FontPath, "--renderer", RendererPath]);
         Assert.True(options.RequireSandbox);
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--require-sandbox", "--font", FontPath]));
+    }
+    [Fact]
+    public async Task HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        {
+            Assert.Throws<PlatformNotSupportedException>(LinuxRendererResources.RequireSupport);
+            return;
+        }
+        using var first = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        using var second = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await first.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        await second.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var unit = first.ResourceUnit!;
+        Assert.StartsWith("visualweb-renderer-", unit);
+        Assert.NotEqual(unit, second.ResourceUnit);
+        var secondPid = second.ProcessId;
+        first.Dispose();
+        Assert.Null(first.ResourceUnit);
+        Assert.Equal("Blue", (await second.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Title);
+        Assert.Equal(secondPid, second.ProcessId);
+        var query = new ProcessStartInfo("/usr/bin/systemctl")
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in new[] { "--user", "show", "--property=LoadState", "--value", unit }) { query.ArgumentList.Add(argument); }
+        using var state = Process.Start(query)!;
+        var output = state.StandardOutput.ReadToEndAsync(Cancellation);
+        var error = state.StandardError.ReadToEndAsync(Cancellation);
+        await state.WaitForExitAsync(Cancellation);
+        Assert.Equal(0, state.ExitCode);
+        Assert.Equal("", await error);
+        Assert.Equal("not-found", (await output).Trim());
     }
     [Fact]
     public void ExternalPixelFrameIsCopiedAndRejectsInvalidContract()

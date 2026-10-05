@@ -3,13 +3,13 @@ using System.Runtime.InteropServices;
 
 namespace VisualWeb.Platform.Linux.Sandbox;
 
-/// <summary>Fail-closed Linux x64 renderer bootstrap using bubblewrap and libseccomp.</summary>
+/// <summary>Fail-closed Linux x64 renderer bootstrap with required cgroup, namespace and seccomp limits.</summary>
 /// <remarks>References: bubblewrap, linux-seccomp, libseccomp, linux-resource-limits.
 /// <see href="https://github.com/containers/bubblewrap">bubblewrap</see> supplies required namespaces.
 /// The syscall filter is installed before the confined .NET runtime starts.</remarks>
 public static class LinuxRendererSandbox
 {
-    public const string Profile = "linux-bwrap-seccomp-v1";
+    public const string Profile = "linux-bwrap-seccomp-cgroup-v2";
     public const string Bubblewrap = "/usr/bin/bwrap";
 
     public static void RequireSupport()
@@ -22,7 +22,8 @@ public static class LinuxRendererSandbox
     }
 
     public static IReadOnlyList<string> Arguments(string application, string font, string runtime, int filterDescriptor,
-        string workerAssembly = "VisualWeb.Renderer.dll", IReadOnlyList<string>? workerArguments = null)
+        string workerAssembly = "VisualWeb.Renderer.dll", IReadOnlyList<string>? workerArguments = null,
+        string? resourceGroup = null)
     {
         RequireSupport();
         ArgumentOutOfRangeException.ThrowIfNegative(filterDescriptor);
@@ -57,6 +58,11 @@ public static class LinuxRendererSandbox
             args.AddRange(["--ro-bind", "/usr/lib64", "/usr/lib64", "--symlink", "usr/lib64", "/lib64"]);
         }
         if (File.Exists("/etc/ld.so.cache")) { args.AddRange(["--ro-bind", "/etc/ld.so.cache", "/etc/ld.so.cache"]); }
+        if (resourceGroup is not null)
+        {
+            LinuxRendererResources.VerifyLimits(resourceGroup);
+            args.AddRange(["--ro-bind", resourceGroup, "/resource-limits"]);
+        }
         args.AddRange([
             "--proc", "/proc", "--dev", "/dev", "--size", "67108864", "--tmpfs", "/tmp",
             "--remount-ro", "/proc", "--remount-ro", "/dev", "--remount-ro", "/",
@@ -72,6 +78,7 @@ public static class LinuxRendererSandbox
         IReadOnlyList<string>? workerArguments = null)
     {
         RequireSupport();
+        var resourceGroup = LinuxRendererResources.VerifyCurrent();
         var descriptor = Native.memfd_create("visualweb-seccomp", 0);
         if (descriptor < 0) { throw Native.Failure("create seccomp descriptor"); }
         try
@@ -82,7 +89,7 @@ public static class LinuxRendererSandbox
             Limit(7, 256); // RLIMIT_NOFILE.
             Limit(1, 64 * 1024 * 1024); // RLIMIT_FSIZE, also bounds private temporary files.
             Limit(8, 1024 * 1024); // RLIMIT_MEMLOCK for CoreCLR's write-barrier page.
-            var arguments = Arguments(application, font, RuntimeEnvironment.GetRuntimeDirectory(), descriptor, workerAssembly, workerArguments);
+            var arguments = Arguments(application, font, RuntimeEnvironment.GetRuntimeDirectory(), descriptor, workerAssembly, workerArguments, resourceGroup);
             var strings = arguments.Select(Marshal.StringToCoTaskMemUTF8).ToArray();
             var vector = Marshal.AllocHGlobal((strings.Length + 1) * IntPtr.Size);
             try
@@ -104,6 +111,7 @@ public static class LinuxRendererSandbox
     public static void VerifyWorker()
     {
         RequireSupportPlatform();
+        LinuxRendererResources.VerifyLimits("/resource-limits");
         var status = File.ReadAllLines("/proc/self/status");
         foreach (var expected in new[] { "NoNewPrivs:\t1", "Seccomp:\t2", "CapEff:\t0000000000000000" })
         {

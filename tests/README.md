@@ -38,10 +38,14 @@ The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
 budgets, strict JSON, opacity, truncation and cancellation.
 Native SDL browser smoke is explicit and separate from ordinary tests.
 Linux x64 browser integration also runs required-confinement workers, so it
-requires bubblewrap/libseccomp and unprivileged namespaces. Other targets assert
+requires bubblewrap/libseccomp, unprivileged namespaces and a systemd user manager
+with delegated cgroup v2 memory/pids/CPU controllers. Other targets assert
 unsupported fail-closed behavior. The explicit
 [LinuxSandboxSmoke](../tools/LinuxSandboxSmoke/) separately measures actual
 filesystem/network/process/namespace denials; it is not a conformance-data fetch.
+Its `--resources` mode additionally verifies kernel-accounted native OOM, task
+denial and CPU throttling within bounded owned scopes. Platform tests reject
+wrong/max kernel settings and unavailable manager launch without fallback.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">

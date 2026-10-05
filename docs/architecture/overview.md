@@ -93,6 +93,8 @@ Engine.Content stays offline. See the [shell guide](../browser-shell.md) and
 [process guide](../renderer-processes.md). Phase 10b adds optional required
 Linux x64 namespace/mount/seccomp confinement through the SDL-independent
 Platform.Linux.Sandbox bootstrap; see the [confinement guide](../linux-confinement.md).
+Phase 10c additionally requires verified kernel memory/swap/task/CPU limits
+in a separate owned systemd user scope per renderer, without global configuration.
 Windows/arm64 and production isolation remain unfinished; unsupported requests
 fail closed.
 The phase-1 project split is not itself process isolation or a sandbox.

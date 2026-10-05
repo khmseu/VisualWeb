@@ -168,8 +168,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Approved phase 10b adds Linux-first x64 renderer namespace/mount/seccomp
   confinement and actual denial probes; Windows/arm64 requests fail closed.
   See [exact guarantees](../docs/linux-confinement.md). This does **not** complete
-  phase 10: other native targets, total OS resource accounting and production
+  phase 10: other native targets and production
   isolation remain unfinished.
+  Approved phase 10c adds hard Linux per-worker cgroup v2 memory/swap/task/CPU
+  limits, verified before content, plus owned-scope cleanup and actual
+  kernel-counter exhaustion probes. Missing user-manager/controllers fail closed.
 - V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

@@ -33,6 +33,8 @@ Phase 10a provides process separation; phase 10b adds opt-in
 [Linux x64 renderer confinement](docs/linux-confinement.md). Windows/arm64,
 origin policy and production-safe browsing remain unfinished. Both modes are
 unsandboxed unless `--require-sandbox` is explicitly selected.
+Required Linux confinement includes per-worker hard cgroup memory/swap/task/CPU
+limits and needs a systemd user manager with the corresponding controllers.
 
 The [platform guide](docs/platform.md) describes window/input/OS services and
 explicit [native smoke checks](tools/PlatformSmoke/README.md).

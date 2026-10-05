@@ -72,7 +72,10 @@
   changes. Linux x64 uses required namespaces, read-only mounts, cleared environment
   and a default-deny libseccomp filter before content. Never add fallback or
   broad host mounts to make startup pass; test precise syscall/mount guarantees.
-  Windows/arm64 fail closed. Managed heap limits are not total OS memory quotas.
+  Windows/arm64 fail closed. Required Linux confinement now also requires
+  verified cgroup v2 memory/swap/task/CPU settings in an owned systemd user scope.
+  Managed heap limits are not OS memory quotas; preserve native resource probes
+  and targeted scope cleanup. Missing user-manager/controller support must fail closed.
   Run LinuxSandboxSmoke explicitly; ordinary standards tests remain offline.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script

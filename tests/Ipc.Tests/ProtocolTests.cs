@@ -27,7 +27,7 @@ public sealed class ProtocolTests
     {
         using var wire = new MemoryStream();
         var writer = new RendererChannel(Stream.Null, wire);
-        await writer.WriteAsync(new() { Kind = "hello", SandboxProfile = "linux-bwrap-seccomp-v1" }, cancellationToken: Cancellation);
+        await writer.WriteAsync(new() { Kind = "hello", SandboxProfile = "linux-bwrap-seccomp-cgroup-v2" }, cancellationToken: Cancellation);
         await writer.WriteAsync(Request, cancellationToken: Cancellation);
         var pixels = new byte[] { 1, 2, 3, 255, 4, 5, 6, 255 };
         var reply = new RendererMessage { Kind = "frame", Id = 1, PixelWidth = 2, PixelHeight = 1, Stride = 8, Title = "café", Status = "Ready" };
@@ -37,7 +37,7 @@ public sealed class ProtocolTests
         var reader = new RendererChannel(wire, Stream.Null);
         var handshake = (await reader.ReadAsync(Cancellation))!.Message;
         Assert.Equal("hello", handshake.Kind);
-        Assert.Equal("linux-bwrap-seccomp-v1", handshake.SandboxProfile);
+        Assert.Equal("linux-bwrap-seccomp-cgroup-v2", handshake.SandboxProfile);
         var request = (await reader.ReadAsync(Cancellation))!.Message;
         Assert.Equal(Request.Html, request.Html); Assert.Equal(Request.Url, request.Url);
         Assert.Equal(Request.Diagnostics, request.Diagnostics);

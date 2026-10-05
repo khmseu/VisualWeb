@@ -1,9 +1,11 @@
-# Phase 10b: Linux renderer confinement
+# Linux renderer confinement
 
 This stage implements the approved **Linux-first** renderer confinement profile.
 It is not a production-safe browser or completion of all cross-platform
 phase-10 isolation. Windows and Linux arm64 sandbox-required launches fail
 closed. Existing explicit local/unsandboxed development modes remain available.
+Phase 10c strengthens required confinement with per-worker cgroup v2 memory,
+swap, task and CPU limits; see [hard resource accounting](#hard-resource-accounting).
 
 ## Run and prerequisites
 
@@ -13,6 +15,10 @@ names, and permission to create unprivileged user, mount, PID, network, IPC,
 UTS and cgroup namespaces. Older/missing tools or restricted kernel policies
 cause visible startup failure, never an unsandboxed retry. No root elevation,
 setuid configuration or machine-wide kernel changes are performed by the app.
+Hard resource accounting additionally requires systemd-run/systemctl at their
+standard `/usr/bin` paths, a reachable systemd **user** manager, cgroup v2 and
+delegated memory, pids and CPU controllers. Both the CLI/API and bootstrap
+fail closed if the required controls cannot be installed and read back.
 
 Build the solution, then run:
 
@@ -43,8 +49,9 @@ remain outside the renderer sandbox.
 OS-specific library with no SDL, browser or engine dependency. A new project
 avoids importing window backends/native UI assets into the worker.
 
-1. The browser launches its trusted renderer bootstrap with cleared environment,
-   disabled .NET diagnostics and private stdio. It has not sent page content.
+1. The browser launches the trusted bootstrap in a unique transient systemd
+   user scope with required cgroup limits, cleared environment, disabled .NET
+   diagnostics and private stdio. It has not sent page content.
 2. The bootstrap exports a libseccomp BPF filter to an anonymous descriptor,
    sets resource limits, and `execv`s the fixed bubblewrap executable without
    shell command construction. Native handles and filters are released on failure.
@@ -53,18 +60,20 @@ avoids importing window backends/native UI assets into the worker.
    filter before executing the fresh .NET worker runtime.
 4. The worker checks `NoNewPrivs: 1`, `Seccomp: 2`, zero effective capabilities
    and expected mount/runtime settings **before** opening its native page font.
-   Only then does it send the profile-confirmed handshake.
-5. The browser requires the exact `linux-bwrap-seccomp-v1` profile. An absent/
+   It also verifies read-only kernel cgroup limits. Only then does it send the
+   profile-confirmed handshake.
+5. The browser requires the exact `linux-bwrap-seccomp-cgroup-v2` profile. An absent/
    different profile, initialization failure or deadline invalidates the worker.
    No fallback is attempted.
 
 The profile string is a configuration confirmation from the **trusted worker
 binary**, not remote cryptographic attestation or proof from untrusted code.
-The process PID owned by the browser becomes bubblewrap; its confined worker
-has a separate namespace PID. `--die-with-parent` terminates the nested worker
-if bubblewrap or the browser dies. Existing tab-close/cancel/deadline/crash
-supervision still terminates only owned processes; the next render reruns the
-entire confinement bootstrap.
+The browser owns the scope launch process and tracks its unique scope unit.
+The bootstrap becomes bubblewrap; its worker has a separate namespace PID.
+`--die-with-parent` terminates the nested worker if bubblewrap or its parent
+dies. Tab-close/cancel/deadline/crash cleanup stops the **owned unit**, then
+terminates any remaining owned launcher tree. The next render creates a fresh
+unit and reruns the complete resource/confinement bootstrap.
 
 ## Filesystem and environment
 
@@ -82,6 +91,7 @@ directory or host temporary directory.
 | `/lib`, optional `/lib64` | Symlinks into the mounted system library trees |
 | `/etc/ld.so.cache` | Native loader cache only, read-only when present |
 | `/proc` | Private PID namespace procfs, read-only |
+| `/resource-limits` | Only this worker's kernel cgroup directory, read-only |
 | `/dev` | Bubblewrap's synthetic minimal devices, read-only mount |
 | `/tmp` | Private 64 MiB tmpfs, writable, discarded on worker exit |
 | `/` | Read-only mount skeleton |
@@ -128,12 +138,53 @@ namespace/mount policy.
 | .NET configured processor count | 2 |
 | Per-exchange startup/render deadline | Existing 30 seconds |
 
-**There is no cgroup-enforced total native/JIT/RSS memory, CPU or thread quota.**
-The managed heap setting is not an OS memory-security guarantee; input/frame
-budgets and deadlines do not substitute for whole-process resource accounting.
+Phase 10b alone had no cgroup-enforced total native/JIT memory, CPU or task quota.
+Required confinement now enforces the following additional phase-10c limits.
+The managed heap setting is not the OS memory guarantee; input/frame budgets
+and deadlines do not substitute for cgroup accounting.
 Kernel vulnerabilities, native exploit resistance, syscall argument tightening,
-production font/runtime supply-chain policy, V8 compatibility and further
-resource confinement require future work.
+production font/runtime supply-chain policy, V8 compatibility and broader
+isolation still require future work.
+
+## Hard resource accounting
+
+| cgroup control | Required value / meaning |
+| --- | --- |
+| `memory.max` | 536870912 bytes (512 MiB) |
+| `memory.swap.max` | 0 (no cgroup swap allowance) |
+| `pids.max` | 64 tasks, including threads and trusted bootstrap/reaper |
+| `cpu.max` | `100000 100000`: at most one CPU's bandwidth per 100 ms period |
+
+The transient scope applies before bootstrap execution and covers its entire
+descendant tree: native resident allocation, JIT/runtime memory, page cache,
+private tmpfs and managed heaps contribute to kernel memory accounting. This
+is **per worker**, not an aggregate browser budget; chrome, loaders and other
+tabs have separate ownership. Kernel `memory.max` can have documented transient
+overshoots and reclaim behavior; it is not a virtual-address-space reservation
+limit or a guarantee that every byte of all kernel objects is charged.
+
+The bootstrap requires unified membership in its generated
+`visualweb-renderer-<unique>.scope`, reads the exact settings, then mounts only
+that scope directory read-only for the worker to verify again. The scope
+launcher needs the user's XDG/DBus manager transport; bubblewrap clears these
+variables and mounts no session socket, so page code cannot reconfigure limits.
+Missing manager/controller support, wrong/max values and out-of-scope direct
+bootstrap invocation fail **before** page/native font initialization.
+
+OOMPolicy is explicitly `continue`: the kernel kills the memory-heavy task
+inside its bounded scope; browser EOF/crash handling then stops the entire
+owned scope. There is no request to terminate the user's slice or other tabs.
+Scope cleanup uses bounded five-second systemctl commands and treats a missing
+collected unit as success only after checking `LoadState=not-found`. Other
+cleanup failures are surfaced; they are never silently reported as success.
+`--collect` removes failed/inactive units; no global systemd configuration changes
+or administrator services are installed.
+
+Tasks are limited by the kernel, not just .NET processor settings. CPUQuota is
+a rate limit, not an accumulated lifetime CPU-seconds cap. Existing rendering
+deadlines remain necessary; idle-worker lifetime and browser-wide scheduling
+policy are not introduced here. The strengthened profile rejects older phase-10b
+workers even though IPC metadata remains v2.
 
 ## Verification
 
@@ -148,6 +199,8 @@ temporary-file read/write must still work.
 ```sh
 dotnet run --project tools/LinuxSandboxSmoke -- \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf
+dotnet run --project tools/LinuxSandboxSmoke -- \
+  --resources --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
   --development-multiprocess --require-sandbox \
   --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
@@ -165,6 +218,12 @@ Official sources `bubblewrap`, `linux-seccomp`, `libseccomp`,
 `linux-resource-limits` and .NET host/process documents are locally cached and
 refreshed independently from tests. No test fetches standards or remote pages.
 See the [process guide](renderer-processes.md) for transactional ownership.
+The resource mode uses bounded, owned scopes and verifies **kernel evidence**:
+`pids.events max` increments when thread creation is denied,
+`cpu.stat nr_throttled` increases under concurrent work, and unmanaged touched
+pages trigger `memory.events oom_kill`. A trusted supervisor in the same scope
+survives to read the OOM counter; each probe scope is stopped/collected afterwards.
+No host-wide pressure or unrestricted allocation test is performed.
 
 Origin/CORS/CSP and site isolation, full web standards, Windows confinement,
 Linux arm64 and production-safe hostile browsing remain unfinished.
@@ -188,3 +247,25 @@ remain passing. A concurrent renderer-heavy validation run exposed the old
 
 These results verify the documented Linux profile on this host, not Windows,
 arm64, Wayland shell input, production-safe browsing or a hard native-memory cap.
+
+### Phase-10c validation outcome
+
+Validated on Linux x64: all **41 projects** build and **11,659 tests** pass with
+no failures or skips (Browser 64, Platform 22, IPC 18; engine/cache suites remain
+passing). First-party formatting and editor diagnostics are clean; all **53
+official cached references** are independently fresh.
+
+Real scoped workers return exact pixels, survive reload/restart and clean up
+their unique units without terminating another tab. Missing user-manager
+transport fails before starting the target command. Wrong/unlimited kernel
+values and direct unscoped bootstrap are rejected.
+
+The resource probes pass with kernel evidence for task denial, CPU throttling
+and resident native-memory OOM while the supervisor survives. All previous
+file/network/process/namespace denial probes remain passing, including denial
+of writes to the resource-control mount. Confined X11 and native-apphost dummy
+shell smoke pass; existing unsandboxed/local smoke remains passing. No owned
+renderer/probe processes or transient scopes remain after validation.
+
+This closes the documented Linux per-worker hard-resource gap; it does not
+certify other targets, production web security or a whole-browser resource budget.

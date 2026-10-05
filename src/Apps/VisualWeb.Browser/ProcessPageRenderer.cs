@@ -17,8 +17,9 @@ public sealed class RendererProcessException(string message) : IOException(messa
 /// Canceled/failed exchanges kill only this owned worker; the next request launches a replacement.</remarks>
 public sealed class ProcessPageRenderer : IPageRenderer
 {
-    private sealed class Connection(Process process) : IDisposable
+    private sealed class Connection(Process process, LinuxRendererResources? resources) : IDisposable
     {
+        internal LinuxRendererResources? Resources { get; } = resources;
         internal Process Process { get; } = process;
         internal RendererChannel Channel { get; } = new(process.StandardOutput.BaseStream, process.StandardInput.BaseStream);
         internal Task? Diagnostics { get; set; }
@@ -31,13 +32,17 @@ public sealed class ProcessPageRenderer : IPageRenderer
         internal string Tail { get { lock (sync) { return tail; } } }
         public void Dispose()
         {
-            if (!Process.HasExited)
+            try { Resources?.Stop(); }
+            finally
             {
-                try { Process.Kill(entireProcessTree: true); }
-                catch (InvalidOperationException) when (Process.HasExited) { }
-                catch (Win32Exception) when (Process.HasExited) { }
+                if (!Process.HasExited)
+                {
+                    try { Process.Kill(entireProcessTree: true); }
+                    catch (InvalidOperationException) when (Process.HasExited) { }
+                    catch (Win32Exception) when (Process.HasExited) { }
+                }
+                Process.Dispose();
             }
-            Process.Dispose();
         }
     }
     private readonly string rendererPath;
@@ -52,11 +57,12 @@ public sealed class ProcessPageRenderer : IPageRenderer
     private long nextId;
     private readonly bool requireSandbox;
     public int? ProcessId { get { lock (sync) { return connection?.Process.Id; } } }
+    public string? ResourceUnit { get { lock (sync) { return connection?.Resources?.Unit; } } }
 
     public ProcessPageRenderer(string rendererPath, string fontPath, TimeSpan? timeout = null,
         bool requireSandbox = false, string? dotnetPath = null)
     {
-        if (requireSandbox) { LinuxRendererSandbox.RequireSupport(); }
+        if (requireSandbox) { LinuxRendererResources.RequireSupport(); }
         this.requireSandbox = requireSandbox;
         ArgumentException.ThrowIfNullOrWhiteSpace(rendererPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
@@ -169,8 +175,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         info.ArgumentList.Add(requireSandbox ? "--linux-sandbox-bootstrap" : "--development-unsandboxed");
         info.ArgumentList.Add("--font"); info.ArgumentList.Add(fontPath);
-        var process = Process.Start(info) ?? throw new RendererProcessException("Renderer process did not start.");
-        var owner = new Connection(process);
+        var resources = requireSandbox ? new LinuxRendererResources() : null;
+        var process = Process.Start(resources?.Wrap(info) ?? info) ?? throw new RendererProcessException("Renderer process did not start.");
+        var owner = new Connection(process, resources);
         owner.Diagnostics = DrainDiagnostics(owner);
         return owner;
     }

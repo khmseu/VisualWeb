@@ -45,6 +45,7 @@ entry (it still uses conditional requests where possible).
 | `dotnet-process-pipes`, `dotnet-stream-read` | Private renderer pipes, continuous diagnostic draining and exact framed reads |
 | `dotnet-host-environment` | Runtime host/root selection and deployment configuration |
 | `bubblewrap`, `linux-seccomp`, `libseccomp`, `linux-resource-limits` | Linux renderer namespace/mount isolation, exact syscall filter and resource limits |
+| `linux-cgroup-v2`, `systemd-run`, `systemd-resource-control` | Hard per-worker memory/swap/task/CPU accounting and transient scope lifecycle |
 
 Add further official standards and native API references as their interfaces
 are introduced. CSS drafts and living standards change: cite the exact section,

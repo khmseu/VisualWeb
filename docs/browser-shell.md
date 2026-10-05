@@ -11,6 +11,8 @@ wire limits, deadlines, crash/restart behavior and unfinished confinement.
 Phase 10b adds opt-in [Linux x64 confinement](linux-confinement.md); without
 `--require-sandbox`, both modes remain unsandboxed. Windows/arm64 sandbox
 requests fail closed.
+Required Linux confinement includes phase-10c hard per-worker cgroup resource
+limits; unavailable user-manager/controller support also fails closed.
 
 ## Run it
 
