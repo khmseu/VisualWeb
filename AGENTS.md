@@ -91,6 +91,9 @@
 - Read the [scripting guide](docs/scripting.md) before V8 work. Preserve private
   thread-owned isolates, exact primitive copying and invalidation on interruption;
   never expose CLR host objects or weaken OS confinement for native startup.
+  Classic execution preserves native global lexical state; batches snapshot
+  all source budgets before running in order under one shared deadline. Do not
+  replace this with wrapped eval or imply rollback after script errors.
   Script scheduling/DOM/Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

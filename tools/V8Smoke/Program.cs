@@ -44,7 +44,10 @@ try
             ?? throw new InvalidOperationException("Unsupported .NET runtime directory layout.");
         var launch = new ProcessStartInfo(Path.Combine(root.FullName, "dotnet"))
         {
-            UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            RedirectStandardInput = true
         };
         foreach (var argument in new[] { Path.Combine(AppContext.BaseDirectory, "VisualWeb.V8Smoke.dll"),
             "--linux-sandbox-bootstrap", "--font", Path.GetFullPath(probeFont) }) { launch.ArgumentList.Add(argument); }
@@ -91,6 +94,9 @@ static void Probe()
     Check(first.Evaluate("[typeof host,typeof clr,typeof System,typeof document,typeof fetch,typeof require].join(',')").Text
         == "undefined,undefined,undefined,undefined,undefined,undefined", "CLR/browser bindings leaked.");
     Check(first.Evaluate("9007199254740993n").Text == "9007199254740993", "BigInt precision was lost.");
+    first.ExecuteClassicBatch(["let classicValue = 20; const increment = 22;", "classicValue += increment;"]);
+    Check(first.Evaluate("classicValue").Number == 42, "Classic-script global lexical state was not retained.");
+    Check(second.Evaluate("typeof classicValue").Text == "undefined", "Classic-script state crossed isolates.");
     Check(first.Evaluate("'V8'.repeat(8192)").Text!.Length == V8ScriptHost.MaxResultCharacters, "Exact result budget failed.");
     try
     {
@@ -99,7 +105,7 @@ static void Probe()
     }
     catch (ScriptExecutionException) { }
     using var bounded = new V8ScriptHost(TimeSpan.FromMilliseconds(150));
-    try { bounded.Evaluate("while (true) {}"); throw new InvalidOperationException("Infinite script escaped its deadline."); }
+    try { bounded.ExecuteClassicBatch(["let prefix = 1;", "while (true) {}"]); throw new InvalidOperationException("Infinite script escaped its batch deadline."); }
     catch (ScriptLimitException exception) when (exception.Message.Contains("deadline", StringComparison.Ordinal)) { }
     using var recovered = new V8ScriptHost();
     Check(recovered.Evaluate("42").Number == 42, "Fresh V8 isolate failed after interruption.");
@@ -112,7 +118,7 @@ static void Probe()
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
-    Console.WriteLine("PASS: native V8 primitives, private isolates, no CLR/browser bindings, exact result/external-allocation limits, monitored heap interruption, infinite-loop deadline and fresh-isolate recovery.");
+    Console.WriteLine("PASS: native V8 primitives, private isolates, ordered classic scripts with persistent lexical state, no CLR/browser bindings, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
 }
 
 static void Check(bool condition, string message)

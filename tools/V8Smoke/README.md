@@ -17,6 +17,9 @@ or job. The supplied trusted font is a launcher prerequisite, not loaded by V8.
 
 Measures private isolates, precise primitives, no CLR/browser globals, copied
 result and external-buffer limits, monitored heap invalidation, infinite-script
-deadlines and fresh-isolate recovery. Linux arm64 confinement remains unsupported;
-native Windows/arm64 evidence requires those hosts. See the
+deadlines and fresh-isolate recovery.
+Classic-script probes additionally verify persistent lexical bindings, isolate
+separation and whole-batch deadline interruption.
+Linux arm64 confinement remains unsupported; native Windows/arm64 evidence
+requires those hosts. See the
 [scripting guide](../../docs/scripting.md) for guarantees and limitations.

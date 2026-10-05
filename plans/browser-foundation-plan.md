@@ -182,6 +182,9 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Approved phase 11a uses ClearScript/V8 for a bounded private-isolate host
   foundation, native asset deployment and fail-closed confinement probes.
   Browser page scripting is still deferred; no DOM/event-loop behavior is implied.
+  Approved phase 11b adds native classic-script global lexical persistence and
+  prevalidated ordered batches under one deadline, without page execution or
+  HTML scheduling/DOM bindings.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

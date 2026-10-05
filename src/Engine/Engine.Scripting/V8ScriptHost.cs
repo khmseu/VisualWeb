@@ -13,6 +13,8 @@ public sealed class V8ScriptHost : IDisposable
 {
     public const int MaxSourceCharacters = 64 * 1024;
     public const int MaxResultCharacters = 16 * 1024;
+    public const int MaxBatchScripts = 64;
+    public const int MaxBatchSourceCharacters = 256 * 1024;
     public const ulong MaxArrayBufferBytes = 16 * 1024 * 1024;
     public const ulong MonitoredHeapBytes = 32 * 1024 * 1024;
     private readonly int thread = Environment.CurrentManagedThreadId;
@@ -73,21 +75,75 @@ public sealed class V8ScriptHost : IDisposable
 
     public ScriptValue Evaluate(string source, CancellationToken cancellationToken = default)
     {
-        Check();
-        if (poisoned) { throw new InvalidOperationException("Interrupted V8 host is invalid; dispose it and create a fresh isolate."); }
+        CheckUsable();
+        ValidateSource(source);
+        return Run(() => Copy(evaluate.InvokeAsFunction(source)), cancellationToken);
+    }
+
+    /// <summary>Execute one classic script in the context's persistent global environment.</summary>
+    /// <remarks>Spec: ecmascript; <see href="https://tc39.es/ecma262/#sec-scriptevaluation">ScriptEvaluation</see>.
+    /// Completion values are deliberately discarded; use Evaluate for copied primitive observations.</remarks>
+    public void ExecuteClassic(string source, CancellationToken cancellationToken = default)
+    {
+        CheckUsable();
+        ValidateSource(source);
+        Run(() => { engine.Execute(source); return 0; }, cancellationToken);
+    }
+
+    /// <summary>Execute a prevalidated snapshot of classic scripts in order under one deadline.</summary>
+    /// <remarks>Spec: ecmascript; <see href="https://tc39.es/ecma262/#sec-scriptevaluation">ScriptEvaluation</see>.
+    /// Stops at the first error; earlier side effects are not rolled back. This is not HTML scheduling.</remarks>
+    public void ExecuteClassicBatch(IReadOnlyList<string> sources, CancellationToken cancellationToken = default)
+    {
+        CheckUsable();
+        ArgumentNullException.ThrowIfNull(sources);
+        if (sources.Count > MaxBatchScripts) { throw new ScriptLimitException("Classic-script batch count limit exceeded."); }
+        var snapshot = new string[sources.Count];
+        var characters = 0;
+        for (var index = 0; index < snapshot.Length; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var source = sources[index];
+            ValidateSource(source);
+            characters = checked(characters + source.Length);
+            if (characters > MaxBatchSourceCharacters) { throw new ScriptLimitException("Classic-script batch character limit exceeded."); }
+            snapshot[index] = source;
+        }
+        Run(() =>
+        {
+            foreach (var source in snapshot)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                engine.Execute(source);
+            }
+            return 0;
+        }, cancellationToken);
+    }
+
+    private static void ValidateSource(string source)
+    {
         ArgumentNullException.ThrowIfNull(source);
         if (source.Length > MaxSourceCharacters) { throw new ScriptLimitException("Script source character limit exceeded."); }
+    }
+
+    private T Run<T>(Func<T> execute, CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var interrupt = deadline.Token.Register(engine.Interrupt);
         deadline.CancelAfter(timeout);
         try
         {
-            var value = evaluate.InvokeAsFunction(source);
-            deadline.CancelAfter(Timeout.InfiniteTimeSpan);
-            interrupt.Dispose();
+            T result;
+            try { result = execute(); }
+            finally
+            {
+                // Drain an in-flight interrupt before returning or preserving a nonfatal-error context.
+                deadline.CancelAfter(Timeout.InfiniteTimeSpan);
+                interrupt.Dispose();
+            }
             deadline.Token.ThrowIfCancellationRequested();
-            return Copy(value);
+            return result;
         }
         catch (Exception exception) when (exception is ScriptInterruptedException or OperationCanceledException)
         {
@@ -99,6 +155,12 @@ public sealed class V8ScriptHost : IDisposable
         }
         catch (ScriptEngineException exception)
         {
+            if (deadline.IsCancellationRequested)
+            {
+                poisoned = true;
+                if (cancellationToken.IsCancellationRequested) { throw new OperationCanceledException("V8 execution canceled; isolate invalidated.", exception, cancellationToken); }
+                throw new ScriptLimitException("V8 execution deadline exceeded; isolate invalidated.", exception);
+            }
             if (exception.IsFatal) { poisoned = true; }
             throw new ScriptExecutionException("V8 execution failed: " + Bounded(exception.Message), exception);
         }
@@ -136,6 +198,11 @@ public sealed class V8ScriptHost : IDisposable
     {
         if (thread != Environment.CurrentManagedThreadId) { throw new InvalidOperationException("V8 host must stay on its creating thread."); }
         ObjectDisposedException.ThrowIf(disposed, this);
+    }
+    private void CheckUsable()
+    {
+        Check();
+        if (poisoned) { throw new InvalidOperationException("Interrupted V8 host is invalid; dispose it and create a fresh isolate."); }
     }
     public void Dispose()
     {

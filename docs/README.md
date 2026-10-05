@@ -30,3 +30,5 @@ development profile with native x64/arm64 validation. Production isolation
 and broader standards remain later work.
 Phase 11a adds the bounded ClearScript/V8 host and native confinement probes,
 without enabling page scripts or changing the static rendering pipeline.
+Phase 11b adds persistent classic-script global lexical state and bounded
+ordered batches; page execution and HTML script scheduling remain deferred.

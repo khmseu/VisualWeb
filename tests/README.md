@@ -38,7 +38,10 @@ The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
 budgets, strict JSON, opacity, truncation and cancellation.
 The [scripting suite](Engine.Scripting.Tests/) runs native V8 primitive/type
 copying, intrinsic-tampering, isolate separation, source/result/stack/buffer
-limits, thread ownership and deadline/cancellation tests. The explicit
+limits, thread ownership and deadline/cancellation tests.
+Classic-script tests additionally verify global lexical/strict/TDZ semantics,
+bounded batch snapshots/order/failures and whole-batch invalidation.
+The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.
 Native SDL browser smoke is explicit and separate from ordinary tests.

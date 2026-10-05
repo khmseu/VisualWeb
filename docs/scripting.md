@@ -1,4 +1,4 @@
-# V8 host foundation (phase 11a)
+# V8 host and classic-script foundation (phases 11a–11b)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -16,11 +16,27 @@ the creating thread. Cancellation may interrupt from another thread; it does
 not grant other threads access to the engine. No engines, DOM nodes, script
 objects or host handles may cross tabs/processes.
 
-The only entry point evaluates bounded source through a private function's
-captured **indirect eval**. Script global properties and `var` declarations may
-persist in that context; eval-local `let`/`const` declarations do not implement
-HTML's persistent script-global lexical environment. This is a host probe API,
-not the future HTML classic-script evaluation algorithm.
+The primitive observation entry point, `Evaluate`, evaluates bounded source
+through a private function's captured **indirect eval**. Its eval-local
+`let`/`const` declarations do not persist, and strict eval's `var` bindings remain
+eval-local. It can observe lexical bindings established by classic execution.
+
+Phase 11b adds `ExecuteClassic` and `ExecuteClassicBatch`, which use native
+script execution in the context's persistent **global lexical environment**.
+Global `let`/`const`/class bindings persist between scripts without becoming
+global-object properties. Native global declaration checks, strict mode,
+redeclaration failures, temporal dead zones and runtime errors are preserved.
+Completion values are deliberately discarded, avoiding native-object conversion
+or arbitrary serialization. Use `Evaluate` only to observe copied primitives.
+
+Batches snapshot and validate **all input/count/character budgets** before any
+script executes, then run scripts in caller order under **one shared deadline**.
+This validation does not precompile later scripts: syntax, declaration and
+runtime errors stop execution at that script. Earlier effects (and effects
+before a runtime error) are not rolled back; later scripts never run. Empty
+batches are valid. A changed caller collection is not reread during execution.
+This foundation is not HTML script preparation, parser blocking, scheduling,
+error-event reporting, navigation lifecycle or an event loop.
 
 Results are copied before ClearScript's managed conversion:
 
@@ -48,9 +64,11 @@ Native ECMAScript built-ins are not a browser event loop or a sandbox.
 
 | Bound | Value |
 | --- | ---: |
-| Input UTF-16 characters per evaluation | 65,536 |
+| Input UTF-16 characters per evaluation/classic script | 65,536 |
+| Classic scripts per batch | 64 |
+| Aggregate UTF-16 characters per batch | 262,144 |
 | Copied String/BigInt UTF-16 characters | 16,384 |
-| Evaluation deadline | 2 seconds by default; configurable `(0, 30]` seconds |
+| Evaluation/single-script/whole-batch deadline | 2 seconds by default; configurable `(0, 30]` seconds |
 | Monitored V8 heap | 32 MiB, sampled every 10 ms |
 | Old-space constraint | 128 MiB, no on-demand expansion |
 | New-space constraint | 16 MiB |
@@ -62,6 +80,9 @@ cancellation, deadline interruption or fatal engine error invalidates the
 host; dispose it and create a fresh isolate rather than resuming partially
 executed state. Normal syntax/runtime errors and unsupported/oversized return
 values are explicit exceptions but leave the context available.
+All execution entry points share the same cancellation/invalidation path.
+Interrupt callbacks are drained on success **and failure** before an operation
+returns, preventing a late callback from interrupting later execution.
 
 ClearScript reports monitored heap exhaustion as a fatal ScriptEngineException,
 wrapped by ScriptExecutionException; the host refuses subsequent evaluation.
@@ -80,7 +101,8 @@ search path or a dependency on a platform backend. The dedicated
 [V8Smoke](../tools/V8Smoke/) tool composes the host with the existing confinement
 launchers. It verifies actual evaluation, isolate separation, primitive limits,
 external allocation rejection, monitored heap invalidation, infinite-loop
-interruption and fresh-isolate recovery.
+interruption and fresh-isolate recovery. Phase 11b also probes native classic
+lexical persistence/isolate separation and whole-batch deadline interruption.
 
 ```sh
 dotnet build VisualWeb.slnx
@@ -118,3 +140,13 @@ cached/fresh, and no owned V8/renderer workers or resource scopes remain.
 
 Linux arm64 and Windows x64/arm64 native assets are present in deployment and
 their CI checks are wired, but were not executed on this Linux x64 host.
+
+## Phase-11b validation outcome
+
+On Linux x64, all **45 projects build** and **37 scripting tests pass** without
+failures or skips (24 existing host tests and 13 classic-script cases). Local
+and unchanged required-confinement V8 probes pass, including persistent global
+lexical state, isolate separation, monitored heap invalidation and whole-batch
+deadline recovery. Changed-file formatting and editor diagnostics are clean.
+No browser rendering or IPC behavior changes were made; native Windows/ARM
+evidence still requires the already-wired target CI.
