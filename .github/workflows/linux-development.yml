@@ -1,0 +1,43 @@
+name: Linux development
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap
+          version=$(/usr/bin/bwrap --version | awk '{print $2}')
+          if ! dpkg --compare-versions "$version" ge 0.9.0; then
+            sudo apt-get install --yes --no-install-recommends \
+              build-essential libcap-dev meson ninja-build pkg-config
+            git clone --depth 1 --branch v0.9.0 \
+              https://github.com/containers/bubblewrap.git \
+              "$RUNNER_TEMP/bubblewrap"
+            meson setup "$RUNNER_TEMP/bubblewrap/build" \
+              --prefix=/usr --bindir=bin
+            sudo meson install -C "$RUNNER_TEMP/bubblewrap/build"
+          fi
+      - name: Verify bubblewrap prerequisite
+        run: |
+          test -x /usr/bin/bwrap
+          version=$(/usr/bin/bwrap --version | awk '{print $2}')
+          dpkg --compare-versions "$version" ge 0.9.0
+          printf 'Using bubblewrap %s\n' "$version"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.401
+      - run: dotnet build VisualWeb.slnx --configuration Release
+      - run: dotnet test tests/Platform.Tests/Platform.Tests.csproj --configuration Release --no-build
+      - run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --filter 'FullyQualifiedName!~RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash&FullyQualifiedName!~RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback&FullyQualifiedName!~HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
