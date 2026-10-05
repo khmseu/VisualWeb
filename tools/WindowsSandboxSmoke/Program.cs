@@ -37,10 +37,11 @@ try
         RuntimeEnvironment.GetRuntimeDirectory(),
         Path.GetFileName(Assembly.GetExecutingAssembly().Location),
         ["--probe-worker", "--canary", canary, "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)]);
-    using var writer = new StreamWriter(worker.Input, leaveOpen: true);
+    using var writer = new StreamWriter(worker.Input, new System.Text.UTF8Encoding(false), 1024, leaveOpen: true);
     await writer.WriteLineAsync(worker.ProfileStoragePath);
     await writer.FlushAsync();
-    var diagnostics = worker.Error.ReadToEndAsync();
+    using var reader = new StreamReader(worker.Error, System.Text.Encoding.UTF8, true, 1024, leaveOpen: true);
+    var diagnostics = reader.ReadToEndAsync();
     using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
     try
     {
@@ -78,7 +79,8 @@ static async Task<int> ProbeWorker(string[] arguments)
         return 2;
     }
     WindowsRendererSandbox.VerifyWorker();
-    var profileStorage = Console.ReadLine()
+    using var reader = new StreamReader(Console.OpenStandardInput(), System.Text.Encoding.UTF8, false, 1024, leaveOpen: true);
+    var profileStorage = await reader.ReadLineAsync()
         ?? throw new InvalidOperationException("Profile storage path was not supplied.");
     DeniedRead(canary);
     DeniedWrite(AppContext.BaseDirectory, "app-write-probe");
@@ -109,11 +111,11 @@ static void DeniedWrite(string directory, string name)
     try
     {
         File.WriteAllText(path, "must be denied");
-        File.Delete(path);
-        throw new InvalidOperationException("Renderer storage was writable: " + directory);
     }
-    catch (UnauthorizedAccessException) { }
-    catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19) { }
+    catch (UnauthorizedAccessException) { return; }
+    catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19) { return; }
+    File.Delete(path);
+    throw new InvalidOperationException("Renderer storage was writable: " + directory);
 }
 
 static void DeniedProcessStart()

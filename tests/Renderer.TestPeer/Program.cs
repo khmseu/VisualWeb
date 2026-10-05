@@ -142,13 +142,14 @@ return 0;
 
 static string ProbeWindowsMemoryLimit()
 {
-    var allocations = new List<IntPtr>();
+    var allocations = new IntPtr[128];
+    var allocationCount = 0;
     try
     {
-        for (var block = 0; block < 128; block++)
+        for (var block = 0; block < allocations.Length; block++)
         {
             var pointer = Marshal.AllocHGlobal(8 * 1024 * 1024);
-            allocations.Add(pointer);
+            allocations[allocationCount++] = pointer;
             for (var offset = 0; offset < 8 * 1024 * 1024; offset += 4096)
             {
                 Marshal.WriteByte(pointer, offset, 1);
@@ -163,6 +164,6 @@ static string ProbeWindowsMemoryLimit()
     }
     finally
     {
-        foreach (var pointer in allocations) { Marshal.FreeHGlobal(pointer); }
+        for (var index = 0; index < allocationCount; index++) { Marshal.FreeHGlobal(allocations[index]); }
     }
 }

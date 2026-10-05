@@ -12,7 +12,7 @@ explicitly development-only, not isolated production browsing.
 | [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and generic processes | Platform.Sdl; renderer confinement is a separate module |
 | [Platform.Linux.Sandbox](../src/Platform/Platform.Linux.Sandbox/) | Linux x64 required namespaces/mounts/seccomp and per-worker hard cgroup resource scopes | BCL + bubblewrap/libseccomp/systemd user manager; no SDL; [scope](linux-confinement.md) |
 | [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and generic processes | Platform.Sdl |
-| [Platform.Windows.Sandbox](../src/Platform/Platform.Windows.Sandbox/) | AppContainer renderer token and per-worker Job Object limits | Windows APIs; [scope](windows-confinement.md) |
+| [Platform.Windows.Sandbox](../src/Platform/Platform.Windows.Sandbox/) | AppContainer renderer token, bounded Job Object, and read-only worker storage | Windows APIs; [scope](windows-confinement.md) |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
 | [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
 | [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders and BOM sniffing | Embedded WHATWG indices; `encoding` |
@@ -34,6 +34,7 @@ explicitly development-only, not isolated production browsing.
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |
 | [LinuxSandboxSmoke](../tools/LinuxSandboxSmoke/) | Explicit measured file/network/process/namespace denial probe | Platform.Linux.Sandbox; no remote traffic/display |
+| [WindowsSandboxSmoke](../tools/WindowsSandboxSmoke/) | Explicit AppContainer/Job Object denial probe | Platform.Windows.Sandbox; no remote traffic/display |
 
 Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/),
 shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service tests, and

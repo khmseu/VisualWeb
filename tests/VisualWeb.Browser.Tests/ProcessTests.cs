@@ -205,6 +205,54 @@ public sealed class ProcessTests
         Assert.NotEqual(oldPid, renderer.ProcessId);
     }
     [Fact]
+    public void WindowsClosingCpuPressuredTabDoesNotPublishFailureOrStopAnotherRenderer()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        var renderers = new List<ProcessPageRenderer>();
+        using var controller = new BrowserController(() => new WindowsPressureSource(), () =>
+        {
+            var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
+            renderers.Add(renderer);
+            return renderer;
+        });
+        var window = controller.Session.CreateWindow();
+        var first = controller.CreateTab(window.Id);
+        var second = controller.CreateTab(window.Id);
+        var failures = new List<TabId>();
+        controller.Failed += (id, _) => failures.Add(id);
+        controller.Navigate(first.Id, Blue.Url.Href);
+        controller.Navigate(second.Id, Blue.Url.Href);
+        PumpUntil(() => !first.IsLoading && !second.IsLoading);
+        var otherFrame = controller.Page(second.Id);
+        var otherPid = renderers[1].ProcessId;
+        controller.Navigate(first.Id, "data:text/html,cpu");
+        PumpUntil(() => first.IsLoading && renderers[0].ProcessId is not null);
+        Thread.Sleep(100);
+        controller.CloseTab(first.Id);
+        Assert.False(controller.Session.Contains(first.Id));
+        Assert.Null(renderers[0].ProcessId);
+        controller.Pump(_ => new(20, 10, 1));
+        Assert.Same(otherFrame, controller.Page(second.Id));
+        controller.Reload(second.Id);
+        PumpUntil(() => !second.IsLoading);
+        Assert.Null(second.Error);
+        Assert.Empty(failures);
+        Assert.Equal(otherPid, renderers[1].ProcessId);
+
+        void PumpUntil(Func<bool> complete)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => new(20, 10, 1));
+                if (complete()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("Windows CPU-pressure tab lifecycle timed out.");
+        }
+    }
+    [Fact]
     public async Task RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback()
     {
         if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
@@ -406,6 +454,12 @@ public sealed class ProcessTests
                 Url = url,
                 Html = url.Href switch { "data:text/html,memory" => "memory", "data:text/html,cpu" => "cpu", _ => Blue.Html }
             });
+        public void Dispose() { }
+    }
+    private sealed class WindowsPressureSource : IPageSource
+    {
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
+            Task.FromResult(Blue with { Url = url, Html = url.Href == "data:text/html,cpu" ? "cpu" : Blue.Html });
         public void Dispose() { }
     }
     [Fact]

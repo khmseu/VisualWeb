@@ -16,12 +16,12 @@ renderer launch, and every failed setup without an unsandboxed retry.
 The browser launches the trusted framework-dependent renderer DLL. The
 renderer, its deployment directory, active runtime and selected font are
 copied into a unique staging directory. The AppContainer SID receives
-read/execute access to that staged tree and write access to its temporary
-directory. Windows also provides the AppContainer's private profile storage.
-The host process supplies only private standard streams and a minimal runtime
-environment. No network, broad host filesystem, or other capabilities are
-added. Staging and AppContainer profile resources are removed when the owned
-worker is disposed.
+read/execute access to that staged tree. Its temporary directory is also
+read-only, and the AppContainer profile directory denies writes to the
+container SID. The host process supplies only private standard streams and a
+minimal runtime environment. No network, broad host filesystem, or other
+capabilities are added. Staging and AppContainer profile resources are removed
+when the owned worker is disposed.
 
 ## Process and resource limits
 
@@ -29,9 +29,11 @@ worker is disposed.
 | --- | --- |
 | AppContainer capabilities | None |
 | Job Object active process limit | 1 |
-| Job Object per-process memory | 512 MiB |
+| Job Object per-process commit limit | 512 MiB |
+| Job Object total commit limit | 512 MiB |
 | Job Object CPU hard cap | 100% of one logical processor |
 | Job Object lifetime | Kill all assigned processes when the owned job handle closes |
+| Renderer writes to staged temp/profile storage | Denied |
 | Managed heap | 256 MiB |
 | Configured processor count | 2 |
 | IPC startup/render deadline | Existing 30 seconds |
@@ -39,20 +41,27 @@ worker is disposed.
 The Job Object is assigned at process creation, before the suspended worker is
 resumed. The startup handshake requires `windows-appcontainer-job-v1`; the
 worker checks its token and Job Object membership before opening its font or
-receiving content. This profile string is trusted-binary configuration
-confirmation, not remote attestation.
+receiving content. It queries and verifies the active Job Object's process,
+per-process and total commit limits, and CPU hard cap. This profile string is
+trusted-binary configuration confirmation, not remote attestation.
 
-The temporary directory and AppContainer profile storage are not subject to a
-kernel disk quota. The AppContainer still relies on the Windows kernel and its normal system DLL
-loading policy. This implementation does not claim a native-code exploit
-boundary, browser-wide resource quota, persistence protection, site isolation,
-or production supply-chain policy.
+Windows Job Objects have no thread/task-count limit or per-job swap limit.
+The 512 MiB commit limits bound process/job committed memory (including
+pagefile-backed commit), but do not prohibit pagefile use or provide a
+Linux-equivalent `memory.swap.max`. Rather than claim a per-directory disk
+quota, this profile removes renderer write access to its only explicitly
+configured temporary and AppContainer profile storage. Other Windows kernel,
+filesystem and system-DLL behavior is not a native-code exploit boundary. This
+implementation does not claim a browser-wide resource quota, persistence
+protection, site isolation, or production supply-chain policy.
 
 ## Validation
 
 ```sh
 dotnet test tests/Platform.Tests/Platform.Tests.csproj
 dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
+dotnet run --project tools/WindowsSandboxSmoke -- `
+  --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 dotnet run --project tools/PlatformSmoke -- windows
 dotnet run --project src/Apps/VisualWeb.Browser -- \
   --development-multiprocess \
@@ -60,7 +69,11 @@ dotnet run --project src/Apps/VisualWeb.Browser -- \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --smoke --backend windows
 ```
 
-The browser suite exercises confined worker launch and exact frame pixels on
-Windows. The native smoke command separately validates actual SDL windows,
-events, pixels, fonts and lifecycle. These native checks must run on Windows
-x64 and arm64; Linux builds and policy tests do not certify them.
+The browser suite exercises confined worker launch, native Job Object memory
+pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
+on Windows. `WindowsSandboxSmoke` probes actual host-file/environment,
+process-creation, loopback-network and storage-write denials. The native platform
+smoke separately validates actual SDL windows, events, pixels, fonts and
+lifecycle. The Windows confinement workflow runs the build, platform/browser
+suites and denial probe on native Windows x64 and arm64 runners; Linux builds
+and policy tests do not certify those targets.

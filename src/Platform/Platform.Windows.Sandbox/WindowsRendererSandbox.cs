@@ -8,7 +8,9 @@ namespace VisualWeb.Platform.Windows.Sandbox;
 /// <summary>Starts a renderer in a capability-free AppContainer and bounded Job Object.</summary>
 /// <remarks>References: <c>windows-appcontainer</c> and <c>windows-job-objects</c>.
 /// <see href="https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer">AppContainer process launch</see>,
+/// <see href="https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-getappcontainerfolderpath">AppContainer profile storage</see>,
 /// <see href="https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute">process startup attributes</see>,
+/// <see href="https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information">Job Object memory limits</see>,
 /// and <see href="https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects">Job Objects</see>.</remarks>
 public static class WindowsRendererSandbox
 {
