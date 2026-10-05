@@ -44,6 +44,7 @@ entry (it still uses conditional requests where possible).
 | `xdg-directories`, `dotnet-process`, `dotnet-process-start`, `windows-fonts`, `fontconfig` | OS paths, process launch/lifecycle and font sources |
 | `dotnet-process-pipes`, `dotnet-stream-read` | Private renderer pipes, continuous diagnostic draining and exact framed reads |
 | `dotnet-host-environment` | Runtime host/root selection and deployment configuration |
+| `bubblewrap`, `linux-seccomp`, `libseccomp`, `linux-resource-limits` | Linux renderer namespace/mount isolation, exact syscall filter and resource limits |
 
 Add further official standards and native API references as their interfaces
 are introduced. CSS drafts and living standards change: cite the exact section,

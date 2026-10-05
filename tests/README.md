@@ -37,6 +37,11 @@ files; the latter simulates malformed replies and hangs, never remote traffic.
 The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
 budgets, strict JSON, opacity, truncation and cancellation.
 Native SDL browser smoke is explicit and separate from ordinary tests.
+Linux x64 browser integration also runs required-confinement workers, so it
+requires bubblewrap/libseccomp and unprivileged namespaces. Other targets assert
+unsupported fail-closed behavior. The explicit
+[LinuxSandboxSmoke](../tools/LinuxSandboxSmoke/) separately measures actual
+filesystem/network/process/namespace denials; it is not a conformance-data fetch.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">

@@ -22,11 +22,12 @@ public sealed record RendererMessage
     public string? Title { get; init; }
     public string? Status { get; init; }
     public string? Error { get; init; }
+    public string? SandboxProfile { get; init; }
 }
 
 public static class RendererProtocol
 {
-    public const int Version = 1;
+    public const int Version = 2;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
     public const int MaxPayloadBytes = MaxPixels * 4;
@@ -39,7 +40,10 @@ public static class RendererProtocol
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
         if (message.Kind == "hello")
         {
-            if (message.Id != 0 || payloadLength != 0) { throw new IpcProtocolException("Invalid renderer handshake."); }
+            if (message.Id != 0 || payloadLength != 0 || message.SandboxProfile is { Length: > MaxTextCharacters })
+            {
+                throw new IpcProtocolException("Invalid renderer handshake.");
+            }
             return;
         }
         if (message.Id <= 0) { throw new IpcProtocolException("Renderer request identity must be positive."); }

@@ -66,8 +66,14 @@
 - Read the [process guide](docs/renderer-processes.md) before IPC/worker changes.
   Preserve exact framing/budgets/identity/viewport checks, per-tab deadlines,
   cancellation and crash recovery. Stdout is protocol only; drain stderr.
-  Process separation is not confinement: sandbox-required launch must refuse.
+  Process separation is not confinement: unsupported sandbox-required launch must refuse.
   Workers use their own native font owners; never publish stale render results.
+- Read the [Linux confinement guide](docs/linux-confinement.md) before sandbox
+  changes. Linux x64 uses required namespaces, read-only mounts, cleared environment
+  and a default-deny libseccomp filter before content. Never add fallback or
+  broad host mounts to make startup pass; test precise syscall/mount guarantees.
+  Windows/arm64 fail closed. Managed heap limits are not total OS memory quotas.
+  Run LinuxSandboxSmoke explicitly; ordinary standards tests remain offline.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; process communication uses data-only IPC contracts.

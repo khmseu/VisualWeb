@@ -2,6 +2,46 @@
   "version": 1,
   "documents": [
     {
+      "id": "bubblewrap",
+      "title": "Bubblewrap namespace sandbox design and invocation",
+      "url": "https://github.com/containers/bubblewrap/blob/v0.9.0/bwrap.xml",
+      "file": "bubblewrap.html",
+      "fetchedAt": "2026-10-05T04:50:45.2522916+00:00",
+      "checkedAt": "2026-10-05T04:50:45.2522916+00:00",
+      "eTag": "W/\u0022a38186550b427de8f8a8b106240d8f8e\u0022",
+      "lastModified": null
+    },
+    {
+      "id": "linux-seccomp",
+      "title": "Linux kernel seccomp filter interface",
+      "url": "https://docs.kernel.org/userspace-api/seccomp_filter.html",
+      "file": "linux-seccomp.html",
+      "fetchedAt": "2026-10-05T04:50:45.6554746+00:00",
+      "checkedAt": "2026-10-05T04:50:45.6554746+00:00",
+      "eTag": null,
+      "lastModified": "2026-10-04T20:58:44+00:00"
+    },
+    {
+      "id": "libseccomp",
+      "title": "libseccomp filter rules and architecture handling",
+      "url": "https://github.com/seccomp/libseccomp/blob/v2.5.5/doc/man/man3/seccomp_rule_add.3",
+      "file": "libseccomp.html",
+      "fetchedAt": "2026-10-05T04:50:46.3452361+00:00",
+      "checkedAt": "2026-10-05T04:50:46.3452361+00:00",
+      "eTag": "W/\u00221db8ac61b4ea22d8781ae690bc31b579\u0022",
+      "lastModified": null
+    },
+    {
+      "id": "linux-resource-limits",
+      "title": "Linux resource limits",
+      "url": "https://man7.org/linux/man-pages/man2/getrlimit.2.html",
+      "file": "linux-resource-limits.html",
+      "fetchedAt": "2026-10-05T04:50:46.5843463+00:00",
+      "checkedAt": "2026-10-05T04:50:46.5843463+00:00",
+      "eTag": "\u00229eff-65b0fe53ed040\u0022",
+      "lastModified": "2026-09-09T17:08:09+00:00"
+    },
+    {
       "id": "dotnet-host-environment",
       "title": ".NET runtime host environment variables",
       "url": "https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables",

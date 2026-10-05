@@ -93,13 +93,61 @@ public sealed class ProcessTests
     [Fact]
     public void SandboxRequiredAndInvalidModesFailBeforeLaunching()
     {
-        Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true));
-        Assert.Throws<PlatformNotSupportedException>(() => BrowserLaunchOptions.Parse(["--require-sandbox"]));
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true));
+        }
+        Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--require-sandbox"]));
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath]));
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--development-multiprocess", "--font", FontPath]));
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--font", FontPath, "--renderer", RendererPath]));
         var options = BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath, "--renderer", RendererPath]);
         Assert.Equal(RendererPath, options.RendererPath);
+    }
+    [Fact]
+    public async Task RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true));
+            return;
+        }
+        using var renderer = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        var page = await renderer.RenderAsync(Blue, new(20, 10, 1.25), Cancellation);
+        Assert.Equal(new VisualWeb.Platform.Abstractions.PixelSize(25, 13), page.Frame.Size);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, page.Frame.Pixels.Span[..4].ToArray());
+        var pid = renderer.ProcessId!.Value;
+        using (var process = Process.GetProcessById(pid))
+        {
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(Cancellation);
+        }
+        Assert.Contains("exited", renderer.TakeFailure());
+        Assert.Equal("Blue", (await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Title);
+        Assert.NotEqual(pid, renderer.ProcessId);
+        using var child = Process.GetProcessById(renderer.ProcessId!.Value);
+        renderer.Dispose();
+        await child.WaitForExitAsync(Cancellation);
+        Assert.True(child.HasExited);
+        using var invalidFont = new ProcessPageRenderer(RendererPath, FontPath + ".missing", requireSandbox: true);
+        await Assert.ThrowsAsync<RendererProcessException>(() => invalidFont.RenderAsync(Blue, new(20, 10, 1), Cancellation));
+        Assert.Null(invalidFont.ProcessId);
+    }
+    [Fact]
+    public async Task RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true));
+            return;
+        }
+        using var renderer = new ProcessPageRenderer(PeerPath, "missing-profile", requireSandbox: true);
+        var failure = await Assert.ThrowsAsync<RendererProcessException>(() => renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation));
+        Assert.Contains("confinement profile", failure.Message);
+        Assert.Null(renderer.ProcessId);
+        var options = BrowserLaunchOptions.Parse(["--development-multiprocess", "--require-sandbox", "--font", FontPath, "--renderer", RendererPath]);
+        Assert.True(options.RequireSandbox);
+        Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--require-sandbox", "--font", FontPath]));
     }
     [Fact]
     public void ExternalPixelFrameIsCopiedAndRejectsInvalidContract()

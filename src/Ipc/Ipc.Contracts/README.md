@@ -1,6 +1,7 @@
 # Ipc.Contracts
 
-Version-1 data-only hello/render/frame/error messages and exact
+Version-2 data-only hello/render/frame/error messages, confirmed sandbox
+profile handshake and exact
 viewport/text/frame budgets. No DOM, V8, native handles or broker capabilities.
 Each private channel serves one tab with monotonically increasing request IDs.
 

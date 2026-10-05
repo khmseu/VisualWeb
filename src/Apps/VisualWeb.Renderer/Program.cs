@@ -2,19 +2,28 @@ using VisualWeb.Core.Url;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using VisualWeb.PageRendering;
+using VisualWeb.Platform.Linux.Sandbox;
 
-if (args is not ["--development-unsandboxed", "--font", var fontPath])
+if (args is not [var mode, "--font", var fontPath]
+    || mode is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap" or "--linux-sandbox-worker"))
 {
-    Console.Error.WriteLine("Renderer is an internal worker. Usage: --development-unsandboxed --font TRUSTED_FONT");
+    Console.Error.WriteLine("Renderer is an internal worker. Usage: (--development-unsandboxed | --linux-sandbox-bootstrap) --font TRUSTED_FONT");
     return 2;
 }
 try
 {
+    if (mode == "--linux-sandbox-bootstrap")
+    {
+        LinuxRendererSandbox.Enter(AppContext.BaseDirectory, fontPath);
+        throw new InvalidOperationException("Sandbox bootstrap returned without confinement.");
+    }
+    var confined = mode == "--linux-sandbox-worker";
+    if (confined) { LinuxRendererSandbox.VerifyWorker(); }
     using var input = Console.OpenStandardInput();
     using var output = Console.OpenStandardOutput();
     var channel = new RendererChannel(input, output);
     using var renderer = new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels);
-    channel.WriteAsync(new() { Kind = "hello" }).GetAwaiter().GetResult();
+    channel.WriteAsync(new() { Kind = "hello", SandboxProfile = confined ? LinuxRendererSandbox.Profile : null }).GetAwaiter().GetResult();
     long lastId = 0;
     while (channel.ReadAsync().GetAwaiter().GetResult() is { } packet)
     {
@@ -49,6 +58,7 @@ try
 }
 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException
     or InvalidOperationException or DllNotFoundException or EntryPointNotFoundException
+    or System.ComponentModel.Win32Exception or PlatformNotSupportedException
     || StaticPageRenderer.IsRenderFailure(exception))
 {
     Console.Error.WriteLine("Renderer terminated: " + exception.Message);

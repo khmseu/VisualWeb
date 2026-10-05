@@ -3,11 +3,14 @@
 The approved implementation uses existing SDL portable windows/input/pixels
 instead of a second UI toolkit. It supplies drawn address/tab chrome, bounded
 session history, GET navigation, tab create/close/move and multiple windows.
-**It is unsandboxed development tooling for trusted content,
+**It is development tooling for trusted content,
 not a secure or standards-complete production browser.**
 Phase 9 supplies local rendering; phase 10a adds explicitly selected per-tab
 worker processes. See the [process guide](renderer-processes.md) for launch,
 wire limits, deadlines, crash/restart behavior and unfinished confinement.
+Phase 10b adds opt-in [Linux x64 confinement](linux-confinement.md); without
+`--require-sandbox`, both modes remain unsandboxed. Windows/arm64 sandbox
+requests fail closed.
 
 ## Run it
 
@@ -35,7 +38,8 @@ scheme guessing or implicit filesystem-path navigation is performed.
 Linux auto-selects Wayland/X11 through the existing platform composition root.
 `--backend x11`, `--backend wayland` or `--backend windows` requests an exact
 backend; failures and fallback diagnostics are logged, never silently hidden.
-The mode warning also remains drawn above the tab strip.
+The mode warning also remains drawn above the tab strip, identifying
+NO SANDBOX or LINUX CONFINEMENT REQUIRED.
 
 ## Controls
 

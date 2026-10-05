@@ -7,5 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="../VisualWeb.PageRendering/VisualWeb.PageRendering.csproj" />
     <ProjectReference Include="../../Ipc/Ipc.Transport/Ipc.Transport.csproj" />
+    <ProjectReference Include="../../Platform/Platform.Linux.Sandbox/Platform.Linux.Sandbox.csproj" />
   </ItemGroup>
 </Project>

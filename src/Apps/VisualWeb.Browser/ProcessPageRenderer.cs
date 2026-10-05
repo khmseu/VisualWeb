@@ -4,15 +4,16 @@ using System.Runtime.InteropServices;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
+using VisualWeb.Platform.Linux.Sandbox;
 
 namespace VisualWeb.Browser;
 
 public sealed class RendererProcessException(string message) : IOException(message);
 
-/// <summary>One tab's explicitly unsandboxed renderer process over inherited private stdio pipes.</summary>
+/// <summary>One tab's renderer process with explicit unsandboxed or required Linux confinement.</summary>
 /// <remarks>References: dotnet-process/dotnet-process-start/dotnet-process-pipes;
 /// <see href="https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput">redirected pipes</see>.
-/// Process separation is not OS confinement.
+/// Required confinement never falls back to unsandboxed launch.
 /// Canceled/failed exchanges kill only this owned worker; the next request launches a replacement.</remarks>
 public sealed class ProcessPageRenderer : IPageRenderer
 {
@@ -49,12 +50,14 @@ public sealed class ProcessPageRenderer : IPageRenderer
     private Connection? connection;
     private bool disposed;
     private long nextId;
+    private readonly bool requireSandbox;
     public int? ProcessId { get { lock (sync) { return connection?.Process.Id; } } }
 
     public ProcessPageRenderer(string rendererPath, string fontPath, TimeSpan? timeout = null,
         bool requireSandbox = false, string? dotnetPath = null)
     {
-        if (requireSandbox) { throw new PlatformNotSupportedException("Renderer OS confinement is not implemented; refusing sandbox-required launch."); }
+        if (requireSandbox) { LinuxRendererSandbox.RequireSupport(); }
+        this.requireSandbox = requireSandbox;
         ArgumentException.ThrowIfNullOrWhiteSpace(rendererPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
         this.rendererPath = Path.GetFullPath(rendererPath);
@@ -105,6 +108,10 @@ public sealed class ProcessPageRenderer : IPageRenderer
             {
                 var hello = await Receive(current, deadline.Token).ConfigureAwait(false);
                 if (hello.Message.Kind != "hello") { throw new IpcProtocolException("Renderer handshake is missing."); }
+                if (requireSandbox && hello.Message.SandboxProfile != LinuxRendererSandbox.Profile)
+                {
+                    throw new IpcProtocolException("Renderer did not confirm the required Linux confinement profile.");
+                }
             }
             await current.Channel.WriteAsync(request, cancellationToken: deadline.Token).ConfigureAwait(false);
             var packet = await Receive(current, deadline.Token).ConfigureAwait(false);
@@ -154,7 +161,13 @@ public sealed class ProcessPageRenderer : IPageRenderer
             CreateNoWindow = true
         };
         if (dll) { info.ArgumentList.Add(rendererPath); }
-        info.ArgumentList.Add("--development-unsandboxed");
+        if (requireSandbox)
+        {
+            info.Environment.Clear();
+            info.Environment["DOTNET_EnableDiagnostics"] = "0";
+            info.Environment["DOTNET_ROOT"] = new DirectoryInfo(RuntimeEnvironment.GetRuntimeDirectory()).Parent?.Parent?.Parent?.FullName;
+        }
+        info.ArgumentList.Add(requireSandbox ? "--linux-sandbox-bootstrap" : "--development-unsandboxed");
         info.ArgumentList.Add("--font"); info.ArgumentList.Add(fontPath);
         var process = Process.Start(info) ?? throw new RendererProcessException("Renderer process did not start.");
         var owner = new Connection(process);

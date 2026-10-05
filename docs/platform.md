@@ -65,10 +65,11 @@ SystemProcessLauncher uses ProcessStartInfo.ArgumentList and UseShellExecute=fal
 Arguments are never concatenated into shell commands. It supports environment
 overrides/removals and a working directory. Waiting can be cancelled without
 killing the child. Termination is explicit; handle disposal alone leaves it
-running. Requested confinement fails before launch: there is **no OS sandbox**.
-The [phase-10a browser client](renderer-processes.md) separately owns and
-terminates per-tab workers through private pipes; process separation is not
-confinement. Renderers must not load hostile content under a claim of sandboxing.
+running. This generic launcher still refuses requested confinement before launch:
+it does not implement the renderer-specific mounts/IPC/bootstrap contract.
+The [browser client](renderer-processes.md) separately owns workers and uses
+the optional [Linux x64 confinement backend](linux-confinement.md). Unsupported
+targets fail closed. Process separation alone is not confinement or safe browsing.
 
 ## Validation
 

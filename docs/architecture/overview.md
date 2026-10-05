@@ -90,10 +90,15 @@ asynchronous publication, deadlines and tab-local crash/restart handling.
 GET/MIME/decoding remain browser-owned; shared VisualWeb.PageRendering owns
 stylesheet discovery and font/rendering policy, independent of chrome/networking.
 Engine.Content stays offline. See the [shell guide](../browser-shell.md) and
-[process guide](../renderer-processes.md). Phase-10 OS confinement remains unfinished.
+[process guide](../renderer-processes.md). Phase 10b adds optional required
+Linux x64 namespace/mount/seccomp confinement through the SDL-independent
+Platform.Linux.Sandbox bootstrap; see the [confinement guide](../linux-confinement.md).
+Windows/arm64 and production isolation remain unfinished; unsupported requests
+fail closed.
 The phase-1 project split is not itself process isolation or a sandbox.
-Linux namespaces/seccomp and Windows AppContainer/Job Objects are planned
-mechanisms, not interchangeable guarantees. Sandboxing must fail explicitly
+Linux namespaces/seccomp are now available for the exact documented x64
+profile; Windows AppContainer/Job Objects remain planned. These are not
+interchangeable guarantees. Sandboxing must fail explicitly
 when requested guarantees cannot be supplied; process separation alone is
 not sufficient for hostile web content.
 

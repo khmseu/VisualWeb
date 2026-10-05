@@ -9,7 +9,8 @@ explicitly development-only, not isolated production browsing.
 | --- | --- | --- |
 | [Platform.Abstractions](../src/Platform/Platform.Abstractions/) | OS-neutral windows, input, surfaces, fonts, process capabilities | Official platform APIs; not web interfaces |
 | [Platform.Sdl](../src/Platform/Platform.Sdl/) | Shared SDL windows/input/pixels and managed process/font services | Platform.Abstractions, SDL3-CS + Native |
-| [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and processes; confinement deferred | Platform.Sdl |
+| [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and generic processes | Platform.Sdl; renderer confinement is a separate module |
+| [Platform.Linux.Sandbox](../src/Platform/Platform.Linux.Sandbox/) | Linux x64 required namespaces/read-only mounts, seccomp and renderer bootstrap | BCL + bubblewrap/libseccomp; no SDL; [scope](linux-confinement.md) |
 | [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and processes; confinement deferred | Platform.Sdl |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
 | [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
@@ -28,9 +29,10 @@ explicitly development-only, not isolated production browsing.
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | Private bounded framed streams, exact reads and pixel validation | Ipc.Contracts; [scope](renderer-processes.md) |
 | [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Development windows/tabs/chrome, broker GET/history, asynchronous worker supervision | Platform.Linux/Windows, Engine.Net, PageRendering, IPC; [scope](browser-shell.md) |
 | [VisualWeb.PageRendering](../src/Apps/VisualWeb.PageRendering/) | Shared explicit fonts, embedded CSS collection and static rendering policy | Engine.Content/Css/Text/Paint; no networking/backend/chrome |
-| [VisualWeb.Renderer](../src/Apps/VisualWeb.Renderer/) | Unsandboxed one-tab static renderer executable | PageRendering, IPC; [scope](renderer-processes.md) |
+| [VisualWeb.Renderer](../src/Apps/VisualWeb.Renderer/) | One-tab static renderer executable, optionally Linux-confined | PageRendering, IPC, Platform.Linux.Sandbox; [scope](renderer-processes.md) |
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |
+| [LinuxSandboxSmoke](../tools/LinuxSandboxSmoke/) | Explicit measured file/network/process/namespace denial probe | Platform.Linux.Sandbox; no remote traffic/display |
 
 Active suites: [Tools.SpecCache.Tests](../tests/Tools.SpecCache.Tests/),
 shared [Platform.Tests](../tests/Platform.Tests/) contract/OS-service tests, and

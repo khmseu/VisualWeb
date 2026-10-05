@@ -2,7 +2,8 @@ using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 
 // Private test peer: the font argument selects deterministic protocol faults, not a font file.
-if (args is not ["--development-unsandboxed", "--font", var scenario])
+if (args is not [var mode, "--font", var scenario]
+    || mode is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap"))
 {
     return 2;
 }

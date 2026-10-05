@@ -165,8 +165,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   stages, validated pixels, asynchronous publication, deadlines and per-tab
   crash/restart behavior. Single-process development remains available and
   sandbox-required launches refuse. See [process scope](../docs/renderer-processes.md).
-  This does **not** complete phase 10: Linux/Windows confinement and target
-  certification remain a separate unfinished stage.
+  Approved phase 10b adds Linux-first x64 renderer namespace/mount/seccomp
+  confinement and actual denial probes; Windows/arm64 requests fail closed.
+  See [exact guarantees](../docs/linux-confinement.md). This does **not** complete
+  phase 10: other native targets, total OS resource accounting and production
+  isolation remain unfinished.
 - V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

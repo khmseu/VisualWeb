@@ -29,6 +29,7 @@
   <Folder Name="/src/Platform/">
     <Project Path="src/Platform/Platform.Abstractions/Platform.Abstractions.csproj" />
     <Project Path="src/Platform/Platform.Linux/Platform.Linux.csproj" />
+    <Project Path="src/Platform/Platform.Linux.Sandbox/Platform.Linux.Sandbox.csproj" />
     <Project Path="src/Platform/Platform.Sdl/Platform.Sdl.csproj" />
     <Project Path="src/Platform/Platform.Windows/Platform.Windows.csproj" />
   </Folder>
@@ -53,6 +54,7 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/PlatformSmoke/PlatformSmoke.csproj" />
+    <Project Path="tools/LinuxSandboxSmoke/LinuxSandboxSmoke.csproj" />
     <Project Path="tools/SpecCache/SpecCache.csproj" />
   </Folder>
 </Solution>

@@ -3,7 +3,7 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-/// <summary>SDL-backed main-thread UI with explicit local or unsandboxed per-tab rendering.</summary>
+/// <summary>SDL-backed main-thread UI with local or optionally confined per-tab rendering.</summary>
 public sealed class DevelopmentShell : IDisposable
 {
     public const string HomeHtml = """
@@ -43,6 +43,7 @@ public sealed class DevelopmentShell : IDisposable
     private readonly Dictionary<BrowserWindowId, View> views = [];
     private readonly bool hidden;
     private readonly bool textInput;
+    private readonly bool requireSandbox;
     private bool quit;
     private bool disposed;
     public BrowserController Controller { get; }
@@ -51,17 +52,19 @@ public sealed class DevelopmentShell : IDisposable
         views.Select(pair => (pair.Key, pair.Value.Native.Id)).ToArray();
 
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
-        bool hidden = false, bool textInput = true, string? rendererPath = null)
+        bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false)
     {
         this.system = system;
         this.hidden = hidden;
         this.textInput = textInput;
+        this.requireSandbox = requireSandbox;
         var settings = options ?? new();
         settings.Validate();
+        if (requireSandbox && rendererPath is null) { throw new ArgumentException("Renderer confinement requires a worker process."); }
         var multiprocess = rendererPath is not null;
-        chrome = new(fontPath, settings.MaxFramePixels, multiprocess);
+        chrome = new(fontPath, settings.MaxFramePixels, multiprocess, requireSandbox);
         Controller = new(() => new GetPageSource(), () => rendererPath is null
-            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels) : new ProcessPageRenderer(rendererPath, fontPath), settings);
+            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels) : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox), settings);
         Controller.Changed += id =>
         {
             foreach (var (key, view) in views)
@@ -85,7 +88,8 @@ public sealed class DevelopmentShell : IDisposable
         IPlatformWindow? native = null;
         try
         {
-            native = system.CreateWindow(new("VisualWeb - DEVELOPMENT - NO SANDBOX", 1000, 720, hidden));
+            native = system.CreateWindow(new("VisualWeb - DEVELOPMENT - "
+                + (requireSandbox ? "LINUX CONFINEMENT REQUIRED" : "NO SANDBOX"), 1000, 720, hidden));
             var view = new View(native);
             views.Add(window.Id, view);
             native.EventReceived += Dispatch;

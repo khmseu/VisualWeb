@@ -1,11 +1,12 @@
-# Phase 10a: per-tab renderer process separation
+# Per-tab renderer process separation
 
-This approved stage adds **process separation, not OS confinement**. Both
-development modes retain normal user permissions. Do not browse hostile
-content. Linux namespaces/seccomp, Windows AppContainer/Job Objects, origin
-policy, cross-site frame isolation and production guarantees remain unfinished
-phase-10 work. `--require-sandbox` and `requireSandbox: true` refuse launch
-before creating a worker; they never fall back to an unsandboxed process.
+Phase 10a added **process separation, not OS confinement**. Phase 10b now adds
+opt-in [Linux x64 confinement](linux-confinement.md) using `--require-sandbox`
+or `requireSandbox: true`; unsupported platforms fail closed. Without that
+option, both development modes retain normal user permissions. Do not browse
+hostile content: Windows confinement, origin policy, cross-site frame isolation
+and production guarantees remain unfinished. Confinement never falls back to
+unsandboxed launch.
 
 ## Launch
 
@@ -33,7 +34,7 @@ cached as `dotnet-host-environment`.
 
 `--development-single-process` remains available, and the two flags are
 mutually exclusive. The SDL warning identifies the selected mode and always
-says **NO SANDBOX**. Controls and page support are unchanged; see the
+says **NO SANDBOX** unless Linux confinement is explicitly required. Controls and page support are unchanged; see the
 [shell guide](browser-shell.md).
 
 ## Ownership and asynchronous publication
@@ -46,8 +47,8 @@ says **NO SANDBOX**. Controls and page support are unchanged; see the
 - [VisualWeb.PageRendering](../src/Apps/VisualWeb.PageRendering/) shares static
   page policy between local and worker hosts without networking, backend or
   chrome dependencies. Engine.Content remains an offline pipeline.
-- The worker has no resource-loading code or window backend. This **does not
-  prevent OS access**: it is unsandboxed and inherits ordinary user privileges.
+- The worker has no resource-loading code or window backend. That alone does
+  not prevent OS access. Optional Linux confinement is a separate platform policy.
 - Main-thread pumps observe asynchronous load/render tasks without blocking
   on worker replies. Only successful, current-generation frames commit URL,
   history, title and content. Stale/canceled results cannot publish.
@@ -58,7 +59,7 @@ says **NO SANDBOX**. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v1
+## Private stream protocol v2
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -74,7 +75,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 1, explicitly present |
+| Protocol version | 2, explicitly present; v1 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -84,7 +85,10 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Raw BGRA bytes | 16 MiB |
 | Startup/render/exchange deadline | 30 seconds by default |
 
-The startup `hello` has ID zero. Requests have increasing positive IDs;
+The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
+confinement must confirm `linux-bwrap-seccomp-v1`. This additive metadata
+requires protocol v2 because older receivers strictly reject unknown fields.
+Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/
 scale. A reply is `frame` (title/status/dimensions/stride/pixels) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
@@ -137,8 +141,9 @@ dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
 ```
 
 Repeat with `--backend x11` or a suitable target backend. Windows/arm64,
-Wayland shell keyboard/IME, real desktop high-DPI and actual OS confinement
-still require target validation. Official .NET process/pipes and exact-stream
+Wayland shell keyboard/IME and real desktop high-DPI still require target
+validation. Linux x64 confinement has separate measured evidence in its guide.
+Official .NET process/pipes and exact-stream
 references are in the independently refreshed [standards cache](standards.md);
 tests never fetch them.
 
