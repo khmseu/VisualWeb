@@ -87,9 +87,10 @@ Managed tests stay display-independent. Platform.Tests is one shared contract/
 selector/service suite, rather than duplicated per-backend suites. Native smoke
 is an explicit tool, separate from ordinary tests.
 
-Linux CI runs on native x64 and arm64 runners, including native font, shaping,
-painting, platform and browser smoke checks. Linux arm64 required confinement
-remains unsupported; see the [Linux confinement guide](linux-confinement.md).
+The Linux workflow is configured for native x64 and arm64 runners, including
+the full test suite and native font, shaping, painting, platform and browser
+smoke checks. Linux arm64 required confinement remains unsupported; see the
+[Linux confinement guide](linux-confinement.md).
 The separately configured Windows x64/arm64 workflow exercises native platform,
 browser and Windows confinement paths. These workflows provide target-specific
 validation; their existence does not certify unobserved runs or high-DPI desktop
