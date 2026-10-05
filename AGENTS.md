@@ -5,7 +5,7 @@
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
 2. Use the [project map](docs/project-map.md) to find the owning subsystem and
    read its README. Platform services, Core URL/Encoding/MIME and developer
-   tooling and Engine.Net/Html/Dom/Css/Text/Layout are implemented; Core.Primitives, other
+   tooling and Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content are implemented; Core.Primitives, other
    Engine projects, IPC and App remain placeholders.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
@@ -50,6 +50,11 @@
   requires zero CSS diagnostics, zero non-root vertical margins and supported
   Latin/LTR content. Unsupported layouts must throw, not silently approximate.
   Preserve the licensed pinned font, native GC regression and exact geometry tests.
+- Read the [painting guide](docs/painting.md) before rasterizing pages. Register
+  exact shaping font bytes, retain thread-affine native ownership, and preserve
+  ordered anonymous layout flow. Pixels are opaque BGRA with explicit scale;
+  offline Content never collects embedded CSS or fetches resources automatically.
+  Unsupported paint must fail; preserve independent pixel and native glyph tests.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; future process communication uses IPC contracts.
@@ -71,6 +76,8 @@ dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
 dotnet test tests/Engine.Css.Tests/Engine.Css.Tests.csproj
 dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
 dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
+dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
+dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
 dotnet test VisualWeb.slnx --no-build
 dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party
 ```

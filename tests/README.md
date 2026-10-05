@@ -21,6 +21,11 @@ The [text suite](Engine.Text.Tests/) uses a [pinned OFL font](Engine.Text.Tests/
 for native HarfBuzz metrics, ligatures, clustering and ownership/GC tests.
 The [layout suite](Engine.Layout.Tests/) combines exact deterministic geometry
 with native text integration. No text/layout test initializes a display.
+The [paint suite](Engine.Paint.Tests/) checks independent exact pixels,
+commands, native glyph rendering, font resource ownership and portable fake
+presentation. The [content suite](Engine.Content.Tests/) checks the offline
+HTML/CSS-to-frame pipeline. Both link the existing font fixture and use CPU
+Skia without displays, scripts or resource fetching.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -53,6 +58,8 @@ dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj
 dotnet test tests/Engine.Css.Tests/Engine.Css.Tests.csproj
 dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj
 dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
+dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
+dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```

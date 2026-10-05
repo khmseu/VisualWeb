@@ -10,6 +10,16 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
 **Decisions (approved)**
+- Phase 8 delivered: immutable background/solid-border/glyph display lists,
+  SkiaSharp CPU rasterization to opaque BGRA frames with explicit scale and
+  viewport clipping, portable surface presentation and an offline decoded
+  HTML/CSS-to-frame pipeline. The user approved deferring networking integration,
+  images, advanced borders/compositing and browser UI with explicit failures.
+  Exact shaping font bytes are registered separately for paint; ordered layout
+  flow preserves anonymous inline groups. Linux x64 validation: all 35 projects
+  build and all 11,573 tests pass, including 24 Paint and 4 Content tests.
+  First-party formatting/editor diagnostics are clean; independently, all
+  43 references are fresh. See the [painting guide](../docs/painting.md).
 - Phase 7 delivered: HarfBuzzSharp with Linux/Windows native assets, owned fonts
   and Latin/LTR shaping; finite horizontal block/inline layout with sizing,
   whitespace, space wrapping and baseline geometry. The user approved deferring

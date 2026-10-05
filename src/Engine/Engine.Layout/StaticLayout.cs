@@ -14,8 +14,14 @@ public readonly record struct LayoutRect(double X, double Y, double Width, doubl
 public readonly record struct LayoutEdges(double Top, double Right, double Bottom, double Left);
 public sealed record LayoutTextFragment(DomText Source, ShapedRun Run, double X, double Baseline, CssComputedStyle Style);
 public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments);
+public abstract record LayoutFlowItem;
+public sealed record LayoutBlockItem(LayoutBox Box) : LayoutFlowItem;
+public sealed record LayoutLineItem(LayoutLine Line) : LayoutFlowItem;
 public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRect PaddingBox,
-    LayoutRect BorderBox, LayoutEdges Margin, IReadOnlyList<LayoutBox> Children, IReadOnlyList<LayoutLine> Lines);
+    LayoutRect BorderBox, LayoutEdges Margin, IReadOnlyList<LayoutBox> Children, IReadOnlyList<LayoutLine> Lines)
+{
+    public IReadOnlyList<LayoutFlowItem> Flow { get; init; } = Array.Empty<LayoutFlowItem>();
+}
 public sealed record LayoutResult(LayoutBox? Root, double ViewportWidth, double ViewportHeight);
 
 public sealed record LayoutOptions
@@ -164,6 +170,7 @@ public static class StaticLayout
             if (definiteHeight is { } definite) { definiteHeight = Math.Max(minHeight, Math.Min(definite, maxHeight)); }
             var childBoxes = new List<LayoutBox>();
             var blockLines = new List<LayoutLine>();
+            var flow = new List<LayoutFlowItem>();
             var inline = new List<InlineUnit>();
             var cursor = contentY;
             foreach (var child in element.ChildNodes)
@@ -175,6 +182,7 @@ public static class StaticLayout
                     Flush();
                     var childBox = Block(block, contentX, cursor, width, definiteHeight, depth + 1);
                     childBoxes.Add(childBox);
+                    flow.Add(new LayoutBlockItem(childBox));
                     cursor = childBox.BorderBox.Y + childBox.BorderBox.Height + childBox.Margin.Bottom;
                 }
                 else { Gather(child, style, inline, depth + 1); }
@@ -187,13 +195,17 @@ public static class StaticLayout
             var paddingBox = Rect(contentX - padding.Left, contentY - padding.Top,
                 width + padding.Left + padding.Right, contentHeight + padding.Top + padding.Bottom);
             var borderBox = Rect(borderX, borderY, width + horizontal, contentHeight + vertical);
-            return new(element, content, paddingBox, borderBox, margin, childBoxes.AsReadOnly(), blockLines.AsReadOnly());
+            return new(element, content, paddingBox, borderBox, margin, childBoxes.AsReadOnly(), blockLines.AsReadOnly())
+            {
+                Flow = flow.AsReadOnly()
+            };
 
             void Flush()
             {
                 if (inline.Count == 0) { return; }
                 var formatted = Inline(inline, style, contentX, cursor, width);
                 blockLines.AddRange(formatted);
+                flow.AddRange(formatted.Select(line => new LayoutLineItem(line)));
                 if (formatted.Count > 0) { cursor = formatted[^1].Bounds.Y + formatted[^1].Bounds.Height; }
                 inline.Clear();
             }

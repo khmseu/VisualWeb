@@ -1,0 +1,5 @@
+# Independently authored 4x4 opaque RGBA reference: red top-left, blue bottom-right, white elsewhere.
+ff 00 00 ff  ff 00 00 ff  ff ff ff ff  ff ff ff ff
+ff 00 00 ff  ff 00 00 ff  ff ff ff ff  ff ff ff ff
+ff ff ff ff  ff ff ff ff  00 00 ff ff  00 00 ff ff
+ff ff ff ff  ff ff ff ff  00 00 ff ff  00 00 ff ff

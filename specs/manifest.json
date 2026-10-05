@@ -2,6 +2,26 @@
   "version": 1,
   "documents": [
     {
+      "id": "skia-canvas",
+      "title": "Skia canvas API",
+      "url": "https://api.skia.org/classSkCanvas.html",
+      "file": "skia-canvas.html",
+      "fetchedAt": "2026-10-04T23:36:52.40164+00:00",
+      "checkedAt": "2026-10-04T23:36:52.40164+00:00",
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "css2-paint",
+      "title": "CSS 2.2 painting order",
+      "url": "https://www.w3.org/TR/CSS22/zindex.html",
+      "file": "css2-paint.html",
+      "fetchedAt": "2026-10-04T23:36:53.0554985+00:00",
+      "checkedAt": "2026-10-04T23:36:53.0554985+00:00",
+      "eTag": null,
+      "lastModified": "2016-04-08T12:57:18+00:00"
+    },
+    {
       "id": "harfbuzz-shaping",
       "title": "HarfBuzz shaping API",
       "url": "https://harfbuzz.github.io/harfbuzz-hb-shape.html",

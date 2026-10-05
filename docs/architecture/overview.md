@@ -15,7 +15,7 @@ window handles into portable surface/input contracts.
 
 SDL3 now handles windowing/input and software pixel presentation through
 Platform.Sdl. Engine.Text now uses HarfBuzzSharp with Linux/Windows native assets;
-SkiaSharp rasterization remains planned.
+Engine.Paint uses SkiaSharp CPU rasterization with explicit exact-byte font resources.
 V8 is the planned ECMAScript/WebAssembly runtime; its binding, native
 distribution, sandbox compatibility and supported architectures are decided
 and tested at the scripting phase.
@@ -58,7 +58,10 @@ not OS backends. Fonts are renderer-local native owners with managed run output.
 Engine.Layout references DOM/CSS/Text and returns finite block/inline geometry,
 rejecting unsupported formatting algorithms. See the
 [text/layout guide](../text-layout.md). Neither project fetches resources or
-initializes a display; painting remains phase 8.
+initializes a display. Engine.Paint consumes layout/styles and emits data-only
+commands then opaque BGRA frames. Engine.Content coordinates decoded HTML and
+caller CSS through those stages, without fetching resources, creating windows
+or collecting embedded styles. See the [painting guide](../painting.md).
 
 ## Windows, tabs and processes
 

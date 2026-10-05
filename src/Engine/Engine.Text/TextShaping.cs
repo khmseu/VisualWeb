@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using HarfBuzzSharp;
 using VisualWeb.Platform.Abstractions;
@@ -50,9 +51,12 @@ public sealed class TextFont : IDisposable
     private readonly Blob blob;
     private readonly Face face;
     private readonly TextOptions options;
+    private readonly byte[] fontData;
+    public int FaceIndex { get; }
     private readonly int thread = Environment.CurrentManagedThreadId;
     private bool disposed;
     public string Identity { get; }
+    public int FontDataLength { get { Check(); return fontData.Length; } }
 
     public TextFont(string path, int faceIndex = 0, TextOptions? options = null)
     {
@@ -64,6 +68,8 @@ public sealed class TextFont : IDisposable
         if (stream.Length > this.options.MaxFontBytes) { throw new TextLimitException("Font byte limit exceeded."); }
         var bytes = new byte[checked((int)stream.Length)];
         stream.ReadExactly(bytes);
+        fontData = bytes;
+        FaceIndex = faceIndex;
         if (stream.ReadByte() != -1) { throw new TextLimitException("Font grew beyond the bounded read."); }
         if (bytes.Length == 0) { throw new FontLoadException("Font file is empty."); }
         // FromStream uses a temporary managed pin with ReadOnly ownership; duplicate into native storage instead.
@@ -87,7 +93,15 @@ public sealed class TextFont : IDisposable
         {
             if (!loaded) { blob.Dispose(); }
         }
-        Identity = Path.GetFullPath(path) + "#" + faceIndex;
+        Identity = "sha256:" + Convert.ToHexString(SHA256.HashData(fontData)) + "#" + faceIndex;
+    }
+
+    /// <summary>Copy the exact loaded font bytes for an explicitly configured paint font resource.</summary>
+    /// <remarks>The recipient owns its copy; this does not reopen a path or share native handles.</remarks>
+    public byte[] CopyFontData()
+    {
+        Check();
+        return fontData.ToArray();
     }
 
     /// <summary>Shape a bounded Latin/LTR run with real OpenType substitutions and positioning.</summary>

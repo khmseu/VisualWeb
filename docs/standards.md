@@ -37,6 +37,7 @@ entry (it still uses conditional requests where possible).
 | `css-color`, `css-sizing`, `css-backgrounds` | Initial computed colors, dimensions and physical borders |
 | `css2-visual`, `css2-sizing` | Initial block/inline formatting and geometry constraints |
 | `harfbuzz-shaping`, `harfbuzz-font` | Native shaping and font APIs |
+| `css2-paint`, `skia-canvas` | Normal-flow display order and native CPU canvas API |
 | `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
 | `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
 | `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |

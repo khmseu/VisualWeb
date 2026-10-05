@@ -28,6 +28,8 @@ renderer thread. FontSet borrows registered fonts; owners dispose fonts after
 all shaping users are finished. ShapedRun is a managed snapshot containing
 glyph IDs, normalized screen-coordinate offsets, advances, UTF-16 clusters,
 font identity/size and horizontal metrics. Native handles never escape.
+Identity hashes exact loaded bytes plus face index; CopyFontData transfers an
+independent bounded byte copy for explicit [painting registration](painting.md).
 Positive y points down; glyph offsets are relative to the baseline. Clusters
 index the run's text, not document byte offsets or original whitespace.
 
@@ -84,6 +86,8 @@ root box. Hidden subtrees produce no geometry and do not require text shaping.
 LayoutResult returns nested block boxes with content/padding/border rectangles,
 used physical margins, line rectangles/baselines and shaped text fragments
 referencing renderer-local DOM text nodes and computed styles.
+LayoutBox.Flow records block children and anonymous line groups in original
+flow order for painting, alongside the separate Children and Lines collections.
 Coordinates are absolute CSS pixels. These are geometry inputs for later paint,
 not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
 
@@ -128,7 +132,8 @@ mode or silent geometry approximation.
   (including backgrounds), tables, ruby, lists/markers, replaced elements,
   controls, images/media/iframes and specialized element layout.
 - Vertical writing, fragmentation, scrolling/overflow clipping, device-pixel
-  border snapping, text decoration, content generation and paint ordering.
+  border snapping, text decoration and content generation.
+  Initial normal-flow painting is now documented in the [painting guide](painting.md).
 
 UnsupportedLayoutException / UnsupportedTextException do not return a partial
 successful tree. Invalid/stale input and missing native capabilities surface

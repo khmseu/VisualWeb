@@ -1,6 +1,6 @@
 # Project map
 
-Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css/Text/Layout and developer tools
+Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css/Text/Layout/Paint/Content and developer tools
 are implemented. Core.Primitives, other Engine projects, IPC and App projects remain
 library placeholders; app projects become executables when
 their real entry points are implemented. Do not add dummy browser entry points.
@@ -21,9 +21,9 @@ their real entry points are implemented. Do not add dummy browser entry points.
 | [Engine.Css](../src/Engine/Engine.Css/) | First-party CSS syntax, static selectors, finite cascade/computed properties | Engine.Dom only; CSS and selectors documents; [scope](css.md) |
 | [Engine.Text](../src/Engine/Engine.Text/) | Owned fonts, explicit face registration, native Latin/LTR shaping/metrics | Platform.Abstractions, HarfBuzzSharp + Linux/Win32 native assets; [scope](text-layout.md) |
 | [Engine.Layout](../src/Engine/Engine.Layout/) | Finite block/inline geometry, space wrapping and baseline lines | Engine.Css, Engine.Dom, Engine.Text; [scope](text-layout.md) |
-| [Engine.Paint](../src/Engine/Engine.Paint/) | Display lists and Skia rasterization | Engine.Layout, Platform.Abstractions |
+| [Engine.Paint](../src/Engine/Engine.Paint/) | Immutable display lists, Skia CPU pixels and portable presentation | Engine.Layout, Platform.Abstractions, SkiaSharp; [scope](painting.md) |
 | [Engine.Scripting](../src/Engine/Engine.Scripting/) | V8 host boundary, future Web IDL bindings | `ecmascript`, `webidl`, HTML event loop |
-| [Engine.Content](../src/Engine/Engine.Content/) | Per-page orchestration | Engine subsystems, no shell/backend dependency |
+| [Engine.Content](../src/Engine/Engine.Content/) | Offline decoded HTML/CSS-to-frame orchestration | Engine.Html/Paint, no loading/shell/backend dependency; [scope](painting.md) |
 | [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages | No DOM/native object dependencies |
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | In-process development and cross-process transports | Ipc.Contracts |
 | [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Windows, tabs, chrome, privileged brokers | Platform composition, IPC |
@@ -43,5 +43,8 @@ pinned WPT An+B cases and resource-limit regressions.
 The [Engine.Text.Tests](../tests/Engine.Text.Tests/) and
 [Engine.Layout.Tests](../tests/Engine.Layout.Tests/) suites cover native fonts,
 ownership/shaping, deterministic geometry and native integration without a display.
+The [Engine.Paint.Tests](../tests/Engine.Paint.Tests/) and
+[Engine.Content.Tests](../tests/Engine.Content.Tests/) suites add exact pixels,
+glyph command preservation, native Skia rendering and offline page integration.
 Add project-specific suites as implementations arrive, using the
 [test convention](../tests/README.md).
