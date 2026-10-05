@@ -27,3 +27,5 @@ dotnet run --project tools/PlatformSmoke -- wayland --skip-text-input
 The tool prints a prominent skipped-check diagnostic. Do not use this option
 to claim full keyboard/IME validation. Native Windows and arm64 checks must
 run on those targets; a dummy driver pass is not desktop portability proof.
+The browser's [Windows confinement smoke](../../docs/windows-confinement.md)
+additionally exercises an AppContainer renderer and exact page pixels.

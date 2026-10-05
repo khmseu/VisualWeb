@@ -95,11 +95,12 @@ Linux x64 namespace/mount/seccomp confinement through the SDL-independent
 Platform.Linux.Sandbox bootstrap; see the [confinement guide](../linux-confinement.md).
 Phase 10c additionally requires verified kernel memory/swap/task/CPU limits
 in a separate owned systemd user scope per renderer, without global configuration.
-Windows/arm64 and production isolation remain unfinished; unsupported requests
-fail closed.
+Windows adds an optional AppContainer/Job Object renderer profile. Linux arm64
+validation and production isolation remain unfinished; unsupported requests fail
+closed.
 The phase-1 project split is not itself process isolation or a sandbox.
-Linux namespaces/seccomp are now available for the exact documented x64
-profile; Windows AppContainer/Job Objects remain planned. These are not
+Linux namespaces/seccomp/cgroups and Windows AppContainer/Job Objects are
+available for their exact documented profiles. These are not
 interchangeable guarantees. Sandboxing must fail explicitly
 when requested guarantees cannot be supplied; process separation alone is
 not sufficient for hostile web content.

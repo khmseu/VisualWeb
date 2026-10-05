@@ -68,11 +68,14 @@
   cancellation and crash recovery. Stdout is protocol only; drain stderr.
   Process separation is not confinement: unsupported sandbox-required launch must refuse.
   Workers use their own native font owners; never publish stale render results.
-- Read the [Linux confinement guide](docs/linux-confinement.md) before sandbox
-  changes. Linux x64 uses required namespaces, read-only mounts, cleared environment
+- Read the [Linux confinement guide](docs/linux-confinement.md) and
+  [Windows confinement guide](docs/windows-confinement.md) before sandbox changes.
+  Linux x64 uses required namespaces, read-only mounts, cleared environment
   and a default-deny libseccomp filter before content. Never add fallback or
   broad host mounts to make startup pass; test precise syscall/mount guarantees.
-  Windows/arm64 fail closed. Required Linux confinement now also requires
+  Windows renderers use the documented AppContainer/Job Object profile;
+  unsupported Windows versions fail closed and native target validation remains
+  required. Required Linux confinement also requires
   verified cgroup v2 memory/swap/task/CPU settings in an owned systemd user scope.
   Managed heap limits are not OS memory quotas; preserve native resource probes
   and targeted scope cleanup. Missing user-manager/controller support must fail closed.

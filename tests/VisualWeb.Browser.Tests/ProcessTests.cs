@@ -2,6 +2,7 @@ using System.Diagnostics;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Platform.Linux.Sandbox;
+using VisualWeb.Platform.Windows.Sandbox;
 using Xunit;
 
 namespace VisualWeb.Browser.Tests;
@@ -96,7 +97,8 @@ public sealed class ProcessTests
     {
         if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
         {
-            Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true));
+            if (OperatingSystem.IsWindows()) { WindowsRendererSandbox.RequireSupport(); }
+            else { Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true)); }
         }
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--require-sandbox"]));
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath]));
@@ -104,13 +106,18 @@ public sealed class ProcessTests
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--font", FontPath, "--renderer", RendererPath]));
         var options = BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath, "--renderer", RendererPath]);
         Assert.Equal(RendererPath, options.RendererPath);
+        if (OperatingSystem.IsWindows())
+        {
+            var sandboxed = BrowserLaunchOptions.Parse(["--development-multiprocess", "--require-sandbox",
+                "--font", FontPath, "--renderer", RendererPath]);
+            Assert.True(sandboxed.RequireSandbox);
+        }
     }
     [Fact]
     public async Task RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash()
     {
         if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
         {
-            Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true));
             return;
         }
         using var renderer = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
@@ -126,6 +133,17 @@ public sealed class ProcessTests
         Assert.Contains("exited", renderer.TakeFailure());
         Assert.Equal("Blue", (await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Title);
         Assert.NotEqual(pid, renderer.ProcessId);
+    }
+
+    [Fact]
+    public async Task RequiredWindowsConfinementReturnsExactPixels()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        using var renderer = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        var page = await renderer.RenderAsync(Blue, new(20, 10, 1.25), Cancellation);
+        Assert.Equal(new VisualWeb.Platform.Abstractions.PixelSize(25, 13), page.Frame.Size);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, page.Frame.Pixels.Span[..4].ToArray());
+        Assert.NotEqual(Environment.ProcessId, renderer.ProcessId);
         using var child = Process.GetProcessById(renderer.ProcessId!.Value);
         renderer.Dispose();
         await child.WaitForExitAsync(Cancellation);
@@ -139,7 +157,6 @@ public sealed class ProcessTests
     {
         if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
         {
-            Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true));
             return;
         }
         using var renderer = new ProcessPageRenderer(PeerPath, "missing-profile", requireSandbox: true);

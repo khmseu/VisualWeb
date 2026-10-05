@@ -11,5 +11,6 @@
     <ProjectReference Include="../../Platform/Platform.Linux/Platform.Linux.csproj" />
     <ProjectReference Include="../../Platform/Platform.Linux.Sandbox/Platform.Linux.Sandbox.csproj" />
     <ProjectReference Include="../../Platform/Platform.Windows/Platform.Windows.csproj" />
+    <ProjectReference Include="../../Platform/Platform.Windows.Sandbox/Platform.Windows.Sandbox.csproj" />
   </ItemGroup>
 </Project>

@@ -166,8 +166,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   crash/restart behavior. Single-process development remains available and
   sandbox-required launches refuse. See [process scope](../docs/renderer-processes.md).
   Approved phase 10b adds Linux-first x64 renderer namespace/mount/seccomp
-  confinement and actual denial probes; Windows/arm64 requests fail closed.
-  See [exact guarantees](../docs/linux-confinement.md). This does **not** complete
+  confinement and actual denial probes. Windows adds an opt-in AppContainer/
+  Job Object profile with a per-renderer process/memory/CPU bound; Linux arm64
+  requests still fail closed. See [Linux guarantees](../docs/linux-confinement.md)
+  and [Windows guarantees](../docs/windows-confinement.md). This does **not** complete
   phase 10: other native targets and production
   isolation remain unfinished.
   Approved phase 10c adds hard Linux per-worker cgroup v2 memory/swap/task/CPU

@@ -11,7 +11,8 @@ explicitly development-only, not isolated production browsing.
 | [Platform.Sdl](../src/Platform/Platform.Sdl/) | Shared SDL windows/input/pixels and managed process/font services | Platform.Abstractions, SDL3-CS + Native |
 | [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and generic processes | Platform.Sdl; renderer confinement is a separate module |
 | [Platform.Linux.Sandbox](../src/Platform/Platform.Linux.Sandbox/) | Linux x64 required namespaces/mounts/seccomp and per-worker hard cgroup resource scopes | BCL + bubblewrap/libseccomp/systemd user manager; no SDL; [scope](linux-confinement.md) |
-| [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and processes; confinement deferred | Platform.Sdl |
+| [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and generic processes | Platform.Sdl |
+| [Platform.Windows.Sandbox](../src/Platform/Platform.Windows.Sandbox/) | AppContainer renderer token and per-worker Job Object limits | Windows APIs; [scope](windows-confinement.md) |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
 | [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
 | [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders and BOM sniffing | Embedded WHATWG indices; `encoding` |

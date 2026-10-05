@@ -5,6 +5,7 @@ using VisualWeb.Engine.Paint;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using VisualWeb.Platform.Linux.Sandbox;
+using VisualWeb.Platform.Windows.Sandbox;
 
 namespace VisualWeb.Browser;
 
@@ -17,11 +18,12 @@ public sealed class RendererProcessException(string message) : IOException(messa
 /// Canceled/failed exchanges kill only this owned worker; the next request launches a replacement.</remarks>
 public sealed class ProcessPageRenderer : IPageRenderer
 {
-    private sealed class Connection(Process process, LinuxRendererResources? resources) : IDisposable
+    private sealed class Connection(Process process, LinuxRendererResources? resources, WindowsRendererWorker? windowsWorker) : IDisposable
     {
         internal LinuxRendererResources? Resources { get; } = resources;
         internal Process Process { get; } = process;
-        internal RendererChannel Channel { get; } = new(process.StandardOutput.BaseStream, process.StandardInput.BaseStream);
+        internal RendererChannel Channel { get; } = new(windowsWorker?.Output ?? process.StandardOutput.BaseStream,
+            windowsWorker?.Input ?? process.StandardInput.BaseStream);
         internal Task? Diagnostics { get; set; }
         private string tail = "";
         private readonly object sync = new();
@@ -30,18 +32,26 @@ public sealed class ProcessPageRenderer : IPageRenderer
             lock (sync) { tail = (tail + text.ToString()); if (tail.Length > 8192) { tail = tail[^8192..]; } }
         }
         internal string Tail { get { lock (sync) { return tail; } } }
+        internal void Abort() => windowsWorker?.Terminate();
         public void Dispose()
         {
             try { Resources?.Stop(); }
             finally
             {
-                if (!Process.HasExited)
+                if (windowsWorker is not null)
                 {
-                    try { Process.Kill(entireProcessTree: true); }
-                    catch (InvalidOperationException) when (Process.HasExited) { }
-                    catch (Win32Exception) when (Process.HasExited) { }
+                    windowsWorker.Dispose();
                 }
-                Process.Dispose();
+                else
+                {
+                    if (!Process.HasExited)
+                    {
+                        try { Process.Kill(entireProcessTree: true); }
+                        catch (InvalidOperationException) when (Process.HasExited) { }
+                        catch (Win32Exception) when (Process.HasExited) { }
+                    }
+                    Process.Dispose();
+                }
             }
         }
     }
@@ -56,13 +66,27 @@ public sealed class ProcessPageRenderer : IPageRenderer
     private bool disposed;
     private long nextId;
     private readonly bool requireSandbox;
+    private readonly string? requiredSandboxProfile;
     public int? ProcessId { get { lock (sync) { return connection?.Process.Id; } } }
     public string? ResourceUnit { get { lock (sync) { return connection?.Resources?.Unit; } } }
 
     public ProcessPageRenderer(string rendererPath, string fontPath, TimeSpan? timeout = null,
         bool requireSandbox = false, string? dotnetPath = null)
     {
-        if (requireSandbox) { LinuxRendererResources.RequireSupport(); }
+        if (requireSandbox)
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                LinuxRendererResources.RequireSupport();
+                requiredSandboxProfile = LinuxRendererSandbox.Profile;
+            }
+            else if (OperatingSystem.IsWindows())
+            {
+                WindowsRendererSandbox.RequireSupport();
+                requiredSandboxProfile = WindowsRendererSandbox.Profile;
+            }
+            else { throw new PlatformNotSupportedException("Renderer confinement is unavailable on this platform."); }
+        }
         this.requireSandbox = requireSandbox;
         ArgumentException.ThrowIfNullOrWhiteSpace(rendererPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
@@ -110,13 +134,16 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 started = connection is null;
                 current = connection ??= Start();
             }
+            using var cancellationAbort = requireSandbox && OperatingSystem.IsWindows()
+                ? deadline.Token.Register(() => current?.Abort())
+                : default;
             if (started)
             {
                 var hello = await Receive(current, deadline.Token).ConfigureAwait(false);
                 if (hello.Message.Kind != "hello") { throw new IpcProtocolException("Renderer handshake is missing."); }
-                if (requireSandbox && hello.Message.SandboxProfile != LinuxRendererSandbox.Profile)
+                if (requireSandbox && hello.Message.SandboxProfile != requiredSandboxProfile)
                 {
-                    throw new IpcProtocolException("Renderer did not confirm the required Linux confinement profile.");
+                    throw new IpcProtocolException("Renderer did not confirm the required platform confinement profile.");
                 }
             }
             await current.Channel.WriteAsync(request, cancellationToken: deadline.Token).ConfigureAwait(false);
@@ -135,6 +162,15 @@ public sealed class ProcessPageRenderer : IPageRenderer
         {
             Stop(current);
             if (cancellationToken.IsCancellationRequested || lifetime.IsCancellationRequested) { throw; }
+            throw new RendererProcessException("Renderer startup/render deadline exceeded; worker terminated.");
+        }
+        catch (Exception) when (deadline.IsCancellationRequested)
+        {
+            Stop(current);
+            if (cancellationToken.IsCancellationRequested || lifetime.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(deadline.Token);
+            }
             throw new RendererProcessException("Renderer startup/render deadline exceeded; worker terminated.");
         }
         catch (Exception exception) when (exception is IOException or Win32Exception or InvalidOperationException or ObjectDisposedException)
@@ -157,6 +193,18 @@ public sealed class ProcessPageRenderer : IPageRenderer
     }
     private Connection Start()
     {
+        if (requireSandbox && OperatingSystem.IsWindows())
+        {
+            if (!rendererPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new PlatformNotSupportedException("Windows confinement requires the framework-dependent renderer DLL.");
+            }
+            var worker = WindowsRendererSandbox.Start(Path.GetDirectoryName(rendererPath)!, fontPath,
+                RuntimeEnvironment.GetRuntimeDirectory(), Path.GetFileName(rendererPath));
+            var connection = new Connection(worker.Process, null, worker);
+            connection.Diagnostics = DrainDiagnostics(connection, worker.Error);
+            return connection;
+        }
         var dll = rendererPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
         var info = new ProcessStartInfo(dll ? dotnetPath : rendererPath)
         {
@@ -177,8 +225,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
         info.ArgumentList.Add("--font"); info.ArgumentList.Add(fontPath);
         var resources = requireSandbox ? new LinuxRendererResources() : null;
         var process = Process.Start(resources?.Wrap(info) ?? info) ?? throw new RendererProcessException("Renderer process did not start.");
-        var owner = new Connection(process, resources);
-        owner.Diagnostics = DrainDiagnostics(owner);
+        var owner = new Connection(process, resources, null);
+        owner.Diagnostics = DrainDiagnostics(owner, process.StandardError.BaseStream);
         return owner;
     }
     private static string RuntimeHost()
@@ -191,9 +239,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         return host;
     }
-    private static async Task DrainDiagnostics(Connection owner)
+    private static async Task DrainDiagnostics(Connection owner, Stream error)
     {
-        var reader = owner.Process.StandardError;
+        using var reader = new StreamReader(error);
         var buffer = new char[1024];
         try
         {
