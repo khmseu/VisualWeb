@@ -30,7 +30,7 @@ try
         textInput: !launch.SkipTextInput, rendererPath: launch.RendererPath, requireSandbox: launch.RequireSandbox);
     shell.OpenWindow(launch.Url);
     if (!launch.Smoke) { shell.Run(); return 0; }
-    BrowserSmoke.Run(shell);
+    BrowserSmoke.Run(shell, launch.RequireSandbox);
     Console.WriteLine($"PASS: {system.Backend}; native page pixels, address focus, tabs, history, multiple windows and lifecycle; {shell.PresentedFrames} presented frames.");
     return 0;
 }
@@ -108,12 +108,18 @@ namespace VisualWeb.Browser
 
     internal static class BrowserSmoke
     {
-        internal static void Run(DevelopmentShell shell)
+        internal static void Run(DevelopmentShell shell, bool requireSandbox)
         {
             Wait(shell, () => shell.Controller.Session.Windows.SelectMany(w => w.Tabs).All(t => !t.IsLoading));
             var first = shell.Controller.Session.Windows.Single();
             Require(first.ActiveTab?.Error is null && shell.Controller.Page(first.ActiveTab!.Id) is not null, "Initial page failed.");
             var native = shell.Windows.Single().Native;
+            var window = SDL.GetWindowFromID(native.Value);
+            var warning = requireSandbox
+                ? OperatingSystem.IsWindows() ? "WINDOWS APP CONTAINER REQUIRED" : "LINUX CONFINEMENT REQUIRED"
+                : "NO SANDBOX";
+            Require(SDL.GetWindowTitle(window).Contains(warning, StringComparison.Ordinal),
+                "Native window title does not identify the active confinement mode.");
             Push(SDL.Scancode.L, SDL.Keymod.Ctrl);
             shell.Tick();
             Push(SDL.Scancode.Escape);
@@ -128,9 +134,8 @@ namespace VisualWeb.Browser
             Require(tab.Error is null && tab.History.Entries.Count == 2, "Navigation did not commit.");
             var pixel = shell.Controller.Page(tab.Id)!.Frame.Pixels.Span;
             Require(pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0 && pixel[3] == 255, "Page did not reach native BGRA pixels.");
-            var handle = SDL.GetWindowFromID(native.Value);
-            Require(SDL.GetWindowSizeInPixels(handle, out _, out var nativeHeight), SDL.GetError());
-            var surface = SDL.GetWindowSurface(handle);
+            Require(SDL.GetWindowSizeInPixels(window, out _, out var nativeHeight), SDL.GetError());
+            var surface = SDL.GetWindowSurface(window);
             Require(SDL.ReadSurfacePixel(surface, 0, nativeHeight - 1, out var red, out var green, out var nativeBlue, out _), SDL.GetError());
             Require(red == 0 && green == 0 && nativeBlue == 255, "Composed page pixels did not reach the SDL surface.");
             shell.Controller.Back(tab.Id);

@@ -42,6 +42,7 @@ Linux auto-selects Wayland/X11 through the existing platform composition root.
 backend; failures and fallback diagnostics are logged, never silently hidden.
 The mode warning also remains drawn above the tab strip, identifying
 NO SANDBOX, LINUX CONFINEMENT REQUIRED or WINDOWS APP CONTAINER REQUIRED.
+The native window title retains the same warning alongside the active page title.
 
 ## Controls
 

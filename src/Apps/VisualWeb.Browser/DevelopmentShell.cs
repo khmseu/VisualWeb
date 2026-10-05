@@ -88,8 +88,7 @@ public sealed class DevelopmentShell : IDisposable
         IPlatformWindow? native = null;
         try
         {
-            native = system.CreateWindow(new("VisualWeb - DEVELOPMENT - "
-                + (requireSandbox ? "LINUX CONFINEMENT REQUIRED" : "NO SANDBOX"), 1000, 720, hidden));
+            native = system.CreateWindow(new(WindowTitle(null), 1000, 720, hidden));
             var view = new View(native);
             views.Add(window.Id, view);
             native.EventReceived += Dispatch;
@@ -141,7 +140,7 @@ public sealed class DevelopmentShell : IDisposable
                 if (!view.SizeLimitReported)
                 {
                     const string error = "Window exceeds framebuffer limit; resize it smaller.";
-                    view.Native.SetTitle("VisualWeb DEVELOPMENT - " + error);
+                    view.Native.SetTitle(WindowTitle(error));
                     Console.Error.WriteLine(error);
                     view.SizeLimitReported = true;
                 }
@@ -169,8 +168,7 @@ public sealed class DevelopmentShell : IDisposable
                 size, density, view.Editing ? view.Editor : null);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
-            view.Native.SetTitle("VisualWeb DEVELOPMENT - "
-                + string.Concat((window.ActiveTab?.Title ?? "New window").EnumerateRunes().Take(120).Select(r => r.ToString())));
+            view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
             view.Dirty = false;
             PresentedFrames++;
         }
@@ -294,6 +292,14 @@ public sealed class DevelopmentShell : IDisposable
         view.Editing = enabled;
         if (enabled) { view.Editor.Reset(window.ActiveTab!.AddressText, selectAll: true); }
         view.Dirty = true;
+    }
+    private string WindowTitle(string? title)
+    {
+        var warning = requireSandbox
+            ? OperatingSystem.IsWindows() ? "WINDOWS APP CONTAINER REQUIRED" : "LINUX CONFINEMENT REQUIRED"
+            : "NO SANDBOX";
+        var value = "VisualWeb DEVELOPMENT - " + warning + " - " + (title ?? "New window");
+        return string.Concat(value.EnumerateRunes().Take(120).Select(rune => rune.ToString()));
     }
     private void SynchronizeWindows()
     {

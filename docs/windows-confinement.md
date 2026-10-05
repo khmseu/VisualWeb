@@ -74,6 +74,10 @@ pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
 on Windows. `WindowsSandboxSmoke` probes actual host-file/environment,
 process-creation, loopback-network and storage-write denials. The native platform
 smoke separately validates actual SDL windows, events, pixels, fonts and
-lifecycle. The Windows confinement workflow runs the build, platform/browser
-suites and denial probe on native Windows x64 and arm64 runners; Linux builds
-and policy tests do not certify those targets.
+lifecycle. On native Windows x64 and arm64 runners, the Windows confinement
+workflow also runs the platform smoke and browser smoke in local, unsandboxed
+multiprocess, and required-sandbox multiprocess modes. Together with the worker
+denial probe, these exercise native window presentation and the full confined
+browser launch path on both architectures. They do not certify high-DPI desktop
+behavior or production isolation; Linux builds and policy tests do not certify
+Windows targets.
