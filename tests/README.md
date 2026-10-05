@@ -46,6 +46,11 @@ filesystem/network/process/namespace denials; it is not a conformance-data fetch
 Its `--resources` mode additionally verifies kernel-accounted native OOM, task
 denial and CPU throttling within bounded owned scopes. Platform tests reject
 wrong/max kernel settings and unavailable manager launch without fallback.
+Phase-10d browser tests also drive those same resource probes over real confined
+IPC: native OOM failure/restart and transactional history, task-denial/channel
+reuse, CPU-pressure cancellation/deadlines, queued cancellation and tab-close
+cleanup with unaffected actual-renderer tabs. The peer alone has a trusted
+OOM-evidence supervisor; production renderers have no fault-injection hooks.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">

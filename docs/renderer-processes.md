@@ -117,6 +117,12 @@ exchange. Idle exits are reported once to the owning tab, preserving its last
 frame/history and any pending browser fetch; reload or that pending navigation
 can recover. EOF waits for exit and final stderr within the existing deadline.
 Other tabs' processes and frames are unaffected.
+Phase 10d exercises this lifecycle under actual Linux cgroup pressure through a
+private confined test peer: native OOM invalidates the exchange and a later render
+starts a fresh scope; CPU-throttled requests remain cancelable/deadline-bounded;
+task denial followed by joined threads leaves the channel usable. Canceling a
+queued request does not stop the active exchange. Closing a pressured tab
+collects only its scope and never publishes its stale result or failure.
 Unexpected worker exceptions go to stderr and exit nonzero, not success-shaped
 fallback frames.
 
@@ -129,6 +135,12 @@ test cancellation and disposal. The private
 [test peer](../tests/Renderer.TestPeer/) deterministically supplies wrong IDs,
 wrong sizes, transparent frames, partial-message exits, oversized stderr and
 startup/render hangs. DLL and native apphost launches both have exact-pixel tests.
+The peer's Linux resource mode uses the production confinement bootstrap and
+the same kernel-backed exhaustion helpers as LinuxSandboxSmoke. Its trusted
+outer supervisor survives the nested worker's OOM long enough to report
+`memory.events oom_kill` on stderr; it never parses page content or alters the
+production renderer. Controller tests preserve the last committed frame/history
+on failed OOM navigation, deliver one tab-local failure and recover on reload.
 Async fake renderers separately prove stale navigation/resize and closed-tab
 results cannot publish. No test needs remote networking or a display.
 

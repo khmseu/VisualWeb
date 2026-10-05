@@ -170,6 +170,10 @@ public sealed class ProcessTests
         Assert.Null(first.ResourceUnit);
         Assert.Equal("Blue", (await second.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Title);
         Assert.Equal(secondPid, second.ProcessId);
+        await AssertScopeCollected(unit);
+    }
+    private static async Task AssertScopeCollected(string unit)
+    {
         var query = new ProcessStartInfo("/usr/bin/systemctl")
         {
             UseShellExecute = false,
@@ -184,6 +188,211 @@ public sealed class ProcessTests
         Assert.Equal(0, state.ExitCode);
         Assert.Equal("", await error);
         Assert.Equal("not-found", (await output).Trim());
+    }
+    [Fact]
+    public async Task NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        using var first = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
+        using var second = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await first.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var healthy = await second.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var secondPid = second.ProcessId; var secondUnit = second.ResourceUnit;
+        var oldUnit = first.ResourceUnit!;
+        using var launcher = Process.GetProcessById(first.ProcessId!.Value);
+        var failure = await Assert.ThrowsAsync<RendererProcessException>(() =>
+            first.RenderAsync(Blue with { Html = "memory" }, new(20, 10, 1), Cancellation));
+        Assert.Contains("KERNEL_OOM_KILL", failure.Message);
+        Assert.Null(first.ProcessId); Assert.Null(first.ResourceUnit); Assert.Null(first.TakeFailure());
+        Assert.True(launcher.WaitForExit(5000));
+        await AssertScopeCollected(oldUnit);
+        var unchanged = await second.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(secondPid, second.ProcessId); Assert.Equal(secondUnit, second.ResourceUnit);
+        Assert.Equal(healthy.Frame.Pixels.ToArray(), unchanged.Frame.Pixels.ToArray());
+        var recovered = await first.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.NotEqual(oldUnit, first.ResourceUnit);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, recovered.Frame.Pixels.Span[..4].ToArray());
+    }
+    [Fact]
+    public async Task TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var pid = renderer.ProcessId; var unit = renderer.ResourceUnit;
+        var exhausted = await renderer.RenderAsync(Blue with { Html = "tasks" }, new(20, 10, 1), Cancellation);
+        var recovered = await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(pid, renderer.ProcessId); Assert.Equal(unit, renderer.ResourceUnit);
+        Assert.Equal(exhausted.Frame.Pixels.ToArray(), recovered.Frame.Pixels.ToArray());
+        Assert.Null(renderer.TakeFailure());
+    }
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(bool cancel)
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, TimeSpan.FromSeconds(12), requireSandbox: true);
+        using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var healthy = await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var otherPid = other.ProcessId; var otherUnit = other.ResourceUnit;
+        var unit = renderer.ResourceUnit!;
+        using var launcher = Process.GetProcessById(renderer.ProcessId!.Value);
+        var membership = File.ReadAllLines($"/proc/{launcher.Id}/cgroup").Single(line => line.StartsWith("0::/", StringComparison.Ordinal));
+        var group = Path.Combine("/sys/fs/cgroup", membership[4..]);
+        long Throttled() => long.Parse(File.ReadAllLines(Path.Combine(group, "cpu.stat"))
+            .Single(line => line.StartsWith("nr_throttled ", StringComparison.Ordinal))["nr_throttled ".Length..],
+            System.Globalization.CultureInfo.InvariantCulture);
+        var before = Throttled();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        var timer = Stopwatch.StartNew();
+        var rendering = renderer.RenderAsync(Blue with { Html = "cpu" }, new(20, 10, 1), cancellation.Token);
+        while (Throttled() <= before && timer.Elapsed < TimeSpan.FromSeconds(6))
+        {
+            Assert.False(rendering.IsCompleted);
+            await Task.Delay(20, Cancellation);
+        }
+        Assert.True(Throttled() > before, "The active IPC worker must actually be CPU-throttled.");
+        using (var queuedCancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation))
+        {
+            var queued = renderer.RenderAsync(Blue, new(20, 10, 1), queuedCancellation.Token);
+            queuedCancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued);
+            Assert.Equal(launcher.Id, renderer.ProcessId); Assert.Equal(unit, renderer.ResourceUnit);
+            Assert.False(rendering.IsCompleted);
+        }
+        if (cancel)
+        {
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => rendering);
+        }
+        else
+        {
+            var failure = await Assert.ThrowsAsync<RendererProcessException>(() => rendering);
+            Assert.Contains("deadline", failure.Message);
+        }
+        Assert.True(timer.Elapsed < TimeSpan.FromSeconds(20));
+        Assert.Null(renderer.ProcessId); Assert.Null(renderer.ResourceUnit);
+        Assert.True(launcher.WaitForExit(5000));
+        await AssertScopeCollected(unit);
+        var unchanged = await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(otherPid, other.ProcessId); Assert.Equal(otherUnit, other.ResourceUnit);
+        Assert.Equal(healthy.Frame.Pixels.ToArray(), unchanged.Frame.Pixels.ToArray());
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.NotEqual(unit, renderer.ResourceUnit);
+    }
+    [Fact]
+    public void ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        var renderers = new List<ProcessPageRenderer>();
+        using var controller = new BrowserController(() => new ResourceSource(), () =>
+        {
+            var renderer = new ProcessPageRenderer(renderers.Count == 0 ? PeerPath : RendererPath, FontPath, requireSandbox: true);
+            renderers.Add(renderer);
+            return renderer;
+        });
+        var window = controller.Session.CreateWindow();
+        var first = controller.CreateTab(window.Id); var second = controller.CreateTab(window.Id);
+        var failures = new List<TabId>();
+        controller.Failed += (id, _) => failures.Add(id);
+        controller.Navigate(first.Id, Blue.Url.Href); controller.Navigate(second.Id, Blue.Url.Href);
+        Wait(() => !first.IsLoading && !second.IsLoading);
+        Assert.Null(first.Error); Assert.Null(second.Error);
+        var frame = controller.Page(first.Id); var otherFrame = controller.Page(second.Id);
+        var otherPid = renderers[1].ProcessId; var otherUnit = renderers[1].ResourceUnit;
+        var oldUnit = renderers[0].ResourceUnit;
+        controller.Navigate(first.Id, "data:text/html,memory");
+        Wait(() => !first.IsLoading);
+        Assert.Contains("KERNEL_OOM_KILL", first.Error);
+        Assert.Equal(new[] { first.Id }, failures);
+        Assert.Same(frame, controller.Page(first.Id)); Assert.Same(otherFrame, controller.Page(second.Id));
+        Assert.Single(first.History.Entries); Assert.Equal(Blue.Url.Href, first.History.Current!.Href);
+        Assert.Null(second.Error); Assert.Equal(otherPid, renderers[1].ProcessId); Assert.Equal(otherUnit, renderers[1].ResourceUnit);
+        Assert.Null(renderers[0].ResourceUnit);
+        controller.Reload(first.Id);
+        Wait(() => !first.IsLoading);
+        Assert.Null(first.Error); Assert.NotEqual(oldUnit, renderers[0].ResourceUnit);
+        Assert.Single(first.History.Entries); Assert.Equal(Blue.Url.Href, first.History.Current!.Href);
+        Assert.Equal(new[] { first.Id }, failures);
+        void Wait(Func<bool> ready)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => new(20, 10, 1));
+                if (ready()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(35));
+            Assert.Fail("Resource controller integration timed out.");
+        }
+    }
+    private sealed class ResourceSource : IPageSource
+    {
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
+            Task.FromResult(Blue with
+            {
+                Url = url,
+                Html = url.Href switch { "data:text/html,memory" => "memory", "data:text/html,cpu" => "cpu", _ => Blue.Html }
+            });
+        public void Dispose() { }
+    }
+    [Fact]
+    public async Task ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure()
+    {
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        var renderers = new List<ProcessPageRenderer>();
+        using var controller = new BrowserController(() => new ResourceSource(), () =>
+        {
+            var renderer = new ProcessPageRenderer(renderers.Count == 0 ? PeerPath : RendererPath, FontPath, requireSandbox: true);
+            renderers.Add(renderer);
+            return renderer;
+        });
+        var window = controller.Session.CreateWindow();
+        var first = controller.CreateTab(window.Id); var second = controller.CreateTab(window.Id);
+        var failures = new List<TabId>();
+        controller.Failed += (id, _) => failures.Add(id);
+        controller.Navigate(first.Id, Blue.Url.Href); controller.Navigate(second.Id, Blue.Url.Href);
+        Wait(() => !first.IsLoading && !second.IsLoading);
+        Assert.Null(first.Error); Assert.Null(second.Error);
+        using var launcher = Process.GetProcessById(renderers[0].ProcessId!.Value);
+        var unit = renderers[0].ResourceUnit!;
+        var membership = File.ReadAllLines($"/proc/{launcher.Id}/cgroup").Single(line => line.StartsWith("0::/", StringComparison.Ordinal));
+        var cpu = Path.Combine("/sys/fs/cgroup", membership[4..], "cpu.stat");
+        long Throttled() => long.Parse(File.ReadAllLines(cpu).Single(line => line.StartsWith("nr_throttled ", StringComparison.Ordinal))
+            ["nr_throttled ".Length..], System.Globalization.CultureInfo.InvariantCulture);
+        var before = Throttled();
+        var otherFrame = controller.Page(second.Id); var otherPid = renderers[1].ProcessId; var otherUnit = renderers[1].ResourceUnit;
+        controller.Navigate(first.Id, "data:text/html,cpu");
+        Wait(() => Throttled() > before);
+        Assert.True(first.IsLoading);
+        controller.CloseTab(first.Id);
+        Assert.False(controller.Session.Contains(first.Id));
+        Assert.Null(renderers[0].ProcessId); Assert.Null(renderers[0].ResourceUnit);
+        Assert.True(launcher.WaitForExit(5000));
+        controller.Pump(_ => new(20, 10, 1));
+        Assert.Same(otherFrame, controller.Page(second.Id));
+        controller.Reload(second.Id);
+        Wait(() => !second.IsLoading);
+        Assert.Null(second.Error); Assert.Empty(failures);
+        Assert.Equal(otherPid, renderers[1].ProcessId); Assert.Equal(otherUnit, renderers[1].ResourceUnit);
+        Assert.Single(second.History.Entries);
+        controller.Dispose();
+        await AssertScopeCollected(unit);
+        void Wait(Func<bool> ready)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => new(20, 10, 1));
+                if (ready()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("CPU-pressure tab-close integration timed out.");
+        }
     }
     [Fact]
     public void ExternalPixelFrameIsCopiedAndRejectsInvalidContract()

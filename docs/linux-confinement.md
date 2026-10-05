@@ -225,6 +225,36 @@ pages trigger `memory.events oom_kill`. A trusted supervisor in the same scope
 survives to read the OOM counter; each probe scope is stopped/collected afterwards.
 No host-wide pressure or unrestricted allocation test is performed.
 
+### Resource-exhaustion lifecycle (phase 10d)
+
+Browser integration now drives the shared native resource probes through a
+private **test-only** peer's profile-confirmed IPC channel. This peer uses the
+same scope limits and namespace/seccomp bootstrap as production. A trusted outer
+supervisor retains the scope long enough to read the kernel OOM counter after
+the nested native allocator is killed, then writes evidence to stderr and exits.
+No fault-injection commands or resource-test hooks are added to the production
+renderer.
+
+Measured behaviors include:
+
+- Native OOM produces an exchange failure, clears the failed worker/scope and
+  allows a fresh scoped render. Another actual renderer keeps its PID, scope
+  and exact pixels.
+- Failed OOM navigation preserves committed history and the previous frame;
+  the UI receives one failure for that tab and reload recovers without adding
+  a history entry.
+- Kernel task denial is followed by joining the probe threads; subsequent
+  replies use the same confined process/channel.
+- CPU-throttled exchanges can be canceled or expire at their deadline. A
+  canceled queued request does not terminate the active worker. Cleanup
+  collects the owned scope and a later request starts a new one.
+- Closing a tab during CPU pressure terminates its scope without publishing a
+  stale frame/failure or changing the other tab's renderer and history.
+
+Supervisor references are detached before disposal so a failed cleanup cannot
+leave a disposed connection available to later polling or renderer diagnostics.
+Cleanup errors still surface; this is not a retry or weaker launch fallback.
+
 Origin/CORS/CSP and site isolation, full web standards, Windows confinement,
 Linux arm64 and production-safe hostile browsing remain unfinished.
 
@@ -269,3 +299,18 @@ renderer/probe processes or transient scopes remain after validation.
 
 This closes the documented Linux per-worker hard-resource gap; it does not
 certify other targets, production web security or a whole-browser resource budget.
+
+### Phase-10d validation outcome
+
+All **41 projects** build on Linux x64. The complete **70-test browser suite**
+passes without failures or skips, including six new resource-lifecycle cases.
+The shared native memory/task/CPU probes and existing confinement-denial probe
+pass independently, and required-confinement X11 shell smoke presents exact
+page pixels with tabs/history/multiple windows. Changed-file formatting passes.
+The standards cache remains independently fresh (53 documents); no renderer or
+probe scopes/processes remain after validation.
+
+The editor additionally reports pre-existing code-quality suggestions in
+ProcessPageRenderer outside this stage's changes; the build has no compiler
+errors. These tests cover supervision under bounded Linux resource pressure,
+not Windows/arm64, V8 or production web security.

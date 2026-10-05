@@ -21,6 +21,9 @@ Resource mode uses bounded scopes to measure thread denial (`pids.events`),
 CPU throttling (`cpu.stat`) and native resident-allocation OOM
 (`memory.events oom_kill`), not merely managed allocation failure or property
 names. A trusted supervisor survives to read the kernel OOM counter.
+The internal ResourceExhaustion helper is source-linked into the private
+Renderer.TestPeer fixture so browser lifecycle tests exercise these same probes
+without introducing test hooks or dependencies into the production renderer.
 
 See the [confinement guide](../../docs/linux-confinement.md) for exact limits
 and unfinished guarantees. These probes do not certify production security.

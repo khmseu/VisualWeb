@@ -173,6 +173,9 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Approved phase 10c adds hard Linux per-worker cgroup v2 memory/swap/task/CPU
   limits, verified before content, plus owned-scope cleanup and actual
   kernel-counter exhaustion probes. Missing user-manager/controllers fail closed.
+  Approved phase 10d hardens Linux resource-exhaustion lifecycle with real
+  confined IPC OOM/restart, task recovery and CPU-pressure deadline/cancellation
+  tests, transactional history and unaffected-tab/tab-close verification.
 - V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

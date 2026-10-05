@@ -210,8 +210,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
         {
             if (disposed || connection is null || !connection.Process.HasExited || exchange.CurrentCount == 0) { return null; }
             var failure = $"Renderer process {connection.Process.Id} exited ({connection.Process.ExitCode}). {connection.Tail}";
-            connection.Dispose();
+            var exited = connection;
             connection = null;
+            exited.Dispose();
             return failure;
         }
     }
@@ -232,8 +233,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
             if (disposed) { return; }
             disposed = true;
             lifetime.Cancel();
-            connection?.Dispose();
+            var owned = connection;
             connection = null;
+            owned?.Dispose();
         }
     }
 }

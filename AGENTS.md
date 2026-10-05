@@ -77,6 +77,9 @@
   Managed heap limits are not OS memory quotas; preserve native resource probes
   and targeted scope cleanup. Missing user-manager/controller support must fail closed.
   Run LinuxSandboxSmoke explicitly; ordinary standards tests remain offline.
+  Phase-10d browser tests use the shared resource probes in a private confined
+  peer to verify OOM/reload history, task/channel recovery and CPU-pressure
+  cancellation/deadlines/tab-close behavior. Keep fault injection test-only.
 - Platform-specific code belongs in Platform backends. Engine code must not
   reference those backends or browser chrome. Never share mutable DOM/script
   objects between tabs; process communication uses data-only IPC contracts.

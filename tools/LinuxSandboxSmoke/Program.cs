@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using VisualWeb.Platform.Linux.Sandbox;
+using VisualWeb.ResourceTesting;
 
 try
 {
@@ -23,7 +24,7 @@ try
         Console.Write(await output); Console.Error.Write(await error);
         if (resourceProbe == "memory")
         {
-            Check(worker.ExitCode != 0 && Counter(group, "memory.events", "oom_kill") > 0,
+            Check(worker.ExitCode != 0 && ResourceExhaustion.Counter(group, "memory.events", "oom_kill") > 0,
                 "Native memory probe did not cause a kernel-accounted cgroup OOM kill.");
             Console.WriteLine("PASS: native allocation exhausted the 512 MiB cgroup; kernel oom_kill incremented; supervisor survived.");
         }
@@ -59,7 +60,7 @@ try
     if (args is ["--linux-sandbox-worker", "--font", _, "--canary", _, "--probe", var workerProbe])
     {
         LinuxRendererSandbox.VerifyWorker();
-        ResourceProbe(workerProbe);
+        ResourceExhaustion.Run(workerProbe, Console.Out);
         return 0;
     }
     if (args is ["--bootstrap", "--font", var probeBootstrapFont, "--canary", var probeCanary, "--probe", var scenario])
@@ -172,65 +173,6 @@ static ProcessStartInfo WorkerInfo(IReadOnlyList<string> arguments)
     info.Environment.Clear();
     info.Environment["DOTNET_EnableDiagnostics"] = "0";
     return info;
-}
-static long Counter(string path, string file, string key) =>
-    long.Parse(File.ReadAllLines(Path.Combine(path, file)).Single(line => line.StartsWith(key + " ", StringComparison.Ordinal))
-        [(key.Length + 1)..], System.Globalization.CultureInfo.InvariantCulture);
-
-static void ResourceProbe(string scenario)
-{
-    if (scenario == "memory")
-    {
-        Console.WriteLine("Probing resident native allocation, not managed GC allocation.");
-        var allocations = new List<IntPtr>();
-        for (var block = 0; block < 128; block++)
-        {
-            var pointer = Marshal.AllocHGlobal(8 * 1024 * 1024);
-            allocations.Add(pointer);
-            for (var offset = 0; offset < 8 * 1024 * 1024; offset += 4096) { Marshal.WriteByte(pointer, offset, 1); }
-        }
-        foreach (var pointer in allocations) { Marshal.FreeHGlobal(pointer); }
-        throw new InvalidOperationException("Native memory probe exceeded its cgroup limit without OOM termination.");
-    }
-    if (scenario == "tasks")
-    {
-        var before = Counter("/resource-limits", "pids.events", "max");
-        using var stop = new ManualResetEventSlim();
-        var threads = new List<Thread>();
-        try
-        {
-            for (var i = 0; i < 96; i++)
-            {
-                var thread = new Thread(() => stop.Wait(), 256 * 1024);
-                try { thread.Start(); threads.Add(thread); }
-                catch (Exception exception) when ((exception is OutOfMemoryException
-                    || exception is Win32Exception { NativeErrorCode: 11 })
-                    && Counter("/resource-limits", "pids.events", "max") > before)
-                { break; }
-            }
-            Check(Counter("/resource-limits", "pids.events", "max") > before, "Thread creation did not hit pids.max.");
-            Check(long.Parse(File.ReadAllText("/resource-limits/pids.current").Trim(), System.Globalization.CultureInfo.InvariantCulture)
-                <= LinuxRendererResources.MaxTasks, "Task limit was exceeded.");
-        }
-        finally { stop.Set(); foreach (var thread in threads) { thread.Join(); } }
-        Console.WriteLine("PASS: kernel pids.max denied thread creation; pids.events max incremented; task count stayed bounded.");
-        return;
-    }
-    if (scenario == "cpu")
-    {
-        var before = Counter("/resource-limits", "cpu.stat", "nr_throttled");
-        var timer = Stopwatch.StartNew();
-        var threads = Enumerable.Range(0, 4).Select(_ => new Thread(() =>
-        {
-            while (timer.Elapsed < TimeSpan.FromSeconds(3)) { Thread.SpinWait(10000); }
-        })).ToArray();
-        foreach (var thread in threads) { thread.Start(); }
-        foreach (var thread in threads) { thread.Join(); }
-        Check(Counter("/resource-limits", "cpu.stat", "nr_throttled") > before, "CPU quota did not throttle concurrent work.");
-        Console.WriteLine("PASS: kernel CPU quota throttled concurrent work; cpu.stat nr_throttled incremented.");
-        return;
-    }
-    throw new ArgumentException("Unknown resource probe: " + scenario);
 }
 static void DenyWrite(string path)
 {
