@@ -185,6 +185,9 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Approved phase 11b adds native classic-script global lexical persistence and
   prevalidated ordered batches under one deadline, without page execution or
   HTML scheduling/DOM bindings.
+  Approved phase 11c adds a minimal live renderer-local title/ID/textContent
+  binding foundation through private primitive-only callbacks with ownership,
+  receiver/identity and resource-budget tests. Page execution remains disabled.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

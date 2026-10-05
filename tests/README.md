@@ -41,6 +41,9 @@ copying, intrinsic-tampering, isolate separation, source/result/stack/buffer
 limits, thread ownership and deadline/cancellation tests.
 Classic-script tests additionally verify global lexical/strict/TDZ semantics,
 bounded batch snapshots/order/failures and whole-batch invalidation.
+Live-binding tests cover title/text/ID semantics, immediate native updates,
+detached identity/adoption, exclusive document leases, private-callback
+invisibility, intrinsic tampering and exact handle/call/traversal/text budgets.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

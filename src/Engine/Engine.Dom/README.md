@@ -7,12 +7,14 @@ adopt entire subtrees; fragment insertion transfers its children.
 
 Child/attribute collections have read-only public views. Attribute names and
 HTML node names fold ASCII only. Text content, sibling links, connection status,
-ID lookup and explicit adoption are available. DOM factory validation is
+ID lookup, HTML document title and explicit adoption are available. DOM factory validation is
 distinct from the internal HTML parser's recovered attribute path.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
-ranges, shadow DOM, namespace APIs, custom elements and script bindings are
+ranges, shadow DOM, namespace APIs, custom elements and full script bindings are
 deferred. See the [HTML/DOM guide](../../../docs/html-dom.md).
+The optional [scripting foundation](../../../docs/scripting.md) wraps a finite
+title/ID/textContent subset without importing these nodes as CLR objects.
 
 Official source: https://dom.spec.whatwg.org/ (ID `dom`); HTML defines
 additional element behavior. See the [standards workflow](../../../docs/standards.md).

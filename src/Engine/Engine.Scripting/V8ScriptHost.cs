@@ -2,10 +2,11 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
+using VisualWeb.Engine.Dom;
 
 namespace VisualWeb.Engine.Scripting;
 
-/// <summary>One owning thread's private V8 isolate and context, with no CLR or browser bindings.</summary>
+/// <summary>One thread's private V8 context, optionally with minimal primitive-only DOM facades.</summary>
 /// <remarks>References: clearscript-v8; <see href="https://github.com/microsoft/ClearScript">ClearScript</see>.
 /// Spec: ecmascript; <see href="https://tc39.es/ecma262/#sec-ecmascript-language-scripts-and-modules">scripts</see>.
 /// Deadlines and heap monitoring supplement, not replace, renderer OS resource limits.</remarks>
@@ -21,10 +22,11 @@ public sealed class V8ScriptHost : IDisposable
     private readonly V8ScriptEngine engine;
     private readonly ScriptObject evaluate;
     private readonly TimeSpan timeout;
+    private readonly DomBindings? dom;
     private bool poisoned;
     private bool disposed;
 
-    public V8ScriptHost(TimeSpan? timeout = null)
+    public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null)
     {
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
         if (this.timeout <= TimeSpan.Zero || this.timeout > TimeSpan.FromSeconds(30)) { throw new ArgumentOutOfRangeException(nameof(timeout)); }
@@ -69,8 +71,14 @@ public sealed class V8ScriptHost : IDisposable
                     };
                 })()
                 """);
+            if (document is not null)
+            {
+                dom = new(document);
+                engine.AddHostObject("__visualwebDom", new Func<string, int, string, string>(dom.Invoke));
+                engine.Execute(DomBindings.Bootstrap);
+            }
         }
-        catch { engine.Dispose(); throw; }
+        catch { dom?.Dispose(); engine.Dispose(); throw; }
     }
 
     public ScriptValue Evaluate(string source, CancellationToken cancellationToken = default)
@@ -132,6 +140,7 @@ public sealed class V8ScriptHost : IDisposable
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var interrupt = deadline.Token.Register(engine.Interrupt);
         deadline.CancelAfter(timeout);
+        dom?.Begin();
         try
         {
             T result;
@@ -210,6 +219,10 @@ public sealed class V8ScriptHost : IDisposable
         Check();
         disposed = true;
         try { evaluate.Dispose(); }
-        finally { engine.Dispose(); }
+        finally
+        {
+            try { engine.Dispose(); }
+            finally { dom?.Dispose(); }
+        }
     }
 }

@@ -112,7 +112,12 @@ Child and attribute collections have read-only public views; node/data/attribute
 mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
 Mutation observers, events, ranges, shadow DOM, namespace-aware APIs, cloning,
-special element behavior and script bindings are deferred.
+most special element behavior and full script bindings are deferred.
+The native document title property follows first-title tree order and ASCII
+whitespace normalization; its setter creates a title only with an existing head.
+The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup
+and element textContent through private primitive-only callbacks, not CLR nodes.
+The browser still does not execute page scripts.
 
 ## Safety limits
 

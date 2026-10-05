@@ -15,6 +15,27 @@ public sealed class DomDocument() : DomNode(null)
     public DomElement? Head => DocumentElement?.ChildNodes.OfType<DomElement>().FirstOrDefault(e => e.LocalName == "head");
     public DomElement? Body => DocumentElement?.ChildNodes.OfType<DomElement>().FirstOrDefault(e => e.LocalName == "body");
 
+    /// <summary>The first HTML title's text with ASCII whitespace stripped and collapsed.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/dom.html#document.title">document.title</see>.
+    /// An absent title is created in the head; without a head the setter does nothing.</remarks>
+    public string Title
+    {
+        get => string.Join(" ", (Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent ?? "")
+            .Split([' ', '\t', '\n', '\r', '\f'], StringSplitOptions.RemoveEmptyEntries));
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            var title = Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title");
+            if (title is null)
+            {
+                if (Head is not { } head) { return; }
+                title = CreateElement("title");
+                head.AppendChild(title);
+            }
+            title.TextContent = value;
+        }
+    }
+
     public DomElement CreateElement(string localName)
     {
         ValidateName(localName);

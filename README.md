@@ -56,6 +56,8 @@ host and native confinement probes. Page scripts, DOM bindings and HTML event
 loops are still unsupported; static browsing behavior is unchanged.
 The host also supports persistent classic-script lexical state and bounded
 ordered batches, without adding page-script execution.
+Optional live title/ID/textContent bindings are a renderer-local foundation,
+not full DOM/Web IDL integration or browser page execution.
 
 The SpecCache command caches official standards locally and checks only missing
 documents or documents last checked more than 30 days ago. It is deliberately

@@ -90,11 +90,15 @@
   objects between tabs; process communication uses data-only IPC contracts.
 - Read the [scripting guide](docs/scripting.md) before V8 work. Preserve private
   thread-owned isolates, exact primitive copying and invalidation on interruption;
-  never expose CLR host objects or weaken OS confinement for native startup.
+  never expose CLR DOM objects/types or weaken OS confinement for native startup.
+  The approved live DOM foundation uses one hidden primitive-only delegate
+  captured and deleted by trusted bootstrap; do not expose it on facades or
+  return CLR objects/exceptions. Preserve receiver brands, identity/ownership
+  checks and exact callback/text/traversal budgets.
   Classic execution preserves native global lexical state; batches snapshot
   all source budgets before running in order under one shared deadline. Do not
   replace this with wrapped eval or imply rollback after script errors.
-  Script scheduling/DOM/Web IDL bindings are deferred. Run V8Smoke explicitly;
+  Script scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.
   Follow `tests/Tools.SpecCache.Tests/` for package references, project references,

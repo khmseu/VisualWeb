@@ -20,6 +20,8 @@ result and external-buffer limits, monitored heap invalidation, infinite-script
 deadlines and fresh-isolate recovery.
 Classic-script probes additionally verify persistent lexical bindings, isolate
 separation and whole-batch deadline interruption.
+Optional live DOM probes verify native title/text mutations and private callback
+invisibility; no production browser page-script execution is enabled.
 Linux arm64 confinement remains unsupported; native Windows/arm64 evidence
 requires those hosts. See the
 [scripting guide](../../docs/scripting.md) for guarantees and limitations.

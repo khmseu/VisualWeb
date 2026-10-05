@@ -32,3 +32,5 @@ Phase 11a adds the bounded ClearScript/V8 host and native confinement probes,
 without enabling page scripts or changing the static rendering pipeline.
 Phase 11b adds persistent classic-script global lexical state and bounded
 ordered batches; page execution and HTML script scheduling remain deferred.
+Phase 11c adds minimal live title/ID/textContent DOM facades and binding probes,
+without enabling browser page scripts.

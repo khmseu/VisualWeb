@@ -1,9 +1,9 @@
-# V8 host and classic-script foundation (phases 11a–11b)
+# V8 host, classic-script and DOM binding foundation (phases 11a–11c)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
 small renderer-local native host, not a web-browser JavaScript environment.
-**The static browser still does not execute page scripts.** DOM/Web IDL bindings,
+**The static browser still does not execute page scripts.** Full DOM/Web IDL bindings,
 HTML script scheduling and event loops, modules, timers, workers and script-visible
 network/storage APIs are deferred. No renderer IPC shape or browser launch mode
 changes in this stage.
@@ -53,12 +53,71 @@ executes. Replacing those global functions cannot spoof result tags or values.
 This is necessary because ClearScript normally turns symbols into strings and
 narrows negative zero to integer zero.
 
-The host installs **no CLR objects/types**, enables no reflection/debugger,
-adds no browser bindings and disables document file/web loading. SharedArrayBuffer,
+The plain host installs **no CLR objects/types**, enables no reflection/debugger,
+adds no browser bindings and disables document file/web loading. Optional
+phase-11c DOM bindings use the private primitive-only callback described below.
+SharedArrayBuffer,
 Atomics and WebAssembly globals are removed in this initial subset: blocking
 shared-memory waits and Wasm native compilation are not certified by these
 execution limits. No task/promise/array host-conversion flags are enabled.
 Native ECMAScript built-ins are not a browser event loop or a sandbox.
+
+## Minimal live DOM bindings (phase 11c)
+
+Pass an explicit renderer-local `DomDocument` to the host's optional `document`
+parameter to install this finite foundation:
+
+- `document.title`: first HTML title in tree order; reads strip/collapse ASCII
+  whitespace, writes replace text (or create a title in an existing head).
+  No head/title means a no-op setter, not an invented document skeleton.
+- `document.getElementById(id)`: required DOMString argument, case-sensitive
+  first connected match, empty ID returns null, repeated matches return the
+  same JavaScript wrapper.
+- Element `textContent`: live descendant Text content excluding comments;
+  writes replace children using existing checked DOM operations. Null/undefined
+  become empty text; other inputs use DOMString conversion, including rejecting
+  symbols. Detached wrappers remain live; adoption into another document rejects
+  subsequent access.
+
+Native mutations by the document owner are immediately visible on the next
+callback. Script mutations are immediate, including within the same script;
+effects before an error are not rolled back. Classic global lexical state may
+retain element wrappers across scripts. A document is leased exclusively to one
+host until disposal; the owner must not mutate it concurrently or share it
+between tabs. The bridge is not a document thread-safety mechanism.
+
+The approved live-binding approach deliberately adds **one private CLR delegate**
+with a fixed `(operation, integer identity, string) -> string` contract. Trusted
+bootstrap captures it in a closure and deletes its temporary global **before
+any caller script**. The document and elements themselves are never imported
+into ClearScript. A string status/value crosses back, never a native node, CLR
+exception, type or arbitrary object. Ordinary bridge failures become JavaScript
+TypeErrors with explicit diagnostics. No callback or identity table is exposed
+as a property of a wrapper.
+
+Facades are native JavaScript objects with private WeakMap brands, stable
+identity and captured pristine intrinsics. Document/element receivers are
+checked; borrowing a getter/method onto an arbitrary object fails. Prototypes
+are intentionally minimal/frozen and have null roots; document has no prototype.
+This is **not full Web IDL prototype/constructor conformance**. Window,
+Document/Element constructors, `document.body`, attributes, tree-mutation
+methods, events, observers and generated IDL bindings remain unavailable.
+Expandos are ordinary JavaScript properties, not native DOM mutations.
+
+| Binding budget | Value |
+| --- | ---: |
+| Retained element wrappers per host | 1,024 |
+| Callbacks per evaluation/single script/whole batch | 4,096 |
+| Traversed nodes per lookup/text/title operation | 8,192 |
+| UTF-16 text per callback argument/result | 65,536 |
+| Aggregate callback argument/result UTF-16 characters per execution | 262,144 |
+
+Budgets are checked before writes; traversal/text assembly is bounded. Counters
+reset per execution, but wrapper identities persist until host disposal.
+Caller conversion hooks run in V8 under the normal deadline. Host callbacks
+are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
+These limits do not substitute for process quotas or constitute an exploit
+boundary. No production worker or browser mode installs these bindings yet.
 
 ## Bounds and failure
 
@@ -103,6 +162,8 @@ launchers. It verifies actual evaluation, isolate separation, primitive limits,
 external allocation rejection, monitored heap invalidation, infinite-loop
 interruption and fresh-isolate recovery. Phase 11b also probes native classic
 lexical persistence/isolate separation and whole-batch deadline interruption.
+Phase 11c probes live title/text mutations and hidden callback state through
+the same unchanged confinement launcher.
 
 ```sh
 dotnet build VisualWeb.slnx
@@ -150,3 +211,19 @@ lexical state, isolate separation, monitored heap invalidation and whole-batch
 deadline recovery. Changed-file formatting and editor diagnostics are clean.
 No browser rendering or IPC behavior changes were made; native Windows/ARM
 evidence still requires the already-wired target CI.
+
+## Phase-11c validation outcome
+
+On Linux x64, all **45 projects build** and **65 selected tests pass** without
+failures or skips: the complete 46-test scripting suite and 19-test native DOM
+suite. Coverage includes live title/text mutation, stable detached wrappers,
+exclusive document ownership, adoption rejection, receiver/conversion errors,
+callback privacy and exact wrapper, traversal, callback and text budgets.
+The wrapper-count test uses an explicit 30-second host deadline so its repeated
+tree lookups measure identity capacity rather than the default execution timeout.
+
+Local and unchanged required-confinement V8 probes pass with live DOM callbacks
+and no exposed CLR node/type or temporary callback global. Changed-file
+formatting, editor diagnostics and diff whitespace checks are clean; no owned
+V8/renderer workers or resource scopes remain. Browser page-script execution
+remains disabled. Native Windows/ARM execution was not performed on this host.
