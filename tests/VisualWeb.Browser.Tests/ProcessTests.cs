@@ -153,6 +153,58 @@ public sealed class ProcessTests
         Assert.Null(invalidFont.ProcessId);
     }
     [Fact]
+    public async Task WindowsJobMemoryPressureRecoversWithoutAffectingAnotherRenderer()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
+        using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var healthy = await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var rendererPid = renderer.ProcessId;
+        var otherPid = other.ProcessId;
+
+        var bounded = await renderer.RenderAsync(Blue with { Html = "memory" }, new(20, 10, 1), Cancellation);
+        Assert.Equal("Memory limit observed", bounded.Title);
+        Assert.Equal(rendererPid, renderer.ProcessId);
+        var recovered = await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(rendererPid, renderer.ProcessId);
+        Assert.Equal(healthy.Frame.Pixels.ToArray(),
+            (await other.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Frame.Pixels.ToArray());
+        Assert.Equal(otherPid, other.ProcessId);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, recovered.Frame.Pixels.Span[..4].ToArray());
+    }
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(bool cancel)
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, TimeSpan.FromSeconds(5), requireSandbox: true);
+        using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var oldPid = renderer.ProcessId;
+        var otherPid = other.ProcessId;
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        if (cancel) { cancellation.CancelAfter(TimeSpan.FromMilliseconds(500)); }
+        var rendering = renderer.RenderAsync(Blue with { Html = "cpu" }, new(20, 10, 1), cancellation.Token);
+        if (cancel)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => rendering);
+        }
+        else
+        {
+            var failure = await Assert.ThrowsAsync<RendererProcessException>(() => rendering);
+            Assert.Contains("deadline", failure.Message);
+        }
+        Assert.Null(renderer.ProcessId);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 },
+            (await other.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(otherPid, other.ProcessId);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.NotEqual(oldPid, renderer.ProcessId);
+    }
+    [Fact]
     public async Task RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback()
     {
         if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
