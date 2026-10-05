@@ -10,11 +10,20 @@ permissions:
 
 jobs:
   linux:
-    name: Linux
-    runs-on: ubuntu-latest
+    name: Linux ${{ matrix.architecture }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: x64
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
     steps:
       - uses: actions/checkout@v4
       - name: Install bubblewrap
+        if: matrix.architecture == 'x64'
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends bubblewrap
@@ -30,6 +39,7 @@ jobs:
             sudo meson install -C "$RUNNER_TEMP/bubblewrap/build"
           fi
       - name: Verify bubblewrap prerequisite
+        if: matrix.architecture == 'x64'
         run: |
           test -x /usr/bin/bwrap
           version=$(/usr/bin/bwrap --version | awk '{print $2}')
@@ -38,6 +48,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.401
+          architecture: ${{ matrix.architecture }}
       - run: dotnet build VisualWeb.slnx --configuration Release
-      - run: dotnet test tests/Platform.Tests/Platform.Tests.csproj --configuration Release --no-build
-      - run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --filter 'FullyQualifiedName!~RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash&FullyQualifiedName!~RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback&FullyQualifiedName!~HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
+      - name: Run solution tests
+        run: >-
+          dotnet test VisualWeb.slnx --configuration Release --no-build
+          --filter 'FullyQualifiedName!~RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash&FullyQualifiedName!~RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback&FullyQualifiedName!~HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
+      - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- dummy
+      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy
+      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy

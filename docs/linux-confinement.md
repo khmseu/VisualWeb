@@ -256,9 +256,10 @@ Supervisor references are detached before disposal so a failed cleanup cannot
 leave a disposed connection available to later polling or renderer diagnostics.
 Cleanup errors still surface; this is not a retry or weaker launch fallback.
 
-Origin/CORS/CSP and site isolation, full web standards, Linux arm64 and
-production-safe hostile browsing remain unfinished. Windows confinement is
-documented separately in [windows-confinement.md](windows-confinement.md).
+The Linux workflow includes native arm64 rendering checks, but Linux arm64
+confinement remains unsupported. Origin/CORS/CSP and site isolation, full web
+standards and production-safe hostile browsing remain unfinished. Windows
+confinement is documented separately in [windows-confinement.md](windows-confinement.md).
 
 ### Phase-10b validation outcome
 
