@@ -50,12 +50,10 @@ jobs:
           dotnet-version: 10.0.401
           architecture: ${{ matrix.architecture }}
       - run: dotnet build VisualWeb.slnx --configuration Release
-      - run: dotnet test tests/Platform.Tests/Platform.Tests.csproj --configuration Release --no-build
-      - run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --filter 'FullyQualifiedName!~RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash&FullyQualifiedName!~RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback&FullyQualifiedName!~HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
-      - run: dotnet test tests/Engine.Text.Tests/Engine.Text.Tests.csproj --configuration Release
-      - run: dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj --configuration Release
-      - run: dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj --configuration Release
-      - run: dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj --configuration Release
+      - name: Run solution tests
+        run: >-
+          dotnet test VisualWeb.slnx --configuration Release --no-build
+          --filter 'FullyQualifiedName!~RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash&FullyQualifiedName!~RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback&FullyQualifiedName!~HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- dummy
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy
