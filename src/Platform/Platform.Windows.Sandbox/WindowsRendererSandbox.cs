@@ -8,7 +8,9 @@ namespace VisualWeb.Platform.Windows.Sandbox;
 /// <summary>Starts a renderer in a capability-free AppContainer and bounded Job Object.</summary>
 /// <remarks>References: <c>windows-appcontainer</c> and <c>windows-job-objects</c>.
 /// <see href="https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer">AppContainer process launch</see>,
+/// <see href="https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-getappcontainerfolderpath">AppContainer profile storage</see>,
 /// <see href="https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute">process startup attributes</see>,
+/// <see href="https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information">Job Object memory limits</see>,
 /// and <see href="https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects">Job Objects</see>.</remarks>
 public static class WindowsRendererSandbox
 {
@@ -21,9 +23,14 @@ public static class WindowsRendererSandbox
     private const uint GenericRead = 0x80000000;
     private const uint GenericWrite = 0x40000000;
     private const uint GenericExecute = 0x20000000;
+    private const uint Delete = 0x00010000;
+    private const uint WriteDac = 0x00040000;
+    private const uint WriteOwner = 0x00080000;
+    private const uint DeleteChild = 0x00000040;
     private const uint ObjectInherit = 1;
     private const uint ContainerInherit = 2;
     private const int SetAccess = 2;
+    private const int DenyAccess = 3;
     private const uint FileObject = 1;
     private const uint DaclSecurityInformation = 4;
     private const uint CreateSuspended = 4;
@@ -33,6 +40,7 @@ public static class WindowsRendererSandbox
     private const uint HandleFlagInherit = 1;
     private const uint JobObjectLimitActiveProcess = 8;
     private const uint JobObjectLimitProcessMemory = 0x100;
+    private const uint JobObjectLimitJobMemory = 0x200;
     private const uint JobObjectLimitKillOnJobClose = 0x2000;
     private const uint JobObjectCpuRateControlEnable = 1;
     private const uint JobObjectCpuRateControlHardCap = 4;
@@ -43,6 +51,52 @@ public static class WindowsRendererSandbox
         {
             throw new PlatformNotSupportedException("Windows renderer confinement requires Windows 10 version 1709 or later.");
         }
+    }
+
+    private static void DenyAppContainerWrites(string path, IntPtr sid)
+    {
+        var trustee = new Native.Trustee
+        {
+            TrusteeForm = 0,
+            TrusteeType = 1,
+            Name = sid
+        };
+        var access = new Native.ExplicitAccess
+        {
+            Permissions = GenericWrite | Delete | DeleteChild | WriteDac | WriteOwner,
+            AccessMode = DenyAccess,
+            Inheritance = ObjectInherit | ContainerInherit,
+            Trustee = trustee
+        };
+        var result = Native.GetNamedSecurityInfoW(path, FileObject, DaclSecurityInformation,
+            IntPtr.Zero, IntPtr.Zero, out var existingAcl, IntPtr.Zero, out var descriptor);
+        if (result != 0) { throw new Win32Exception(unchecked((int)result), "Cannot inspect AppContainer profile storage permissions."); }
+        IntPtr acl = IntPtr.Zero;
+        try
+        {
+            result = Native.SetEntriesInAclW(1, ref access, existingAcl, out acl);
+            if (result != 0) { throw new Win32Exception(unchecked((int)result), "Cannot restrict AppContainer profile storage."); }
+            result = Native.SetNamedSecurityInfoW(path, FileObject, DaclSecurityInformation,
+                IntPtr.Zero, IntPtr.Zero, acl, IntPtr.Zero);
+            if (result != 0) { throw new Win32Exception(unchecked((int)result), "Cannot deny renderer writes to AppContainer profile storage."); }
+        }
+        finally
+        {
+            if (acl != IntPtr.Zero) { _ = Native.LocalFree(acl); }
+            if (descriptor != IntPtr.Zero) { _ = Native.LocalFree(descriptor); }
+        }
+    }
+
+    private static string GetAppContainerFolderPath(IntPtr sid)
+    {
+        var result = Native.GetAppContainerFolderPath(sid, out var path);
+        if (result != 0) { throw new Win32Exception(result, "Cannot resolve AppContainer profile storage."); }
+        try
+        {
+            return Marshal.PtrToStringUni(path)
+                ?? throw new InvalidOperationException("AppContainer profile storage path is empty.");
+        }
+        finally { Native.CoTaskMemFree(path); }
     }
 
     internal static int RemoveAppContainerProfile(string name) => Native.DeleteAppContainerProfile(name);
@@ -65,6 +119,27 @@ public static class WindowsRendererSandbox
         if (!Native.IsProcessInJob(Native.GetCurrentProcess(), IntPtr.Zero, out var inJob) || !inJob)
         {
             throw new InvalidOperationException("Renderer is not assigned to its required Job Object.");
+        }
+        var limits = new Native.ExtendedLimitInformation();
+        var limitFlags = JobObjectLimitActiveProcess | JobObjectLimitProcessMemory
+            | JobObjectLimitJobMemory | JobObjectLimitKillOnJobClose;
+        if (!Native.QueryInformationJobObject(IntPtr.Zero, 9, ref limits,
+                (uint)Marshal.SizeOf<Native.ExtendedLimitInformation>(), IntPtr.Zero)
+            || (limits.BasicLimitInformation.LimitFlags & limitFlags) != limitFlags
+            || limits.BasicLimitInformation.ActiveProcessLimit != ActiveProcessLimit
+            || limits.ProcessMemoryLimit.ToUInt64() != (ulong)MemoryLimitBytes
+            || limits.JobMemoryLimit.ToUInt64() != (ulong)MemoryLimitBytes)
+        {
+            throw new InvalidOperationException("Renderer Job Object memory/process limits are absent or different.");
+        }
+        var cpu = new Native.CpuRateControl();
+        if (!Native.QueryInformationJobObject(IntPtr.Zero, 15, ref cpu,
+                (uint)Marshal.SizeOf<Native.CpuRateControl>(), IntPtr.Zero)
+            || (cpu.ControlFlags & (JobObjectCpuRateControlEnable | JobObjectCpuRateControlHardCap))
+                != (JobObjectCpuRateControlEnable | JobObjectCpuRateControlHardCap)
+            || cpu.CpuRate != 10000)
+        {
+            throw new InvalidOperationException("Renderer Job Object CPU hard cap is absent or different.");
         }
         if (Environment.GetEnvironmentVariable("DOTNET_EnableDiagnostics") != "0"
             || string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_ROOT")))
@@ -113,6 +188,10 @@ public static class WindowsRendererSandbox
                 throw new Win32Exception(result, "Cannot create a unique renderer AppContainer profile.");
             }
 
+            var profileStorage = GetAppContainerFolderPath(appContainerSid);
+            Directory.CreateDirectory(profileStorage);
+            DenyAppContainerWrites(profileStorage, appContainerSid);
+
             var stagedRoot = Path.Combine(staging, "worker");
             var stagedApp = Path.Combine(stagedRoot, "app");
             var stagedRuntime = Path.Combine(stagedRoot, "runtime");
@@ -128,10 +207,10 @@ public static class WindowsRendererSandbox
             Directory.CreateDirectory(Path.GetDirectoryName(stagedFont)!);
             File.Copy(fontSource, stagedFont);
             Directory.CreateDirectory(stagedTemp);
-            SetAppContainerAccess(stagedTemp, appContainerSid, writable: true);
+            SetAppContainerAccess(stagedTemp, appContainerSid, writable: false);
 
             job = CreateJob();
-            return CreateWorker(profileName, appContainerSid, job, staging, stagedApp,
+            return CreateWorker(profileName, appContainerSid, job, staging, profileStorage, stagedApp,
                 stagedRuntime, stagedFont, stagedTemp, workerAssembly, workerArguments);
         }
         catch
@@ -147,7 +226,7 @@ public static class WindowsRendererSandbox
     }
 
     private static WindowsRendererWorker CreateWorker(string profileName, IntPtr sid, SafeFileHandle job,
-        string staging, string app, string runtime, string font, string temp,
+        string staging, string profileStorage, string app, string runtime, string font, string temp,
         string workerAssembly, IReadOnlyList<string>? workerArguments)
     {
         CreatePipePair(childReads: true, out var childInput, out var parentInput);
@@ -233,7 +312,7 @@ public static class WindowsRendererSandbox
                     var input = new FileStream(parentInput, FileAccess.Write, 4096, isAsync: false);
                     var output = new FileStream(parentOutput, FileAccess.Read, 4096, isAsync: false);
                     var error = new FileStream(parentError, FileAccess.Read, 4096, isAsync: false);
-                    var worker = new WindowsRendererWorker(process, job, staging, profileName, sid, input, output, error);
+                    var worker = new WindowsRendererWorker(process, job, staging, profileStorage, profileName, sid, input, output, error);
                     streamsOwnHandles = true;
                     return worker;
                 }
@@ -279,10 +358,12 @@ public static class WindowsRendererSandbox
         {
             BasicLimitInformation = new Native.BasicLimitInformation
             {
-                LimitFlags = JobObjectLimitActiveProcess | JobObjectLimitProcessMemory | JobObjectLimitKillOnJobClose,
+                LimitFlags = JobObjectLimitActiveProcess | JobObjectLimitProcessMemory
+                    | JobObjectLimitJobMemory | JobObjectLimitKillOnJobClose,
                 ActiveProcessLimit = ActiveProcessLimit
             },
-            ProcessMemoryLimit = (UIntPtr)MemoryLimitBytes
+            ProcessMemoryLimit = (UIntPtr)MemoryLimitBytes,
+            JobMemoryLimit = (UIntPtr)MemoryLimitBytes
         };
         if (!Native.SetInformationJobObject(job, 9, ref limits, Marshal.SizeOf<Native.ExtendedLimitInformation>()))
         {
@@ -500,6 +581,9 @@ public static class WindowsRendererSandbox
         internal static extern int CreateAppContainerProfile(
             string name, string displayName, string description, IntPtr capabilities, uint capabilityCount, out IntPtr sid);
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)] internal static extern int DeleteAppContainerProfile(string name);
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+        internal static extern int GetAppContainerFolderPath(IntPtr appContainerSid, out IntPtr path);
+        [DllImport("ole32.dll")] internal static extern void CoTaskMemFree(IntPtr memory);
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool OpenProcessToken(IntPtr process, uint access, out SafeFileHandle token);
@@ -530,6 +614,14 @@ public static class WindowsRendererSandbox
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool SetInformationJobObject(SafeFileHandle job, int infoClass, ref CpuRateControl info, int length);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool QueryInformationJobObject(IntPtr job, int infoClass, ref ExtendedLimitInformation info,
+            uint length, IntPtr returnLength);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool QueryInformationJobObject(IntPtr job, int infoClass, ref CpuRateControl info,
+            uint length, IntPtr returnLength);
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CreatePipe(out SafeFileHandle read, out SafeFileHandle write, ref SecurityAttributes attributes, int size);
@@ -566,6 +658,7 @@ public static class WindowsRendererSandbox
 public sealed class WindowsRendererWorker : IDisposable
 {
     private readonly string staging;
+    public string ProfileStoragePath { get; }
     private readonly string profile;
     private IntPtr sid;
     private SafeFileHandle job;
@@ -579,10 +672,11 @@ public sealed class WindowsRendererWorker : IDisposable
         if (!disposed && !job.IsClosed) { job.Dispose(); }
     }
 
-    internal WindowsRendererWorker(Process process, SafeFileHandle job, string staging, string profile,
+    internal WindowsRendererWorker(Process process, SafeFileHandle job, string staging, string profileStorage, string profile,
         IntPtr sid, Stream input, Stream output, Stream error)
     {
-        Process = process; this.job = job; this.staging = staging; this.profile = profile; this.sid = sid;
+        Process = process; this.job = job; this.staging = staging; ProfileStoragePath = profileStorage;
+        this.profile = profile; this.sid = sid;
         Input = input; Output = output; Error = error;
     }
 

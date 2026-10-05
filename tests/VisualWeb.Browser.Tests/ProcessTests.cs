@@ -153,6 +153,106 @@ public sealed class ProcessTests
         Assert.Null(invalidFont.ProcessId);
     }
     [Fact]
+    public async Task WindowsJobMemoryPressureRecoversWithoutAffectingAnotherRenderer()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
+        using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var healthy = await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var rendererPid = renderer.ProcessId;
+        var otherPid = other.ProcessId;
+
+        var bounded = await renderer.RenderAsync(Blue with { Html = "memory" }, new(20, 10, 1), Cancellation);
+        Assert.Equal("Memory limit observed", bounded.Title);
+        Assert.Equal(rendererPid, renderer.ProcessId);
+        var recovered = await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(rendererPid, renderer.ProcessId);
+        Assert.Equal(healthy.Frame.Pixels.ToArray(),
+            (await other.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Frame.Pixels.ToArray());
+        Assert.Equal(otherPid, other.ProcessId);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, recovered.Frame.Pixels.Span[..4].ToArray());
+    }
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(bool cancel)
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, TimeSpan.FromSeconds(5), requireSandbox: true);
+        using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var oldPid = renderer.ProcessId;
+        var otherPid = other.ProcessId;
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        if (cancel) { cancellation.CancelAfter(TimeSpan.FromMilliseconds(500)); }
+        var rendering = renderer.RenderAsync(Blue with { Html = "cpu" }, new(20, 10, 1), cancellation.Token);
+        if (cancel)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => rendering);
+        }
+        else
+        {
+            var failure = await Assert.ThrowsAsync<RendererProcessException>(() => rendering);
+            Assert.Contains("deadline", failure.Message);
+        }
+        Assert.Null(renderer.ProcessId);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 },
+            (await other.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(otherPid, other.ProcessId);
+        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.NotEqual(oldPid, renderer.ProcessId);
+    }
+    [Fact]
+    public void WindowsClosingCpuPressuredTabDoesNotPublishFailureOrStopAnotherRenderer()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        var renderers = new List<ProcessPageRenderer>();
+        using var controller = new BrowserController(() => new WindowsPressureSource(), () =>
+        {
+            var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
+            renderers.Add(renderer);
+            return renderer;
+        });
+        var window = controller.Session.CreateWindow();
+        var first = controller.CreateTab(window.Id);
+        var second = controller.CreateTab(window.Id);
+        var failures = new List<TabId>();
+        controller.Failed += (id, _) => failures.Add(id);
+        controller.Navigate(first.Id, Blue.Url.Href);
+        controller.Navigate(second.Id, Blue.Url.Href);
+        PumpUntil(() => !first.IsLoading && !second.IsLoading);
+        var otherFrame = controller.Page(second.Id);
+        var otherPid = renderers[1].ProcessId;
+        controller.Navigate(first.Id, "data:text/html,cpu");
+        PumpUntil(() => first.IsLoading && renderers[0].ProcessId is not null);
+        Thread.Sleep(100);
+        controller.CloseTab(first.Id);
+        Assert.False(controller.Session.Contains(first.Id));
+        Assert.Null(renderers[0].ProcessId);
+        controller.Pump(_ => new(20, 10, 1));
+        Assert.Same(otherFrame, controller.Page(second.Id));
+        controller.Reload(second.Id);
+        PumpUntil(() => !second.IsLoading);
+        Assert.Null(second.Error);
+        Assert.Empty(failures);
+        Assert.Equal(otherPid, renderers[1].ProcessId);
+
+        void PumpUntil(Func<bool> complete)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => new(20, 10, 1));
+                if (complete()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("Windows CPU-pressure tab lifecycle timed out.");
+        }
+    }
+    [Fact]
     public async Task RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback()
     {
         if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
@@ -354,6 +454,12 @@ public sealed class ProcessTests
                 Url = url,
                 Html = url.Href switch { "data:text/html,memory" => "memory", "data:text/html,cpu" => "cpu", _ => Blue.Html }
             });
+        public void Dispose() { }
+    }
+    private sealed class WindowsPressureSource : IPageSource
+    {
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
+            Task.FromResult(Blue with { Url = url, Html = url.Href == "data:text/html,cpu" ? "cpu" : Blue.Html });
         public void Dispose() { }
     }
     [Fact]

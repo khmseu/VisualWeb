@@ -74,12 +74,13 @@
   and a default-deny libseccomp filter before content. Never add fallback or
   broad host mounts to make startup pass; test precise syscall/mount guarantees.
   Windows renderers use the documented AppContainer/Job Object profile;
-  unsupported Windows versions fail closed and native target validation remains
+  unsupported Windows versions fail closed and native x64/arm64 validation remains
   required. Required Linux confinement also requires
   verified cgroup v2 memory/swap/task/CPU settings in an owned systemd user scope.
   Managed heap limits are not OS memory quotas; preserve native resource probes
   and targeted scope cleanup. Missing user-manager/controller support must fail closed.
-  Run LinuxSandboxSmoke explicitly; ordinary standards tests remain offline.
+  Run LinuxSandboxSmoke explicitly and WindowsSandboxSmoke on native Windows;
+  ordinary standards tests remain offline.
   Phase-10d browser tests use the shared resource probes in a private confined
   peer to verify OOM/reload history, task/channel recovery and CPU-pressure
   cancellation/deadlines/tab-close behavior. Keep fault injection test-only.

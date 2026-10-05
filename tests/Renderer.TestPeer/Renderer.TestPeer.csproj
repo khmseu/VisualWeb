@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Ipc/Ipc.Transport/Ipc.Transport.csproj" />
     <ProjectReference Include="../../src/Platform/Platform.Linux.Sandbox/Platform.Linux.Sandbox.csproj" />
+    <ProjectReference Include="../../src/Platform/Platform.Windows.Sandbox/Platform.Windows.Sandbox.csproj" />
     <Compile Include="../../tools/LinuxSandboxSmoke/ResourceExhaustion.cs" Link="ResourceExhaustion.cs" />
   </ItemGroup>
 </Project>

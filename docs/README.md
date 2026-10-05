@@ -25,5 +25,5 @@ utilities, loading, static HTML/DOM/CSS, text/layout, CPU painting and a
 development-only browser shell. Phase 10a adds per-tab process separation;
 Phase 10b adds opt-in Linux x64 confinement, strengthened by phase-10c hard
 per-worker resource accounting; Windows adds an AppContainer/Job Object
-development profile. Production isolation and broader standards remain later
-work.
+development profile with native x64/arm64 validation. Production isolation
+and broader standards remain later work.

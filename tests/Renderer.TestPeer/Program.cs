@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using VisualWeb.Platform.Linux.Sandbox;
+using VisualWeb.Platform.Windows.Sandbox;
 using VisualWeb.ResourceTesting;
 
 if (args is ["--linux-sandbox-bootstrap", "--font", var font] && File.Exists(font))
@@ -24,6 +25,38 @@ if (args is ["--confined-bootstrap", "--font", var confinedFont])
 {
     LinuxRendererSandbox.Enter(AppContext.BaseDirectory, confinedFont, "VisualWeb.Renderer.TestPeer.dll");
     throw new InvalidOperationException("Test bootstrap unexpectedly returned.");
+}
+if (args is ["--windows-sandbox-worker", "--font", _])
+{
+    WindowsRendererSandbox.VerifyWorker();
+    using var confinedInput = Console.OpenStandardInput();
+    using var confinedOutput = Console.OpenStandardOutput();
+    var confinedChannel = new RendererChannel(confinedInput, confinedOutput);
+    await confinedChannel.WriteAsync(new() { Kind = "hello", SandboxProfile = WindowsRendererSandbox.Profile });
+    while (await confinedChannel.ReadAsync() is { } packet)
+    {
+        var message = packet.Message;
+        var title = "Resource fixture";
+        if (message.Html == "memory") { title = ProbeWindowsMemoryLimit(); }
+        if (message.Html == "cpu")
+        {
+            while (true) { Thread.SpinWait(10_000); }
+        }
+        var dimensions = RendererProtocol.Dimensions(message.Width, message.Height, message.Scale);
+        var blue = new byte[dimensions.Width * dimensions.Height * 4];
+        for (var i = 0; i < blue.Length; i += 4) { blue[i] = 255; blue[i + 3] = 255; }
+        await confinedChannel.WriteAsync(new()
+        {
+            Kind = "frame",
+            Id = message.Id,
+            PixelWidth = dimensions.Width,
+            PixelHeight = dimensions.Height,
+            Stride = dimensions.Width * 4,
+            Title = title,
+            Status = "Fixture"
+        }, blue);
+    }
+    return 0;
 }
 if (args is ["--linux-sandbox-worker", "--font", _])
 {
@@ -106,3 +139,31 @@ await channel.WriteAsync(new()
 }, pixels);
 await channel.ReadAsync();
 return 0;
+
+static string ProbeWindowsMemoryLimit()
+{
+    var allocations = new IntPtr[128];
+    var allocationCount = 0;
+    try
+    {
+        for (var block = 0; block < allocations.Length; block++)
+        {
+            var pointer = Marshal.AllocHGlobal(8 * 1024 * 1024);
+            allocations[allocationCount++] = pointer;
+            for (var offset = 0; offset < 8 * 1024 * 1024; offset += 4096)
+            {
+                Marshal.WriteByte(pointer, offset, 1);
+            }
+        }
+        throw new InvalidOperationException("Windows Job Object memory limit was not reached.");
+    }
+    catch (OutOfMemoryException)
+    {
+        Console.Error.WriteLine("JOB_MEMORY_LIMIT_REACHED: native allocation was bounded by the Windows Job Object.");
+        return "Memory limit observed";
+    }
+    finally
+    {
+        for (var index = 0; index < allocationCount; index++) { Marshal.FreeHGlobal(allocations[index]); }
+    }
+}
