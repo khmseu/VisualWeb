@@ -8,9 +8,9 @@ not a secure or standards-complete production browser.**
 Phase 9 supplies local rendering; phase 10a adds explicitly selected per-tab
 worker processes. See the [process guide](renderer-processes.md) for launch,
 wire limits, deadlines, crash/restart behavior and unfinished confinement.
-Phase 10b adds opt-in [Linux x64 confinement](linux-confinement.md); without
-`--require-sandbox`, both modes remain unsandboxed. Windows/arm64 sandbox
-requests fail closed.
+Phase 10b adds opt-in [Linux x64 confinement](linux-confinement.md) and
+[Windows confinement](windows-confinement.md); without `--require-sandbox`,
+both modes remain unsandboxed. Unsupported OS versions/configurations fail closed.
 Required Linux confinement includes phase-10c hard per-worker cgroup resource
 limits; unavailable user-manager/controller support also fails closed.
 
@@ -41,7 +41,7 @@ Linux auto-selects Wayland/X11 through the existing platform composition root.
 `--backend x11`, `--backend wayland` or `--backend windows` requests an exact
 backend; failures and fallback diagnostics are logged, never silently hidden.
 The mode warning also remains drawn above the tab strip, identifying
-NO SANDBOX or LINUX CONFINEMENT REQUIRED.
+NO SANDBOX, LINUX CONFINEMENT REQUIRED or WINDOWS APP CONTAINER REQUIRED.
 
 ## Controls
 

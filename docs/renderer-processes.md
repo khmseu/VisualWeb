@@ -1,12 +1,13 @@
 # Per-tab renderer process separation
 
-Phase 10a added **process separation, not OS confinement**. Phase 10b now adds
-opt-in [Linux x64 confinement](linux-confinement.md) using `--require-sandbox`
-or `requireSandbox: true`; unsupported platforms fail closed. Without that
-option, both development modes retain normal user permissions. Do not browse
-hostile content: Windows confinement, origin policy, cross-site frame isolation
-and production guarantees remain unfinished. Confinement never falls back to
-unsandboxed launch.
+Phase 10a added **process separation, not OS confinement**. Phase 10b added
+opt-in [Linux x64 confinement](linux-confinement.md); Windows provides a separate
+[AppContainer/Job Object profile](windows-confinement.md). Both use
+`--require-sandbox` or `requireSandbox: true`; unsupported platforms/configurations
+fail closed. Without that option, both development modes retain normal user
+permissions. Do not browse hostile content: origin policy, cross-site frame
+isolation and production guarantees remain unfinished. Confinement never falls
+back to unsandboxed launch.
 
 ## Launch
 
@@ -86,9 +87,9 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Startup/render/exchange deadline | 30 seconds by default |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
-confinement must confirm `linux-bwrap-seccomp-cgroup-v2`, including required hard
-resource accounting. This additive metadata
-requires protocol v2 because older receivers strictly reject unknown fields.
+confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows
+confinement confirms `windows-appcontainer-job-v1`. This metadata requires
+protocol v2 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/
 scale. A reply is `frame` (title/status/dimensions/stride/pixels) or `error`
@@ -155,7 +156,7 @@ dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
 
 Repeat with `--backend x11` or a suitable target backend. Windows/arm64,
 Wayland shell keyboard/IME and real desktop high-DPI still require target
-validation. Linux x64 confinement has separate measured evidence in its guide.
+validation. Linux x64 and Windows confinement have separate documented profiles.
 Official .NET process/pipes and exact-stream
 references are in the independently refreshed [standards cache](standards.md);
 tests never fetch them.

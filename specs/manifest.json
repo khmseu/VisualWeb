@@ -36,9 +36,9 @@
       "title": "Bubblewrap namespace sandbox design and invocation",
       "url": "https://github.com/containers/bubblewrap/blob/v0.9.0/bwrap.xml",
       "file": "bubblewrap.html",
-      "fetchedAt": "2026-10-05T04:50:45.2522916+00:00",
-      "checkedAt": "2026-10-05T04:50:45.2522916+00:00",
-      "eTag": "W/\u0022a38186550b427de8f8a8b106240d8f8e\u0022",
+      "fetchedAt": "2026-10-05T07:01:58.5975529+00:00",
+      "checkedAt": "2026-10-05T07:01:58.5975529+00:00",
+      "eTag": "W/\u00225b8fbcb0e6cec2f70e454f0c081f95e8\u0022",
       "lastModified": null
     },
     {
@@ -56,9 +56,9 @@
       "title": "libseccomp filter rules and architecture handling",
       "url": "https://github.com/seccomp/libseccomp/blob/v2.5.5/doc/man/man3/seccomp_rule_add.3",
       "file": "libseccomp.html",
-      "fetchedAt": "2026-10-05T04:50:46.3452361+00:00",
-      "checkedAt": "2026-10-05T04:50:46.3452361+00:00",
-      "eTag": "W/\u00221db8ac61b4ea22d8781ae690bc31b579\u0022",
+      "fetchedAt": "2026-10-05T07:01:59.1286723+00:00",
+      "checkedAt": "2026-10-05T07:01:59.1286723+00:00",
+      "eTag": "W/\u0022532f72776cfced1227e772865244fe1e\u0022",
       "lastModified": null
     },
     {
@@ -520,6 +520,36 @@
       "checkedAt": "2026-10-04T15:12:32.271233+00:00",
       "eTag": "\u00224Fn5hXYt7rUuV4mdPTbE3VbCLvU=\u0022",
       "lastModified": "2026-08-26T21:43:37+00:00"
+    },
+    {
+      "id": "windows-appcontainer",
+      "title": "Implementing an AppContainer",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer",
+      "file": "windows-appcontainer.html",
+      "fetchedAt": null,
+      "checkedAt": null,
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "windows-job-objects",
+      "title": "Job Objects",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects",
+      "file": "windows-job-objects.html",
+      "fetchedAt": null,
+      "checkedAt": null,
+      "eTag": null,
+      "lastModified": null
+    },
+    {
+      "id": "windows-process-attributes",
+      "title": "UpdateProcThreadAttribute",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute",
+      "file": "windows-process-attributes.html",
+      "fetchedAt": null,
+      "checkedAt": null,
+      "eTag": null,
+      "lastModified": null
     },
     {
       "id": "fontconfig",

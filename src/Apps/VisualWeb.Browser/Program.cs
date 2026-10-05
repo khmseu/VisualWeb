@@ -15,7 +15,7 @@ try
 {
     var launch = BrowserLaunchOptions.Parse(args);
     Console.Error.WriteLine("WARNING: DEVELOPMENT " + (launch.RendererPath is null ? "SINGLE-PROCESS" : "MULTIPROCESS")
-        + (launch.RequireSandbox ? " BROWSER. Linux renderer confinement required; no origin isolation or production web security."
+        + (launch.RequireSandbox ? " BROWSER. OS renderer confinement required; no origin isolation or production web security."
             : " BROWSER. No sandbox, origin isolation or production web security.") + " Use only trusted content.");
     IPlatformServices platform = OperatingSystem.IsLinux() ? new LinuxPlatformServices()
         : OperatingSystem.IsWindows() ? new WindowsPlatformServices()
@@ -93,7 +93,9 @@ namespace VisualWeb.Browser
             if (sandbox)
             {
                 if (!multiprocess) { throw new ArgumentException("--require-sandbox requires explicit multiprocess mode."); }
-                LinuxRendererResources.RequireSupport();
+                if (OperatingSystem.IsLinux()) { LinuxRendererResources.RequireSupport(); }
+                else if (OperatingSystem.IsWindows()) { VisualWeb.Platform.Windows.Sandbox.WindowsRendererSandbox.RequireSupport(); }
+                else { throw new PlatformNotSupportedException("Renderer confinement is unavailable on this platform."); }
             }
             if (string.IsNullOrWhiteSpace(font)) { throw new ArgumentException("An explicit trusted --font path is required."); }
             if (backend is not (null or "x11" or "wayland" or "windows" or "dummy")) { throw new ArgumentException("Unsupported video backend."); }

@@ -1,9 +1,10 @@
 # Linux renderer confinement
 
-This stage implements the approved **Linux-first** renderer confinement profile.
+This guide documents the approved Linux x64 renderer confinement profile.
 It is not a production-safe browser or completion of all cross-platform
-phase-10 isolation. Windows and Linux arm64 sandbox-required launches fail
-closed. Existing explicit local/unsandboxed development modes remain available.
+phase-10 isolation. Linux arm64 sandbox-required launches fail closed. Existing
+explicit local/unsandboxed development modes remain available. Windows has a
+separate [AppContainer/Job Object profile](windows-confinement.md).
 Phase 10c strengthens required confinement with per-worker cgroup v2 memory,
 swap, task and CPU limits; see [hard resource accounting](#hard-resource-accounting).
 
@@ -255,8 +256,9 @@ Supervisor references are detached before disposal so a failed cleanup cannot
 leave a disposed connection available to later polling or renderer diagnostics.
 Cleanup errors still surface; this is not a retry or weaker launch fallback.
 
-Origin/CORS/CSP and site isolation, full web standards, Windows confinement,
-Linux arm64 and production-safe hostile browsing remain unfinished.
+Origin/CORS/CSP and site isolation, full web standards, Linux arm64 and
+production-safe hostile browsing remain unfinished. Windows confinement is
+documented separately in [windows-confinement.md](windows-confinement.md).
 
 ### Phase-10b validation outcome
 

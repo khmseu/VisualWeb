@@ -67,9 +67,11 @@ overrides/removals and a working directory. Waiting can be cancelled without
 killing the child. Termination is explicit; handle disposal alone leaves it
 running. This generic launcher still refuses requested confinement before launch:
 it does not implement the renderer-specific mounts/IPC/bootstrap contract.
-The [browser client](renderer-processes.md) separately owns workers and uses
-the optional [Linux x64 confinement backend](linux-confinement.md). Unsupported
-targets fail closed. Process separation alone is not confinement or safe browsing.
+The [browser client](renderer-processes.md) separately owns workers and uses the
+optional [Linux x64](linux-confinement.md) or
+[Windows AppContainer/Job Object](windows-confinement.md) confinement backend.
+Unsupported targets fail closed. Process separation alone is not confinement
+or safe browsing.
 
 ## Validation
 

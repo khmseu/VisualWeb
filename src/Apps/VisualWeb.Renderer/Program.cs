@@ -3,11 +3,12 @@ using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using VisualWeb.PageRendering;
 using VisualWeb.Platform.Linux.Sandbox;
+using VisualWeb.Platform.Windows.Sandbox;
 
 if (args is not [var mode, "--font", var fontPath]
-    || mode is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap" or "--linux-sandbox-worker"))
+    || mode is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap" or "--linux-sandbox-worker" or "--windows-sandbox-worker"))
 {
-    Console.Error.WriteLine("Renderer is an internal worker. Usage: (--development-unsandboxed | --linux-sandbox-bootstrap) --font TRUSTED_FONT");
+    Console.Error.WriteLine("Renderer is an internal worker. Usage: (--development-unsandboxed | --linux-sandbox-bootstrap | --windows-sandbox-worker) --font TRUSTED_FONT");
     return 2;
 }
 try
@@ -18,12 +19,19 @@ try
         throw new InvalidOperationException("Sandbox bootstrap returned without confinement.");
     }
     var confined = mode == "--linux-sandbox-worker";
+    var windowsConfined = mode == "--windows-sandbox-worker";
     if (confined) { LinuxRendererSandbox.VerifyWorker(); }
+    if (windowsConfined) { WindowsRendererSandbox.VerifyWorker(); }
     using var input = Console.OpenStandardInput();
     using var output = Console.OpenStandardOutput();
     var channel = new RendererChannel(input, output);
     using var renderer = new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels);
-    channel.WriteAsync(new() { Kind = "hello", SandboxProfile = confined ? LinuxRendererSandbox.Profile : null }).GetAwaiter().GetResult();
+    channel.WriteAsync(new()
+    {
+        Kind = "hello",
+        SandboxProfile = confined ? LinuxRendererSandbox.Profile
+        : windowsConfined ? WindowsRendererSandbox.Profile : null
+    }).GetAwaiter().GetResult();
     long lastId = 0;
     while (channel.ReadAsync().GetAwaiter().GetResult() is { } packet)
     {

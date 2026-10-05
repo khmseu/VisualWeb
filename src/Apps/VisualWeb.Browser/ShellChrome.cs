@@ -59,7 +59,8 @@ public sealed class ShellChrome : IDisposable
         Fill(new(0, 0, width, Math.Min(Height, height)), new(228, 232, 238));
         Fill(new(0, 0, width, 28), dark);
         Label("VISUALWEB DEVELOPMENT - " + (multiprocess ? "MULTIPROCESS" : "SINGLE PROCESS")
-            + (requireSandbox ? " - LINUX CONFINEMENT REQUIRED" : " - NO SANDBOX"), 8, 20, width - 16, white);
+            + (requireSandbox ? OperatingSystem.IsWindows() ? " - WINDOWS APP CONTAINER REQUIRED" : " - LINUX CONFINEMENT REQUIRED"
+                : " - NO SANDBOX"), 8, 20, width - 16, white);
         Button("<", new(0, 28, 32, 32), ChromeAction.PreviousTab);
         Button(">", new(32, 28, 32, 32), ChromeAction.NextTab);
         var slots = Math.Max(0, (int)((width - 64) / 120));
