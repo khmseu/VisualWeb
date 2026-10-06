@@ -208,6 +208,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   snapshotted ancestor paths. Listener errors fail tasks/navigation even if caught.
   Budgets: 1,024 listener entries/path targets, 4,096 invocations per shared task,
   32 nested dispatches. Automatic events, on* handlers and AbortSignal remain deferred.
+  Approved phase 11h adds readonly document readiness, interactive/complete
+  readystatechange and one DOMContentLoaded with private dispatch/checkpoints.
+  Initial sources and lifecycle callbacks share the same navigation budgets;
+  failures remain transactional. This finite post-parse lifecycle does not
+  add Window/load, timers, external scripts or persistent V8.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

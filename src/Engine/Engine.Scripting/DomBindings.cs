@@ -278,7 +278,7 @@ internal sealed class DomBindings : IDisposable
     }
 
     internal const string Bootstrap = """
-        (events => {
+        ((events, lifecycle) => {
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
@@ -312,6 +312,7 @@ internal sealed class DomBindings : IDisposable
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
             if (events) events('register', document, () => null, () => call('node-type', 0));
+            if (lifecycle) events('document', document);
             const wrap = value => {
                 if (!value) return null;
                 const separator = apply(indexOf, value, ':');

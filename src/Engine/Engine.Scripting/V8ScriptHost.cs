@@ -30,11 +30,17 @@ public sealed class V8ScriptHost : IDisposable
     private readonly DomBindings? dom;
     private readonly ScriptObject? microtasks;
     private readonly ScriptObject? events;
+    private readonly bool documentLifecycle;
+    private bool initialDocumentExecuted;
     private bool poisoned;
     private bool disposed;
 
-    public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false, bool enableEvents = false)
+    public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false,
+        bool enableEvents = false, bool enableDocumentLifecycle = false)
     {
+        if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
+        { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }
+        documentLifecycle = enableDocumentLifecycle;
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
         if (this.timeout <= TimeSpan.Zero || this.timeout > TimeSpan.FromSeconds(30)) { throw new ArgumentOutOfRangeException(nameof(timeout)); }
         if (!(OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
@@ -84,7 +90,7 @@ public sealed class V8ScriptHost : IDisposable
                 dom = new(document);
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 using var installDom = (ScriptObject)engine.Evaluate(DomBindings.Bootstrap);
-                installDom.InvokeAsFunction(events);
+                installDom.InvokeAsFunction(events, documentLifecycle);
             }
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }
         }
@@ -112,6 +118,20 @@ public sealed class V8ScriptHost : IDisposable
     /// <remarks>Spec: ecmascript; <see href="https://tc39.es/ecma262/#sec-scriptevaluation">ScriptEvaluation</see>.
     /// Stops at the first error; earlier side effects are not rolled back. This is not HTML scheduling.</remarks>
     public void ExecuteClassicBatch(IReadOnlyList<string> sources, CancellationToken cancellationToken = default)
+        => ExecuteBatch(sources, false, cancellationToken);
+
+    /// <summary>Execute initial inline classics and finite document readiness events under one task budget.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/#the-end">the end</see>.
+    /// Post-parse approximation only: no parser-blocking scripts, Window/load or persistent event loop.</remarks>
+    public void ExecuteInitialDocumentBatch(IReadOnlyList<string> sources, CancellationToken cancellationToken = default)
+    {
+        CheckUsable();
+        if (!documentLifecycle) { throw new InvalidOperationException("Document lifecycle was not enabled for this host."); }
+        if (initialDocumentExecuted) { throw new InvalidOperationException("Initial document lifecycle has already executed."); }
+        ExecuteBatch(sources, true, cancellationToken);
+    }
+
+    private void ExecuteBatch(IReadOnlyList<string> sources, bool completeDocument, CancellationToken cancellationToken)
     {
         CheckUsable();
         ArgumentNullException.ThrowIfNull(sources);
@@ -129,12 +149,23 @@ public sealed class V8ScriptHost : IDisposable
         }
         Run(() =>
         {
+            if (completeDocument) { initialDocumentExecuted = true; }
             foreach (var source in snapshot)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 engine.Execute(source);
                 CheckEvents("checkpoint");
                 CheckMicrotasks("checkpoint");
+            }
+            if (completeDocument)
+            {
+                foreach (var stage in new[] { "interactive", "dom-content-loaded", "complete" })
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    CheckEvents(stage);
+                    CheckEvents("checkpoint");
+                    CheckMicrotasks("checkpoint");
+                }
             }
             return 0;
         }, cancellationToken);
@@ -219,6 +250,7 @@ public sealed class V8ScriptHost : IDisposable
         poisoned = true;
         if (status is int limit && limit == 2)
         { throw new ScriptLimitException("Event resource limit exceeded; isolate invalidated."); }
+        CheckMicrotasks("checkpoint");
         throw new ScriptExecutionException("Event listener failed; isolate invalidated.");
     }
 

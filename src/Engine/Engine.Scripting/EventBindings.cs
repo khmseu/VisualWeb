@@ -15,6 +15,7 @@ internal static class EventBindings
             const TypeErrorCtor = TypeError;
             const targets = new WeakMap(), events = new WeakMap();
             let retained = 0, invoked = 0, depth = 0, failure = 0, active = false;
+            let documentTarget = null, readiness = 'loading';
             const list = () => {const value = create(null); value.length = 0; return value;};
             const copyList = source => {
                 const result = list();
@@ -53,8 +54,8 @@ internal static class EventBindings
                     const bubbles = !!init.bubbles, cancelable = !!init.cancelable, composed = !!init.composed;
                     apply(set, events, this, {type: name, bubbles, cancelable, composed,
                         target: null, currentTarget: null, phase: 0, path: list(), canceled: false,
-                        stop: false, immediate: false, passive: false, dispatching: false});
-                    define(this, 'isTrusted', {enumerable: true, get() {return false;}});
+                        stop: false, immediate: false, passive: false, dispatching: false, trusted: false});
+                    define(this, 'isTrusted', {enumerable: true, get() {return event(this).trusted;}});
                 }
                 preventDefault() {const state = event(this); if (state.cancelable && !state.passive) state.canceled = true;}
                 stopPropagation() {event(this).stop = true;}
@@ -152,11 +153,11 @@ internal static class EventBindings
                     if (state.immediate || failure) return;
                 }
             };
-            const dispatchEvent = function(value) {
-                target(this); task();
-                if (arguments.length < 1) error('dispatchEvent requires an Event');
+            const dispatch = function(value, trusted) {
+                task();
                 const state = event(value);
                 if (state.dispatching) error('Event is already being dispatched');
+                state.trusted = trusted;
                 if (depth >= 32) limit();
                 const path = list();
                 let node = this;
@@ -181,6 +182,11 @@ internal static class EventBindings
                     state.currentTarget = null; state.phase = 0; state.path = list();
                 }
             };
+            const dispatchEvent = function(value) {
+                target(this);
+                if (arguments.length < 1) error('dispatchEvent requires an Event');
+                return apply(dispatch, this, value, false);
+            };
             const install = prototype => {
                 for (const [name, fn] of [
                     ['addEventListener',addEventListener], ['removeEventListener',removeEventListener], ['dispatchEvent',dispatchEvent]
@@ -192,11 +198,28 @@ internal static class EventBindings
             install(EventTarget.prototype);
             define(globalThis, 'Event', {value: Event, configurable: true, writable: true});
             define(globalThis, 'EventTarget', {value: EventTarget, configurable: true, writable: true});
+            const lifecycleEvent = (type, bubbles) => {
+                const init = create(null); init.bubbles = bubbles; init.cancelable = init.composed = false;
+                const value = new Event(type, init);
+                apply(dispatch, documentTarget, value, true);
+            };
             return (operation, receiver, parent, validate) => {
                 if (operation === 'install') {install(receiver); return 0;}
                 if (operation === 'register') {
                     apply(set, targets, receiver, {listeners: list(), parent, validate}); return 0;
                 }
+                if (operation === 'document') {
+                    documentTarget = receiver;
+                    define(receiver, 'readyState', {enumerable: true, get() {
+                        if (this !== documentTarget) error('Illegal Document receiver');
+                        return readiness;
+                    }});
+                    return 0;
+                }
+                if (operation === 'interactive' || operation === 'complete') {
+                    readiness = operation; lifecycleEvent('readystatechange', false); return failure;
+                }
+                if (operation === 'dom-content-loaded') {lifecycleEvent('DOMContentLoaded', true); return failure;}
                 if (operation === 'begin') {invoked = depth = failure = 0; active = true; return 0;}
                 if (operation === 'end') active = false;
                 return failure;

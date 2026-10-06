@@ -109,6 +109,11 @@ There is no persistent script host or HTML event loop.
 Phase 11g also enables bounded synchronous synthetic Event/EventTarget dispatch
 and Node/document capture/target/bubble listeners. Caught listener failures
 still reject navigation. No automatic input/load events or `on*` handlers run.
+Phase 11h runs finite loading/interactive/DOMContentLoaded/complete readiness
+and readystatechange events before paint, with native checkpoints between
+stages and shared navigation budgets. Listener failures preserve the published
+page; retained resize never repeats lifecycle. This is a post-parse
+approximation, not HTML scheduling or Window/load support.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

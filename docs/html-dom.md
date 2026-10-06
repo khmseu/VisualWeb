@@ -127,6 +127,8 @@ Phase 11g adds optional synchronous synthetic Node/document event dispatch
 in native JavaScript facades, not in these C# nodes. Listener identities and
 snapshotted ancestor paths stay in the owning V8 isolate; no automatic browser
 events, persistent event loop or dynamic script execution is added.
+Phase 11h opts page execution into finite readiness/DOMContentLoaded on the
+script facade only; native C# nodes remain free of script lifecycle state.
 
 ## Safety limits
 

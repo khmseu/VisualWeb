@@ -116,6 +116,12 @@
   capture/once/passive/removal semantics, 1,024 entries/path targets, 4,096 shared
   invocations, 32 nested dispatches and caught-failure latching. No automatic
   input/load events, on* handlers, AbortSignal or persistent listeners on resize.
+  Phase 11h opts inline pages into one-shot loading/interactive/DOMContentLoaded/
+  complete readiness with private dispatch and checkpoints between stages.
+  Sources and lifecycle callbacks share one deadline and all task budgets.
+  Keep readyState readonly, lifecycle trust internal, failures transactional,
+  and no Window/load event or retained V8/listeners. Empty opted-in batches
+  still complete lifecycle; static mode does not construct V8.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

@@ -45,3 +45,6 @@ deferred. See the [scripting guide](scripting.md) for exact limits and deviation
 Phase 11g adds opt-in bounded synthetic Event/EventTarget and Node/document
 capture/target/bubble dispatch, without automatic browser events or live hosts
 after initial execution.
+Phase 11h adds finite readonly document readiness and private readystatechange/
+DOMContentLoaded dispatch/checkpoints under the same navigation task budgets,
+without Window/load or persistent V8.

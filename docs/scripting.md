@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11g)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11h)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -120,7 +120,7 @@ algorithms for ordinary trees without shadow DOM:
 - `new Event(type, {bubbles, cancelable, composed})` creates an untrusted event.
   Type is required and uses DOMString conversion. Events expose type, target,
   currentTarget, eventPhase, bubbles/cancelable/composed, defaultPrevented,
-  unforgeable false isTrusted and the four phase constants.
+  unforgeable isTrusted (false for script-dispatched events) and the four phase constants.
 - `new EventTarget()` creates an independent target with no parent. DOM
   dispatch snapshots the current ancestor path up to document before calling
   listeners. Detached nodes/fragments use their own current tree; mutations
@@ -178,9 +178,60 @@ not yet exposed. Native syntax/runtime errors invalidate event-enabled hosts.
 This is not complete Web IDL Event/EventTarget conformance. Node facades retain
 their minimal null-root prototypes rather than becoming EventTarget instances.
 Legacy initEvent, timeStamp, CustomEvent/specialized events, automatic
-load/DOMContentLoaded/input events, `on*` handlers, default actions, Window,
+load/input events, `on*` handlers, default actions, Window,
 AbortSignal and a persistent event loop are deferred. All hosts/listeners are
 disposed after initial page execution; retained resize runs no events.
+
+## Finite document readiness (phase 11h)
+
+Enable `enableDocumentLifecycle: true` on a host with a bound document, events
+and microtasks, then call `ExecuteInitialDocumentBatch` exactly once.
+Inline page rendering uses this path behind the existing script opt-in.
+Event-enabled hosts without lifecycle retain their previous behavior and
+do not expose readyState. Preconditions and the full source snapshot/budgets
+are validated before execution; rejected inputs/pre-cancellation do not consume
+the one-shot lifecycle.
+
+This finite post-parse sequence references HTML's
+[current document readiness](https://html.spec.whatwg.org/#current-document-readiness)
+and [the end](https://html.spec.whatwg.org/#the-end):
+
+1. All initial classic sources and their native microtasks observe
+   `document.readyState === 'loading'`, despite the already parsed DOM.
+2. Transition to `interactive`, dispatch a nonbubbling/noncancelable
+   `readystatechange`, and drain/verify the native microtask checkpoint.
+3. Dispatch exactly one bubbling/noncancelable `DOMContentLoaded` at document,
+   still interactive, then drain/verify its native checkpoint.
+4. Transition to `complete`, dispatch another nonbubbling/noncancelable
+   `readystatechange`, and drain/verify its native checkpoint before painting.
+
+readyState is a readonly nonconfigurable document property with receiver checks.
+Lifecycle Event instances have isTrusted true; public dispatchEvent always
+resets it to false, including redispatch of a saved lifecycle event. A script
+creating an event with a lifecycle name cannot advance readiness or consume the
+private lifecycle. Dispatch uses captured internal constructors/algorithms,
+not replaceable document methods, Event globals or caller-supplied option
+objects. Listener lists and normal phase/cancellation/cleanup rules still apply.
+
+All sources, lifecycle listeners and native jobs share **one navigation
+deadline, DOM callback budget, listener invocation budget and microtask quota**.
+The three lifecycle stages do not consume source slots/characters and do not
+reset counters. Failures at a stage/checkpoint prevent subsequent stages and
+invalidate the host; a failure before completion publishes no candidate and
+preserves the committed page. Event listeners that attempt to enqueue beyond
+the microtask quota report a resource-limit failure, not a masked listener error.
+All final DOM/title/style changes feed paint; successful resize retains only
+DOM, never listeners/jobs, and does not repeat readiness events.
+
+Even an opted-in page with zero eligible sources creates/disposes a host and
+completes this lifecycle; static mode still creates no V8 host. Navigation/reload
+uses a fresh host/readiness state. This is intentionally **not full HTML
+scheduling**: DOMContentLoaded is normally a queued global task, readiness
+depends on parser/deferred/async scripts and subresources, and complete normally
+precedes Window load. Here no external resources/modules/deferred scripts are
+supported, the complete transition means only this finite execution finished,
+and there is no Window/load dispatch, timing API, persistent task queue, parser
+interleaving, error-report-and-continue, or input event delivery.
 
 ## Minimal live DOM bindings (phase 11c)
 
@@ -327,7 +378,8 @@ script still run from the snapshot. This is deliberately **not parser-blocking
 HTML script preparation/scheduling**. Global lexical state persists between the
 batch's scripts, but not between navigations or tabs.
 
-After execution, the host is disposed. Stylesheets are collected from the
+After execution and the finite phase-11h readiness events/checkpoints, the host
+is disposed. Stylesheets are collected from the
 mutated DOM, and style/layout/display lists/pixels are computed afresh. Live
 title changes become the page/tab/window title; a script may change an embedded
 style's `textContent` before stylesheet collection. All existing CSS/layout/paint
@@ -570,3 +622,29 @@ All **58 official references** are independently cached/fresh with no network
 refresh needed. Windows/ARM evidence remains native target-CI work. Automatic
 browser events, handlers/default actions, AbortSignal, external scripts, timers,
 Promise rejection reporting and a persistent HTML event loop remain deferred.
+
+## Phase-11h validation outcome
+
+On Linux x64, all **45 projects build** and **265 selected tests pass** without
+failures or skips: 140 scripting and 125 browser cases. Lifecycle cases cover
+loading/interactive/DOMContentLoaded/complete ordering and trusted event flags,
+readonly readiness, private dispatch despite caller/prototype tampering,
+one-shot/prevalidation/empty-batch behavior, stage checkpoints and source
+failure suppression. Exact shared invocation/microtask limits, shared DOM
+budgets, whole-navigation deadlines and in-flight lifecycle cancellation are
+verified; checkpoint failures stop later stages even through native Promise jobs.
+
+Local/process pages verify final readiness-listener/microtask title/blue pixels,
+retained resize, empty-source pages, transactional DOMContentLoaded/complete
+failures and fresh navigation recovery. Local and unchanged required-confined
+V8 probes pass with finite readiness checkpoints. One concurrent native heap
+probe reached its existing deadline while reporting heap exhaustion; rerunning
+local/confined probes without competing validation passed without changing
+limits. SDL dummy and required-confined X11 shell smokes pass with
+DOMContentLoaded-driven title/pixels and tab/history/window lifecycle.
+Formatting, editor diagnostics and whitespace checks are clean; no owned
+workers/resource scopes remain. All **58 official references** are independently
+cached/fresh without network refresh. Windows/ARM still require native target
+evidence. This remains a finite post-parse approximation: Window/load, input
+events, timers, external scripts, ordinary Promise rejection reporting and a
+persistent event loop are deferred.

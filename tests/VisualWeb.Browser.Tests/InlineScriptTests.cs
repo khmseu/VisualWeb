@@ -22,6 +22,82 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task FiniteReadinessListenersAndCheckpointsFeedFinalPaintAndRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:red}</style>
+            <script>
+            let order=[document.readyState];
+            document.addEventListener('readystatechange',()=>{
+                order.push(document.readyState);
+                queueMicrotask(()=>{order.push('micro:'+document.readyState);document.title=order.join(',');});
+            });
+            document.addEventListener('DOMContentLoaded',e=>{
+                if(!e.isTrusted||!e.bubbles||e.cancelable)throw Error('lifecycle event');
+                order.push('dom');queueMicrotask(()=>document.body.setAttribute('style','background-color:blue'));
+            },{once:true});
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("loading,interactive,micro:interactive,dom,complete,micro:complete", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        Assert.Equal(rendered.Title, (await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadinessFailureCannotPublishAndFreshPageCanRecover(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var good = Page();
+        await renderer.RenderAsync(good, Viewport, Cancellation); renderer.CommitDocument(good.DocumentId);
+        var failure = Page("""
+            <!doctype html><script>
+            document.addEventListener('DOMContentLoaded',()=>{document.title='bad';throw Error('fixture')});
+            </script>
+            """);
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(failure, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(failure, Viewport, Cancellation)); }
+        Assert.Equal("Script title", (await renderer.RenderRetainedAsync(good, new(25, 20, 1), Cancellation)).Title);
+        Assert.Equal("Script title", (await renderer.RenderAsync(Page(), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CompleteLifecycleFailurePreservesPublishedPageAndEmptySourcePagesRemainValid(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var good = Page("<!doctype html><title>Empty scripts</title><style>body{margin:0;background-color:blue}</style>");
+        var rendered = await renderer.RenderAsync(good, Viewport, Cancellation);
+        Assert.Equal("Empty scripts", rendered.Title);
+        renderer.CommitDocument(good.DocumentId);
+        var failure = Page("""
+            <!doctype html><script>
+            document.addEventListener('readystatechange',()=>{
+                if(document.readyState==='complete'){document.title='bad';throw Error('complete fixture')}
+            });
+            </script>
+            """);
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(failure, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(failure, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(good, new(25, 20, 1), Cancellation);
+        Assert.Equal("Empty scripts", retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task SyntheticDomEventsAndListenerMicrotasksFeedPixelsAndRetainedResize(bool process)
     {
         using IPageRenderer renderer = process

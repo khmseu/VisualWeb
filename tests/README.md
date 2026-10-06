@@ -66,6 +66,11 @@ object getters, exact listener/invocation/path/depth limits, task failure latchi
 intrinsic tampering, adoption and cancellation. Local/process page fixtures
 verify event/listener-microtask mutations reach pixels and failed candidates
 preserve committed DOM.
+Phase-11h tests verify finite readiness ordering and event flags, readonly state,
+private dispatch/trust despite tampering, checkpoints before subsequent stages,
+one-shot/prevalidation/cancellation semantics and shared invocation/microtask
+quotas/deadlines. Local/process pages verify lifecycle mutations reach paint
+and failures preserve committed DOM while fresh navigation recovers.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

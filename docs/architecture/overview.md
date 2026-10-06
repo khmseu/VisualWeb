@@ -27,6 +27,9 @@ deadlines and bounded queues, enabled for opt-in inline pages before painting.
 Phase 11g adds native-JavaScript listener/Event identities and synchronous
 synthetic DOM propagation with snapshotted paths; callbacks never cross IPC or
 enter the native DOM. Listeners are disposed before retained repaint.
+Phase 11h adds one-shot finite document readiness, private lifecycle events and
+verified stage checkpoints under the initial batch deadline; no Window/load
+or persistent renderer event loop is implied.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

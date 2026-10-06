@@ -27,6 +27,11 @@ document dispatch with snapshotted propagation paths, listener identity/once/
 passive semantics and shared invocation/depth limits. Callback errors and
 caught quota violations invalidate tasks. No automatic browser events or
 new CLR callbacks are installed; plain hosts remain unchanged.
+Phase 11h optionally enables readonly document readiness and a one-shot
+ExecuteInitialDocumentBatch with interactive/DOMContentLoaded/complete events,
+private trusted dispatch and native checkpoints between stages. Requires
+document/events/microtasks; all stages share the initial task budgets.
+This finite post-parse approximation does not add Window/load or retain V8.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 
