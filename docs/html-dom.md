@@ -172,6 +172,12 @@ Phase 11t exposes checked ChildNode.remove for Element, CharacterData and
 DocumentType with bounded parent-subtree preflight. Detached nodes keep
 ownership, children, data and listeners; Document/Fragment receivers reject.
 No observer, range or custom-element reactions are introduced.
+Phase 11u exposes live document.doctype and native name/publicId/systemId as
+readonly privately branded script getters. The lookup scans only document
+children; detached metadata retains its values and adopted wrappers reject.
+Parser mode selection is unchanged: public and non-legacy-compatible system
+identifiers still fail explicitly in the static tree builder, while native
+nodes can retain arbitrary raw identifier strings. Identifiers are not fetched.
 
 ## Safety limits
 

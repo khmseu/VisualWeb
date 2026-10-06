@@ -38,6 +38,9 @@ Target remains immutable while raw data edits do not rerun construction checks.
 ChildNode Remove delegates checked parent removal for Element, CharacterData
 and DocumentType. Detached valid nodes are no-ops; unsupported receivers reject.
 Removed nodes retain ownership, descendant links and data.
+Document Doctype and immutable doctype Name/PublicId/SystemId feed the bounded
+script metadata surface. Native values retain raw UTF-16 and case; removing or
+adopting doctypes neither rewrites identifiers nor changes document mode.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

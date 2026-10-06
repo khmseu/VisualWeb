@@ -88,6 +88,8 @@ static void Wait(Process process, StreamReader output, StreamReader error, Actio
 static void Probe()
 {
     var document = new DomDocument();
+    document.AppendChild(document.CreateComment("before"));
+    document.AppendChild(document.CreateDocumentType("HTML", "VisualWeb public", "https://example.invalid/doctype"));
     var html = document.CreateElement("html"); document.AppendChild(html);
     html.AppendChild(document.CreateElement("head"));
     var body = document.CreateElement("body"); html.AppendChild(body);
@@ -172,6 +174,15 @@ static void Probe()
                 &&pi.target==='Probe'&&pi.ownerDocument===document&&comment.data==='raw'
                 &&created[Symbol.unscopables].remove===true})()
         """).Boolean, "Native ChildNode removal/identity failed.");
+    Check(bound.Evaluate("""
+        (()=>{const doctype=document.doctype;
+            if(doctype!==document.firstChild.nextSibling||doctype.name!=='HTML'||doctype.nodeName!==doctype.name
+                ||doctype.publicId!=='VisualWeb public'||doctype.systemId!=='https://example.invalid/doctype')return false;
+            doctype.remove();
+            if(document.doctype!==null||doctype.ownerDocument!==document||doctype.name!=='HTML')return false;
+            document.insertBefore(doctype,document.documentElement);
+            return document.doctype===doctype})()
+        """).Boolean, "Native DocumentType lookup/metadata failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

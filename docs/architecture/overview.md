@@ -55,6 +55,8 @@ Phase 11s adds native-validated comment/instruction factories and branded target
 through the same bounded bridge; insertion is inert and no resource API is added.
 Phase 11t adds ChildNode.remove through that bridge with bounded parent-tree
 preflight, no new identities and retained detached subtree/listener ownership.
+Phase 11u adds doctype lookup/metadata over the same primitive-only bridge.
+Identifiers are inert strings, not resource requests or mode-selection inputs.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

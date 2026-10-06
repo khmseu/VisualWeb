@@ -22,6 +22,46 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task DoctypeMetadataGuidesLifecyclePaintWithTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!--before--><!DOCTYPE HTML SYSTEM "about:legacy-compat">
+            <title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let doctype=document.doctype;
+            document.addEventListener('DOMContentLoaded',()=>{
+                if(doctype!==document.firstChild.nextSibling||doctype.name!=='html'||doctype.nodeName!==doctype.name
+                    ||doctype.publicId!==''||doctype.systemId!=='about:legacy-compat')
+                    throw Error('doctype metadata');
+                doctype.remove();
+                if(document.doctype!==null||doctype.name!=='html'||doctype.ownerDocument!==document)
+                    throw Error('detached doctype');
+                document.insertBefore(doctype,document.documentElement);
+                if(document.doctype!==doctype)throw Error('doctype identity');
+                document.getElementById('sheet').textContent='body{margin:0;background-color:blue}';
+                queueMicrotask(()=>document.title='Doctype '+doctype.name+' '+doctype.systemId);
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Doctype html about:legacy-compat", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>'use strict';document.doctype.publicId='spoof'</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(rendered.Title, (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task SelfRemovalFeedsLifecyclePaintAndTitleWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

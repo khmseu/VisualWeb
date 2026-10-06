@@ -10,6 +10,8 @@ public sealed class DomDocument() : DomNode(null)
     public override DomNodeType NodeType => DomNodeType.Document;
     public override string NodeName => "#document";
     public DomElement? DocumentElement => ChildNodes.OfType<DomElement>().FirstOrDefault();
+    /// <summary>The doctype child, or null when none is attached.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-document-doctype">doctype</see>.</remarks>
     public DomDocumentType? Doctype => ChildNodes.OfType<DomDocumentType>().FirstOrDefault();
     public DomDocumentMode Mode { get; set; } = DomDocumentMode.NoQuirks;
     public DomElement? Head => DocumentElement?.ChildNodes.OfType<DomElement>().FirstOrDefault(e => e.LocalName == "head");

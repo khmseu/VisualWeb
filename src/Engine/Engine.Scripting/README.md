@@ -78,6 +78,11 @@ pseudoattributes/reactions, automatic resource loading and scheduling are deferr
 Phase 11t adds privately branded, unscopable ChildNode.remove with
 parent-descendant/ancestor and cancellation preflight, no identity allocation
 or recycling, and retained detached descendants/ownership/listeners.
+Phase 11u adds document.doctype and privately branded readonly doctype
+name/publicId/systemId. Lookup bounds immediate document children and reuses
+wrapper identity; fields share individual/task output and callback budgets.
+Detached values remain readable, adopted wrappers reject; no identifier
+fetching or parser mode-selection expansion is added.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

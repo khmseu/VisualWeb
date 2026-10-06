@@ -17,6 +17,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-normalize">normalize</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-childnode-remove">self removal</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-document-doctype">doctype lookup</see>,
+/// <see href="https://dom.spec.whatwg.org/#interface-documenttype">doctype metadata</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createcomment">comment factory</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction">processing instruction factory</see>,
@@ -106,6 +108,10 @@ internal sealed class DomBindings : IDisposable
                 "create-comment" => Create("comment", value),
                 "create-instruction" => Create("instruction", value, name),
                 "instruction-target" => Observe(Instruction(handle).Target),
+                "doctype-name" => Observe(Doctype(handle).Name),
+                "doctype-public" => Observe(Doctype(handle).PublicId),
+                "doctype-system" => Observe(Doctype(handle).SystemId),
+                "document-doctype" => DocumentDoctype(),
                 "create-fragment" => Create("fragment", ""),
                 "document-element" or "document-head" or "document-body" => DocumentRoot(operation),
                 "parent" => Identity(Node(handle).ParentNode),
@@ -250,6 +256,8 @@ internal sealed class DomBindings : IDisposable
         ?? throw new InvalidOperationException("Illegal Text receiver.");
     private DomProcessingInstruction Instruction(int handle) => Node(handle) as DomProcessingInstruction
         ?? throw new InvalidOperationException("Illegal ProcessingInstruction receiver.");
+    private DomDocumentType Doctype(int handle) => Node(handle) as DomDocumentType
+        ?? throw new InvalidOperationException("Illegal DocumentType receiver.");
     private string NodeName(DomNode node)
     {
         if (node is DomElement element)
@@ -550,6 +558,12 @@ internal sealed class DomBindings : IDisposable
             _ => document.Body
         });
     }
+    private string DocumentDoctype()
+    {
+        if (document.ChildNodes.Count > MaxNodes)
+        { throw new ScriptLimitException("DOM document doctype scan limit exceeded."); }
+        return Identity(document.Doctype);
+    }
     private string Connected(DomNode node)
     {
         CheckAncestors(node);
@@ -612,7 +626,7 @@ internal sealed class DomBindings : IDisposable
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
             const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap(),
                 characterBrands = new WeakMap(), textBrands = new WeakMap(), instructionBrands = new WeakMap(),
-                childBrands = new WeakMap();
+                childBrands = new WeakMap(), doctypeBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
             const document = create(null), prototype = create(null), nodePrototype = create(null);
@@ -663,6 +677,11 @@ internal sealed class DomBindings : IDisposable
                 if (id === undefined) throw new TypeErrorCtor('Illegal ChildNode receiver');
                 return id;
             };
+            const doctypeBrand = receiver => {
+                const id = apply(brandGet, doctypeBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal DocumentType receiver');
+                return id;
+            };
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
@@ -683,6 +702,7 @@ internal sealed class DomBindings : IDisposable
                     if (type === 3 || type === 7 || type === 8) apply(brandSet, characterBrands, wrapper, handle);
                     if (type === 3) apply(brandSet, textBrands, wrapper, handle);
                     if (type === 7) apply(brandSet, instructionBrands, wrapper, handle);
+                    if (type === 10) apply(brandSet, doctypeBrands, wrapper, handle);
                     if (type === 1 || type === 3 || type === 7 || type === 8 || type === 10)
                         apply(brandSet, childBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
@@ -872,6 +892,11 @@ internal sealed class DomBindings : IDisposable
             define(nodePrototype, 'target', {enumerable: true, get() {
                 return call('instruction-target',instructionBrand(this));
             }});
+            for (const [property, operation] of [
+                ['name', 'doctype-name'], ['publicId', 'doctype-public'], ['systemId', 'doctype-system']
+            ]) define(nodePrototype, property, {enumerable: true, get() {
+                return call(operation, doctypeBrand(this));
+            }});
             for (const target of [document, prototype, nodePrototype]) {
                 for (const [property, operation] of [
                     ['firstElementChild', 'first-element'], ['lastElementChild', 'last-element']
@@ -938,7 +963,8 @@ internal sealed class DomBindings : IDisposable
                 }
             });
             for (const [property, operation] of [
-                ['documentElement', 'document-element'], ['head', 'document-head'], ['body', 'document-body']
+                ['documentElement', 'document-element'], ['head', 'document-head'], ['body', 'document-body'],
+                ['doctype', 'document-doctype']
             ]) define(document, property, {enumerable: true, get() {documentBrand(this); return wrap(call(operation, 0)); }});
             for (const [method, operation] of [
                 ['createElement', 'create-element'], ['createTextNode', 'create-text'], ['createComment', 'create-comment']

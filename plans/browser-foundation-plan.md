@@ -261,6 +261,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   DocumentType, preserving detached identity/ownership/subtrees/listeners.
   Parent-descendant and ancestor budgets/cancellation precede writes; no
   identities, observers/reactions or scheduling are added.
+  Phase 11u adds bounded document.doctype and readonly branded name/publicId/
+  systemId, reusing native payloads and identity/output/callback budgets.
+  No descendant scans, identifier fetching, parser mode expansion or scheduling
+  is introduced; detached ownership and adopted-wrapper rejection remain.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11t)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11u)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,41 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## DocumentType lookup and metadata (phase 11u)
+
+`document.doctype` returns the attached DocumentType wrapper or null, skipping
+preceding comments and reusing any wrapper reached through Node navigation.
+Its readonly `name`, `publicId` and `systemId` getters return the native raw
+UTF-16 fields, preserving case, NUL and lone surrogates; absent identifiers
+are empty strings. HTML parsing still folds parsed names independently.
+DocumentType `nodeName` equals `name`, while `nodeValue` and `textContent`
+remain null. Removal makes `document.doctype` null but retains detached
+metadata/ownership; reinsertion returns the same wrapper. Native adoption
+invalidates all old-wrapper getters.
+
+Lookup checks **8,192 immediate document children** before scanning, including
+when absent or already wrapped. It neither traverses element descendants nor
+reads metadata payloads. A first successful lookup uses the existing **1,024
+lifetime non-document identity** budget; repeated lookups/field reads allocate
+no identities. Capacity or lookup-output failure reserves no new identity.
+Each field read independently shares **65,536 characters per output**,
+**262,144 task input/output characters**, **4,096 callbacks** and the existing
+deadline/cancellation. An oversized field does not block reading other fields
+or looking up the node; absent lookup needs no identity.
+
+Getters are enumerable, nonconfigurable and setter-free. A private DocumentType
+brand rejects forged, inherited or borrowed wrong-interface receivers, and
+managed ownership rejects adopted wrappers. The minimal shared non-element
+prototype exposes field getters on other node wrappers, but access rejects
+instead of pretending those interfaces implement DocumentType.
+
+Identifiers are inert strings: no DTD/resource fetching, mode changes or
+document implementation factories are introduced. The static parser continues
+to reject unsupported legacy PUBLIC/non-compatible SYSTEM mode selection;
+only its already-supported identifiers are accepted on rendered pages.
+Full WebIDL constructors/prototypes, DOMImplementation and scheduling remain
+deferred.
 
 ## ChildNode self-removal (phase 11t)
 
@@ -1408,3 +1443,32 @@ whitespace checks are clean; no owned workers/resource scopes remain.
 All **58 official references** are independently fresh without network refresh.
 Native Windows/ARM evidence, full WebIDL, observers/live ranges/custom-element
 reactions and persistent event loops remain deferred; scripting is still opt-in.
+
+## Phase-11u validation outcome
+
+On Linux x64, all **45 projects build** and **506 selected tests pass** without
+failures or skips: 55 DOM, 300 scripting and 151 browser cases.
+Two native and eleven scripted doctype cases cover leading-comment lookup,
+same-wrapper identity, null absence, raw case/UTF-16 fields, readonly getters,
+wrong/fake/inherited/adopted receivers, removal/reinsertion and unchanged mode.
+Exact **65,536/65,537 individual output**, **262,144 shared output**,
+**8,192/8,193 document children**, **1,024 lifetime identities** and **4,096
+callbacks** are verified. Lookup ignores oversized descendant trees/metadata;
+individual reads ignore other fields; absent lookup consumes no identity.
+Failed lookup output reserves no identity and leaves the tree unchanged.
+Captured brands, private-callback invisibility and cancellation invalidation pass.
+
+Local/process lifecycle fixtures inspect the parser-supported
+`about:legacy-compat` system identifier through a leading comment, remove and
+reinsert the doctype, and verify exact blue pixels/title, transactional strict
+readonly-write failure, retained resize and fresh-navigation recovery.
+The initial PUBLIC fixture explicitly hit existing unsupported legacy-mode
+selection; it was corrected without weakening parser behavior.
+Local and unchanged required-confined V8 metadata probes pass. SDL dummy and
+required-confined X11 shell smokes pass with 10 and 15 presented frames.
+Formatting, changed-file editor diagnostics and whitespace checks are clean;
+no owned workers/resource scopes remain. All **58 official references** are
+independently fresh without network refresh.
+Native Windows/ARM evidence, legacy parser mode selection, DTD fetching,
+DOMImplementation, full WebIDL and persistent event loops remain deferred;
+page scripting remains opt-in.

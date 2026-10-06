@@ -72,3 +72,5 @@ Phase 11s adds bounded comment/processing-instruction factories and readonly
 target over native validation and existing CharacterData/Node machinery.
 Phase 11t adds branded, unscopable ChildNode.remove with atomic traversal
 preflight and preserved detached ownership/identity/listeners.
+Phase 11u adds live document.doctype and privately branded readonly doctype
+name/publicId/systemId with bounded child scans and per-field output.

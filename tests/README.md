@@ -1,5 +1,13 @@
 # Tests
 
+Phase-11u doctype tests cover lookup through leading comments, absence,
+readonly raw UTF-16 fields, detached identity/removal/reinsertion/adoption,
+receiver brands, exact per-field/shared output, document-child, identity and
+callback limits, failed output without identity reservation, cancellation
+and captured intrinsics. Local/process pages use supported legacy-compatible
+doctype identifiers for lifecycle title/style, exact pixels, transactional
+failure, retained resize and fresh-navigation recovery; parser scope is unchanged.
+
 Phase-11t removal tests cover Element/CharacterData/DocumentType, detached
 no-ops, sibling repair, unsupported/adopted brands, argument nonconversion,
 unscopables, exact parent-descendant/callback/identity limits, atomic rejection,

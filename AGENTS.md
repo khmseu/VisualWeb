@@ -171,6 +171,10 @@
   Phase 11t adds branded ChildNode.remove with pre-write parent-subtree/
   ancestor/cancellation checks and unscopable lookup. Preserve detached
   identity, ownership, descendants and listeners; allocate/recycle no handles.
+  Phase 11u adds document.doctype and privately branded readonly name/publicId/
+  systemId. Bound the document child scan and per-field/shared output; reuse
+  existing identities, reject adopted wrappers, and do not fetch identifiers
+  or broaden parser mode selection.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

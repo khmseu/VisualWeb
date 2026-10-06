@@ -118,8 +118,14 @@ public sealed class DomDocumentType : DomNode
         SystemId = systemId;
     }
 
+    /// <summary>The case-preserved doctype name.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-documenttype-name">name</see>.</remarks>
     public string Name { get; }
+    /// <summary>The raw public identifier, or the empty string when absent.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-documenttype-publicid">publicId</see>.</remarks>
     public string PublicId { get; }
+    /// <summary>The raw system identifier, not a resource to fetch.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-documenttype-systemid">systemId</see>.</remarks>
     public string SystemId { get; }
     public override DomNodeType NodeType => DomNodeType.DocumentType;
     public override string NodeName => Name;
