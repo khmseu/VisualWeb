@@ -234,6 +234,9 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   editing, reusing native checked UTF-16 primitives with atomic storage budgets.
   Text identity and lifecycle paint/resize remain stable; no observers,
   live ranges, PI pseudoattribute reactions or dynamic scripts are added.
+  Phase 11n adds bounded splitText and wholeText, with atomic identity/output/
+  data/subtree preflight and contiguous Text-run reads. Original identity and
+  listeners survive; observers, live ranges and normalization remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

@@ -13,6 +13,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-element-toggleattribute">toggleAttribute</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-id">id reflection</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-characterdata">CharacterData</see>,
+/// <see href="https://dom.spec.whatwg.org/#interface-text">Text splitting and wholeText</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
@@ -77,6 +78,8 @@ internal sealed class DomBindings : IDisposable
                 "data-length" => Observe(CharacterData(handle).Length.ToString(CultureInfo.InvariantCulture)),
                 "data-set" or "data-append" or "data-insert" or "data-delete" or "data-replace" or "data-substring"
                     => CharacterOperation(operation, CharacterData(handle), unchecked((uint)other), unchecked((uint)reference), value),
+                "text-split" => SplitText(TextNode(handle), unchecked((uint)other)),
+                "whole-text" => WholeText(TextNode(handle)),
                 "attribute-get" => Observe(Element(handle).GetAttribute(name)),
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attribute-set" => SetAttribute(Element(handle), name, value),
@@ -217,6 +220,43 @@ internal sealed class DomBindings : IDisposable
         ?? throw new InvalidOperationException("Illegal Element receiver.");
     private DomCharacterData CharacterData(int handle) => Node(handle) as DomCharacterData
         ?? throw new InvalidOperationException("Illegal CharacterData receiver.");
+    private DomText TextNode(int handle) => Node(handle) as DomText
+        ?? throw new InvalidOperationException("Illegal Text receiver.");
+    private string WholeText(DomText text)
+    {
+        if (text.ParentNode?.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM text sibling scan limit exceeded."); }
+        var result = new System.Text.StringBuilder();
+        foreach (var sibling in text.GetContiguousTextNodes())
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (result.Length + (long)sibling.Length > MaxTextCharacters)
+            { throw new ScriptLimitException("DOM wholeText result limit exceeded."); }
+            result.Append(sibling.Data);
+        }
+        return Observe(result.ToString())!;
+    }
+    private string SplitText(DomText text, uint offset)
+    {
+        if (offset > text.Length) { throw new DomException(DomError.IndexSize, "Text split offset exceeds its length."); }
+        if (text.Length > MaxTextCharacters) { throw new ScriptLimitException("DOM Text split storage limit exceeded."); }
+        if (nodes.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
+        if (text.ParentNode is { } parent)
+        {
+            CheckAncestors(parent);
+            var count = 0;
+            foreach (var node in Traverse(parent))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (++count >= MaxNodes) { throw new ScriptLimitException("DOM destination subtree limit exceeded."); }
+            }
+        }
+        var result = (nodes.Count + 1).ToString(CultureInfo.InvariantCulture) + ":3";
+        Budget(result);
+        cancellation.ThrowIfCancellationRequested();
+        var created = text.SplitText(offset);
+        nodes.Add(created); identities.Add(created, nodes.Count);
+        return result;
+    }
     private string SetNodeValue(DomNode node, string value)
         => node is DomCharacterData data ? CharacterOperation("data-set", data, 0, 0, value) : "";
     private string CharacterOperation(string operation, DomCharacterData data, uint offset, uint count, string value)
@@ -468,7 +508,7 @@ internal sealed class DomBindings : IDisposable
             const TypeErrorCtor = TypeError, SyntaxErrorCtor = SyntaxError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
             const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap(),
-                characterBrands = new WeakMap();
+                characterBrands = new WeakMap(), textBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
             const document = create(null), prototype = create(null), nodePrototype = create(null);
@@ -504,6 +544,11 @@ internal sealed class DomBindings : IDisposable
                 if (id === undefined) throw new TypeErrorCtor('Illegal CharacterData receiver');
                 return id;
             };
+            const textBrand = receiver => {
+                const id = apply(brandGet, textBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal Text receiver');
+                return id;
+            };
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
@@ -522,6 +567,7 @@ internal sealed class DomBindings : IDisposable
                     if (type === 1) apply(brandSet, elementBrands, wrapper, handle);
                     if (type === 1 || type === 11) apply(brandSet, parentBrands, wrapper, handle);
                     if (type === 3 || type === 7 || type === 8) apply(brandSet, characterBrands, wrapper, handle);
+                    if (type === 3) apply(brandSet, textBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
                     if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
                 }
@@ -676,6 +722,14 @@ internal sealed class DomBindings : IDisposable
                 const id=characterBrand(this);required(arguments.length,3);
                 const start=(+offset)>>>0, amount=(+count)>>>0, text=`${value}`;
                 call('data-replace',id,text,start|0,amount|0);
+            }});
+            define(nodePrototype, 'splitText', {enumerable: true, value: function(offset) {
+                const id=textBrand(this);required(arguments.length,1);
+                const start=(+offset)>>>0;
+                return wrap(call('text-split',id,'',start|0));
+            }});
+            define(nodePrototype, 'wholeText', {enumerable: true, get() {
+                return call('whole-text',textBrand(this));
             }});
             for (const target of [document, prototype, nodePrototype]) {
                 for (const [property, operation] of [

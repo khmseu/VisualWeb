@@ -58,3 +58,5 @@ Phase 11l adds reflected id and checked attribute toggling, preserving native
 attribute order/storage bounds and lifecycle selector/paint integration.
 Phase 11m adds bounded CharacterData/nodeValue editing, retaining UTF-16
 semantics, node identity and lifecycle styling/title/paint integration.
+Phase 11n adds bounded Text splitting and contiguous wholeText reads with
+atomic identity/tree budget preflight and retained lifecycle paint.

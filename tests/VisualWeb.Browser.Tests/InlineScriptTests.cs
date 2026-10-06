@@ -22,6 +22,44 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TextSplittingPreservesLifecycleStyleAndTitleRunsWithTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let original=document.getElementById('sheet').firstChild;
+            document.addEventListener('DOMContentLoaded',()=>{
+                let tail=original.splitText(original.data.indexOf('red'));
+                tail.replaceData(0,3,'blue');
+                if(tail.previousSibling!==original||original.wholeText!==document.getElementById('sheet').textContent)
+                    throw Error('text run identity');
+                queueMicrotask(()=>{
+                    let title=document.querySelector('title').firstChild;title.data='Split title';
+                    let end=title.splitText(6);end.appendData(' data');
+                    if(end.wholeText!=='Split title data')throw Error('title run');
+                });
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Split title data", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.createTextNode('x').splitText(2)</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Split title data", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task CharacterDataEditsPreserveNodeIdentityAndFeedLifecyclePaintTransactionally(bool process)
     {
         using IPageRenderer renderer = process

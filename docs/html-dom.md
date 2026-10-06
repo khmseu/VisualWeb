@@ -144,6 +144,9 @@ removal/readdition; the bridge preserves existing storage preflight.
 Phase 11m exposes CharacterData/nodeValue bindings using native UTF-16
 substring/replacement primitives. No observer, live-range or processing-
 instruction pseudoattribute reactions are implied.
+Phase 11n adds native/script Text splitting and contiguous wholeText reads.
+The script bridge preflights result identities and subtree limits before
+inserting a suffix; no normalization or live-range repair is implied.
 
 ## Safety limits
 

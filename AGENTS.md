@@ -141,6 +141,9 @@
   Phase 11m adds nodeValue and bounded CharacterData editing. Preserve UTF-16/
   unsigned offset semantics, conversion order, atomic storage/result budgets
   and identity. Observers/range/PI pseudoattribute reactions remain deferred.
+  Phase 11n adds Text splitText/wholeText. Preflight output/identity/data/tree
+  capacity before splitting; preserve original listeners and UTF-16 boundaries.
+  WholeText stops at non-Text siblings; no normalization/range repair is implied.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

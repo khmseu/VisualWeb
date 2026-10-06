@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11m)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11n)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -298,6 +298,41 @@ These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
 
+## Bounded Text splitting and contiguous reads (phase 11n)
+
+Branded Text wrappers expose `splitText(offset)` and readonly `wholeText`.
+Split uses WebIDL unsigned-long conversion after receiver/required-argument
+checks, then reads the current data (including conversion side effects).
+The original node retains the prefix and its listeners/identity; a fresh Text
+wrapper contains the suffix and is inserted immediately after the original
+when attached. Detached splits leave both nodes detached. Offsets zero and
+length produce empty nodes, not normalization/removal. UTF-16 splits can
+separate surrogate halves. Invalid offsets report the existing bridge TypeError
+with an IndexSize diagnostic, not yet a DOMException.
+
+`wholeText` concatenates the live contiguous Text sibling run in tree order,
+including empty text nodes, and stops at any non-Text node. Detached nodes
+return their own data. The C# DOM exposes SplitText, WholeText and a shared
+contiguous-run enumeration; callers must not mutate during enumeration.
+Comments, processing instructions and fragments are not Text receivers.
+
+Before splitting, the bridge checks the **65,536-code-unit original data**
+cap, **1,024-wrapper lifetime capacity**, parent ancestor limits and the
+**8,192-descendant destination subtree** limit including the new node.
+It reserves output text budget before mutation and registers the new identity
+without a second fallible budget check. Rejected splits leave text/tree/
+identity capacity unchanged; prior user conversion effects are not rolled back.
+`wholeText` requires at most **8,192 immediate siblings** and a **65,536
+aggregate code-unit result**. All operations share DOM callback/text limits,
+host deadline/cancellation and ownership checks. No new CLR callback or
+cross-tab object is exposed.
+
+Observers/live-range repair, CDATA, normalization and full WebIDL Text
+constructors remain deferred. Lifecycle style/title splits preserve content
+and feed final paint; retained resize never reruns splitting.
+Sources: cached `dom`, [splitText](https://dom.spec.whatwg.org/#dom-text-splittext)
+and [wholeText](https://dom.spec.whatwg.org/#dom-text-wholetext).
+
 ## Bounded CharacterData editing (phase 11m)
 
 Branded text, comment and processing-instruction wrappers expose `data`,
@@ -331,7 +366,7 @@ TypeError diagnostic, **not yet an IndexSizeError DOMException**.
 No CLR node/string-operation objects cross the bridge.
 
 This remains the existing static DOM subset: no observers, live-range repair,
-Text.splitText/wholeText, normalization, custom-element reactions or new
+normalization, custom-element reactions or new
 dynamic script execution. ProcessingInstruction edits update raw data only;
 the engine does not implement processing-instruction pseudoattribute parsing
 or reactions. Shared non-element prototypes reject non-CharacterData receivers
@@ -995,3 +1030,24 @@ All **58 official references** are independently cached/fresh without network
 refresh. Windows/ARM still require native target evidence. Observers,
 live-range/PI pseudoattribute reactions, full WebIDL/DOMException objects
 and persistent script event loops remain deferred.
+
+## Phase-11n validation outcome
+
+On Linux x64, all **45 projects build** and **407 selected tests pass** without
+failures or skips: 37 DOM, 233 scripting and 137 browser cases. Three native
+and eleven scripted Text cases cover UTF-16/surrogate splitting, detached/
+fragment/empty boundary behavior, contiguous runs with non-Text barriers,
+conversion order, brands/adoption/intrinsic tampering, original listeners,
+exact data/result/sibling/subtree/identity bounds, atomic output/shared-call
+failures and cancellation.
+
+Local/process lifecycle fixtures split style/title text and verify fresh suffix
+and original identities, exact blue pixels/title, retained resize and
+transactional failed-navigation preservation/recovery. Local and unchanged
+required-confined V8 probes pass with split/wholeText sibling identity checks.
+SDL dummy and required-confined X11 shell smokes pass, presenting 10 and 15
+frames respectively. Formatting, editor diagnostics and whitespace checks are
+clean; no owned workers/resource scopes remain. All **58 official references**
+are independently cached/fresh without network refresh. Windows/ARM still
+require native target evidence. CDATA, observers/live-range repair,
+normalization, full WebIDL and persistent script event loops remain deferred.

@@ -56,6 +56,37 @@ public sealed class DomText : DomCharacterData
     internal DomText(DomDocument document, string data) : base(document, data) { }
     public override DomNodeType NodeType => DomNodeType.Text;
     public override string NodeName => "#text";
+
+    /// <summary>Split at a UTF-16 offset, inserting the remainder immediately after this node.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-text-splittext">splitText</see>.
+    /// Observer and live-range reactions are deferred.</remarks>
+    public DomText SplitText(uint offset)
+    {
+        var remainder = SubstringData(offset, uint.MaxValue);
+        var prefix = SubstringData(0, offset);
+        var created = NodeDocument.CreateTextNode(remainder);
+        ParentNode?.InsertBefore(created, NextSibling);
+        Data = prefix;
+        return created;
+    }
+
+    /// <summary>Data of contiguous Text siblings in tree order, including empty nodes.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-text-wholetext">wholeText</see>.</remarks>
+    public string WholeText => string.Concat(GetContiguousTextNodes().Select(node => node.Data));
+
+    /// <summary>Enumerate the contiguous Text run containing this node in tree order.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#contiguous-text-nodes">contiguous Text nodes</see>.
+    /// Callers must not mutate the tree during enumeration.</remarks>
+    public IEnumerable<DomText> GetContiguousTextNodes()
+    {
+        if (ParentNode is not { } parent) { yield return this; yield break; }
+        var index = 0;
+        while (parent.ChildNodes[index] != this) { index++; }
+        var start = index;
+        while (start > 0 && parent.ChildNodes[start - 1] is DomText) { start--; }
+        for (var i = start; i < parent.ChildNodes.Count && parent.ChildNodes[i] is DomText text; i++)
+        { yield return text; }
+    }
 }
 
 public sealed class DomComment : DomCharacterData

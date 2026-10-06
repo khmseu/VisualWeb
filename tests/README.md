@@ -95,6 +95,10 @@ conversion order, unsigned offset/count boundaries, identity/nodeValue, exact
 storage/result/shared text/callback limits and ownership/cancellation.
 Local/process lifecycle fixtures verify in-place style/title edits, pixels
 and retained resize with transactional failure/recovery.
+Phase-11n tests cover UTF-16 splitting, detached/fragment boundaries, contiguous
+runs, conversion/brands, retained listeners, exact storage/result/sibling/tree/
+identity/shared task limits and cancellation. Local/process lifecycle fixtures
+verify split style/title pixels and transactional resize/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

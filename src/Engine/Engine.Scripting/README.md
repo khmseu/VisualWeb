@@ -52,6 +52,9 @@ bindings with UTF-16 unsigned offsets and atomic result/storage limits.
 Lifecycle edits preserve text-node identity and feed final styles/title/paint.
 Monotonic stage/return checks reject expired finite tasks even when the native
 interrupt timer callback is delayed; no timeout values are relaxed.
+Phase 11n adds branded Text splitText/wholeText. Split preflights data, subtree,
+identity and output budgets before mutation; contiguous reads remain live and
+bounded. Original node/listener identity and retained resize remain stable.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

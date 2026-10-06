@@ -41,6 +41,8 @@ Phase 11l adds ID reflection/attribute toggling with shared native storage
 preflight and ordered attributes, without additional host callbacks.
 Phase 11m adds primitive-only CharacterData/nodeValue editing over checked
 native UTF-16 storage; no observers, live ranges or persistent task loop.
+Phase 11n adds bounded splitText/wholeText over shared native Text primitives,
+with atomic identity/output/tree capacity checks in the bridge.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

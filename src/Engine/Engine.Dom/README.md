@@ -15,6 +15,9 @@ attributes after removal/readdition, consistently across native mutation paths.
 CharacterData Length/SubstringData/ReplaceData operate on UTF-16 code units,
 clamp counts and reject invalid offsets before mutation. Observers, live-range
 repair and processing-instruction pseudoattribute reactions remain deferred.
+Text SplitText/WholeText preserve UTF-16 data and concatenate contiguous Text
+siblings; splitting inserts a fresh suffix immediately after an attached node.
+No normalization, observer or live-range reactions are added.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

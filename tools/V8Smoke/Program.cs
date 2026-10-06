@@ -132,6 +132,11 @@ static void Probe()
             return text===created.firstChild && text.data==='native data' && text.nodeValue===text.textContent
                 && text.length===11 && text.substringData(7,4)==='data'})()
         """).Boolean, "Native CharacterData editing/identity failed.");
+    Check(bound.Evaluate("""
+        (()=>{const text=created.firstChild,tail=text.splitText(7);
+            return text.data==='native '&&tail.data==='data'&&tail.previousSibling===text
+                &&text.nextSibling===tail&&tail.parentNode===created&&tail.wholeText==='native data'})()
+        """).Boolean, "Native Text split/wholeText identity failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

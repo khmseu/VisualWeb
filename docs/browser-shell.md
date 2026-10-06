@@ -125,6 +125,8 @@ Phase 11l adds reflected IDs and attribute toggles that feed lookup/selectors
 before painting, retaining the same transactional navigation behavior.
 Phase 11m allows bounded in-place style/title CharacterData edits during
 lifecycle; text identity and retained DOM resize remain unchanged.
+Phase 11n allows bounded style/title Text splitting during lifecycle;
+retained resize uses both resulting nodes without script reexecution.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.
