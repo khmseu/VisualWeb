@@ -90,7 +90,8 @@ public sealed class V8ScriptHost : IDisposable
                 dom = new(document);
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 using var installDom = (ScriptObject)engine.Evaluate(DomBindings.Bootstrap);
-                installDom.InvokeAsFunction(events, documentLifecycle);
+                using var installClasses = (ScriptObject)engine.Evaluate(ClassTokenBindings.Bootstrap);
+                installDom.InvokeAsFunction(events, documentLifecycle, installClasses);
             }
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }
         }

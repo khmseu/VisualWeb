@@ -218,6 +218,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   selectors only; :scope, live collections and full Web IDL remain deferred.
   Queries preflight result/identity capacity and share native matching limits
   across candidates, while observing task cancellation/deadlines.
+  Phase 11j adds className and bounded same-object live classList, with ordered
+  token mutation, indexed access/live iteration and existing attribute storage
+  preflight. Argument/token validation precedes writes; class changes feed CSS
+  queries and final paint. Full DOMTokenList WebIDL and DOMException are deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

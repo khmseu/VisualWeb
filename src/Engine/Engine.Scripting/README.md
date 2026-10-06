@@ -36,6 +36,10 @@ Phase 11i adds document/element/fragment queries, static branded NodeList
 snapshots and Element matches/closest via Engine.Css's bounded selector matcher.
 Result identities are preflighted atomically and native matching observes
 task cancellation. Unsupported selector features fail explicitly.
+Phase 11j adds reflected className and same-object live classList token facades,
+with ordered-set mutation, indexed access/iteration, atomic validation and
+shared callback/text/deadline budgets. It reuses the primitive attribute bridge;
+full DOMTokenList WebIDL and DOMException objects remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

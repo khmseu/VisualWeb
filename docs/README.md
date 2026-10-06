@@ -50,3 +50,5 @@ DOMContentLoaded dispatch/checkpoints under the same navigation task budgets,
 without Window/load or persistent V8.
 Phase 11i adds bounded DOM queries and static NodeList snapshots, sharing the
 existing first-party CSS selector parser and native Node wrapper identities.
+Phase 11j adds className and live bounded classList, including ordered token
+mutations and iteration, over the existing private attribute bridge.

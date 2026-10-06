@@ -117,6 +117,8 @@ approximation, not HTML scheduling or Window/load support.
 Phase 11i exposes bounded querySelector/querySelectorAll and Element
 matches/closest. Static list wrappers retain node identity; query-driven
 lifecycle style/title changes participate in paint and retained resize.
+Phase 11j adds className/live classList; lifecycle token mutations feed CSS
+queries and class selectors before paint, with transactional page failure.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

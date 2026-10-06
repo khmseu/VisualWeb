@@ -109,6 +109,13 @@ static void Probe()
         """).Boolean, "Bounded native DOM query/snapshot identity failed.");
     Check(document.GetElementById("created")?.TextContent == "tree" && bound.Evaluate("inserted").Boolean,
         "Branded attribute/fragment/tree mutation failed.");
+    Check(bound.Evaluate("""
+        (()=>{const list=created.classList;created.className=' old  old ';
+            list.replace('old','probe');list.add('live');
+            return list===created.classList && list.length===2 && list[0]==='probe'
+                && list.item(1)==='live' && document.querySelector('span.probe.live')===created
+                && [...list].join(',')==='probe,live'})()
+        """).Boolean, "Live bounded class token mutation/query failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",
@@ -177,7 +184,7 @@ static void Probe()
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
-    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, synthetic DOM event capture/target/bubble and cancellation, finite document readiness/DOMContentLoaded checkpoints, bounded DOM query/static-list identity and matches/closest, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
+    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, synthetic DOM event capture/target/bubble and cancellation, finite document readiness/DOMContentLoaded checkpoints, bounded DOM query/static-list identity and matches/closest, live bounded className/classList mutation and selectors, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
 }
 
 static void Check(bool condition, string message)

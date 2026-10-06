@@ -132,6 +132,9 @@ script facade only; native C# nodes remain free of script lifecycle state.
 Phase 11i exposes bounded querySelector/querySelectorAll, matches and closest
 through the same hidden primitive bridge and existing CSS selector matcher.
 Static NodeList facades retain live node identities without exposing CLR lists.
+Phase 11j exposes className and a bounded live classList facade in native
+JavaScript. Ordered token mutations reuse attribute preflight; the C# DOM
+continues storing ordinary raw class attributes.
 
 ## Safety limits
 

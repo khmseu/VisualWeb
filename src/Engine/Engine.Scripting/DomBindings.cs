@@ -67,6 +67,7 @@ internal sealed class DomBindings : IDisposable
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attribute-set" => SetAttribute(Element(handle), name, value),
                 "attribute-remove" => RemoveAttribute(Element(handle), name),
+                "class-input" => CheckClassInput(handle),
                 "create-element" => Create("element", value),
                 "create-text" => Create("text", value),
                 "create-fragment" => Create("fragment", ""),
@@ -264,6 +265,11 @@ internal sealed class DomBindings : IDisposable
         element.RemoveAttribute(name);
         return "";
     }
+    private string CheckClassInput(int handle)
+    {
+        _ = Element(handle);
+        return "";
+    }
     private string Sibling(DomNode node, bool previous)
     {
         if (node.ParentNode?.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM sibling scan limit exceeded."); }
@@ -333,7 +339,7 @@ internal sealed class DomBindings : IDisposable
     }
 
     internal const string Bootstrap = """
-        ((events, lifecycle) => {
+        ((events, lifecycle, installClasses) => {
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
@@ -504,6 +510,7 @@ internal sealed class DomBindings : IDisposable
                 const convertedName = `${name}`, convertedValue = `${value}`;
                 call('attribute-set', id, convertedValue, -1, -1, convertedName);
             }});
+            installClasses(prototype, elementBrand, call);
             freeze(prototype); freeze(nodePrototype);
             define(document, 'title', {
                 enumerable: true,

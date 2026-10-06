@@ -127,6 +127,10 @@
   reservation, SyntaxError vs unsupported TypeError, receiver/ownership guards,
   linked cancellation and one shared matching budget per query. No :scope,
   live collections, new parser or dynamically scheduled scripts.
+  Phase 11j adds className/live classList over the primitive attribute bridge.
+  Preserve ordered-set and live iteration semantics, atomic argument/token/
+  storage preflight, private receiver brands and shared callback/text budgets.
+  Token syntax errors are native named errors, not yet DOMException objects.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

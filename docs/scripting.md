@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11i)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11j)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,56 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Live bounded class tokens (phase 11j)
+
+Bound HTML Element wrappers expose `className` and a same-object `classList`.
+Both use the existing hidden primitive attribute bridge; no CLR objects or
+additional host callbacks are installed. The native-JavaScript list reads the
+current attribute on every operation, including external attribute changes,
+detachment and changes during iteration. Adopted elements remain rejected.
+`className`, `classList.value`, the stringifier and assignment to `classList`
+(forwarded to `value`) preserve raw attribute whitespace and duplicates.
+
+Token reads parse an ordered, case-sensitive set using only ASCII whitespace.
+Supported operations are readonly `length`/numeric indices, `item` with unsigned
+long conversion (out of range returns null), `contains`, variadic `add`/`remove`,
+`toggle` with optional Boolean force, `replace`, `forEach`, `keys`, `values`,
+`entries` and the default iterator. Iteration is live rather than a snapshot;
+callbacks receive `(token, index, list)` with their supplied receiver.
+`supports` always throws TypeError because `class` has no supported vocabulary.
+`contains` does not reject empty or whitespace-bearing tokens.
+
+Mutators convert all relevant arguments before token validation and read the
+attribute after conversion, so conversion side effects are visible. Validation,
+capacity checks and serialization complete before the attribute is written.
+Zero-argument add/remove normalize existing attributes, but do not create an
+absent empty attribute. Forced no-op toggle and unsuccessful replace do not
+normalize. Replacement merges existing tokens at their first ordered-set slot.
+Earlier user conversion/callback effects are not rolled back.
+
+Limits are **1,024 unique tokens**, **1,024 variadic arguments**, and **65,536
+aggregate argument/serialized UTF-16 characters per operation**. Raw value
+writes retain the existing native attribute storage/count preflight. The
+existing shared **4,096 DOM callbacks and 262,144 callback text characters per
+execution task** also apply, including input validation and repeated live
+reads. Iterating a large list can exhaust these shared budgets before its end.
+All native work/callbacks share the host deadline and cancellation. An external
+attribute with too many tokens fails token operations explicitly; raw value
+reads/writes remain available to inspect or replace it.
+
+Empty mutation tokens throw native SyntaxError; ASCII whitespace tokens throw
+a native Error named `InvalidCharacterError`. These are **not yet DOMException
+objects**. Captured intrinsics, private null-root storage and receiver brands
+resist prototype/global tampering. Numeric properties are readonly and
+enumerable; a private Proxy supplies live descriptors and membership.
+This is a finite DOMTokenList-like facade, not full WebIDL: global
+DOMTokenList/Element constructors, expandos, prototype replacement,
+defineProperty overrides, and sealing/freezing a live list are deferred.
+Lifecycle class mutations participate in CSS queries and final paint; retained
+resize still uses the mutated DOM without script reexecution.
+Source: cached `dom`, [DOMTokenList](https://dom.spec.whatwg.org/#interface-domtokenlist)
+and [Element.classList](https://dom.spec.whatwg.org/#dom-element-classlist).
 
 ## Bounded DOM queries (phase 11i)
 
@@ -732,3 +782,27 @@ workers/resource scopes remain. All **58 official references**
 are independently cached/fresh without network refresh. Windows/ARM still
 require native target evidence. Unsupported selectors, full WebIDL NodeList,
 external scripts and a persistent event loop remain deferred.
+
+## Phase-11j validation outcome
+
+On Linux x64, all **45 projects build** and **316 selected tests pass** without
+failures or skips: 187 scripting and 129 browser cases. The 25 class-token cases
+cover same-object reflection, external/detached changes, ordered normalization
+and replacement, force/no-op behavior, conversion side effects and atomic
+validation failures, ASCII/non-ASCII whitespace, readonly indexed descriptors,
+live iteration, receiver/adoption/tampering checks, exact token/argument/storage
+and shared callback boundaries, shared input text budgets and interruption.
+Large-value assertions use separate execution tasks to respect, rather than
+weaken, the existing aggregate DOM text limit.
+
+Local/process lifecycle class-selector fixtures verify exact blue pixels,
+title, retained resize and transactional failed-navigation preservation with
+fresh-page recovery. Local and unchanged required-confined V8 probes pass with
+class token mutation/query/iteration. SDL dummy and required-confined X11
+browser smokes pass with lifecycle-driven class changes, presenting 10 and 15
+frames respectively and exercising tabs/history/windows. Formatting, editor
+diagnostics and whitespace checks are clean; no owned workers/resource scopes
+remain. All **58 official references** are independently cached/fresh without
+network refresh. Windows/ARM still require native target evidence. Full
+DOMTokenList WebIDL/DOMException objects, external scripts and persistent V8
+event loops remain deferred.

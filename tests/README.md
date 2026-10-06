@@ -76,6 +76,11 @@ callbacks/iteration, live identity after mutation, detached/adopted nodes,
 syntax/unsupported/receiver failures, intrinsic tampering and exact result/
 traversal/selector bounds. CSS tests verify shared matching/candidate budgets;
 local/process lifecycle query fixtures verify pixels and transactional failure.
+Phase-11j tests cover className/value reflection, same-object live tokens,
+ordered mutation/normalization, conversion and atomic failures, indexed access/
+live iteration, receiver/adoption/tampering, exact token/argument/storage/shared
+callback budgets and cancellation. Local/process class-selector fixtures verify
+final pixels, retained resize and failed-navigation preservation/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

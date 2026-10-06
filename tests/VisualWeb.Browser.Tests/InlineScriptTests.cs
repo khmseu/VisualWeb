@@ -22,6 +22,47 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task LiveClassTokensFeedSelectorsPaintAndRetainedResizeTransactionally(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:red}body.blue{background-color:blue}</style>
+            <script>
+            let list=document.body.classList;
+            document.addEventListener('DOMContentLoaded',()=>{
+                document.body.className='red red';
+                list.replace('red','blue');
+                queueMicrotask(()=>{
+                    if(document.querySelector('.blue')!==document.body||!document.body.matches('body.blue')
+                        ||list[0]!=='blue'||list!==document.body.classList)throw Error('class identity');
+                    document.title='class tokens';
+                });
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("class tokens", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var resized = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, resized.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, resized.Frame.Pixels.Span[..4].ToArray());
+        var bad = Page("""
+            <!doctype html><script>
+            document.body.classList.add('candidate','bad value');
+            </script>
+            """);
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        Assert.Equal(rendered.Title, (await renderer.RenderRetainedAsync(page, Viewport, Cancellation)).Title);
+        Assert.Equal("class tokens", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task LifecycleQueriesMutateStyleAndSnapshotNodesBeforePainting(bool process)
     {
         using IPageRenderer renderer = process
