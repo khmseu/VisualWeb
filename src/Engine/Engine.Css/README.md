@@ -5,6 +5,9 @@ typed computed styles. UA/user/author/inline cascade, !important, specificity,
 inheritance, CSS-wide keywords and initial block/inline properties are supported.
 Selectors include `:scope` with explicit immutable `CssSelectorScope` roots
 (Element, Document, DocumentFragment virtual root); stylesheets default to `:root`.
+`:nth-child(An+B of S)` and `:nth-last-child(An+B of S)` support strict complex
+selector lists, filtered inclusive element siblings and maximum argument
+specificity, sharing the original scope and matching budgets.
 Depends on Engine.Dom only; no native, networking or script dependency.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,

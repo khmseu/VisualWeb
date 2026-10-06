@@ -50,7 +50,7 @@ public sealed class CssSelectorScope
 
 /// <summary>A compiled static HTML selector list. Invalid syntax throws; unsupported features are distinct.</summary>
 /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#match">matching</see>.
-/// No namespaces, pseudo-elements, :has(), dynamic state or nth-child(of ...) yet. Without an explicit
+/// No namespaces, pseudo-elements, :has() or dynamic state. Without an explicit
 /// <see cref="CssSelectorScope"/>, <c>:scope</c> is equivalent to <c>:root</c>.</remarks>
 public sealed class CssSelectorList
 {
@@ -379,19 +379,41 @@ public sealed class CssSelectorList
                 }
                 if (name is "nth-child" or "nth-last-child" or "nth-of-type" or "nth-last-of-type")
                 {
-                    if (argument.Any(t => t.Kind == CssTokenKind.Ident && CssText.Lower(t.Value) == "of"))
+                    var of = -1;
+                    var nesting = new Stack<CssTokenKind>();
+                    for (var i = 0; i < argument.Count; i++)
                     {
-                        throw new UnsupportedCssException("Filtered nth-child selectors are unsupported.", function.Offset);
+                        context.Cancellation.ThrowIfCancellationRequested();
+                        var part = argument[i];
+                        if (nesting.Count == 0 && part.Kind == CssTokenKind.Ident && CssText.Lower(part.Value) == "of")
+                        {
+                            of = i;
+                            break;
+                        }
+                        if (CssText.Opens(part.Kind)) { nesting.Push(CssText.Closing(part.Kind)); }
+                        else if (nesting.TryPeek(out var close) && part.Kind == close) { nesting.Pop(); }
                     }
-                    var (a, b) = Nth(argument);
+                    var sameType = name.Contains("of-type", StringComparison.Ordinal);
+                    if (of >= 0 && sameType)
+                    {
+                        throw new UnsupportedCssException("Of clauses on nth-of-type selectors are unsupported.", function.Offset);
+                    }
+                    var (a, b) = Nth(of < 0 ? argument : argument.GetRange(0, of));
+                    var filter = of < 0 ? null : new Parser(argument.GetRange(of + 1, argument.Count - of - 1),
+                        context, depth + 1).List(false);
+                    var specificity = new CssSpecificity(0, 1, 0)
+                        + (filter is null ? new CssSpecificity() : filter.Select(s => s.Specificity).Max());
                     return new((e, ctx) =>
                     {
-                        var siblings = Siblings(e, name.Contains("of-type", StringComparison.Ordinal), ctx);
+                        var siblings = Siblings(e, sameType, ctx);
+                        if (filter is not null) { siblings = siblings.Where(sibling => filter.Any(s => s.Matches(sibling, ctx))).ToList(); }
                         var index = siblings.IndexOf(e) + 1;
+                        // Membership is required before reversing: an absent subject must not become count + 1.
+                        if (index == 0) { return false; }
                         if (name.Contains("last", StringComparison.Ordinal)) { index = siblings.Count - index + 1; }
                         var difference = (long)index - b;
-                        return index > 0 && (a == 0 ? difference == 0 : difference % a == 0 && difference / a >= 0);
-                    }, new(0, 1, 0));
+                        return a == 0 ? difference == 0 : difference % a == 0 && difference / a >= 0;
+                    }, specificity);
                 }
                 throw new UnsupportedCssException($"Unsupported functional pseudo-class :{name}().", function.Offset);
             }

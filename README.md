@@ -57,7 +57,8 @@ bindings, finite native microtask checkpoints and bounded synchronous synthetic
 Event/EventTarget dispatch and finite document readiness/DOMContentLoaded, plus native confinement
 probes. Page scripts remain disabled by default. `--enable-inline-scripts`
 also exposes bounded DOM queries with static NodeList snapshots and Element
-matches/closest, reusing the current CSS selector subset (including `:scope`), plus reflected
+matches/closest, reusing the current CSS selector subset (including `:scope`
+and filtered `:nth-child`/`:nth-last-child`), plus reflected
 className, bounded live classList token mutation/iteration and tree
 inspection/element navigation, reflected IDs and checked attribute toggles. It
 also supports bounded CharacterData/nodeValue editing that preserves text-node

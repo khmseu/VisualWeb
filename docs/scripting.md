@@ -799,7 +799,7 @@ IDs/classes, attributes, combinators, structural pseudo-classes and supported
 functional selectors. Invalid selector syntax/tokenization throws a native
 JavaScript SyntaxError, not yet a DOMException. Unsupported features fail
 explicitly with TypeError instead of silently returning no matches: dynamic
-state, namespaces, `:has`, filtered nth-child and pseudo-elements remain
+state, namespaces, `:has` and pseudo-elements remain
 deferred. `:scope` is supported as described below. Rejecting pseudo-elements
 rather than returning an empty list is an
 intentional finite-subset deviation. No selector cache, live collections,
@@ -836,6 +836,15 @@ remain unsupported TypeErrors. Scope checks and virtual-root combinator steps
 consume the same per-query operation/depth budget and linked cancellation;
 traversal, result and identity limits are unchanged. Reused selector strings
 or `CssSelectorList` instances retain no scope between queries or tabs.
+
+Filtered `:nth-child(An+B of S)` and `:nth-last-child(An+B of S)` use the same
+CSS matcher for queries, `matches` and `closest`. `S` is a strict complex-real
+selector list; invalid branches throw SyntaxError, while unsupported features
+still throw TypeError. Filtering uses inclusive element siblings, including a
+detached singleton, and never rebinds `:scope` to each sibling or ancestor.
+Nested filters share the existing operation/depth budget and cancellation;
+static NodeList, traversal/result/identity bounds and atomic publication stay
+unchanged. `of` clauses on the of-type variants remain unsupported.
 
 ## Bounded attributes and Node mutation (phase 11e)
 

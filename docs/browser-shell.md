@@ -145,6 +145,9 @@ matches/closest. Static list wrappers retain node identity; query-driven
 lifecycle style/title changes participate in paint and retained resize.
 Scoped `:scope` queries and root-scoped `:scope` stylesheet rules feed the same
 lifecycle paint/retained resize path; selector failures stay transactional.
+Filtered `:nth-child`/`:nth-last-child` queries and stylesheet rules also feed
+that path in local and process rendering, with strict-list failures preserving
+the committed document and exact retained pixels.
 Phase 11j adds className/live classList; lifecycle token mutations feed CSS
 queries and class selectors before paint, with transactional page failure.
 Phase 11k adds bounded live tree inspection/navigation for lifecycle callbacks;

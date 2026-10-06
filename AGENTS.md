@@ -128,6 +128,10 @@
   linked cancellation and one shared matching budget per query. `:scope` uses
   an explicit per-call CssSelectorScope (receiver; closest keeps the original
   receiver; fragments are featureless virtual roots, never fake elements).
+  Filtered nth-child/nth-last-child use strict complex selector lists, inclusive
+  element siblings and pseudo-class plus maximum argument specificity. Nested
+  filtering must keep that original scope and shared budgets/cancellation;
+  of-type variants still reject of clauses.
   No live collections, :has, new parser or dynamically scheduled scripts.
   Phase 11j adds className/live classList over the primitive attribute bridge.
   Preserve ordered-set and live iteration semantics, atomic argument/token/

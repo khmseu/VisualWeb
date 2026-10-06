@@ -38,6 +38,9 @@ Result identities are preflighted atomically and native matching observes
 task cancellation. Unsupported selector features fail explicitly. `:scope`
 uses the receiver (closest: original receiver) as the explicit scoping root;
 fragments are virtual roots and documents resolve to the document element.
+Filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` reuse that same
+scope and shared matching budget; strict-list syntax and unsupported features
+retain distinct SyntaxError/TypeError handling.
 Phase 11j adds reflected className and same-object live classList token facades,
 with ordered-set mutation, indexed access/iteration, atomic validation and
 shared callback/text/deadline budgets. It reuses the primitive attribute bridge;

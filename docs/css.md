@@ -91,13 +91,22 @@ Supported:
   pseudo-classes over it) as the parent of top-level elements, never as a subject.
 - `:nth-child`, `:nth-last-child`, `:nth-of-type`, `:nth-last-of-type`, with
   token-based An+B parsing and signed 32-bit coefficients/constants.
+  [`:nth-child(An+B of S)`](https://drafts.csswg.org/selectors-4/#the-nth-child-pseudo)
+  and [`:nth-last-child(An+B of S)`](https://drafts.csswg.org/selectors-4/#the-nth-last-child-pseudo)
+  accept strict complex-real-selector lists (not forgiving lists). They index
+  only inclusive element siblings matching `S`, forward or backward respectively;
+  the subject must belong to that filtered list. Text/comments are ignored and
+  detached elements form singleton sibling lists. Nested filters share the
+  original immutable scope, operation/depth budgets and cancellation.
 - `:is`, `:not`, `:where`, including nested complex selectors. `:is`/`:where`
   discard syntactically invalid branches as forgiving lists; unsupported
   features still produce an explicit unsupported failure.
 
 Specificity is an `(IDs, classes, types)` tuple compared lexicographically.
 Selector lists use the most specific **matching** branch; `:is`/`:not` use their
-most specific argument; `:where` contributes zero. HTML ID/class matching is
+most specific argument; filtered nth selectors add `(0,1,0)` to the maximum
+argument specificity, even when that argument branch does not match.
+`:where` contributes zero. HTML ID/class matching is
 ASCII-insensitive in quirks mode and sensitive otherwise.
 
 `:empty` follows the **cached current Selectors Level 4** rule: document
@@ -105,8 +114,8 @@ whitespace-only text does not prevent a match. This differs from older
 Selectors 2/3 and currently deployed browser behavior; the test states the
 chosen standard explicitly.
 
-Unsupported: namespaces/column combinators, pseudo-elements, `:has`, filtered
-`nth-child(of ...)`, dynamic/interactive pseudo-classes and other pseudo-classes
+Unsupported: namespaces/column combinators, pseudo-elements, `:has`, `of` clauses
+on `:nth-of-type`/`:nth-last-of-type`, dynamic/interactive pseudo-classes and other pseudo-classes
 not listed above. No selector silently approximates these features.
 
 ## Cascade and computed values
