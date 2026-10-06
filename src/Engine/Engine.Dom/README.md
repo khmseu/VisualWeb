@@ -22,6 +22,10 @@ the first nonempty identity. An iterative whole-subtree plan checks cancellation
 before any write; removed nodes retain data and ownership. A bounded internal
 overload shared with Engine.Scripting preflights traversal/storage/text-work
 budgets. No observer or live-range reactions are added.
+IsEqualNode compares supported interface payloads, unordered attributes and
+ordered child trees iteratively, with optional cancellation and no mutations.
+Parent/identity/ownership/document mode are not structural equality criteria.
+Engine.Scripting shares an internal bounded preflight overload.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

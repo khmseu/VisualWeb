@@ -241,6 +241,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   plan and atomic traversal/storage/shared text-work preflight. The first
   nonempty Text identity survives; removed nodes retain data/ownership/listeners.
   No wrapper allocation/recycling, observers/live ranges or scheduling is added.
+  Phase 11p adds bounded Node.isEqualNode with shared iterative native structural
+  comparison and both-tree/payload preflight. Attributes compare unordered,
+  children ordered; ownership and shared callback/text/deadline budgets remain.
+  No descendant handles, cloning, shadow DOM or scheduling is added.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

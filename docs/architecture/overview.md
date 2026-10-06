@@ -45,6 +45,8 @@ Phase 11n adds bounded splitText/wholeText over shared native Text primitives,
 with atomic identity/output/tree capacity checks in the bridge.
 Phase 11o adds descendant Text normalization through a shared iterative native
 plan with whole-subtree preflight and shared text-work/cancellation budgets.
+Phase 11p adds read-only structural Node equality over shared iterative native
+comparison, preflighting both operands without allocating descendant identities.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

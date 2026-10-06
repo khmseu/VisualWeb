@@ -152,6 +152,11 @@ nodes and merge adjacent runs into the first nonempty identity, preserving
 detached node data/ownership. The iterative native plan preflights the entire
 subtree before mutation; the script bridge supplies finite traversal/storage
 and shared text-work limits. Observers/live-range reactions remain deferred.
+Phase 11p adds native/script structural equality: exact interface payloads,
+unordered attributes and ordered child trees. Native comparisons can span
+documents; script comparisons preserve single-document ownership and preflight
+both complete trees/payloads. Parent, identity and document mode are not equality
+criteria; no descendant wrappers are allocated.
 
 ## Safety limits
 

@@ -59,6 +59,10 @@ Phase 11o adds Node.normalize over a shared iterative native plan, atomically
 preflighting descendant, surviving-run and shared task text budgets. Empty
 descendant Text nodes disappear; adjacent runs preserve the first nonempty
 identity and detached data/listeners, without allocating/recycling handles.
+Phase 11p adds isEqualNode with optional null operands, both-wrapper ownership
+and iterative structural equality. Both complete non-null trees/payloads are
+preflighted against traversal/attribute/shared-text budgets even for identity
+or obvious mismatches. No descendant wrappers are allocated.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

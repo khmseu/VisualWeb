@@ -41,6 +41,8 @@ Text probes additionally verify splitting, fresh suffix identity, sibling
 links and wholeText under unchanged confinement.
 Normalization probes verify first Text identity, merged data, detached suffix
 data and undefined completion under the same confinement profiles.
+Structural equality probes compare distinct Text identities, null and
+self-comparison under unchanged confinement.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

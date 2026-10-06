@@ -142,6 +142,11 @@ static void Probe()
             return created.firstChild===text&&created.lastChild===text&&text.data==='native data'
                 &&tail.parentNode===null&&tail.data==='data'&&created.normalize()===undefined})()
         """).Boolean, "Native Node normalization/identity failed.");
+    Check(bound.Evaluate("""
+        (()=>{const text=document.createTextNode('native data');
+            return created.firstChild.isEqualNode(text)&&!created.firstChild.isSameNode(text)
+                &&!created.isEqualNode(null)&&created.isEqualNode(created)})()
+        """).Boolean, "Native Node structural equality failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

@@ -20,6 +20,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-getrootnode">getRootNode</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-issamenode">isSameNode</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-isequalnode">isEqualNode</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-parentnode">element children</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-nondocumenttypechildnode">element siblings</see>,
 /// <see href="https://webidl.spec.whatwg.org/#es-DOMString">DOMString conversion</see>.</remarks>
@@ -98,6 +99,8 @@ internal sealed class DomBindings : IDisposable
                 "contains" => Observe(other < 0 ? ValidateNullNode(handle) :
                     InspectAncestors(Node(other), Node(handle), root: false) is null ? "false" : "true"),
                 "same-node" => Observe(other < 0 ? ValidateNullNode(handle) : Node(handle) == Node(other) ? "true" : "false"),
+                "equal-node" => Observe(Node(handle).IsEqualNode(other < 0 ? null : Node(other), MaxNodes,
+                    CheckEqualityNode, cancellation) ? "true" : "false"),
                 "has-children" => Observe(Node(handle).ChildNodes.Count == 0 ? "false" : "true"),
                 "first-element" or "last-element" or "element-count" => ElementChildren(Node(handle), operation),
                 "previous-element" => ElementSibling(Node(handle), previous: true),
@@ -263,6 +266,32 @@ internal sealed class DomBindings : IDisposable
     {
         node.Normalize(MaxNodes, MaxTextCharacters, Budget, cancellation);
         return "";
+    }
+    private void CheckEqualityNode(DomNode node)
+    {
+        if (node != document && node.OwnerDocument != document)
+        { throw new InvalidOperationException("DOM equality node belongs to another document."); }
+        switch (node)
+        {
+            case DomElement element:
+                Budget(element.NamespaceUri); Budget(element.LocalName);
+                if (element.Attributes.Count > MaxAttributes) { throw new ScriptLimitException("DOM equality attribute count limit exceeded."); }
+                long stored = 0;
+                foreach (var attribute in element.Attributes)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    stored += attribute.Key.Length + (long)attribute.Value.Length;
+                    if (stored > MaxTextCharacters) { throw new ScriptLimitException("DOM equality attribute storage limit exceeded."); }
+                    Budget(attribute.Key); Budget(attribute.Value);
+                }
+                break;
+            case DomProcessingInstruction instruction:
+                Budget(instruction.Target); Budget(instruction.Data); break;
+            case DomCharacterData data:
+                Budget(data.Data); break;
+            case DomDocumentType doctype:
+                Budget(doctype.Name); Budget(doctype.PublicId); Budget(doctype.SystemId); break;
+        }
     }
     private string SetNodeValue(DomNode node, string value)
         => node is DomCharacterData data ? CharacterOperation("data-set", data, 0, 0, value) : "";
@@ -678,6 +707,10 @@ internal sealed class DomBindings : IDisposable
                 define(target, 'isSameNode', {enumerable: true, value: function(node = null) {
                     const id = brand(this);
                     return call('same-node', id, '', node == null ? -1 : brand(node)) === 'true';
+                }});
+                define(target, 'isEqualNode', {enumerable: true, value: function(node = null) {
+                    const id = brand(this);
+                    return call('equal-node', id, '', node == null ? -1 : brand(node)) === 'true';
                 }});
                 define(target, 'getRootNode', {enumerable: true, value: function(options) {
                     const id = brand(this);

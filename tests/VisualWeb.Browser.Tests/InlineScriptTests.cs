@@ -22,6 +22,45 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task StructuralEqualityObservesLifecycleChangesWithTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let sheet=document.getElementById('sheet'),expected=document.createElement('style');
+            expected.id='sheet';expected.textContent=sheet.textContent;
+            if(!sheet.isEqualNode(expected)||sheet.isSameNode(expected))throw Error('structural identity');
+            document.addEventListener('DOMContentLoaded',()=>{
+                sheet.firstChild.replaceData(sheet.textContent.indexOf('red'),3,'blue');
+                if(sheet.isEqualNode(expected))throw Error('stale equality');
+                expected.textContent='body{margin:0;background-color:blue}';
+                if(!sheet.isEqualNode(expected))throw Error('live equality');
+                queueMicrotask(()=>{
+                    document.title='Equal nodes';let title=document.querySelector('title');
+                    if(!title.firstChild.isEqualNode(document.createTextNode('Equal nodes')))throw Error('title equality');
+                });
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Equal nodes", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.body.isEqualNode({})</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Equal nodes", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TextNormalizationFeedsLifecycleStyleAndTitleWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

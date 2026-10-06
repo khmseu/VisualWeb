@@ -149,6 +149,12 @@
   first nonempty identity and detached data/listeners. Charge shared task text
   budgets even for singleton runs; never recycle removed wrapper identities.
   No observers/live-range repair or dynamic scheduling is implied.
+  Phase 11p adds isEqualNode over shared iterative native equality. Preflight
+  both complete non-null trees (including roots) and both payloads before
+  identity/mismatch shortcuts. Attribute order is ignored, child order and
+  Text segmentation are not; keep both operand ownership checks and allocate
+  no descendant wrappers. Native cross-document comparison is not a script
+  ownership exception.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

@@ -105,6 +105,12 @@ brands/ownership, exact storage/traversal/shared text/callback limits, full
 identity capacity, intrinsic tampering and cancellation. Local/process
 lifecycle fixtures verify normalized style/title pixels and retained
 transactional resize/recovery.
+Phase-11p tests cover native/script structural equality, unordered attributes,
+ordered children/Text segmentation, UTF-16/interface-specific leaf payloads,
+document mode, null/default/brand/ownership checks, exact both-tree/attribute/
+text/output/callback capacities, full identity capacity, listeners, tampering
+and cancellation. Local/process lifecycle fixtures verify live equality,
+style/title pixels and retained transactional resize/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

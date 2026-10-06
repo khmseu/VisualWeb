@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11o)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11p)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,45 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Bounded structural Node equality (phase 11p)
+
+All branded Node wrappers expose `isEqualNode(otherNode = null)`. Omitted,
+undefined and null arguments return false after validating the receiver's
+ownership. Non-null operands must be genuine Node wrappers owned by the same
+bound document; no object/string conversion is attempted. Extra arguments are
+ignored. Both operand brands/ownership are checked before comparison, including
+self-comparison and obvious interface mismatches.
+
+The shared iterative native algorithm compares supported node interfaces,
+element HTML namespace/local name, unordered raw attribute names/values,
+Text/Comment data, ProcessingInstruction target/data, DocumentType name/public/
+system IDs, and children at identical tree indices. UTF-16 data is exact;
+adjacent Text segmentation matters even when textContent matches. Identity,
+parent/connection, owner document, listeners and document quirks mode do not
+affect structural equality. Native C# IsEqualNode supports different documents;
+script facades deliberately retain their existing single-document ownership
+boundary. Namespace-aware Attr, CDATA and shadow trees remain deferred.
+
+For non-null operands, both **complete trees** are preflighted before payload
+comparison or identity/mismatch shortcuts. Each permits **8,192 nodes including
+the root**, **128 attributes per element**, **65,536 aggregate stored attribute
+name/value characters per element**, and **65,536 characters per individual
+payload field**. Namespace/local names, attributes, CharacterData, instruction
+targets and doctype fields on **both** trees charge the existing **262,144
+shared task text budget**, even when comparing a node with itself. The Boolean
+primitive also charges output budget. Null comparison does not scan a tree.
+These intentional work bounds reject oversized native trees explicitly rather
+than returning a misleading false result.
+
+No identities are allocated, recycled or exposed for descendants. Comparison
+is read-only and cancellation-aware, uses no recursion and shares the existing
+callback/deadline budget. Native API cancellation is optional; the internal
+bounded overload is available only to Engine.Scripting. Lifecycle equality
+observes live edits before final paint without altering retained resize or
+dynamic script scheduling.
+Source: cached `dom`, [isEqualNode](https://dom.spec.whatwg.org/#dom-node-isequalnode)
+and [node equality](https://dom.spec.whatwg.org/#concept-node-equals).
 
 ## Bounded descendant Text normalization (phase 11o)
 
@@ -1109,3 +1148,26 @@ official references** are independently cached/fresh without network refresh.
 Windows/ARM still require native target evidence. Observers/live-range repair,
 CDATA, custom-element reactions, full WebIDL and persistent event loops remain
 deferred; page scripting is still opt-in.
+
+## Phase-11p validation outcome
+
+On Linux x64, all **45 projects build** and **441 selected tests pass** without
+failures or skips: 46 DOM, 254 scripting and 141 browser cases. Five native
+and eleven scripted equality cases cover unordered attribute insertion,
+ordered children/Text segmentation, exact UTF-16 data, supported leaf
+interfaces/doctype fields, cross-document native comparison/document mode,
+null/default arguments, brand/ownership rejection, exact tree/attribute/
+individual/shared-text/Boolean-output/callback limits, full identity capacity,
+listener independence, captured intrinsics and cancellation. Native deep
+comparison uses iterative traversal.
+
+Local/process lifecycle fixtures compare live style/title edits and verify
+exact blue pixels/title, distinct structural/identity semantics, retained
+resize and transactional failed-navigation preservation/recovery. Local and
+unchanged required-confined V8 probes pass with Text equality/null/self checks.
+SDL dummy and required-confined X11 shell smokes pass, presenting 10 and 15
+frames respectively. Formatting, editor diagnostics and whitespace checks are
+clean; no owned workers/resource scopes remain. All **58 official references**
+are independently cached/fresh without network refresh. Windows/ARM still
+require native target evidence. Cloning, namespace-aware Attr/CDATA, shadow
+DOM, full WebIDL and persistent event loops remain deferred.
