@@ -798,12 +798,44 @@ Supported syntax is the existing [static CSS selector subset](css.md): types,
 IDs/classes, attributes, combinators, structural pseudo-classes and supported
 functional selectors. Invalid selector syntax/tokenization throws a native
 JavaScript SyntaxError, not yet a DOMException. Unsupported features fail
-explicitly with TypeError instead of silently returning no matches: `:scope`,
-dynamic state, namespaces, `:has`, filtered nth-child and pseudo-elements remain
-deferred. Rejecting pseudo-elements rather than returning an empty list is an
+explicitly with TypeError instead of silently returning no matches: dynamic
+state, namespaces, `:has`, filtered nth-child and pseudo-elements remain
+deferred. `:scope` is supported as described below. Rejecting pseudo-elements
+rather than returning an empty list is an
 intentional finite-subset deviation. No selector cache, live collections,
 innerHTML or dynamic script scheduling is added. Inline pages gain these APIs
 under the existing opt-in; lifecycle, retention and confinement are unchanged.
+
+## Scoped selector queries (`:scope`)
+
+Queries now pass an explicit immutable Engine.Css `CssSelectorScope` per call,
+following DOM's [scope-match a selectors string](https://dom.spec.whatwg.org/#scope-match-a-selectors-string),
+[matches](https://dom.spec.whatwg.org/#dom-element-matches) and
+[closest](https://dom.spec.whatwg.org/#dom-element-closest) plus Selectors'
+[:scope](https://drafts.csswg.org/selectors-4/#the-scope-pseudo) (cached `dom`,
+`selectors`). There is no JavaScript matcher, facade change or new bridge field.
+
+- Element `querySelector`/`querySelectorAll`: the receiver is the scoping root;
+  only descendants are candidates, so `:scope` alone returns null/empty while
+  `:scope > div` returns children. Left-hand compounds may still match
+  ancestors outside the receiver subtree (`html > :scope > div`).
+- Document queries: `:scope` resolves to the document element.
+- DocumentFragment queries: the fragment is a featureless **virtual scoping
+  root**, never a result. `:scope > p` finds top-level elements; `:scope` and
+  `* > p` do not match the fragment. `:is`/`:where`/`:not` follow Selectors'
+  featureless rule (`:not(.x)` cannot match the virtual root; `:not(:scope)` can
+  be evaluated against it). No synthetic root element is created.
+- `matches` scopes to the receiver. `closest` scopes **every** inclusive
+  ancestor test to the original receiver, so `inner.closest('div:scope')` is
+  null rather than the nearest div.
+- Detached receivers keep explicit scoping; there is no `:root` for them.
+
+Leading/dangling combinators (`> div`, `:scope >`, `:scope,`) are invalid
+SyntaxErrors, not relative selectors. `:scope()`/`:has(:scope)`/pseudo-elements
+remain unsupported TypeErrors. Scope checks and virtual-root combinator steps
+consume the same per-query operation/depth budget and linked cancellation;
+traversal, result and identity limits are unchanged. Reused selector strings
+or `CssSelectorList` instances retain no scope between queries or tabs.
 
 ## Bounded attributes and Node mutation (phase 11e)
 

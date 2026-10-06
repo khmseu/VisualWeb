@@ -35,7 +35,9 @@ This finite post-parse approximation does not add Window/load or retain V8.
 Phase 11i adds document/element/fragment queries, static branded NodeList
 snapshots and Element matches/closest via Engine.Css's bounded selector matcher.
 Result identities are preflighted atomically and native matching observes
-task cancellation. Unsupported selector features fail explicitly.
+task cancellation. Unsupported selector features fail explicitly. `:scope`
+uses the receiver (closest: original receiver) as the explicit scoping root;
+fragments are virtual roots and documents resolve to the document element.
 Phase 11j adds reflected className and same-object live classList token facades,
 with ordered-set mutation, indexed access/iteration, atomic validation and
 shared callback/text/deadline budgets. It reuses the primitive attribute bridge;

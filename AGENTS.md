@@ -125,8 +125,10 @@
   Phase 11i reuses Engine.Css for bounded querySelector/querySelectorAll and
   Element matches/closest. Preserve static NodeList identities, atomic result
   reservation, SyntaxError vs unsupported TypeError, receiver/ownership guards,
-  linked cancellation and one shared matching budget per query. No :scope,
-  live collections, new parser or dynamically scheduled scripts.
+  linked cancellation and one shared matching budget per query. `:scope` uses
+  an explicit per-call CssSelectorScope (receiver; closest keeps the original
+  receiver; fragments are featureless virtual roots, never fake elements).
+  No live collections, :has, new parser or dynamically scheduled scripts.
   Phase 11j adds className/live classList over the primitive attribute bridge.
   Preserve ordered-set and live iteration semantics, atomic argument/token/
   storage preflight, private receiver brands and shared callback/text budgets.

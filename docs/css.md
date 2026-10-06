@@ -69,6 +69,10 @@ in supplied order under one shared candidate/operation budget, rather than
 resetting counters for each candidate. Phase-11i DOM queries reuse this API
 with stricter bounds; see the [scripting guide](scripting.md) for scope,
 static-list behavior and unsupported selector errors.
+`Match`/`Filter` overloads accept an explicit immutable `CssSelectorScope`
+(Element, Document or DocumentFragment scoping root) that is fixed for one
+call, so reusing a selector list cannot leak a scope. The scope resolves
+`:scope` only; restricting candidates to descendants remains the caller's job.
 
 Supported:
 
@@ -79,6 +83,12 @@ Supported:
 - Descendant, child, adjacent sibling and general sibling combinators;
   non-element siblings do not affect element relationships.
 - `:root`, `:empty`, first/last/only-child and first/last/only-of-type.
+- [`:scope`](https://drafts.csswg.org/selectors-4/#the-scope-pseudo) with
+  pseudo-class specificity `(0,1,0)`. Without a scoping root (stylesheets and
+  scope-less matching) it equals `:root`. An Element scope matches that element;
+  a Document scope matches its document element; a DocumentFragment scope is a
+  featureless virtual root that only matches `:scope` (and logical
+  pseudo-classes over it) as the parent of top-level elements, never as a subject.
 - `:nth-child`, `:nth-last-child`, `:nth-of-type`, `:nth-last-of-type`, with
   token-based An+B parsing and signed 32-bit coefficients/constants.
 - `:is`, `:not`, `:where`, including nested complex selectors. `:is`/`:where`

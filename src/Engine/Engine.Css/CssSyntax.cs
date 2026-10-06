@@ -61,11 +61,15 @@ internal sealed class CssContext
     private int matchDepth;
     private int assignments;
 
-    internal CssContext(CssOptions? options, CancellationToken cancellation)
+    // Fixed per matching call so reused selector lists never retain another call's scoping root.
+    internal CssSelectorScope? Scope { get; }
+
+    internal CssContext(CssOptions? options, CancellationToken cancellation, CssSelectorScope? scope = null)
     {
         Options = options ?? new();
         Options.Validate();
         Cancellation = cancellation;
+        Scope = scope;
         cancellation.ThrowIfCancellationRequested();
     }
 

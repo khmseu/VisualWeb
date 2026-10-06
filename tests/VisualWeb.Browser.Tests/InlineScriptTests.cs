@@ -539,6 +539,40 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ScopeQueriesMutateTitleAndRootScopedStyleBeforeTransactionalRetainedPaint(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            document.addEventListener('DOMContentLoaded',()=>{
+                let head=document.head,sheet=head.querySelector(':scope > style');
+                if(sheet.textContent.includes('blue'))throw Error('rerun');
+                if(sheet!==document.getElementById('sheet')||!sheet.matches('head > :scope')||sheet.closest(':scope')!==sheet
+                    ||document.querySelector(':scope')!==document.documentElement||head.querySelector(':scope')!==null
+                    ||document.body.closest('html > :scope')!==document.body)throw Error('scope');
+                sheet.textContent=':scope > body{margin:0;background-color:blue}';
+                head.querySelector(':scope > title').textContent='scoped '+document.querySelectorAll(':scope > *').length;
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("scoped 2", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.title='partial';document.querySelector(':scope >')</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task FiniteReadinessListenersAndCheckpointsFeedFinalPaintAndRetainedResize(bool process)
     {
         using IPageRenderer renderer = process

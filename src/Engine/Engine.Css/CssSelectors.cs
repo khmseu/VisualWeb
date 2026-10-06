@@ -17,9 +17,41 @@ public readonly record struct CssSpecificity(int Ids, int Classes, int Types) : 
         => new(checked(a.Ids + b.Ids), checked(a.Classes + b.Classes), checked(a.Types + b.Types));
 }
 
+/// <summary>An immutable, reusable scoping root for <c>:scope</c> and scoped selector matching.</summary>
+/// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#the-scope-pseudo">:scope</see> and
+/// <see href="https://www.w3.org/TR/selectors-4/#scoping-root">scoping root</see>. An Element root is matched by
+/// <c>:scope</c>; a Document root resolves <c>:scope</c> to its document element; a DocumentFragment root is a
+/// featureless virtual scoping root that is never a match subject but acts as the parent of its top-level elements.
+/// The scope does not filter candidates; callers supply descendants as DOM's
+/// <see href="https://dom.spec.whatwg.org/#scope-match-a-selectors-string">scope-match</see> requires (spec ID: dom).</remarks>
+public sealed class CssSelectorScope
+{
+    private CssSelectorScope(DomNode root) => Root = root;
+
+    /// <summary>The Element, Document or DocumentFragment scoping root.</summary>
+    public DomNode Root { get; }
+
+    public static CssSelectorScope For(DomNode root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        return root is DomElement or DomDocument or DomDocumentFragment ? new(root)
+            : throw new ArgumentException("A selector scoping root must be an Element, Document or DocumentFragment.", nameof(root));
+    }
+
+    internal bool IsVirtualRoot(DomNode node) => Root is DomDocumentFragment && node == Root;
+
+    internal bool Matches(DomElement element) => Root switch
+    {
+        DomElement scope => element == scope,
+        DomDocument document => element.ParentNode == document,
+        _ => false
+    };
+}
+
 /// <summary>A compiled static HTML selector list. Invalid syntax throws; unsupported features are distinct.</summary>
 /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#match">matching</see>.
-/// No namespaces, pseudo-elements, :has(), dynamic state or nth-child(of ...) yet.</remarks>
+/// No namespaces, pseudo-elements, :has(), dynamic state or nth-child(of ...) yet. Without an explicit
+/// <see cref="CssSelectorScope"/>, <c>:scope</c> is equivalent to <c>:root</c>.</remarks>
 public sealed class CssSelectorList
 {
     private readonly IReadOnlyList<ComplexSelector> selectors;
@@ -43,18 +75,29 @@ public sealed class CssSelectorList
     }
 
     public CssSpecificity? Match(DomElement element, CancellationToken cancellationToken = default)
+        => Match(element, null, cancellationToken);
+
+    /// <summary>Match one element, resolving <c>:scope</c> against an explicit scoping root (or <c>:root</c> when null).</summary>
+    /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#match-a-selector-against-an-element">match a selector against an element</see>.</remarks>
+    public CssSpecificity? Match(DomElement element, CssSelectorScope? scope, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return Match(element, new CssContext(options, cancellationToken));
+        return Match(element, new CssContext(options, cancellationToken, scope));
     }
 
     /// <summary>Filter candidates in caller order under one shared matching budget.</summary>
     /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#match">matching</see>.
     /// The caller supplies traversal order/scope; enumeration is lazy and cancellation-aware.</remarks>
     public IEnumerable<DomElement> Filter(IEnumerable<DomElement> candidates, CancellationToken cancellationToken = default)
+        => Filter(candidates, null, cancellationToken);
+
+    /// <summary>Filter candidates in caller order with one explicit scoping root for every candidate.</summary>
+    /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#the-scope-pseudo">:scope</see>.
+    /// The scope only resolves <c>:scope</c>; candidate restriction remains the caller's traversal.</remarks>
+    public IEnumerable<DomElement> Filter(IEnumerable<DomElement> candidates, CssSelectorScope? scope, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(candidates);
-        var context = new CssContext(options, cancellationToken);
+        var context = new CssContext(options, cancellationToken, scope);
         var count = 0;
         foreach (var element in candidates)
         {
@@ -81,13 +124,41 @@ public sealed class CssSelectorList
         return best;
     }
 
-    private sealed record SimpleSelector(Func<DomElement, CssContext, bool> Matches, CssSpecificity Specificity);
+    // Virtual evaluates a featureless virtual scoping root: null means the selector is not allowed to match it.
+    private sealed record SimpleSelector(Func<DomElement, CssContext, bool> Matches, CssSpecificity Specificity,
+        Func<CssContext, bool?>? Virtual = null);
     private sealed record Compound(IReadOnlyList<SimpleSelector> Tests, char Combinator);
     private sealed class ComplexSelector(List<Compound> parts)
     {
         internal CssSpecificity Specificity { get; } = parts.SelectMany(p => p.Tests)
             .Aggregate(new CssSpecificity(), (a, b) => a + b.Specificity);
         internal bool Matches(DomElement element, CssContext context) => At(element, parts.Count - 1, context);
+
+        // Selectors 4 featureless rule: a complex selector is allowed if its subject compound is; the virtual root has no relatives.
+        internal bool? MatchesVirtual(CssContext context)
+        {
+            var subject = VirtualCompound(parts.Count - 1, context);
+            return subject is null ? null : subject.Value && parts.Count == 1;
+        }
+
+        private bool AtVirtual(int index, CssContext context) => index == 0 && VirtualCompound(index, context) == true;
+
+        private bool? VirtualCompound(int index, CssContext context)
+        {
+            context.EnterMatch();
+            try
+            {
+                var result = true;
+                foreach (var test in parts[index].Tests)
+                {
+                    context.MatchStep();
+                    if (test.Virtual?.Invoke(context) is not { } matched) { return null; }
+                    result &= matched;
+                }
+                return result;
+            }
+            finally { context.ExitMatch(); }
+        }
         private bool At(DomElement element, int index, CssContext context)
         {
             context.EnterMatch();
@@ -104,7 +175,9 @@ public sealed class CssSelectorList
                 if (index == 0) { return true; }
                 switch (parts[index].Combinator)
                 {
-                    case '>': return element.ParentNode is DomElement parent && At(parent, index - 1, context);
+                    case '>':
+                        if (element.ParentNode is DomElement parent) { return At(parent, index - 1, context); }
+                        return element.ParentNode is { } root && context.Scope?.IsVirtualRoot(root) == true && AtVirtual(index - 1, context);
                     case '+': return Previous(element, context) is { } previous && At(previous, index - 1, context);
                     case '~':
                         for (var sibling = Previous(element, context); sibling is not null; sibling = Previous(sibling, context))
@@ -117,7 +190,8 @@ public sealed class CssSelectorList
                         for (var ancestor = element.ParentNode; ancestor is not null; ancestor = ancestor.ParentNode)
                         {
                             context.MatchStep();
-                            if (ancestor is DomElement e && At(e, index - 1, context)) { return true; }
+                            if (ancestor is DomElement e ? At(e, index - 1, context)
+                                : context.Scope?.IsVirtualRoot(ancestor) == true && AtVirtual(index - 1, context)) { return true; }
                         }
                         return false;
                 }
@@ -291,7 +365,17 @@ public sealed class CssSelectorList
                     var specificity = name == "where" || selectors.Count == 0 ? new CssSpecificity()
                         : selectors.Select(s => s.Specificity).Max();
                     return new((e, ctx) => name == "not" ? !selectors.Any(s => s.Matches(e, ctx))
-                        : selectors.Any(s => s.Matches(e, ctx)), specificity);
+                        : selectors.Any(s => s.Matches(e, ctx)), specificity, ctx =>
+                        {
+                            bool? matched = null;
+                            foreach (var selector in selectors)
+                            {
+                                if (selector.MatchesVirtual(ctx) is not { } result) { continue; }
+                                matched = result || matched == true;
+                                if (result) { break; }
+                            }
+                            return name == "not" ? !matched : matched;
+                        });
                 }
                 if (name is "nth-child" or "nth-last-child" or "nth-of-type" or "nth-last-of-type")
                 {
@@ -318,6 +402,11 @@ public sealed class CssSelectorList
             return pseudo switch
             {
                 "root" => new((e, _) => e.ParentNode is DomDocument, new(0, 1, 0)),
+                "scope" => new((e, ctx) =>
+                {
+                    ctx.MatchStep();
+                    return ctx.Scope is { } scope ? scope.Matches(e) : e.ParentNode is DomDocument;
+                }, new(0, 1, 0), ctx => { ctx.MatchStep(); return true; }),
                 "empty" => new((e, ctx) => Empty(e, ctx), new(0, 1, 0)),
                 "first-child" or "last-child" or "only-child" or "first-of-type" or "last-of-type" or "only-of-type"
                     => new((e, ctx) =>

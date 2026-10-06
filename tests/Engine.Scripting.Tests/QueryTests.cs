@@ -82,8 +82,8 @@ public sealed class QueryTests
     }
 
     [Theory]
-    [InlineData(":scope")]
     [InlineData(":hover")]
+    [InlineData(":focus")]
     [InlineData(":has(div)")]
     [InlineData("div::before")]
     [InlineData("svg|a")]

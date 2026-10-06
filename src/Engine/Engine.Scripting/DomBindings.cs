@@ -195,14 +195,16 @@ internal sealed class DomBindings : IDisposable
         if (operation == "matches")
         {
             if (root is not DomElement element) { throw new InvalidOperationException("Illegal Element receiver."); }
-            var matched = selector.Match(element, cancellation) is not null ? "true" : "false";
+            var matched = selector.Match(element, CssSelectorScope.For(element), cancellation) is not null ? "true" : "false";
             Budget(matched);
             return matched;
         }
         if (operation is "query-first" or "query-all" && root is not (DomDocument or DomElement or DomDocumentFragment))
         { throw new InvalidOperationException("Illegal ParentNode receiver."); }
+        if (operation == "closest" && root is not DomElement) { throw new InvalidOperationException("Illegal Element receiver."); }
         IEnumerable<DomElement> candidates = operation == "closest" ? Ancestors(root) : Traverse(root).OfType<DomElement>();
-        var matches = selector.Filter(candidates, cancellation);
+        // DOM scoping root: the query receiver, or closest's original receiver for every inclusive ancestor.
+        var matches = selector.Filter(candidates, CssSelectorScope.For(root), cancellation);
         if (operation != "query-all") { return Identity(matches.FirstOrDefault()); }
         var result = matches.Take(MaxHandles + 1).ToList();
         if (result.Count > MaxHandles) { throw new ScriptLimitException("DOM query result limit exceeded."); }

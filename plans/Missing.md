@@ -77,7 +77,7 @@ Evidence: `HTML tree-building scope`.
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, tables, floats, positioning, and margin collapse.
-- Media queries, custom properties, calculations, modern selectors, and broader CSS properties.
+- Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` is now supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
 - Images/replaced elements, controls, list markers, decorations, scrolling, and overflow layout.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
