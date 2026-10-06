@@ -22,6 +22,43 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task CharacterFactoriesPreserveLifecycleTextBarriersAndTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            document.addEventListener('DOMContentLoaded',()=>{
+                let sheet=document.getElementById('sheet'),text=sheet.firstChild,tail=text.splitText(text.data.indexOf('red'));
+                tail.replaceData(0,3,'blue');
+                let comment=document.createComment('ignored'),pi=document.createProcessingInstruction('Probe','ignored');
+                sheet.insertBefore(comment,tail);sheet.insertBefore(pi,tail);sheet.normalize();
+                if(comment.nextSibling!==pi||pi.nextSibling!==tail||pi.target!=='Probe'
+                    ||comment.ownerDocument!==document||pi.ownerDocument!==document
+                    ||sheet.textContent!=='body{margin:0;background-color:blue}')
+                    throw Error('character factory barriers');
+                queueMicrotask(()=>document.title='Created '+comment.nodeName+' '+pi.target);
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Created #comment Probe", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.createProcessingInstruction('bad name','data')</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Created #comment Probe", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task AttributeInspectionObservesLifecycleOrderAndPreservesTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

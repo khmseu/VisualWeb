@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11r)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11s)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,50 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Comment and ProcessingInstruction factories (phase 11s)
+
+Document exposes `createComment(data)` and
+`createProcessingInstruction(target, data)`. Both return fresh detached Node
+wrappers owned by the same bound document. Comments preserve arbitrary UTF-16
+data, including NUL, lone surrogates and markup-like `-->` sequences; this is
+node construction, not HTML parsing. ProcessingInstruction validates the target
+as an XML Name and rejects `?>` in initial data using the existing native
+factory. Empty targets explicitly report the same native InvalidCharacter
+diagnostic as other invalid names rather than escaping as a BCL exception.
+The bridge maps native validation to its existing TypeError string diagnostic,
+not a full DOMException object.
+
+Receiver and required-argument checks precede DOMString conversion. Instruction
+target converts before data; **both conversions finish before native validation**,
+so user conversion effects are retained on a later validation failure.
+Null/undefined stringify normally. Extra arguments are ignored without
+conversion. Factories share **65,536 characters per input field**, **262,144
+shared task input/output characters**, **1,024 lifetime non-document identities**
+and **4,096 callbacks**, plus deadline/cancellation. Input, capacity, native
+validation and primitive output-budget failures register no wrapper identity
+and do not alter a tree.
+
+Instruction wrappers expose readonly, case-preserved `target` through a private
+ProcessingInstruction brand and native ownership validation. It shares normal
+string output budgets. The minimal non-element prototype also exposes this
+getter on other wrappers, but invoking it on a non-instruction explicitly
+rejects, consistent with existing CharacterData/Text subset brands.
+Comments/instructions use existing CharacterData editing, metadata, equality,
+tree navigation/mutation and synthetic listener machinery. They are non-Text
+barriers for wholeText/normalize and excluded from element descendant textContent.
+Editing instruction data remains raw and does not rerun factory validation
+or change target.
+
+Current DOM ProcessingInstruction pseudoattribute parsing/APIs and reactions,
+special XML stylesheet behavior, full constructors/WebIDL and automatic
+events remain deferred. Inserting these nodes never schedules scripts or
+loads resources. Lifecycle changes feed final style/title/paint while retained
+resize and transactional failure remain unchanged.
+Sources: cached `dom`,
+[createComment](https://dom.spec.whatwg.org/#dom-document-createcomment),
+[createProcessingInstruction](https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction)
+and [target](https://dom.spec.whatwg.org/#dom-processinginstruction-target).
 
 ## Ordered attribute inspection (phase 11r)
 
@@ -1289,3 +1333,26 @@ All **58 official references** are independently cached/fresh without network
 refresh. Windows/ARM still require native target evidence. Attr/NamedNodeMap,
 namespace-aware duplicates, full WebIDL and persistent event loops remain
 deferred; page scripting is still opt-in.
+
+## Phase-11s validation outcome
+
+On Linux x64, all **45 projects build** and **7,679 selected tests pass** without
+failures or skips: 51 DOM, 7,202 HTML, 279 scripting and 147 browser cases.
+Two native and eight scripted factory cases cover raw UTF-16 comments,
+XML Name/initial instruction data validation (including empty-target DOM
+errors), required receivers and ordered conversions, readonly target brands/
+adoption, exact field/target/shared-output/callback/identity limits, failure
+without identity reservation, non-Text barriers, listener independence,
+captured intrinsics and cancellation.
+
+Local/process lifecycle fixtures create inert comment/instruction style-text
+barriers and verify exact blue pixels/title, document/sibling identity,
+transactional invalid-target failure, retained resize and fresh-navigation
+recovery. Local and unchanged required-confined V8 probes pass with factory/
+target/CharacterData checks. SDL dummy and required-confined X11 shell smokes
+pass, presenting 10 and 15 frames respectively. Formatting, editor diagnostics
+and whitespace checks are clean; no owned workers/resource scopes remain.
+All **58 official references** are independently cached/fresh without network
+refresh. Windows/ARM still require native target evidence. Instruction
+pseudoattributes/reactions, special stylesheet loading, full constructors/
+WebIDL and persistent event loops remain deferred.

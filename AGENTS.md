@@ -163,6 +163,11 @@
   Return fresh mutable arrays via captured length-prefixed decoding, not live
   CLR collections or Attr objects. Preserve recovered names, shared encoded
   output/count limits and prototype-tampering defenses.
+  Phase 11s adds comment/instruction factories and branded readonly target.
+  Convert target then data before native validation; share all factory input/
+  output/identity limits. Empty XML targets must report DOM InvalidCharacter,
+  not BCL exceptions. Preserve raw editing, non-Text barriers and inert insertion;
+  instruction pseudoattributes/reactions remain deferred.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

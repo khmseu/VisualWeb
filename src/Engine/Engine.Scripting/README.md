@@ -71,6 +71,10 @@ Phase 11r adds constant-time hasAttributes and bounded ordered getAttributeNames
 Fresh mutable arrays use captured length-prefixed primitive decoding, preserve
 native ordering/recovered names and allocate no node wrappers. Attr/NamedNodeMap
 and namespace-aware duplicate qualified names remain deferred.
+Phase 11s adds bounded document comment/instruction factories and readonly
+branded target, reusing native validation and all shared factory budgets.
+Raw CharacterData editing, listener identity and non-Text barriers apply;
+pseudoattributes/reactions, automatic resource loading and scheduling are deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

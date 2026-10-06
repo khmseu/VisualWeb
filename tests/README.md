@@ -121,6 +121,11 @@ readdition, unusual UTF-16 names, brands/adoption, exact count/encoded/shared
 text/callback limits, oversized native values, full identity capacity,
 captured intrinsics/inherited setters and cancellation. Local/process lifecycle
 fixtures cover recovered parser names, ordered mutations, pixels and recovery.
+Phase-11s tests cover raw comments and native instruction validation, factory
+conversion order/required receivers, target brands/readonly/adoption, exact
+field/shared-output/callback/identity budgets, non-Text barriers, listeners,
+tampering and cancellation. Local/process lifecycle fixtures verify inert
+style text barriers, exact pixels/title and transactional resize/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

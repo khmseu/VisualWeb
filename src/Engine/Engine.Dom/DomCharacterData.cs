@@ -99,6 +99,8 @@ public sealed class DomComment : DomCharacterData
 public sealed class DomProcessingInstruction : DomCharacterData
 {
     internal DomProcessingInstruction(DomDocument document, string target, string data) : base(document, data) => Target = target;
+    /// <summary>The case-preserved target supplied at construction.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-processinginstruction-target">target</see>.</remarks>
     public string Target { get; }
     public override DomNodeType NodeType => DomNodeType.ProcessingInstruction;
     public override string NodeName => Target;

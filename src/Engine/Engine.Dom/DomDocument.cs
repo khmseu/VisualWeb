@@ -43,10 +43,19 @@ public sealed class DomDocument() : DomNode(null)
     }
 
     public DomText CreateTextNode(string data) => new(this, data);
+    /// <summary>Create a detached comment with raw UTF-16 data.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-document-createcomment">createComment</see>.</remarks>
     public DomComment CreateComment(string data) => new(this, data);
+    /// <summary>Create a detached processing instruction with a checked XML Name target and initial data.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction">createProcessingInstruction</see>.
+    /// Pseudoattribute parsing and reactions are deferred.</remarks>
     public DomProcessingInstruction CreateProcessingInstruction(string target, string data)
     {
         ArgumentNullException.ThrowIfNull(target);
+        if (target.Length == 0)
+        {
+            throw new DomException(DomError.InvalidCharacter, "Processing instruction target must be an XML Name.");
+        }
         try
         {
             XmlConvert.VerifyName(target);

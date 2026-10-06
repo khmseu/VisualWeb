@@ -164,6 +164,10 @@ owner; adopted wrappers reject rather than exposing another document.
 Phase 11r exposes ordered native attribute names as bounded, fresh mutable
 script arrays and constant-time presence. Recovered parser names are preserved;
 values, Attr objects and live NamedNodeMap remain outside this API.
+Phase 11s exposes native comment/instruction factories and readonly target to
+scripts. XML Name/initial-data validation precedes identity registration;
+empty targets explicitly use DomError.InvalidCharacter. Raw UTF-16 comments
+and instruction data reuse CharacterData, with pseudoattributes/reactions deferred.
 
 ## Safety limits
 

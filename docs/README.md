@@ -68,3 +68,5 @@ Phase 11q adds bounded readonly Node/Element metadata, ASCII-only HTML names
 and same-document ownership without additional non-document identities.
 Phase 11r adds bounded hasAttributes/getAttributeNames, fresh mutable ordered
 name arrays and captured primitive-only decoding without live Attr objects.
+Phase 11s adds bounded comment/processing-instruction factories and readonly
+target over native validation and existing CharacterData/Node machinery.

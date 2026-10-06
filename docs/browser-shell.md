@@ -136,6 +136,9 @@ Phase 11q exposes readonly Node/Element metadata for lifecycle scripts,
 preserving bounded string outputs, owner identity and transactional resize.
 Phase 11r allows ordered attribute snapshots/presence checks in lifecycle
 scripts, without changing stylesheet discovery or retained resize policy.
+Phase 11s allows comment/instruction creation and target inspection in lifecycle
+scripts. They are inert non-Text barriers, excluded from stylesheet/title text;
+no pseudoattribute reactions, loading or dynamic script scheduling is added.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

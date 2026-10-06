@@ -253,6 +253,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   bounded count/encoded output and captured primitive decoding. Preserve native
   attribute order, recovered names and independent mutable arrays without new
   wrapper slots; Attr/NamedNodeMap and namespace-aware duplication remain deferred.
+  Phase 11s adds bounded createComment/createProcessingInstruction and readonly
+  target with ordered conversion, native XML Name/initial-data validation and
+  shared factory identity/input/output/callback budgets. Existing Node/data/
+  event machinery applies; pseudoattributes, loading and scheduling are deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

@@ -31,6 +31,10 @@ readonly script metadata surface. HTML names fold ASCII only; detached nodes
 retain their owner, and adoption updates every descendant's owner.
 The script attribute-inspection subset reads this ordered attribute view for
 fresh name snapshots and presence checks, without exposing the CLR collection.
+Comment/instruction native factories also back the bounded script creation
+surface. Comments preserve raw UTF-16; instructions validate XML Name targets
+(including empty-target InvalidCharacter) and reject `?>` in initial data.
+Target remains immutable while raw data edits do not rerun construction checks.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

@@ -17,6 +17,9 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-normalize">normalize</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-document-createcomment">comment factory</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction">processing instruction factory</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-processinginstruction-target">processing instruction target</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-getrootnode">getRootNode</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-issamenode">isSameNode</see>,
@@ -98,6 +101,9 @@ internal sealed class DomBindings : IDisposable
                 "class-input" => CheckClassInput(handle),
                 "create-element" => Create("element", value),
                 "create-text" => Create("text", value),
+                "create-comment" => Create("comment", value),
+                "create-instruction" => Create("instruction", value, name),
+                "instruction-target" => Observe(Instruction(handle).Target),
                 "create-fragment" => Create("fragment", ""),
                 "document-element" or "document-head" or "document-body" => DocumentRoot(operation),
                 "parent" => Identity(Node(handle).ParentNode),
@@ -240,6 +246,8 @@ internal sealed class DomBindings : IDisposable
         ?? throw new InvalidOperationException("Illegal CharacterData receiver.");
     private DomText TextNode(int handle) => Node(handle) as DomText
         ?? throw new InvalidOperationException("Illegal Text receiver.");
+    private DomProcessingInstruction Instruction(int handle) => Node(handle) as DomProcessingInstruction
+        ?? throw new InvalidOperationException("Illegal ProcessingInstruction receiver.");
     private string NodeName(DomNode node)
     {
         if (node is DomElement element)
@@ -372,13 +380,15 @@ internal sealed class DomBindings : IDisposable
         element.TextContent = value;
         return "";
     }
-    private string Create(string kind, string value)
+    private string Create(string kind, string value, string name = "")
     {
         if (nodes.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
         return Identity(kind switch
         {
             "element" => document.CreateElement(value),
             "text" => document.CreateTextNode(value),
+            "comment" => document.CreateComment(value),
+            "instruction" => document.CreateProcessingInstruction(name, value),
             _ => document.CreateDocumentFragment()
         });
     }
@@ -586,7 +596,7 @@ internal sealed class DomBindings : IDisposable
             const TypeErrorCtor = TypeError, SyntaxErrorCtor = SyntaxError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
             const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap(),
-                characterBrands = new WeakMap(), textBrands = new WeakMap();
+                characterBrands = new WeakMap(), textBrands = new WeakMap(), instructionBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
             const document = create(null), prototype = create(null), nodePrototype = create(null);
@@ -627,6 +637,11 @@ internal sealed class DomBindings : IDisposable
                 if (id === undefined) throw new TypeErrorCtor('Illegal Text receiver');
                 return id;
             };
+            const instructionBrand = receiver => {
+                const id = apply(brandGet, instructionBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal ProcessingInstruction receiver');
+                return id;
+            };
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
@@ -646,6 +661,7 @@ internal sealed class DomBindings : IDisposable
                     if (type === 1 || type === 11) apply(brandSet, parentBrands, wrapper, handle);
                     if (type === 3 || type === 7 || type === 8) apply(brandSet, characterBrands, wrapper, handle);
                     if (type === 3) apply(brandSet, textBrands, wrapper, handle);
+                    if (type === 7) apply(brandSet, instructionBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
                     if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
                 }
@@ -821,6 +837,9 @@ internal sealed class DomBindings : IDisposable
             define(nodePrototype, 'wholeText', {enumerable: true, get() {
                 return call('whole-text',textBrand(this));
             }});
+            define(nodePrototype, 'target', {enumerable: true, get() {
+                return call('instruction-target',instructionBrand(this));
+            }});
             for (const target of [document, prototype, nodePrototype]) {
                 for (const [property, operation] of [
                     ['firstElementChild', 'first-element'], ['lastElementChild', 'last-element']
@@ -890,7 +909,7 @@ internal sealed class DomBindings : IDisposable
                 ['documentElement', 'document-element'], ['head', 'document-head'], ['body', 'document-body']
             ]) define(document, property, {enumerable: true, get() {documentBrand(this); return wrap(call(operation, 0)); }});
             for (const [method, operation] of [
-                ['createElement', 'create-element'], ['createTextNode', 'create-text']
+                ['createElement', 'create-element'], ['createTextNode', 'create-text'], ['createComment', 'create-comment']
             ]) define(document, method, {enumerable: true, value: function(value) {
                 documentBrand(this); required(arguments.length, 1);
                 if (operation === 'create-element' && arguments.length > 1 && arguments[1] !== undefined)
@@ -899,6 +918,11 @@ internal sealed class DomBindings : IDisposable
             }});
             define(document, 'createDocumentFragment', {enumerable: true, value: function() {
                 documentBrand(this); return wrap(call('create-fragment', 0));
+            }});
+            define(document, 'createProcessingInstruction', {enumerable: true, value: function(target, data) {
+                documentBrand(this); required(arguments.length, 2);
+                const convertedTarget=`${target}`,convertedData=`${data}`;
+                return wrap(call('create-instruction',0,convertedData,-1,-1,convertedTarget));
             }});
             define(globalThis, 'document', { value: document, enumerable: true });
         })

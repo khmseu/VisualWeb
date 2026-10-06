@@ -158,6 +158,13 @@ static void Probe()
             return created.hasAttributes()&&names.includes('id')&&names!==created.getAttributeNames()
                 &&names.every(name=>typeof name==='string')})()
         """).Boolean, "Native attribute name snapshot/presence failed.");
+    Check(bound.Evaluate("""
+        (()=>{const comment=document.createComment('raw'),pi=document.createProcessingInstruction('Probe','data');
+            created.appendChild(comment);created.appendChild(pi);
+            return comment.nodeType===8&&comment.data==='raw'&&pi.nodeType===7&&pi.target==='Probe'
+                &&pi.data==='data'&&pi.previousSibling===comment&&pi.ownerDocument===document
+                &&created.textContent==='native data'})()
+        """).Boolean, "Native comment/processing instruction factory failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",
