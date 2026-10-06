@@ -115,6 +115,26 @@ public sealed class NavigationTests
         Assert.Contains(page.Diagnostics, d => d.Contains("UTF-8", StringComparison.Ordinal));
     }
     [Theory]
+    [InlineData("http://example.com:0/", 0)]
+    [InlineData("https://example.com:6000/", 0)]
+    [InlineData("http://example.com/redirect", 1)]
+    public async Task BadPortNavigationFailsWithExplicitBlockedPortError(string address, int expectedRequests)
+    {
+        var requests = 0;
+        using var source = new GetPageSource(new Handler(_ =>
+        {
+            requests++;
+            var response = new HttpResponseMessage(HttpStatusCode.MovedPermanently) { Content = new StringContent("") };
+            response.Headers.TryAddWithoutValidation("Location", "https://example.com:10080/");
+            return response;
+        }));
+        var error = await Assert.ThrowsAsync<VisualWeb.Engine.Net.ResourceLoadException>(() =>
+            source.LoadAsync(BrowserUrl.Parse(address), Cancellation));
+        Assert.Equal(VisualWeb.Engine.Net.ResourceError.BlockedPort, error.Error);
+        Assert.IsAssignableFrom<IOException>(error);
+        Assert.Equal(expectedRequests, requests);
+    }
+    [Theory]
     [InlineData("image/png")]
     [InlineData("text/plain")]
     [InlineData("text/html;charset=not-an-encoding")]

@@ -7,6 +7,7 @@ namespace VisualWeb.Engine.Net;
 /// <summary>A bounded GET-only loader for trusted browser-side callers.</summary>
 /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#scheme-fetch">scheme fetch</see>
 /// and <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
+/// HTTP(S) <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad ports</see> are blocked for every request.
 /// <see cref="LoadSameOriginAsync"/> is an opt-in same-origin restricted mode; CORS, other origin policy,
 /// SameSite, caching and script-visible Fetch are not implemented.
 /// Cookies require explicit opt-in and are isolated per loader.</remarks>
@@ -51,11 +52,15 @@ public sealed class ResourceLoader : IDisposable
 
     /// <summary>Trusted, unrestricted developer/browser navigation: HTTP(S), local file and data URLs, with
     /// redirects to any HTTP(S) origin. Not an authorization boundary; see <see cref="LoadSameOriginAsync"/>.</summary>
+    /// <remarks>Spec: fetch; HTTP(S) URLs and redirect targets on a
+    /// <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see> throw <see cref="ResourceLoadException"/> with
+    /// <see cref="ResourceError.BlockedPort"/> before any transport or cookie work.</remarks>
     public async Task<ResourceResponse> LoadAsync(BrowserUrl url, bool includeCookies = false,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
+        BadPortPolicy.ThrowIfBlocked(url);
         return await LoadCoreAsync(url, null, includeCookies, cancellationToken);
     }
 
@@ -70,7 +75,9 @@ public sealed class ResourceLoader : IDisposable
     /// <paramref name="requestOrigin"/> (never the preceding URL) before its request is sent. No CORS, Origin header,
     /// referrer, CSP or response tainting is implemented; this is not script-visible Fetch or a complete
     /// browser-wide policy. Denials throw <see cref="ResourceLoadException"/> with
-    /// <see cref="ResourceError.SameOriginDenied"/>.</remarks>
+    /// <see cref="ResourceError.SameOriginDenied"/>. As in main fetch, the
+    /// <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad-port check</see> precedes the origin check, so a
+    /// bad-port URL or redirect target throws <see cref="ResourceError.BlockedPort"/>.</remarks>
     public async Task<ResourceResponse> LoadSameOriginAsync(BrowserUrl url, SecurityOrigin requestOrigin,
         bool includeCookies = false, CancellationToken cancellationToken = default)
     {
@@ -83,6 +90,7 @@ public sealed class ResourceLoader : IDisposable
                 "Same-origin loads require an HTTP(S) tuple request origin.");
         }
 
+        BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
         return await LoadCoreAsync(url, requestOrigin, includeCookies, cancellationToken);
     }
@@ -169,6 +177,7 @@ public sealed class ResourceLoader : IDisposable
                     next = BrowserUrl.Parse(next.Href + url.Href[WithoutFragment(url).Length..]);
                 }
 
+                BadPortPolicy.ThrowIfBlocked(next);
                 if (requestOrigin is not null)
                 {
                     EnforceSameOrigin(next, requestOrigin);

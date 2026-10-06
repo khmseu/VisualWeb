@@ -19,7 +19,7 @@ explicitly development-only, not isolated production browsing.
 | [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
 | [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders and BOM sniffing | Embedded WHATWG indices; `encoding` |
 | [Core.Mime](../src/Core/Core.Mime/) | MIME parsing/serialization; context sniffing deferred | .NET BCL; `mime-sniffing` |
-| [Engine.Net](../src/Engine/Engine.Net/) | Bounded GET loading, redirects, opt-in host-only cookies, opt-in same-origin restricted loads; full Fetch policies deferred | Core.Url/Encoding/Mime, BCL HTTP/files/cookies; `fetch`, `http-cookies` |
+| [Engine.Net](../src/Engine/Engine.Net/) | Bounded GET loading, redirects, opt-in host-only cookies, opt-in same-origin restricted loads, Fetch bad-port blocking; full Fetch policies deferred | Core.Url/Encoding/Mime, BCL HTTP/files/cookies; `fetch`, `http-cookies` |
 | [Engine.Html](../src/Engine/Engine.Html/) | First-party tokenizer and bounded static document tree building; advanced recovery deferred | Engine.Dom, embedded official entities; `html` |
 | [Engine.Dom](../src/Engine/Engine.Dom/) | Renderer-local HTML nodes, checked mutations/adoption and attributes | .NET BCL; `dom`, `html` |
 | [Engine.Css](../src/Engine/Engine.Css/) | First-party CSS syntax, static selectors, finite cascade/computed properties | Engine.Dom only; CSS and selectors documents; [scope](css.md) |

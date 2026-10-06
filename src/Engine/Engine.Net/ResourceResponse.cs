@@ -71,7 +71,11 @@ public enum ResourceError
     Timeout,
 
     /// <summary>A restricted same-origin load was denied by origin or scheme policy before the request was sent.</summary>
-    SameOriginDenied
+    SameOriginDenied,
+
+    /// <summary>An HTTP(S) URL targeted a Fetch <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see>;
+    /// the request was blocked before transport or cookie work.</summary>
+    BlockedPort
 }
 
 public sealed class ResourceLoadException(ResourceError error, string message, Exception? innerException = null)

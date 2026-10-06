@@ -63,6 +63,28 @@ callers should surface rather than ignore.
   is supplied. Callers must select ordinary local files; OS special files and
   blocking filesystem opens are not deadline-controlled by the managed API.
 
+## Fetch bad-port blocking
+
+Both `LoadAsync` and `LoadSameOriginAsync` apply Fetch
+[should be blocked due to a bad port](https://fetch.spec.whatwg.org/#block-bad-port)
+to the initial URL and to every redirect target, before credentials, cookie
+headers or any transport request. An HTTP(S) URL whose port is in the 83-entry
+[bad port](https://fetch.spec.whatwg.org/#bad-port) table (0, 1, 7, … 6697,
+10080) throws `ResourceError.BlockedPort`; no DNS or connection is attempted.
+A blocked redirect stops after the response that named it, so cookies stored
+from earlier allowed responses remain, but nothing is sent to the blocked target.
+
+Only HTTP(S) is checked. Default ports are a null URL port and are always
+allowed, so `http://host:80/` and `https://host:443/` load; non-default allowed
+ports such as 8080 or `https://host:80/` load. Data/file URLs are unchanged and
+other schemes keep `UnsupportedScheme`. In the same-origin mode the bad-port
+check precedes the origin check, as in main fetch.
+
+This is an intentional, standards-aligned behavior change: explicit developer
+navigations to blocked ports (for example `http://localhost:6000/`) now fail
+with a visible page error in the browser. There is no CLI flag or fallback to
+bypass it. It is not CORS, CSP, mixed-content or safe-browsing enforcement.
+
 System.Uri is only a transport/path adapter after WHATWG parsing, not the URL
 parser. An injected handler is owned by the loader. Built-in SocketsHttpHandler
 and HttpClientHandler are configured before use; custom handlers must not
@@ -74,7 +96,8 @@ for their ephemeral loopback servers.
 
 `LoadAsync` stays the trusted, unrestricted developer navigation entry point:
 HTTP(S), local file and data URLs, with redirects to any HTTP(S) origin. The
-browser's `GetPageSource` top-level navigation keeps using it unchanged.
+browser's `GetPageSource` top-level navigation keeps using it without a
+same-origin restriction; the bad-port policy above still applies.
 
 `LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken)`
 is a separate, opt-in GET entry point. It shares the same HTTP pipeline, so
@@ -132,8 +155,8 @@ broader conformance data and persistence decisions.
 **Do not expose this loader directly to hostile page scripts or use it as an
 authorization boundary.** It is an unfiltered browser-side loader, not the Fetch
 API. It can access local files and arbitrary network endpoints. Apart from the
-opt-in `LoadSameOriginAsync` check above, there is no
-CORS, CSP, mixed-content policy, referrer/origin policy, Fetch bad-port blocking,
+opt-in `LoadSameOriginAsync` check and bad-port blocking above, there is no
+CORS, CSP, mixed-content policy, referrer/origin policy,
 HSTS, cache, storage partitioning, sandbox or private-network policy yet.
 Cookie opt-in does not authorize a request. The future shell/broker must mediate
 access before renderer integration.
@@ -159,7 +182,13 @@ deadlines during both headers and body. Same-origin tests cover normalized
 default-port/case/IDNA/IPv4/IPv6 matches, scheme/host/port, opaque and non-HTTP
 denials with zero handler calls, all five redirect statuses denied cross-origin
 before a second request, exact multi-hop cookies, credentials, limits,
-cancellation/deadlines and the unrestricted default. Owned ephemeral loopback
+cancellation/deadlines and the unrestricted default. Bad-port tests compare an
+exhaustive 0-65535 HTTP and HTTPS sweep with an independently pinned copy of the
+official table, block every entry through both entry points with zero handler
+calls, allow defaults/adjacent/custom ports and normalized IPv6, and stop all
+five redirect statuses and multi-hop chains before the blocked request without
+cookie work. Browser tests verify the explicit navigation error preserves the
+committed page, history and origin. Owned ephemeral loopback
 HTTP servers also verify actual redirects, cookie sending, decompressed body
 limits and a denied cross-origin hop through SocketsHttpHandler. No tests contact the public network or refresh
 standards. Fixture licensing/pins are in the

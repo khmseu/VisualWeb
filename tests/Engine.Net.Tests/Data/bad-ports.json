@@ -1,0 +1,342 @@
+{
+  "source": "https://fetch.spec.whatwg.org/#bad-port",
+  "specId": "fetch",
+  "algorithm": "https://fetch.spec.whatwg.org/#block-bad-port",
+  "cacheFetchedAt": "2026-10-04T14:43:22.5598821+00:00",
+  "cacheETag": "\"6ab0cb9c-1d72eb\"",
+  "cacheLastModified": "2026-09-21T06:15:56+00:00",
+  "badPorts": [
+    {
+      "port": 0,
+      "service": "—"
+    },
+    {
+      "port": 1,
+      "service": "tcpmux"
+    },
+    {
+      "port": 7,
+      "service": "echo"
+    },
+    {
+      "port": 9,
+      "service": "discard"
+    },
+    {
+      "port": 11,
+      "service": "systat"
+    },
+    {
+      "port": 13,
+      "service": "daytime"
+    },
+    {
+      "port": 15,
+      "service": "netstat"
+    },
+    {
+      "port": 17,
+      "service": "qotd"
+    },
+    {
+      "port": 19,
+      "service": "chargen"
+    },
+    {
+      "port": 20,
+      "service": "ftp-data"
+    },
+    {
+      "port": 21,
+      "service": "ftp"
+    },
+    {
+      "port": 22,
+      "service": "ssh"
+    },
+    {
+      "port": 23,
+      "service": "telnet"
+    },
+    {
+      "port": 25,
+      "service": "smtp"
+    },
+    {
+      "port": 37,
+      "service": "time"
+    },
+    {
+      "port": 42,
+      "service": "name"
+    },
+    {
+      "port": 43,
+      "service": "nicname"
+    },
+    {
+      "port": 53,
+      "service": "domain"
+    },
+    {
+      "port": 69,
+      "service": "tftp"
+    },
+    {
+      "port": 77,
+      "service": "—"
+    },
+    {
+      "port": 79,
+      "service": "finger"
+    },
+    {
+      "port": 87,
+      "service": "—"
+    },
+    {
+      "port": 95,
+      "service": "supdup"
+    },
+    {
+      "port": 101,
+      "service": "hostname"
+    },
+    {
+      "port": 102,
+      "service": "iso-tsap"
+    },
+    {
+      "port": 103,
+      "service": "gppitnp"
+    },
+    {
+      "port": 104,
+      "service": "acr-nema"
+    },
+    {
+      "port": 109,
+      "service": "pop2"
+    },
+    {
+      "port": 110,
+      "service": "pop3"
+    },
+    {
+      "port": 111,
+      "service": "sunrpc"
+    },
+    {
+      "port": 113,
+      "service": "auth"
+    },
+    {
+      "port": 115,
+      "service": "sftp"
+    },
+    {
+      "port": 117,
+      "service": "uucp-path"
+    },
+    {
+      "port": 119,
+      "service": "nntp"
+    },
+    {
+      "port": 123,
+      "service": "ntp"
+    },
+    {
+      "port": 135,
+      "service": "epmap"
+    },
+    {
+      "port": 137,
+      "service": "netbios-ns"
+    },
+    {
+      "port": 139,
+      "service": "netbios-ssn"
+    },
+    {
+      "port": 143,
+      "service": "imap"
+    },
+    {
+      "port": 161,
+      "service": "snmp"
+    },
+    {
+      "port": 179,
+      "service": "bgp"
+    },
+    {
+      "port": 389,
+      "service": "ldap"
+    },
+    {
+      "port": 427,
+      "service": "svrloc"
+    },
+    {
+      "port": 465,
+      "service": "submissions"
+    },
+    {
+      "port": 512,
+      "service": "exec"
+    },
+    {
+      "port": 513,
+      "service": "login"
+    },
+    {
+      "port": 514,
+      "service": "shell"
+    },
+    {
+      "port": 515,
+      "service": "printer"
+    },
+    {
+      "port": 526,
+      "service": "tempo"
+    },
+    {
+      "port": 530,
+      "service": "courier"
+    },
+    {
+      "port": 531,
+      "service": "chat"
+    },
+    {
+      "port": 532,
+      "service": "netnews"
+    },
+    {
+      "port": 540,
+      "service": "uucp"
+    },
+    {
+      "port": 548,
+      "service": "afp"
+    },
+    {
+      "port": 554,
+      "service": "rtsp"
+    },
+    {
+      "port": 556,
+      "service": "remotefs"
+    },
+    {
+      "port": 563,
+      "service": "nntps"
+    },
+    {
+      "port": 587,
+      "service": "submission"
+    },
+    {
+      "port": 601,
+      "service": "syslog-conn"
+    },
+    {
+      "port": 636,
+      "service": "ldaps"
+    },
+    {
+      "port": 989,
+      "service": "ftps-data"
+    },
+    {
+      "port": 990,
+      "service": "ftps"
+    },
+    {
+      "port": 993,
+      "service": "imaps"
+    },
+    {
+      "port": 995,
+      "service": "pop3s"
+    },
+    {
+      "port": 1719,
+      "service": "h323gatestat"
+    },
+    {
+      "port": 1720,
+      "service": "h323hostcall"
+    },
+    {
+      "port": 1723,
+      "service": "pptp"
+    },
+    {
+      "port": 2049,
+      "service": "nfs"
+    },
+    {
+      "port": 3659,
+      "service": "apple-sasl"
+    },
+    {
+      "port": 4045,
+      "service": "npp"
+    },
+    {
+      "port": 4190,
+      "service": "sieve"
+    },
+    {
+      "port": 5060,
+      "service": "sip"
+    },
+    {
+      "port": 5061,
+      "service": "sips"
+    },
+    {
+      "port": 6000,
+      "service": "x11"
+    },
+    {
+      "port": 6566,
+      "service": "sane-port"
+    },
+    {
+      "port": 6665,
+      "service": "ircu"
+    },
+    {
+      "port": 6666,
+      "service": "ircu"
+    },
+    {
+      "port": 6667,
+      "service": "ircu"
+    },
+    {
+      "port": 6668,
+      "service": "ircu"
+    },
+    {
+      "port": 6669,
+      "service": "ircu"
+    },
+    {
+      "port": 6679,
+      "service": "osaut"
+    },
+    {
+      "port": 6697,
+      "service": "ircs-u"
+    },
+    {
+      "port": 10080,
+      "service": "amanda"
+    }
+  ]
+}

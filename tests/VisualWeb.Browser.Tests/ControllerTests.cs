@@ -205,6 +205,61 @@ public sealed class ControllerTests
         Assert.Equal([first.DocumentId, first.DocumentId], renderer.Committed);
     }
     [Fact]
+    public void BadPortNavigationReportsExplicitErrorAndPreservesCommittedState()
+    {
+        var requests = new List<string>();
+        var renderer = new Renderer();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent("<!doctype html>") };
+            if (request.RequestUri.AbsolutePath == "/redirect")
+            {
+                response.StatusCode = System.Net.HttpStatusCode.Found;
+                response.Headers.TryAddWithoutValidation("Location", "http://first.example:6667/irc");
+            }
+            response.Content.Headers.Remove("Content-Type");
+            response.Content.Headers.TryAddWithoutValidation("Content-Type", "text/html");
+            return response;
+        })), () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        PumpUntilIdle(controller, tab, () => controller.Navigate(tab.Id, "https://first.example:8443/"));
+        Assert.Null(tab.Error);
+        var page = controller.Page(tab.Id);
+        var origin = tab.Origin;
+        Assert.NotNull(page);
+        Assert.Equal("https://first.example:8443", origin!.Serialize());
+
+        foreach (var (address, port) in new[] { ("http://first.example:25/", "25"), ("https://first.example:8443/redirect", "6667") })
+        {
+            PumpUntilIdle(controller, tab, () => controller.Navigate(tab.Id, address));
+            Assert.Contains("bad port", tab.Error, StringComparison.Ordinal);
+            Assert.Contains(port, tab.Error, StringComparison.Ordinal);
+            Assert.Same(origin, tab.Origin);
+            Assert.Same(page, controller.Page(tab.Id));
+            Assert.Equal(["https://first.example:8443/"], tab.History.Entries.Select(entry => entry.Href));
+        }
+
+        Assert.Equal(["https://first.example:8443/", "https://first.example:8443/redirect"], requests);
+        Assert.Single(renderer.Committed);
+    }
+    private static void PumpUntilIdle(BrowserController controller, BrowserTab tab, Action start)
+    {
+        start();
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (tab.IsLoading)
+        {
+            Assert.True(DateTime.UtcNow < deadline, "Navigation did not finish.");
+            controller.Pump(_ => Viewport);
+            Thread.Sleep(1);
+        }
+    }
+    private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(respond(request));
+    }
+    [Fact]
     public void NavigationOnlyCommitsAfterSuccessfulLoadAndRender()
     {
         var source = new Source(); var renderer = new Renderer();

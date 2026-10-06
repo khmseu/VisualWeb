@@ -174,6 +174,10 @@ unchanged.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.
+Browser GET navigation inherits Engine.Net Fetch bad-port blocking: HTTP(S)
+addresses or redirects to a blocked port (for example `:6000`) fail with a
+visible tab error and keep the committed page, history and origin. There is no
+bypass flag; see the [networking guide](networking.md#fetch-bad-port-blocking).
 
 Existing HTML/CSS/text/layout/paint subsets remain enforced. **The shell
 does not override author CSS to make unsupported pages appear successful.**
