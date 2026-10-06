@@ -52,3 +52,5 @@ Phase 11i adds bounded DOM queries and static NodeList snapshots, sharing the
 existing first-party CSS selector parser and native Node wrapper identities.
 Phase 11j adds className and live bounded classList, including ordered token
 mutations and iteration, over the existing private attribute bridge.
+Phase 11k adds bounded tree inspection and live element-only navigation,
+including detached/fragment roots and shared wrapper identities.

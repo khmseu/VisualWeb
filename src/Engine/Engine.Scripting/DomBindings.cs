@@ -12,6 +12,11 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-element-setattribute">attributes</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-getrootnode">getRootNode</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-issamenode">isSameNode</see>,
+/// <see href="https://dom.spec.whatwg.org/#interface-parentnode">element children</see>,
+/// <see href="https://dom.spec.whatwg.org/#interface-nondocumenttypechildnode">element siblings</see>,
 /// <see href="https://webidl.spec.whatwg.org/#es-DOMString">DOMString conversion</see>.</remarks>
 internal sealed class DomBindings : IDisposable
 {
@@ -73,6 +78,15 @@ internal sealed class DomBindings : IDisposable
                 "create-fragment" => Create("fragment", ""),
                 "document-element" or "document-head" or "document-body" => DocumentRoot(operation),
                 "parent" => Identity(Node(handle).ParentNode),
+                "parent-element" => Identity(Node(handle).ParentNode as DomElement),
+                "root" => Identity(InspectAncestors(Node(handle), null, root: true)),
+                "contains" => Observe(other < 0 ? ValidateNullNode(handle) :
+                    InspectAncestors(Node(other), Node(handle), root: false) is null ? "false" : "true"),
+                "same-node" => Observe(other < 0 ? ValidateNullNode(handle) : Node(handle) == Node(other) ? "true" : "false"),
+                "has-children" => Observe(Node(handle).ChildNodes.Count == 0 ? "false" : "true"),
+                "first-element" or "last-element" or "element-count" => ElementChildren(Node(handle), operation),
+                "previous-element" => ElementSibling(Node(handle), previous: true),
+                "next-element" => ElementSibling(Node(handle), previous: false),
                 "first-child" => Identity(Node(handle).FirstChild),
                 "last-child" => Identity(Node(handle).LastChild),
                 "previous-sibling" => Sibling(Node(handle), previous: true),
@@ -269,6 +283,63 @@ internal sealed class DomBindings : IDisposable
     {
         _ = Element(handle);
         return "";
+    }
+    private string ValidateNullNode(int handle)
+    {
+        _ = Node(handle);
+        return "false";
+    }
+    private DomNode? InspectAncestors(DomNode node, DomNode? sought, bool root)
+    {
+        var count = 0;
+        for (DomNode? current = node; current is not null; current = current.ParentNode)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (++count > MaxNodes) { throw new ScriptLimitException("DOM ancestor scan limit exceeded."); }
+            if (root ? current.ParentNode is null : current == sought) { return current; }
+        }
+        return null;
+    }
+    private string ElementChildren(DomNode node, string operation)
+    {
+        if (node is not (DomDocument or DomElement or DomDocumentFragment))
+        { throw new InvalidOperationException("Illegal ParentNode receiver."); }
+        if (node.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM child scan limit exceeded."); }
+        DomElement? result = null;
+        var count = 0;
+        foreach (var child in node.ChildNodes)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (child is not DomElement element) { continue; }
+            count++;
+            if (operation == "first-element") { return Identity(element); }
+            result = element;
+        }
+        return operation == "element-count" ? Observe(count.ToString(CultureInfo.InvariantCulture))! : Identity(result);
+    }
+    private string ElementSibling(DomNode node, bool previous)
+    {
+        if (node is not (DomElement or DomCharacterData))
+        { throw new InvalidOperationException("Illegal NonDocumentTypeChildNode receiver."); }
+        if (node.ParentNode is not { } parent) { return Identity(null); }
+        if (parent.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM sibling scan limit exceeded."); }
+        DomElement? preceding = null;
+        var found = false;
+        foreach (var child in parent.ChildNodes)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (child == node)
+            {
+                if (previous) { return Identity(preceding); }
+                found = true;
+            }
+            else if (child is DomElement element)
+            {
+                if (found) { return Identity(element); }
+                preceding = element;
+            }
+        }
+        return Identity(null);
     }
     private string Sibling(DomNode node, bool previous)
     {
@@ -475,11 +546,29 @@ internal sealed class DomBindings : IDisposable
                     set(value) { const id = brand(this); call('text-set', id, value == null ? '' : `${value}`); }
                 });
                 for (const [property, operation] of [
-                    ['parentNode', 'parent'], ['firstChild', 'first-child'], ['lastChild', 'last-child'],
+                    ['parentNode', 'parent'], ['parentElement', 'parent-element'], ['firstChild', 'first-child'], ['lastChild', 'last-child'],
                     ['previousSibling', 'previous-sibling'], ['nextSibling', 'next-sibling']
                 ]) define(target, property, {enumerable: true, get() { return wrap(call(operation, brand(this))); }});
                 define(target, 'nodeType', {enumerable: true, get() {return +call('node-type', brand(this)); }});
                 define(target, 'isConnected', {enumerable: true, get() {return call('connected', brand(this)) === 'true'; }});
+                define(target, 'hasChildNodes', {enumerable: true, value: function() {
+                    return call('has-children', brand(this)) === 'true';
+                }});
+                define(target, 'contains', {enumerable: true, value: function(node) {
+                    const id = brand(this); required(arguments.length, 1);
+                    return call('contains', id, '', node == null ? -1 : brand(node)) === 'true';
+                }});
+                define(target, 'isSameNode', {enumerable: true, value: function(node = null) {
+                    const id = brand(this);
+                    return call('same-node', id, '', node == null ? -1 : brand(node)) === 'true';
+                }});
+                define(target, 'getRootNode', {enumerable: true, value: function(options) {
+                    const id = brand(this);
+                    if (options != null && typeof options !== 'object' && typeof options !== 'function')
+                        throw new TypeErrorCtor('getRootNode options must be a dictionary');
+                    if (options != null) {const composed = !!options.composed;}
+                    return wrap(call('root', id));
+                }});
                 define(target, 'appendChild', {enumerable: true, value: function(node) {
                     const id = brand(this); required(arguments.length, 1);
                     call('append', id, '', brand(node)); return node;
@@ -498,6 +587,21 @@ internal sealed class DomBindings : IDisposable
                 }});
             };
             installNode(document); installNode(prototype); installNode(nodePrototype);
+            for (const target of [document, prototype, nodePrototype]) {
+                for (const [property, operation] of [
+                    ['firstElementChild', 'first-element'], ['lastElementChild', 'last-element']
+                ]) define(target, property, {enumerable: true, get() {
+                    return wrap(call(operation, parentBrand(this)));
+                }});
+                define(target, 'childElementCount', {enumerable: true, get() {
+                    return +call('element-count', parentBrand(this));
+                }});
+            }
+            for (const target of [prototype, nodePrototype]) {
+                for (const [property, operation] of [
+                    ['previousElementSibling', 'previous-element'], ['nextElementSibling', 'next-element']
+                ]) define(target, property, {enumerable: true, get() {return wrap(call(operation, brand(this)));}});
+            }
             for (const [method, operation] of [
                 ['getAttribute', 'attribute-get'], ['hasAttribute', 'attribute-has'], ['removeAttribute', 'attribute-remove']
             ]) define(prototype, method, {enumerable: true, value: function(name) {

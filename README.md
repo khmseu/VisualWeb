@@ -58,7 +58,8 @@ Event/EventTarget dispatch and finite document readiness/DOMContentLoaded, plus 
 probes. Page scripts remain disabled by default. `--enable-inline-scripts`
 also exposes bounded DOM queries with static NodeList snapshots and Element
 matches/closest, reusing the current CSS selector subset, plus reflected
-className and bounded live classList token mutation/iteration. It
+className, bounded live classList token mutation/iteration and tree
+inspection/element navigation. It
 explicitly enables a bounded post-parse inline classic subset in either
 development mode; mutations feed style/layout/paint, and resize retains the
 committed scripted DOM without reexecution. External scripts, HTML scheduling,

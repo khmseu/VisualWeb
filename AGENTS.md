@@ -131,6 +131,10 @@
   Preserve ordered-set and live iteration semantics, atomic argument/token/
   storage preflight, private receiver brands and shared callback/text budgets.
   Token syntax errors are native named errors, not yet DOMException objects.
+  Phase 11k adds bounded tree inspection and element-only navigation. Preserve
+  inclusive containment, detached/fragment roots, options getter ordering,
+  both-operand ownership, exact ancestor/child scans and lifetime identity limits.
+  No shadow DOM or live children/childNodes collections are implied.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

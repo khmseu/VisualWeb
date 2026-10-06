@@ -119,6 +119,8 @@ matches/closest. Static list wrappers retain node identity; query-driven
 lifecycle style/title changes participate in paint and retained resize.
 Phase 11j adds className/live classList; lifecycle token mutations feed CSS
 queries and class selectors before paint, with transactional page failure.
+Phase 11k adds bounded live tree inspection/navigation for lifecycle callbacks;
+failed inspection cannot publish a candidate or displace retained DOM.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

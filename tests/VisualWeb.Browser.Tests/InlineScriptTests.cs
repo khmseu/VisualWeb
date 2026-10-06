@@ -22,6 +22,40 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TreeInspectionFindsLiveElementsDuringLifecycleAndPreservesFailedNavigation(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:red}body.blue{background-color:blue}</style>
+            <script>
+            document.addEventListener('DOMContentLoaded',()=>{
+                let html=document.firstElementChild,body=html.lastElementChild;
+                body.appendChild(document.createTextNode(''));
+                if(!body.isSameNode(document.body)||!html.contains(body)||body.getRootNode({composed:true})!==document
+                    ||body.parentElement!==html||body.previousElementSibling!==document.head
+                    ||html.childElementCount!==2||!body.hasChildNodes())throw Error('tree inspection');
+                queueMicrotask(()=>{body.classList.add('blue');document.title='inspected tree'});
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("inspected tree", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.body.getRootNode(true)</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("inspected tree", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task LiveClassTokensFeedSelectorsPaintAndRetainedResizeTransactionally(bool process)
     {
         using IPageRenderer renderer = process

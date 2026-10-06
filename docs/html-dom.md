@@ -135,6 +135,9 @@ Static NodeList facades retain live node identities without exposing CLR lists.
 Phase 11j exposes className and a bounded live classList facade in native
 JavaScript. Ordered token mutations reuse attribute preflight; the C# DOM
 continues storing ordinary raw class attributes.
+Phase 11k exposes bounded contains/isSameNode/getRootNode, parentElement,
+hasChildNodes and element-only child/sibling navigation over these live trees.
+No shadow DOM or live child collection is implied.
 
 ## Safety limits
 

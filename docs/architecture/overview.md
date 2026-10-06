@@ -35,6 +35,8 @@ Engine.Scripting now references Engine.Css to reuse its selector implementation;
 there is no platform/chrome/network dependency or duplicate selector parser.
 Phase 11j adds live bounded class token facades through the existing primitive
 attribute bridge, not a new host callback or mutable cross-tab collection.
+Phase 11k extends that bridge with bounded tree inspection and element-only
+navigation; node identities remain renderer-local and cancellation-aware.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

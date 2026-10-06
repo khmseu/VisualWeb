@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11j)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11k)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,42 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Bounded tree inspection (phase 11k)
+
+Bound Node facades expose `contains`, `isSameNode`, `getRootNode`,
+`hasChildNodes` and readonly `parentElement`. Containment is inclusive, with
+null/undefined arguments returning false; `contains` requires an argument,
+while omitted `isSameNode` defaults to null. Both operands must be branded
+nodes owned by the bound document. Identity, detached trees and fragment roots
+use the same lifetime wrappers as queries/mutations. Null comparisons still
+validate receiver ownership; adopted wrappers cannot bypass checks.
+
+`getRootNode` accepts an optional WebIDL-style dictionary: null/undefined is
+empty, other primitive values throw TypeError, and object/function dictionaries
+read `composed` before inspecting the tree. Getter failures/side effects remain
+visible. With shadow DOM deferred, ordinary and composed roots are identical.
+This does not approximate traversal across an unimplemented shadow tree.
+
+Document, Element and DocumentFragment provide readonly `firstElementChild`,
+`lastElementChild` and `childElementCount`. Element and CharacterData wrappers
+provide readonly `previousElementSibling`/`nextElementSibling`, skipping text
+and comments. These values are live and preserve wrapper identity. Minimal
+shared non-element prototypes may expose properties on unsupported receivers,
+but those getters throw rather than supply success-shaped defaults.
+Live `children`/`childNodes` collections and full WebIDL prototypes remain
+deferred.
+
+Ancestor scans allow **8,192 inclusive nodes**, check cancellation per node,
+and short-circuit when containment succeeds. Child/sibling scans require at
+most **8,192 total immediate children**, including non-elements, before
+producing results. Returned identities retain the existing **1,024-wrapper**
+lifetime cap. The shared DOM callback/text limits and host deadline still
+apply. Resource failures do not mutate the tree. Lifecycle inspection can
+drive class/style/title changes before paint; retained resize never reruns it.
+Sources: cached `dom`, [Node](https://dom.spec.whatwg.org/#interface-node),
+[ParentNode](https://dom.spec.whatwg.org/#interface-parentnode) and
+[NonDocumentTypeChildNode](https://dom.spec.whatwg.org/#interface-nondocumenttypechildnode).
 
 ## Live bounded class tokens (phase 11j)
 
@@ -806,3 +842,26 @@ remain. All **58 official references** are independently cached/fresh without
 network refresh. Windows/ARM still require native target evidence. Full
 DOMTokenList WebIDL/DOMException objects, external scripts and persistent V8
 event loops remain deferred.
+
+## Phase-11k validation outcome
+
+On Linux x64, all **45 projects build** and **328 selected tests pass** without
+failures or skips: 197 scripting and 131 browser cases. Ten tree-inspection
+cases measure inclusive containment/identity, detached/fragment roots, live
+element-only navigation, dictionary getter ordering and failures, receiver/
+both-operand adoption checks, intrinsic tampering, exact 8,192-node ancestor/
+child/sibling boundaries, 1,024-wrapper capacity, shared callbacks and in-flight
+cancellation. Lifecycle fixtures in local and process renderers verify exact
+title/blue pixels, retained resize and failed-navigation preservation/recovery.
+
+Local and unchanged required-confined V8 tree-inspection probes pass.
+The first local run hit a fatal native OOM during the pre-existing heap stress
+probe; isolated local/confined reruns passed with no limit changes. This
+transient native failure remains a reason to require renderer process isolation,
+not a guarantee that monitored V8 heap interruption always precedes native OOM.
+SDL dummy and required-confined X11 shell smokes pass, presenting 10 and 15
+frames respectively. Formatting, editor diagnostics and whitespace checks are
+clean; no owned workers/resource scopes remain. All **58 official references**
+are independently cached/fresh without network refresh. Windows/ARM still
+require native target evidence. Shadow DOM, live child collections, full
+WebIDL and persistent script event loops remain deferred.

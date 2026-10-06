@@ -116,6 +116,11 @@ static void Probe()
                 && list.item(1)==='live' && document.querySelector('span.probe.live')===created
                 && [...list].join(',')==='probe,live'})()
         """).Boolean, "Live bounded class token mutation/query failed.");
+    Check(bound.Evaluate("""
+        document.contains(created) && created.contains(created.firstChild) && created.getRootNode({composed:true})===document
+            && created.isSameNode(document.body.firstElementChild) && created.parentElement===document.body
+            && created.nextElementSibling===document.getElementById('content') && document.body.childElementCount===2
+        """).Boolean, "Bounded native tree inspection/navigation failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

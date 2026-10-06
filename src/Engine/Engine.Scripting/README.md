@@ -40,6 +40,10 @@ Phase 11j adds reflected className and same-object live classList token facades,
 with ordered-set mutation, indexed access/iteration, atomic validation and
 shared callback/text/deadline budgets. It reuses the primitive attribute bridge;
 full DOMTokenList WebIDL and DOMException objects remain deferred.
+Phase 11k adds bounded contains/isSameNode/getRootNode, hasChildNodes,
+parentElement and element-only child/sibling navigation. Live results preserve
+wrapper identity, ownership and shared task budgets; shadow DOM and live
+children/childNodes collections remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

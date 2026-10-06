@@ -81,6 +81,11 @@ ordered mutation/normalization, conversion and atomic failures, indexed access/
 live iteration, receiver/adoption/tampering, exact token/argument/storage/shared
 callback budgets and cancellation. Local/process class-selector fixtures verify
 final pixels, retained resize and failed-navigation preservation/recovery.
+Phase-11k tests cover inclusive containment/identity, live roots/navigation,
+dictionary conversion/getter ordering, invalid receivers/adoption, exact
+ancestor/child/sibling/identity limits, tampering and shared call/cancellation
+budgets. Local/process lifecycle inspection fixtures verify exact pixels,
+retained resize and transactional failure/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

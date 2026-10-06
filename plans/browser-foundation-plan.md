@@ -222,6 +222,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   token mutation, indexed access/live iteration and existing attribute storage
   preflight. Argument/token validation precedes writes; class changes feed CSS
   queries and final paint. Full DOMTokenList WebIDL and DOMException are deferred.
+  Phase 11k adds bounded Node identity/containment/root inspection and
+  element-only navigation, preserving detached/fragment roots, receiver/
+  ownership checks and existing task/identity limits. Shadow DOM, full WebIDL
+  and live children/childNodes collections remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.
