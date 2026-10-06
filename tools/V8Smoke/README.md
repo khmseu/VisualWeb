@@ -23,6 +23,8 @@ separation and whole-batch deadline interruption.
 Optional microtask probes verify native Promise/queueMicrotask FIFO ordering,
 per-source checkpoints and deadline interruption inside native callbacks,
 under the same confinement profile.
+Synthetic event probes verify DOM capture/target/bubble ordering, cancelation
+and listener-enqueued microtask title mutation under unchanged confinement.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

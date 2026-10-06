@@ -278,7 +278,7 @@ internal sealed class DomBindings : IDisposable
     }
 
     internal const string Bootstrap = """
-        (() => {
+        (events => {
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
@@ -311,6 +311,7 @@ internal sealed class DomBindings : IDisposable
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
+            if (events) events('register', document, () => null, () => call('node-type', 0));
             const wrap = value => {
                 if (!value) return null;
                 const separator = apply(indexOf, value, ':');
@@ -323,10 +324,12 @@ internal sealed class DomBindings : IDisposable
                     apply(brandSet, brands, wrapper, handle);
                     if (type === 1) apply(brandSet, elementBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
+                    if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
                 }
                 return wrapper;
             };
             const installNode = target => {
+                if (events) events('install', target);
                 define(target, 'textContent', {
                     enumerable: true,
                     get() { return call('text-get', brand(this)); },
@@ -396,6 +399,6 @@ internal sealed class DomBindings : IDisposable
                 documentBrand(this); return wrap(call('create-fragment', 0));
             }});
             define(globalThis, 'document', { value: document, enumerable: true });
-        })()
+        })
         """;
 }

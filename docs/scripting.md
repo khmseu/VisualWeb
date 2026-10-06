@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11f)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11g)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -99,8 +99,88 @@ checkpoint DOM/style/title changes reach paint and retained resize.
 
 No new CLR callback is installed: the private task controller and queued
 functions remain native JavaScript closures. Ordinary Promise rejection
-reporting, HTML error events, timers, event dispatch, external scripts and a
+reporting, HTML error events, timers, automatic browser events, external scripts and a
 persistent host after page execution remain deferred.
+
+## Bounded synchronous synthetic events (phase 11g)
+
+Pass `enableEvents: true` to install native-JavaScript `Event` and `EventTarget`.
+With an optional bound document, document and all Node facades also expose
+`addEventListener`, `removeEventListener` and `dispatchEvent`. Inline pages
+enable this subset under the existing `--enable-inline-scripts` opt-in.
+Plain hosts remain unchanged. There are no new CLR callbacks or script objects
+stored in the native DOM: listener identities, callbacks, Event brands and state
+stay in private JavaScript closures in the owning isolate.
+
+The implemented subset follows DOM's
+[dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) and
+[listener invocation](https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke)
+algorithms for ordinary trees without shadow DOM:
+
+- `new Event(type, {bubbles, cancelable, composed})` creates an untrusted event.
+  Type is required and uses DOMString conversion. Events expose type, target,
+  currentTarget, eventPhase, bubbles/cancelable/composed, defaultPrevented,
+  unforgeable false isTrusted and the four phase constants.
+- `new EventTarget()` creates an independent target with no parent. DOM
+  dispatch snapshots the current ancestor path up to document before calling
+  listeners. Detached nodes/fragments use their own current tree; mutations
+  during dispatch do not rewrite the path.
+- Capture runs root-to-target, then non-capture at target, then ancestor
+  bubbling if enabled. Each target/phase clones its listener list: additions
+  can participate in a later phase, removals suppress pending callbacks, and
+  remove/re-add is a new entry. Duplicate type/callback/capture triples are
+  ignored, without updating once/passive.
+- Listeners may be functions (`this` is currentTarget) or callback objects
+  whose live `handleEvent` is called with the object as `this`. Return values
+  and thenables are ignored. Null/undefined callbacks are inert.
+- Boolean options select capture; dictionary options support capture, once
+  and passive. Primitive union values use Boolean conversion. Removal reads
+  only capture. A supplied signal other than undefined rejects explicitly:
+  AbortSignal integration is deferred. Passive defaults to false in this
+  synthetic subset, not HTML's input-specific default-passive policy.
+- Once removes before invocation, including nested dispatch. Passive listeners
+  cannot cancel. `preventDefault`, `stopPropagation`,
+  `stopImmediatePropagation`, cancelBubble and returnValue are supported.
+  `dispatchEvent` returns false exactly when canceled; canceled state persists
+  on redispatch. Reentrant dispatch of the same Event rejects.
+- `composedPath()` returns a fresh path copy only during dispatch. Cleanup
+  resets currentTarget, phase, path and propagation flags even after errors;
+  target and canceled state remain. There are no shadow roots/retargeting,
+  so composed has no shadow-boundary effect.
+
+| Event budget | Bound |
+| --- | ---: |
+| Registered listener entries per host, across all targets | 1,024 |
+| Listener invocations per evaluation/single script/whole batch | 4,096 |
+| Nested simultaneous dispatches | 32 |
+| Snapshotted targets per ancestor path, including target/document | 1,024 |
+| UTF-16 event/listener type characters | 65,536 |
+
+Explicit removal/once releases listener capacity. Garbage collection of an
+unreachable standalone target does not refund accounting; that conservative
+host-lifetime quota cannot be bypassed by discarding targets. Node identity,
+callback/traversal/text limits continue to apply. Invocation counts reset once
+per host execution, not per source or checkpoint. Listener dispatch from
+microtasks/Promise reactions shares the same counts, deadline and DOM budget.
+Microtasks do not run between synchronous listener invocations; they drain at
+native script return, before the next classic source/paint.
+
+Listener exceptions (including handleEvent getters) and event quotas latch task
+failure, even when script catches the thrown error. Later listeners/dispatches
+and classic sources do not run; the host is invalidated at its checkpoint.
+Arbitrary caller code or native Promise jobs can still have effects before
+that checkpoint; there is no DOM rollback. Page failure publishes nothing and
+preserves the previous committed frame/history/DOM. This deliberately differs
+from HTML's report-exception-and-continue policy. Argument/receiver/options
+errors alone remain catchable TypeErrors; InvalidState/DOMException classes are
+not yet exposed. Native syntax/runtime errors invalidate event-enabled hosts.
+
+This is not complete Web IDL Event/EventTarget conformance. Node facades retain
+their minimal null-root prototypes rather than becoming EventTarget instances.
+Legacy initEvent, timeStamp, CustomEvent/specialized events, automatic
+load/DOMContentLoaded/input events, `on*` handlers, default actions, Window,
+AbortSignal and a persistent event loop are deferred. All hosts/listeners are
+disposed after initial page execution; retained resize runs no events.
 
 ## Minimal live DOM bindings (phase 11c)
 
@@ -143,8 +223,9 @@ identity and captured pristine intrinsics. Document/element receivers are
 checked; borrowing a getter/method onto an arbitrary object fails. Prototypes
 are intentionally minimal/frozen and have null roots; document has no prototype.
 This is **not full Web IDL prototype/constructor conformance**. Window,
-Document/Element/Node constructors, events, observers and generated IDL bindings
-remain unavailable. Phase-11e factories/accessors/mutations are listed below.
+Document/Element/Node constructors, observers and generated IDL bindings
+remain unavailable. Optional phase-11g synthetic events are described above.
+Phase-11e factories/accessors/mutations are listed below.
 Expandos are ordinary JavaScript properties, not native DOM mutations.
 
 | Binding budget | Value |
@@ -284,7 +365,7 @@ resize fails with an explicit reload requirement instead of silently executing
 scripts again. Reload/new navigation may create a replacement worker/context.
 Static-mode resize behavior is unchanged. Retained DOM never crosses IPC.
 
-There is still no Window/global browser API, event-handler dispatch, timer,
+There is still no Window/global browser API, automatic event-handler dispatch, timer,
 HTML event loop, module loader, origin/CSP enforcement or script-visible
 network/storage. Finite native microtask checkpoints are not an HTML event-loop
 scheduler; there is no live host remaining after initial execution. Do not use
@@ -310,8 +391,8 @@ cancellation, deadline interruption or fatal engine error invalidates the
 host; dispose it and create a fresh isolate rather than resuming partially
 executed state. Normal syntax/runtime errors and unsupported/oversized return
 values are explicit exceptions but leave the plain context available.
-Opt-in microtask hosts instead invalidate on native engine errors or latched
-queue failure, as described above.
+Opt-in microtask/event hosts instead invalidate on native engine errors or
+latched queue/listener failure, as described above.
 All execution entry points share the same cancellation/invalidation path.
 Interrupt callbacks are drained on success **and failure** before an operation
 returns, preventing a late callback from interrupting later execution.
@@ -466,3 +547,26 @@ workers/resource scopes remain. All **58 official references** are independently
 cached/fresh without network refresh. Windows/ARM guarantees still require
 native target evidence. External scripts, timers, events, ordinary Promise
 rejection reporting and a persistent HTML event loop remain deferred.
+
+## Phase-11g validation outcome
+
+On Linux x64, all **45 projects build** and **246 distinct selected tests pass**
+without failures or skips: 127 scripting and 119 browser cases. Following the
+final empty-dictionary/prototype hardening, all 127 scripting and 44 inline-page
+cases were rerun. Event coverage measures exact listener, invocation, nested
+dispatch, ancestor-path and type-character boundaries, propagation/once/passive/
+removal/addition semantics, mutation during dispatch, callback objects and
+ignored returns, cleanup/redispatch, failure latching, detached/adopted nodes,
+intrinsic/prototype tampering, private isolates and deadline/cancellation.
+
+Local/process pages verify exact synthetic-event/listener-microtask title/blue
+pixels and retained resize, plus caught-listener-failure preservation and fresh
+navigation recovery. Local and unchanged required-confined V8 probes pass with
+capture/target/bubble/cancellation and listener-enqueued microtask mutation.
+Opt-in SDL dummy and required-confined X11 shell smokes pass with event-driven
+title/pixels and tab/history/window lifecycle. Formatting, editor diagnostics
+and whitespace checks are clean; no owned worker/resource scopes remain.
+All **58 official references** are independently cached/fresh with no network
+refresh needed. Windows/ARM evidence remains native target-CI work. Automatic
+browser events, handlers/default actions, AbortSignal, external scripts, timers,
+Promise rejection reporting and a persistent HTML event loop remain deferred.

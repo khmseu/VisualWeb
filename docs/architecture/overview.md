@@ -24,6 +24,9 @@ Phase 11e expands the live facade with bounded attributes, node factories and
 checked tree mutation/navigation; newly inserted script elements stay inert.
 Phase 11f adds finite native Promise/queueMicrotask checkpoints with shared task
 deadlines and bounded queues, enabled for opt-in inline pages before painting.
+Phase 11g adds native-JavaScript listener/Event identities and synchronous
+synthetic DOM propagation with snapshotted paths; callbacks never cross IPC or
+enter the native DOM. Listeners are disposed before retained repaint.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

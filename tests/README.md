@@ -60,6 +60,12 @@ checkpoints, exact pending/recursive task limits, callback arguments/returns,
 captured-intrinsic tampering, failure latching and native callback interruption.
 Local/worker pages verify checkpoint title/style pixels, retained resize and
 failed-task preservation/recovery.
+Phase-11g tests cover branded synthetic Event/EventTarget, DOM propagation paths,
+mutation/removal/addition/once ordering, passive/cancellation controls, callback
+object getters, exact listener/invocation/path/depth limits, task failure latching,
+intrinsic tampering, adoption and cancellation. Local/process page fixtures
+verify event/listener-microtask mutations reach pixels and failed candidates
+preserve committed DOM.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

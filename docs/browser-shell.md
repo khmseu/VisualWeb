@@ -106,6 +106,9 @@ Phase 11f enables finite native Promise/queueMicrotask checkpoints between
 classic scripts and before paint, sharing task deadlines and DOM/queue budgets.
 Callback failure rejects navigation; retained resize never reruns jobs.
 There is no persistent script host or HTML event loop.
+Phase 11g also enables bounded synchronous synthetic Event/EventTarget dispatch
+and Node/document capture/target/bubble listeners. Caught listener failures
+still reject navigation. No automatic input/load events or `on*` handlers run.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

@@ -111,6 +111,19 @@ static void Probe()
         "order.push('next');"
     ]);
     Check(tasks.Evaluate("order.join(',')").Text == "queue,promise,nested,next", "Native microtask checkpoint ordering failed.");
+    bound.Dispose();
+    using var eventHost = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true);
+    eventHost.ExecuteClassic("""
+        let eventOrder=[];
+        document.addEventListener('probe',()=>eventOrder.push('capture'),true);
+        document.documentElement.addEventListener('probe',e=>{
+            eventOrder.push('target');e.preventDefault();queueMicrotask(()=>document.title='event checkpoint');
+        },{once:true});
+        document.addEventListener('probe',()=>eventOrder.push('bubble'));
+        let canceled=!document.documentElement.dispatchEvent(new Event('probe',{bubbles:true,cancelable:true}));
+        """);
+    Check(eventHost.Evaluate("canceled && eventOrder.join(',')==='capture,target,bubble'").Boolean
+        && document.Title == "event checkpoint", "Native DOM event propagation/checkpoint failed.");
     using var taskDeadline = new V8ScriptHost(TimeSpan.FromMilliseconds(150), enableMicrotasks: true);
     try { taskDeadline.ExecuteClassic("queueMicrotask(()=>{while(true){}});"); throw new InvalidOperationException("Microtask escaped deadline."); }
     catch (ScriptLimitException) { }
@@ -146,7 +159,7 @@ static void Probe()
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
-    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
+    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, synthetic DOM event capture/target/bubble and cancellation, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
 }
 
 static void Check(bool condition, string message)

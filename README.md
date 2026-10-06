@@ -53,7 +53,8 @@ The [painting guide](docs/painting.md) covers immutable display lists, opaque
 BGRA frames, surface presentation and offline decoded-HTML-to-frame rendering.
 The [scripting guide](docs/scripting.md) covers the new bounded ClearScript/V8
 host, classic batches, live title/ID/text/attribute and Node creation/mutation
-bindings and native confinement
+bindings, finite native microtask checkpoints and bounded synchronous synthetic
+Event/EventTarget dispatch, plus native confinement
 probes. Page scripts remain disabled by default. `--enable-inline-scripts`
 explicitly enables a bounded post-parse inline classic subset in either
 development mode; mutations feed style/layout/paint, and resize retains the

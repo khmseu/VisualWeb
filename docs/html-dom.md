@@ -111,7 +111,7 @@ weakening the public API. Node/attribute case folding is ASCII-only.
 Child and attribute collections have read-only public views; node/data/attribute
 mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
-Mutation observers, events, ranges, shadow DOM, namespace-aware APIs, cloning,
+Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs, cloning,
 most special element behavior and full script bindings are deferred.
 The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
@@ -123,6 +123,10 @@ parser-blocking script integration.
 Phase 11e also exposes bounded native attribute operations, element/text/fragment
 factories and Node mutation/navigation through branded wrappers. It reuses these
 native checked algorithms without adding events or dynamic script execution.
+Phase 11g adds optional synchronous synthetic Node/document event dispatch
+in native JavaScript facades, not in these C# nodes. Listener identities and
+snapshotted ancestor paths stay in the owning V8 isolate; no automatic browser
+events, persistent event loop or dynamic script execution is added.
 
 ## Safety limits
 

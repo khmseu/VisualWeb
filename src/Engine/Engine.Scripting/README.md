@@ -22,6 +22,11 @@ One execution shares its deadline/DOM budget across all callbacks; task failures
 invalidate the host. Inline pages enable it under the existing script opt-in,
 then dispose the host before paint. Persistent event loops/rejection reporting
 remain deferred.
+Phase 11g optionally installs native Event/EventTarget and synthetic Node/
+document dispatch with snapshotted propagation paths, listener identity/once/
+passive semantics and shared invocation/depth limits. Callback errors and
+caught quota violations invalidate tasks. No automatic browser events or
+new CLR callbacks are installed; plain hosts remain unchanged.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

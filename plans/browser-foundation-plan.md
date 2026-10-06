@@ -203,6 +203,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   each classic script, with bounded queues, shared execution/DOM budgets and
   transactional page failure. External scripts, timers, event dispatch, ordinary
   Promise rejection reporting and a persistent browser event loop remain deferred.
+  Approved phase 11g adds native Event/EventTarget plus synchronous Node/document
+  capture/target/bubble propagation, once/passive/cancellation controls and
+  snapshotted ancestor paths. Listener errors fail tasks/navigation even if caught.
+  Budgets: 1,024 listener entries/path targets, 4,096 invocations per shared task,
+  32 nested dispatches. Automatic events, on* handlers and AbortSignal remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

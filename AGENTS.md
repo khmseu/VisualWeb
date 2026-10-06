@@ -111,6 +111,11 @@
   after each classic source, and one shared task deadline/DOM/queue budget. Preserve
   1,024 pending/4,096 total limits and failure latching/invalidation; never replace
   native FIFO ordering with a separate queue or claim a persistent HTML event loop.
+  Phase 11g adds optional native Event/EventTarget and synchronous Node/document
+  listener propagation on snapshotted ancestor paths. Preserve listener brands,
+  capture/once/passive/removal semantics, 1,024 entries/path targets, 4,096 shared
+  invocations, 32 nested dispatches and caught-failure latching. No automatic
+  input/load events, on* handlers, AbortSignal or persistent listeners on resize.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

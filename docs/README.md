@@ -42,3 +42,6 @@ branded Node navigation/mutation while preserving the initial script snapshot.
 Phase 11f adds opt-in finite native Promise/queueMicrotask checkpoints, bounded
 task queues and shared deadlines before painting; persistent event loops remain
 deferred. See the [scripting guide](scripting.md) for exact limits and deviations.
+Phase 11g adds opt-in bounded synthetic Event/EventTarget and Node/document
+capture/target/bubble dispatch, without automatic browser events or live hosts
+after initial execution.
