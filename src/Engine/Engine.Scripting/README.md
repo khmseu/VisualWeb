@@ -47,6 +47,11 @@ children/childNodes collections remain deferred.
 Phase 11l adds reflected id and toggleAttribute with DOMString/Boolean
 conversion, native validation and existing atomic attribute storage limits.
 Mutated IDs and toggled attributes feed live lookup/selectors and final paint.
+Phase 11m adds nodeValue and branded CharacterData data/length/substring/edit
+bindings with UTF-16 unsigned offsets and atomic result/storage limits.
+Lifecycle edits preserve text-node identity and feed final styles/title/paint.
+Monotonic stage/return checks reject expired finite tasks even when the native
+interrupt timer callback is delayed; no timeout values are relaxed.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

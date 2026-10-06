@@ -12,6 +12,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-element-setattribute">attributes</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-toggleattribute">toggleAttribute</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-id">id reflection</see>,
+/// <see href="https://dom.spec.whatwg.org/#interface-characterdata">CharacterData</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
@@ -70,6 +71,12 @@ internal sealed class DomBindings : IDisposable
                 "title-set" => SetTitle(value),
                 "text-get" => Observe(Text(Node(handle))),
                 "text-set" => SetText(Node(handle), value),
+                "node-value-get" => Observe(Node(handle) is DomCharacterData data ? data.Data : null),
+                "node-value-set" => SetNodeValue(Node(handle), value),
+                "data-get" => Observe(CharacterData(handle).Data),
+                "data-length" => Observe(CharacterData(handle).Length.ToString(CultureInfo.InvariantCulture)),
+                "data-set" or "data-append" or "data-insert" or "data-delete" or "data-replace" or "data-substring"
+                    => CharacterOperation(operation, CharacterData(handle), unchecked((uint)other), unchecked((uint)reference), value),
                 "attribute-get" => Observe(Element(handle).GetAttribute(name)),
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attribute-set" => SetAttribute(Element(handle), name, value),
@@ -208,6 +215,28 @@ internal sealed class DomBindings : IDisposable
     }
     private DomElement Element(int handle) => Node(handle) as DomElement
         ?? throw new InvalidOperationException("Illegal Element receiver.");
+    private DomCharacterData CharacterData(int handle) => Node(handle) as DomCharacterData
+        ?? throw new InvalidOperationException("Illegal CharacterData receiver.");
+    private string SetNodeValue(DomNode node, string value)
+        => node is DomCharacterData data ? CharacterOperation("data-set", data, 0, 0, value) : "";
+    private string CharacterOperation(string operation, DomCharacterData data, uint offset, uint count, string value)
+    {
+        if (operation == "data-set") { offset = 0; count = (uint)data.Length; }
+        else if (operation == "data-append") { offset = (uint)data.Length; count = 0; }
+        else if (operation == "data-insert") { count = 0; }
+        if (offset > data.Length) { throw new DomException(DomError.IndexSize, "CharacterData offset exceeds its length."); }
+        var removed = Math.Min(count, (uint)data.Length - offset);
+        if (operation == "data-substring")
+        {
+            if (removed > MaxTextCharacters) { throw new ScriptLimitException("DOM CharacterData result limit exceeded."); }
+            return Observe(data.SubstringData(offset, count))!;
+        }
+        if (operation == "data-delete") { value = ""; }
+        if (data.Length - removed + (long)value.Length > MaxTextCharacters)
+        { throw new ScriptLimitException("DOM CharacterData storage limit exceeded."); }
+        data.ReplaceData(offset, count, value);
+        return "";
+    }
     private static string? Text(DomNode element)
     {
         if (element is DomDocument or DomDocumentType) { return null; }
@@ -438,7 +467,8 @@ internal sealed class DomBindings : IDisposable
             const slice = String.prototype.slice, indexOf = String.prototype.indexOf;
             const TypeErrorCtor = TypeError, SyntaxErrorCtor = SyntaxError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
-            const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap();
+            const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap(),
+                characterBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
             const document = create(null), prototype = create(null), nodePrototype = create(null);
@@ -469,6 +499,11 @@ internal sealed class DomBindings : IDisposable
                 if (id === undefined) throw new TypeErrorCtor('Illegal ParentNode receiver');
                 return id;
             };
+            const characterBrand = receiver => {
+                const id = apply(brandGet, characterBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal CharacterData receiver');
+                return id;
+            };
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
@@ -486,6 +521,7 @@ internal sealed class DomBindings : IDisposable
                     apply(brandSet, brands, wrapper, handle);
                     if (type === 1) apply(brandSet, elementBrands, wrapper, handle);
                     if (type === 1 || type === 11) apply(brandSet, parentBrands, wrapper, handle);
+                    if (type === 3 || type === 7 || type === 8) apply(brandSet, characterBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
                     if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
                 }
@@ -566,6 +602,10 @@ internal sealed class DomBindings : IDisposable
                     get() { return call('text-get', brand(this)); },
                     set(value) { const id = brand(this); call('text-set', id, value == null ? '' : `${value}`); }
                 });
+                define(target, 'nodeValue', {enumerable: true,
+                    get() {return call('node-value-get', brand(this));},
+                    set(value) {const id=brand(this);call('node-value-set',id,value==null?'':`${value}`);}
+                });
                 for (const [property, operation] of [
                     ['parentNode', 'parent'], ['parentElement', 'parent-element'], ['firstChild', 'first-child'], ['lastChild', 'last-child'],
                     ['previousSibling', 'previous-sibling'], ['nextSibling', 'next-sibling']
@@ -608,6 +648,35 @@ internal sealed class DomBindings : IDisposable
                 }});
             };
             installNode(document); installNode(prototype); installNode(nodePrototype);
+            define(nodePrototype, 'data', {enumerable: true,
+                get() {return call('data-get', characterBrand(this));},
+                set(value) {const id=characterBrand(this);call('data-set',id,value===null?'':`${value}`);}
+            });
+            define(nodePrototype, 'length', {enumerable: true, get() {return +call('data-length',characterBrand(this));}});
+            define(nodePrototype, 'substringData', {enumerable: true, value: function(offset,count) {
+                const id=characterBrand(this);required(arguments.length,2);
+                const start=(+offset)>>>0, amount=(+count)>>>0;
+                return call('data-substring',id,'',start|0,amount|0);
+            }});
+            define(nodePrototype, 'appendData', {enumerable: true, value: function(value) {
+                const id=characterBrand(this);required(arguments.length,1);
+                call('data-append',id,`${value}`);
+            }});
+            define(nodePrototype, 'insertData', {enumerable: true, value: function(offset,value) {
+                const id=characterBrand(this);required(arguments.length,2);
+                const start=(+offset)>>>0, text=`${value}`;
+                call('data-insert',id,text,start|0,0);
+            }});
+            define(nodePrototype, 'deleteData', {enumerable: true, value: function(offset,count) {
+                const id=characterBrand(this);required(arguments.length,2);
+                const start=(+offset)>>>0, amount=(+count)>>>0;
+                call('data-delete',id,'',start|0,amount|0);
+            }});
+            define(nodePrototype, 'replaceData', {enumerable: true, value: function(offset,count,value) {
+                const id=characterBrand(this);required(arguments.length,3);
+                const start=(+offset)>>>0, amount=(+count)>>>0, text=`${value}`;
+                call('data-replace',id,text,start|0,amount|0);
+            }});
             for (const target of [document, prototype, nodePrototype]) {
                 for (const [property, operation] of [
                     ['firstElementChild', 'first-element'], ['lastElementChild', 'last-element']

@@ -22,6 +22,33 @@ public abstract class DomCharacterData : DomNode
     }
 
     public override string? TextContent { get => data; set => data = value ?? ""; }
+
+    /// <summary>Number of UTF-16 code units, not Unicode scalar values.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-characterdata-length">length</see>.</remarks>
+    public int Length => data.Length;
+
+    /// <summary>Copy code units, clamping count at the end of the data.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-characterdata-substringdata">substringData</see>.</remarks>
+    public string SubstringData(uint offset, uint count)
+    {
+        var length = CheckedCount(offset, count);
+        return data.Substring((int)offset, length);
+    }
+
+    /// <summary>Replace code units after validating the offset, without observer/range reactions.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-cd-replace">replace data</see>.</remarks>
+    public void ReplaceData(uint offset, uint count, string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var length = CheckedCount(offset, count);
+        data = string.Concat(data.AsSpan(0, (int)offset), value.AsSpan(), data.AsSpan((int)offset + length));
+    }
+
+    private int CheckedCount(uint offset, uint count)
+    {
+        if (offset > data.Length) { throw new DomException(DomError.IndexSize, "CharacterData offset exceeds its length."); }
+        return (int)Math.Min(count, (uint)data.Length - offset);
+    }
 }
 
 public sealed class DomText : DomCharacterData

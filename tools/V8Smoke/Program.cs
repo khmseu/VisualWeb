@@ -127,6 +127,11 @@ static void Probe()
             const removed=!created.toggleAttribute('data-probe',false);
             created.id='created';return present&&matched&&removed&&!created.hasAttribute('data-probe')})()
         """).Boolean, "Native ID reflection/attribute toggle failed.");
+    Check(bound.Evaluate("""
+        (()=>{const text=created.firstChild;text.replaceData(0,4,'native');text.appendData(' data');
+            return text===created.firstChild && text.data==='native data' && text.nodeValue===text.textContent
+                && text.length===11 && text.substringData(7,4)==='data'})()
+        """).Boolean, "Native CharacterData editing/identity failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

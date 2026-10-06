@@ -138,6 +138,9 @@
   Phase 11l adds reflected id and toggleAttribute. Preserve live conversion
   ordering, forced no-op validation/value retention, ordered attributes and
   shared native storage/callback limits. No custom-element reactions are implied.
+  Phase 11m adds nodeValue and bounded CharacterData editing. Preserve UTF-16/
+  unsigned offset semantics, conversion order, atomic storage/result budgets
+  and identity. Observers/range/PI pseudoattribute reactions remain deferred.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

@@ -230,6 +230,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   bridge, with live selector/lookup effects, forced no-op value retention and
   existing atomic attribute storage limits. Native attributes preserve ordered
   removal/readdition; no custom-element reactions or new scheduling are added.
+  Phase 11m adds nodeValue and bounded CharacterData data/length/substring/
+  editing, reusing native checked UTF-16 primitives with atomic storage budgets.
+  Text identity and lifecycle paint/resize remain stable; no observers,
+  live ranges, PI pseudoattribute reactions or dynamic scripts are added.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

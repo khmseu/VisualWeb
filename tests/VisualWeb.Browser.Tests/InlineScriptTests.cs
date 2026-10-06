@@ -22,6 +22,38 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task CharacterDataEditsPreserveNodeIdentityAndFeedLifecyclePaintTransactionally(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let text=document.getElementById('sheet').firstChild,title=document.querySelector('title').firstChild;
+            document.addEventListener('DOMContentLoaded',()=>{
+                let offset=text.data.indexOf('red');text.replaceData(offset,3,'blue');
+                if(document.getElementById('sheet').firstChild!==text||text.substringData(offset,4)!=='blue')throw Error('data identity');
+                queueMicrotask(()=>{title.nodeValue='Character';title.appendData(' data');});
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Character data", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.createTextNode('x').insertData(2,'bad')</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Character data", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ReflectedIdAndToggledAttributeFeedLifecycleSelectorsAndTransactionalPaint(bool process)
     {
         using IPageRenderer renderer = process

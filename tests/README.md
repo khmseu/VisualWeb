@@ -90,6 +90,11 @@ Phase-11l tests cover native attribute toggles/order, live ID reflection and
 lookup/selectors, force/name conversion, invalid/foreign receivers, exact
 attribute/storage/shared call/text bounds and cancellation. Local/process
 lifecycle fixtures verify ID/attribute-selector pixels and failure recovery.
+Phase-11m tests cover native UTF-16 substring/replacement, CharacterData brands,
+conversion order, unsigned offset/count boundaries, identity/nodeValue, exact
+storage/result/shared text/callback limits and ownership/cancellation.
+Local/process lifecycle fixtures verify in-place style/title edits, pixels
+and retained resize with transactional failure/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

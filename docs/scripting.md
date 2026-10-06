@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11l)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11m)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,50 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Bounded CharacterData editing (phase 11m)
+
+Branded text, comment and processing-instruction wrappers expose `data`,
+readonly UTF-16 `length`, `substringData`, `appendData`, `insertData`,
+`deleteData` and `replaceData`. Node wrappers also expose `nodeValue`:
+CharacterData reads/writes the same storage as textContent; other supported
+nodes read null and ignore writes after argument conversion. In-place edits
+preserve node identity, parent/sibling links and event registrations.
+The C# DOM provides `Length`, `SubstringData` and `ReplaceData` primitives;
+script adapters compose those rather than copy/replace nodes.
+
+Offsets/counts follow WebIDL unsigned-long conversion: truncate/wrap to 32 bits,
+NaN/infinity become zero, and Symbol/BigInt numeric conversion fails.
+Offsets above the current length fail explicitly; offset equal to length is
+valid, and counts clamp at the end without unsigned addition overflow.
+All operations count UTF-16 code units, allowing surrogate halves and NUL.
+Receiver/required-argument checks precede conversion. Offset, count and data
+convert in argument order before reading current storage, so conversion side
+effects remain visible. Extra arguments are ignored. `data` uses
+LegacyNullToEmptyString: null becomes empty, while undefined becomes
+`"undefined"`. Nullable nodeValue maps both null/undefined to empty data;
+method DOMString arguments stringify null/undefined normally.
+
+Bridge writes preflight the resulting **65,536-code-unit data storage** limit
+before allocation/mutation. Substring results have the same limit; length can
+inspect larger native data, and bounded deletion/full replacement can recover
+it. Existing shared **4,096 callbacks / 262,144 input-output text characters**
+and execution deadline/cancellation still apply. Native offset failures use
+`DomError.IndexSize`; script failures use the existing primitive bridge
+TypeError diagnostic, **not yet an IndexSizeError DOMException**.
+No CLR node/string-operation objects cross the bridge.
+
+This remains the existing static DOM subset: no observers, live-range repair,
+Text.splitText/wholeText, normalization, custom-element reactions or new
+dynamic script execution. ProcessingInstruction edits update raw data only;
+the engine does not implement processing-instruction pseudoattribute parsing
+or reactions. Shared non-element prototypes reject non-CharacterData receivers
+instead of pretending those APIs apply. Lifecycle edits to style/title text
+feed final styling/paint; retained resize does not rerun scripts.
+Sources: cached `dom`,
+[CharacterData](https://dom.spec.whatwg.org/#interface-characterdata),
+[replace data](https://dom.spec.whatwg.org/#concept-cd-replace) and
+[nodeValue](https://dom.spec.whatwg.org/#dom-node-nodevalue).
 
 ## Reflected ID and attribute toggling (phase 11l)
 
@@ -601,6 +645,11 @@ scheduler; there is no live host remaining after initial execution. Do not use
 this mode for hostile content, even with OS confinement.
 
 ## Bounds and failure
+
+Execution stages and final return additionally check a monotonic elapsed clock.
+The cancellation timer remains responsible for interrupting in-flight native
+work, but a delayed timer callback cannot make an expired finite task succeed
+or start the next source/lifecycle stage. The timeout is shared and never reset.
 
 | Bound | Value |
 | --- | ---: |
@@ -920,3 +969,29 @@ checks are clean; no owned workers/resource scopes remain. All **58 official
 references** are independently cached/fresh without network refresh.
 Windows/ARM still require native target evidence. Full WebIDL/DOMException,
 custom-element reactions and persistent script event loops remain deferred.
+
+## Phase-11m validation outcome
+
+On Linux x64, all **45 projects build** and **391 distinct selected tests pass**
+without final failures or skips: 34 DOM, 222 scripting and 135 browser cases.
+Three native and ten script CharacterData cases cover UTF-16/surrogate/NUL
+storage, unsigned offset conversion/count clamping, data/nodeValue reflection,
+comment/PI branding, ordered conversion side effects, receiver/adoption/
+tampering, exact storage/result/shared input-output/callback bounds and
+cancellation. After the final null-versus-undefined conversion correction,
+all 222 scripting and 60 inline-page cases were rerun successfully.
+
+Regression validation exposed finite whole-batch/lifecycle tasks succeeding
+when the cancellation timer was delayed. Monotonic stage/return checks now
+reject expired tasks without relaxing deadlines; both existing deadline
+regressions and the complete scripting/browser suites pass.
+Local/process lifecycle style/title edits preserve text-node identity and
+produce exact blue pixels, retained resize and transactional failure/recovery.
+Local and unchanged required-confined V8 probes pass with in-place
+CharacterData edits. SDL dummy and required-confined X11 shell smokes pass,
+presenting 10 and 15 frames respectively. Formatting, editor diagnostics and
+whitespace checks are clean; no owned workers/resource scopes remain.
+All **58 official references** are independently cached/fresh without network
+refresh. Windows/ARM still require native target evidence. Observers,
+live-range/PI pseudoattribute reactions, full WebIDL/DOMException objects
+and persistent script event loops remain deferred.

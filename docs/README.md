@@ -56,3 +56,5 @@ Phase 11k adds bounded tree inspection and live element-only navigation,
 including detached/fragment roots and shared wrapper identities.
 Phase 11l adds reflected id and checked attribute toggling, preserving native
 attribute order/storage bounds and lifecycle selector/paint integration.
+Phase 11m adds bounded CharacterData/nodeValue editing, retaining UTF-16
+semantics, node identity and lifecycle styling/title/paint integration.

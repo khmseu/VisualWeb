@@ -12,6 +12,9 @@ distinct from the internal HTML parser's recovered attribute path.
 Checked ToggleAttribute supports optional forced presence without replacing
 existing values. Ordered storage preserves replacement position and appends
 attributes after removal/readdition, consistently across native mutation paths.
+CharacterData Length/SubstringData/ReplaceData operate on UTF-16 code units,
+clamp counts and reject invalid offsets before mutation. Observers, live-range
+repair and processing-instruction pseudoattribute reactions remain deferred.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.ClearScript;
@@ -12,6 +13,7 @@ namespace VisualWeb.Engine.Scripting;
 /// Deadlines and heap monitoring supplement, not replace, renderer OS resource limits.</remarks>
 public sealed class V8ScriptHost : IDisposable
 {
+    private long executionStarted;
     public const int MaxSourceCharacters = 64 * 1024;
     public const int MaxResultCharacters = 16 * 1024;
     public const int MaxBatchScripts = 64;
@@ -154,6 +156,7 @@ public sealed class V8ScriptHost : IDisposable
             foreach (var source in snapshot)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                CheckExecutionDeadline();
                 engine.Execute(source);
                 CheckEvents("checkpoint");
                 CheckMicrotasks("checkpoint");
@@ -183,6 +186,7 @@ public sealed class V8ScriptHost : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var interrupt = deadline.Token.Register(engine.Interrupt);
+        executionStarted = Stopwatch.GetTimestamp();
         deadline.CancelAfter(timeout);
         dom?.Begin(deadline.Token);
         try
@@ -209,6 +213,7 @@ public sealed class V8ScriptHost : IDisposable
                 interrupt.Dispose();
             }
             deadline.Token.ThrowIfCancellationRequested();
+            CheckExecutionDeadline();
             return result;
         }
         catch (Exception exception) when (exception is ScriptInterruptedException or OperationCanceledException)
@@ -232,8 +237,17 @@ public sealed class V8ScriptHost : IDisposable
         }
     }
 
+    private void CheckExecutionDeadline()
+    {
+        // Timer callbacks can be delayed; never accept an expired finite task at a checkpoint.
+        if (Stopwatch.GetElapsedTime(executionStarted) < timeout) { return; }
+        poisoned = true;
+        throw new ScriptLimitException("V8 execution deadline exceeded; isolate invalidated.");
+    }
+
     private void CheckMicrotasks(string operation)
     {
+        CheckExecutionDeadline();
         if (microtasks is null) { return; }
         var status = microtasks.InvokeAsFunction(operation);
         if (status is int code && code == 0) { return; }
@@ -245,6 +259,7 @@ public sealed class V8ScriptHost : IDisposable
 
     private void CheckEvents(string operation)
     {
+        CheckExecutionDeadline();
         if (events is null) { return; }
         var status = events.InvokeAsFunction(operation);
         if (status is int code && code == 0) { return; }

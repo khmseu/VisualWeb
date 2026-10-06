@@ -141,6 +141,9 @@ No shadow DOM or live child collection is implied.
 Phase 11l adds native checked ToggleAttribute and script id/toggleAttribute
 bindings. Ordered attributes retain replacement position and append on
 removal/readdition; the bridge preserves existing storage preflight.
+Phase 11m exposes CharacterData/nodeValue bindings using native UTF-16
+substring/replacement primitives. No observer, live-range or processing-
+instruction pseudoattribute reactions are implied.
 
 ## Safety limits
 

@@ -210,7 +210,7 @@ public abstract class DomNode
 }
 
 public enum DomNodeType { Element = 1, Text = 3, ProcessingInstruction = 7, Comment = 8, Document = 9, DocumentType = 10, DocumentFragment = 11 }
-public enum DomError { HierarchyRequest, NotFound, InvalidCharacter, NotSupported }
+public enum DomError { HierarchyRequest, NotFound, InvalidCharacter, NotSupported, IndexSize }
 public sealed class DomException(DomError error, string message) : InvalidOperationException(message)
 {
     public DomError Error { get; } = error;
