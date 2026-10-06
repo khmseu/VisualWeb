@@ -449,17 +449,16 @@ public sealed class ProcessTests
     private sealed class ResourceSource : IPageSource
     {
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
-            Task.FromResult(Blue with
-            {
-                Url = url,
-                Html = url.Href switch { "data:text/html,memory" => "memory", "data:text/html,cpu" => "cpu", _ => Blue.Html }
-            });
+            Task.FromResult(new LoadedPage(url,
+                url.Href switch { "data:text/html,memory" => "memory", "data:text/html,cpu" => "cpu", _ => Blue.Html },
+                Blue.StatusCode, Blue.Diagnostics));
         public void Dispose() { }
     }
     private sealed class WindowsPressureSource : IPageSource
     {
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
-            Task.FromResult(Blue with { Url = url, Html = url.Href == "data:text/html,cpu" ? "cpu" : Blue.Html });
+            Task.FromResult(new LoadedPage(url, url.Href == "data:text/html,cpu" ? "cpu" : Blue.Html,
+                Blue.StatusCode, Blue.Diagnostics));
         public void Dispose() { }
     }
     [Fact]
@@ -615,6 +614,118 @@ public sealed class ProcessTests
             Assert.Fail("Controller process integration timed out.");
         }
     }
+    [Fact]
+    public void ActualControllerKeepsBrowserOwnedOriginAcrossRepaintMoveAndCrashUntilFreshReload()
+    {
+        var source = new RecordingSource();
+        using var renderer = new ProcessPageRenderer(RendererPath, FontPath);
+        using var controller = new BrowserController(() => source, () => renderer);
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        var viewport = new PageViewport(20, 10, 1);
+        Assert.Null(tab.Origin);
+
+        controller.Navigate(tab.Id, "https://first.example/a");
+        Wait(() => !tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.Same(source.Pages[^1].Origin, tab.Origin);
+        Assert.Equal("https://first.example", tab.Origin!.Serialize());
+        controller.Navigate(tab.Id, "https://second.example:8443/b");
+        Wait(() => !tab.IsLoading);
+        Assert.Equal("https://second.example:8443", tab.Origin!.Serialize());
+
+        controller.Navigate(tab.Id, Blue.Url.Href);
+        Wait(() => !tab.IsLoading);
+        var document = source.Pages[^1];
+        var origin = tab.Origin;
+        Assert.NotNull(origin);
+        Assert.True(origin.IsOpaque);
+        Assert.Same(document.Origin, origin);
+
+        viewport = new(30, 10, 1);
+        controller.Resize(tab.Id, viewport);
+        Wait(() => controller.Page(tab.Id)?.Frame.Size.Width == 30);
+        Assert.Null(tab.Error);
+        Assert.Same(origin, tab.Origin);
+        Assert.Equal(3, source.Pages.Count);
+        controller.Session.MoveTab(tab.Id, controller.Session.CreateWindow().Id);
+        controller.Pump(_ => viewport);
+        Assert.Same(origin, controller.Session.Tab(tab.Id).Origin);
+
+        var pid = renderer.ProcessId!.Value;
+        using (var child = Process.GetProcessById(pid)) { child.Kill(); Assert.True(child.WaitForExit(5000)); }
+        Wait(() => tab.Error is not null);
+        Assert.Contains("exited", tab.Error);
+        Assert.Same(origin, tab.Origin);
+
+        controller.Reload(tab.Id);
+        Assert.Same(origin, tab.Origin);
+        Wait(() => !tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.NotEqual(pid, renderer.ProcessId);
+        Assert.Same(source.Pages[^1].Origin, tab.Origin);
+        Assert.True(tab.Origin!.IsOpaque);
+        Assert.False(origin.IsSameOrigin(tab.Origin));
+        Assert.Equal(Blue.Url.Href, tab.History.Current!.Href);
+        void Wait(Func<bool> ready)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => viewport);
+                if (ready()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("Controller process integration timed out.");
+        }
+    }
+    [Fact]
+    public void ActualControllerFailedProcessRenderPreservesCommittedOrigin()
+    {
+        var source = new RecordingSource();
+        using var renderer = new ProcessPageRenderer(RendererPath, FontPath);
+        using var controller = new BrowserController(() => source, () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://first.example/");
+        Wait();
+        Assert.Null(tab.Error);
+        var origin = tab.Origin;
+        Assert.Equal("https://first.example", origin!.Serialize());
+        var page = controller.Page(tab.Id);
+
+        source.Html = "<!doctype html><link rel=stylesheet href=a.css>";
+        controller.Navigate(tab.Id, "https://second.example/");
+        Wait();
+        Assert.Contains("Linked stylesheets", tab.Error);
+        Assert.Same(origin, tab.Origin);
+        Assert.Same(page, controller.Page(tab.Id));
+        Assert.Equal("https://first.example/", tab.History.Current!.Href);
+        void Wait()
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => new(20, 10, 1));
+                if (!tab.IsLoading) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("Controller process integration timed out.");
+        }
+    }
+    private sealed class RecordingSource : IPageSource
+    {
+        internal List<LoadedPage> Pages { get; } = [];
+        internal string Html { get; set; } = Blue.Html;
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
+        {
+            var page = new LoadedPage(url, Html, 200, []);
+            Pages.Add(page);
+            return Task.FromResult(page);
+        }
+        public void Dispose() { }
+    }
     private sealed class ImmediateSource : IPageSource
     {
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) => Task.FromResult(Blue);
@@ -640,7 +751,8 @@ public sealed class ProcessTests
         Assert.True(tab.IsLoading); Assert.Contains("exited", tab.Error);
         controller.Resize(tab.Id, new(30, 10, 1));
         Assert.False(source.Requests[1].Token.IsCancellationRequested);
-        source.Requests[1].Completion.SetResult(Blue with { Url = BrowserUrl.Parse("data:text/html,next") });
+        source.Requests[1].Completion.SetResult(new(BrowserUrl.Parse("data:text/html,next"), Blue.Html,
+            Blue.StatusCode, Blue.Diagnostics));
         Wait();
         Assert.Null(tab.Error);
         Assert.Equal("data:text/html,next", tab.History.Current!.Href);

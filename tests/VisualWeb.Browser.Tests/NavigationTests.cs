@@ -12,6 +12,67 @@ public sealed class NavigationTests
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
     [Fact]
+    public async Task RedirectedNavigationUsesTheFinalResponseUrlOrigin()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            if (requests.Count == 1)
+            {
+                var redirect = new HttpResponseMessage(HttpStatusCode.Found);
+                redirect.Headers.Location = new Uri("https://destination.example:8443/final");
+                return redirect;
+            }
+            return new(HttpStatusCode.OK) { Content = new StringContent("<p>final</p>", Encoding.UTF8, "text/html") };
+        }));
+        var initialUrl = BrowserUrl.Parse("https://initial.example/start");
+        var page = await source.LoadAsync(initialUrl, Cancellation);
+
+        Assert.Equal(["https://initial.example/start", "https://destination.example:8443/final"], requests);
+        Assert.Equal("https://destination.example:8443/final", page.Url.Href);
+        Assert.Equal("https://destination.example:8443", page.Origin.Serialize());
+        Assert.True(page.Origin.IsSameOrigin(page.Url.Origin));
+        Assert.False(page.Origin.IsSameOrigin(initialUrl.Origin));
+    }
+
+    [Fact]
+    public async Task RepeatedDataLoadsUsingTheSameUrlHaveDistinctDocumentOrigins()
+    {
+        using var source = new GetPageSource();
+        var url = BrowserUrl.Parse("data:text/html,%3Cp%3Ehello%3C/p%3E");
+        var first = await source.LoadAsync(url, Cancellation);
+        var second = await source.LoadAsync(url, Cancellation);
+
+        Assert.Same(url, first.Url);
+        Assert.Same(url, second.Url);
+        Assert.True(first.Origin.IsOpaque);
+        Assert.False(first.Origin.IsSameOrigin(second.Origin));
+        Assert.NotEqual(first.DocumentId, second.DocumentId);
+    }
+
+    [Fact]
+    public async Task RepeatedFileLoadsUsingTheSameUrlHaveDistinctDocumentOrigins()
+    {
+        using var source = new GetPageSource();
+        var path = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(path, "<!doctype html><p>local</p>", Cancellation);
+            var url = BrowserUrl.Parse(new Uri(path).AbsoluteUri);
+            var first = await source.LoadAsync(url, Cancellation);
+            var second = await source.LoadAsync(url, Cancellation);
+
+            Assert.Same(url, first.Url);
+            Assert.Same(url, second.Url);
+            Assert.True(first.Origin.IsOpaque);
+            Assert.False(first.Origin.IsSameOrigin(second.Origin));
+            Assert.NotEqual(first.DocumentId, second.DocumentId);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task HttpNavigationUsesHeaderEncodingAndBomPrecedenceWithoutCookies()
     {
         using var source = new GetPageSource(new Handler(request =>

@@ -11,6 +11,18 @@ host; lost DOM requires explicit reload rather than repeating execution.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
 
+`LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
+Each new construction gets a fresh opaque origin (including reused data/file URL
+instances); tuple origins use the URL's scheme/host/effective port. Metadata
+record copies and retained repaint keep the same origin and document ID. The
+four-argument constructor and deconstruction remain supported, but `Url` and
+`Origin` are get-only: replace a URL by constructing a new document, not by `with`.
+The browser publishes this origin as `BrowserTab.Origin` only with a committed
+document. This is identity, not inherited or sandbox origin selection,
+same-origin enforcement, CORS or CSP. IPC remains
+unchanged; worker reconstruction has a local identity, not a transmitted browser
+opaque principal.
+
 No networking, window backend or browser chrome dependencies. Unsupported page
 features fail explicitly. See the [shell guide](../../../docs/browser-shell.md)
 and [process guide](../../../docs/renderer-processes.md), plus the

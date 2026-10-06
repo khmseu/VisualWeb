@@ -90,6 +90,34 @@ public sealed class UrlTests
         }
     }
 
+    [Theory]
+    [InlineData("http://EXAMPLE.COM:80/", "http://example.com/", "example.com")]
+    [InlineData("https://EXAMPLE.com:443/", "https://example.com/", "example.com")]
+    [InlineData("http://EXAMPLE.com:8080/", "http://example.com:8080/", "example.com:8080")]
+    [InlineData("wss://Example.COM:444/", "wss://example.com:444/", "example.com:444")]
+    [InlineData("http://B\u00FCcher.example:8080/", "http://xn--bcher-kva.example:8080/", "xn--bcher-kva.example:8080")]
+    [InlineData("http://%45xample.com:8080/", "http://example.com:8080/", "example.com:8080")]
+    [InlineData("http://0x7f.1:8080/", "http://127.0.0.1:8080/", "127.0.0.1:8080")]
+    [InlineData("http://0x7F.1:80/", "http://127.0.0.1/", "127.0.0.1")]
+    [InlineData("foo://EXAMPLE.com:8080/", "foo://EXAMPLE.com:8080/", "EXAMPLE.com:8080")]
+    [InlineData("foo://%45xample:1/", "foo://%45xample:1/", "%45xample:1")]
+    public void HostsFollowedByExplicitPortsUseSchemeHostParsing(string input, string href, string host)
+    {
+        var url = BrowserUrl.Parse(input);
+        Assert.Equal(href, url.Href);
+        Assert.Equal(host, url.Host);
+    }
+
+    [Theory]
+    [InlineData("http://ex%25ample.com:8080/")]
+    [InlineData("http://ex%7Fample.com:80/")]
+    [InlineData("https://ex%00ample.com:443/")]
+    [InlineData("http://0x100000000:8080/")]
+    public void SpecialForbiddenHostsFollowedByExplicitPortsAreRejected(string input)
+    {
+        Assert.False(BrowserUrl.ParseResult(input).Success);
+    }
+
     [Fact]
     public void ResolvingRelativeUrl_DoesNotMutateBase()
     {

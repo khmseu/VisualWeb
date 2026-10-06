@@ -4,7 +4,9 @@ using VisualWeb.Core.Url;
 namespace VisualWeb.Browser;
 
 /// <summary>UI-thread transactional navigation over local or asynchronous process renderers.</summary>
-/// <remarks>Process results are published only by the UI pump; process separation is not OS confinement.</remarks>
+/// <remarks>Process results are published only by the UI pump; process separation is not OS confinement.
+/// <see cref="BrowserTab.Origin"/> is taken from the browser-side <see cref="LoadedPage"/> and changes only when that
+/// document is rendered, accepted by <see cref="IPageRenderer.CommitDocument"/> and published.</remarks>
 public sealed class BrowserController : IDisposable
 {
     private sealed class Content(IPageSource source, IPageRenderer renderer)
@@ -152,8 +154,11 @@ public sealed class BrowserController : IDisposable
             var rendered = operation.Render.GetAwaiter().GetResult();
             var owner = content[operation.Tab];
             var tab = Session.Tab(operation.Tab);
+            // Throwing steps precede publication so a rejected commit leaves document, origin and history intact.
             owner.Renderer.CommitDocument(document.DocumentId);
+            if (!operation.Resize) { tab.History.Commit(document.Url, operation.Traversal, operation.Replace); }
             owner.Document = document; owner.Page = rendered; owner.Viewport = operation.Viewport;
+            tab.Origin = document.Origin;
             if (operation.Resize)
             {
                 if (owner.ResizeFailed) { tab.Error = null; }
@@ -161,7 +166,6 @@ public sealed class BrowserController : IDisposable
             }
             else
             {
-                tab.History.Commit(document.Url, operation.Traversal, operation.Replace);
                 tab.AddressText = document.Url.Href; tab.Title = rendered.Title; tab.Status = rendered.Status;
                 tab.Error = null; tab.IsLoading = false;
             }

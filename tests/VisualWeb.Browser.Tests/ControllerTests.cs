@@ -17,6 +17,194 @@ public sealed class ControllerTests
             "Title", "Ready");
     }
     [Fact]
+    public void OpaqueOriginsAreFreshForReloadAndSeparateTabsButRetainedForRepaint()
+    {
+        var sources = new List<Source>();
+        var renderers = new List<Renderer>();
+        using var controller = new BrowserController(
+            () => { var source = new Source(); sources.Add(source); return source; },
+            () => { var renderer = new Renderer(); renderers.Add(renderer); return renderer; });
+        var window = controller.Session.CreateWindow();
+        var firstTab = controller.CreateTab(window.Id);
+        var secondTab = controller.CreateTab(window.Id);
+        var url = BrowserUrl.Parse("data:text/html,test");
+        var firstDocument = new LoadedPage(url, "<!doctype html>", 200, []);
+        controller.Navigate(firstTab.Id, url.Href);
+        sources[0].Requests[0].Completion.SetResult(firstDocument);
+        controller.Pump(_ => Viewport);
+
+        controller.Resize(firstTab.Id, new(30, 20, 1));
+        Assert.Same(firstDocument, Assert.Single(renderers[0].RetainedPages));
+        Assert.Same(firstDocument.Origin, renderers[0].RetainedPages[0].Origin);
+        Assert.Single(sources[0].Requests);
+
+        var secondDocument = new LoadedPage(url, "<!doctype html>", 200, []);
+        controller.Navigate(secondTab.Id, url.Href);
+        sources[1].Requests[0].Completion.SetResult(secondDocument);
+        controller.Pump(_ => Viewport);
+        Assert.Same(secondDocument, Assert.Single(renderers[1].Pages));
+        Assert.False(firstDocument.Origin.IsSameOrigin(secondDocument.Origin));
+
+        var reloadedDocument = new LoadedPage(url, "<!doctype html>", 200, []);
+        controller.Reload(firstTab.Id);
+        sources[0].Requests[1].Completion.SetResult(reloadedDocument);
+        controller.Pump(_ => Viewport);
+        Assert.Same(reloadedDocument, renderers[0].Pages[^1]);
+        Assert.False(firstDocument.Origin.IsSameOrigin(reloadedDocument.Origin));
+        Assert.False(secondDocument.Origin.IsSameOrigin(reloadedDocument.Origin));
+        controller.Resize(firstTab.Id, new(40, 20, 1));
+        Assert.Same(reloadedDocument, renderers[0].RetainedPages[^1]);
+        Assert.Same(reloadedDocument.Origin, renderers[0].RetainedPages[^1].Origin);
+    }
+    [Fact]
+    public void CommittedOriginStartsNullAndChangesOnlyWithPublishedTupleNavigations()
+    {
+        var source = new Source(); var renderer = new Renderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        Assert.Null(tab.Origin);
+        Assert.False(typeof(BrowserTab).GetProperty(nameof(BrowserTab.Origin))!.SetMethod!.IsPublic);
+
+        controller.Navigate(tab.Id, "https://first.example/a");
+        Assert.Null(tab.Origin);
+        source.Requests[^1].Completion.SetException(new PageNavigationException("Load failed"));
+        controller.Pump(_ => Viewport);
+        Assert.Null(tab.Origin);
+        controller.Navigate(tab.Id, "https://first.example/a");
+        source.Requests[^1].Completion.SetResult(new(BrowserUrl.Parse("https://first.example/a"), "", 200, []));
+        renderer.Fail = true;
+        controller.Pump(_ => Viewport);
+        Assert.Null(tab.Origin);
+        Assert.Null(controller.Page(tab.Id));
+
+        renderer.Fail = false;
+        var first = Navigate("https://first.example/a", "https://first.example:443/redirected");
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Equal("https://first.example", tab.Origin!.Serialize());
+        var sameOrigin = Navigate("https://first.example/b", "https://FIRST.example/c");
+        Assert.Same(sameOrigin.Origin, tab.Origin);
+        Assert.True(first.Origin.IsSameOrigin(tab.Origin));
+        var crossOrigin = Navigate("https://first.example/d", "https://second.example:8443/e");
+        Assert.Same(crossOrigin.Origin, tab.Origin);
+        Assert.Equal("https://second.example:8443", tab.Origin!.Serialize());
+        Assert.False(first.Origin.IsSameOrigin(tab.Origin));
+
+        controller.Navigate(tab.Id, "https://third.example/");
+        source.Requests[^1].Completion.SetException(new IOException("Load failed"));
+        controller.Pump(_ => Viewport);
+        Assert.Same(crossOrigin.Origin, tab.Origin);
+        controller.Navigate(tab.Id, "https://third.example/");
+        source.Requests[^1].Completion.SetResult(new(BrowserUrl.Parse("https://third.example/"), "", 200, []));
+        renderer.Fail = true;
+        controller.Pump(_ => Viewport);
+        Assert.Same(crossOrigin.Origin, tab.Origin);
+        Assert.Equal("https://second.example:8443/e", tab.History.Current!.Href);
+        controller.Back(tab.Id);
+        controller.Pump(_ => Viewport);
+        Assert.Same(crossOrigin.Origin, tab.Origin);
+        renderer.Fail = false;
+        controller.Back(tab.Id);
+        source.Requests[^1].Completion.SetResult(sameOrigin);
+        controller.Pump(_ => Viewport);
+        Assert.Same(sameOrigin.Origin, tab.Origin);
+        LoadedPage Navigate(string address, string final)
+        {
+            var page = new LoadedPage(BrowserUrl.Parse(final), "", 200, []);
+            controller.Navigate(tab.Id, address);
+            source.Requests[^1].Completion.SetResult(page);
+            controller.Pump(_ => Viewport);
+            Assert.Null(tab.Error);
+            return page;
+        }
+    }
+    [Fact]
+    public void RetainedRepaintAndTabMoveKeepTheSameOpaqueOriginWhileReloadAndFileDocumentsReplaceIt()
+    {
+        var source = new Source(); var renderer = new Renderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        var url = BrowserUrl.Parse("data:text/html,test");
+        var document = new LoadedPage(url, "", 200, []);
+        controller.Navigate(tab.Id, url.Href);
+        source.Requests[^1].Completion.SetResult(document);
+        controller.Pump(_ => Viewport);
+        var origin = tab.Origin;
+        Assert.NotNull(origin);
+        Assert.True(origin.IsOpaque);
+        Assert.Same(document.Origin, origin);
+
+        controller.Resize(tab.Id, new(30, 20, 1));
+        Assert.Same(origin, tab.Origin);
+        renderer.Fail = true;
+        controller.Resize(tab.Id, new(40, 20, 1));
+        Assert.Contains("Resize", tab.Error);
+        Assert.Same(origin, tab.Origin);
+        renderer.Fail = false;
+        controller.Resize(tab.Id, new(50, 20, 1));
+        Assert.Same(origin, tab.Origin);
+        var other = controller.Session.CreateWindow();
+        controller.Session.MoveTab(tab.Id, other.Id);
+        Assert.Same(origin, controller.Session.Tab(tab.Id).Origin);
+        controller.Pump(_ => Viewport);
+        Assert.Same(origin, tab.Origin);
+
+        controller.Reload(tab.Id);
+        Assert.Same(origin, tab.Origin);
+        var reloaded = new LoadedPage(url, "", 200, []);
+        source.Requests[^1].Completion.SetResult(reloaded);
+        controller.Pump(_ => Viewport);
+        Assert.Same(reloaded.Origin, tab.Origin);
+        Assert.False(origin.IsSameOrigin(tab.Origin));
+
+        var file = BrowserUrl.Parse("file:///document.html");
+        var fileDocument = new LoadedPage(file, "", 200, []);
+        controller.Navigate(tab.Id, file.Href);
+        source.Requests[^1].Completion.SetResult(fileDocument);
+        controller.Pump(_ => Viewport);
+        Assert.Same(fileDocument.Origin, tab.Origin);
+        Assert.True(tab.Origin!.IsOpaque);
+        controller.Reload(tab.Id);
+        var fileReloaded = new LoadedPage(file, "", 200, []);
+        source.Requests[^1].Completion.SetResult(fileReloaded);
+        controller.Pump(_ => Viewport);
+        Assert.Same(fileReloaded.Origin, tab.Origin);
+        Assert.False(fileDocument.Origin.IsSameOrigin(tab.Origin));
+    }
+    [Fact]
+    public void RejectedDocumentCommitLeavesOriginHistoryAndPublishedPageUntouched()
+    {
+        var source = new Source(); var renderer = new Renderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var first = new LoadedPage(BrowserUrl.Parse("https://first.example/"), "", 200, []);
+        controller.Navigate(tab.Id, first.Url.Href);
+        source.Requests[^1].Completion.SetResult(first);
+        controller.Pump(_ => Viewport);
+        var page = controller.Page(tab.Id);
+        Assert.Equal([first.DocumentId], renderer.Committed);
+
+        renderer.RejectCommit = true;
+        controller.Navigate(tab.Id, "https://second.example/");
+        source.Requests[^1].Completion.SetResult(new(BrowserUrl.Parse("https://second.example/"), "", 200, []));
+        controller.Pump(_ => Viewport);
+        Assert.Contains("rejected", tab.Error);
+        Assert.False(tab.IsLoading);
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Same(page, controller.Page(tab.Id));
+        Assert.Equal([first.Url.Href], tab.History.Entries.Select(entry => entry.Href));
+
+        controller.Resize(tab.Id, new(30, 20, 1));
+        Assert.Contains("rejected", tab.Error);
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Single(renderer.Committed);
+        renderer.RejectCommit = false;
+        controller.Resize(tab.Id, new(40, 20, 1));
+        Assert.Null(tab.Error);
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Equal([first.DocumentId, first.DocumentId], renderer.Committed);
+    }
+    [Fact]
     public void NavigationOnlyCommitsAfterSuccessfulLoadAndRender()
     {
         var source = new Source(); var renderer = new Renderer();
@@ -159,6 +347,57 @@ public sealed class ControllerTests
         Assert.Single(tab.History.Entries);
     }
     [Fact]
+    public void OriginCommitsOnlyAfterRenderAndStaleOrSupersededResultsCannotReplaceIt()
+    {
+        var source = new Source(); var renderer = new AsyncRenderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var first = new LoadedPage(BrowserUrl.Parse("https://first.example/"), "", 200, []);
+        controller.Navigate(tab.Id, first.Url.Href);
+        source.Requests[^1].Completion.SetResult(first);
+        controller.Pump(_ => Viewport);
+        Assert.Null(tab.Origin);
+        renderer.Tasks[^1].SetResult(Blank(Viewport));
+        controller.Pump(_ => Viewport);
+        Assert.Same(first.Origin, tab.Origin);
+
+        var loaded = new LoadedPage(BrowserUrl.Parse("https://loaded.example/"), "", 200, []);
+        controller.Navigate(tab.Id, loaded.Url.Href);
+        source.Requests[^1].Completion.SetResult(loaded);
+        controller.Pump(_ => Viewport);
+        Assert.Same(loaded, renderer.Pages[^1]);
+        Assert.Same(first.Origin, tab.Origin);
+        var loadedRender = renderer.Tasks[^1];
+
+        var superseding = new LoadedPage(BrowserUrl.Parse("https://superseding.example/"), "", 200, []);
+        controller.Navigate(tab.Id, superseding.Url.Href);
+        var supersedingLoad = source.Requests[^1].Completion;
+        controller.Navigate(tab.Id, "https://latest.example/");
+        loadedRender.SetResult(Blank(Viewport));
+        supersedingLoad.SetResult(superseding);
+        controller.Pump(_ => Viewport);
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Equal(2, renderer.Tasks.Count);
+        source.Requests[^1].Completion.SetResult(new(BrowserUrl.Parse("https://latest.example/"), "", 200, []));
+        controller.Pump(_ => Viewport);
+        renderer.Tasks[^1].SetException(new PageNavigationException("Render failed"));
+        controller.Pump(_ => Viewport);
+        Assert.Contains("Render failed", tab.Error);
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Equal(first.Url.Href, tab.History.Current!.Href);
+
+        controller.Resize(tab.Id, new(12, 12, 1));
+        var staleResize = renderer.Tasks[^1];
+        controller.Navigate(tab.Id, "https://after-resize.example/");
+        staleResize.SetResult(Blank(new(12, 12, 1)));
+        controller.Pump(_ => Viewport);
+        Assert.Same(first.Origin, tab.Origin);
+        source.Requests[^1].Completion.SetCanceled(TestContext.Current.CancellationToken);
+        controller.Pump(_ => Viewport);
+        Assert.Same(first.Origin, tab.Origin);
+        Assert.Single(renderer.Committed);
+    }
+    [Fact]
     public void SupersededResizeAndClosedTabCannotPublishLateRenderResults()
     {
         var source = new Source(); var renderer = new AsyncRenderer();
@@ -198,13 +437,17 @@ public sealed class ControllerTests
     {
         internal List<TaskCompletionSource<BrowserPage>> Tasks { get; } = [];
         internal List<CancellationToken> Tokens { get; } = [];
+        internal List<LoadedPage> Pages { get; } = [];
+        internal List<Guid> Committed { get; } = [];
         public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
         {
+            Pages.Add(page);
             var task = new TaskCompletionSource<BrowserPage>();
             Tasks.Add(task);
             Tokens.Add(cancellationToken);
             return task.Task;
         }
+        public void CommitDocument(Guid documentId) => Committed.Add(documentId);
         public void Dispose() { }
     }
     internal sealed class Source : IPageSource
@@ -224,6 +467,15 @@ public sealed class ControllerTests
     {
         internal bool Fail { get; set; }
         internal int Calls { get; private set; }
+        internal List<LoadedPage> Pages { get; } = [];
+        internal List<LoadedPage> RetainedPages { get; } = [];
+        internal bool RejectCommit { get; set; }
+        internal List<Guid> Committed { get; } = [];
+        public void CommitDocument(Guid documentId)
+        {
+            if (RejectCommit) { throw new PageNavigationException("Document commit rejected."); }
+            Committed.Add(documentId);
+        }
         public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -231,8 +483,16 @@ public sealed class ControllerTests
             if (Fail) { throw new UnsupportedHtmlException("Unsupported page."); }
             return Blank(viewport);
         }
-        public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
-            Task.FromResult(Render(page, viewport, cancellationToken));
+        public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
+        {
+            Pages.Add(page);
+            return Task.FromResult(Render(page, viewport, cancellationToken));
+        }
+        public Task<BrowserPage> RenderRetainedAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken)
+        {
+            RetainedPages.Add(page);
+            return Task.FromResult(Render(page, viewport, cancellationToken));
+        }
         public void Dispose() { }
     }
 }

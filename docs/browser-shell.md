@@ -91,6 +91,28 @@ prescan; `<meta charset>` is not a decoding-policy implementation. Unknown
 charset labels and unsupported MIME fail visibly. HTTP error-status HTML
 can render; status codes and transport diagnostics remain visible.
 
+`LoadedPage.Origin` is associated with the **final response URL**, after redirects.
+Tuple identity comes from that URL; every new opaque document gets a distinct
+identity even when the same `BrowserUrl` is reused for reload or another tab.
+The retained document and ordinary metadata record copies preserve identity.
+URL and origin are get-only to prevent `with { Url = ... }` from leaving a stale
+origin; a changed URL requires a new document.
+
+`BrowserTab.Origin` is the browser-owned **committed origin**: read-only to
+callers, null until the first successful publication, and set by
+`BrowserController` only in the same UI-pump step that publishes the
+document's page, history entry and retained document, after rendering and
+`IPageRenderer.CommitDocument` succeed. A pending, stale or superseded load or
+render, a load/render failure or a rejected commit leaves the previous origin
+(or null). Retained resize and tab moves keep the same instance; reload or a
+new data/file document publishes a new opaque identity; tuple navigations
+update to the final URL's origin. A renderer crash keeps the committed origin
+until a fresh load succeeds. The origin is never derived from the worker. This
+is identity only: it does not authorize requests, and same-origin/CORS/CSP,
+inherited/sandbox origin selection, site isolation and production navigation
+policy remain unimplemented; explicitly selected development navigation is
+unchanged.
+
 The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
 in document order, taking their child text. Inline attributes also participate.
 Named stylesheet sets, non-CSS type values, media other than empty/`all`,

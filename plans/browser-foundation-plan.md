@@ -77,6 +77,9 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Streaming/encoders/HTML charset prescan, URL mutation/security-origin identity
   and context-sensitive MIME sniffing remain future work. All 27 projects build
   and all 3,857 tests pass. See the [core guide](../docs/core.md).
+  Follow-up: tuple/opaque security-origin identity, `LoadedPage` document
+  origins and browser-owned tab committed origins (published only with a
+  rendered document) now exist; enforcement and inherited/sandbox origins do not.
 - Phase 2 delivered: portable contracts, shared Platform.Sdl implementation,
   Linux/Windows composition roots, shared managed platform tests and explicit
   native smoke tooling. SDL3-CS and SDL3-CS.Native are pinned to matching 3.4.2.

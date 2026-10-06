@@ -106,6 +106,16 @@ worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
 the [finite scripting policy](scripting.md); input, event loops and display-list
 IPC are deferred.
 
+Document-origin association does not change IPC v3: the browser keeps its
+`LoadedPage.Origin`, while worker reconstruction from the URL creates a local
+origin. Neither tuple nor opaque browser principals are transmitted or used
+for renderer authorization. Retained repaint uses the existing document GUID
+and retained DOM, not reconstructed origin identity. The tab's committed
+origin is browser state: it changes only after a successful render and
+`CommitDocument`, and a worker crash or failed render leaves it unchanged until
+a fresh reload publishes. Cross-process principal sharing and site isolation
+remain later work.
+
 Receivers reject wrong magic/version, missing version/kind, duplicate or
 unknown JSON fields, malformed/truncated messages and excessive lengths.
 Metadata is validated before pixel allocation. Frames require finite bounded

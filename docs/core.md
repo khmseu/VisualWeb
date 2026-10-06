@@ -28,8 +28,12 @@ instance, so `"null"` is never an identity. `file:` is always opaque (the URL sp
 leaves it implementation-defined). `blob:` takes the origin of its path only when
 that parses as `http`/`https`; there is no blob URL entry registry. Origin is
 computed once per `BrowserUrl`, so re-parsing an opaque URL gives a different
-origin. Document, sandbox, inherited origins, `document.domain` and enforcement
-belong to later phases and are not wired into documents yet.
+origin. The app-layer `LoadedPage` now associates each new document with the final
+response URL's tuple origin or a fresh opaque identity, independent of opaque URL
+snapshot reuse. Retained repaint and metadata record copies preserve that
+document identity. The browser shell publishes it as the tab's read-only
+committed origin only with a successfully rendered document. Sandbox/inherited
+origin selection, `document.domain` and enforcement remain deferred.
 
 No mutable DOM URL API or URLSearchParams is implemented.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.

@@ -71,6 +71,10 @@ public sealed class BrowserTab
     public string Status { get; internal set; } = "Development mode - no sandbox";
     public string? Error { get; internal set; }
     public bool IsLoading { get; internal set; }
+    /// <summary>Origin of the currently published document, or null before the first successful publication.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsers.html#concept-origin">origin</see>.
+    /// Browser-owned identity only: never derived from or sent to the renderer, and not used for policy enforcement.</remarks>
+    public SecurityOrigin? Origin { get; internal set; }
     internal long Generation { get; set; }
     internal BrowserTab(TabId id, int historyLimit) { Id = id; History = new(historyLimit); }
 }

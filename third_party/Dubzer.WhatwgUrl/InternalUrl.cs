@@ -427,7 +427,7 @@ internal partial class InternalUrl
                 return;
             }
 
-            var parseResult = HostParser.Parse(Buf.ToString(), true);
+            var parseResult = HostParser.Parse(Buf.ToString(), !IsSpecial);
             if (!parseResult)
             {
                 Error = parseResult.Error;

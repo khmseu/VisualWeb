@@ -17,6 +17,12 @@ public sealed class SecurityOriginTests
     [InlineData("http://0x7f.1/", "http://127.0.0.1/")]
     [InlineData("http://[0:0:0:0:0:0:0:1]/", "http://[::1]:80/")]
     [InlineData("http://u:p@example.com/", "http://example.com/")]
+    [InlineData("http://EXAMPLE.COM:80/", "http://example.com/")]
+    [InlineData("https://EXAMPLE.com:443/", "https://example.com/")]
+    [InlineData("http://EXAMPLE.com:8080/", "http://example.com:8080/")]
+    [InlineData("http://B\u00FCcher.example:8080/", "http://xn--bcher-kva.example:8080/")]
+    [InlineData("http://%45xample.com:8080/", "http://example.com:8080/")]
+    [InlineData("http://0x7f.1:8080/", "http://127.0.0.1:8080/")]
     public void NormalizedTupleOriginsAreSame(string left, string right)
     {
         Assert.Equal(O(left), O(right));
