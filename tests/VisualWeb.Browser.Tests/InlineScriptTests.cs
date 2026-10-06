@@ -19,6 +19,58 @@ public sealed class InlineScriptTests
         """;
     private static LoadedPage Page(string html = Html) => new(BrowserUrl.Parse("data:text/html,script"), html, 200, []);
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AttributeAndTreeMutationsRecomputeStylesAndNewLayoutWithoutRunningDynamicScripts(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:white}</style>
+            <script>
+            document.body.setAttribute('style','background-color:blue');
+            let box = document.createElement('div');
+            box.setAttribute('style','height:4px;background-color:red');
+            let fragment = document.createDocumentFragment();
+            fragment.appendChild(box); document.body.appendChild(fragment);
+            let dynamic = document.createElement('script');
+            dynamic.textContent = "throw Error('dynamic scripts must remain inert')";
+            document.head.appendChild(dynamic);
+            let css = document.createElement('style');
+            css.appendChild(document.createTextNode('div{width:10px}'));
+            document.head.appendChild(css);
+            document.title = 'new tree';
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        renderer.CommitDocument(page.DocumentId);
+        Assert.Equal("new tree", rendered.Title);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span.Slice(15 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span.Slice(rendered.Frame.Stride * 10, 4).ToArray());
+        var resize = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal("new tree", resize.Title);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, resize.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemovedInitialScriptsStillExecuteTheirPreflightSnapshot(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var rendered = await renderer.RenderAsync(Page("""
+            <!doctype html><style>body{margin:0}</style>
+            <script>let later = document.getElementById('later'); later.parentNode.removeChild(later);</script>
+            <script id="later">document.title = 'detached snapshot';</script>
+            """), Viewport, Cancellation);
+        Assert.Equal("detached snapshot", rendered.Title);
+    }
+
     [Fact]
     public void OptInMutationsReachTitleAndExactPixelsWhileDefaultRemainsStatic()
     {

@@ -49,6 +49,12 @@ bounded batch snapshots/order/failures and whole-batch invalidation.
 Live-binding tests cover title/text/ID semantics, immediate native updates,
 detached identity/adoption, exclusive document leases, private-callback
 invisibility, intrinsic tampering and exact handle/call/traversal/text budgets.
+Phase-11e tests cover shared Node identities, detached fragments/move semantics,
+required arguments/receiver brands/conversion errors, native adoption rejection,
+atomic hierarchy/attribute/tree failures and exact creation/attribute/subtree
+budgets. Browser cases verify inserted nodes/inline attributes/styles reach
+exact pixels in local and worker modes, while new script nodes remain inert
+and removed initial scripts retain their preflight snapshot.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

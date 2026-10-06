@@ -9,6 +9,10 @@ remain a separate indirect-eval operation. No HTML script scheduling is implied.
 Plain hosts install no CLR objects or DOM bindings. Optional phase-11c live
 document.title/getElementById/element textContent facades use one privately
 captured primitive-only delegate, never CLR node/type/exception exposure.
+Phase 11e extends this bridge with bounded attributes, element/text/fragment
+creation, document roots and branded Node navigation/mutation. Native checked
+algorithms preserve tree invariants; all non-document wrappers share one
+lifetime identity budget. Attribute/tree/resource failures precede mutation.
 The static browser still
 executes no page scripts by default. PageRendering's phase-11d opt-in composes
 these APIs for post-parse inline classics, not HTML scheduling. Full Web IDL
@@ -18,7 +22,8 @@ See the [scripting guide](../../../docs/scripting.md) for exact scope and deploy
 
 Official document IDs: `ecmascript`, `webidl`, and `html` for the event loop.
 Native API references: `clearscript-v8` and `clearscript-v8-constraints`.
-Binding sources: `dom` for ID lookup/textContent and `html`/`webidl` for title
+Binding sources: `dom` for lookup/textContent, attributes, factories and mutations,
+and `html`/`webidl` for title
 and string conversion. Full prototype/constructor bindings remain deferred.
 See the [standards workflow](../../../docs/standards.md) and
 [architecture](../../../docs/architecture/overview.md).

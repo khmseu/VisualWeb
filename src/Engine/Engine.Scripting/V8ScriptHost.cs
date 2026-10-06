@@ -74,7 +74,7 @@ public sealed class V8ScriptHost : IDisposable
             if (document is not null)
             {
                 dom = new(document);
-                engine.AddHostObject("__visualwebDom", new Func<string, int, string, string>(dom.Invoke));
+                engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 engine.Execute(DomBindings.Bootstrap);
             }
         }

@@ -20,6 +20,8 @@ V8 is embedded through ClearScript with matching Linux/Windows x64/arm64 native
 assets. Phase 11a establishes private thread-owned isolates, copied primitive
 results and native confinement probes. Phase 11c adds minimal live DOM facades;
 phase 11d optionally executes inline classics after whole-document parsing.
+Phase 11e expands the live facade with bounded attributes, node factories and
+checked tree mutation/navigation; newly inserted script elements stay inert.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

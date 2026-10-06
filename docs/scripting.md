@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11d)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11e)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -88,11 +88,14 @@ host until disposal; the owner must not mutate it concurrently or share it
 between tabs. The bridge is not a document thread-safety mechanism.
 
 The approved live-binding approach deliberately adds **one private CLR delegate**
-with a fixed `(operation, integer identity, string) -> string` contract. Trusted
+with a fixed primitive-only contract. Phase 11e extends that contract to
+`(operation, target identity, node identity, reference identity, name, value) -> string`;
+identities are integers and all other values are strings. Trusted
 bootstrap captures it in a closure and deletes its temporary global **before
-any caller script**. The document and elements themselves are never imported
+any caller script**. Native document/nodes themselves are never imported
 into ClearScript. A string status/value crosses back, never a native node, CLR
-exception, type or arbitrary object. Ordinary bridge failures become JavaScript
+exception, type or arbitrary object. A separate string status distinguishes null
+from empty text. Ordinary bridge failures become JavaScript
 TypeErrors with explicit diagnostics. No callback or identity table is exposed
 as a property of a wrapper.
 
@@ -101,17 +104,20 @@ identity and captured pristine intrinsics. Document/element receivers are
 checked; borrowing a getter/method onto an arbitrary object fails. Prototypes
 are intentionally minimal/frozen and have null roots; document has no prototype.
 This is **not full Web IDL prototype/constructor conformance**. Window,
-Document/Element constructors, `document.body`, attributes, tree-mutation
-methods, events, observers and generated IDL bindings remain unavailable.
+Document/Element/Node constructors, events, observers and generated IDL bindings
+remain unavailable. Phase-11e factories/accessors/mutations are listed below.
 Expandos are ordinary JavaScript properties, not native DOM mutations.
 
 | Binding budget | Value |
 | --- | ---: |
-| Retained element wrappers per host | 1,024 |
+| Retained non-document node wrappers per host, including detached/created nodes | 1,024 |
 | Callbacks per evaluation/single script/whole batch | 4,096 |
-| Traversed nodes per lookup/text/title operation | 8,192 |
+| Descendants per traversal/destination subtree; siblings per scan | 8,192 |
+| Ancestor chain per connectivity/mutation check, including receiver | 8,192 |
 | UTF-16 text per callback argument/result | 65,536 |
 | Aggregate callback argument/result UTF-16 characters per execution | 262,144 |
+| Attributes per script-mutated element | 128 |
+| Stored attribute name/value UTF-16 characters per script-mutated element | 65,536 |
 
 Budgets are checked before writes; traversal/text assembly is bounded. Counters
 reset per execution, but wrapper identities persist until host disposal.
@@ -120,6 +126,69 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Bounded attributes and Node mutation (phase 11e)
+
+The optional bound host now also provides:
+
+- `document.documentElement`, `head`, `body`: live nullable root accessors,
+  using existing HTML-only native DOM behavior. `body` has no setter.
+- `document.createElement(name)`, `createTextNode(data)`,
+  `createDocumentFragment()`: detached renderer-local nodes. Element/text
+  factories require a DOMString argument. Element names use the existing native
+  HTML-only name validation/ASCII lowercasing subset; namespace APIs, customized
+  built-ins and `createElement` options are deferred (explicit options other
+  than undefined reject).
+- Element `getAttribute`, `hasAttribute`, `setAttribute`, `removeAttribute`:
+  required DOMString arguments, native ASCII-only name folding and validation,
+  missing versus empty values preserved. Names/values are not interpreted as
+  script, network or event-handler commands. `setAttribute`/`removeAttribute`
+  return undefined.
+- Node `nodeType`, `parentNode`, `firstChild`, `lastChild`, `previousSibling`,
+  `nextSibling`, `isConnected` and `textContent`. Element and fragment text
+  getters concatenate descendant Text, excluding comments; CharacterData
+  wrappers read/write their own data; Document/DocumentType return null and
+  ignore writes. Null/undefined text setters become empty text.
+- Node `appendChild`, `insertBefore`, `removeChild`, `replaceChild`: checked
+  existing native DOM operations, including move semantics, fragment draining,
+  cycle/document-hierarchy rejection and not-found reference checks.
+  `appendChild`/`insertBefore` return the input node (including an emptied
+  fragment); removal/replacement return the removed node. `insertBefore`
+  requires two arguments; null/undefined reference means append.
+
+Document has a null prototype and its Node surface as own properties.
+Element and other Node wrappers each use a frozen, null-root minimal prototype;
+the common Node surface is shared as methods/accessors, not a full Web IDL
+inheritance hierarchy. Private Node/Element brands reject spoofed receivers and
+plain objects/proxies as node arguments. Element receiver checks precede caller
+string conversion hooks. Node arguments must belong to this host's identity
+table; native adoption into another document rejects every subsequent access.
+All access paths share wrapper identity, including roots, navigation, lookup
+and newly created nodes. Detached wrappers stay valid and consume the lifetime
+wrapper budget; GC does not replenish it. Native nodes and types never cross
+the callback.
+
+Mutation checks bound source/destination descendant walks and parent/source
+sibling scans before native adoption/removal/insertion. Insert/replace must
+leave at most 8,192 descendants in the receiver's subtree; replacing or
+reordering nodes at the exact limit is permitted. These are per-operation/tree
+budgets, not a document-wide node cap. Script attribute writes check the full
+resulting count and name/value storage before modifying anything. Existing
+native/parser attributes are not silently truncated; oversized native values
+fail bounded reads and removal can explicitly reduce an oversized attribute set.
+Callback text accounting includes both attribute name and value, and identities
+returned to JavaScript. Input/conversion/budget/hierarchy failures do not
+partially perform the requested mutation; independent side effects in caller
+conversion hooks remain ordinary script effects.
+
+This does not add `childNodes`/`children` collections, `innerHTML`, selectors,
+clone/import/adopt APIs, shadow DOM, events or observers. Appending or changing
+script elements **never schedules execution**. Phase 11d still executes only its
+initial source snapshot, including an initially collected script detached by an
+earlier script. New embedded styles and inline attribute/tree changes feed the
+post-script style/layout/paint pass, and the mutated DOM remains retained for
+resize without repeating execution. Unsupported CSS/layout/resource features
+still fail explicitly; this is not broader HTML element behavior.
 
 ## Opt-in inline page execution (phase 11d)
 
@@ -311,3 +380,25 @@ refresh needed. Native Windows/ARM checks are wired in target CI but were not
 executed on this Linux x64 host. Page scripts remain disabled unless explicitly
 enabled; external scripts, HTML scheduling/event loops and production web
 security remain unfinished.
+
+## Phase-11e validation outcome
+
+On Linux x64, all **45 projects build** and **207 selected tests pass** without
+failures or skips: 77 scripting, 19 native DOM and 111 browser cases.
+The new cases cover live attributes and missing/empty distinctions, branded
+element/text/fragment creation, node identity and navigation, fragment draining/
+move/replace semantics, receiver/conversion/hierarchy/adoption failures and
+exact lifetime-wrapper, attribute-storage and destination-subtree bounds.
+Local/process page tests verify new inline attributes and inserted style/layout
+nodes reach exact pixels, newly inserted scripts stay inert, and initially
+collected scripts still execute after detachment.
+
+Local and unchanged required-confined V8 probes pass with attribute/Node/
+fragment mutations. Opt-in local SDL dummy and required-confined X11 shell
+smokes pass with script-mutated title/pixels and tab/history/window lifecycle.
+Formatting, editor diagnostics and whitespace checks are clean; no owned
+renderer/V8 workers or resource scopes remain. All **58 official references**
+are independently cached/fresh with no network refresh needed.
+Windows/ARM checks remain target-CI work, not evidence from this Linux x64 host.
+The inline-only initial snapshot, disabled-by-default browser policy and
+unfinished HTML event loop/security boundaries are unchanged.

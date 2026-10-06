@@ -99,6 +99,9 @@ producing a partially styled page. No subresource is fetched. Scripts are inert 
 `--enable-inline-scripts` phase-11d option executes a bounded inline classic batch
 after parsing and before stylesheet collection. See the
 [scripting guide](scripting.md) for exact classification, limits and deviations.
+Its phase-11e bindings also allow bounded attributes and node creation/mutation;
+new inline styles and tree edits participate in the post-script paint pass,
+but inserted script elements never execute.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

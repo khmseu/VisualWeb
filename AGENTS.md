@@ -95,7 +95,11 @@
   The approved live DOM foundation uses one hidden primitive-only delegate
   captured and deleted by trusted bootstrap; do not expose it on facades or
   return CLR objects/exceptions. Preserve receiver brands, identity/ownership
-  checks and exact callback/text/traversal budgets.
+  checks and exact callback/text/traversal budgets. Phase 11e extends the hidden
+  primitive contract for attributes, element/text/fragment factories and Node
+  mutation/navigation. All non-document wrappers share one lifetime budget;
+  mutations preflight native tree/attribute work and fail without partial writes.
+  Never schedule dynamically appended/changed script elements.
   Classic execution preserves native global lexical state; batches snapshot
   all source budgets before running in order under one shared deadline. Do not
   replace this with wrapped eval or imply rollback after script errors.

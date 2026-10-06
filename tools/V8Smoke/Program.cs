@@ -96,6 +96,15 @@ static void Probe()
     bound.ExecuteClassic("document.title = 'V8 DOM'; document.getElementById('content').textContent = 'live';");
     Check(document.Title == "V8 DOM" && content.TextContent == "live", "Live primitive-only DOM mutation failed.");
     Check(bound.Evaluate("typeof __visualwebDom").Text == "undefined", "Private DOM callback leaked.");
+    bound.ExecuteClassic("""
+        let fragment = document.createDocumentFragment(), created = document.createElement('span');
+        created.setAttribute('id', 'created'); created.appendChild(document.createTextNode('tree'));
+        fragment.appendChild(created); document.body.appendChild(fragment);
+        let inserted = document.getElementById('created') === created && created.parentNode === document.body;
+        document.body.removeChild(created); document.body.insertBefore(created, document.body.firstChild);
+        """);
+    Check(document.GetElementById("created")?.TextContent == "tree" && bound.Evaluate("inserted").Boolean,
+        "Branded attribute/fragment/tree mutation failed.");
     using var first = new V8ScriptHost();
     using var second = new V8ScriptHost();
     Check(first.Evaluate("6 * 7").Number == 42, "Native V8 evaluation failed.");
@@ -128,7 +137,7 @@ static void Probe()
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
-    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, live title/text DOM with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
+    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
 }
 
 static void Check(bool condition, string message)

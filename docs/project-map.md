@@ -26,7 +26,7 @@ explicitly development-only, not isolated production browsing.
 | [Engine.Text](../src/Engine/Engine.Text/) | Owned fonts, explicit face registration, native Latin/LTR shaping/metrics | Platform.Abstractions, HarfBuzzSharp + Linux/Win32 native assets; [scope](text-layout.md) |
 | [Engine.Layout](../src/Engine/Engine.Layout/) | Finite block/inline geometry, space wrapping and baseline lines | Engine.Css, Engine.Dom, Engine.Text; [scope](text-layout.md) |
 | [Engine.Paint](../src/Engine/Engine.Paint/) | Immutable display lists, Skia CPU pixels and portable presentation | Engine.Layout, Platform.Abstractions, SkiaSharp; [scope](painting.md) |
-| [Engine.Scripting](../src/Engine/Engine.Scripting/) | Private V8 host, classic batches and optional minimal live DOM facade; full Web IDL deferred | Engine.Dom, ClearScript + Linux/Windows x64/arm64 native assets; [scope](scripting.md) |
+| [Engine.Scripting](../src/Engine/Engine.Scripting/) | Private V8 host, classic batches and bounded live DOM attributes/Node mutations; full Web IDL deferred | Engine.Dom, ClearScript + Linux/Windows x64/arm64 native assets; [scope](scripting.md) |
 | [Engine.Content](../src/Engine/Engine.Content/) | Offline decoded HTML/CSS-to-frame orchestration | Engine.Html/Paint, no loading/shell/backend dependency; [scope](painting.md) |
 | [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages | No DOM/native object dependencies |
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | Private bounded framed streams, exact reads and pixel validation | Ipc.Contracts; [scope](renderer-processes.md) |

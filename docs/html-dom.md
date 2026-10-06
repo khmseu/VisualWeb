@@ -120,6 +120,9 @@ and element textContent through private primitive-only callbacks, not CLR nodes.
 The parser itself never executes scripts. PageRendering's optional phase-11d
 inline classic batch runs only after whole-document parsing; this is not
 parser-blocking script integration.
+Phase 11e also exposes bounded native attribute operations, element/text/fragment
+factories and Node mutation/navigation through branded wrappers. It reuses these
+native checked algorithms without adding events or dynamic script execution.
 
 ## Safety limits
 

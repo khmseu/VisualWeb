@@ -8,6 +8,9 @@ namespace VisualWeb.Engine.Scripting;
 /// <remarks>Specs: dom, html, webidl;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-textcontent">textContent</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid">ID lookup</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-element-setattribute">attributes</see>,
+/// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://webidl.spec.whatwg.org/#es-DOMString">DOMString conversion</see>.</remarks>
 internal sealed class DomBindings : IDisposable
 {
@@ -15,10 +18,11 @@ internal sealed class DomBindings : IDisposable
     internal const int MaxCalls = 4096;
     internal const int MaxNodes = 8192;
     internal const int MaxTextCharacters = 65536;
+    internal const int MaxAttributes = 128;
     private static readonly ConditionalWeakTable<DomDocument, DomBindings> Owners = new();
     private readonly DomDocument document;
-    private readonly Dictionary<DomElement, int> identities = [];
-    private readonly List<DomElement> elements = [];
+    private readonly Dictionary<DomNode, int> identities = [];
+    private readonly List<DomNode> nodes = [];
     private int calls;
     private int characters;
 
@@ -34,23 +38,39 @@ internal sealed class DomBindings : IDisposable
 
     internal void Begin() { calls = 0; characters = 0; }
 
-    internal string Invoke(string operation, int handle, string value)
+    internal string Invoke(string operation, int handle, int other, int reference, string name, string value)
     {
         try
         {
             if (++calls > MaxCalls) { throw new ScriptLimitException("DOM callback count limit exceeded."); }
-            Budget(value);
+            Budget(name); Budget(value);
             var result = operation switch
             {
                 "lookup" => Lookup(value),
-                "title-get" => Title(),
+                "title-get" => Observe(Title()),
                 "title-set" => SetTitle(value),
-                "text-get" => Text(Element(handle)),
-                "text-set" => SetText(Element(handle), value),
+                "text-get" => Observe(Text(Node(handle))),
+                "text-set" => SetText(Node(handle), value),
+                "attribute-get" => Observe(Element(handle).GetAttribute(name)),
+                "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
+                "attribute-set" => SetAttribute(Element(handle), name, value),
+                "attribute-remove" => RemoveAttribute(Element(handle), name),
+                "create-element" => Create("element", value),
+                "create-text" => Create("text", value),
+                "create-fragment" => Create("fragment", ""),
+                "document-element" or "document-head" or "document-body" => DocumentRoot(operation),
+                "parent" => Identity(Node(handle).ParentNode),
+                "first-child" => Identity(Node(handle).FirstChild),
+                "last-child" => Identity(Node(handle).LastChild),
+                "previous-sibling" => Sibling(Node(handle), previous: true),
+                "next-sibling" => Sibling(Node(handle), previous: false),
+                "node-type" => Observe(((int)Node(handle).NodeType).ToString(CultureInfo.InvariantCulture)),
+                "connected" => Connected(Node(handle)),
+                "append" or "insert" or "remove" or "replace" => Mutate(operation, Node(handle), Node(other),
+                    reference < 0 ? null : Node(reference)),
                 _ => throw new InvalidOperationException("Unknown private DOM operation.")
             };
-            Budget(result);
-            return "ok:" + result;
+            return result is null ? "null:" : "ok:" + result;
         }
         catch (Exception exception) when (exception is ScriptLimitException or DomException or InvalidOperationException)
         {
@@ -59,6 +79,7 @@ internal sealed class DomBindings : IDisposable
         }
     }
 
+    private string? Observe(string? value) { if (value is not null) { Budget(value); } return value; }
     private void Budget(string value)
     {
         if (value.Length > MaxTextCharacters || (characters += value.Length) > 4 * MaxTextCharacters)
@@ -87,24 +108,37 @@ internal sealed class DomBindings : IDisposable
     }
     private string Lookup(string id)
     {
-        var element = id.Length == 0 ? null : Descendants().FirstOrDefault(e => e.GetAttribute("id") == id);
-        if (element is null) { return "0"; }
-        if (!identities.TryGetValue(element, out var identity))
+        return Identity(id.Length == 0 ? null : Descendants().FirstOrDefault(e => e.GetAttribute("id") == id));
+    }
+    private string Identity(DomNode? node)
+    {
+        if (node is null) { Budget(""); return ""; }
+        if (node == document) { Budget("0:9"); return "0:9"; }
+        if (node.OwnerDocument != document) { throw new InvalidOperationException("DOM node belongs to another document."); }
+        var known = identities.TryGetValue(node, out var identity);
+        if (!known && nodes.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
+        var result = (known ? identity : nodes.Count + 1).ToString(CultureInfo.InvariantCulture) + ":" + (int)node.NodeType;
+        Budget(result);
+        if (!known)
         {
-            if (elements.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
-            elements.Add(element); identity = elements.Count; identities.Add(element, identity);
+            nodes.Add(node); identities.Add(node, nodes.Count);
         }
-        return identity.ToString(CultureInfo.InvariantCulture);
+        return result;
     }
-    private DomElement Element(int handle)
+    private DomNode Node(int handle)
     {
-        if (handle <= 0 || handle > elements.Count) { throw new InvalidOperationException("Invalid private DOM identity."); }
-        var element = elements[handle - 1];
-        if (element.OwnerDocument != document) { throw new InvalidOperationException("DOM node was adopted into another document."); }
-        return element;
+        if (handle == 0) { return document; }
+        if (handle < 0 || handle > nodes.Count) { throw new InvalidOperationException("Invalid private DOM identity."); }
+        var node = nodes[handle - 1];
+        if (node.OwnerDocument != document) { throw new InvalidOperationException("DOM node was adopted into another document."); }
+        return node;
     }
-    private static string Text(DomElement element)
+    private DomElement Element(int handle) => Node(handle) as DomElement
+        ?? throw new InvalidOperationException("Illegal Element receiver.");
+    private static string? Text(DomNode element)
     {
+        if (element is DomDocument or DomDocumentType) { return null; }
+        if (element is DomCharacterData data) { return data.Data; }
         var result = new System.Text.StringBuilder();
         foreach (var node in Traverse(element))
         {
@@ -117,7 +151,7 @@ internal sealed class DomBindings : IDisposable
     private string Title()
     {
         var title = Descendants().FirstOrDefault(e => e.LocalName == "title");
-        return string.Join(" ", (title is null ? "" : Text(title))
+        return string.Join(" ", (title is null ? "" : Text(title) ?? "")
             .Split([' ', '\t', '\n', '\r', '\f'], StringSplitOptions.RemoveEmptyEntries));
     }
     private string SetTitle(string value)
@@ -127,16 +161,120 @@ internal sealed class DomBindings : IDisposable
         document.Title = value;
         return "";
     }
-    private static string SetText(DomElement element, string value)
+    private static string SetText(DomNode element, string value)
     {
         _ = Text(element);
         element.TextContent = value;
         return "";
     }
+    private string Create(string kind, string value)
+    {
+        if (nodes.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
+        return Identity(kind switch
+        {
+            "element" => document.CreateElement(value),
+            "text" => document.CreateTextNode(value),
+            _ => document.CreateDocumentFragment()
+        });
+    }
+    private static string SetAttribute(DomElement element, string name, string value)
+    {
+        var count = element.Attributes.Count;
+        if (count > MaxAttributes) { throw new ScriptLimitException("DOM attribute count limit exceeded."); }
+        long characters = 0;
+        var replaced = false;
+        foreach (var attribute in element.Attributes)
+        {
+            if (AsciiEquals(attribute.Key, name)) { replaced = true; continue; }
+            characters += attribute.Key.Length + (long)attribute.Value.Length;
+            if (characters > MaxTextCharacters) { throw new ScriptLimitException("DOM attribute storage limit exceeded."); }
+        }
+        if (count + (replaced ? 0 : 1) > MaxAttributes || characters + name.Length + value.Length > MaxTextCharacters)
+        { throw new ScriptLimitException("DOM attribute storage limit exceeded."); }
+        element.SetAttribute(name, value);
+        return "";
+    }
+    private static bool AsciiEquals(string left, string right)
+    {
+        if (left.Length != right.Length) { return false; }
+        for (var i = 0; i < left.Length; i++)
+        {
+            var c = right[i];
+            if (left[i] != (c is >= 'A' and <= 'Z' ? c + 32 : c)) { return false; }
+        }
+        return true;
+    }
+    private static string RemoveAttribute(DomElement element, string name)
+    {
+        element.RemoveAttribute(name);
+        return "";
+    }
+    private string Sibling(DomNode node, bool previous)
+    {
+        if (node.ParentNode?.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM sibling scan limit exceeded."); }
+        return Identity(previous ? node.PreviousSibling : node.NextSibling);
+    }
+    private string DocumentRoot(string operation)
+    {
+        if (document.ChildNodes.Count > MaxNodes || document.DocumentElement?.ChildNodes.Count > MaxNodes)
+        { throw new ScriptLimitException("DOM document root scan limit exceeded."); }
+        return Identity(operation switch
+        {
+            "document-element" => document.DocumentElement,
+            "document-head" => document.Head,
+            _ => document.Body
+        });
+    }
+    private string Connected(DomNode node)
+    {
+        CheckAncestors(node);
+        return Observe(node.IsConnected ? "true" : "false")!;
+    }
+    private static void CheckAncestors(DomNode node)
+    {
+        var count = 0;
+        for (DomNode? current = node; current is not null; current = current.ParentNode)
+        {
+            if (++count > MaxNodes) { throw new ScriptLimitException("DOM ancestor scan limit exceeded."); }
+        }
+    }
+    private static string Mutate(string operation, DomNode parent, DomNode child, DomNode? reference)
+    {
+        CheckAncestors(parent);
+        _ = Traverse(parent).Count();
+        _ = Traverse(child).Count();
+        if (child.ParentNode?.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM source child scan limit exceeded."); }
+        if (operation is "append" or "insert" or "replace")
+        {
+            var destination = Traverse(parent).ToHashSet();
+            if (operation == "replace" && reference is not null && child != reference)
+            {
+                destination.Remove(reference);
+                foreach (var node in Traverse(reference)) { destination.Remove(node); }
+            }
+            if (child is not DomDocumentFragment) { Add(child); }
+            foreach (var node in Traverse(child)) { Add(node); }
+            void Add(DomNode node)
+            {
+                if (destination.Add(node) && destination.Count > MaxNodes)
+                { throw new ScriptLimitException("DOM destination subtree limit exceeded."); }
+            }
+        }
+        switch (operation)
+        {
+            case "append": parent.AppendChild(child); break;
+            case "insert": parent.InsertBefore(child, reference); break;
+            case "remove": parent.RemoveChild(child); break;
+            case "replace":
+                if (reference is null) { throw new InvalidOperationException("replaceChild requires an existing child."); }
+                parent.ReplaceChild(child, reference); break;
+        }
+        return "";
+    }
     public void Dispose()
     {
         lock (Owners) { Owners.Remove(document); }
-        identities.Clear(); elements.Clear();
+        identities.Clear(); nodes.Clear();
     }
 
     internal const string Bootstrap = """
@@ -144,49 +282,119 @@ internal sealed class DomBindings : IDisposable
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
-            const slice = String.prototype.slice, TypeErrorCtor = TypeError;
+            const slice = String.prototype.slice, indexOf = String.prototype.indexOf, TypeErrorCtor = TypeError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
-            const map = new Map(), brands = new WeakMap();
+            const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
-            const document = create(null), prototype = create(null);
-            const call = (operation, handle, value) => {
-                const result = bridge(operation, handle, value);
+            const document = create(null), prototype = create(null), nodePrototype = create(null);
+            apply(brandSet, brands, document, 0);
+            const call = (operation, handle, value = '', other = -1, reference = -1, name = '') => {
+                const result = bridge(operation, handle, other, reference, name, value);
+                if (result[0] === 'n') return null;
                 if (result[0] !== 'o') throw new TypeErrorCtor(apply(slice, result, 6));
                 return apply(slice, result, 3);
             };
             const brand = receiver => {
                 const id = apply(brandGet, brands, receiver);
-                if (!id) throw new TypeErrorCtor('Illegal Element receiver');
+                if (id === undefined) throw new TypeErrorCtor('Illegal Node receiver');
                 return id;
             };
-            define(prototype, 'textContent', {
-                enumerable: true,
-                get() { return call('text-get', brand(this), ''); },
-                set(value) { const id = brand(this); call('text-set', id, value == null ? '' : `${value}`); }
-            });
-            freeze(prototype);
+            const documentBrand = receiver => {
+                if (receiver !== document) throw new TypeErrorCtor('Illegal Document receiver');
+            };
+            const elementBrand = receiver => {
+                const id = apply(brandGet, elementBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal Element receiver');
+                return id;
+            };
+            const required = (count, minimum) => {
+                if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
+            };
+            const wrap = value => {
+                if (!value) return null;
+                const separator = apply(indexOf, value, ':');
+                const handle = +apply(slice, value, 0, separator);
+                if (handle === 0) return document;
+                let wrapper = apply(mapGet, map, handle);
+                if (!wrapper) {
+                    const type = +apply(slice, value, separator + 1);
+                    wrapper = create(type === 1 ? prototype : nodePrototype);
+                    apply(brandSet, brands, wrapper, handle);
+                    if (type === 1) apply(brandSet, elementBrands, wrapper, handle);
+                    apply(mapSet, map, handle, wrapper);
+                }
+                return wrapper;
+            };
+            const installNode = target => {
+                define(target, 'textContent', {
+                    enumerable: true,
+                    get() { return call('text-get', brand(this)); },
+                    set(value) { const id = brand(this); call('text-set', id, value == null ? '' : `${value}`); }
+                });
+                for (const [property, operation] of [
+                    ['parentNode', 'parent'], ['firstChild', 'first-child'], ['lastChild', 'last-child'],
+                    ['previousSibling', 'previous-sibling'], ['nextSibling', 'next-sibling']
+                ]) define(target, property, {enumerable: true, get() { return wrap(call(operation, brand(this))); }});
+                define(target, 'nodeType', {enumerable: true, get() {return +call('node-type', brand(this)); }});
+                define(target, 'isConnected', {enumerable: true, get() {return call('connected', brand(this)) === 'true'; }});
+                define(target, 'appendChild', {enumerable: true, value: function(node) {
+                    const id = brand(this); required(arguments.length, 1);
+                    call('append', id, '', brand(node)); return node;
+                }});
+                define(target, 'insertBefore', {enumerable: true, value: function(node, reference) {
+                    const id = brand(this); required(arguments.length, 2);
+                    call('insert', id, '', brand(node), reference == null ? -1 : brand(reference)); return node;
+                }});
+                define(target, 'removeChild', {enumerable: true, value: function(node) {
+                    const id = brand(this); required(arguments.length, 1);
+                    call('remove', id, '', brand(node)); return node;
+                }});
+                define(target, 'replaceChild', {enumerable: true, value: function(node, child) {
+                    const id = brand(this); required(arguments.length, 2);
+                    call('replace', id, '', brand(node), brand(child)); return child;
+                }});
+            };
+            installNode(document); installNode(prototype); installNode(nodePrototype);
+            for (const [method, operation] of [
+                ['getAttribute', 'attribute-get'], ['hasAttribute', 'attribute-has'], ['removeAttribute', 'attribute-remove']
+            ]) define(prototype, method, {enumerable: true, value: function(name) {
+                const id = elementBrand(this); required(arguments.length, 1);
+                const result = call(operation, id, '', -1, -1, `${name}`);
+                return operation === 'attribute-has' ? result === 'true' : operation === 'attribute-remove' ? undefined : result;
+            }});
+            define(prototype, 'setAttribute', {enumerable: true, value: function(name, value) {
+                const id = elementBrand(this); required(arguments.length, 2);
+                const convertedName = `${name}`, convertedValue = `${value}`;
+                call('attribute-set', id, convertedValue, -1, -1, convertedName);
+            }});
+            freeze(prototype); freeze(nodePrototype);
             define(document, 'title', {
                 enumerable: true,
-                get() { if (this !== document) throw new TypeErrorCtor('Illegal Document receiver'); return call('title-get', 0, ''); },
-                set(value) { if (this !== document) throw new TypeErrorCtor('Illegal Document receiver'); call('title-set', 0, `${value}`); }
+                get() { documentBrand(this); return call('title-get', 0); },
+                set(value) { documentBrand(this); call('title-set', 0, `${value}`); }
             });
             define(document, 'getElementById', {
                 enumerable: true,
                 value: function(id) {
-                    if (this !== document) throw new TypeErrorCtor('Illegal Document receiver');
-                    if (arguments.length === 0) throw new TypeErrorCtor('getElementById requires one argument');
-                    const handle = +call('lookup', 0, `${id}`);
-                    if (!handle) return null;
-                    let wrapper = apply(mapGet, map, handle);
-                    if (!wrapper) {
-                        wrapper = create(prototype);
-                        apply(brandSet, brands, wrapper, handle);
-                        apply(mapSet, map, handle, wrapper);
-                    }
-                    return wrapper;
+                    documentBrand(this); required(arguments.length, 1);
+                    return wrap(call('lookup', 0, `${id}`));
                 }
             });
+            for (const [property, operation] of [
+                ['documentElement', 'document-element'], ['head', 'document-head'], ['body', 'document-body']
+            ]) define(document, property, {enumerable: true, get() {documentBrand(this); return wrap(call(operation, 0)); }});
+            for (const [method, operation] of [
+                ['createElement', 'create-element'], ['createTextNode', 'create-text']
+            ]) define(document, method, {enumerable: true, value: function(value) {
+                documentBrand(this); required(arguments.length, 1);
+                if (operation === 'create-element' && arguments.length > 1 && arguments[1] !== undefined)
+                    throw new TypeErrorCtor('createElement options/custom elements are deferred');
+                return wrap(call(operation, 0, `${value}`));
+            }});
+            define(document, 'createDocumentFragment', {enumerable: true, value: function() {
+                documentBrand(this); return wrap(call('create-fragment', 0));
+            }});
             define(globalThis, 'document', { value: document, enumerable: true });
         })()
         """;

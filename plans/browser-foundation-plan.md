@@ -87,7 +87,8 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Windowing/input: SDL3 behind `Platform.Abstractions`, with both X11 and Wayland backends supported and selectable on Linux (auto-detect via `WAYLAND_DISPLAY`/`DISPLAY`, override via config/env).
 - Graphics/text: SkiaSharp for rasterization, HarfBuzzSharp for shaping.
 - JavaScript: V8 through ClearScript (approved phase 11a host foundation).
-  Page scripting, DOM/Web IDL and HTML event-loop integration remain deferred.
+  Explicit post-parse inline scripting and bounded live DOM facades are
+  implemented; full Web IDL and HTML scheduling/event-loop integration remain deferred.
 - Tests: xUnit v3; WPT-derived data used where available.
 - Standards: every public interface documents the spec section it implements (URL + section anchor) in XML doc comments.
 - Standards cache: `specs/` holds local copies of the referenced specifications, with a manifest recording source URL and fetch date; a refresh tool re-downloads entries older than 30 days. This is independent of the test suites.
@@ -193,6 +194,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   transactionally; committed mutated DOM is retained for resize without
   reexecution, with fresh DOM/host on navigation/reload. IPC v3 carries document
   identity and trusted policy only. External scripts and event loops remain deferred.
+  Approved phase 11e expands live DOM facades with bounded element attributes,
+  element/text/fragment factories, document roots and branded Node mutation/
+  navigation. Native checked algorithms, shared lifetime identities and
+  pre-write attribute/tree budgets preserve ownership and failure behavior.
+  No innerHTML, selectors, events or dynamic script scheduling is added.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

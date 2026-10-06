@@ -37,3 +37,5 @@ without enabling browser page scripts.
 Phase 11d adds explicit opt-in post-parse inline classic page execution,
 transactional publication and retained scripted DOM repainting via IPC v3.
 External scripts, HTML scheduling and event loops remain deferred.
+Phase 11e adds bounded element attributes, element/text/fragment creation and
+branded Node navigation/mutation while preserving the initial script snapshot.
