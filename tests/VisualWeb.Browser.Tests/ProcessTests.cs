@@ -104,7 +104,7 @@ public sealed class ProcessTests
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath]));
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--development-multiprocess", "--font", FontPath]));
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(["--development-single-process", "--font", FontPath, "--renderer", RendererPath]));
-        var options = BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath, "--renderer", RendererPath]);
+        var options = BrowserLaunchOptions.Parse(["--development-multiprocess", "--allow-unsandboxed-development", "--font", FontPath, "--renderer", RendererPath]);
         Assert.Equal(RendererPath, options.RendererPath);
         if (OperatingSystem.IsWindows())
         {

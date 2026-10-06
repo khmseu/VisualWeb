@@ -3,7 +3,8 @@
 This guide documents the approved Linux x64 renderer confinement profile.
 It is not a production-safe browser or completion of all cross-platform
 phase-10 isolation. Linux arm64 sandbox-required launches fail closed. Existing
-explicit local/unsandboxed development modes remain available. Windows has a
+explicit local/unsandboxed development modes require the trusted-content
+`--allow-unsandboxed-development` acknowledgement. Windows has a
 separate [AppContainer/Job Object profile](windows-confinement.md).
 Phase 10c strengthens required confinement with per-worker cgroup v2 memory,
 swap, task and CPU limits; see [hard resource accounting](#hard-resource-accounting).
@@ -25,7 +26,7 @@ Build the solution, then run:
 
 ```sh
 dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
-  --development-multiprocess --require-sandbox \
+  --multiprocess \
   --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 ```
@@ -37,10 +38,16 @@ read its entire deployment directory. A supplied native apphost can launch
 the same bootstrap, but the confined worker is always the framework-dependent
 renderer DLL. Custom/self-contained/single-file deployment is not supported.
 
-`--require-sandbox` is valid only with explicit multiprocess mode. Chrome says
+Both CLI multiprocess modes require this profile by default; the recommended
+normal mode is `--multiprocess`. `--require-sandbox` is a compatible redundant
+assertion in either multiprocess mode. Public parsing invokes
+`LinuxRendererResources.RequireSupport` before SDL/content/process startup.
+Chrome says
 **LINUX CONFINEMENT REQUIRED**, not production security. If initialization
 fails, the tab receives a diagnostic and no page is sent to an unconfined
-renderer. Without the flag the existing **NO SANDBOX** mode is unchanged.
+renderer. No automatic fallback exists. **NO SANDBOX** requires explicit
+`--allow-unsandboxed-development` in a development mode; it conflicts with
+normal mode or `--require-sandbox`. Library renderer defaults are unchanged.
 The browser itself is privileged and unconfined; its GET broker and SDL chrome
 remain outside the renderer sandbox.
 
@@ -203,7 +210,7 @@ dotnet run --project tools/LinuxSandboxSmoke -- \
 dotnet run --project tools/LinuxSandboxSmoke -- \
   --resources --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
-  --development-multiprocess --require-sandbox \
+  --multiprocess \
   --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy
 ```

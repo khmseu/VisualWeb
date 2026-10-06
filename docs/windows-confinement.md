@@ -1,6 +1,6 @@
 # Windows renderer confinement
 
-The optional Windows x64/arm64 renderer profile uses a capability-free
+The Windows x64/arm64 renderer profile uses a capability-free
 AppContainer token and a per-renderer Job Object. It is a development
 confinement layer, not production-safe hostile-content browsing or completion
 of browser isolation. The browser remains privileged and unconfined. Renderer
@@ -9,9 +9,15 @@ process separation does not provide origin/site isolation.
 ## Requirements and use
 
 Requires Windows 10 version 1709 or later and the framework-dependent .NET 10
-renderer deployment. Run the existing multiprocess browser command with
-`--require-sandbox`; the browser refuses unsupported OS versions, apphost-only
+renderer deployment. Recommended CLI `--multiprocess` and legacy
+`--development-multiprocess` require this profile by default;
+`--require-sandbox` is a compatible redundant assertion. Public parsing invokes
+`WindowsRendererSandbox.RequireSupport` before SDL/content/process startup.
+The browser refuses unsupported OS versions, apphost-only
 renderer launch, and every failed setup without an unsandboxed retry.
+Unsandboxed execution requires explicit trusted-content
+`--allow-unsandboxed-development` in a development mode, rejected with normal
+mode or `--require-sandbox`. Low-level renderer/library defaults are unchanged.
 
 The browser launches the trusted framework-dependent renderer DLL. The
 renderer, its deployment directory, active runtime and selected font are
@@ -64,9 +70,9 @@ dotnet run --project tools/WindowsSandboxSmoke -- `
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 dotnet run --project tools/PlatformSmoke -- windows
 dotnet run --project src/Apps/VisualWeb.Browser -- \
-  --development-multiprocess \
+  --multiprocess \
   --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
-  --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --smoke --backend windows
+  --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
 ```
 
 The browser suite exercises confined worker launch, native Job Object memory

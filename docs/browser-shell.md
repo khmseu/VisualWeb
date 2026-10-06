@@ -8,19 +8,26 @@ not a secure or standards-complete production browser.**
 Phase 9 supplies local rendering; phase 10a adds explicitly selected per-tab
 worker processes. See the [process guide](renderer-processes.md) for launch,
 wire limits, deadlines, crash/restart behavior and unfinished confinement.
-Phase 10b adds opt-in [Linux x64 confinement](linux-confinement.md) and
-[Windows confinement](windows-confinement.md); without `--require-sandbox`,
-both modes remain unsandboxed. Unsupported OS versions/configurations fail closed.
+Phase 10b adds [Linux x64 confinement](linux-confinement.md) and
+[Windows confinement](windows-confinement.md). Recommended CLI `--multiprocess`
+and legacy `--development-multiprocess` require confinement by default, before
+display/content startup. `--require-sandbox` is a redundant explicit assertion.
+Unsandboxed modes require trusted-content acknowledgement
+`--allow-unsandboxed-development`, rejected with normal `--multiprocess` or
+`--require-sandbox`. Unsupported OS versions/configurations fail closed, without fallback.
+Low-level shell/renderer API defaults remain unchanged for library/test callers.
 Required Linux confinement includes phase-10c hard per-worker cgroup resource
 limits; unavailable user-manager/controller support also fails closed.
 
 ## Run it
 
-From the repository root, using an explicitly chosen trusted regular font:
+For the recommended confined mode, see the [process launch command](renderer-processes.md#launch).
+For local development with only the trusted offline welcome page, from the
+repository root using an explicitly chosen trusted regular font:
 
 ```sh
 dotnet run --project src/Apps/VisualWeb.Browser -- \
-  --development-single-process \
+  --development-single-process --allow-unsandboxed-development \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 ```
 
@@ -32,7 +39,7 @@ The single supplied face is explicitly mapped to the generic serif/sans-serif/
 monospace aliases; this is development caller configuration, not font metadata
 matching or a guarantee that the supplied face has all those characteristics.
 
-The explicit mode acknowledgement and font path are mandatory. `--help`
+The explicit mode, development opt-out where applicable, and font path are mandatory. `--help`
 describes options. `--url ABSOLUTE_URL` replaces the offline welcome page;
 enter absolute `http:`, `https:`, local `file:` or HTML `data:` URLs. No search,
 scheme guessing or implicit filesystem-path navigation is performed.
@@ -256,13 +263,16 @@ remain shell failures. Production origin/CORS/CSP/confinement policy remains
 ```sh
 dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
 dotnet run --project src/Apps/VisualWeb.Browser -- \
-  --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf \
+  --development-single-process --allow-unsandboxed-development --font tests/Engine.Text.Tests/Data/NotoSans.ttf \
   --smoke --backend dummy
 dotnet run --project src/Apps/VisualWeb.Browser -- \
-  --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf \
+  --development-single-process --allow-unsandboxed-development --font tests/Engine.Text.Tests/Data/NotoSans.ttf \
   --smoke --backend x11
 ```
 
+These explicit unsandboxed opt-outs are only for trusted offline development
+fixtures; `--smoke` itself never bypasses confinement. To exercise the required
+profile, use normal `--multiprocess` with `--renderer` as in the platform guides.
 Smoke checks use hidden native windows and offline HTML data URLs. They
 verify actual SDL surface pixels, keyboard shortcut routing/address focus,
 tab/window lifecycle, moved identities and back/forward history. `--backend

@@ -6,14 +6,22 @@ history, tabs and multiple windows.
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and
-either local rendering or one unsandboxed worker process per tab. Worker
-crashes are contained in multiprocess mode. Optional `--require-sandbox`
-provides [Linux x64 confinement](../../../docs/linux-confinement.md);
-unsupported targets fail closed. Neither mode is production-safe browsing.
+either local rendering or one worker process per tab. Worker
+crashes are contained in multiprocess mode. The CLI requires
+[Linux x64 confinement](../../../docs/linux-confinement.md) or
+[Windows confinement](../../../docs/windows-confinement.md) by default;
+unsupported targets/configurations fail closed before display/content startup.
+Neither mode is production-safe browsing.
 
-Requires explicit `--development-single-process` or `--development-multiprocess`
-acknowledgement and trusted `--font` path. Multiprocess mode also requires
-`--renderer`; confinement requires explicit `--require-sandbox`.
+Requires exactly one mode and a trusted `--font` path. Recommended
+`--multiprocess` and legacy `--development-multiprocess` require `--renderer`
+and supported confinement. `--require-sandbox` is a redundant assertion.
+Unsandboxed development requires explicit trusted-content acknowledgement
+`--allow-unsandboxed-development`, including for `--development-single-process`.
+It conflicts with normal `--multiprocess` and `--require-sandbox`; single-process
+also rejects sandbox/renderer options. No fallback or smoke exemption exists.
+Public `BrowserLaunchOptions.Parse` performs native preflight. Low-level
+renderer/shell API defaults remain unchanged for library/test callers.
 `--enable-inline-scripts` explicitly enables the finite post-parse inline subset
 in either mode; scripts stay inert by default. See the
 [process guide](../../../docs/renderer-processes.md) and

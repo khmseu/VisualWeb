@@ -4,7 +4,8 @@ A C# web browser monorepo targeting Linux (X11 and Wayland) and Windows,
 on x64 and arm64. Repository tooling, platform services, core standards
 utilities, resource loading, static HTML/DOM/CSS, text/layout and CPU painting are implemented;
 a development-only browser shell supports local or per-tab worker rendering.
-Optional Linux renderer confinement is available; it is **not safe for hostile content**.
+The browser CLI requires supported OS renderer confinement in multiprocess
+modes by default; it is **not safe for hostile content**.
 
 ## Getting started
 
@@ -18,22 +19,31 @@ dotnet test VisualWeb.slnx --no-build
 dotnet run --project tools/SpecCache -- specs/manifest.json
 ```
 
-Launch the offline welcome page with the pinned development font:
+Launch the offline welcome page in the recommended confined CLI mode with the pinned development font:
 
 ```sh
 dotnet run --project src/Apps/VisualWeb.Browser -- \
-  --development-single-process --font tests/Engine.Text.Tests/Data/NotoSans.ttf
+  --multiprocess \
+  --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
+  --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 ```
 
 See the [browser shell guide](docs/browser-shell.md) for tabs, multiple windows,
 navigation controls, explicit font setup and the finite supported page subset.
 The [renderer process guide](docs/renderer-processes.md) describes launching
-the explicitly unsandboxed multiprocess mode, IPC validation and crash recovery.
-Phase 10a provides process separation; phase 10b adds opt-in
-[Linux x64 renderer confinement](docs/linux-confinement.md). Linux ARM64 is
+the CLI modes, IPC validation and crash recovery.
+Phase 10a provides process separation; phase 10b adds
+[Linux x64 renderer confinement](docs/linux-confinement.md), with a separate
+[Windows profile](docs/windows-confinement.md). Linux ARM64 is
 included in the native build, test and smoke CI matrix, but Linux ARM64
-confinement, origin policy and production-safe browsing remain unfinished. Both
-modes are unsandboxed unless `--require-sandbox` is explicitly selected.
+confinement, origin policy and production-safe browsing remain unfinished.
+`--multiprocess` and legacy `--development-multiprocess` require confinement
+before display/content startup; there is no fallback. `--require-sandbox`
+remains a redundant explicit assertion. For trusted-content development only,
+select `--development-single-process --allow-unsandboxed-development`, or
+`--development-multiprocess --allow-unsandboxed-development` with `--renderer`.
+The acknowledgement conflicts with `--multiprocess` and `--require-sandbox`.
+Low-level renderer/library defaults remain unchanged; CLI policy is stricter.
 Required Linux confinement includes per-worker hard cgroup memory/swap/task/CPU
 limits and needs a systemd user manager with the corresponding controllers.
 

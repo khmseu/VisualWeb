@@ -68,10 +68,12 @@ killing the child. Termination is explicit; handle disposal alone leaves it
 running. This generic launcher still refuses requested confinement before launch:
 it does not implement the renderer-specific mounts/IPC/bootstrap contract.
 The [browser client](renderer-processes.md) separately owns workers and uses the
-optional [Linux x64](linux-confinement.md) or
+[Linux x64](linux-confinement.md) or
 [Windows AppContainer/Job Object](windows-confinement.md) confinement backend.
-Unsupported targets fail closed. Process separation alone is not confinement
-or safe browsing.
+Multiprocess CLI launches require confinement by default; unsandboxed development
+requires an explicit trusted-content opt-out. Low-level library defaults remain
+unchanged. Unsupported required-confinement targets fail closed. Process
+separation alone is not confinement or safe browsing.
 
 ## Validation
 

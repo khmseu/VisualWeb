@@ -13,7 +13,7 @@ The biggest remaining gaps are page interaction, real-world standards compatibil
 | C# monorepo with separate browser subsystems | Implemented: platform, core standards utilities, networking, HTML/DOM, CSS, text/layout, painting, scripting, IPC, and applications. See the `project map`. |
 | Encapsulated OS dependencies | Implemented through platform abstractions and Linux/Windows backends using SDL. See the `platform guide`. |
 | Tabs and multiple windows | Implemented, including tab creation, closing, switching, and moving between windows. See the `browser shell guide`. |
-| Isolation between tabs | Partially delivered: multiprocess mode has one renderer per tab, bounded IPC, deadlines, and tab-local crash/restart handling. Optional OS confinement exists. **Process separation is not complete web security.** See the `process architecture`. |
+| Isolation between tabs | Partially delivered: multiprocess mode has one renderer per tab, bounded IPC, deadlines, and tab-local crash/restart handling. Browser CLI multiprocess modes require supported OS confinement by default. **Process separation is not complete web security.** See the `process architecture`. |
 | Architecture prepared for standards growth | Present: subsystem boundaries, official-spec references/cache, and targeted conformance fixtures. This is preparation, not comprehensive standards implementation. |
 
 ## What is still missing
@@ -24,7 +24,7 @@ This is the most important gap before accepting arbitrary web content.
 
 - Security-origin identity is partially implemented: immutable tuple/opaque URL origins and `LoadedPage` origins from the final response URL, with fresh opaque identity per new document and stable identity for retained repaint/metadata copies. Tabs expose a browser-owned committed origin published atomically with successfully rendered documents. Inherited/sandbox origin selection remains missing. Engine.Net has an opt-in same-origin restricted GET mode (`LoadSameOriginAsync`) that checks the initial URL and every redirect against a fixed HTTP(S) request origin. Nothing calls it from script or the browser, and it is not production-safe policy. Both Engine.Net entry points (and therefore browser navigation) block Fetch bad ports for HTTP(S) URLs and every redirect hop. No browser-wide same-origin enforcement, CORS, CSP, mixed-content policy, HSTS, or storage partitioning is implemented.
 - No cross-site frame isolation or navigation process swaps; isolation is currently per tab.
-- Renderer confinement is **opt-in**, not the normal launch policy.
+- The CLI secure-by-default renderer milestone is delivered: recommended `--multiprocess` and legacy `--development-multiprocess` require supported confinement before SDL/content/worker startup, without fallback. Unsandboxed execution requires explicit `--allow-unsandboxed-development` trusted-content acknowledgement in a development mode (mandatory for single-process), rejected with normal mode or `--require-sandbox`. `--require-sandbox` remains a redundant compatible assertion; low-level library/test renderer defaults are unchanged. This does not deliver production request authorization or complete web security.
 - Linux ARM64 confinement is explicitly unsupported and fails closed.
 - The browser/network broker remains privileged; production request authorization is unfinished.
 

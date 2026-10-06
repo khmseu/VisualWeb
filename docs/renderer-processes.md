@@ -1,11 +1,12 @@
 # Per-tab renderer process separation
 
 Phase 10a added **process separation, not OS confinement**. Phase 10b added
-opt-in [Linux x64 confinement](linux-confinement.md); Windows provides a separate
+the [Linux x64 confinement](linux-confinement.md) profile; Windows provides a separate
 [AppContainer/Job Object profile](windows-confinement.md). Both use
-`--require-sandbox` or `requireSandbox: true`; unsupported platforms/configurations
-fail closed. Without that option, both development modes retain normal user
-permissions. Do not browse hostile content: origin policy, cross-site frame
+required CLI policy or library `requireSandbox: true`; unsupported platforms/configurations
+fail closed. Low-level `ProcessPageRenderer` and `DevelopmentShell` API defaults
+remain unsandboxed for library/test callers; they are not the CLI launch policy.
+Do not browse hostile content: origin policy, cross-site frame
 isolation and production guarantees remain unfinished. Confinement never falls
 back to unsandboxed launch.
 
@@ -16,7 +17,7 @@ Build the solution first, then run from the repository root:
 ```sh
 dotnet build VisualWeb.slnx
 dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
-  --development-multiprocess \
+  --multiprocess \
   --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 ```
@@ -33,9 +34,20 @@ Apphost runtime-root configuration follows the official
 [.NET host environment reference](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64),
 cached as `dotnet-host-environment`.
 
-`--development-single-process` remains available, and the two flags are
-mutually exclusive. The SDL warning identifies the selected mode and always
-says **NO SANDBOX** unless Linux confinement is explicitly required. Controls and page support are unchanged; see the
+`--multiprocess` is recommended. Legacy `--development-multiprocess` also
+defaults to `requireSandbox: true`; `--require-sandbox` remains a compatible
+redundant assertion in either multiprocess mode. Public option parsing calls
+`LinuxRendererResources.RequireSupport` or `WindowsRendererSandbox.RequireSupport`
+before SDL, content loading or worker launch; failures propagate without fallback.
+
+Unsandboxed execution requires `--allow-unsandboxed-development`, an explicit
+trusted-content acknowledgement, with `--development-multiprocess` or
+`--development-single-process`. It is rejected with normal `--multiprocess`
+or `--require-sandbox`. Single-process without this acknowledgement, with
+`--require-sandbox`, or with `--renderer` is rejected. Choose exactly one mode;
+duplicate options are rejected. `--smoke` and scripts do not bypass confinement.
+The SDL warning identifies the selected mode and says **NO SANDBOX** only for
+explicit development opt-outs. Controls and page support are unchanged; see the
 [shell guide](browser-shell.md).
 
 ## Ownership and asynchronous publication
@@ -49,7 +61,7 @@ says **NO SANDBOX** unless Linux confinement is explicitly required. Controls an
   page policy between local and worker hosts without networking, backend or
   chrome dependencies. Engine.Content remains an offline pipeline.
 - The worker has no resource-loading code or window backend. That alone does
-  not prevent OS access. Optional Linux confinement is a separate platform policy.
+  not prevent OS access. Required CLI confinement is a separate platform policy.
 - Main-thread pumps observe asynchronous load/render tasks without blocking
   on worker replies. Only successful, current-generation frames commit URL,
   history, title and content. Stale/canceled results cannot publish.
@@ -167,11 +179,12 @@ on failed OOM navigation, deliver one tab-local failure and recover on reload.
 Async fake renderers separately prove stale navigation/resize and closed-tab
 results cannot publish. No test needs remote networking or a display.
 
-Use the same offline native shell smoke in multiprocess mode:
+For trusted offline development fixtures only, use the same native shell smoke
+with an explicit unsandboxed development opt-out (not a confinement test):
 
 ```sh
 dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
-  --development-multiprocess \
+  --development-multiprocess --allow-unsandboxed-development \
   --renderer src/Apps/VisualWeb.Renderer/bin/Debug/net10.0/VisualWeb.Renderer.dll \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy
 ```

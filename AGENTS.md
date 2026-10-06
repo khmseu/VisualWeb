@@ -10,7 +10,8 @@
    ClearScript/V8 host and live DOM foundation. PageRendering optionally executes
    post-parse inline classics; browser page scripts are disabled by default.
    IPC and VisualWeb.Renderer are implemented.
-   VisualWeb.Browser supports local or unsandboxed per-tab process rendering;
+   VisualWeb.Browser CLI requires supported confinement for per-tab process rendering
+   by default; local/unsandboxed development requires explicit trusted-content opt-out;
    shared static rendering policy lives in VisualWeb.PageRendering.
 3. Read the [standards index](docs/standards.md). Use the local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
@@ -61,7 +62,12 @@
   offline Content never collects embedded CSS or fetches resources automatically.
   Unsupported paint must fail; preserve independent pixel and native glyph tests.
 - Read the [shell guide](docs/browser-shell.md) before navigation/chrome changes.
-  Require explicit development-mode acknowledgement and trusted font setup.
+  Recommend CLI `--multiprocess`; it and legacy `--development-multiprocess`
+  require supported confinement before SDL/content/worker startup, no fallback.
+  Unsandboxed development (including single-process) requires explicit
+  `--allow-unsandboxed-development` trusted-content acknowledgement; reject it
+  with normal mode or `--require-sandbox`. Preserve low-level library/test defaults.
+  Require an explicit mode and trusted font setup.
   Keep asynchronous loading separate from owning-thread native rendering, preserve
   transactional history and stale-load cancellation, and do not claim isolation.
   Shared app-layer stylesheet discovery must not leak into offline Engine.Content policy.

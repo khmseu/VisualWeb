@@ -5,6 +5,7 @@
     <AssemblyName>VisualWeb.Browser</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="VisualWeb.Browser.Tests" />
     <ProjectReference Include="../VisualWeb.PageRendering/VisualWeb.PageRendering.csproj" />
     <ProjectReference Include="../../Ipc/Ipc.Transport/Ipc.Transport.csproj" />
     <ProjectReference Include="../../Engine/Engine.Net/Engine.Net.csproj" />

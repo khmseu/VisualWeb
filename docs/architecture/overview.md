@@ -128,8 +128,8 @@ not assume every frame in a tab shares a trust principal.
 Phase 9 implements an **explicit development-only single-process mode** to test
 the shell. BrowserController uses independent tab loaders/renderers and URL-only
 history; asynchronous GET completion returns to the main thread for native
-rendering and SDL presentation. Phase 10a also supplies explicit unsandboxed
-multiprocess development mode, one worker per tab, bounded private IPC,
+rendering and SDL presentation. Phase 10a also supplies
+multiprocess mode, one worker per tab, bounded private IPC,
 asynchronous publication, deadlines and tab-local crash/restart handling.
 GET/MIME/decoding remain browser-owned; shared VisualWeb.PageRendering owns
 stylesheet discovery and font/rendering policy, independent of chrome/networking.
@@ -137,12 +137,16 @@ Engine.Content stays offline and script-free. Opt-in inline scripts execute only
 in PageRendering; successful mutated DOM is retained for resize, while fresh
 navigation/reload uses a new isolate. Document publication identities/policy
 travel through IPC v3, not DOM/native objects. See the [shell guide](../browser-shell.md) and
-[process guide](../renderer-processes.md). Phase 10b adds optional required
+[process guide](../renderer-processes.md). The CLI now recommends `--multiprocess`
+and requires supported confinement in both multiprocess modes before SDL/content
+startup, without fallback. Unsandboxed development requires explicit
+`--allow-unsandboxed-development`; low-level renderer/test defaults are unchanged.
+Phase 10b adds required
 Linux x64 namespace/mount/seccomp confinement through the SDL-independent
 Platform.Linux.Sandbox bootstrap; see the [confinement guide](../linux-confinement.md).
 Phase 10c additionally requires verified kernel memory/swap/task/CPU limits
 in a separate owned systemd user scope per renderer, without global configuration.
-Windows adds an optional AppContainer/Job Object renderer profile with
+Windows adds an AppContainer/Job Object renderer profile with
 per-process/total commit bounds, a CPU cap and denied temp/profile writes.
 Windows job objects provide no thread-count or per-job swap limit; Linux arm64,
 production isolation and broader Windows guarantees remain unfinished.

@@ -104,17 +104,17 @@ public sealed class SessionTests
     [Theory]
     [InlineData("--font", "x")]
     [InlineData("--development-single-process")]
-    [InlineData("--development-single-process", "--font", "x", "--backend", "dummy")]
-    [InlineData("--development-single-process", "--font", "x", "--skip-text-input")]
-    [InlineData("--development-single-process", "--font", "x", "--smoke", "--url", "https://example.com")]
-    [InlineData("--development-single-process", "--font", "x", "--unknown")]
-    [InlineData("--development-single-process", "--font", "x", "--font", "y")]
+    [InlineData("--development-single-process", "--allow-unsandboxed-development", "--font", "x", "--backend", "dummy")]
+    [InlineData("--development-single-process", "--allow-unsandboxed-development", "--font", "x", "--skip-text-input")]
+    [InlineData("--development-single-process", "--allow-unsandboxed-development", "--font", "x", "--smoke", "--url", "https://example.com")]
+    [InlineData("--development-single-process", "--allow-unsandboxed-development", "--font", "x", "--unknown")]
+    [InlineData("--development-single-process", "--allow-unsandboxed-development", "--font", "x", "--font", "y")]
     public void UnsafeOrInvalidLaunchOptionsAreRejected(params string[] args) =>
         Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse(args));
     [Fact]
     public void ExplicitDevelopmentAndSmokeLaunchOptionsAreAccepted()
     {
-        var options = BrowserLaunchOptions.Parse(["--development-single-process", "--font", "font.ttf",
+        var options = BrowserLaunchOptions.Parse(["--development-single-process", "--allow-unsandboxed-development", "--font", "font.ttf",
             "--smoke", "--backend", "dummy", "--skip-text-input"]);
         Assert.True(options.Smoke);
         Assert.True(options.SkipTextInput);

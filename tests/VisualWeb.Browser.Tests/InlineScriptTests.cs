@@ -1037,9 +1037,9 @@ public sealed class InlineScriptTests
     [Fact]
     public void LaunchOptInIsExplicitAndControllerPreservesHistoryOnScriptFailure()
     {
-        Assert.False(BrowserLaunchOptions.Parse(["--development-single-process", "--font", FontPath]).ExecuteInlineScripts);
-        Assert.True(BrowserLaunchOptions.Parse(["--development-single-process", "--font", FontPath, "--enable-inline-scripts"]).ExecuteInlineScripts);
-        Assert.True(BrowserLaunchOptions.Parse(["--development-multiprocess", "--font", FontPath,
+        Assert.False(BrowserLaunchOptions.Parse(["--development-single-process", "--allow-unsandboxed-development", "--font", FontPath]).ExecuteInlineScripts);
+        Assert.True(BrowserLaunchOptions.Parse(["--development-single-process", "--allow-unsandboxed-development", "--font", FontPath, "--enable-inline-scripts"]).ExecuteInlineScripts);
+        Assert.True(BrowserLaunchOptions.Parse(["--development-multiprocess", "--allow-unsandboxed-development", "--font", FontPath,
             "--renderer", RendererPath, "--enable-inline-scripts"]).ExecuteInlineScripts);
         using var controller = new BrowserController(() => new GetPageSource(),
             () => new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true));

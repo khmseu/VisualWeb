@@ -911,8 +911,9 @@ still fail explicitly; this is not broader HTML element behavior.
 
 ## Opt-in inline page execution (phase 11d)
 
-Add `--enable-inline-scripts` to either explicit development browser mode.
-It composes with `--require-sandbox` without changing OS profiles, mounts,
+Add `--enable-inline-scripts` to an explicit browser mode.
+It preserves the CLI's mandatory confinement policy (or explicit trusted-content
+development opt-out) and composes with redundant `--require-sandbox` without changing OS profiles, mounts,
 syscall policy or resource quotas. The API equivalent is
 `executeInlineScripts: true` on the shared page renderer/process client.
 Without this option, script elements remain inert and existing static rendering

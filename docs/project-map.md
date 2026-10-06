@@ -6,6 +6,9 @@ Core.Primitives remains a library placeholder; Engine.Scripting supplies the
 bounded V8 host and minimal live DOM bindings. PageRendering supports explicit
 opt-in post-parse inline classics. The browser executable is
 explicitly development-only, not isolated production browsing.
+CLI multiprocess modes require supported renderer confinement by default;
+unsandboxed development requires explicit trusted-content acknowledgement.
+Low-level renderer/library defaults remain unchanged.
 
 | Project | Responsibility | Planned dependencies / official sources |
 | --- | --- | --- |
