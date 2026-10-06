@@ -6,8 +6,10 @@ the [Linux x64 confinement](linux-confinement.md) profile; Windows provides a se
 required CLI policy or library `requireSandbox: true`; unsupported platforms/configurations
 fail closed. Low-level `ProcessPageRenderer` and `DevelopmentShell` API defaults
 remain unsandboxed for library/test callers; they are not the CLI launch policy.
-Do not browse hostile content: origin policy, cross-site frame
-isolation and production guarantees remain unfinished. Confinement never falls
+Multiprocess shells rotate tab worker processes on cross-origin and new
+opaque-document navigations ([origin-isolated navigation](browser-shell.md));
+same-origin navigations keep the worker. Do not browse hostile content: origin
+policy, cross-site frame isolation and production guarantees remain unfinished. Confinement never falls
 back to unsandboxed launch.
 
 ## Launch
@@ -125,8 +127,13 @@ for renderer authorization. Retained repaint uses the existing document GUID
 and retained DOM, not reconstructed origin identity. The tab's committed
 origin is browser state: it changes only after a successful render and
 `CommitDocument`, and a worker crash or failed render leaves it unchanged until
-a fresh reload publishes. Cross-process principal sharing and site isolation
-remain later work.
+a fresh reload publishes. With origin isolation (always on in multiprocess
+shells) a cross-origin or new opaque document renders in a new
+`ProcessPageRenderer` worker; the previous worker and committed document stay
+retained until the candidate commits, then the previous worker is disposed. A failed or stale candidate worker is
+killed without affecting the committed worker. No principal crosses IPC; IPC v3
+is unchanged. Cross-process principal sharing, site computation and cross-site
+frame isolation remain later work.
 
 Receivers reject wrong magic/version, missing version/kind, duplicate or
 unknown JSON fields, malformed/truncated messages and excessive lengths.

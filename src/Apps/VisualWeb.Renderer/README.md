@@ -14,7 +14,9 @@ Normal user permissions remain in development-unsandboxed mode. The trusted
 `--linux-sandbox-bootstrap` reexecutes into required Linux confinement before
 receiving any page. Direct `--linux-sandbox-worker` requires verified status/
 mount configuration. See the [confinement guide](../../../docs/linux-confinement.md).
-Future cross-site frames require stronger site isolation than per-tab processes.
+Multiprocess shells start a new worker for each cross-origin or new opaque
+top-level document and keep it for same-origin navigation. Future cross-site
+frames require stronger site isolation than these per-tab, per-origin workers.
 
 See the [process guide](../../../docs/renderer-processes.md) and
 [architecture](../../../docs/architecture/overview.md).

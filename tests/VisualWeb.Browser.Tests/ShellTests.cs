@@ -170,6 +170,43 @@ public sealed class ShellTests
         Assert.DoesNotContain("framebuffer limit", native.Title);
         Assert.NotNull(shell.Controller.Page(first.ActiveTab!.Id));
     }
+    [Fact]
+    public void EveryMultiprocessShellModeEnablesOriginIsolatedNavigationWithoutOptOut()
+    {
+        var rendererPath = Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll");
+        using (var system = new Windows())
+        using (var single = new DevelopmentShell(system, FontPath)) { Assert.False(single.Controller.IsolatesOrigins); }
+        using (var system = new Windows())
+        using (var confined = new DevelopmentShell(system, FontPath, rendererPath: rendererPath, requireSandbox: true))
+        {
+            Assert.True(confined.Controller.IsolatesOrigins);
+        }
+        using var unsandboxedSystem = new Windows();
+        using var shell = new DevelopmentShell(unsandboxedSystem, FontPath, rendererPath: rendererPath);
+        Assert.True(shell.Controller.IsolatesOrigins);
+        var tab = shell.OpenWindow().ActiveTab!;
+        Wait();
+        Assert.Null(tab.Error);
+        var home = tab.Origin;
+        Assert.NotNull(home);
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString("<!doctype html><style>body{margin:0;background-color:blue}</style>"));
+        Wait();
+        Assert.Null(tab.Error);
+        Assert.False(home!.IsSameOrigin(tab.Origin));
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, unsandboxedSystem.Items[0].Pixels!.AsSpan(120 * unsandboxedSystem.Items[0].Size.Width * 4, 4).ToArray());
+
+        void Wait()
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            do
+            {
+                shell.Tick();
+                if (!tab.IsLoading) { return; }
+                Thread.Sleep(5);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(30));
+            Assert.Fail("Multiprocess shell navigation timed out.");
+        }
+    }
     private sealed class Windows : IWindowSystem
     {
         internal List<Window> Items { get; } = [];

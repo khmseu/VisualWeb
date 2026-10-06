@@ -120,8 +120,10 @@ messages, with bounded payloads and validation at every trust boundary.
 Browser chrome and privileged OS resources must not be reachable directly by
 page scripts. A renderer crash must close/restart only its tab, not the shell.
 
-Eventually site isolation needs separate renderer processes for cross-site
-frames and navigation process swaps, not merely one process per tab. Networking
+Multiprocess shells now perform strict per-origin top-level navigation
+renderer swaps (cross-origin and new opaque documents get a fresh worker,
+promoted transactionally). Eventually site isolation still needs separate
+renderer processes for cross-site frames and site computation. Networking
 and storage can move behind broker/service processes. The architecture must
 not assume every frame in a tab shares a trust principal.
 

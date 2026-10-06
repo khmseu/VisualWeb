@@ -6,13 +6,21 @@ namespace VisualWeb.Browser;
 /// <summary>UI-thread transactional navigation over local or asynchronous process renderers.</summary>
 /// <remarks>Process results are published only by the UI pump; process separation is not OS confinement.
 /// <see cref="BrowserTab.Origin"/> is taken from the browser-side <see cref="LoadedPage"/> and changes only when that
-/// document is rendered, accepted by <see cref="IPageRenderer.CommitDocument"/> and published.</remarks>
+/// document is rendered, accepted by <see cref="IPageRenderer.CommitDocument"/> and published.
+/// With <see cref="IsolatesOrigins"/>, top-level navigation keeps each tab renderer strictly per origin
+/// (<see href="https://html.spec.whatwg.org/multipage/browsers.html#same-origin">same origin</see>, spec ID html):
+/// the final <see cref="LoadedPage.Origin"/> is compared with the committed document origin; same-origin documents
+/// reuse the committed renderer, while cross-origin and every new opaque document render in a fresh factory
+/// candidate that replaces (and disposes) the committed renderer only after render, commit and history succeed.
+/// This is navigation renderer rotation, not site isolation, frame isolation or same-origin policy enforcement.</remarks>
 public sealed class BrowserController : IDisposable
 {
     private sealed class Content(IPageSource source, IPageRenderer renderer)
     {
         internal IPageSource Source { get; } = source;
-        internal IPageRenderer Renderer { get; } = renderer;
+        internal IPageRenderer Renderer { get; set; } = renderer;
+        /// <summary>Whether any document content has been sent to <see cref="Renderer"/>.</summary>
+        internal bool Used { get; set; }
         internal LoadedPage? Document { get; set; }
         internal BrowserPage? Page { get; set; }
         internal PageViewport? Viewport { get; set; }
@@ -31,6 +39,16 @@ public sealed class BrowserController : IDisposable
         internal LoadedPage? Document { get; set; }
         internal Task<BrowserPage>? Render { get; set; }
         internal PageViewport? Viewport { get; set; }
+        /// <summary>The renderer that actually received this operation's document.</summary>
+        internal IPageRenderer? Renderer { get; set; }
+        /// <summary>An unpromoted origin-isolation candidate owned (and disposed) by this operation.</summary>
+        internal IPageRenderer? Candidate { get; set; }
+        internal void ReleaseCandidate()
+        {
+            var candidate = Candidate;
+            Candidate = null;
+            candidate?.Dispose();
+        }
     }
     private readonly Dictionary<TabId, Content> content = [];
     private readonly List<Operation> operations = [];
@@ -39,11 +57,15 @@ public sealed class BrowserController : IDisposable
     private readonly int thread = Environment.CurrentManagedThreadId;
     private bool disposed;
     public BrowserSession Session { get; }
+    /// <summary>Whether top-level navigations rotate to a fresh renderer for each new cross-origin or opaque document.</summary>
+    public bool IsolatesOrigins { get; }
     public event Action<TabId>? Changed;
     public event Action<TabId, string>? Failed;
 
-    public BrowserController(Func<IPageSource> sourceFactory, Func<IPageRenderer> rendererFactory, BrowserOptions? options = null)
+    public BrowserController(Func<IPageSource> sourceFactory, Func<IPageRenderer> rendererFactory, BrowserOptions? options = null,
+        bool isolateOrigins = false)
     {
+        IsolatesOrigins = isolateOrigins;
         ArgumentNullException.ThrowIfNull(sourceFactory);
         ArgumentNullException.ThrowIfNull(rendererFactory);
         this.sourceFactory = sourceFactory; this.rendererFactory = rendererFactory;
@@ -146,17 +168,24 @@ public sealed class BrowserController : IDisposable
                 if (size is null) { finished = false; return; }
                 operation.Document = document;
                 operation.Viewport = size;
+                var renderer = operation.Renderer = Select(content[operation.Tab], operation, document);
                 operation.Render = operation.Resize
-                    ? content[operation.Tab].Renderer.RenderRetainedAsync(document, size.Value, operation.Cancellation.Token)
-                    : content[operation.Tab].Renderer.RenderAsync(document, size.Value, operation.Cancellation.Token);
+                    ? renderer.RenderRetainedAsync(document, size.Value, operation.Cancellation.Token)
+                    : renderer.RenderAsync(document, size.Value, operation.Cancellation.Token);
                 if (!operation.Render.IsCompleted) { finished = false; return; }
             }
             var rendered = operation.Render.GetAwaiter().GetResult();
             var owner = content[operation.Tab];
             var tab = Session.Tab(operation.Tab);
-            // Throwing steps precede publication so a rejected commit leaves document, origin and history intact.
-            owner.Renderer.CommitDocument(document.DocumentId);
+            // Throwing steps precede publication so a rejected commit leaves renderer, document, origin and history intact.
+            operation.Renderer!.CommitDocument(document.DocumentId);
             if (!operation.Resize) { tab.History.Commit(document.Url, operation.Traversal, operation.Replace); }
+            var previous = owner.Renderer;
+            if (operation.Candidate is { } candidate)
+            {
+                operation.Candidate = null;
+                owner.Renderer = candidate; owner.Used = true;
+            }
             owner.Document = document; owner.Page = rendered; owner.Viewport = operation.Viewport;
             tab.Origin = document.Origin;
             if (operation.Resize)
@@ -170,6 +199,7 @@ public sealed class BrowserController : IDisposable
                 tab.Error = null; tab.IsLoading = false;
             }
             owner.ResizeFailed = false;
+            if (!ReferenceEquals(previous, owner.Renderer)) { previous.Dispose(); }
             Changed?.Invoke(operation.Tab);
         }
         catch (OperationCanceledException)
@@ -190,8 +220,33 @@ public sealed class BrowserController : IDisposable
         }
         finally
         {
-            if (finished) { operations.Remove(operation); operation.Cancellation.Dispose(); }
+            if (finished)
+            {
+                operations.Remove(operation); operation.Cancellation.Dispose();
+                operation.ReleaseCandidate();
+            }
         }
+    }
+    /// <summary>Choose the renderer for a loaded document: the committed one or a fresh origin-isolation candidate.</summary>
+    private IPageRenderer Select(Content owner, Operation operation, LoadedPage document)
+    {
+        var reuse = !IsolatesOrigins || operation.Resize || (owner.Document is { } committed
+            ? !document.Origin.IsOpaque && committed.Origin.IsSameOrigin(document.Origin)
+            : !owner.Used);
+        if (reuse)
+        {
+            owner.Used = true;
+            return owner.Renderer;
+        }
+        IPageRenderer candidate;
+        try { candidate = rendererFactory() ?? throw new InvalidOperationException("Renderer factory returned null."); }
+        catch (Exception exception) when (IsPageFailure(exception)
+            || exception is ArgumentException or PlatformNotSupportedException or InvalidOperationException)
+        {
+            throw new RendererProcessException("Origin-isolated renderer creation failed: " + exception.Message);
+        }
+        operation.Candidate = candidate;
+        return candidate;
     }
     public void Resize(TabId id, PageViewport viewport)
     {
@@ -227,6 +282,7 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         Cancel(id);
+        foreach (var operation in operations.Where(op => op.Tab == id)) { operation.ReleaseCandidate(); }
         var owner = content[id];
         content.Remove(id);
         owner.Source.Dispose(); owner.Renderer.Dispose(); Session.CloseTab(id);

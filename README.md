@@ -37,6 +37,9 @@ Phase 10a provides process separation; phase 10b adds
 [Windows profile](docs/windows-confinement.md). Linux ARM64 is
 included in the native build, test and smoke CI matrix, but Linux ARM64
 confinement, origin policy and production-safe browsing remain unfinished.
+Multiprocess modes swap a tab's renderer process on cross-origin or new opaque
+top-level navigation (same-origin navigation reuses it); this is not site or
+frame isolation.
 `--multiprocess` and legacy `--development-multiprocess` require confinement
 before display/content startup; there is no fallback. `--require-sandbox`
 remains a redundant explicit assertion. For trusted-content development only,

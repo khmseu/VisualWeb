@@ -70,6 +70,11 @@
   Require an explicit mode and trusted font setup.
   Keep asynchronous loading separate from owning-thread native rendering, preserve
   transactional history and stale-load cancellation, and do not claim isolation.
+  Multiprocess shells always enable controller origin isolation: compare final
+  LoadedPage origins with IsSameOrigin, reuse same-origin, rotate cross-origin and
+  every new opaque document into an operation-owned candidate promoted only after
+  render/commit/history success; dispose failed/stale/closed candidates and keep
+  resize on the committed renderer. Not site/frame isolation or SOP/CORS/CSP.
   Shared app-layer stylesheet discovery must not leak into offline Engine.Content policy.
 - Read the [process guide](docs/renderer-processes.md) before IPC/worker changes.
   Preserve exact framing/budgets/identity/viewport checks, per-tab deadlines,

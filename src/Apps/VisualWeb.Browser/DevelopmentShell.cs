@@ -66,7 +66,9 @@ public sealed class DevelopmentShell : IDisposable
         chrome = new(fontPath, settings.MaxFramePixels, multiprocess, requireSandbox);
         Controller = new(() => new GetPageSource(), () => rendererPath is null
             ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts)
-            : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts), settings);
+            : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts), settings,
+            // Every multiprocess mode (confined or explicitly unsandboxed) rotates renderers per origin; there is no opt-out.
+            isolateOrigins: multiprocess);
         Controller.Changed += id =>
         {
             foreach (var (key, view) in views)

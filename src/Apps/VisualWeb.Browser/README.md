@@ -6,7 +6,9 @@ history, tabs and multiple windows.
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and
-either local rendering or one worker process per tab. Worker
+either local rendering or one worker process per tab and committed origin.
+Multiprocess mode always rotates the worker transactionally for cross-origin or
+new opaque top-level documents (no site/frame isolation). Worker
 crashes are contained in multiprocess mode. The CLI requires
 [Linux x64 confinement](../../../docs/linux-confinement.md) or
 [Windows confinement](../../../docs/windows-confinement.md) by default;

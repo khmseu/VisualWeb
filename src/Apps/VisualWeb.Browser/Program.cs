@@ -15,8 +15,8 @@ try
 {
     var launch = BrowserLaunchOptions.Parse(args);
     Console.Error.WriteLine("WARNING: EXPERIMENTAL " + (launch.RendererPath is null ? "SINGLE-PROCESS" : "MULTIPROCESS")
-        + (launch.RequireSandbox ? " BROWSER. OS renderer confinement required; no origin isolation or production web security."
-            : " BROWSER. No sandbox, origin isolation or production web security.") + " Use only trusted content.");
+        + (launch.RequireSandbox ? " BROWSER. OS renderer confinement required; no browser-wide origin policy or production web security."
+            : " BROWSER. No sandbox, browser-wide origin policy or production web security.") + " Use only trusted content.");
     IPlatformServices platform = OperatingSystem.IsLinux() ? new LinuxPlatformServices()
         : OperatingSystem.IsWindows() ? new WindowsPlatformServices()
         : throw new PlatformNotSupportedException("VisualWeb supports Linux and Windows.");
@@ -26,7 +26,7 @@ try
         foreach (var failure in sdl.InitializationFailures) { Console.Error.WriteLine("Backend fallback: " + failure); }
     }
     if (launch.SkipTextInput) { Console.Error.WriteLine("Smoke text input explicitly skipped; keyboard/IME support is not certified."); }
-    if (launch.ExecuteInlineScripts) { Console.Error.WriteLine("WARNING: post-parse inline scripts enabled; no HTML scheduling, CSP, origin isolation or browser event loop."); }
+    if (launch.ExecuteInlineScripts) { Console.Error.WriteLine("WARNING: post-parse inline scripts enabled; no HTML scheduling, CSP, browser-wide origin policy or browser event loop."); }
     using var shell = new DevelopmentShell(system, launch.FontPath, hidden: launch.Smoke,
         textInput: !launch.SkipTextInput, rendererPath: launch.RendererPath, requireSandbox: launch.RequireSandbox,
         executeInlineScripts: launch.ExecuteInlineScripts);

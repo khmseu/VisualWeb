@@ -124,6 +124,34 @@ inherited/sandbox origin selection, site isolation and production navigation
 policy remain unimplemented; explicitly selected development navigation is
 unchanged.
 
+**Origin-isolated navigation renderers.** `BrowserController` accepts an
+optional `isolateOrigins` policy (`IsolatesOrigins`); low-level/test controllers
+default to one renderer per tab. `DevelopmentShell` always enables it when a
+renderer path is set, so every multiprocess CLI mode (confined or explicitly
+unsandboxed) rotates renderers with no opt-out. After loading, the authoritative
+final `LoadedPage.Origin` is compared with the committed document origin via
+`SecurityOrigin.IsSameOrigin` (never serialized `null` or the requested URL):
+
+- the first document uses the tab's pristine renderer; once any content has
+  been sent to it (even a canceled or failed render) it is no longer pristine;
+- same-origin tuple navigations, reloads and traversals reuse the committed
+  renderer; every new opaque document (data:, about:blank, file:, reload of
+  those) and every cross-origin document gets a new factory renderer before
+  any content is sent;
+- the candidate is owned by the pending operation. The old renderer, document,
+  title, origin, history and pixels stay published until the candidate's
+  `RenderAsync`, `CommitDocument` and the history commit all succeed; then the
+  candidate is promoted and the previous renderer disposed in the same pump step;
+- factory, render, commit or history failures, cancellation, stale/superseded
+  completions and tab/window/controller close dispose the candidate without
+  touching the committed renderer. Retained resize always uses the committed
+  renderer and never rotates or reruns scripts. Only the committed renderer's
+  `TakeFailure` is polled, so crash recovery restarts that renderer.
+
+This is strict per-origin top-level navigation rotation only: there is no site
+computation, cross-site frame isolation, inherited origin selection,
+same-origin/CORS/CSP policy or production request authorization.
+
 The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
 in document order, taking their child text. Inline attributes also participate.
 Named stylesheet sets, non-CSS type values, media other than empty/`all`,
