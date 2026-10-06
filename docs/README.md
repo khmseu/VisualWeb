@@ -70,3 +70,5 @@ Phase 11r adds bounded hasAttributes/getAttributeNames, fresh mutable ordered
 name arrays and captured primitive-only decoding without live Attr objects.
 Phase 11s adds bounded comment/processing-instruction factories and readonly
 target over native validation and existing CharacterData/Node machinery.
+Phase 11t adds branded, unscopable ChildNode.remove with atomic traversal
+preflight and preserved detached ownership/identity/listeners.

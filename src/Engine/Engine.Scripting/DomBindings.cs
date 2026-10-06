@@ -16,6 +16,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#interface-text">Text splitting and wholeText</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-normalize">normalize</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-childnode-remove">self removal</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createcomment">comment factory</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createprocessinginstruction">processing instruction factory</see>,
@@ -91,6 +92,7 @@ internal sealed class DomBindings : IDisposable
                 "text-split" => SplitText(TextNode(handle), unchecked((uint)other)),
                 "whole-text" => WholeText(TextNode(handle)),
                 "normalize" => Normalize(Node(handle)),
+                "remove-self" => RemoveSelf(Node(handle)),
                 "attribute-get" => Observe(Element(handle).GetAttribute(name)),
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attributes-has" => Observe(Element(handle).Attributes.Count == 0 ? "false" : "true"),
@@ -300,6 +302,19 @@ internal sealed class DomBindings : IDisposable
     private string Normalize(DomNode node)
     {
         node.Normalize(MaxNodes, MaxTextCharacters, Budget, cancellation);
+        return "";
+    }
+    private string RemoveSelf(DomNode node)
+    {
+        if (node is not (DomElement or DomCharacterData or DomDocumentType))
+        { throw new InvalidOperationException("Illegal ChildNode receiver."); }
+        if (node.ParentNode is { } parent)
+        {
+            CheckAncestors(parent);
+            foreach (var descendant in Traverse(parent)) { cancellation.ThrowIfCancellationRequested(); }
+        }
+        cancellation.ThrowIfCancellationRequested();
+        node.Remove();
         return "";
     }
     private void CheckEqualityNode(DomNode node)
@@ -596,7 +611,8 @@ internal sealed class DomBindings : IDisposable
             const TypeErrorCtor = TypeError, SyntaxErrorCtor = SyntaxError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
             const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap(),
-                characterBrands = new WeakMap(), textBrands = new WeakMap(), instructionBrands = new WeakMap();
+                characterBrands = new WeakMap(), textBrands = new WeakMap(), instructionBrands = new WeakMap(),
+                childBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
             const document = create(null), prototype = create(null), nodePrototype = create(null);
@@ -642,6 +658,11 @@ internal sealed class DomBindings : IDisposable
                 if (id === undefined) throw new TypeErrorCtor('Illegal ProcessingInstruction receiver');
                 return id;
             };
+            const childBrand = receiver => {
+                const id = apply(brandGet, childBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal ChildNode receiver');
+                return id;
+            };
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
@@ -662,6 +683,8 @@ internal sealed class DomBindings : IDisposable
                     if (type === 3 || type === 7 || type === 8) apply(brandSet, characterBrands, wrapper, handle);
                     if (type === 3) apply(brandSet, textBrands, wrapper, handle);
                     if (type === 7) apply(brandSet, instructionBrands, wrapper, handle);
+                    if (type === 1 || type === 3 || type === 7 || type === 8 || type === 10)
+                        apply(brandSet, childBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
                     if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
                 }
@@ -797,6 +820,15 @@ internal sealed class DomBindings : IDisposable
                 }});
             };
             installNode(document); installNode(prototype); installNode(nodePrototype);
+            const unscopables=create(null);
+            define(unscopables,'remove',{value:true,enumerable:true});
+            freeze(unscopables);
+            for(const target of [prototype,nodePrototype]){
+                define(target,'remove',{enumerable:true,value:function(){
+                    call('remove-self',childBrand(this));
+                }});
+                define(target,Symbol.unscopables,{value:unscopables});
+            }
             for (const [property, operation] of [
                 ['localName', 'local-name'], ['tagName', 'tag-name'], ['namespaceURI', 'namespace-uri'], ['prefix', 'prefix']
             ]) define(prototype, property, {enumerable: true, get() {return call(operation, elementBrand(this));}});

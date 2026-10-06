@@ -75,6 +75,9 @@ Phase 11s adds bounded document comment/instruction factories and readonly
 branded target, reusing native validation and all shared factory budgets.
 Raw CharacterData editing, listener identity and non-Text barriers apply;
 pseudoattributes/reactions, automatic resource loading and scheduling are deferred.
+Phase 11t adds privately branded, unscopable ChildNode.remove with
+parent-descendant/ancestor and cancellation preflight, no identity allocation
+or recycling, and retained detached descendants/ownership/listeners.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

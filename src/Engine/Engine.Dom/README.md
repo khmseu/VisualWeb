@@ -35,6 +35,9 @@ Comment/instruction native factories also back the bounded script creation
 surface. Comments preserve raw UTF-16; instructions validate XML Name targets
 (including empty-target InvalidCharacter) and reject `?>` in initial data.
 Target remains immutable while raw data edits do not rerun construction checks.
+ChildNode Remove delegates checked parent removal for Element, CharacterData
+and DocumentType. Detached valid nodes are no-ops; unsupported receivers reject.
+Removed nodes retain ownership, descendant links and data.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

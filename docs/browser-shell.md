@@ -139,6 +139,9 @@ scripts, without changing stylesheet discovery or retained resize policy.
 Phase 11s allows comment/instruction creation and target inspection in lifecycle
 scripts. They are inert non-Text barriers, excluded from stylesheet/title text;
 no pseudoattribute reactions, loading or dynamic script scheduling is added.
+Phase 11t allows lifecycle self-removal of style/title nodes. Discovery and
+paint use the final live tree; failed candidates retain the committed DOM,
+and resize still recomputes without reexecuting scripts.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

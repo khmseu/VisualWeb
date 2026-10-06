@@ -257,6 +257,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   target with ordered conversion, native XML Name/initial-data validation and
   shared factory identity/input/output/callback budgets. Existing Node/data/
   event machinery applies; pseudoattributes, loading and scheduling are deferred.
+  Phase 11t adds bounded ChildNode.remove for Element, CharacterData and
+  DocumentType, preserving detached identity/ownership/subtrees/listeners.
+  Parent-descendant and ancestor budgets/cancellation precede writes; no
+  identities, observers/reactions or scheduling are added.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

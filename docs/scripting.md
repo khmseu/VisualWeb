@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11s)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11t)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,33 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## ChildNode self-removal (phase 11t)
+
+Element, Text, Comment, ProcessingInstruction and DocumentType wrappers expose
+`remove()` through a private ChildNode brand. Attached nodes delegate the
+native checked parent removal; detached valid nodes are no-ops. Completion is
+`undefined`; extra arguments are ignored without conversion. Documents have
+no method. The minimal shared non-element prototype exposes it on fragments,
+but fragment, fake, inherited and borrowed unsupported receivers reject.
+Current-document ownership is checked even for detached no-ops; adopted
+wrappers cannot mutate another document.
+
+Before any attached removal, the bridge checks **8,192 parent ancestors**
+including the parent, and **8,192 descendants of the parent** (excluding that
+parent, including the removed subtree), with cancellation before writing.
+This conservative bound matches existing tree-mutation traversal policy.
+Over-limit removal leaves the tree unchanged. No node payload is read, no
+identity is allocated/recycled, and no output text is charged. Existing
+**4,096 callbacks**, shared task deadline/cancellation and lifetime identities
+still apply. Detached no-ops require no tree traversal.
+
+Sibling links repair immediately; removed subtree/data/owner/wrapper identity,
+query snapshots and synthetic listeners survive. Dispatch keeps its snapshotted
+path if a listener removes its target, while a later detached dispatch has no
+former parent. `Symbol.unscopables.remove` keeps `with(node)` from capturing
+unqualified remove names. Full WebIDL prototypes, mutation observers, live
+ranges, custom-element reactions and persistent scheduling remain deferred.
 
 ## Comment and ProcessingInstruction factories (phase 11s)
 
@@ -1356,3 +1383,28 @@ All **58 official references** are independently cached/fresh without network
 refresh. Windows/ARM still require native target evidence. Instruction
 pseudoattributes/reactions, special stylesheet loading, full constructors/
 WebIDL and persistent event loops remain deferred.
+
+## Phase-11t validation outcome
+
+On Linux x64, all **45 projects build** and **491 selected tests pass** without
+failures or skips: 53 DOM, 289 scripting and 149 browser cases.
+Two native and ten scripted removal cases cover valid ChildNode types,
+detached/repeated no-ops, first/middle/last sibling repair, root/doctype removal,
+retained data/subtree/ownership/query identities, argument nonconversion,
+unsupported/fake/adopted brands, unscopables and intrinsic tampering.
+Exact **8,192/8,193 parent-descendant and ancestor limits**, **1,024 lifetime
+identities** and **4,096 shared callbacks** are checked against atomic native
+tree state. Oversized unread payloads and exhausted shared output budgets do
+not block removal; removed identities are not recycled. Listener/path retention
+and cancellation/host invalidation also pass.
+
+Local/process lifecycle fixtures remove overriding styles and title text,
+then verify exact blue pixels/title, retained detached listeners, failed-candidate
+preservation, resize without reexecution and fresh-navigation recovery.
+Local and unchanged required-confined V8 probes pass with native self-removal
+checks. SDL dummy and required-confined X11 shell smokes pass, presenting 10
+and 15 frames respectively. Formatting, changed-file editor diagnostics and
+whitespace checks are clean; no owned workers/resource scopes remain.
+All **58 official references** are independently fresh without network refresh.
+Native Windows/ARM evidence, full WebIDL, observers/live ranges/custom-element
+reactions and persistent event loops remain deferred; scripting is still opt-in.

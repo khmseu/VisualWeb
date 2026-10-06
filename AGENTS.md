@@ -168,6 +168,9 @@
   output/identity limits. Empty XML targets must report DOM InvalidCharacter,
   not BCL exceptions. Preserve raw editing, non-Text barriers and inert insertion;
   instruction pseudoattributes/reactions remain deferred.
+  Phase 11t adds branded ChildNode.remove with pre-write parent-subtree/
+  ancestor/cancellation checks and unscopable lookup. Preserve detached
+  identity, ownership, descendants and listeners; allocate/recycle no handles.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

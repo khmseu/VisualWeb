@@ -1,5 +1,12 @@
 # Tests
 
+Phase-11t removal tests cover Element/CharacterData/DocumentType, detached
+no-ops, sibling repair, unsupported/adopted brands, argument nonconversion,
+unscopables, exact parent-descendant/callback/identity limits, atomic rejection,
+oversized unread payloads, listener/path retention and cancellation. Local/
+process fixtures verify lifecycle stylesheet/title removal, exact blue pixels,
+transactional failure, retained resize and fresh-navigation recovery.
+
 Use one xUnit v3 test project per implemented source project:
 `tests/<source-project>.Tests/<source-project>.Tests.csproj`.
 The [cache tests](Tools.SpecCache.Tests/) are the phase-1 example.

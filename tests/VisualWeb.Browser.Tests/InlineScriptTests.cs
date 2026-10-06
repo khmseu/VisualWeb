@@ -22,6 +22,46 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task SelfRemovalFeedsLifecyclePaintAndTitleWithTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style>body{margin:0;background-color:blue}</style>
+            <style id="override">body{background-color:red}</style>
+            <script>
+            let sheet=document.getElementById('override'),title=document.head.querySelector('title'),hits=0;
+            sheet.addEventListener('probe',()=>hits++);
+            document.addEventListener('DOMContentLoaded',()=>{
+                sheet.remove();title.firstChild.remove();
+                let comment=document.createComment('ignored'),pi=document.createProcessingInstruction('probe','data');
+                title.appendChild(comment);title.appendChild(pi);comment.remove();pi.remove();
+                if(sheet.parentNode!==null||sheet.ownerDocument!==document||sheet.firstChild.parentNode!==sheet
+                    ||document.getElementById('override')!==null||document.title!=='')
+                    throw Error('self removal');
+                queueMicrotask(()=>{
+                    sheet.dispatchEvent(new Event('probe'));document.title='Removed '+hits;
+                });
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Removed 1", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.body.remove.call(document.createDocumentFragment())</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Removed 1", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task CharacterFactoriesPreserveLifecycleTextBarriersAndTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

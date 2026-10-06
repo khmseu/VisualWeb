@@ -168,6 +168,10 @@ Phase 11s exposes native comment/instruction factories and readonly target to
 scripts. XML Name/initial-data validation precedes identity registration;
 empty targets explicitly use DomError.InvalidCharacter. Raw UTF-16 comments
 and instruction data reuse CharacterData, with pseudoattributes/reactions deferred.
+Phase 11t exposes checked ChildNode.remove for Element, CharacterData and
+DocumentType with bounded parent-subtree preflight. Detached nodes keep
+ownership, children, data and listeners; Document/Fragment receivers reject.
+No observer, range or custom-element reactions are introduced.
 
 ## Safety limits
 

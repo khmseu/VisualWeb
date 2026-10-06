@@ -128,6 +128,17 @@ public abstract partial class DomNode
         return child;
     }
 
+    /// <summary>Remove this ChildNode from its parent, or do nothing when detached.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-childnode-remove">remove</see>.
+    /// Only Element, CharacterData and DocumentType implement this mixin.
+    /// Ownership and descendant links are retained; observers and reactions are deferred.</remarks>
+    public void Remove()
+    {
+        if (this is not (DomElement or DomCharacterData or DomDocumentType))
+        { throw new DomException(DomError.NotSupported, "This node does not implement ChildNode."); }
+        ParentNode?.RemoveChild(this);
+    }
+
     public IEnumerable<DomNode> Descendants()
     {
         var pending = new Stack<DomNode>(children.AsEnumerable().Reverse());

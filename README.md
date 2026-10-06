@@ -66,7 +66,8 @@ descendant Text normalization preserving surviving/detached identities, plus
 bounded structural Node equality over ordered trees and unordered attributes,
 readonly Node/Element name, namespace and owner-document metadata, and bounded
 ordered attribute-name snapshots/presence inspection, plus comment and
-processing-instruction factories with readonly target. It
+processing-instruction factories with readonly target and bounded ChildNode
+self-removal retaining detached subtree identity, ownership and listeners. It
 explicitly enables a bounded post-parse inline classic subset in either
 development mode; mutations feed style/layout/paint, and resize retains the
 committed scripted DOM without reexecution. External scripts, HTML scheduling,

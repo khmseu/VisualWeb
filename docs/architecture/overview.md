@@ -53,6 +53,8 @@ Phase 11r adds ordered attribute inspection over existing native storage,
 returning bounded primitive-decoded mutable snapshots without new identities.
 Phase 11s adds native-validated comment/instruction factories and branded target
 through the same bounded bridge; insertion is inert and no resource API is added.
+Phase 11t adds ChildNode.remove through that bridge with bounded parent-tree
+preflight, no new identities and retained detached subtree/listener ownership.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

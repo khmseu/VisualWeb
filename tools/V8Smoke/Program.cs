@@ -165,6 +165,13 @@ static void Probe()
                 &&pi.data==='data'&&pi.previousSibling===comment&&pi.ownerDocument===document
                 &&created.textContent==='native data'})()
         """).Boolean, "Native comment/processing instruction factory failed.");
+    Check(bound.Evaluate("""
+        (()=>{const pi=created.lastChild,comment=pi.previousSibling,text=created.firstChild;
+            if(pi.remove()!==undefined)return false;comment.remove();comment.remove();
+            return created.lastChild===text&&text.nextSibling===null&&pi.parentNode===null
+                &&pi.target==='Probe'&&pi.ownerDocument===document&&comment.data==='raw'
+                &&created[Symbol.unscopables].remove===true})()
+        """).Boolean, "Native ChildNode removal/identity failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

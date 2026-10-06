@@ -49,6 +49,8 @@ Attribute-inspection probes verify presence and fresh string name snapshots
 locally and under unchanged confinement.
 Comment/instruction probes verify created CharacterData, readonly target,
 sibling/document identity and exclusion from element text under confinement.
+ChildNode probes additionally remove comments/instructions, verifying undefined
+completion, detached ownership/data and adjacent links under the same profile.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.
