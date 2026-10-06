@@ -70,6 +70,9 @@ processing-instruction factories with readonly target and bounded ChildNode
 self-removal retaining detached subtree identity, ownership and listeners.
 Document doctype lookup and readonly name/public/system identifiers share the
 same wrapper and bounded primitive bridge, without resource fetching. It
+also exposes deep/shallow `cloneNode` for non-Document DOM nodes with detached
+fresh identities, preflighted subtree/attribute/text limits and no copied
+listeners; Document cloning remains outside the script bridge. It
 explicitly enables a bounded post-parse inline classic subset in either
 development mode; mutations feed style/layout/paint, and resize retains the
 committed scripted DOM without reexecution. External scripts, HTML scheduling,

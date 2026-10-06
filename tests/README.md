@@ -1,5 +1,15 @@
 # Tests
 
+Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
+attributes, UTF-16/comment/PI/doctype payloads, detached independent children,
+native Document mode/owner remapping, fresh wrapper IDs and uncopied listeners.
+Script tests exercise Boolean conversion/receiver brands, Document rejection,
+exact descendant/attribute/text/identity/output/callback limits, capacity and
+output failure atomicity, shallow descendant avoidance and cancellation.
+Local/process lifecycle fixtures verify detached styles stay inert until
+insertion, cloned CSS reaches exact pixels, candidate errors preserve commits
+and retained resize/fresh navigation do not reexecute scripts.
+
 Phase-11u doctype tests cover lookup through leading comments, absence,
 readonly raw UTF-16 fields, detached identity/removal/reinsertion/adoption,
 receiver brands, exact per-field/shared output, document-child, identity and

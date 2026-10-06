@@ -178,6 +178,13 @@ children; detached metadata retains its values and adopted wrappers reject.
 Parser mode selection is unchanged: public and non-legacy-compatible system
 identifiers still fail explicitly in the static tree builder, while native
 nodes can retain arbitrary raw identifier strings. Identifiers are not fetched.
+Phase 11v adds checked native `cloneNode(deep)` for supported node kinds.
+Clones preserve element attributes/order, CharacterData, PI and doctype
+payloads, fragment children and document mode for native Document copies.
+Parent links and synthetic listeners are never copied. Script-facing clone
+preflights complete deep subtrees, per-element attributes and text/callback
+budgets before allocation; Document wrappers are explicitly unsupported in
+the one-bound-document bridge.
 
 ## Safety limits
 

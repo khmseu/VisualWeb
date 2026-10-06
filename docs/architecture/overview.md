@@ -57,6 +57,8 @@ Phase 11t adds ChildNode.remove through that bridge with bounded parent-tree
 preflight, no new identities and retained detached subtree/listener ownership.
 Phase 11u adds doctype lookup/metadata over the same primitive-only bridge.
 Identifiers are inert strings, not resource requests or mode-selection inputs.
+Phase 11v adds detached native node clones through bounded script preflight;
+parents/listeners are omitted and each returned root gets a fresh identity.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

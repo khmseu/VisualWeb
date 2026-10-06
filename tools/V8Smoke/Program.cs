@@ -183,6 +183,13 @@ static void Probe()
             document.insertBefore(doctype,document.documentElement);
             return document.doctype===doctype})()
         """).Boolean, "Native DocumentType lookup/metadata failed.");
+    Check(bound.Evaluate("""
+        (()=>{const clone=created.cloneNode(true);
+            return clone!==created&&clone.parentNode===null&&clone.localName==='span'
+                &&clone.getAttribute('id')==='created'&&clone.firstChild.data==='native data'
+                &&clone.lastChild===clone.firstChild&&clone.firstChild!==created.firstChild
+                &&created.parentNode===document.body})()
+        """).Boolean, "Native deep Node clone/identity failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

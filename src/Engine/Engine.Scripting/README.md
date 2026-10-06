@@ -83,6 +83,10 @@ name/publicId/systemId. Lookup bounds immediate document children and reuses
 wrapper identity; fields share individual/task output and callback budgets.
 Detached values remain readable, adopted wrappers reject; no identifier
 fetching or parser mode-selection expansion is added.
+Phase 11v adds shallow/deep cloneNode on branded non-Document wrappers.
+It preflights the copied tree, per-element attributes, shared primitive text,
+identity and cancellation before detached native cloning. Parent links and
+listeners do not copy; cloning Document facades is explicitly unsupported.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

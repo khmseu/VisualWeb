@@ -175,6 +175,12 @@
   systemId. Bound the document child scan and per-field/shared output; reuse
   existing identities, reject adopted wrappers, and do not fetch identifiers
   or broaden parser mode selection.
+  Phase 11v adds native deep/shallow cloneNode for supported non-Document
+  wrappers. Preflight the whole copied tree, attributes and primitive payloads
+  before allocating detached copies; enforce per-element/shared traversal/text,
+  identity/output and cancellation limits. Never copy parents or listeners.
+  Script Document cloning remains explicitly unsupported by the single-document
+  bridge; native Document clones preserve mode and remap cloned owners.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

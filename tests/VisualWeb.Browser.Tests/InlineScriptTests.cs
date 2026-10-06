@@ -62,6 +62,44 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task DeepCloneStylesApplyOnlyWhenInsertedAndSurviveRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Clone</title>
+            <style id="source">body{margin:0;background-color:red}</style>
+            <script>
+            let source=document.getElementById('source');
+            document.addEventListener('DOMContentLoaded',()=>{
+                let clone=source.cloneNode(true);
+                clone.removeAttribute('id');clone.firstChild.data='body{margin:0;background-color:blue}';
+                if(clone.parentNode!==null||clone===source||clone.firstChild===source.firstChild
+                    ||clone.firstChild.data.indexOf('blue')<0)throw Error('detached deep clone');
+                document.head.appendChild(clone);
+                if(clone.parentNode!==document.head||source.parentNode!==document.head)
+                    throw Error('clone insertion');
+                queueMicrotask(()=>document.title='Cloned '+clone.firstChild.length);
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Cloned 36", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.cloneNode(false)</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(rendered.Title, (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task SelfRemovalFeedsLifecyclePaintAndTitleWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

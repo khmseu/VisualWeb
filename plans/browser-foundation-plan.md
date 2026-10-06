@@ -265,6 +265,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   systemId, reusing native payloads and identity/output/callback budgets.
   No descendant scans, identifier fetching, parser mode expansion or scheduling
   is introduced; detached ownership and adopted-wrapper rejection remain.
+  Phase 11v adds bounded native shallow/deep cloning for non-Document script
+  nodes. Whole-subtree, attribute and shared-text validation/cancellation run
+  before detached clone allocation; copies keep payload/order and document
+  ownership but never parent/listener identity. Script Document clones remain
+  deferred because bindings own exactly one document facade.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

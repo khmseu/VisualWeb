@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11u)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11v)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -1007,6 +1007,37 @@ and `ecmascript`; `html` and `webidl` describe deferred integration. The pinned
 ClearScript 7.5.1 source documents the API used by its 7.5.1.1 packaging update.
 Cache refresh is independent of native tests.
 
+## Detached node cloning (phase 11v)
+
+Branded non-Document wrappers expose `cloneNode(deep = false)`. The Boolean
+argument uses JavaScript ToBoolean (no string/value conversion), and extra
+arguments are ignored. A successful call returns a new detached native node
+with a fresh wrapper identity; source parent/siblings/attributes/data remain
+unchanged. Elements preserve ordered attributes and names, CharacterData and
+PI/doctype nodes preserve raw payloads, fragments clone children when deep,
+and native Document clones preserve mode while assigning the clone as owner
+of cloned descendants. Parent links and synthetic event listeners are not
+copied. Script elements in clones are inert and are not added to the initial
+script-source snapshot.
+
+Before allocating a copy, the bridge checks available wrapper identity and
+preflights the entire copied tree for deep calls (**8,192 nodes including the
+root**), each element's **128 attribute/65,536 stored-character** caps, every
+individual primitive (**65,536 UTF-16 units**) and the shared **262,144
+task-character** budget, with cancellation checkpoints. Shallow calls inspect
+only the root's payload/attributes, not descendants. The final opaque identity
+output and **4,096 callback** budget still apply; no identity is registered
+until output preflight succeeds. A failed preflight leaves source state
+unchanged, and no inaccessible clone is attached to the document. Later
+navigation of copied descendants consumes the normal lifetime identity cap.
+
+The script bridge explicitly rejects cloning its canonical Document facade:
+it is the single bound document and a cloned document's tree/owner facade is
+not separately script-bindable. The native Engine.Dom API does support
+independent shallow/deep Document copies with mode and owner remapping. Full
+Document bindings, events/listener cloning, custom-element cloning steps and
+WebIDL constructor semantics remain deferred.
+
 ## Phase-11a validation outcome
 
 On Linux x64, **45 projects build** and **99 selected tests pass** without
@@ -1472,3 +1503,29 @@ independently fresh without network refresh.
 Native Windows/ARM evidence, legacy parser mode selection, DTD fetching,
 DOMImplementation, full WebIDL and persistent event loops remain deferred;
 page scripting remains opt-in.
+
+## Phase-11v validation outcome
+
+On Linux x64, all **45 projects build** and **520 selected tests pass** without
+failures or skips: 58 DOM, 309 scripting and 153 browser cases. Three native
+and nine scripted clone cases cover shallow/deep interfaces, ordered attributes,
+CharacterData/PI/doctype data, fragments, native Document mode/owner remapping,
+detached roots, fresh identity, uncopied listeners, Boolean conversion,
+receiver brands, and explicit script Document rejection.
+Exact **8,192/8,193 subtree nodes**, **128 attributes**, **65,536 per-field/
+attribute storage**, **262,144 shared task characters**, and **1,024 wrapper
+identities** are exercised. Shallow clones skip descendants; failed limits
+leave source trees and wrapper allocation unchanged. Cancellation during a
+bounded deep copy interrupts V8 and preserves the source tree.
+
+Local/process lifecycle tests show a detached deep-cloned style has no effect
+until insertion, then applies exact blue pixels; failed Document-clone
+candidates preserve the committed state, and retained resize/fresh navigation
+preserve prior lifecycle guarantees. Local and unchanged required-confined V8
+probes pass. SDL dummy and required-confined X11 shell smokes pass with 10/15
+presented frames. Formatting, changed-file editor diagnostics and whitespace
+checks are clean; no owned workers/resource scopes remain. All **58 official
+references** are independently fresh without network refresh. Native
+Windows/ARM evidence, script Document cloning, listener/custom-element clone
+steps, full WebIDL and persistent event loops remain deferred; page scripts are
+still opt-in.

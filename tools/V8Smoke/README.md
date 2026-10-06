@@ -53,6 +53,8 @@ ChildNode probes additionally remove comments/instructions, verifying undefined
 completion, detached ownership/data and adjacent links under the same profile.
 Doctype probes verify live lookup through leading comments, exact readonly
 name/public/system strings and removal/reinsertion identity under confinement.
+Clone probes verify deep Element/attribute/text/PI copies, fresh wrappers,
+detached roots and original-tree identity under the same profiles.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

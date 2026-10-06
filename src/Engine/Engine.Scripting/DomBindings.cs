@@ -15,6 +15,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#interface-characterdata">CharacterData</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-text">Text splitting and wholeText</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-normalize">normalize</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-clonenode">node cloning</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-childnode-remove">self removal</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-doctype">doctype lookup</see>,
@@ -95,6 +96,7 @@ internal sealed class DomBindings : IDisposable
                 "whole-text" => WholeText(TextNode(handle)),
                 "normalize" => Normalize(Node(handle)),
                 "remove-self" => RemoveSelf(Node(handle)),
+                "clone-node" => CloneNode(Node(handle), other != 0),
                 "attribute-get" => Observe(Element(handle).GetAttribute(name)),
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attributes-has" => Observe(Element(handle).Attributes.Count == 0 ? "false" : "true"),
@@ -324,6 +326,13 @@ internal sealed class DomBindings : IDisposable
         cancellation.ThrowIfCancellationRequested();
         node.Remove();
         return "";
+    }
+    private string CloneNode(DomNode node, bool deep)
+    {
+        if (node is DomDocument) { throw new InvalidOperationException("Cloning Document wrappers is deferred."); }
+        if (nodes.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
+        var clone = node.CloneNode(deep, MaxNodes, MaxTextCharacters, MaxAttributes, Budget, cancellation);
+        return Identity(clone);
     }
     private void CheckEqualityNode(DomNode node)
     {
@@ -891,6 +900,15 @@ internal sealed class DomBindings : IDisposable
             }});
             define(nodePrototype, 'target', {enumerable: true, get() {
                 return call('instruction-target',instructionBrand(this));
+            }});
+            define(document, 'cloneNode', {enumerable: true, value: function(deep) {
+                documentBrand(this);
+                if (deep !== undefined && !!deep) throw new TypeErrorCtor('Cloning Document wrappers is deferred');
+                return call('clone-node',0,'',0);
+            }});
+            for (const target of [prototype,nodePrototype]) define(target,'cloneNode',{enumerable:true,value:function(deep){
+                const id=brand(this);
+                return wrap(call('clone-node',id,'',deep===undefined?0:(deep?1:0)));
             }});
             for (const [property, operation] of [
                 ['name', 'doctype-name'], ['publicId', 'doctype-public'], ['systemId', 'doctype-system']

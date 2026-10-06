@@ -74,3 +74,5 @@ Phase 11t adds branded, unscopable ChildNode.remove with atomic traversal
 preflight and preserved detached ownership/identity/listeners.
 Phase 11u adds live document.doctype and privately branded readonly doctype
 name/publicId/systemId with bounded child scans and per-field output.
+Phase 11v adds bounded detached deep/shallow node clones with native subtree
+preflight and fresh wrappers, excluding Document wrappers from script cloning.

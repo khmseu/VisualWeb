@@ -41,6 +41,11 @@ Removed nodes retain ownership, descendant links and data.
 Document Doctype and immutable doctype Name/PublicId/SystemId feed the bounded
 script metadata surface. Native values retain raw UTF-16 and case; removing or
 adopting doctypes neither rewrites identifiers nor changes document mode.
+CloneNode creates detached independent native node trees iteratively, preserving
+node payloads, ordered element attributes and native Document mode. Deep clones
+receive the cloned document as owner; parents and external script listeners
+are not copied. Its bounded internal overload preflights traversal, attributes,
+text work and cancellation before allocating copies.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are
