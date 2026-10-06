@@ -5,8 +5,11 @@ serialization and URL components. `ParseResult` reports errors; `Parse` throws.
 The managed [vendored MIT parser](../../../third_party/Dubzer.WhatwgUrl/README.md)
 is isolated behind this facade; do not substitute System.Uri.
 
-No setters, URLSearchParams or security-origin identity are exposed yet.
-Serialized opaque origins are `"null"` and must not be compared for security.
+`BrowserUrl.Origin` is an immutable `SecurityOrigin`: a scheme/host/effective-port
+tuple for http, https, ftp, ws, wss (and `blob:` wrapping http/https), otherwise
+a unique opaque origin (always for `file:`; no blob registry). Compare origins
+with `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"null"`.
+No setters or URLSearchParams are exposed; document origins are a later phase.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
 
 Official source: https://url.spec.whatwg.org/ (manifest ID `url`, local

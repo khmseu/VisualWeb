@@ -6,7 +6,9 @@ namespace VisualWeb.Core.Url;
 /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#concept-basic-url-parser">basic URL parser</see>
 /// and <see href="https://url.spec.whatwg.org/#concept-url-serializer">URL serializer</see>.
 /// Parsing is delegated to the managed MIT-licensed Dubzer.WhatwgUrl implementation.
-/// SerializedOrigin is for display/serialization, not an opaque-origin security identity.</remarks>
+/// SerializedOrigin is for display/serialization, not an opaque-origin security identity; use <see cref="Origin"/>.
+/// Origin is computed once per snapshot, so an opaque origin keeps its identity across reads of the same instance
+/// but a re-parse yields a different one. See <see href="https://url.spec.whatwg.org/#concept-url-origin">origin of a URL</see>.</remarks>
 public sealed class BrowserUrl
 {
     public string Href { get; }
@@ -20,6 +22,7 @@ public sealed class BrowserUrl
     public string Search { get; }
     public string Hash { get; }
     public string SerializedOrigin { get; }
+    public SecurityOrigin Origin { get; }
 
     private BrowserUrl(DomUrl url)
     {
@@ -34,6 +37,30 @@ public sealed class BrowserUrl
         Search = url.Search;
         Hash = url.Hash;
         SerializedOrigin = url.Origin;
+        Origin = ComputeOrigin(url, allowBlob: true);
+    }
+
+    private static SecurityOrigin ComputeOrigin(DomUrl url, bool allowBlob)
+    {
+        switch (url.Protocol)
+        {
+            case "http:" or "https:" or "ftp:" or "ws:" or "wss:":
+                return SecurityOrigin.FromTuple(url.Protocol[..^1], url.Hostname, url.Port);
+            case "blob:" when allowBlob:
+                try
+                {
+                    var inner = new DomUrl(url.Pathname);
+                    return inner.Protocol is "http:" or "https:"
+                        ? ComputeOrigin(inner, allowBlob: false)
+                        : SecurityOrigin.CreateOpaque();
+                }
+                catch (InvalidUrlException)
+                {
+                    return SecurityOrigin.CreateOpaque();
+                }
+            default:
+                return SecurityOrigin.CreateOpaque();
+        }
     }
 
     public static UrlParseResult ParseResult(string input, BrowserUrl? baseUrl = null)

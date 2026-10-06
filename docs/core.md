@@ -18,9 +18,21 @@ after release 1.1.0 failed nine URL vectors. Local changes correct non-strict
 ASCII domain handling, leading-zero embedded IPv4 and default bidi classes.
 The vendor README is the patch ledger and update guide.
 
-No mutable DOM URL API, URLSearchParams or origin security model is implemented.
-In particular, `"null"` is only opaque-origin serialization, not a shared
-principal. Do not use serialized-origin equality as an authorization check.
+[SecurityOrigin](../src/Core/Core.Url/SecurityOrigin.cs), exposed as `BrowserUrl.Origin`,
+is the immutable URL-level origin identity ([URL origin](https://url.spec.whatwg.org/#concept-url-origin),
+[HTML origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin)).
+`http`, `https`, `ftp`, `ws` and `wss` URLs give a tuple of scheme, normalized host
+(IDNA/IPv4/IPv6 as serialized) and effective port; equality uses those three
+values. Everything else gives a unique opaque origin equal only to the same
+instance, so `"null"` is never an identity. `file:` is always opaque (the URL spec
+leaves it implementation-defined). `blob:` takes the origin of its path only when
+that parses as `http`/`https`; there is no blob URL entry registry. Origin is
+computed once per `BrowserUrl`, so re-parsing an opaque URL gives a different
+origin. Document, sandbox, inherited origins, `document.domain` and enforcement
+belong to later phases and are not wired into documents yet.
+
+No mutable DOM URL API or URLSearchParams is implemented.
+`SerializedOrigin` remains display text only; do not use it as an authorization check.
 
 ## Encoding
 
