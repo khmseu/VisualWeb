@@ -127,6 +127,9 @@ Phase 11m allows bounded in-place style/title CharacterData edits during
 lifecycle; text identity and retained DOM resize remain unchanged.
 Phase 11n allows bounded style/title Text splitting during lifecycle;
 retained resize uses both resulting nodes without script reexecution.
+Phase 11o allows bounded lifecycle Node normalization with atomic subtree
+preflight, surviving Text identity and detached suffix data preservation.
+Styles/title are recomputed before paint; retained resize never renormalizes.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

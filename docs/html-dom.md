@@ -146,7 +146,12 @@ substring/replacement primitives. No observer, live-range or processing-
 instruction pseudoattribute reactions are implied.
 Phase 11n adds native/script Text splitting and contiguous wholeText reads.
 The script bridge preflights result identities and subtree limits before
-inserting a suffix; no normalization or live-range repair is implied.
+inserting a suffix; no live-range repair is implied.
+Phase 11o adds native/script Node normalization: remove empty descendant Text
+nodes and merge adjacent runs into the first nonempty identity, preserving
+detached node data/ownership. The iterative native plan preflights the entire
+subtree before mutation; the script bridge supplies finite traversal/storage
+and shared text-work limits. Observers/live-range reactions remain deferred.
 
 ## Safety limits
 

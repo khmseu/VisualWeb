@@ -143,7 +143,12 @@
   and identity. Observers/range/PI pseudoattribute reactions remain deferred.
   Phase 11n adds Text splitText/wholeText. Preflight output/identity/data/tree
   capacity before splitting; preserve original listeners and UTF-16 boundaries.
-  WholeText stops at non-Text siblings; no normalization/range repair is implied.
+  WholeText stops at non-Text siblings; no range repair is implied.
+  Phase 11o adds Node.normalize through a shared iterative native plan. Preflight
+  the entire subtree and all surviving Text runs before writes; preserve the
+  first nonempty identity and detached data/listeners. Charge shared task text
+  budgets even for singleton runs; never recycle removed wrapper identities.
+  No observers/live-range repair or dynamic scheduling is implied.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

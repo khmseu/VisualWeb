@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11n)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11o)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -298,6 +298,38 @@ These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
 
+## Bounded descendant Text normalization (phase 11o)
+
+All branded Node wrappers expose zero-argument `normalize()`, returning
+undefined. It removes empty **descendant** Text nodes and merges adjacent Text
+siblings into the first nonempty Text node, without crossing elements, comments
+or processing instructions. Documents, fragments and nested element subtrees
+are supported. Normalizing a leaf is a no-op: the receiver and its siblings
+are not normalized. Extra arguments are ignored without conversion.
+
+The survivor retains its identity/listeners; removed wrappers remain valid,
+detached, with their original data, document ownership and listeners. UTF-16
+code units concatenate unchanged, including surrogate halves. Repeating
+normalization is idempotent. No new wrapper identities are allocated or
+recycled, even at the **1,024 lifetime identity** limit.
+
+The native DOM shares one iterative, whole-subtree plan with the bridge via
+an assembly-internal bounded overload. The public C# Normalize accepts optional
+cancellation. Script normalization preflights **8,192 descendants**, including
+non-Text nodes, and **65,536 code units per surviving run**, even a singleton.
+Each surviving run's data charges the shared **262,144-character task budget**
+before any write; normalizing a large subtree cannot bypass text-work limits
+merely because the operation returns undefined. All **4,096 callback**, ownership,
+deadline and cancellation checks still apply. Limit or preflight cancellation
+failure leaves every run and parent unchanged. Commit has no callbacks or
+cancellation points and compacts affected child lists without quadratic removals.
+
+Observers, live-range repair, CDATA and custom-element reactions remain
+deferred. No dynamic script scheduling or persistent hosts are added.
+Lifecycle normalization feeds final style/title/paint and retained resize
+without reexecution.
+Source: cached `dom`, [normalize](https://dom.spec.whatwg.org/#dom-node-normalize).
+
 ## Bounded Text splitting and contiguous reads (phase 11n)
 
 Branded Text wrappers expose `splitText(offset)` and readonly `wholeText`.
@@ -327,7 +359,7 @@ aggregate code-unit result**. All operations share DOM callback/text limits,
 host deadline/cancellation and ownership checks. No new CLR callback or
 cross-tab object is exposed.
 
-Observers/live-range repair, CDATA, normalization and full WebIDL Text
+Observers/live-range repair, CDATA and full WebIDL Text
 constructors remain deferred. Lifecycle style/title splits preserve content
 and feed final paint; retained resize never reruns splitting.
 Sources: cached `dom`, [splitText](https://dom.spec.whatwg.org/#dom-text-splittext)
@@ -366,7 +398,7 @@ TypeError diagnostic, **not yet an IndexSizeError DOMException**.
 No CLR node/string-operation objects cross the bridge.
 
 This remains the existing static DOM subset: no observers, live-range repair,
-normalization, custom-element reactions or new
+custom-element reactions or new
 dynamic script execution. ProcessingInstruction edits update raw data only;
 the engine does not implement processing-instruction pseudoattribute parsing
 or reactions. Shared non-element prototypes reject non-CharacterData receivers
@@ -1051,3 +1083,29 @@ clean; no owned workers/resource scopes remain. All **58 official references**
 are independently cached/fresh without network refresh. Windows/ARM still
 require native target evidence. CDATA, observers/live-range repair,
 normalization, full WebIDL and persistent script event loops remain deferred.
+
+## Phase-11o validation outcome
+
+On Linux x64, all **45 projects build** and **423 selected tests pass** without
+failures or skips: 41 DOM, 243 scripting and 139 browser cases. Four native
+and ten scripted normalization cases cover UTF-16 concatenation, first-nonempty
+identity, detached data/ownership/listeners, barriers and nested document/
+fragment trees, leaf no-ops, idempotence, ignored arguments, receiver brands,
+adoption, exact surviving-run storage/descendant/shared-text/callback limits,
+whole-subtree atomic rejection, full identity capacity, captured intrinsics
+and cancellation. Native deep trees use iterative traversal.
+
+Local/process lifecycle fixtures normalize style/title runs and verify exact
+blue pixels/title, original and detached identities, retained resize and
+transactional failed-navigation preservation/recovery. Local and unchanged
+required-confined V8 probes pass with normalization identity/data checks.
+SDL dummy and required-confined X11 shell smokes pass, presenting 10 and 15
+frames. The first X11 run hit the existing five-second systemd scope-stop
+timeout; inspection confirmed the scope inactive and no workers remaining,
+then an isolated rerun passed without changing any confinement setting.
+
+Formatting, editor diagnostics and whitespace checks are clean. All **58
+official references** are independently cached/fresh without network refresh.
+Windows/ARM still require native target evidence. Observers/live-range repair,
+CDATA, custom-element reactions, full WebIDL and persistent event loops remain
+deferred; page scripting is still opt-in.

@@ -43,6 +43,8 @@ Phase 11m adds primitive-only CharacterData/nodeValue editing over checked
 native UTF-16 storage; no observers, live ranges or persistent task loop.
 Phase 11n adds bounded splitText/wholeText over shared native Text primitives,
 with atomic identity/output/tree capacity checks in the bridge.
+Phase 11o adds descendant Text normalization through a shared iterative native
+plan with whole-subtree preflight and shared text-work/cancellation budgets.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

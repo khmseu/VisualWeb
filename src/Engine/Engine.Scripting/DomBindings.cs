@@ -14,6 +14,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-element-id">id reflection</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-characterdata">CharacterData</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-text">Text splitting and wholeText</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-normalize">normalize</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
@@ -80,6 +81,7 @@ internal sealed class DomBindings : IDisposable
                     => CharacterOperation(operation, CharacterData(handle), unchecked((uint)other), unchecked((uint)reference), value),
                 "text-split" => SplitText(TextNode(handle), unchecked((uint)other)),
                 "whole-text" => WholeText(TextNode(handle)),
+                "normalize" => Normalize(Node(handle)),
                 "attribute-get" => Observe(Element(handle).GetAttribute(name)),
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attribute-set" => SetAttribute(Element(handle), name, value),
@@ -256,6 +258,11 @@ internal sealed class DomBindings : IDisposable
         var created = text.SplitText(offset);
         nodes.Add(created); identities.Add(created, nodes.Count);
         return result;
+    }
+    private string Normalize(DomNode node)
+    {
+        node.Normalize(MaxNodes, MaxTextCharacters, Budget, cancellation);
+        return "";
     }
     private string SetNodeValue(DomNode node, string value)
         => node is DomCharacterData data ? CharacterOperation("data-set", data, 0, 0, value) : "";
@@ -660,6 +667,9 @@ internal sealed class DomBindings : IDisposable
                 define(target, 'isConnected', {enumerable: true, get() {return call('connected', brand(this)) === 'true'; }});
                 define(target, 'hasChildNodes', {enumerable: true, value: function() {
                     return call('has-children', brand(this)) === 'true';
+                }});
+                define(target, 'normalize', {enumerable: true, value: function() {
+                    call('normalize', brand(this));
                 }});
                 define(target, 'contains', {enumerable: true, value: function(node) {
                     const id = brand(this); required(arguments.length, 1);

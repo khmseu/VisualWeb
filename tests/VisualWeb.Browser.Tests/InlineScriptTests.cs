@@ -22,6 +22,46 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TextNormalizationFeedsLifecycleStyleAndTitleWithTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let sheet=document.getElementById('sheet'),original=sheet.firstChild;
+            document.addEventListener('DOMContentLoaded',()=>{
+                let tail=original.splitText(original.data.indexOf('red'));tail.replaceData(0,3,'blue');
+                sheet.insertBefore(document.createTextNode(''),original);
+                sheet.normalize();
+                if(sheet.firstChild!==original||sheet.lastChild!==original||tail.parentNode!==null||tail.data!=='blue}')
+                    throw Error('normalization identity');
+                queueMicrotask(()=>{
+                    let title=document.querySelector('title'),text=title.firstChild;text.data='Normalized title';
+                    let end=text.splitText(11);title.normalize();
+                    if(title.firstChild!==text||text.nextSibling!==null||end.parentNode!==null)
+                        throw Error('title identity');
+                });
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Normalized title", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.body.normalize.call({})</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Normalized title", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TextSplittingPreservesLifecycleStyleAndTitleRunsWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

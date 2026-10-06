@@ -60,3 +60,5 @@ Phase 11m adds bounded CharacterData/nodeValue editing, retaining UTF-16
 semantics, node identity and lifecycle styling/title/paint integration.
 Phase 11n adds bounded Text splitting and contiguous wholeText reads with
 atomic identity/tree budget preflight and retained lifecycle paint.
+Phase 11o adds bounded Node.normalize with whole-subtree atomic preflight,
+first-nonempty Text identity preservation and shared text-work budgeting.

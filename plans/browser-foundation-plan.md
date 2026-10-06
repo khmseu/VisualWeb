@@ -236,7 +236,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   live ranges, PI pseudoattribute reactions or dynamic scripts are added.
   Phase 11n adds bounded splitText and wholeText, with atomic identity/output/
   data/subtree preflight and contiguous Text-run reads. Original identity and
-  listeners survive; observers, live ranges and normalization remain deferred.
+  listeners survive; observers and live ranges remain deferred.
+  Phase 11o adds bounded Node.normalize with an iterative whole-subtree native
+  plan and atomic traversal/storage/shared text-work preflight. The first
+  nonempty Text identity survives; removed nodes retain data/ownership/listeners.
+  No wrapper allocation/recycling, observers/live ranges or scheduling is added.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

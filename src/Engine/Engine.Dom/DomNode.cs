@@ -6,7 +6,7 @@ namespace VisualWeb.Engine.Dom;
 /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">pre-insert</see>
 /// and <see href="https://dom.spec.whatwg.org/#concept-node-adopt">adopt</see>.
 /// No events, live ranges, observers, shadow DOM or custom-element reactions yet.</remarks>
-public abstract class DomNode
+public abstract partial class DomNode
 {
     private readonly List<DomNode> children = [];
     public IReadOnlyList<DomNode> ChildNodes { get; }

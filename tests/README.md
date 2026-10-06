@@ -99,6 +99,12 @@ Phase-11n tests cover UTF-16 splitting, detached/fragment boundaries, contiguous
 runs, conversion/brands, retained listeners, exact storage/result/sibling/tree/
 identity/shared task limits and cancellation. Local/process lifecycle fixtures
 verify split style/title pixels and transactional resize/recovery.
+Phase-11o tests cover descendant normalization, first-nonempty identity,
+UTF-16/barriers, detached data/listeners, document/fragment/leaf behavior,
+brands/ownership, exact storage/traversal/shared text/callback limits, full
+identity capacity, intrinsic tampering and cancellation. Local/process
+lifecycle fixtures verify normalized style/title pixels and retained
+transactional resize/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

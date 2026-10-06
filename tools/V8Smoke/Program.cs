@@ -137,6 +137,11 @@ static void Probe()
             return text.data==='native '&&tail.data==='data'&&tail.previousSibling===text
                 &&text.nextSibling===tail&&tail.parentNode===created&&tail.wholeText==='native data'})()
         """).Boolean, "Native Text split/wholeText identity failed.");
+    Check(bound.Evaluate("""
+        (()=>{const text=created.firstChild,tail=text.nextSibling;created.normalize();
+            return created.firstChild===text&&created.lastChild===text&&text.data==='native data'
+                &&tail.parentNode===null&&tail.data==='data'&&created.normalize()===undefined})()
+        """).Boolean, "Native Node normalization/identity failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

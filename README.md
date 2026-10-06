@@ -61,7 +61,8 @@ matches/closest, reusing the current CSS selector subset, plus reflected
 className, bounded live classList token mutation/iteration and tree
 inspection/element navigation, reflected IDs and checked attribute toggles. It
 also supports bounded CharacterData/nodeValue editing that preserves text-node
-identity, plus bounded Text splitting and contiguous wholeText reads. It
+identity, plus bounded Text splitting, contiguous wholeText reads and atomic
+descendant Text normalization preserving surviving/detached identities. It
 explicitly enables a bounded post-parse inline classic subset in either
 development mode; mutations feed style/layout/paint, and resize retains the
 committed scripted DOM without reexecution. External scripts, HTML scheduling,

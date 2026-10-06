@@ -55,6 +55,10 @@ interrupt timer callback is delayed; no timeout values are relaxed.
 Phase 11n adds branded Text splitText/wholeText. Split preflights data, subtree,
 identity and output budgets before mutation; contiguous reads remain live and
 bounded. Original node/listener identity and retained resize remain stable.
+Phase 11o adds Node.normalize over a shared iterative native plan, atomically
+preflighting descendant, surviving-run and shared task text budgets. Empty
+descendant Text nodes disappear; adjacent runs preserve the first nonempty
+identity and detached data/listeners, without allocating/recycling handles.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 
