@@ -6,6 +6,8 @@ utilities, resource loading, static HTML/DOM/CSS, text/layout and CPU painting a
 a development-only browser shell supports local or per-tab worker rendering.
 The browser CLI requires supported OS renderer confinement in multiprocess
 modes by default; it is **not safe for hostile content**.
+Every shell mode shares bounded, memory-only session HSTS across its tabs/windows;
+standalone loaders require explicit opt-in. See [scope and limits](docs/networking.md#session-hsts).
 
 ## Getting started
 

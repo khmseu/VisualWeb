@@ -19,6 +19,15 @@ Low-level shell/renderer API defaults remain unchanged for library/test callers.
 Required Linux confinement includes phase-10c hard per-worker cgroup resource
 limits; unavailable user-manager/controller support also fails closed.
 
+Each shell owns one bounded, thread-safe, memory-only
+[HSTS policy store](networking.md#session-hsts), shared across tab-local
+`GetPageSource` loaders in all modes and windows. HTTPS STS learning upgrades
+future HTTP navigation and redirects before destination checks. Per-tab cookies
+stay off; independent shells share no policies. Final upgraded URLs determine
+committed document origins and transactional renderer rotation, without changing
+an existing document on failed navigation. No persistence, preload, public-suffix
+policy or general SOP/CSP enforcement is implied.
+
 ## Run it
 
 For the recommended confined mode, see the [process launch command](renderer-processes.md#launch).

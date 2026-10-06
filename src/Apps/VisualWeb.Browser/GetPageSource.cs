@@ -16,8 +16,11 @@ public interface IPageSource : IDisposable
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
-    public GetPageSource(HttpMessageHandler? handler = null) =>
-        loader = new(new() { MaxResponseBytes = 4 * 1024 * 1024 }, handler);
+    /// <summary>Creates a tab-local loader, optionally using a caller-owned session HSTS store.</summary>
+    /// <remarks>Spec: rfc6797; <see href="https://www.rfc-editor.org/rfc/rfc6797.html#section-8">UA processing</see>.
+    /// Cookies remain disabled. Standalone sources without a supplied store retain their prior behavior.</remarks>
+    public GetPageSource(HttpMessageHandler? handler = null, Engine.Net.HstsPolicyStore? hstsPolicyStore = null) =>
+        loader = new(new() { MaxResponseBytes = 4 * 1024 * 1024 }, handler, hstsPolicyStore);
     public async Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
     {
         var response = await loader.LoadAsync(url, cancellationToken: cancellationToken).ConfigureAwait(false);

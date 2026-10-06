@@ -31,6 +31,7 @@ entry (it still uses conditional requests where possible).
 | `url`, `encoding`, `mime-sniffing` | Core URL, Encoding and MIME (Core.Encoding also cites `html` for the charset prescan) |
 | `unicode-idna`, `unicode-bidi` | URL internationalized domains and Unicode bidi defaults |
 | `fetch` | Networking and resource policies |
+| `rfc6797` | Bounded, memory-only DNS-host HSTS learning/upgrades shared within a browser shell session |
 | `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler` | Basic session cookies and HTTP transport, not full browser cookie policy |
 | `html`, `dom` | HTML parser, DOM, navigation, event loop |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |

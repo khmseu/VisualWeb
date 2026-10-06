@@ -44,6 +44,8 @@ public sealed class DevelopmentShell : IDisposable
     private readonly bool hidden;
     private readonly bool textInput;
     private readonly bool requireSandbox;
+    // One store per shell session, shared by all tab-local loaders in every rendering mode.
+    private readonly Engine.Net.HstsPolicyStore hstsPolicyStore = new();
     private bool quit;
     private bool disposed;
     public BrowserController Controller { get; }
@@ -51,9 +53,13 @@ public sealed class DevelopmentShell : IDisposable
     public IReadOnlyList<(BrowserWindowId Browser, WindowId Native)> Windows =>
         views.Select(pair => (pair.Key, pair.Value.Native.Id)).ToArray();
 
+    /// <summary>Creates a browser session with one shared, memory-only HSTS store in every rendering mode.</summary>
+    /// <remarks>Spec: rfc6797; <see href="https://www.rfc-editor.org/rfc/rfc6797.html#section-8">UA processing</see>.
+    /// An optional transport factory returns a fresh owned handler per tab, subject to ResourceLoader's trusted
+    /// handler contract (including certificate authentication). Cookies remain off; independent shells share no policy state.</remarks>
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
         bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false,
-        bool executeInlineScripts = false)
+        bool executeInlineScripts = false, Func<HttpMessageHandler>? pageTransportFactory = null)
     {
         this.system = system;
         this.hidden = hidden;
@@ -64,7 +70,7 @@ public sealed class DevelopmentShell : IDisposable
         if (requireSandbox && rendererPath is null) { throw new ArgumentException("Renderer confinement requires a worker process."); }
         var multiprocess = rendererPath is not null;
         chrome = new(fontPath, settings.MaxFramePixels, multiprocess, requireSandbox);
-        Controller = new(() => new GetPageSource(), () => rendererPath is null
+        Controller = new(() => new GetPageSource(pageTransportFactory?.Invoke(), hstsPolicyStore), () => rendererPath is null
             ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts)
             : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts), settings,
             // Every multiprocess mode (confined or explicitly unsandboxed) rotates renderers per origin; there is no opt-out.

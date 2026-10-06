@@ -41,6 +41,14 @@
 - Read the [networking guide](docs/networking.md) before using Engine.Net.
   It is privileged GET-only loading, not script-visible Fetch or a sandbox.
   Cookies require explicit opt-in; do not silently weaken unsupported policy.
+  Session HSTS (official ID `rfc6797`) is explicit loader/store injection; every
+  DevelopmentShell owns one shared bounded memory-only store across tabs/windows
+  in all modes, with cookies still off. Upgrade initial/redirect destinations
+  before transport/cookies/bad-port/fixed-origin checks; never rebind caller
+  origins or bypass certificate validation. Learn only first STS field from
+  authenticated HTTPS, never IP/HTTP. Malformed fields need visible diagnostics;
+  expire before capacity errors, never evict active protection. Persistence,
+  preload/public-suffix policy and SOP/CSP remain deferred.
 - Read the [HTML and DOM guide](docs/html-dom.md) before changing parsing.
   The tokenizer is first-party; tree building is an explicit static subset.
   Unsupported algorithms must throw, not silently produce an approximate tree.

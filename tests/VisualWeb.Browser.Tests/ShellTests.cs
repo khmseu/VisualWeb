@@ -1,3 +1,4 @@
+using System.Net;
 using SDL3;
 using VisualWeb.Platform.Abstractions;
 using Xunit;
@@ -7,6 +8,63 @@ namespace VisualWeb.Browser.Tests;
 public sealed class ShellTests
 {
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HstsSessionStoreIsSharedAcrossTabsAndWindowsButNotIndependentShells(bool multiprocess)
+    {
+        var requests = new List<Uri>();
+        HttpMessageHandler Transport() => new HstsHandler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            Assert.False(request.Headers.Contains("Cookie"));
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("<!doctype html><title>Secure</title><style>body{margin:0}</style>",
+                    System.Text.Encoding.UTF8, "text/html")
+            };
+            response.Headers.TryAddWithoutValidation("Strict-Transport-Security", "max-age=60; includeSubDomains");
+            response.Headers.TryAddWithoutValidation("Set-Cookie", "secret=value; Secure; Path=/");
+            return response;
+        });
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer, pageTransportFactory: Transport);
+        var firstWindow = shell.OpenWindow();
+        Navigate(shell, firstWindow.ActiveTab!, "https://example.test/learn");
+        var secondTab = shell.Controller.CreateTab(firstWindow.Id);
+        Navigate(shell, secondTab, "http://example.test:80/second");
+        Assert.Equal("https://example.test/second", secondTab.History.Current!.Href);
+        Assert.Equal("https://example.test", secondTab.Origin!.Serialize());
+        var secondWindow = shell.OpenWindow();
+        Navigate(shell, secondWindow.ActiveTab!, "http://child.example.test/third");
+        Assert.Equal("https", requests[^1].Scheme);
+        shell.Controller.Session.MoveTab(secondTab.Id, secondWindow.Id);
+        Navigate(shell, secondTab, "http://example.test/moved");
+        Assert.Equal("https", requests[^1].Scheme);
+        using var otherSystem = new Windows();
+        using var independent = new DevelopmentShell(otherSystem, FontPath, rendererPath: renderer, pageTransportFactory: Transport);
+        var independentWindow = independent.OpenWindow();
+        Navigate(independent, independentWindow.ActiveTab!, "http://example.test/independent");
+        Assert.Equal("http", requests[^1].Scheme);
+
+        static void Navigate(DevelopmentShell target, BrowserTab tab, string input)
+        {
+            target.Controller.Navigate(tab.Id, input);
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                target.Tick();
+                return !tab.IsLoading;
+            }, TimeSpan.FromSeconds(20)), "Navigation did not finish.");
+            Assert.Null(tab.Error);
+        }
+    }
+
+    private sealed class HstsHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(respond(request));
+    }
     [Fact]
     public void FakePlatformReceivesPagePixelsAndRoutesTabsAddressAndWindowLifecycle()
     {

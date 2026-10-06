@@ -10,21 +10,27 @@ namespace VisualWeb.Engine.Net;
 /// HTTP(S) <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad ports</see> are blocked for every request.
 /// <see cref="LoadSameOriginAsync"/> is an opt-in same-origin restricted mode; CORS, other origin policy,
 /// SameSite, caching and script-visible Fetch are not implemented.
-/// Cookies require explicit opt-in and are isolated per loader.</remarks>
+/// Cookies require explicit opt-in and are isolated per loader. Session HSTS requires an explicitly supplied
+/// <see cref="HstsPolicyStore"/> (spec: rfc6797;
+/// <see href="https://www.rfc-editor.org/rfc/rfc6797.html#section-8.3">URI loading</see>).</remarks>
 public sealed class ResourceLoader : IDisposable
 {
     private readonly ResourceLoaderOptions options;
     private readonly HttpClient client;
     private readonly SessionCookies cookies = new();
+    private readonly HstsPolicyStore? hstsPolicyStore;
     private bool disposed;
 
     /// <summary>Creates a loader which owns its transport handler and session cookie store.</summary>
     /// <remarks>An injected custom handler must not follow redirects, handle cookies,
-    /// supply ambient credentials or buffer unbounded response bodies. Built-in HTTP
+    /// supply ambient credentials, bypass HTTPS certificate authentication or buffer unbounded response bodies. Built-in HTTP
     /// handlers are configured accordingly before use. Transport URI conversion occurs
-    /// only after WHATWG parsing and is not a replacement for Core.Url.</remarks>
-    public ResourceLoader(ResourceLoaderOptions? options = null, HttpMessageHandler? handler = null)
+    /// only after WHATWG parsing and is not a replacement for Core.Url.
+    /// A supplied HSTS store is caller-owned and may be shared across loaders; null explicitly leaves HSTS disabled.</remarks>
+    public ResourceLoader(ResourceLoaderOptions? options = null, HttpMessageHandler? handler = null,
+        HstsPolicyStore? hstsPolicyStore = null)
     {
+        this.hstsPolicyStore = hstsPolicyStore;
         this.options = options ?? new();
         this.options.Validate();
         handler ??= new SocketsHttpHandler();
@@ -60,6 +66,7 @@ public sealed class ResourceLoader : IDisposable
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
+        url = hstsPolicyStore?.Upgrade(url) ?? url;
         BadPortPolicy.ThrowIfBlocked(url);
         return await LoadCoreAsync(url, null, includeCookies, cancellationToken);
     }
@@ -84,6 +91,7 @@ public sealed class ResourceLoader : IDisposable
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(requestOrigin);
+        url = hstsPolicyStore?.Upgrade(url) ?? url;
         if (requestOrigin.IsOpaque || requestOrigin.Scheme is not ("http" or "https"))
         {
             throw new ResourceLoadException(ResourceError.SameOriginDenied,
@@ -146,6 +154,13 @@ public sealed class ResourceLoader : IDisposable
             }
 
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+            if (hstsPolicyStore is not null && response.Headers.TryGetValues("Strict-Transport-Security", out var sts))
+            {
+                // A completed HTTPS send on the trusted transport has passed platform TLS validation.
+                // Custom handlers must uphold that contract; transport failures never reach this point.
+                hstsPolicyStore.ProcessResponse(url, sts, authenticatedTransport: true, diagnostics);
+            }
+
             if (includeCookies && response.Headers.TryGetValues("Set-Cookie", out var setCookies))
             {
                 cookies.Store(uri, setCookies, diagnostics);
@@ -177,6 +192,7 @@ public sealed class ResourceLoader : IDisposable
                     next = BrowserUrl.Parse(next.Href + url.Href[WithoutFragment(url).Length..]);
                 }
 
+                next = hstsPolicyStore?.Upgrade(next) ?? next;
                 BadPortPolicy.ThrowIfBlocked(next);
                 if (requestOrigin is not null)
                 {

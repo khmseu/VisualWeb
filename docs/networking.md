@@ -41,6 +41,49 @@ precedence with a caller-selected fallback; it does not choose an HTML charset
 Invalid HTTP MIME metadata and rejected cookies appear in diagnostics, which
 callers should surface rather than ignore.
 
+## Session HSTS
+
+`ResourceLoader` and standalone `GetPageSource` enable HSTS only when explicitly
+given a caller-owned `HstsPolicyStore`. `DevelopmentShell` owns **one** store
+shared by every tab/window in every shell mode. Independent shells are isolated;
+closing or moving tabs does not clear shared policies. Cookies remain tab-local
+and off for shell navigation. No policy survives the shell session.
+
+The locked in-memory store defaults to **1024 records** (configurable positive
+finite limit), with injectable `TimeProvider`. It follows
+[RFC 6797 §§6.1, 8](https://www.rfc-editor.org/rfc/rfc6797.html#section-8):
+learn only from authenticated HTTPS responses, including every HTTP status and
+redirect/error response, never HTTP or IP literals. The trusted transport handler
+must uphold TLS authentication; built-in handlers retain platform certificate
+validation, and certificate errors fail without an HTTP retry or bypass.
+Only the first STS header field is processed. Directive names are ASCII
+case-insensitive; duplicates (including unknown names) invalidate the whole field.
+Max-age is decimal after quoted-string unescaping; includeSubDomains is valueless.
+Unknown directives with valid token/quoted-string grammar are ignored; malformed
+fields leave policies unchanged and produce visible response diagnostics.
+
+Matching uses Core.Url-normalized DNS names (case/IDNA, optional final root dot),
+exact host plus parent-label walk for includeSubDomains, never suffix substrings.
+Expiry uses reception time; repeated policies refresh it. `max-age=0` removes
+only the exact host record, not a covering parent. Large lifetimes saturate at
+`DateTimeOffset.MaxValue` without overflow. Expired entries are removed first.
+Capacity exhaustion throws `ResourceError.HstsCapacity`, never silently evicts
+active security protections; refresh/removal of existing records still works.
+
+Known HTTP destinations become HTTPS before initial or redirect destination
+bad-port, fixed-origin, cookie, credential or transport checks. The URL is rebuilt
+from parsed components via Core.Url, preserving credentials/path/query/fragment;
+port 80 becomes HTTPS default/443 and other explicit ports remain.
+URL credentials are still rejected by the loader. The original same-origin
+caller origin is never rebound to the upgraded URL. Final upgraded response URLs
+feed browser document origins and transactional renderer swaps.
+
+This is the RFC-oriented loading order: cached Fetch's current main-fetch HSTS
+step is **after** bad-port checking; this bounded loader upgrades **before**
+destination checks. There is no preload, persistence, public-suffix list,
+localhost exclusion, DNS HTTPS-record upgrade, SOP/CORS/CSP, mixed-content or
+full Fetch conformance claim. Official source ID: `rfc6797`.
+
 ## Schemes and redirects
 
 - **HTTP(S):** BCL transport, platform TLS certificate verification, automatic
@@ -158,7 +201,9 @@ authorization boundary.** It is an unfiltered browser-side loader, not the Fetch
 API. It can access local files and arbitrary network endpoints. Apart from the
 opt-in `LoadSameOriginAsync` check and bad-port blocking above, there is no
 CORS, CSP, mixed-content policy, referrer/origin policy,
-HSTS, cache, storage partitioning, sandbox or private-network policy yet.
+cache, storage partitioning, sandbox or private-network policy yet.
+The session HSTS subset above protects learned DNS hosts, not first visits or
+general request authorization.
 Cookie opt-in does not authorize a request. The future shell/broker must mediate
 access before renderer integration.
 

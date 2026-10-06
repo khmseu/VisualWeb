@@ -15,6 +15,13 @@ crashes are contained in multiprocess mode. The CLI requires
 unsupported targets/configurations fail closed before display/content startup.
 Neither mode is production-safe browsing.
 
+Every shell session owns one bounded in-memory HSTS store shared across all
+tab-local GET loaders/windows, in local and multiprocess modes. Independent
+shells are isolated; cookies remain disabled. Standalone `GetPageSource` accepts
+explicit store injection. Final upgraded URLs feed document origins and
+transactional swaps. See [session HSTS](../../../docs/networking.md#session-hsts)
+(official source ID `rfc6797`); persistence/preload/public-suffix policy is deferred.
+
 Requires exactly one mode and a trusted `--font` path. Recommended
 `--multiprocess` and legacy `--development-multiprocess` require `--renderer`
 and supported confinement. `--require-sandbox` is a redundant assertion.

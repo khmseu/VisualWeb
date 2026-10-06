@@ -75,7 +75,10 @@ public enum ResourceError
 
     /// <summary>An HTTP(S) URL targeted a Fetch <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see>;
     /// the request was blocked before transport or cookie work.</summary>
-    BlockedPort
+    BlockedPort,
+
+    /// <summary>The finite session HSTS store is full; no active protection was evicted.</summary>
+    HstsCapacity
 }
 
 public sealed class ResourceLoadException(ResourceError error, string message, Exception? innerException = null)
