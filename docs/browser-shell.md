@@ -132,6 +132,8 @@ preflight, surviving Text identity and detached suffix data preservation.
 Styles/title are recomputed before paint; retained resize never renormalizes.
 Phase 11p lets lifecycle scripts compare live DOM structure via bounded
 isEqualNode, without changing publication, retained DOM or script scheduling.
+Phase 11q exposes readonly Node/Element metadata for lifecycle scripts,
+preserving bounded string outputs, owner identity and transactional resize.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

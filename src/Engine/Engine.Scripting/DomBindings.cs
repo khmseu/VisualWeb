@@ -21,6 +21,9 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-getrootnode">getRootNode</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-issamenode">isSameNode</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-isequalnode">isEqualNode</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-nodename">nodeName</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-ownerdocument">ownerDocument</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-element-tagname">Element names</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-parentnode">element children</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-nondocumenttypechildnode">element siblings</see>,
 /// <see href="https://webidl.spec.whatwg.org/#es-DOMString">DOMString conversion</see>.</remarks>
@@ -110,6 +113,12 @@ internal sealed class DomBindings : IDisposable
                 "previous-sibling" => Sibling(Node(handle), previous: true),
                 "next-sibling" => Sibling(Node(handle), previous: false),
                 "node-type" => Observe(((int)Node(handle).NodeType).ToString(CultureInfo.InvariantCulture)),
+                "node-name" => NodeName(Node(handle)),
+                "owner-document" => Identity(Node(handle).OwnerDocument),
+                "local-name" => Observe(Element(handle).LocalName),
+                "tag-name" => NodeName(Element(handle)),
+                "namespace-uri" => Observe(Element(handle).NamespaceUri),
+                "prefix" => ElementPrefix(handle),
                 "connected" => Connected(Node(handle)),
                 "append" or "insert" or "remove" or "replace" => Mutate(operation, Node(handle), Node(other),
                     reference < 0 ? null : Node(reference)),
@@ -227,6 +236,20 @@ internal sealed class DomBindings : IDisposable
         ?? throw new InvalidOperationException("Illegal CharacterData receiver.");
     private DomText TextNode(int handle) => Node(handle) as DomText
         ?? throw new InvalidOperationException("Illegal Text receiver.");
+    private string NodeName(DomNode node)
+    {
+        if (node is DomElement element)
+        {
+            Budget(element.LocalName);
+            return element.NodeName;
+        }
+        return Observe(node.NodeName)!;
+    }
+    private string? ElementPrefix(int handle)
+    {
+        _ = Element(handle);
+        return null;
+    }
     private string WholeText(DomText text)
     {
         if (text.ParentNode?.ChildNodes.Count > MaxNodes) { throw new ScriptLimitException("DOM text sibling scan limit exceeded."); }
@@ -693,6 +716,8 @@ internal sealed class DomBindings : IDisposable
                     ['previousSibling', 'previous-sibling'], ['nextSibling', 'next-sibling']
                 ]) define(target, property, {enumerable: true, get() { return wrap(call(operation, brand(this))); }});
                 define(target, 'nodeType', {enumerable: true, get() {return +call('node-type', brand(this)); }});
+                define(target, 'nodeName', {enumerable: true, get() {return call('node-name', brand(this));}});
+                define(target, 'ownerDocument', {enumerable: true, get() {return wrap(call('owner-document', brand(this)));}});
                 define(target, 'isConnected', {enumerable: true, get() {return call('connected', brand(this)) === 'true'; }});
                 define(target, 'hasChildNodes', {enumerable: true, value: function() {
                     return call('has-children', brand(this)) === 'true';
@@ -737,6 +762,9 @@ internal sealed class DomBindings : IDisposable
                 }});
             };
             installNode(document); installNode(prototype); installNode(nodePrototype);
+            for (const [property, operation] of [
+                ['localName', 'local-name'], ['tagName', 'tag-name'], ['namespaceURI', 'namespace-uri'], ['prefix', 'prefix']
+            ]) define(prototype, property, {enumerable: true, get() {return call(operation, elementBrand(this));}});
             define(nodePrototype, 'data', {enumerable: true,
                 get() {return call('data-get', characterBrand(this));},
                 set(value) {const id=characterBrand(this);call('data-set',id,value===null?'':`${value}`);}

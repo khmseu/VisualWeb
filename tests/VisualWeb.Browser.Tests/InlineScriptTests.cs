@@ -22,6 +22,42 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task NodeMetadataGuidesLifecycleStyleAndTitleWithTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let sheet=document.getElementById('sheet');
+            document.addEventListener('DOMContentLoaded',()=>{
+                if(sheet.nodeName!=='STYLE'||sheet.tagName!=='STYLE'||sheet.localName!=='style'
+                    ||sheet.namespaceURI!=='http://www.w3.org/1999/xhtml'||sheet.prefix!==null
+                    ||sheet.ownerDocument!==document||sheet.firstChild.nodeName!=='#text'
+                    ||sheet.firstChild.ownerDocument!==document||document.ownerDocument!==null)
+                    throw Error('metadata');
+                sheet.textContent='body{margin:0;background-color:blue}';
+                queueMicrotask(()=>{sheet.ownerDocument.title='Metadata '+document.body.tagName;});
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Metadata BODY", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>'use strict';document.body.tagName='spoof'</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Metadata BODY", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task StructuralEqualityObservesLifecycleChangesWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

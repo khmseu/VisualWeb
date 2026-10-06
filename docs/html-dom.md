@@ -157,6 +157,10 @@ unordered attributes and ordered child trees. Native comparisons can span
 documents; script comparisons preserve single-document ownership and preflight
 both complete trees/payloads. Parent, identity and document mode are not equality
 criteria; no descendant wrappers are allocated.
+Phase 11q exposes native NodeName/OwnerDocument and HTML Element names/namespace
+through readonly script metadata getters. Names fold ASCII only; prefix is
+null even when the local name contains a colon. Detached nodes retain their
+owner; adopted wrappers reject rather than exposing another document.
 
 ## Safety limits
 

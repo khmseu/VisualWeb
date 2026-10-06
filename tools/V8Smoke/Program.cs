@@ -147,6 +147,12 @@ static void Probe()
             return created.firstChild.isEqualNode(text)&&!created.firstChild.isSameNode(text)
                 &&!created.isEqualNode(null)&&created.isEqualNode(created)})()
         """).Boolean, "Native Node structural equality failed.");
+    Check(bound.Evaluate("""
+        created.nodeName===created.tagName&&created.localName==='span'
+            &&created.namespaceURI==='http://www.w3.org/1999/xhtml'&&created.prefix===null
+            &&created.ownerDocument===document&&created.firstChild.nodeName==='#text'
+            &&created.firstChild.ownerDocument===document&&document.ownerDocument===null
+        """).Boolean, "Native Node/Element metadata failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

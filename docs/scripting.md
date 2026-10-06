@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11p)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11q)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,45 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Live Node and Element metadata (phase 11q)
+
+All Node facades expose readonly `nodeName` and `ownerDocument`; Element
+facades also expose readonly `localName`, `tagName`, `namespaceURI` and `prefix`.
+Each getter validates its private receiver brand and current native ownership.
+Names follow the existing HTML-only native model: element local names use
+ASCII lowercase, nodeName/tagName use ASCII uppercase, and non-ASCII UTF-16
+code units are preserved. A colon in a createElement local name does not
+create a namespace prefix. All supported elements use the HTML namespace and
+return null prefix; namespace-aware factories and XML documents are deferred.
+
+Document returns `"#document"` and null ownerDocument. Text, Comment and
+DocumentFragment return their standard `#` names; ProcessingInstruction
+returns its case-preserved target, and DocumentType its case-preserved name.
+Every non-document wrapper returns the **same bound document facade** as
+ownerDocument, including detached, removed and normalized-away nodes. Adoption
+outside that document rejects all metadata getters; it never returns a
+foreign document facade. Element-only properties are absent on non-element
+facades, and borrowed Element getters reject them explicitly.
+
+Getters are enumerable, getter-only and nonconfigurable, following the
+existing minimal facade pattern (not full WebIDL prototype conformance).
+String results charge the existing **65,536 per-result / 262,144 shared-task
+text limits**. Element name output budget is checked before allocating uppercase
+output. ownerDocument uses the existing document identity, without consuming
+a non-document wrapper slot even at the **1,024 lifetime identity** cap.
+All getters share the **4,096 callbacks**, deadline/cancellation and ownership
+checks. These constant-node reads do not traverse parents or descendants.
+No new CLR callbacks, mutable native objects, namespace machinery or dynamic
+script scheduling are added. Lifecycle reads can guide style/title updates
+while transactional navigation and retained resize remain unchanged.
+
+Sources: cached `dom`, [nodeName](https://dom.spec.whatwg.org/#dom-node-nodename),
+[ownerDocument](https://dom.spec.whatwg.org/#dom-node-ownerdocument),
+[tagName](https://dom.spec.whatwg.org/#dom-element-tagname),
+[localName](https://dom.spec.whatwg.org/#dom-element-localname),
+[namespaceURI](https://dom.spec.whatwg.org/#dom-element-namespaceuri) and
+[prefix](https://dom.spec.whatwg.org/#dom-element-prefix).
 
 ## Bounded structural Node equality (phase 11p)
 
@@ -1171,3 +1210,25 @@ clean; no owned workers/resource scopes remain. All **58 official references**
 are independently cached/fresh without network refresh. Windows/ARM still
 require native target evidence. Cloning, namespace-aware Attr/CDATA, shadow
 DOM, full WebIDL and persistent event loops remain deferred.
+
+## Phase-11q validation outcome
+
+On Linux x64, all **45 projects build** and **455 selected tests pass** without
+failures or skips: 49 DOM, 263 scripting and 143 browser cases. Three native
+and nine scripted metadata cases cover every supported Node name/owner,
+ASCII-only HTML casing with non-ASCII/colon names, detached/normalized ownership,
+native adoption and script rejection, readonly descriptors/borrowed receiver
+brands, exact element/instruction/doctype name output limits, shared text and
+callback exhaustion, full identity capacity, captured intrinsics and
+cancellation. Element uppercase allocation follows output-budget preflight.
+
+Local/process lifecycle fixtures verify metadata-guided style/title changes,
+exact blue pixels/title, transactional readonly-assignment failure, retained
+resize and fresh-navigation recovery. Local and unchanged required-confined
+V8 probes pass with Element/Text/Document metadata and owner identity checks.
+SDL dummy and required-confined X11 shell smokes pass, presenting 10 and 15
+frames respectively. Formatting, editor diagnostics and whitespace checks are
+clean; no owned workers/resource scopes remain. All **58 official references**
+are independently cached/fresh without network refresh. Windows/ARM still
+require native target evidence. Namespace-aware factories/XML documents,
+full WebIDL and persistent event loops remain deferred.

@@ -64,3 +64,5 @@ Phase 11o adds bounded Node.normalize with whole-subtree atomic preflight,
 first-nonempty Text identity preservation and shared text-work budgeting.
 Phase 11p adds bounded Node.isEqualNode with both-tree/payload preflight,
 unordered attribute comparison and ordered child equality without new handles.
+Phase 11q adds bounded readonly Node/Element metadata, ASCII-only HTML names
+and same-document ownership without additional non-document identities.

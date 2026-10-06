@@ -245,6 +245,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   comparison and both-tree/payload preflight. Attributes compare unordered,
   children ordered; ownership and shared callback/text/deadline budgets remain.
   No descendant handles, cloning, shadow DOM or scheduling is added.
+  Phase 11q adds readonly nodeName/ownerDocument and Element localName/tagName/
+  namespaceURI/prefix. Reuse native HTML names with ASCII-only casing and
+  same-document identity; enforce output/callback limits and adopted-wrapper
+  rejection. Namespace-aware factories and full WebIDL remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

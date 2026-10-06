@@ -155,6 +155,10 @@
   Text segmentation are not; keep both operand ownership checks and allocate
   no descendant wrappers. Native cross-document comparison is not a script
   ownership exception.
+  Phase 11q adds readonly nodeName/ownerDocument and Element name/namespace
+  metadata. Preserve ASCII-only HTML name casing, null prefixes and same
+  document facade ownership for detached nodes. Preflight uppercase name
+  allocation and shared text limits; never expose an adopted foreign document.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

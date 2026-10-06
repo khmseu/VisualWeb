@@ -63,6 +63,10 @@ Phase 11p adds isEqualNode with optional null operands, both-wrapper ownership
 and iterative structural equality. Both complete non-null trees/payloads are
 preflighted against traversal/attribute/shared-text budgets even for identity
 or obvious mismatches. No descendant wrappers are allocated.
+Phase 11q adds readonly Node.nodeName/ownerDocument and Element.localName/
+tagName/namespaceURI/prefix. Native ASCII-only HTML casing, detached ownership,
+same document facade and string/callback budgets remain intact; adopted
+wrappers cannot expose a foreign document.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

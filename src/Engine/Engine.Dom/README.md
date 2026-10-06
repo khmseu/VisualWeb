@@ -26,6 +26,9 @@ IsEqualNode compares supported interface payloads, unordered attributes and
 ordered child trees iteratively, with optional cancellation and no mutations.
 Parent/identity/ownership/document mode are not structural equality criteria.
 Engine.Scripting shares an internal bounded preflight overload.
+Native NodeName/OwnerDocument and Element.LocalName/NamespaceUri also feed the
+readonly script metadata surface. HTML names fold ASCII only; detached nodes
+retain their owner, and adoption updates every descendant's owner.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

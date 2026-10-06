@@ -47,6 +47,8 @@ Phase 11o adds descendant Text normalization through a shared iterative native
 plan with whole-subtree preflight and shared text-work/cancellation budgets.
 Phase 11p adds read-only structural Node equality over shared iterative native
 comparison, preflighting both operands without allocating descendant identities.
+Phase 11q adds readonly name/namespace/owner-document metadata through the same
+primitive bridge, with shared text quotas and unchanged receiver ownership.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

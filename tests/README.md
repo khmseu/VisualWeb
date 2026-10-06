@@ -111,6 +111,11 @@ document mode, null/default/brand/ownership checks, exact both-tree/attribute/
 text/output/callback capacities, full identity capacity, listeners, tampering
 and cancellation. Local/process lifecycle fixtures verify live equality,
 style/title pixels and retained transactional resize/recovery.
+Phase-11q tests cover every supported node's name/owner, ASCII/non-ASCII/colon
+HTML names, detached and adopted ownership, readonly descriptors and borrowed
+getter brands, exact name/output/shared callback bounds, full identity
+capacity, captured intrinsics and cancellation. Local/process lifecycle
+fixtures verify metadata-guided style/title pixels and transactional resize.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

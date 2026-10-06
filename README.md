@@ -63,7 +63,8 @@ inspection/element navigation, reflected IDs and checked attribute toggles. It
 also supports bounded CharacterData/nodeValue editing that preserves text-node
 identity, plus bounded Text splitting, contiguous wholeText reads and atomic
 descendant Text normalization preserving surviving/detached identities, plus
-bounded structural Node equality over ordered trees and unordered attributes. It
+bounded structural Node equality over ordered trees and unordered attributes,
+and readonly Node/Element name, namespace and owner-document metadata. It
 explicitly enables a bounded post-parse inline classic subset in either
 development mode; mutations feed style/layout/paint, and resize retains the
 committed scripted DOM without reexecution. External scripts, HTML scheduling,

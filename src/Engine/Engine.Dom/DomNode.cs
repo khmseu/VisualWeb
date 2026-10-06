@@ -11,8 +11,12 @@ public abstract partial class DomNode
     private readonly List<DomNode> children = [];
     public IReadOnlyList<DomNode> ChildNodes { get; }
     public DomNode? ParentNode { get; private set; }
+    /// <summary>The owning document, or null for a Document node.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-node-ownerdocument">ownerDocument</see>.</remarks>
     public DomDocument? OwnerDocument { get; private set; }
     public abstract DomNodeType NodeType { get; }
+    /// <summary>The interface-specific name, with ASCII-uppercase HTML element names.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-node-nodename">nodeName</see>.</remarks>
     public abstract string NodeName { get; }
     public DomNode? FirstChild => children.FirstOrDefault();
     public DomNode? LastChild => children.LastOrDefault();
