@@ -66,3 +66,5 @@ Phase 11p adds bounded Node.isEqualNode with both-tree/payload preflight,
 unordered attribute comparison and ordered child equality without new handles.
 Phase 11q adds bounded readonly Node/Element metadata, ASCII-only HTML names
 and same-document ownership without additional non-document identities.
+Phase 11r adds bounded hasAttributes/getAttributeNames, fresh mutable ordered
+name arrays and captured primitive-only decoding without live Attr objects.

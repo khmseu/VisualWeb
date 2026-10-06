@@ -45,6 +45,8 @@ Structural equality probes compare distinct Text identities, null and
 self-comparison under unchanged confinement.
 Metadata probes verify Element name/namespace/prefix and same-owner document
 facades for Element/Text/Document under unchanged confinement.
+Attribute-inspection probes verify presence and fresh string name snapshots
+locally and under unchanged confinement.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

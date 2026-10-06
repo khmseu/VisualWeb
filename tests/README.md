@@ -116,6 +116,11 @@ HTML names, detached and adopted ownership, readonly descriptors and borrowed
 getter brands, exact name/output/shared callback bounds, full identity
 capacity, captured intrinsics and cancellation. Local/process lifecycle
 fixtures verify metadata-guided style/title pixels and transactional resize.
+Phase-11r tests cover ordered fresh/mutable name arrays, replacement/removal/
+readdition, unusual UTF-16 names, brands/adoption, exact count/encoded/shared
+text/callback limits, oversized native values, full identity capacity,
+captured intrinsics/inherited setters and cancellation. Local/process lifecycle
+fixtures cover recovered parser names, ordered mutations, pixels and recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

@@ -24,6 +24,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-nodename">nodeName</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-ownerdocument">ownerDocument</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-tagname">Element names</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-element-getattributenames">attribute name snapshots</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-element-hasattributes">attribute presence</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-parentnode">element children</see>,
 /// <see href="https://dom.spec.whatwg.org/#interface-nondocumenttypechildnode">element siblings</see>,
 /// <see href="https://webidl.spec.whatwg.org/#es-DOMString">DOMString conversion</see>.</remarks>
@@ -88,6 +90,8 @@ internal sealed class DomBindings : IDisposable
                 "normalize" => Normalize(Node(handle)),
                 "attribute-get" => Observe(Element(handle).GetAttribute(name)),
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
+                "attributes-has" => Observe(Element(handle).Attributes.Count == 0 ? "false" : "true"),
+                "attribute-names" => AttributeNames(Element(handle)),
                 "attribute-set" => SetAttribute(Element(handle), name, value),
                 "attribute-remove" => RemoveAttribute(Element(handle), name),
                 "attribute-toggle" => ToggleAttribute(Element(handle), name, value),
@@ -383,6 +387,21 @@ internal sealed class DomBindings : IDisposable
         CheckAttributeStorage(element, name, value);
         element.SetAttribute(name, value);
         return "";
+    }
+    private string AttributeNames(DomElement element)
+    {
+        if (element.Attributes.Count > MaxAttributes)
+        { throw new ScriptLimitException("DOM attribute name count limit exceeded."); }
+        var result = new System.Text.StringBuilder();
+        foreach (var name in element.Attributes.Keys)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            var prefix = name.Length.ToString(CultureInfo.InvariantCulture) + ":";
+            if (result.Length + (long)prefix.Length + name.Length > MaxTextCharacters)
+            { throw new ScriptLimitException("DOM attribute name result limit exceeded."); }
+            result.Append(prefix); result.Append(name);
+        }
+        return Observe(result.ToString())!;
     }
     private static void CheckAttributeStorage(DomElement element, string name, string value)
     {
@@ -823,6 +842,21 @@ internal sealed class DomBindings : IDisposable
                 const id = elementBrand(this); required(arguments.length, 1);
                 const result = call(operation, id, '', -1, -1, `${name}`);
                 return operation === 'attribute-has' ? result === 'true' : operation === 'attribute-remove' ? undefined : result;
+            }});
+            define(prototype, 'hasAttributes', {enumerable: true, value: function() {
+                return call('attributes-has',elementBrand(this))==='true';
+            }});
+            define(prototype, 'getAttributeNames', {enumerable: true, value: function() {
+                const text=call('attribute-names',elementBrand(this)),result=[];
+                let offset=0,index=0;
+                while(offset<text.length){
+                    const separator=apply(indexOf,text,':',offset),length=+apply(slice,text,offset,separator);
+                    offset=separator+1;
+                    define(result,index++,{value:apply(slice,text,offset,offset+length),
+                        enumerable:true,writable:true,configurable:true});
+                    offset+=length;
+                }
+                return result;
             }});
             define(prototype, 'setAttribute', {enumerable: true, value: function(name, value) {
                 const id = elementBrand(this); required(arguments.length, 2);

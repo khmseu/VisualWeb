@@ -22,6 +22,45 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task AttributeInspectionObservesLifecycleOrderAndPreservesTransactionalResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:red}body[data-blue]{background-color:blue}</style>
+            <body =odd=value>
+            <script>
+            let body=document.body,snapshot=body.getAttributeNames();
+            document.addEventListener('DOMContentLoaded',()=>{
+                if(!body.hasAttributes()||snapshot.join(',')!=='=odd')throw Error('recovered attributes');
+                body.removeAttribute('=odd');
+                if(body.hasAttributes())throw Error('empty attributes');
+                body.id='live';body.toggleAttribute('data-blue');body.className='token';
+                body.removeAttribute('id');body.id='again';
+                if(body.getAttributeNames().join(',')!=='data-blue,class,id'||!body.hasAttributes())
+                    throw Error('attribute order');
+                snapshot.push('local');
+                queueMicrotask(()=>document.title='Attributes '+body.getAttributeNames().length);
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("Attributes 3", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.body.getAttributeNames.call({})</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("Attributes 3", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NodeMetadataGuidesLifecycleStyleAndTitleWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

@@ -159,6 +159,10 @@
   metadata. Preserve ASCII-only HTML name casing, null prefixes and same
   document facade ownership for detached nodes. Preflight uppercase name
   allocation and shared text limits; never expose an adopted foreign document.
+  Phase 11r adds hasAttributes/getAttributeNames over native ordered attributes.
+  Return fresh mutable arrays via captured length-prefixed decoding, not live
+  CLR collections or Attr objects. Preserve recovered names, shared encoded
+  output/count limits and prototype-tampering defenses.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

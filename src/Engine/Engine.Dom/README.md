@@ -29,6 +29,8 @@ Engine.Scripting shares an internal bounded preflight overload.
 Native NodeName/OwnerDocument and Element.LocalName/NamespaceUri also feed the
 readonly script metadata surface. HTML names fold ASCII only; detached nodes
 retain their owner, and adoption updates every descendant's owner.
+The script attribute-inspection subset reads this ordered attribute view for
+fresh name snapshots and presence checks, without exposing the CLR collection.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

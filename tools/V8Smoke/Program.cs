@@ -153,6 +153,11 @@ static void Probe()
             &&created.ownerDocument===document&&created.firstChild.nodeName==='#text'
             &&created.firstChild.ownerDocument===document&&document.ownerDocument===null
         """).Boolean, "Native Node/Element metadata failed.");
+    Check(bound.Evaluate("""
+        (()=>{const names=created.getAttributeNames();
+            return created.hasAttributes()&&names.includes('id')&&names!==created.getAttributeNames()
+                &&names.every(name=>typeof name==='string')})()
+        """).Boolean, "Native attribute name snapshot/presence failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

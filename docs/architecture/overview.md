@@ -49,6 +49,8 @@ Phase 11p adds read-only structural Node equality over shared iterative native
 comparison, preflighting both operands without allocating descendant identities.
 Phase 11q adds readonly name/namespace/owner-document metadata through the same
 primitive bridge, with shared text quotas and unchanged receiver ownership.
+Phase 11r adds ordered attribute inspection over existing native storage,
+returning bounded primitive-decoded mutable snapshots without new identities.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

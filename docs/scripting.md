@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11q)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11r)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,41 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Ordered attribute inspection (phase 11r)
+
+Branded Element wrappers expose `hasAttributes()` and `getAttributeNames()`.
+Presence reads only the native attribute count; name inspection returns a
+**fresh mutable JavaScript Array** in native attribute-list order. Replacement
+keeps a name's position, removal deletes it, and readdition appends it. Returned
+arrays are snapshots: user edits and later attribute changes are independent.
+Extra arguments are ignored without conversion. Borrowed methods reject
+non-elements, forged receivers and wrappers adopted into another document.
+
+The existing OrderedDictionary is the source of truth; no live NamedNodeMap
+or Attr objects are added. HTML names retain ASCII folding; parser-recovered
+names are copied without public-setter revalidation. Names containing colons,
+commas, quotes, backslashes or lone surrogates survive a private length-prefixed
+UTF-16 wire format. The decoder captures string/defineProperty/brand intrinsics
+and defines own writable/configurable/enumerable array entries directly, avoiding
+inherited index setters, push/species/JSON hooks or replacement Array globals.
+
+Name scans permit **128 attributes** and **65,536 encoded output characters**,
+including decimal length prefixes and separators; this deliberately means
+a single 65,530-character name fits exactly, while 65,531 does not. Encoded
+output charges the existing **262,144 shared task text budget**. Values are
+neither read nor copied, so oversized native values do not prevent name
+inspection. hasAttributes remains a constant-time Boolean read even when
+the native list exceeds the name-scan cap. Both methods share **4,096 callbacks**,
+ownership, cancellation and host deadlines. No wrapper slots are allocated.
+Failure never changes attributes or exposes a partial snapshot.
+
+Namespace-aware duplicate qualified names, NamedNodeMap/Attr, full WebIDL and
+dynamic script scheduling remain deferred. Lifecycle snapshots observe live
+attribute mutations before final styles/title/paint; retained resize is unchanged.
+Sources: cached `dom`,
+[hasAttributes](https://dom.spec.whatwg.org/#dom-element-hasattributes) and
+[getAttributeNames](https://dom.spec.whatwg.org/#dom-element-getattributenames).
 
 ## Live Node and Element metadata (phase 11q)
 
@@ -1232,3 +1267,25 @@ clean; no owned workers/resource scopes remain. All **58 official references**
 are independently cached/fresh without network refresh. Windows/ARM still
 require native target evidence. Namespace-aware factories/XML documents,
 full WebIDL and persistent event loops remain deferred.
+
+## Phase-11r validation outcome
+
+On Linux x64, all **45 projects build** and **416 selected tests pass** without
+failures or skips: 271 scripting and 145 browser cases. Eight scripted
+attribute-inspection cases cover fresh mutable ordered arrays, replacement/
+removal/readdition, unusual UTF-16 names, ignored arguments, receiver brands/
+adoption, exact count/encoded/shared-text/callback limits, oversized native
+values, full identity capacity, captured intrinsics/inherited index setters
+and cancellation. No native DOM algorithm changes are introduced.
+
+Local/process lifecycle fixtures preserve recovered parser attribute names,
+observe ordered live mutations, and verify exact blue pixels/title,
+transactional bad-receiver failure, retained resize and fresh-navigation
+recovery. Local and unchanged required-confined V8 probes pass with attribute
+presence/fresh-name checks. SDL dummy and required-confined X11 shell smokes
+pass, presenting 10 and 15 frames respectively. Formatting, editor diagnostics
+and whitespace checks are clean; no owned workers/resource scopes remain.
+All **58 official references** are independently cached/fresh without network
+refresh. Windows/ARM still require native target evidence. Attr/NamedNodeMap,
+namespace-aware duplicates, full WebIDL and persistent event loops remain
+deferred; page scripting is still opt-in.

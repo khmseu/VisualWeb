@@ -67,6 +67,10 @@ Phase 11q adds readonly Node.nodeName/ownerDocument and Element.localName/
 tagName/namespaceURI/prefix. Native ASCII-only HTML casing, detached ownership,
 same document facade and string/callback budgets remain intact; adopted
 wrappers cannot expose a foreign document.
+Phase 11r adds constant-time hasAttributes and bounded ordered getAttributeNames.
+Fresh mutable arrays use captured length-prefixed primitive decoding, preserve
+native ordering/recovered names and allocate no node wrappers. Attr/NamedNodeMap
+and namespace-aware duplicate qualified names remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

@@ -161,6 +161,9 @@ Phase 11q exposes native NodeName/OwnerDocument and HTML Element names/namespace
 through readonly script metadata getters. Names fold ASCII only; prefix is
 null even when the local name contains a colon. Detached nodes retain their
 owner; adopted wrappers reject rather than exposing another document.
+Phase 11r exposes ordered native attribute names as bounded, fresh mutable
+script arrays and constant-time presence. Recovered parser names are preserved;
+values, Attr objects and live NamedNodeMap remain outside this API.
 
 ## Safety limits
 

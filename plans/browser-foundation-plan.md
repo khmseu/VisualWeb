@@ -249,6 +249,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   namespaceURI/prefix. Reuse native HTML names with ASCII-only casing and
   same-document identity; enforce output/callback limits and adopted-wrapper
   rejection. Namespace-aware factories and full WebIDL remain deferred.
+  Phase 11r adds hasAttributes and ordered getAttributeNames snapshots with
+  bounded count/encoded output and captured primitive decoding. Preserve native
+  attribute order, recovered names and independent mutable arrays without new
+  wrapper slots; Attr/NamedNodeMap and namespace-aware duplication remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.
