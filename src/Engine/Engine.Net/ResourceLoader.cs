@@ -7,7 +7,8 @@ namespace VisualWeb.Engine.Net;
 /// <summary>A bounded GET-only loader for trusted browser-side callers.</summary>
 /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#scheme-fetch">scheme fetch</see>
 /// and <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
-/// CORS, origin policy, SameSite, caching and script-visible Fetch are not implemented.
+/// <see cref="LoadSameOriginAsync"/> is an opt-in same-origin restricted mode; CORS, other origin policy,
+/// SameSite, caching and script-visible Fetch are not implemented.
 /// Cookies require explicit opt-in and are isolated per loader.</remarks>
 public sealed class ResourceLoader : IDisposable
 {
@@ -48,11 +49,47 @@ public sealed class ResourceLoader : IDisposable
         client = new(handler, disposeHandler: true) { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
     }
 
+    /// <summary>Trusted, unrestricted developer/browser navigation: HTTP(S), local file and data URLs, with
+    /// redirects to any HTTP(S) origin. Not an authorization boundary; see <see cref="LoadSameOriginAsync"/>.</summary>
     public async Task<ResourceResponse> LoadAsync(BrowserUrl url, bool includeCookies = false,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
+        return await LoadCoreAsync(url, null, includeCookies, cancellationToken);
+    }
+
+    /// <summary>Opt-in restricted GET: loads only HTTP(S) URLs same origin with a fixed HTTP(S) tuple request origin.</summary>
+    /// <remarks>Spec: fetch; models only the origin check of
+    /// <see href="https://fetch.spec.whatwg.org/#concept-main-fetch">main fetch</see> for request mode
+    /// <see href="https://fetch.spec.whatwg.org/#concept-request-mode">"same-origin"</see>, re-applied before every
+    /// <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirect</see> hop.
+    /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsers.html#same-origin">same origin</see>.
+    /// Stricter subset: data, file, blob and other non-HTTP(S) URLs, opaque request origins and non-HTTP(S) tuple
+    /// request origins are denied before any I/O. Each redirect target is compared with the original
+    /// <paramref name="requestOrigin"/> (never the preceding URL) before its request is sent. No CORS, Origin header,
+    /// referrer, CSP or response tainting is implemented; this is not script-visible Fetch or a complete
+    /// browser-wide policy. Denials throw <see cref="ResourceLoadException"/> with
+    /// <see cref="ResourceError.SameOriginDenied"/>.</remarks>
+    public async Task<ResourceResponse> LoadSameOriginAsync(BrowserUrl url, SecurityOrigin requestOrigin,
+        bool includeCookies = false, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(requestOrigin);
+        if (requestOrigin.IsOpaque || requestOrigin.Scheme is not ("http" or "https"))
+        {
+            throw new ResourceLoadException(ResourceError.SameOriginDenied,
+                "Same-origin loads require an HTTP(S) tuple request origin.");
+        }
+
+        EnforceSameOrigin(url, requestOrigin);
+        return await LoadCoreAsync(url, requestOrigin, includeCookies, cancellationToken);
+    }
+
+    private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin, bool includeCookies,
+        CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(options.Timeout);
@@ -62,7 +99,7 @@ public sealed class ResourceLoader : IDisposable
             {
                 "data:" => DataUrlProcessor.Load(url, options.MaxResponseBytes, deadline.Token),
                 "file:" => await LoadFileAsync(url, deadline.Token),
-                "http:" or "https:" => await LoadHttpAsync(url, includeCookies, deadline.Token),
+                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, includeCookies, deadline.Token),
                 _ => throw new ResourceLoadException(ResourceError.UnsupportedScheme, "Unsupported resource URL scheme.")
             };
         }
@@ -76,7 +113,17 @@ public sealed class ResourceLoader : IDisposable
         }
     }
 
-    private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, bool includeCookies, CancellationToken token)
+    private static void EnforceSameOrigin(BrowserUrl url, SecurityOrigin requestOrigin)
+    {
+        if (url.Protocol is not ("http:" or "https:") || !requestOrigin.IsSameOrigin(url.Origin))
+        {
+            throw new ResourceLoadException(ResourceError.SameOriginDenied,
+                "Resource URL is not same origin with the request origin.");
+        }
+    }
+
+    private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin, bool includeCookies,
+        CancellationToken token)
     {
         var url = initial;
         var diagnostics = new List<string>();
@@ -120,6 +167,11 @@ public sealed class ResourceLoader : IDisposable
                 if (!values[0].Contains('#') && WithoutFragment(url).Length != url.Href.Length)
                 {
                     next = BrowserUrl.Parse(next.Href + url.Href[WithoutFragment(url).Length..]);
+                }
+
+                if (requestOrigin is not null)
+                {
+                    EnforceSameOrigin(next, requestOrigin);
                 }
 
                 url = next;

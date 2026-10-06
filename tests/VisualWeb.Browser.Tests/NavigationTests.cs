@@ -37,6 +37,30 @@ public sealed class NavigationTests
     }
 
     [Fact]
+    public async Task TopLevelNavigationRemainsUnrestrictedAcrossOriginsAfterSameOriginLoaderMode()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            if (requests.Count == 2)
+            {
+                var redirect = new HttpResponseMessage(HttpStatusCode.MovedPermanently);
+                redirect.Headers.Location = new Uri("http://third.example:8080/final");
+                return redirect;
+            }
+            return new(HttpStatusCode.OK) { Content = new StringContent("<p>page</p>", Encoding.UTF8, "text/html") };
+        }));
+        var first = await source.LoadAsync(BrowserUrl.Parse("https://first.example/"), Cancellation);
+        var second = await source.LoadAsync(BrowserUrl.Parse("https://second.example/start"), Cancellation);
+
+        Assert.Equal(["https://first.example/", "https://second.example/start", "http://third.example:8080/final"], requests);
+        Assert.Equal("https://first.example", first.Origin.Serialize());
+        Assert.Equal("http://third.example:8080", second.Origin.Serialize());
+        Assert.False(second.Origin.IsSameOrigin(first.Origin));
+    }
+
+    [Fact]
     public async Task RepeatedDataLoadsUsingTheSameUrlHaveDistinctDocumentOrigins()
     {
         using var source = new GetPageSource();

@@ -22,7 +22,7 @@ The biggest remaining gaps are page interaction, real-world standards compatibil
 
 This is the most important gap before accepting arbitrary web content.
 
-- Security-origin identity is partially implemented: immutable tuple/opaque URL origins and `LoadedPage` origins from the final response URL, with fresh opaque identity per new document and stable identity for retained repaint/metadata copies. Tabs expose a browser-owned committed origin published atomically with successfully rendered documents. Inherited/sandbox origin selection remains missing; no same-origin enforcement, CORS, CSP, mixed-content policy, HSTS, or storage partitioning is implemented.
+- Security-origin identity is partially implemented: immutable tuple/opaque URL origins and `LoadedPage` origins from the final response URL, with fresh opaque identity per new document and stable identity for retained repaint/metadata copies. Tabs expose a browser-owned committed origin published atomically with successfully rendered documents. Inherited/sandbox origin selection remains missing. Engine.Net has an opt-in same-origin restricted GET mode (`LoadSameOriginAsync`) that checks the initial URL and every redirect against a fixed HTTP(S) request origin. Nothing calls it from script or the browser, and it is not production-safe policy. No browser-wide same-origin enforcement, CORS, CSP, mixed-content policy, HSTS, or storage partitioning is implemented.
 - No cross-site frame isolation or navigation process swaps; isolation is currently per tab.
 - Renderer confinement is **opt-in**, not the normal launch policy.
 - Linux ARM64 confinement is explicitly unsupported and fails closed.

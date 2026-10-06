@@ -96,4 +96,65 @@ public sealed class HttpTransportTests
             }
         }
     }
+
+    [Fact]
+    public async Task RealHttpTransportFollowsSameOriginRedirectAndDeniesCrossOriginHopBeforeConnecting()
+    {
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        lifetime.CancelAfter(TimeSpan.FromSeconds(10));
+        var token = lifetime.Token;
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var requests = new List<string>();
+        var server = ServeAsync();
+        try
+        {
+            using var loader = new ResourceLoader(handler: new SocketsHttpHandler { UseProxy = false });
+            var url = BrowserUrl.Parse($"http://127.0.0.1:{port}/start");
+            var error = await Assert.ThrowsAsync<ResourceLoadException>(() => loader.LoadSameOriginAsync(url, url.Origin, true, token));
+            Assert.Equal(ResourceError.SameOriginDenied, error.Error);
+            await server;
+            Assert.Equal(2, requests.Count);
+            Assert.StartsWith("GET /start HTTP/1.1\r\n", requests[0]);
+            Assert.StartsWith("GET /same HTTP/1.1\r\n", requests[1]);
+            Assert.Contains("Cookie: id=local\r\n", requests[1]);
+            Assert.DoesNotContain("Origin:", requests[0] + requests[1], StringComparison.OrdinalIgnoreCase);
+            Assert.False(listener.Pending());
+        }
+        finally
+        {
+            await lifetime.CancelAsync();
+            listener.Stop();
+            try
+            {
+                await server;
+            }
+            catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+            {
+                // Own listener task is canceled during cleanup if the test fails early.
+            }
+        }
+
+        async Task ServeAsync()
+        {
+            for (var index = 0; index < 2; index++)
+            {
+                using var connection = await listener.AcceptTcpClientAsync(token);
+                await using var stream = connection.GetStream();
+                using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
+                var request = new StringBuilder();
+                string? line;
+                while ((line = await reader.ReadLineAsync(token)) is { Length: > 0 })
+                {
+                    request.Append(line).Append("\r\n");
+                }
+
+                requests.Add(request.ToString());
+                var location = index == 0 ? "/same" : $"http://localhost:{port}/cross";
+                await stream.WriteAsync(Encoding.ASCII.GetBytes(
+                    $"HTTP/1.1 302 Found\r\nLocation: {location}\r\nSet-Cookie: id=local; Path=/\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"), token);
+            }
+        }
+    }
 }

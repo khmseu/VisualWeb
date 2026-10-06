@@ -84,6 +84,8 @@ tables; Core.Mime uses the BCL. See the [core guide](../core.md) for scope.
 Engine.Net references those three core libraries and portable BCL HTTP/file
 services. Its session cookie store belongs to a loader instance, not global
 renderer state. It has no platform-backend or browser-shell dependency.
+Its opt-in same-origin restricted mode compares Core.Url `SecurityOrigin`
+identities. It is not wired into script, the renderer or top-level navigation.
 See the [networking guide](../networking.md) before integrating it with pages.
 Engine.Html consumes already-decoded strings and references Engine.Dom only.
 Engine.Dom is independent of parsing, networking, platform backends and chrome.

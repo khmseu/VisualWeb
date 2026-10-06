@@ -6,8 +6,14 @@ deadline. Cancellation propagates; typed errors distinguish resource failures.
 
 Responses contain bytes, status, final URL, headers, parsed MIME and diagnostics.
 Cookies are host-only, in-memory per loader and require `includeCookies: true`.
-Unsupported cookie policies are rejected with diagnostics. No CORS, origin
-policy, SameSite, persistence or script-visible Fetch API is implemented.
+Unsupported cookie policies are rejected with diagnostics. No CORS, browser-wide
+origin policy, SameSite, persistence or script-visible Fetch API is implemented.
+
+`LoadAsync` is trusted, unrestricted navigation. The opt-in `LoadSameOriginAsync`
+accepts only HTTP(S) URLs same origin with a fixed HTTP(S) tuple `SecurityOrigin`,
+checked before the first request and every redirect hop. It throws
+`ResourceError.SameOriginDenied` otherwise. It is a loader primitive with no CORS,
+Origin header or script binding, and it is not browser-wide enforcement.
 
 Use only from trusted browser-side callers. HttpClient is a transport, not
 complete Fetch. See the [networking guide](../../../docs/networking.md) for

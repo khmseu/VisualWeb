@@ -68,7 +68,10 @@ public enum ResourceError
     RedirectLimit,
     BodyLimit,
     Network,
-    Timeout
+    Timeout,
+
+    /// <summary>A restricted same-origin load was denied by origin or scheme policy before the request was sent.</summary>
+    SameOriginDenied
 }
 
 public sealed class ResourceLoadException(ResourceError error, string message, Exception? innerException = null)

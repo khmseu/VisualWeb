@@ -70,6 +70,41 @@ redirect, supply ambient credentials, manage cookies or buffer unbounded
 responses themselves. Tests inject fakes; real transport tests disable proxies
 for their ephemeral loopback servers.
 
+## Opt-in same-origin restricted loads
+
+`LoadAsync` stays the trusted, unrestricted developer navigation entry point:
+HTTP(S), local file and data URLs, with redirects to any HTTP(S) origin. The
+browser's `GetPageSource` top-level navigation keeps using it unchanged.
+
+`LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken)`
+is a separate, opt-in GET entry point. It shares the same HTTP pipeline, so
+redirect limits, body bounds, deadlines, cancellation and the cookie opt-in are
+identical. It models only the origin check of Fetch
+[main fetch](https://fetch.spec.whatwg.org/#concept-main-fetch) for request mode
+`"same-origin"`, re-applied for every
+[HTTP-redirect fetch](https://fetch.spec.whatwg.org/#http-redirect-fetch) hop:
+
+- `requestOrigin` must be an HTTP(S) tuple `SecurityOrigin`. Opaque origins are
+  denied, even the origin of the very URL being loaded, as are other tuple
+  schemes such as `ftp`/`ws`. Null arguments throw `ArgumentNullException`.
+- The URL must be HTTP(S) and same origin with `requestOrigin` (scheme, host in
+  IDNA/IP-normalized serializer form, effective port). Data, file, blob and all
+  other schemes are denied. This is stricter than Fetch, which lets data URLs
+  through same-origin mode.
+- Denials raise `ResourceLoadException` with `ResourceError.SameOriginDenied`
+  before any transport or cookie work. URL credentials still raise
+  `UrlCredentials`; non-HTTP(S) redirect targets still raise `UnsupportedRedirect`.
+- Each redirect target is compared with the fixed `requestOrigin`, never the
+  preceding URL. This happens before its request is sent, so a cross-origin hop
+  stops the load and a cross-to-same-origin bounce is never reached. Cookies set
+  by allowed responses, including the redirect response that was denied, stay in
+  this loader's session.
+
+This is a loader primitive, not browser-wide enforcement. No CORS, `Origin`
+header, referrer policy, CSP, response tainting or `no-cors` mode is
+implemented, and no script binding, renderer/broker caller or CLI flag uses it
+yet. It does not make the loader safe to expose to hostile content.
+
 ## Basic cookies, not full browser policy
 
 Cookies are **omitted by default**, both outbound and inbound. Explicit
@@ -96,7 +131,8 @@ broader conformance data and persistence decisions.
 
 **Do not expose this loader directly to hostile page scripts or use it as an
 authorization boundary.** It is an unfiltered browser-side loader, not the Fetch
-API. It can access local files and arbitrary network endpoints. There is no
+API. It can access local files and arbitrary network endpoints. Apart from the
+opt-in `LoadSameOriginAsync` check above, there is no
 CORS, CSP, mixed-content policy, referrer/origin policy, Fetch bad-port blocking,
 HSTS, cache, storage partitioning, sandbox or private-network policy yet.
 Cookie opt-in does not authorize a request. The future shell/broker must mediate
@@ -119,9 +155,13 @@ dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_pa
 Tests cover pinned official data URL/base64 byte and MIME fixtures, all five
 redirect statuses, relative/fragment handling, exact redirect/body limits,
 local files, cookie scoping/deletion/rejection, ownership, cancellation and
-deadlines during both headers and body. Owned ephemeral loopback HTTP servers
-also verify actual redirects, cookie sending and decompressed body limits
-through SocketsHttpHandler. No tests contact the public network or refresh
+deadlines during both headers and body. Same-origin tests cover normalized
+default-port/case/IDNA/IPv4/IPv6 matches, scheme/host/port, opaque and non-HTTP
+denials with zero handler calls, all five redirect statuses denied cross-origin
+before a second request, exact multi-hop cookies, credentials, limits,
+cancellation/deadlines and the unrestricted default. Owned ephemeral loopback
+HTTP servers also verify actual redirects, cookie sending, decompressed body
+limits and a denied cross-origin hop through SocketsHttpHandler. No tests contact the public network or refresh
 standards. Fixture licensing/pins are in the
 [data provenance](../tests/Engine.Net.Tests/Data/README.md).
 
