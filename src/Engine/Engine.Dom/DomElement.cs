@@ -8,7 +8,7 @@ namespace VisualWeb.Engine.Dom;
 public sealed class DomElement : DomNode
 {
     public const string HtmlNamespace = "http://www.w3.org/1999/xhtml";
-    private readonly Dictionary<string, string> attributes = new(StringComparer.Ordinal);
+    private readonly OrderedDictionary<string, string> attributes = new(StringComparer.Ordinal);
     public string LocalName { get; }
     public string NamespaceUri => HtmlNamespace;
     public IReadOnlyDictionary<string, string> Attributes { get; }
@@ -46,5 +46,19 @@ public sealed class DomElement : DomNode
     {
         ArgumentNullException.ThrowIfNull(name);
         attributes.Remove(DomDocument.AsciiLower(name));
+    }
+
+    /// <summary>Toggle a checked HTML attribute, optionally forcing its presence.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-element-toggleattribute">toggleAttribute</see>.
+    /// Existing values remain unchanged when force is true.</remarks>
+    public bool ToggleAttribute(string name, bool? force = null)
+    {
+        DomDocument.ValidateAttributeName(name);
+        var normalized = DomDocument.AsciiLower(name);
+        var present = attributes.ContainsKey(normalized);
+        var wanted = force ?? !present;
+        if (wanted && !present) { attributes.Add(normalized, ""); }
+        else if (!wanted && present) { attributes.Remove(normalized); }
+        return wanted;
     }
 }

@@ -22,6 +22,38 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ReflectedIdAndToggledAttributeFeedLifecycleSelectorsAndTransactionalPaint(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:red}#live[data-blue]{background-color:blue}</style>
+            <script>
+            document.addEventListener('DOMContentLoaded',()=>{
+                let body=document.body;body.id='live';
+                if(!body.toggleAttribute('DATA-BLUE')||document.getElementById('live')!==body
+                    ||document.querySelector('#live[data-blue]')!==body)throw Error('attribute reflection');
+                queueMicrotask(()=>document.title='reflected attributes');
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("reflected attributes", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var bad = Page("<!doctype html><script>document.body.toggleAttribute('bad name',false)</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal("reflected attributes", (await renderer.RenderAsync(Page(page.Html), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TreeInspectionFindsLiveElementsDuringLifecycleAndPreservesFailedNavigation(bool process)
     {
         using IPageRenderer renderer = process

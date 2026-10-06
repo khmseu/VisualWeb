@@ -226,6 +226,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   element-only navigation, preserving detached/fragment roots, receiver/
   ownership checks and existing task/identity limits. Shadow DOM, full WebIDL
   and live children/childNodes collections remain deferred.
+  Phase 11l adds reflected id and checked toggleAttribute through the primitive
+  bridge, with live selector/lookup effects, forced no-op value retention and
+  existing atomic attribute storage limits. Native attributes preserve ordered
+  removal/readdition; no custom-element reactions or new scheduling are added.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

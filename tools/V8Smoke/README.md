@@ -33,6 +33,8 @@ Live class token probes verify className reflection, same-object classList,
 ordered mutation, readonly indexed reads/iteration and class-selector matching.
 Tree inspection probes verify containment, root/identity, parentElement and
 element-only child/sibling navigation under the same confinement profiles.
+ID reflection/attribute-toggle probes verify live selector identity and
+presence/removal under unchanged confinement.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

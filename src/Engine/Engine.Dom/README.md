@@ -9,6 +9,9 @@ Child/attribute collections have read-only public views. Attribute names and
 HTML node names fold ASCII only. Text content, sibling links, connection status,
 ID lookup, HTML document title and explicit adoption are available. DOM factory validation is
 distinct from the internal HTML parser's recovered attribute path.
+Checked ToggleAttribute supports optional forced presence without replacing
+existing values. Ordered storage preserves replacement position and appends
+attributes after removal/readdition, consistently across native mutation paths.
 
 Mutable DOM objects are neither thread-safe nor IPC payloads. Events, observers,
 ranges, shadow DOM, namespace APIs, custom elements and full script bindings are

@@ -10,6 +10,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-textcontent">textContent</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid">ID lookup</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-setattribute">attributes</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-element-toggleattribute">toggleAttribute</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-element-id">id reflection</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-node-pre-insert">tree mutation</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-createelement">node factories</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-contains">contains</see>,
@@ -72,6 +74,7 @@ internal sealed class DomBindings : IDisposable
                 "attribute-has" => Observe(Element(handle).GetAttribute(name) is null ? "false" : "true"),
                 "attribute-set" => SetAttribute(Element(handle), name, value),
                 "attribute-remove" => RemoveAttribute(Element(handle), name),
+                "attribute-toggle" => ToggleAttribute(Element(handle), name, value),
                 "class-input" => CheckClassInput(handle),
                 "create-element" => Create("element", value),
                 "create-text" => Create("text", value),
@@ -249,6 +252,12 @@ internal sealed class DomBindings : IDisposable
     }
     private static string SetAttribute(DomElement element, string name, string value)
     {
+        CheckAttributeStorage(element, name, value);
+        element.SetAttribute(name, value);
+        return "";
+    }
+    private static void CheckAttributeStorage(DomElement element, string name, string value)
+    {
         var count = element.Attributes.Count;
         if (count > MaxAttributes) { throw new ScriptLimitException("DOM attribute count limit exceeded."); }
         long characters = 0;
@@ -261,8 +270,20 @@ internal sealed class DomBindings : IDisposable
         }
         if (count + (replaced ? 0 : 1) > MaxAttributes || characters + name.Length + value.Length > MaxTextCharacters)
         { throw new ScriptLimitException("DOM attribute storage limit exceeded."); }
-        element.SetAttribute(name, value);
-        return "";
+    }
+    private string ToggleAttribute(DomElement element, string name, string force)
+    {
+        bool? forced = force switch
+        {
+            "" => null,
+            "true" => true,
+            "false" => false,
+            _ => throw new InvalidOperationException("Invalid private attribute force.")
+        };
+        var present = element.GetAttribute(name) is not null;
+        if (!present && forced != false) { CheckAttributeStorage(element, name, ""); }
+        Budget((forced ?? !present) ? "true" : "false");
+        return element.ToggleAttribute(name, forced) ? "true" : "false";
     }
     private static bool AsciiEquals(string left, string right)
     {
@@ -614,6 +635,15 @@ internal sealed class DomBindings : IDisposable
                 const convertedName = `${name}`, convertedValue = `${value}`;
                 call('attribute-set', id, convertedValue, -1, -1, convertedName);
             }});
+            define(prototype, 'toggleAttribute', {enumerable: true, value: function(name, force) {
+                const id = elementBrand(this); required(arguments.length, 1);
+                const convertedName = `${name}`, convertedForce = force === undefined ? '' : force ? 'true' : 'false';
+                return call('attribute-toggle', id, convertedForce, -1, -1, convertedName) === 'true';
+            }});
+            define(prototype, 'id', {enumerable: true,
+                get() {return call('attribute-get', elementBrand(this), '', -1, -1, 'id') ?? '';},
+                set(value) {const id = elementBrand(this);call('attribute-set', id, `${value}`, -1, -1, 'id');}
+            });
             installClasses(prototype, elementBrand, call);
             freeze(prototype); freeze(nodePrototype);
             define(document, 'title', {

@@ -135,6 +135,9 @@
   inclusive containment, detached/fragment roots, options getter ordering,
   both-operand ownership, exact ancestor/child scans and lifetime identity limits.
   No shadow DOM or live children/childNodes collections are implied.
+  Phase 11l adds reflected id and toggleAttribute. Preserve live conversion
+  ordering, forced no-op validation/value retention, ordered attributes and
+  shared native storage/callback limits. No custom-element reactions are implied.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

@@ -37,6 +37,8 @@ Phase 11j adds live bounded class token facades through the existing primitive
 attribute bridge, not a new host callback or mutable cross-tab collection.
 Phase 11k extends that bridge with bounded tree inspection and element-only
 navigation; node identities remain renderer-local and cancellation-aware.
+Phase 11l adds ID reflection/attribute toggling with shared native storage
+preflight and ordered attributes, without additional host callbacks.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

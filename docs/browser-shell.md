@@ -121,6 +121,8 @@ Phase 11j adds className/live classList; lifecycle token mutations feed CSS
 queries and class selectors before paint, with transactional page failure.
 Phase 11k adds bounded live tree inspection/navigation for lifecycle callbacks;
 failed inspection cannot publish a candidate or displace retained DOM.
+Phase 11l adds reflected IDs and attribute toggles that feed lookup/selectors
+before painting, retaining the same transactional navigation behavior.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

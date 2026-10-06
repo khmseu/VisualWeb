@@ -44,6 +44,9 @@ Phase 11k adds bounded contains/isSameNode/getRootNode, hasChildNodes,
 parentElement and element-only child/sibling navigation. Live results preserve
 wrapper identity, ownership and shared task budgets; shadow DOM and live
 children/childNodes collections remain deferred.
+Phase 11l adds reflected id and toggleAttribute with DOMString/Boolean
+conversion, native validation and existing atomic attribute storage limits.
+Mutated IDs and toggled attributes feed live lookup/selectors and final paint.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

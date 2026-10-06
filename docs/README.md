@@ -54,3 +54,5 @@ Phase 11j adds className and live bounded classList, including ordered token
 mutations and iteration, over the existing private attribute bridge.
 Phase 11k adds bounded tree inspection and live element-only navigation,
 including detached/fragment roots and shared wrapper identities.
+Phase 11l adds reflected id and checked attribute toggling, preserving native
+attribute order/storage bounds and lifecycle selector/paint integration.

@@ -138,6 +138,9 @@ continues storing ordinary raw class attributes.
 Phase 11k exposes bounded contains/isSameNode/getRootNode, parentElement,
 hasChildNodes and element-only child/sibling navigation over these live trees.
 No shadow DOM or live child collection is implied.
+Phase 11l adds native checked ToggleAttribute and script id/toggleAttribute
+bindings. Ordered attributes retain replacement position and append on
+removal/readdition; the bridge preserves existing storage preflight.
 
 ## Safety limits
 

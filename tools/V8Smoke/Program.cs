@@ -121,6 +121,12 @@ static void Probe()
             && created.isSameNode(document.body.firstElementChild) && created.parentElement===document.body
             && created.nextElementSibling===document.getElementById('content') && document.body.childElementCount===2
         """).Boolean, "Bounded native tree inspection/navigation failed.");
+    Check(bound.Evaluate("""
+        (()=>{created.id='reflected';const present=created.toggleAttribute('DATA-PROBE');
+            const matched=document.querySelector('#reflected[data-probe]')===created;
+            const removed=!created.toggleAttribute('data-probe',false);
+            created.id='created';return present&&matched&&removed&&!created.hasAttribute('data-probe')})()
+        """).Boolean, "Native ID reflection/attribute toggle failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
     tasks.ExecuteClassicBatch([
         "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",

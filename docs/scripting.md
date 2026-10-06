@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11k)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11l)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,38 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Reflected ID and attribute toggling (phase 11l)
+
+Bound HTML Element wrappers expose reflected `id` and `toggleAttribute(name,
+force?)`. An absent ID reads as the empty string; writes use DOMString
+conversion and preserve raw UTF-16 text, including whitespace and NUL. Null
+and undefined become `"null"` and `"undefined"`, not an empty value.
+Live ID changes immediately affect ID lookup and CSS matching; detached nodes
+retain their reflected value without participating in document lookup.
+
+Toggle converts the name after checking the Element receiver and required
+argument, then applies Boolean force conversion. Omitted/undefined force
+toggles; false forces absence; true forces presence without replacing an
+existing value. Objects are truthy without invoking valueOf/toString.
+Names follow the existing native HTML attribute validation and ASCII folding,
+including validation for forced no-ops. Invalid names produce the existing
+native-bridge TypeError diagnostic, not yet a DOMException. Conversion effects
+precede the live attribute read; extra arguments are ignored.
+
+The C# DOM also exposes checked `DomElement.ToggleAttribute`. Attribute
+storage now uses an ordered dictionary: replacement preserves position,
+while removal/readdition appends at the end instead of recycling a removed
+dictionary slot. This applies consistently to native and script mutations.
+The bridge reuses the existing **128-attribute / 65,536 aggregate stored
+name/value character** preflight for new toggle attributes and ID writes.
+Forced no-ops and removals remain available at capacity; rejected additions
+do not partially write. Shared DOM call/text limits, receiver ownership and
+host cancellation/deadlines remain unchanged. No new CLR callback, script
+scheduling, boolean-attribute-specific behavior or custom-element reactions
+are added. Final lifecycle mutations feed selectors/paint and retained resize.
+Source: cached `dom`, [id](https://dom.spec.whatwg.org/#dom-element-id) and
+[toggleAttribute](https://dom.spec.whatwg.org/#dom-element-toggleattribute).
 
 ## Bounded tree inspection (phase 11k)
 
@@ -865,3 +897,26 @@ clean; no owned workers/resource scopes remain. All **58 official references**
 are independently cached/fresh without network refresh. Windows/ARM still
 require native target evidence. Shadow DOM, live child collections, full
 WebIDL and persistent script event loops remain deferred.
+
+## Phase-11l validation outcome
+
+On Linux x64, all **45 projects build** and **7,782 selected tests pass**
+without failures or skips: 31 DOM, 7,202 HTML, 204 CSS, 212 scripting and 133
+browser cases. Twelve native toggle/order cases and 15 reflection cases cover
+live ID lookup/selector effects, raw DOMString conversion, optional Boolean
+force, forced no-op value retention/validation, name conversion side effects,
+invalid receivers/symbols/adoption, intrinsic tampering, exact attribute/
+storage/shared callback bounds, aggregate input text and cancellation.
+Attribute removal/readdition now appends in order; native replacement keeps
+position. Dependent parser/style suites verify the ordered-storage change.
+
+Local/process lifecycle fixtures verify exact ID/attribute-selector title/blue
+pixels, retained resize and failed-navigation preservation/fresh recovery.
+Local and unchanged required-confined V8 probes pass with reflected ID and
+attribute-toggle selector checks. SDL dummy and required-confined X11 shell
+smokes pass with lifecycle-driven ID/toggle/class mutations, presenting 10
+and 15 frames respectively. Formatting, editor diagnostics and whitespace
+checks are clean; no owned workers/resource scopes remain. All **58 official
+references** are independently cached/fresh without network refresh.
+Windows/ARM still require native target evidence. Full WebIDL/DOMException,
+custom-element reactions and persistent script event loops remain deferred.
