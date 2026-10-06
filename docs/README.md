@@ -48,3 +48,5 @@ after initial execution.
 Phase 11h adds finite readonly document readiness and private readystatechange/
 DOMContentLoaded dispatch/checkpoints under the same navigation task budgets,
 without Window/load or persistent V8.
+Phase 11i adds bounded DOM queries and static NodeList snapshots, sharing the
+existing first-party CSS selector parser and native Node wrapper identities.

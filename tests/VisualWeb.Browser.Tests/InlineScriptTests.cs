@@ -22,6 +22,37 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task LifecycleQueriesMutateStyleAndSnapshotNodesBeforePainting(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style id="sheet">body{margin:0;background-color:red}</style>
+            <script>
+            let snapshot=document.querySelectorAll('style');
+            document.addEventListener('DOMContentLoaded',()=>{
+                if(snapshot.item(0)!==document.querySelector('#sheet'))throw Error('identity');
+                snapshot.forEach(node=>node.textContent='body{margin:0;background-color:blue}');
+                if(!snapshot[0].matches('head > style')||snapshot[0].closest('head')!==document.head)throw Error('match');
+                document.title='queried lifecycle';
+            });
+            </script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("queried lifecycle", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        Assert.Equal(rendered.Title, (await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation)).Title);
+        var bad = Page("<!doctype html><script>document.querySelector('[')</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(bad, Viewport, Cancellation)); }
+        Assert.Equal(rendered.Title, (await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task FiniteReadinessListenersAndCheckpointsFeedFinalPaintAndRetainedResize(bool process)
     {
         using IPageRenderer renderer = process

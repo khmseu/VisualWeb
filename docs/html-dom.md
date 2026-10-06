@@ -129,6 +129,9 @@ snapshotted ancestor paths stay in the owning V8 isolate; no automatic browser
 events, persistent event loop or dynamic script execution is added.
 Phase 11h opts page execution into finite readiness/DOMContentLoaded on the
 script facade only; native C# nodes remain free of script lifecycle state.
+Phase 11i exposes bounded querySelector/querySelectorAll, matches and closest
+through the same hidden primitive bridge and existing CSS selector matcher.
+Static NodeList facades retain live node identities without exposing CLR lists.
 
 ## Safety limits
 

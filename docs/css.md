@@ -64,6 +64,12 @@ propagate and do not return partial success.
 
 ## Static selectors
 
+`CssSelectorList.Filter(candidates, cancellationToken)` lazily returns matches
+in supplied order under one shared candidate/operation budget, rather than
+resetting counters for each candidate. Phase-11i DOM queries reuse this API
+with stricter bounds; see the [scripting guide](scripting.md) for scope,
+static-list behavior and unsupported selector errors.
+
 Supported:
 
 - HTML type/universal, ID, class and attribute selectors.

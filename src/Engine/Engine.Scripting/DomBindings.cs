@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
 
 namespace VisualWeb.Engine.Scripting;
@@ -25,6 +26,15 @@ internal sealed class DomBindings : IDisposable
     private readonly List<DomNode> nodes = [];
     private int calls;
     private int characters;
+    private CancellationToken cancellation;
+    private static readonly CssOptions QueryOptions = new()
+    {
+        MaxInputCharacters = 4096,
+        MaxTokens = 8192,
+        MaxDepth = 64,
+        MaxElements = MaxNodes,
+        MaxMatchOperations = 65536
+    };
 
     internal DomBindings(DomDocument document)
     {
@@ -36,7 +46,7 @@ internal sealed class DomBindings : IDisposable
         }
     }
 
-    internal void Begin() { calls = 0; characters = 0; }
+    internal void Begin(CancellationToken cancellationToken) { calls = 0; characters = 0; cancellation = cancellationToken; }
 
     internal string Invoke(string operation, int handle, int other, int reference, string name, string value)
     {
@@ -44,9 +54,11 @@ internal sealed class DomBindings : IDisposable
         {
             if (++calls > MaxCalls) { throw new ScriptLimitException("DOM callback count limit exceeded."); }
             Budget(name); Budget(value);
+            cancellation.ThrowIfCancellationRequested();
             var result = operation switch
             {
                 "lookup" => Lookup(value),
+                "query-first" or "query-all" or "matches" or "closest" => Query(operation, Node(handle), value),
                 "title-get" => Observe(Title()),
                 "title-set" => SetTitle(value),
                 "text-get" => Observe(Text(Node(handle))),
@@ -72,7 +84,11 @@ internal sealed class DomBindings : IDisposable
             };
             return result is null ? "null:" : "ok:" + result;
         }
-        catch (Exception exception) when (exception is ScriptLimitException or DomException or InvalidOperationException)
+        catch (FormatException exception) { return "syntax:" + exception.Message; }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        { return "error:DOM operation canceled."; }
+        catch (Exception exception) when (exception is ScriptLimitException or DomException or InvalidOperationException
+            or CssLimitException or UnsupportedCssException)
         {
             // A string error crosses the bridge, never a CLR exception object or native node.
             return "error:" + exception.Message;
@@ -109,6 +125,45 @@ internal sealed class DomBindings : IDisposable
     private string Lookup(string id)
     {
         return Identity(id.Length == 0 ? null : Descendants().FirstOrDefault(e => e.GetAttribute("id") == id));
+    }
+    private string Query(string operation, DomNode root, string source)
+    {
+        var selector = CssSelectorList.Parse(source, QueryOptions, cancellation);
+        if (selector.Diagnostics.Count != 0) { throw new FormatException("Invalid selector tokenization."); }
+        if (operation == "matches")
+        {
+            if (root is not DomElement element) { throw new InvalidOperationException("Illegal Element receiver."); }
+            var matched = selector.Match(element, cancellation) is not null ? "true" : "false";
+            Budget(matched);
+            return matched;
+        }
+        if (operation is "query-first" or "query-all" && root is not (DomDocument or DomElement or DomDocumentFragment))
+        { throw new InvalidOperationException("Illegal ParentNode receiver."); }
+        IEnumerable<DomElement> candidates = operation == "closest" ? Ancestors(root) : Traverse(root).OfType<DomElement>();
+        var matches = selector.Filter(candidates, cancellation);
+        if (operation != "query-all") { return Identity(matches.FirstOrDefault()); }
+        var result = matches.Take(MaxHandles + 1).ToList();
+        if (result.Count > MaxHandles) { throw new ScriptLimitException("DOM query result limit exceeded."); }
+        var added = result.Where(element => !identities.ContainsKey(element)).ToList();
+        if (nodes.Count + added.Count > MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
+        var next = nodes.Count;
+        var reserved = added.ToDictionary(element => element, _ => ++next);
+        var text = string.Join(",", result.Select(element => (identities.TryGetValue(element, out var id) ? id : reserved[element])
+            .ToString(CultureInfo.InvariantCulture) + ":1"));
+        Budget(text);
+        foreach (var element in added) { nodes.Add(element); identities.Add(element, nodes.Count); }
+        return text;
+    }
+
+    private static IEnumerable<DomElement> Ancestors(DomNode root)
+    {
+        if (root is not DomElement) { throw new InvalidOperationException("Illegal Element receiver."); }
+        var count = 0;
+        for (DomNode? node = root; node is not null; node = node.ParentNode)
+        {
+            if (++count > MaxNodes) { throw new ScriptLimitException("DOM ancestor node limit exceeded."); }
+            if (node is DomElement element) { yield return element; }
+        }
     }
     private string Identity(DomNode? node)
     {
@@ -282,16 +337,19 @@ internal sealed class DomBindings : IDisposable
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
-            const slice = String.prototype.slice, indexOf = String.prototype.indexOf, TypeErrorCtor = TypeError;
+            const slice = String.prototype.slice, indexOf = String.prototype.indexOf;
+            const TypeErrorCtor = TypeError, SyntaxErrorCtor = SyntaxError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
-            const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap();
+            const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
             const document = create(null), prototype = create(null), nodePrototype = create(null);
             apply(brandSet, brands, document, 0);
+            apply(brandSet, parentBrands, document, 0);
             const call = (operation, handle, value = '', other = -1, reference = -1, name = '') => {
                 const result = bridge(operation, handle, other, reference, name, value);
                 if (result[0] === 'n') return null;
+                if (result[0] === 's') throw new SyntaxErrorCtor(apply(slice, result, 7));
                 if (result[0] !== 'o') throw new TypeErrorCtor(apply(slice, result, 6));
                 return apply(slice, result, 3);
             };
@@ -306,6 +364,11 @@ internal sealed class DomBindings : IDisposable
             const elementBrand = receiver => {
                 const id = apply(brandGet, elementBrands, receiver);
                 if (id === undefined) throw new TypeErrorCtor('Illegal Element receiver');
+                return id;
+            };
+            const parentBrand = receiver => {
+                const id = apply(brandGet, parentBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal ParentNode receiver');
                 return id;
             };
             const required = (count, minimum) => {
@@ -324,11 +387,80 @@ internal sealed class DomBindings : IDisposable
                     wrapper = create(type === 1 ? prototype : nodePrototype);
                     apply(brandSet, brands, wrapper, handle);
                     if (type === 1) apply(brandSet, elementBrands, wrapper, handle);
+                    if (type === 1 || type === 11) apply(brandSet, parentBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
                     if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
                 }
                 return wrapper;
             };
+            const lists = new WeakMap(), listPrototype = create(null);
+            const listBrand = receiver => {
+                const values = apply(brandGet, lists, receiver);
+                if (!values) throw new TypeErrorCtor('Illegal NodeList receiver');
+                return values;
+            };
+            define(listPrototype, 'length', {enumerable: true, get() {return listBrand(this).length;}});
+            define(listPrototype, 'item', {enumerable: true, value: function(index) {
+                const values = listBrand(this); required(arguments.length, 1);
+                return values[(+index) >>> 0] ?? null;
+            }});
+            define(listPrototype, 'forEach', {enumerable: true, value: function(callback, receiver) {
+                const values = listBrand(this);
+                if (typeof callback !== 'function') throw new TypeErrorCtor('NodeList forEach requires a callable callback');
+                for (let i=0; i<values.length; ++i) apply(callback, receiver, values[i], i, this);
+            }});
+            const values = function() {
+                const items = listBrand(this);
+                return (function*(){for(let i=0;i<items.length;++i)yield items[i];})();
+            };
+            define(listPrototype, 'values', {enumerable: true, value: values});
+            define(listPrototype, Symbol.iterator, {value: values});
+            define(listPrototype, 'keys', {enumerable: true, value: function() {
+                const items = listBrand(this);
+                return (function*(){for(let i=0;i<items.length;++i)yield i;})();
+            }});
+            define(listPrototype, 'entries', {enumerable: true, value: function() {
+                const items = listBrand(this);
+                return (function*(){for(let i=0;i<items.length;++i)yield [i,items[i]];})();
+            }});
+            freeze(listPrototype);
+            const nodeList = text => {
+                const result = create(listPrototype), items = create(null);
+                items.length = 0;
+                if (text) {
+                    let offset = 0;
+                    while (offset < text.length) {
+                        let end = apply(indexOf, text, ',', offset);
+                        if (end < 0) end = text.length;
+                        const node = wrap(apply(slice, text, offset, end));
+                        const i = items.length;
+                        items[items.length++] = node;
+                        define(result, i, {value: node, enumerable: true});
+                        offset = end + 1;
+                    }
+                }
+                apply(brandSet, lists, result, items);
+                return freeze(result);
+            };
+            const installQueries = target => {
+                define(target, 'querySelector', {enumerable: true, value: function(selectors) {
+                    const id = parentBrand(this); required(arguments.length, 1);
+                    return wrap(call('query-first', id, `${selectors}`));
+                }});
+                define(target, 'querySelectorAll', {enumerable: true, value: function(selectors) {
+                    const id = parentBrand(this); required(arguments.length, 1);
+                    return nodeList(call('query-all', id, `${selectors}`));
+                }});
+            };
+            installQueries(document); installQueries(prototype); installQueries(nodePrototype);
+            define(prototype, 'matches', {enumerable: true, value: function(selectors) {
+                const id = elementBrand(this); required(arguments.length, 1);
+                return call('matches', id, `${selectors}`) === 'true';
+            }});
+            define(prototype, 'closest', {enumerable: true, value: function(selectors) {
+                const id = elementBrand(this); required(arguments.length, 1);
+                return wrap(call('closest', id, `${selectors}`));
+            }});
             const installNode = target => {
                 if (events) events('install', target);
                 define(target, 'textContent', {

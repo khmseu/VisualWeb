@@ -15,6 +15,17 @@ public sealed class SelectorTests
         "<!doctype html><div id=box><p id=a class='item X' data-word='Abc def' lang=en-US>A</p><!--gap--><p id=b class=item>B</p><span id=c></span></div>",
         cancellationToken: Cancellation).Document;
 
+    [Fact]
+    public void CandidateFilteringSharesOperationBudgetAndPreservesOrder()
+    {
+        var candidates = Document().Descendants().OfType<DomElement>().Take(2).ToList();
+        Assert.Equal(candidates, CssSelectorList.Parse("*", new() { MaxMatchOperations = 4 }, Cancellation).Filter(candidates, Cancellation));
+        var limited = CssSelectorList.Parse("*", new() { MaxMatchOperations = 3 }, Cancellation);
+        Assert.Throws<CssLimitException>(() => limited.Filter(candidates, Cancellation).ToList());
+        var elementLimited = CssSelectorList.Parse("*", new() { MaxElements = 1 }, Cancellation);
+        Assert.Throws<CssLimitException>(() => elementLimited.Filter(candidates, Cancellation).ToList());
+    }
+
     [Theory]
     [InlineData("p", "a,b")]
     [InlineData("#a", "a")]

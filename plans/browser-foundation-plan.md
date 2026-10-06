@@ -213,6 +213,11 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Initial sources and lifecycle callbacks share the same navigation budgets;
   failures remain transactional. This finite post-parse lifecycle does not
   add Window/load, timers, external scripts or persistent V8.
+  Phase 11i continues with bounded querySelector/querySelectorAll, static
+  NodeList facades and Element matches/closest, reusing Engine.Css. Existing
+  selectors only; :scope, live collections and full Web IDL remain deferred.
+  Queries preflight result/identity capacity and share native matching limits
+  across candidates, while observing task cancellation/deadlines.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

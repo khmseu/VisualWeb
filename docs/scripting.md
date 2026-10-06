@@ -1,4 +1,4 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11h)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11i)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
@@ -297,6 +297,65 @@ are synchronous finite DOM work, not network/storage or arbitrary CLR execution.
 These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
+
+## Bounded DOM queries (phase 11i)
+
+Bound document, Element and DocumentFragment facades expose `querySelector`
+and `querySelectorAll`; Elements also expose `matches` and `closest`.
+They reuse Engine.Css's first-party static selector parser/matcher, not a
+second parser or JavaScript traversal. See DOM's
+[scope queries](https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall)
+and [closest](https://dom.spec.whatwg.org/#dom-element-closest).
+Queries require a DOMString selector argument and receiver validation precedes
+caller conversion hooks. Current detached trees are searchable; adopted
+wrappers fail under the existing ownership rules.
+
+Descendants are searched in tree order, excluding the query receiver itself.
+Selector-list branches deduplicate naturally through one match per candidate.
+Selector ancestor/sibling matching can look outside the receiver subtree;
+only returned candidates are scoped. `matches` tests the receiver and `closest`
+searches inclusive ancestors nearest-first. Missing results are null/empty.
+No DOM mutation or script execution is performed by native matching.
+
+`querySelectorAll` returns a branded static NodeList-like facade with readonly
+indices and length, `item` (Web IDL unsigned-long index conversion and null when
+out of range), `forEach`, values/keys/entries and iteration. Every entry shares
+the existing live Node wrapper identity. The list retains its original sequence
+after removal/reordering/new nodes; wrappers still observe live node changes.
+The facade is frozen, with a minimal null-root prototype and no global NodeList
+constructor: this is not full Web IDL inheritance/expando conformance.
+Caller changes to array/string/map intrinsics cannot alter private list storage.
+No CLR collections, nodes or exceptions cross the bridge.
+
+| Per-query budget | Bound |
+| --- | ---: |
+| Selector UTF-16 characters | 4,096 |
+| CSS tokens | 8,192 |
+| Selector chain/nesting/evaluation depth | 64 |
+| Shared matching operations across all candidates | 65,536 |
+| Traversed descendants or inclusive ancestors | 8,192 |
+| Static result entries | 1,024 |
+
+Query results also consume the existing **1,024 host-lifetime Node identities**,
+including all previously created/detached wrappers. Full-list result and identity
+capacity plus serialized output text are preflighted before new identities are
+reserved; failed oversized queries cannot consume partial identity capacity.
+Queries share existing per-task DOM callback/aggregate text budgets. Native CSS
+parsing/matching observes the host's linked deadline/cancellation token;
+caller conversion and NodeList callbacks execute in V8 under that deadline.
+Resource/ownership errors are explicit catchable TypeErrors, as with other DOM
+bridge operations. An uncaught query error rejects page publication.
+
+Supported syntax is the existing [static CSS selector subset](css.md): types,
+IDs/classes, attributes, combinators, structural pseudo-classes and supported
+functional selectors. Invalid selector syntax/tokenization throws a native
+JavaScript SyntaxError, not yet a DOMException. Unsupported features fail
+explicitly with TypeError instead of silently returning no matches: `:scope`,
+dynamic state, namespaces, `:has`, filtered nth-child and pseudo-elements remain
+deferred. Rejecting pseudo-elements rather than returning an empty list is an
+intentional finite-subset deviation. No selector cache, live collections,
+innerHTML or dynamic script scheduling is added. Inline pages gain these APIs
+under the existing opt-in; lifecycle, retention and confinement are unchanged.
 
 ## Bounded attributes and Node mutation (phase 11e)
 
@@ -648,3 +707,28 @@ cached/fresh without network refresh. Windows/ARM still require native target
 evidence. This remains a finite post-parse approximation: Window/load, input
 events, timers, external scripts, ordinary Promise rejection reporting and a
 persistent event loop are deferred.
+
+## Phase-11i validation outcome
+
+On Linux x64, all **45 projects build** and **493 distinct selected tests pass**
+without failures or skips: 162 scripting, 204 CSS and 127 browser cases.
+Following cancellation hardening, all 162 scripting and 52 inline-page cases
+were rerun; the final exact selector-depth and reserved-identity checks also
+pass with the full scripting suite and both lifecycle-query integration cases.
+Coverage includes scoped tree order, static lists with live identities,
+matches/closest, invalid and unsupported selectors, detached/adopted nodes,
+intrinsic tampering, atomic identity reservation, exact traversal/result/depth
+bounds, shared matching budgets and deadline/cancellation invalidation.
+
+Local/process pages verify lifecycle-query title/blue pixels, retained resize
+and transactional query-failure preservation. Local and unchanged
+required-confined V8 probes pass. SDL dummy and required-confined X11 browser
+smokes pass with query-driven mutations and tab/history/window lifecycle,
+presenting 10 and 15 frames respectively. Initial concurrent validation
+encountered existing default deadlines; sequential reruns passed without
+weakening limits. Formatting and whitespace checks are clean; the editor reports
+style/complexity advisories in the DOM bridge, not build failures. No owned
+workers/resource scopes remain. All **58 official references**
+are independently cached/fresh without network refresh. Windows/ARM still
+require native target evidence. Unsupported selectors, full WebIDL NodeList,
+external scripts and a persistent event loop remain deferred.

@@ -32,6 +32,10 @@ ExecuteInitialDocumentBatch with interactive/DOMContentLoaded/complete events,
 private trusted dispatch and native checkpoints between stages. Requires
 document/events/microtasks; all stages share the initial task budgets.
 This finite post-parse approximation does not add Window/load or retain V8.
+Phase 11i adds document/element/fragment queries, static branded NodeList
+snapshots and Element matches/closest via Engine.Css's bounded selector matcher.
+Result identities are preflighted atomically and native matching observes
+task cancellation. Unsupported selector features fail explicitly.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

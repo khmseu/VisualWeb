@@ -122,6 +122,11 @@
   Keep readyState readonly, lifecycle trust internal, failures transactional,
   and no Window/load event or retained V8/listeners. Empty opted-in batches
   still complete lifecycle; static mode does not construct V8.
+  Phase 11i reuses Engine.Css for bounded querySelector/querySelectorAll and
+  Element matches/closest. Preserve static NodeList identities, atomic result
+  reservation, SyntaxError vs unsupported TypeError, receiver/ownership guards,
+  linked cancellation and one shared matching budget per query. No :scope,
+  live collections, new parser or dynamically scheduled scripts.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

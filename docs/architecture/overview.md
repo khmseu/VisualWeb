@@ -30,6 +30,9 @@ enter the native DOM. Listeners are disposed before retained repaint.
 Phase 11h adds one-shot finite document readiness, private lifecycle events and
 verified stage checkpoints under the initial batch deadline; no Window/load
 or persistent renderer event loop is implied.
+Phase 11i adds bounded query/matches/closest facades and static NodeList snapshots.
+Engine.Scripting now references Engine.Css to reuse its selector implementation;
+there is no platform/chrome/network dependency or duplicate selector parser.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

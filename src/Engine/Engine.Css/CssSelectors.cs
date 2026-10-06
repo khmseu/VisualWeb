@@ -48,6 +48,22 @@ public sealed class CssSelectorList
         return Match(element, new CssContext(options, cancellationToken));
     }
 
+    /// <summary>Filter candidates in caller order under one shared matching budget.</summary>
+    /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#match">matching</see>.
+    /// The caller supplies traversal order/scope; enumeration is lazy and cancellation-aware.</remarks>
+    public IEnumerable<DomElement> Filter(IEnumerable<DomElement> candidates, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+        var context = new CssContext(options, cancellationToken);
+        var count = 0;
+        foreach (var element in candidates)
+        {
+            context.Cancellation.ThrowIfCancellationRequested();
+            if (++count > options.MaxElements) { throw new CssLimitException("CSS selector candidate limit exceeded."); }
+            if (Match(element, context) is not null) { yield return element; }
+        }
+    }
+
     internal static CssSelectorList Compile(IReadOnlyList<CssToken> tokens, CssContext context, bool includeDiagnostics = false)
         => new(new Parser(tokens, context, 0).List(false), context.Options,
             includeDiagnostics ? context.Diagnostics.ToList().AsReadOnly() : Array.Empty<CssDiagnostic>());

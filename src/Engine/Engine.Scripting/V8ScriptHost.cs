@@ -183,7 +183,7 @@ public sealed class V8ScriptHost : IDisposable
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var interrupt = deadline.Token.Register(engine.Interrupt);
         deadline.CancelAfter(timeout);
-        dom?.Begin();
+        dom?.Begin(deadline.Token);
         try
         {
             T result;

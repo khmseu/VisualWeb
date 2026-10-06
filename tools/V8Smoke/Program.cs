@@ -103,6 +103,10 @@ static void Probe()
         let inserted = document.getElementById('created') === created && created.parentNode === document.body;
         document.body.removeChild(created); document.body.insertBefore(created, document.body.firstChild);
         """);
+    Check(bound.Evaluate("""
+        document.querySelector('#created')===created && document.querySelectorAll('span').item(0)===created
+            && created.matches('body > span') && created.closest('body')===document.body
+        """).Boolean, "Bounded native DOM query/snapshot identity failed.");
     Check(document.GetElementById("created")?.TextContent == "tree" && bound.Evaluate("inserted").Boolean,
         "Branded attribute/fragment/tree mutation failed.");
     using var tasks = new V8ScriptHost(enableMicrotasks: true);
@@ -173,7 +177,7 @@ static void Probe()
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
-    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, synthetic DOM event capture/target/bubble and cancellation, finite document readiness/DOMContentLoaded checkpoints, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
+    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, synthetic DOM event capture/target/bubble and cancellation, finite document readiness/DOMContentLoaded checkpoints, bounded DOM query/static-list identity and matches/closest, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
 }
 
 static void Check(bool condition, string message)

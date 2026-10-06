@@ -27,6 +27,8 @@ Synthetic event probes verify DOM capture/target/bubble ordering, cancelation
 and listener-enqueued microtask title mutation under unchanged confinement.
 Finite document lifecycle probes additionally verify loading/interactive/
 DOMContentLoaded/complete order, trusted event flags and checkpoint title mutation.
+Bounded query probes verify selector results, static-list identity and Element
+matches/closest locally and under the unchanged renderer confinement profiles.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

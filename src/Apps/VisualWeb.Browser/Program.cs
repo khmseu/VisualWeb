@@ -135,7 +135,7 @@ namespace VisualWeb.Browser
             Require(first.Tabs.Count == 2, "New tab shortcut failed.");
             var tab = first.ActiveTab!;
             var blue = "data:text/html;charset=utf-8," + Uri.EscapeDataString(executeInlineScripts
-                ? "<!doctype html><style id='sheet'>body{margin:0;background-color:red}</style><script>document.addEventListener('DOMContentLoaded',()=>queueMicrotask(()=>{document.title='Script blue'; document.body.setAttribute('style','background-color:blue'); let sheet=document.createElement('style'); sheet.appendChild(document.createTextNode('body{margin:0}')); document.head.appendChild(sheet);}),{once:true});</script>"
+                ? "<!doctype html><style id='sheet'>body{margin:0;background-color:red}</style><script>document.addEventListener('DOMContentLoaded',()=>queueMicrotask(()=>{document.title='Script blue'; document.querySelectorAll('body').forEach(node=>node.setAttribute('style','background-color:blue')); let sheet=document.createElement('style'); sheet.appendChild(document.createTextNode('body{margin:0}')); document.head.appendChild(sheet);}),{once:true});</script>"
                 : "<!doctype html><style>body{margin:0;background-color:blue}</style>");
             shell.Controller.Navigate(tab.Id, blue);
             Wait(shell, () => !tab.IsLoading);

@@ -114,6 +114,9 @@ and readystatechange events before paint, with native checkpoints between
 stages and shared navigation budgets. Listener failures preserve the published
 page; retained resize never repeats lifecycle. This is a post-parse
 approximation, not HTML scheduling or Window/load support.
+Phase 11i exposes bounded querySelector/querySelectorAll and Element
+matches/closest. Static list wrappers retain node identity; query-driven
+lifecycle style/title changes participate in paint and retained resize.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.
