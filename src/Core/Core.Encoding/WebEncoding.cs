@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 
@@ -14,12 +15,34 @@ public sealed class WebEncoding
     public string Name { get; }
     private WebEncoding(string name) => Name = name;
 
-    public static WebEncoding ForLabel(string label)
+    public static WebEncoding ForLabel(string label) =>
+        TryForLabel(label, out var encoding) ? encoding
+            : throw new ArgumentException($"Unknown web encoding label: {label}", nameof(label));
+
+    /// <summary>Resolves a label without throwing; failure is the spec's "failure" result.</summary>
+    /// <remarks>Spec: encoding; <see href="https://encoding.spec.whatwg.org/#concept-encoding-get">get an encoding</see>
+    /// (ASCII whitespace trimming and ASCII-only case-insensitive matching).</remarks>
+    public static bool TryForLabel(string label, [NotNullWhen(true)] out WebEncoding? encoding)
     {
         ArgumentNullException.ThrowIfNull(label);
-        var normalized = label.AsSpan().Trim("\t\n\f\r ").ToString().ToLowerInvariant();
-        return Labels.TryGetValue(normalized, out var encoding) ? encoding
-            : throw new ArgumentException($"Unknown web encoding label: {label}", nameof(label));
+        var trimmed = label.AsSpan().Trim("\t\n\f\r ");
+        Span<char> lowered = trimmed.Length <= 64 ? stackalloc char[trimmed.Length] : new char[trimmed.Length];
+        for (var i = 0; i < trimmed.Length; i++)
+        {
+            lowered[i] = char.IsAsciiLetterUpper(trimmed[i]) ? (char)(trimmed[i] | 0x20) : trimmed[i];
+        }
+
+        return Labels.TryGetValue(lowered.ToString(), out encoding);
+    }
+
+    /// <summary>Returns the encoding indicated by a leading UTF-8/UTF-16 BOM, or null.</summary>
+    /// <remarks>Spec: encoding; <see href="https://encoding.spec.whatwg.org/#bom-sniff">BOM sniff</see>.</remarks>
+    public static WebEncoding? SniffBom(ReadOnlySpan<byte> bytes, out int bomLength)
+    {
+        (var label, bomLength) = bytes.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]) ? ("UTF-8", 3)
+            : bytes.StartsWith((ReadOnlySpan<byte>)[0xFE, 0xFF]) ? ("UTF-16BE", 2)
+            : bytes.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xFE]) ? ("UTF-16LE", 2) : (null, 0);
+        return label is null ? null : ForLabel(label);
     }
 
     public string Decode(ReadOnlySpan<byte> bytes, bool fatal = false)
@@ -75,9 +98,7 @@ public sealed class WebEncoding
     public static DecodedText DecodeWithBom(ReadOnlySpan<byte> bytes, WebEncoding fallback, bool fatal = false)
     {
         ArgumentNullException.ThrowIfNull(fallback);
-        var (encoding, skip) = bytes.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }) ? (ForLabel("UTF-8"), 3)
-            : bytes.StartsWith(new byte[] { 0xFF, 0xFE }) ? (ForLabel("UTF-16LE"), 2)
-            : bytes.StartsWith(new byte[] { 0xFE, 0xFF }) ? (ForLabel("UTF-16BE"), 2) : (fallback, 0);
+        var encoding = SniffBom(bytes, out var skip) ?? fallback;
         return new(encoding, encoding.Decode(bytes[skip..], fatal));
     }
 

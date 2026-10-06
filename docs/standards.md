@@ -28,7 +28,7 @@ entry (it still uses conditional requests where possible).
 
 | IDs | Used by |
 | --- | --- |
-| `url`, `encoding`, `mime-sniffing` | Core URL, Encoding and MIME |
+| `url`, `encoding`, `mime-sniffing` | Core URL, Encoding and MIME (Core.Encoding also cites `html` for the charset prescan) |
 | `unicode-idna`, `unicode-bidi` | URL internationalized domains and Unicode bidi defaults |
 | `fetch` | Networking and resource policies |
 | `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler` | Basic session cookies and HTTP transport, not full browser cookie policy |

@@ -205,6 +205,26 @@ public sealed class ControllerTests
         Assert.Equal([first.DocumentId, first.DocumentId], renderer.Committed);
     }
     [Fact]
+    public void LegacyMetaCharsetPageIsDecodedBeforeRendering()
+    {
+        var renderer = new Renderer();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(_ =>
+        {
+            var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(System.Text.Encoding.Latin1.GetBytes("<!doctype html><meta charset=windows-1252><p>\u0080</p>"))
+            };
+            response.Content.Headers.TryAddWithoutValidation("Content-Type", "text/html");
+            return response;
+        })), () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        PumpUntilIdle(controller, tab, () => controller.Navigate(tab.Id, "https://legacy.example/"));
+        Assert.Null(tab.Error);
+        var page = Assert.Single(renderer.Pages);
+        Assert.EndsWith("<p>\u20AC</p>", page.Html, StringComparison.Ordinal);
+        Assert.Contains(page.Diagnostics, d => d.StartsWith("Encoding: windows-1252 from <meta charset> prescan", StringComparison.Ordinal));
+    }
+    [Fact]
     public void BadPortNavigationReportsExplicitErrorAndPreservesCommittedState()
     {
         var requests = new List<string>();

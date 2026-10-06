@@ -17,7 +17,7 @@ explicitly development-only, not isolated production browsing.
 | [Platform.Windows.Sandbox](../src/Platform/Platform.Windows.Sandbox/) | AppContainer renderer token, bounded Job Object, and read-only worker storage | Windows APIs; [scope](windows-confinement.md) |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
 | [Core.Url](../src/Core/Core.Url/) | Immutable WHATWG URL parsing, resolution and serialization | Vendored Dubzer.WhatwgUrl; `url`, `unicode-idna`, `unicode-bidi` |
-| [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders and BOM sniffing | Embedded WHATWG indices; `encoding` |
+| [Core.Encoding](../src/Core/Core.Encoding/) | Encoding labels, whole-buffer decoders, BOM sniffing and HTML charset prescan/sniffing subset | Embedded WHATWG indices; `encoding`, `html` |
 | [Core.Mime](../src/Core/Core.Mime/) | MIME parsing/serialization; context sniffing deferred | .NET BCL; `mime-sniffing` |
 | [Engine.Net](../src/Engine/Engine.Net/) | Bounded GET loading, redirects, opt-in host-only cookies, opt-in same-origin restricted loads, Fetch bad-port blocking; full Fetch policies deferred | Core.Url/Encoding/Mime, BCL HTTP/files/cookies; `fetch`, `http-cookies` |
 | [Engine.Html](../src/Engine/Engine.Html/) | First-party tokenizer and bounded static document tree building; advanced recovery deferred | Engine.Dom, embedded official entities; `html` |

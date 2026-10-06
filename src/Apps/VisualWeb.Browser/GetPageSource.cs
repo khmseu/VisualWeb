@@ -10,7 +10,9 @@ public interface IPageSource : IDisposable
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>
 /// <remarks>Specs: fetch, encoding; <see href="https://fetch.spec.whatwg.org/#scheme-fetch">scheme fetch</see>,
-/// <see href="https://encoding.spec.whatwg.org/#decode">BOM-first decode</see>.</remarks>
+/// <see href="https://encoding.spec.whatwg.org/#decode">BOM-first decode</see>; html,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#encoding-sniffing-algorithm">encoding sniffing</see> subset
+/// via <see cref="HtmlEncodingSniffer"/>. Unlike the spec, an unknown Content-Type charset fails visibly unless a BOM decides.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -24,15 +26,51 @@ public sealed class GetPageSource : IPageSource
         {
             throw new PageNavigationException("Only text/html (or explicitly selected local HTML files) can be rendered; MIME sniffing is deferred.");
         }
-        var encoding = WebEncoding.ForLabel("utf-8");
-        if (response.ContentType?.Parameters.TryGetValue("charset", out var label) == true)
+        string? label = null;
+        response.ContentType?.Parameters.TryGetValue("charset", out label);
+        var sniffed = HtmlEncodingSniffer.Sniff(response.Body.Span, label, WebEncoding.ForLabel("UTF-8"));
+        if (sniffed.Source != HtmlEncodingSource.ByteOrderMark && sniffed.UnsupportedTransportLabel is { } unsupported)
         {
-            try { encoding = WebEncoding.ForLabel(label); }
-            catch (ArgumentException exception) { throw new PageNavigationException(exception.Message); }
+            throw new PageNavigationException($"Unknown web encoding label: {unsupported}");
         }
-        var decoded = response.DecodeText(encoding);
+
+        var decoded = response.DecodeText(sniffed.Encoding);
         return new(response.Url, decoded.Text, response.StatusCode,
-            response.Diagnostics.Append("Encoding: " + decoded.Encoding.Name + "; no HTML charset prescan.").ToArray());
+            response.Diagnostics.Append(Describe(sniffed)).ToArray());
     }
+
+    private static string Describe(HtmlEncodingSniffResult sniffed)
+    {
+        var name = sniffed.Encoding.Name;
+        var text = sniffed.Source switch
+        {
+            HtmlEncodingSource.ByteOrderMark => $"Encoding: {name} from byte order mark (certain)",
+            HtmlEncodingSource.TransportLayer => $"Encoding: {name} from Content-Type charset (certain)",
+            HtmlEncodingSource.Prescan => $"Encoding: {name} from {Declaration(sniffed.Prescan!.Source)} prescan at byte "
+                + $"{sniffed.Prescan.DeclarationOffset} (tentative)",
+            _ => $"Encoding: {name} from default fallback; no BOM, Content-Type charset or declaration in the first "
+                + $"{HtmlEncodingPrescanner.ByteLimit} bytes (tentative)",
+        };
+        if (sniffed.UnsupportedTransportLabel is { } unsupported)
+        {
+            text += $"; ignored unknown Content-Type charset \"{unsupported}\"";
+        }
+
+        if (sniffed.Prescan?.IgnoredLabels is { Count: > 0 } ignored)
+        {
+            text += "; ignored unknown <meta> labels: " + string.Join(", ", ignored.Select(item => $"\"{item}\""));
+        }
+
+        return text + "; no statistical/locale sniffing or reparse on later declarations.";
+    }
+
+    private static string Declaration(HtmlPrescanSource source) => source switch
+    {
+        HtmlPrescanSource.MetaCharset => "<meta charset>",
+        HtmlPrescanSource.MetaPragma => "<meta http-equiv content-type>",
+        HtmlPrescanSource.XmlDeclaration => "<?xml encoding>",
+        _ => "UTF-16 <?x prefix",
+    };
+
     public void Dispose() => loader.Dispose();
 }

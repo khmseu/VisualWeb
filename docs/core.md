@@ -52,9 +52,36 @@ standard's reconsume/EOF rules, rather than OS code-page approximations.
 
 `Decode` does not sniff or strip a BOM. `DecodeWithBom` applies UTF-8/UTF-16 BOM
 precedence over a supplied fallback and strips exactly one BOM. It returns both
-the selected encoding and text. HTML charset prescanning, transport metadata
-policy, incremental decoding, encoders and JavaScript TextDecoder bindings
-remain later work; callers must collect a complete buffer for this API.
+the selected encoding and text. `TryForLabel` is the non-throwing "get an
+encoding" (ASCII-only case folding, so e.g. a Kelvin sign never matches `k`).
+
+### HTML charset prescan and sniffing subset
+
+[HtmlEncodingPrescanner](../src/Core/Core.Encoding/HtmlEncodingPrescanner.cs)
+follows the HTML "prescan a byte stream to determine its encoding" steps over a
+read-only span with the end condition fixed at the first **1024 bytes** (bytes,
+not characters). It covers the UTF-16 `<?x` prefixes, `<!--` comments, `<!`/`</`/`<?`
+skipping, generic tags whose attributes are consumed with "get an attribute",
+case-folded `meta` with duplicate-attribute suppression, `charset` versus
+`http-equiv="content-type"` + `content` (need/got pragma, order independent),
+failure labels that continue scanning at the next byte, UTF-16 → UTF-8 and
+x-user-defined → windows-1252 normalization, and the "get an XML encoding"
+fallback. Running out of bytes inside any construct — including a declaration
+that is incomplete at byte 1024 — aborts exactly as the spec requires; bytes after
+the limit are never read. `ExtractFromMetaContent` exposes the meta content
+algorithm. Results report source, declaration offset and ignored labels.
+
+[HtmlEncodingSniffer](../src/Core/Core.Encoding/HtmlEncodingSniffer.cs) runs only
+these sniffing steps on a complete buffer: BOM (certain), supported transport
+charset (certain), prescan (tentative), caller default (tentative). Unsupported
+transport labels are skipped as specified and reported for callers. Deliberately
+missing: user override, waiting for more bytes, container-document inheritance,
+remembered per-page encodings, frequency-analysis autodetection, locale defaults
+and the parser's "change the encoding" reparse. There are no pinned html5lib
+`encoding/` fixtures; tests are spec-derived cases.
+
+Incremental decoding, encoders and JavaScript TextDecoder bindings remain later
+work; callers must collect a complete buffer for these APIs.
 
 ## MIME
 
@@ -98,7 +125,8 @@ dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_pa
 The suite checks 896 URL parsing vectors, 87 additional domain vectors, the full
 pinned Unicode 17 IDNA corpus, 74 MIME records, official ISO-2022-JP vectors,
 all encoding labels, every mapped single/multibyte pointer, gb18030 range
-boundaries, malformed sequences, fatal errors and BOM handling. Tests never
+boundaries, malformed sequences, fatal errors, BOM handling and HTML prescan
+cases including exact 1024-byte boundaries. Tests never
 download data or refresh documentation. These finite checks are conformance
 evidence, not a claim to implement every web standard or API.
 

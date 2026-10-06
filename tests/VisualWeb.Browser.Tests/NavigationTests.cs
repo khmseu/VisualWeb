@@ -196,6 +196,84 @@ public sealed class NavigationTests
         Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => renderer.Render(
             new(BrowserUrl.Parse("data:text/html,test"), "<!doctype html><p>Author margin</p>", 200, []), new(20, 20, 1), Cancellation));
     }
+    private static GetPageSource Serving(byte[] body, string contentType) => new(new Handler(_ =>
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(body) };
+        response.Content.Headers.TryAddWithoutValidation("Content-Type", contentType);
+        return response;
+    }));
+    private static byte[] Latin1(string text) => Encoding.Latin1.GetBytes(text);
+    [Fact]
+    public async Task HttpWithoutCharsetDecodesLegacyBodyFromMetaPrescan()
+    {
+        using var source = Serving(Latin1("<!doctype html><meta charset=windows-1252><p>caf\u00E9 \u0080</p>"), "text/html");
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.com"), Cancellation);
+        Assert.Contains("caf\u00E9 \u20AC", page.Html);
+        Assert.Contains(page.Diagnostics, d => d.StartsWith("Encoding: windows-1252 from <meta charset> prescan at byte 15", StringComparison.Ordinal)
+            && d.Contains("tentative", StringComparison.Ordinal));
+    }
+    [Fact]
+    public async Task HttpLegacyPragmaPrescanIsUsed()
+    {
+        using var source = Serving(Latin1("<meta content='text/html; charset=koi8-r' http-equiv=Content-Type><p>\u00E9</p>"), "text/html");
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.com"), Cancellation);
+        Assert.Contains("<p>\u0418</p>", page.Html);
+        Assert.Contains(page.Diagnostics, d => d.Contains("KOI8-R from <meta http-equiv content-type> prescan", StringComparison.Ordinal));
+    }
+    [Fact]
+    public async Task ValidHeaderCharsetWinsOverConflictingMeta()
+    {
+        using var source = Serving(Latin1("<meta charset=koi8-r><p>\u00E9</p>"), "text/html;charset=windows-1252");
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.com"), Cancellation);
+        Assert.Contains("<p>\u00E9</p>", page.Html);
+        Assert.Contains(page.Diagnostics, d => d.StartsWith("Encoding: windows-1252 from Content-Type charset", StringComparison.Ordinal));
+    }
+    [Fact]
+    public async Task BomWinsOverUnknownHeaderCharsetAndMeta()
+    {
+        using var source = Serving([0xFF, 0xFE, .. Encoding.Unicode.GetBytes("<meta charset=koi8-r><p>\u00E9</p>")],
+            "text/html;charset=not-an-encoding");
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.com"), Cancellation);
+        Assert.Equal("<meta charset=koi8-r><p>\u00E9</p>", page.Html);
+        Assert.Contains(page.Diagnostics, d => d.StartsWith("Encoding: UTF-16LE from byte order mark", StringComparison.Ordinal)
+            && d.Contains("not-an-encoding", StringComparison.Ordinal));
+    }
+    [Fact]
+    public async Task UnknownHeaderCharsetStillFailsVisiblyWithoutBomEvenWithMeta()
+    {
+        using var source = Serving(Latin1("<meta charset=windows-1252><p>x</p>"), "text/html;charset=not-an-encoding");
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() => source.LoadAsync(BrowserUrl.Parse("https://example.com"), Cancellation));
+        Assert.Contains("not-an-encoding", error.Message, StringComparison.Ordinal);
+    }
+    [Theory]
+    [InlineData("<p>\u00E9</p>")]
+    [InlineData("<!--{0}--><meta charset=windows-1252><p>\u00E9</p>")]
+    public async Task MissingOrLateMetaUsesExplicitUtf8Fallback(string template)
+    {
+        var html = string.Format(System.Globalization.CultureInfo.InvariantCulture, template, new string('x', 1024));
+        using var source = Serving(Encoding.UTF8.GetBytes(html), "text/html");
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.com"), Cancellation);
+        Assert.Equal(html, page.Html);
+        Assert.Contains(page.Diagnostics, d => d.StartsWith("Encoding: UTF-8 from default fallback", StringComparison.Ordinal));
+    }
+    [Fact]
+    public async Task DataAndFileNavigationUseMetaPrescanUnlessCharsetIsExplicit()
+    {
+        using var source = new GetPageSource();
+        var data = await source.LoadAsync(BrowserUrl.Parse("data:text/html,%3Cmeta%20charset=windows-1252%3E%80"), Cancellation);
+        Assert.Equal("<meta charset=windows-1252>\u20AC", data.Html);
+        var labelled = await source.LoadAsync(BrowserUrl.Parse("data:text/html;charset=utf-8,%3Cmeta%20charset=windows-1252%3E%E2%82%AC"), Cancellation);
+        Assert.Equal("<meta charset=windows-1252>\u20AC", labelled.Html);
+        var path = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllBytesAsync(path, [.. Latin1("<!doctype html><meta charset=windows-1251><p>"), 0xCF, 0xF0, .. Latin1("</p>")], Cancellation);
+            var file = await source.LoadAsync(BrowserUrl.Parse(new Uri(path).AbsoluteUri), Cancellation);
+            Assert.Contains("<p>\u041F\u0440</p>", file.Html);
+            Assert.Contains(file.Diagnostics, d => d.StartsWith("Encoding: windows-1251 from <meta charset> prescan", StringComparison.Ordinal));
+        }
+        finally { File.Delete(path); }
+    }
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> response) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

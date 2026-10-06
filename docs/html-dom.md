@@ -15,9 +15,10 @@ var result = HtmlParser.Parse(
 var paragraph = result.Document.GetElementById("welcome");
 ```
 
-Callers supply **already-decoded text**. There is no HTML encoding prescan,
-transport charset policy or automatic resource loading yet. For bytes, use
-Core.Encoding with a deliberately chosen fallback first. Engine.Content will
+Callers supply **already-decoded text**. The parser has no encoding confidence
+or "change the encoding" reparse, and no automatic resource loading. For bytes,
+use Core.Encoding's `HtmlEncodingSniffer` (BOM, transport charset, prescan,
+explicit default) first, as the browser shell does. Engine.Content will
 coordinate that pipeline later.
 
 `HtmlParseResult` contains the mutable renderer-local document and read-only

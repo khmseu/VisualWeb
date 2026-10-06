@@ -85,10 +85,14 @@ stay on the browser UI thread in both modes.
 
 Only `text/html` is accepted, except that explicitly selected local files
 without MIME metadata are treated as HTML. There is **no MIME sniffing**.
-Decoding uses BOM precedence, then a valid MIME charset, otherwise explicit
-UTF-8 fallback. The status identifies the encoding and missing HTML charset
-prescan; `<meta charset>` is not a decoding-policy implementation. Unknown
-charset labels and unsupported MIME fail visibly. HTTP error-status HTML
+Decoding uses `HtmlEncodingSniffer`: a BOM first (even when the Content-Type
+charset is unknown), then a valid MIME charset, then the HTML prescan of the
+first 1024 bytes (`<meta charset>`, `http-equiv` pragma, XML declaration), then
+explicit UTF-8 fallback. The diagnostics name the chosen source, declaration
+offset, confidence and ignored labels. Unlike the spec, an unknown Content-Type
+charset without a BOM still fails visibly instead of falling through to the
+prescan. There is no statistical/locale sniffing or reparse when the tree
+builder sees a later declaration. Unsupported MIME fails visibly. HTTP error-status HTML
 can render; status codes and transport diagnostics remain visible.
 
 `LoadedPage.Origin` is associated with the **final response URL**, after redirects.

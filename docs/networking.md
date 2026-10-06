@@ -36,7 +36,8 @@ responses, not transport failures.
 Responses expose status, final WHATWG URL, redirect flag, read-only header
 collections, raw bytes, parsed Content-Type and diagnostics. There is no
 extension-based MIME guessing or byte sniffing. `DecodeText` applies BOM
-precedence with a caller-selected fallback; it does not choose an HTML charset.
+precedence with a caller-selected fallback; it does not choose an HTML charset
+(the browser shell selects one with Core.Encoding's `HtmlEncodingSniffer`).
 Invalid HTTP MIME metadata and rejected cookies appear in diagnostics, which
 callers should surface rather than ignore.
 

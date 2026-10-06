@@ -51,7 +51,7 @@ Only the main HTML resource is loaded. Missing pieces include:
 - Resource discovery, scheduling, and lifecycle integration.
 - General HTTP methods/request bodies, streaming responses, HTTP caching, and authentication challenges.
 - Full cookie policy and persistence. The browser currently disables cookies; the networking library’s optional cookie subset rejects Domain, SameSite, and Partitioned attributes.
-- MIME sniffing and HTML encoding prescan, including `<meta charset>` handling.
+- MIME sniffing. The byte-level HTML charset prescan (`<meta charset>`, pragma, XML declaration; first 1024 bytes) now feeds navigation decoding, but statistical/locale encoding detection, container inheritance and the parser's reparse on a later conflicting declaration are absent.
 
 Linked stylesheets and external scripts are explicitly rejected rather than merely ignored.
 
