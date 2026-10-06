@@ -55,6 +55,11 @@ atomic hierarchy/attribute/tree failures and exact creation/attribute/subtree
 budgets. Browser cases verify inserted nodes/inline attributes/styles reach
 exact pixels in local and worker modes, while new script nodes remain inert
 and removed initial scripts retain their preflight snapshot.
+Phase-11f tests verify native Promise/queueMicrotask FIFO ordering, per-script
+checkpoints, exact pending/recursive task limits, callback arguments/returns,
+captured-intrinsic tampering, failure latching and native callback interruption.
+Local/worker pages verify checkpoint title/style pixels, retained resize and
+failed-task preservation/recovery.
 The explicit
 [V8Smoke](../tools/V8Smoke/) probe additionally measures monitored heap failure
 and native startup under unchanged Linux or Windows renderer confinement.

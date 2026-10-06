@@ -102,6 +102,10 @@ after parsing and before stylesheet collection. See the
 Its phase-11e bindings also allow bounded attributes and node creation/mutation;
 new inline styles and tree edits participate in the post-script paint pass,
 but inserted script elements never execute.
+Phase 11f enables finite native Promise/queueMicrotask checkpoints between
+classic scripts and before paint, sharing task deadlines and DOM/queue budgets.
+Callback failure rejects navigation; retained resize never reruns jobs.
+There is no persistent script host or HTML event loop.
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

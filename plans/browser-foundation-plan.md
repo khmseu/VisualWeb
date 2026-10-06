@@ -199,6 +199,10 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   navigation. Native checked algorithms, shared lifetime identities and
   pre-write attribute/tree budgets preserve ownership and failure behavior.
   No innerHTML, selectors, events or dynamic script scheduling is added.
+  Approved phase 11f adds finite native Promise/queueMicrotask checkpoints after
+  each classic script, with bounded queues, shared execution/DOM budgets and
+  transactional page failure. External scripts, timers, event dispatch, ordinary
+  Promise rejection reporting and a persistent browser event loop remain deferred.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

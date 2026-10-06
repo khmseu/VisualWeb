@@ -22,6 +22,49 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task NativeMicrotasksRunBetweenScriptsAndFeedRetainedPagePixels(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><style>body{margin:0;background-color:red}</style>
+            <script>
+            let order=[];
+            queueMicrotask(()=>{order.push('queue');document.body.setAttribute('style','background-color:blue');
+                queueMicrotask(()=>order.push('nested'));});
+            Promise.resolve().then(()=>order.push('promise'));
+            order.push('sync');
+            </script>
+            <script>order.push('next');document.title=order.join(',');</script>
+            """);
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("sync,queue,promise,nested,next", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        Assert.Equal(rendered.Title, (await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MicrotaskFailurePreservesCommittedDomAndWorkerCanRenderNewTask(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var good = Page();
+        await renderer.RenderAsync(good, Viewport, Cancellation); renderer.CommitDocument(good.DocumentId);
+        var failure = Page("<!doctype html><script>queueMicrotask(()=>{throw Error('fixture')});</script>");
+        if (process) { await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(failure, Viewport, Cancellation)); }
+        else { await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(failure, Viewport, Cancellation)); }
+        Assert.Equal("Script title", (await renderer.RenderRetainedAsync(good, new(25, 20, 1), Cancellation)).Title);
+        Assert.Equal("Script title", (await renderer.RenderAsync(Page(), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task AttributeAndTreeMutationsRecomputeStylesAndNewLayoutWithoutRunningDynamicScripts(bool process)
     {
         using IPageRenderer renderer = process

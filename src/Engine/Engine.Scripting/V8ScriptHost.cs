@@ -16,6 +16,8 @@ public sealed class V8ScriptHost : IDisposable
     public const int MaxResultCharacters = 16 * 1024;
     public const int MaxBatchScripts = 64;
     public const int MaxBatchSourceCharacters = 256 * 1024;
+    public const int MaxPendingMicrotasks = 1024;
+    public const int MaxMicrotasksPerExecution = 4096;
     public const ulong MaxArrayBufferBytes = 16 * 1024 * 1024;
     public const ulong MonitoredHeapBytes = 32 * 1024 * 1024;
     private readonly int thread = Environment.CurrentManagedThreadId;
@@ -23,10 +25,11 @@ public sealed class V8ScriptHost : IDisposable
     private readonly ScriptObject evaluate;
     private readonly TimeSpan timeout;
     private readonly DomBindings? dom;
+    private readonly ScriptObject? microtasks;
     private bool poisoned;
     private bool disposed;
 
-    public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null)
+    public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false)
     {
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
         if (this.timeout <= TimeSpan.Zero || this.timeout > TimeSpan.FromSeconds(30)) { throw new ArgumentOutOfRangeException(nameof(timeout)); }
@@ -77,6 +80,7 @@ public sealed class V8ScriptHost : IDisposable
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 engine.Execute(DomBindings.Bootstrap);
             }
+            if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }
         }
         catch { dom?.Dispose(); engine.Dispose(); throw; }
     }
@@ -85,7 +89,7 @@ public sealed class V8ScriptHost : IDisposable
     {
         CheckUsable();
         ValidateSource(source);
-        return Run(() => Copy(evaluate.InvokeAsFunction(source)), cancellationToken);
+        return Copy(Run(() => evaluate.InvokeAsFunction(source), cancellationToken));
     }
 
     /// <summary>Execute one classic script in the context's persistent global environment.</summary>
@@ -123,6 +127,7 @@ public sealed class V8ScriptHost : IDisposable
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 engine.Execute(source);
+                CheckMicrotasks("checkpoint");
             }
             return 0;
         }, cancellationToken);
@@ -144,7 +149,17 @@ public sealed class V8ScriptHost : IDisposable
         try
         {
             T result;
-            try { result = execute(); }
+            try
+            {
+                CheckMicrotasks("begin");
+                result = execute();
+                CheckMicrotasks("end");
+            }
+            catch (ScriptEngineException exception) when (!exception.IsFatal && !deadline.IsCancellationRequested)
+            {
+                CheckMicrotasks("end");
+                throw;
+            }
             finally
             {
                 // Drain an in-flight interrupt before returning or preserving a nonfatal-error context.
@@ -170,9 +185,20 @@ public sealed class V8ScriptHost : IDisposable
                 if (cancellationToken.IsCancellationRequested) { throw new OperationCanceledException("V8 execution canceled; isolate invalidated.", exception, cancellationToken); }
                 throw new ScriptLimitException("V8 execution deadline exceeded; isolate invalidated.", exception);
             }
-            if (exception.IsFatal) { poisoned = true; }
+            if (exception.IsFatal || microtasks is not null) { poisoned = true; }
             throw new ScriptExecutionException("V8 execution failed: " + Bounded(exception.Message), exception);
         }
+    }
+
+    private void CheckMicrotasks(string operation)
+    {
+        if (microtasks is null) { return; }
+        var status = microtasks.InvokeAsFunction(operation);
+        if (status is int code && code == 0) { return; }
+        poisoned = true;
+        if (status is int limit && limit == 2)
+        { throw new ScriptLimitException("queueMicrotask resource limit exceeded; isolate invalidated."); }
+        throw new ScriptExecutionException("queueMicrotask callback failed or native checkpoint remained pending; isolate invalidated.");
     }
 
     private static ScriptValue Copy(object? value)
@@ -218,7 +244,11 @@ public sealed class V8ScriptHost : IDisposable
         if (disposed) { return; }
         Check();
         disposed = true;
-        try { evaluate.Dispose(); }
+        try
+        {
+            try { microtasks?.Dispose(); }
+            finally { evaluate.Dispose(); }
+        }
         finally
         {
             try { engine.Dispose(); }

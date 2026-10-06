@@ -16,7 +16,12 @@ lifetime identity budget. Attribute/tree/resource failures precede mutation.
 The static browser still
 executes no page scripts by default. PageRendering's phase-11d opt-in composes
 these APIs for post-parse inline classics, not HTML scheduling. Full Web IDL
-and event loops remain deferred.
+and event loops remain deferred. Phase 11f optionally installs bounded native
+queueMicrotask with Promise FIFO ordering and verified per-script checkpoints.
+One execution shares its deadline/DOM budget across all callbacks; task failures
+invalidate the host. Inline pages enable it under the existing script opt-in,
+then dispose the host before paint. Persistent event loops/rejection reporting
+remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

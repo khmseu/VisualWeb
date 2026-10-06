@@ -105,6 +105,15 @@ static void Probe()
         """);
     Check(document.GetElementById("created")?.TextContent == "tree" && bound.Evaluate("inserted").Boolean,
         "Branded attribute/fragment/tree mutation failed.");
+    using var tasks = new V8ScriptHost(enableMicrotasks: true);
+    tasks.ExecuteClassicBatch([
+        "let order=[];queueMicrotask(()=>{order.push('queue');queueMicrotask(()=>order.push('nested'));});Promise.resolve().then(()=>order.push('promise'));",
+        "order.push('next');"
+    ]);
+    Check(tasks.Evaluate("order.join(',')").Text == "queue,promise,nested,next", "Native microtask checkpoint ordering failed.");
+    using var taskDeadline = new V8ScriptHost(TimeSpan.FromMilliseconds(150), enableMicrotasks: true);
+    try { taskDeadline.ExecuteClassic("queueMicrotask(()=>{while(true){}});"); throw new InvalidOperationException("Microtask escaped deadline."); }
+    catch (ScriptLimitException) { }
     using var first = new V8ScriptHost();
     using var second = new V8ScriptHost();
     Check(first.Evaluate("6 * 7").Number == 42, "Native V8 evaluation failed.");
@@ -137,7 +146,7 @@ static void Probe()
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
-    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
+    Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");
 }
 
 static void Check(bool condition, string message)

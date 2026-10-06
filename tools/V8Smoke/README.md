@@ -20,6 +20,9 @@ result and external-buffer limits, monitored heap invalidation, infinite-script
 deadlines and fresh-isolate recovery.
 Classic-script probes additionally verify persistent lexical bindings, isolate
 separation and whole-batch deadline interruption.
+Optional microtask probes verify native Promise/queueMicrotask FIFO ordering,
+per-source checkpoints and deadline interruption inside native callbacks,
+under the same confinement profile.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.

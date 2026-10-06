@@ -39,3 +39,6 @@ transactional publication and retained scripted DOM repainting via IPC v3.
 External scripts, HTML scheduling and event loops remain deferred.
 Phase 11e adds bounded element attributes, element/text/fragment creation and
 branded Node navigation/mutation while preserving the initial script snapshot.
+Phase 11f adds opt-in finite native Promise/queueMicrotask checkpoints, bounded
+task queues and shared deadlines before painting; persistent event loops remain
+deferred. See the [scripting guide](scripting.md) for exact limits and deviations.

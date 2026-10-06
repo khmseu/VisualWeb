@@ -107,6 +107,10 @@
   inline classic sources after parsing and recomputes styles/paint after mutation.
   Keep script errors transactional and committed DOM pinned for resize; never
   rerun scripts to hide lost worker state. IPC v3 carries identities/policy only.
+  Phase 11f uses optional native Promise-backed queueMicrotask, verified checkpoints
+  after each classic source, and one shared task deadline/DOM/queue budget. Preserve
+  1,024 pending/4,096 total limits and failure latching/invalidation; never replace
+  native FIFO ordering with a separate queue or claim a persistent HTML event loop.
   HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
   Windows/arm64 guarantees require native target evidence.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.

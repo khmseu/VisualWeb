@@ -1,11 +1,11 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11e)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11f)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
 small renderer-local native host, not a web-browser JavaScript environment.
 **Page scripts remain disabled by default.** Phase 11d explicitly opts into the
 post-parse inline subset below. Full DOM/Web IDL bindings,
-HTML script scheduling and event loops, modules, timers, workers and script-visible
+Full HTML script scheduling and event loops, modules, timers, workers and script-visible
 network/storage APIs are deferred. IPC v3 carries only document identities and
 trusted script/repaint policy, never DOM or V8 objects.
 
@@ -62,6 +62,45 @@ Atomics and WebAssembly globals are removed in this initial subset: blocking
 shared-memory waits and Wasm native compilation are not certified by these
 execution limits. No task/promise/array host-conversion flags are enabled.
 Native ECMAScript built-ins are not a browser event loop or a sandbox.
+
+## Finite native microtask checkpoints (phase 11f)
+
+Pass `enableMicrotasks: true` to opt into a native-JavaScript `queueMicrotask`
+adapter. Inline page execution enables it automatically, still behind
+`--enable-inline-scripts`; plain hosts do not install that global.
+The adapter captures pristine Promise operations and enqueues callbacks on
+V8's **same native FIFO** as Promise reactions. ClearScript drains that queue
+at native script return; the host verifies completion after each classic source
+before the next source runs, and before returning an evaluation/single script.
+This is a finite renderer-local execution task, not a persistent HTML event loop.
+
+One evaluation, single classic script, or whole classic batch shares one
+deadline, cancellation registration, DOM callback budget and microtask budget.
+The queue permits **1,024 pending callbacks and 4,096 total callbacks per task**,
+including recursive enqueueing and all sources in a batch. Counters reset on
+the next host execution. Native Promise jobs themselves are bounded by
+deadline/heap/process limits, not counted against these queueMicrotask quotas.
+
+The callback must be callable; otherwise enqueueing throws TypeError without
+invalidating an otherwise successful task. Callbacks receive no arguments,
+with undefined `this` (ordinary non-strict functions apply their normal
+ECMAScript this conversion). Callback return values are ignored, including
+thenables. An evaluation's copied completion value precedes checkpoint effects;
+those effects are visible on the next evaluation.
+
+Callback throws and quota violations latch task failure, even when an enqueue
+TypeError is caught by caller code. Remaining queueMicrotask wrappers skip,
+later classic scripts do not run, and the host is invalidated. Other Promise
+jobs can still have effects while V8 drains its native queue; there is no DOM
+rollback. Opt-in microtask hosts also invalidate on native syntax/runtime errors
+to prevent later reuse of failed-task state. Page navigation publishes nothing
+on failure, preserving the previous committed DOM/frame/history. Successful
+checkpoint DOM/style/title changes reach paint and retained resize.
+
+No new CLR callback is installed: the private task controller and queued
+functions remain native JavaScript closures. Ordinary Promise rejection
+reporting, HTML error events, timers, event dispatch, external scripts and a
+persistent host after page execution remain deferred.
 
 ## Minimal live DOM bindings (phase 11c)
 
@@ -247,7 +286,7 @@ Static-mode resize behavior is unchanged. Retained DOM never crosses IPC.
 
 There is still no Window/global browser API, event-handler dispatch, timer,
 HTML event loop, module loader, origin/CSP enforcement or script-visible
-network/storage. Native ECMAScript built-ins are not an HTML task/microtask
+network/storage. Finite native microtask checkpoints are not an HTML event-loop
 scheduler; there is no live host remaining after initial execution. Do not use
 this mode for hostile content, even with OS confinement.
 
@@ -270,7 +309,9 @@ Pre-canceled calls do not execute or invalidate a usable host. An in-flight
 cancellation, deadline interruption or fatal engine error invalidates the
 host; dispose it and create a fresh isolate rather than resuming partially
 executed state. Normal syntax/runtime errors and unsupported/oversized return
-values are explicit exceptions but leave the context available.
+values are explicit exceptions but leave the plain context available.
+Opt-in microtask hosts instead invalidate on native engine errors or latched
+queue failure, as described above.
 All execution entry points share the same cancellation/invalidation path.
 Interrupt callbacks are drained on success **and failure** before an operation
 returns, preventing a late callback from interrupting later execution.
@@ -402,3 +443,26 @@ are independently cached/fresh with no network refresh needed.
 Windows/ARM checks remain target-CI work, not evidence from this Linux x64 host.
 The inline-only initial snapshot, disabled-by-default browser policy and
 unfinished HTML event loop/security boundaries are unchanged.
+
+## Phase-11f validation outcome
+
+On Linux x64, all **45 projects build**. **207 distinct selected tests pass**
+without failures/skips: 92 scripting and 115 browser cases. After the final
+observation/checkpoint fix, all 92 scripting and 40 inline-page cases were rerun.
+Coverage includes native FIFO/nested Promise ordering, checkpoints between
+classic sources, exact 1,024 pending/4,096 recursive/shared-batch limits, caught
+quota latching, callback arguments/ignored thenables, intrinsic tampering,
+shared DOM budgets, isolate separation and explicit task invalidation.
+Infinite native callbacks and recursively replenished Promise jobs interrupt
+under the shared deadline; in-flight cancellation also invalidates the host.
+Observation errors cannot mask a latched callback failure.
+
+Local/process pages verify exact checkpoint title/blue pixels, retained resize
+and failed-task preservation/recovery. Local and unchanged required-confined V8
+probes pass. Opt-in SDL dummy and required-confined X11 browser smokes pass
+with microtask-driven title/pixels and tab/history/window lifecycle.
+Formatting, editor diagnostics and whitespace checks are clean; no owned
+workers/resource scopes remain. All **58 official references** are independently
+cached/fresh without network refresh. Windows/ARM guarantees still require
+native target evidence. External scripts, timers, events, ordinary Promise
+rejection reporting and a persistent HTML event loop remain deferred.

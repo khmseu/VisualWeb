@@ -65,7 +65,7 @@ public static class InlinePageScripts
     {
         var sources = Collect(document, cancellationToken);
         if (sources.Count == 0) { return 0; }
-        using var host = new V8ScriptHost(document: document);
+        using var host = new V8ScriptHost(document: document, enableMicrotasks: true);
         host.ExecuteClassicBatch(sources, cancellationToken);
         return sources.Count;
     }
