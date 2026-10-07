@@ -435,9 +435,9 @@ bypass flag; see the [networking guide](networking.md#fetch-bad-port-blocking).
 
 Existing HTML/CSS/text/layout/paint subsets remain enforced. **The shell
 does not override author CSS to make unsupported pages appear successful.**
-Pages should set non-root vertical margins to zero while collapse is deferred;
-the welcome page also overrides bold/italic UA defaults for the configured
-regular face. Unsupported executable script features in opt-in mode, layout algorithms, CSS diagnostics and
+Adjacent block-sibling vertical margins collapse; parent-edge collapsing is
+deferred. The welcome page also overrides bold/italic UA defaults for the
+configured regular face. Unsupported executable script features in opt-in mode, layout algorithms, CSS diagnostics and
 paint features remain errors. See [HTML](html-dom.md), [CSS](css.md),
 [text/layout](text-layout.md) and [painting](painting.md).
 

@@ -193,8 +193,9 @@ public sealed class NavigationTests
         Assert.Throws<CssLimitException>(() => StaticPageRenderer.CollectStyles(parsed.Document, new() { MaxStyleSources = 1 }, Cancellation));
         Assert.Throws<CssLimitException>(() => StaticPageRenderer.CollectStyles(parsed.Document, new() { MaxInputCharacters = 23 }, Cancellation));
         using var renderer = new StaticPageRenderer(FontPath, 1000);
-        Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => renderer.Render(
-            new(BrowserUrl.Parse("data:text/html,test"), "<!doctype html><p>Author margin</p>", 200, []), new(20, 20, 1), Cancellation));
+        var page = renderer.Render(new(BrowserUrl.Parse("data:text/html,test"),
+            "<!doctype html><p>Author margin</p>", 200, []), new(20, 20, 1), Cancellation);
+        Assert.Equal(20 * 20 * 4, page.Frame.Pixels.Length);
     }
     private static GetPageSource Serving(byte[] body, string contentType) => new(new Handler(_ =>
     {

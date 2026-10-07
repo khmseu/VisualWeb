@@ -2,8 +2,8 @@
 
 The user approved HarfBuzzSharp with Linux/Windows native assets, a licensed
 bundled test font and a finite horizontal LTR block/inline layout subset.
-Advanced bidi, full Unicode line breaking, floats, margin collapse,
-inline-block and replaced-element layout must fail explicitly.
+Advanced bidi, full Unicode line breaking, floats, parent-edge margin collapse,
+general inline-block and replaced-element layout remain deferred.
 
 [Engine.Text](../src/Engine/Engine.Text/) references Platform.Abstractions,
 not Linux/Windows/SDL backends. [Engine.Layout](../src/Engine/Engine.Layout/)
@@ -101,8 +101,8 @@ not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
   parent's definite clamped content height. Against an indefinite height,
   percentage height is auto, percentage min-height is zero and max-height none.
 - Auto height from stacked block children and anonymous inline line groups.
-- Non-collapsing root margins; **non-root vertical margins must be zero**.
-  This deliberate restriction prevents approximate stacking without collapse.
+- Vertical margins between adjacent block siblings collapse, including
+  positive and negative margins. Collapse through parent edges is deferred.
 - Shaped unbroken words, collapsing spaces, space-only wrapping and overflow of
   unbreakable text. Exact fits do not wrap. Line-edge collapsible spaces drop.
 - white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
@@ -112,11 +112,9 @@ not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
   Negative leading is valid; an empty inline strut can affect an existing line
   but does not create a standalone visible line.
 
-The default UA sheet has nonzero body/paragraph vertical margins, so callers
-must override them to zero while margin collapse is deferred. Fonts with bold/
-italic styles must be configured explicitly or those styles overridden.
-The restriction is surfaced as an exception, not hidden behind a development
-mode or silent geometry approximation.
+Default body and paragraph vertical margins participate in the supported
+sibling collapse. Parent-edge collapse remains deferred. Fonts with bold/italic
+styles must be configured explicitly or those styles overridden.
 
 ## Explicit deferred cases
 

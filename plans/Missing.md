@@ -119,7 +119,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 - Images/replaced elements, controls, list markers, decorations, nested/horizontal scrolling, and general overflow layout.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
-**A particularly restrictive current limitation:** non-root vertical margins must be zero. Ordinary default paragraph/body styling therefore requires overrides. Some CSS values parse successfully but remain unsupported downstream in layout or paint.
+**A particularly restrictive current limitation:** vertical margin collapsing is supported only between adjacent block siblings; parent-edge collapsing remains missing. Some CSS values parse successfully but remain unsupported downstream in layout or paint.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

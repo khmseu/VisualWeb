@@ -141,10 +141,6 @@ public static class StaticLayout
             var padding = Edges(style, "padding", containingWidth);
             var border = Edges(style, "border", containingWidth, "-width");
             var margin = Edges(style, "margin", containingWidth);
-            if (element.ParentNode is DomElement && (margin.Top != 0 || margin.Bottom != 0))
-            {
-                throw new UnsupportedLayoutException("Non-root vertical margins require the deferred margin-collapse algorithm; set them to zero.");
-            }
             var horizontal = padding.Left + padding.Right + border.Left + border.Right;
             var sizing = ((CssKeyword)style["box-sizing"]).Value;
             var specifiedWidth = Dimension(style["width"], containingWidth);
@@ -188,6 +184,7 @@ public static class StaticLayout
             var flow = new List<LayoutFlowItem>();
             var inline = new List<InlineUnit>();
             var cursor = contentY;
+            double? previousBlockBottomMargin = null;
             if (element.LocalName == "input")
             {
                 // Spec: html; https://html.spec.whatwg.org/multipage/rendering.html#the-input-element-as-a-text-entry-widget
@@ -202,10 +199,15 @@ public static class StaticLayout
                 if (child is DomElement block && Display(block) == "block")
                 {
                     Flush();
-                    var childBox = Block(block, contentX, cursor, width, definiteHeight, depth + 1);
+                    var childTopMargin = Edges(Style(block), "margin", width).Top;
+                    var childTop = previousBlockBottomMargin is { } previousBottomMargin
+                        ? cursor + CollapseMargins(previousBottomMargin, childTopMargin) - previousBottomMargin - childTopMargin
+                        : cursor;
+                    var childBox = Block(block, contentX, childTop, width, definiteHeight, depth + 1);
                     childBoxes.Add(childBox);
                     flow.Add(new LayoutBlockItem(childBox));
                     cursor = childBox.BorderBox.Y + childBox.BorderBox.Height + childBox.Margin.Bottom;
+                    previousBlockBottomMargin = childBox.Margin.Bottom;
                 }
                 else { Gather(child, style, inline, depth + 1); }
             }
@@ -228,10 +230,17 @@ public static class StaticLayout
                 var formatted = Inline(inline, style, contentX, cursor, width);
                 blockLines.AddRange(formatted);
                 flow.AddRange(formatted.Select(line => new LayoutLineItem(line)));
-                if (formatted.Count > 0) { cursor = formatted[^1].Bounds.Y + formatted[^1].Bounds.Height; }
+                if (formatted.Count > 0)
+                {
+                    cursor = formatted[^1].Bounds.Y + formatted[^1].Bounds.Height;
+                    previousBlockBottomMargin = null;
+                }
                 inline.Clear();
             }
         }
+
+        private static double CollapseMargins(double first, double second)
+            => Math.Max(0, Math.Max(first, second)) + Math.Min(0, Math.Min(first, second));
 
         private void Gather(DomNode node, CssComputedStyle inheritedStyle, List<InlineUnit> output, int depth)
         {

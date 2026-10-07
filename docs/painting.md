@@ -28,8 +28,8 @@ page.Frame.Present(window.Surface);
 ```
 
 Use the [text/layout guide](text-layout.md) and [CSS guide](css.md) for the
-necessary font registrations, non-root zero vertical margins and finite layout
-restrictions. Callers open/select windows through platform services separately.
+necessary font registrations and finite layout restrictions, including the
+current limits on vertical margin collapsing. Callers open/select windows through platform services separately.
 Presentation requires a frame matching the surface's current physical pixel
 size; the caller chooses CSS viewport and scale and rerenders after a resize.
 Presentation exceptions propagate to the caller.

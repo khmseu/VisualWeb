@@ -91,6 +91,29 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void AdjacentBlockVerticalMarginsCollapseToLargestPositiveMargin()
+    {
+        var root = Layout("<div><p id=a>A</p><p id=b>B</p></div>",
+            "#a{margin-top:3px;margin-bottom:8px} #b{margin-top:12px;margin-bottom:4px}").Root!;
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+
+        Assert.Equal(3, first.BorderBox.Y);
+        Assert.Equal(first.BorderBox.Y + first.BorderBox.Height + 12, second.BorderBox.Y);
+    }
+
+    [Fact]
+    public void AdjacentNegativeBlockMarginsCollapseToMostNegativeMargin()
+    {
+        var root = Layout("<div><p id=a>A</p><p id=b>B</p></div>",
+            "#a{margin-bottom:-4px} #b{margin-top:-7px}").Root!;
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+
+        Assert.Equal(first.BorderBox.Y + first.BorderBox.Height - 7, second.BorderBox.Y);
+    }
+
+    [Fact]
     public void CollapsedWhitespaceWrapsAtSpacesAndDropsLineEdges()
     {
         var box = Find(Layout("<p id=x>  aa \n bb\tcc  </p>", width: 24).Root!, "x");
@@ -167,7 +190,6 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("<p>text</p>", "p{margin-top:1px}")]
     [InlineData("<span><div>x</div></span>", "")]
     [InlineData("<span>x</span>", "span{display:inline-block}")]
     [InlineData("<span>x</span>", "span{padding:1px}")]
