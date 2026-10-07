@@ -200,10 +200,28 @@ public sealed class StylesheetTests
             var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
                 source.LoadAsync(BrowserUrl.Parse(new Uri(htmlPath).AbsoluteUri), Cancellation));
 
-            Assert.Contains("blocked from local file documents", error.Message, StringComparison.Ordinal);
+            Assert.Contains("blocked from file: documents", error.Message, StringComparison.Ordinal);
             Assert.Empty(requests);
         }
         finally { File.Delete(htmlPath); }
+    }
+
+    [Fact]
+    public async Task OpaqueDataDocumentCannotTriggerNetworkStylesheetRequests()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Text("body{color:red}", "text/css");
+        }));
+        var html = "<!doctype html><link rel=stylesheet href='https://internal.example/style.css'>";
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("data:text/html," + Uri.EscapeDataString(html)), Cancellation));
+
+        Assert.Contains("blocked from data: documents", error.Message, StringComparison.Ordinal);
+        Assert.Empty(requests);
     }
 
     [Fact]
