@@ -134,8 +134,18 @@ public sealed class ShellChrome : IDisposable
                     : index == forms.Focused && !forms.SelectAll && forms.Caret >= 0
                         ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
                     : forms.Values[index];
-                Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
-                    control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind == "button");
+                if (control.Kind == "textarea")
+                {
+                    var rows = Math.Max(1, (int)((box.Height - 8) / 15));
+                    var lines = text.Split('\n');
+                    for (var row = 0; row < Math.Min(rows, lines.Length); row++)
+                    { Label(lines[row], box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink); }
+                }
+                else
+                {
+                    Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
+                        control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind == "button");
+                }
             }
         }
         var chrome = CpuRasterizer.Render(new(width, height, commands), fonts, density, options: options);

@@ -83,12 +83,12 @@ The native window title retains the same warning alongside the active page title
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
-| Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search/tel field | Edit the shell-owned field value (no page scrolling) |
-| Enter in a focused field / on a submit control, or primary click on a submit control | Submit the [simple GET form](#simple-get-forms) in the current tab |
+| Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search/tel field or textarea | Edit the shell-owned field value (no page scrolling) |
+| Enter in a focused text/search/tel field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
-| Ctrl+V while editing the address or a text/search/tel field | Paste clipboard text at the caret or over the current field selection |
+| Ctrl+V while editing the address or a text/search/tel/textarea field | Paste clipboard text at the caret or over the current field selection |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Page text hit geometry is a bounded v9 data-only snapshot of shaped fragments
@@ -200,63 +200,61 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v10); the browser owns all values,
-focus, carets and submission. Supported controls are `input` text/search/tel (editable with generic text behavior; no
-telephone-specific keyboard or validation), hidden and submit, plus `button`
-submit (and inert `type=button`),
-with a user-agent `display:inline-block` default and bounded fallback dimensions
-(160 by 20 CSS pixels) when sizes are unspecified; author `display:none` still
-hides controls. Form-control inline boxes wrap atomically with text; nonzero
-control margins and general inline-block/replaced-element layout remain unsupported.
+reports data-only form/control snapshots (IPC v11); the browser owns all values,
+focus, carets and submission. Supported controls are `input` text/search/tel
+(editable with generic text behavior; tel has no telephone-specific keyboard or
+validation), `textarea`, hidden and submit, plus `button` submit (and inert
+`type=button`). Input/button controls default to 160 by 20 CSS pixels. Textareas
+default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
+to 128 and 64. Author CSS may size the controls within the layout limits; author
+`display:none` still hides them. Textarea values are drawn by the shell overlay,
+one line per row, without soft wrapping or internal scrolling. Form-control inline
+boxes wrap atomically with text; nonzero control margins and general inline-block/
+replaced-element layout remain unsupported.
+
 Fields and submit buttons are drawn by a shell-owned overlay (white field or
-gray button, gray border, bounded ASCII label with `|` caret when focused),
+gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
-rectangles. These defaults are a bounded layout accommodation, not complete UA
-widget sizing or styling.
+rectangles. These defaults are bounded layout accommodations, not complete UA
+widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
+tree order with anchor groups; primary-clicking a visible text/search/tel field
+or textarea focuses it without starting page text selection. Focusing an editable
+control enables SDL committed text input, disabled again when focus leaves.
+Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
+sequences normalize to LF; other control characters are rejected. Ctrl+A selects
+the entire value and Ctrl+V pastes at the caret or over that selection. Caret
+movement is linear; textarea soft wrapping, internal scrolling and line-aware
+Home/End behavior are not implemented. Values are capped at 8192 UTF-16 code
+units and truncated to `maxlength` without splitting surrogate pairs.
 
-Tab/Shift+Tab visit visible, enabled controls merged in tree order with anchor
-groups; primary-clicking a visible text/search/tel field focuses it without starting
-page text selection. Focusing a text/search/tel field enables SDL committed text
-input, which is disabled again when focus leaves. Values are inserted without
-control characters. Ctrl+A visibly selects the full field value, the next
-insertion replaces it, and Ctrl+V pastes clipboard text at the caret or over the
-selection. Address editing also supports Ctrl+V, replacing the current Ctrl+L
-selection; its existing length and control-character limits still apply. Values
-are truncated to `maxlength` (whole UTF-16 surrogate pairs) and capped at 8192
-characters. Enter in a field submits through the form's first submit
+Enter in a focused text/search/tel field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the
-form has at most one text/search/tel field (implicit submission). Field state is
-tab-local and survives tab switches and same-document scroll/resize repaints
-whose control metadata is unchanged; new document commits reset it, failed
-navigations keep it.
+form has at most one text/search/tel field (implicit submission). Enter in a
+textarea inserts LF and never triggers implicit submission. Form state is tab-local
+and survives tab switches and same-document scroll/resize repaints whose control
+metadata is unchanged; new document commits reset it, failed navigations keep it.
 
-Submission includes named, non-disabled text/search/tel/hidden controls plus the
-named activating submitter, in tree order. `_charset_` hidden fields submit
-`UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
-`application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as
-`+`, everything else `%XX`, lone surrogates as U+FFFD), replacing the action's
-query and keeping its fragment. The result is navigated with the ordinary
-current-tab `Navigate` transaction (HSTS, redirects, origin rotation, history),
-so `file:` and `data:` actions also receive the query. The query is capped at
-8192 characters and the resulting URL at the existing URL limit.
+Submission includes named, non-disabled text/search/tel/textarea/hidden controls
+plus the named activating submitter, in tree order. `_charset_` hidden fields
+submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
+`application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,
+everything else `%XX`, lone surrogates as U+FFFD), replacing the action's query
+and keeping its fragment. The result uses the ordinary same-tab navigation
+transaction (HSTS, redirects, origin rotation, history); `file:` and `data:`
+actions also receive the query. The query is capped at 8192 characters and the
+resulting URL at the existing URL limit.
 
-Visible failures, without navigation and keeping the committed page: a form
-with `method` post/dialog, `enctype` multipart/form-data or text/plain, a
-`target` other than `_self` (or an inherited `<base target>`), `novalidate`,
-a non-UTF-8 `accept-charset`, any `<base href>`, any `form=` attribute,
-`formaction`/`formmethod`/`formenctype`/`formtarget`/`formnovalidate`, text-field
-`pattern`/`minlength`/`dirname`/`list`, other input types, reset buttons,
-`textarea`/`select`/`output`/`object`, `datalist` or disabled `fieldset`
-ancestors, an action that is unparsable, over 8192 characters or outside
-`http`/`https`/`file`/`data`; a document whose encoding is not UTF-8/UTF-16
-(stricter than the standard's charset selection); an HTTPS form submission that cannot be upgraded from HTTP by HSTS (including
-redirects to HTTP); an empty `required` field or an edited value over
-`maxlength`; and query/URL limit overflow. There is no
-POST, no constraint-validation UI, no `submit`/`input`/`change`/`keydown`
-events or `requestSubmit`, and scripts cannot submit forms or bypass the broker.
-Implicit submission through `<input type=image>`, autofill, autocomplete,
-`dirname`, IME preedit, clipboard selection ranges and richer text-selection
-behavior are deferred.
+Visible failures, without navigation and keeping the committed page: a form with
+`method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
+target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
+`form=` attribute, submitter overrides, unsupported input types/reset buttons,
+textarea `dirname`, `minlength` or `wrap=hard`, select/output/object controls,
+`datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
+unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
+required empty fields, edited overlong values, or query/URL limit overflow.
+There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
+events, `requestSubmit`, script submission, select controls, autofill, IME
+preedit, or clipboard selection range support.
 
 ## Navigation and page policy
 

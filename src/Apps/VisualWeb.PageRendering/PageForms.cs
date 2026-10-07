@@ -63,6 +63,13 @@ internal static class PageForms
                     if (element.GetAttribute(name) is not null) { Reject(index, $"text field attribute {name}"); }
                 }
             }
+            if (kind == "textarea")
+            {
+                if (element.GetAttribute("dirname") is not null || element.GetAttribute("minlength") is not null)
+                { Reject(index, "textarea dirname/minlength"); }
+                if (element.GetAttribute("wrap")?.Equals("hard", StringComparison.OrdinalIgnoreCase) == true)
+                { Reject(index, "textarea wrap=hard"); }
+            }
             if (kind is "submit" or "button")
             {
                 foreach (var name in SubmitterOverrides)
@@ -77,8 +84,8 @@ internal static class PageForms
             }
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
-            var text = kind is "text" or "search" or "tel";
-            var value = element.GetAttribute("value");
+            var text = kind is "text" or "search" or "tel" or "textarea";
+            var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "") : element.GetAttribute("value");
             value = kind switch
             {
                 "text" or "search" or "tel" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
@@ -150,8 +157,12 @@ internal static class PageForms
     {
         "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "tel" or "hidden" or "submit" ? type : null,
         "button" => DomFormControls.ButtonType(element) == "submit" ? "button" : null,
+        "textarea" => "textarea",
         _ => null,
     };
+
+    private static string NormalizeTextArea(string value) =>
+        value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 
     private static DomElement? Owner(DomElement element) => Ancestors(element).FirstOrDefault(a => a.LocalName == "form");
 

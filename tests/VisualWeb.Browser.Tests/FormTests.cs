@@ -60,6 +60,35 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TextareaReportsInitialMultilineValueAndGeometryAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><textarea name=message rows=3 maxlength=80 required>first\nsecond</textarea></form>"),
+            new(200, 400, 1), Cancellation);
+
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("textarea", control.Kind);
+        Assert.Equal("first\nsecond", control.Value);
+        Assert.Equal(80, control.MaxLength);
+        Assert.True(control.Required);
+        Assert.Equal(160, control.Rect!.Width);
+        Assert.Equal(60, control.Rect.Height);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData("rows=65")]
+    [InlineData("cols=129")]
+    public async Task TextareaDimensionsEnforceRendererBounds(string dimensions)
+    {
+        using var renderer = Renderer(false);
+        await Assert.ThrowsAsync<VisualWeb.Engine.Layout.LayoutLimitException>(() =>
+            renderer.RenderAsync(Document($"<textarea {dimensions}></textarea>"), new(200, 400, 1), Cancellation));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TelephoneInputUsesTextControlMetadataAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -97,7 +126,9 @@ public sealed class FormTests
     [InlineData("<form><input type=checkbox name=c style=display:none></form>", "checkbox")]
     [InlineData("<form><input type=password name=c style=display:none></form>", "password")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
-    [InlineData("<form><textarea name=t style=display:none>x</textarea></form>", "textarea")]
+    [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
+    [InlineData("<form><textarea name=t minlength=2></textarea></form>", "minlength")]
+    [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
     [InlineData("<form><button type=reset>r</button></form>", "reset")]
     [InlineData("<form><fieldset disabled><input name=q></fieldset></form>", "fieldset")]
     [InlineData("<form id=f></form><input form=f name=q>", "form attribute")]
@@ -271,6 +302,22 @@ public sealed class FormTests
         Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
         Assert.Equal("https://example.com/search?q=x+y%2B%C3%A9&_CHARSET_=UTF-8&go=Go%21#frag",
             harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void TextareaAcceptsMultilineTextAndSubmitsNormalizedNewlines()
+    {
+        using var harness = new Harness("<form action='/message'><textarea name=body rows=3>first</textarea><button>Send</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.EditingFormControl(tab));
+        Assert.Equal("first\nsecond", controller.InsertFormText(tab, "\nsecond"));
+        Assert.False(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/message?body=first%0D%0Asecond", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

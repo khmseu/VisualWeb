@@ -227,6 +227,58 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void TextareaEnterInsertsLineAndTabEnterSubmits(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        var requests = new List<Uri>();
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer, pageTransportFactory: Transport);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "https://forms.example/form");
+        Wait();
+        var textarea = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(textarea.X + 8), (float)(ShellChrome.Height + textarea.Y + 8)));
+
+        Assert.True(native.TextInput);
+        Key(SDL.Scancode.Return);
+        shell.Dispatch(new TextEntered(native.Id, "second"));
+        Assert.Equal("first\nsecond", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.Single(tab.History.Entries);
+        Assert.Single(requests);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.False(native.TextInput);
+        Key(SDL.Scancode.Return);
+        Wait();
+        Assert.Equal("Result", tab.Title);
+        Assert.Equal("https://forms.example/message?body=first%0D%0Asecond&send=yes", tab.History.Current!.Href);
+        Assert.Equal(2, requests.Count);
+
+        HttpMessageHandler Transport() => new HstsHandler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            var html = request.RequestUri!.AbsolutePath == "/form"
+                ? "<!doctype html><style>*{margin:0}</style><form action='/message'>" +
+                  "<textarea name=body>first</textarea><button name=send value=yes>Send</button></form>"
+                : "<!doctype html><style>*{margin:0}</style><title>Result</title><p>sent</p>";
+            return new(HttpStatusCode.OK) { Content = new StringContent(html, System.Text.Encoding.UTF8, "text/html") };
+        });
+        void Key(SDL.Scancode scan) => shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void UnstyledFormButtonIsPaintedAndSubmitsByClickOrEnter(bool click)
     {
         using var system = new Windows();

@@ -274,7 +274,6 @@ public sealed class LayoutTests
     [InlineData("<input type=checkbox>", "input{display:block}")]
     [InlineData("<input type=password>", "input{display:block}")]
     [InlineData("<input type=hidden>", "input{display:block}")]
-    [InlineData("<textarea>x</textarea>", "textarea{display:block}")]
     [InlineData("<ul><li>x</li></ul>", "")]
     public void DeferredAlgorithmsNeverReturnApproximateGeometry(string html, string css)
     {

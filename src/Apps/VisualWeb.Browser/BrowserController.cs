@@ -259,7 +259,13 @@ public sealed class BrowserController : IDisposable
         Check();
         var owner = content[id];
         return owner.PageFocused && owner.Page is { } page && owner.FocusedControl >= 0
-            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "tel", ReadOnly: false, Disabled: false };
+            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "tel" or "textarea", ReadOnly: false, Disabled: false };
+    }
+    public bool IsMultilineFormControl(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        return EditingFormControl(id) && owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea";
     }
     /// <summary>Current value: the browser-owned edit when present, otherwise the renderer-reported initial value.</summary>
     public string FormControlValue(TabId id, int index)
@@ -275,7 +281,7 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
-        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "tel"
+        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "tel" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
     /// <summary>Whether the focused editable text field has its full value selected.</summary>
@@ -302,10 +308,16 @@ public sealed class BrowserController : IDisposable
         Check();
         ArgumentNullException.ThrowIfNull(text);
         if (!EditingFormControl(id)) { throw new PageNavigationException("No editable form field is focused."); }
-        if (text.Any(char.IsControl)) { throw new PageNavigationException("Control characters are not accepted in form fields."); }
         var owner = content[id];
         var index = owner.FocusedControl;
         var control = owner.Page!.FormControls[index];
+        if (control.Kind == "textarea")
+        {
+            text = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+            if (text.Any(c => char.IsControl(c) && c != '\n'))
+            { throw new PageNavigationException("Only line feeds are accepted as control characters in textareas."); }
+        }
+        else if (text.Any(char.IsControl)) { throw new PageNavigationException("Control characters are not accepted in form fields."); }
         var editor = Field(owner, index);
         var existingLength = editor.SelectAll ? 0 : editor.Text.Length;
         if (control.MaxLength >= 0)
@@ -316,7 +328,7 @@ public sealed class BrowserController : IDisposable
         }
         if ((long)existingLength + text.Length > RendererProtocol.MaxTextCharacters)
         { throw new BrowserLimitException("Form field length limit exceeded."); }
-        editor.Insert(text, RendererProtocol.MaxTextCharacters);
+        editor.Insert(text, RendererProtocol.MaxTextCharacters, allowLineFeed: control.Kind == "textarea");
         owner.Dirty.Add(index);
         Changed?.Invoke(id);
         return editor.Text;
@@ -420,7 +432,7 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "tel") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "tel" or "textarea") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             if (control.Required && value.Length == 0)
             { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
@@ -467,7 +479,7 @@ public sealed class BrowserController : IDisposable
             if (control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
             return control.Kind is "submit" or "button" ? ActivateControl(id, owner, index)
-                : control.Kind is "text" or "search" or "tel";
+                : control.Kind is "text" or "search" or "tel" or "textarea";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {

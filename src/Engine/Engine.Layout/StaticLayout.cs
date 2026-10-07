@@ -112,7 +112,7 @@ public static class StaticLayout
             {
                 throw new UnsupportedLayoutException("Language-dependent shaping/segment-break handling beyond English is deferred.");
             }
-            if (element.LocalName is "input" or "button")
+            if (element.LocalName is "input" or "button" or "textarea")
             {
                 if (!block && Display(element) != "inline-block")
                 { throw new UnsupportedLayoutException("Form controls require block or supported inline-block layout."); }
@@ -123,7 +123,7 @@ public static class StaticLayout
 
                 return;
             }
-            if (element.LocalName is "bdi" or "bdo" or "img" or "textarea" or "select"
+            if (element.LocalName is "bdi" or "bdo" or "img" or "select"
                 or "video" or "audio" or "canvas" or "iframe" or "object" or "embed" or "ul" or "ol" or "li"
                 or "table" or "ruby")
             {
@@ -160,6 +160,8 @@ public static class StaticLayout
             var vertical = padding.Top + padding.Bottom + border.Top + border.Bottom;
             var specifiedHeight = Dimension(style["height"], containingHeight);
             var definiteHeight = specifiedHeight is { } h ? Math.Max(0, h - (sizing == "border-box" ? vertical : 0)) : (double?)null;
+            if (element.LocalName == "textarea" && definiteHeight is null)
+            { definiteHeight = TextareaDimension(element, "rows", 2, 64) * 20; }
             var minHeight = Dimension(style["min-height"], containingHeight) ?? 0;
             var maxHeight = Dimension(style["max-height"], containingHeight) ?? double.PositiveInfinity;
             if (sizing == "border-box")
@@ -192,12 +194,10 @@ public static class StaticLayout
             double? previousBlockBottomMargin = null;
             if (element.LocalName == "input")
             {
-                // Spec: html; https://html.spec.whatwg.org/multipage/rendering.html#the-input-element-as-a-text-entry-widget
-                // The value/label is shell-painted, so the box reserves exactly one strut line of content height.
                 var (ascent, descent) = Extents(Shape("", style), style);
                 cursor += ascent + descent;
             }
-            foreach (var child in element.LocalName == "input" ? [] : element.ChildNodes)
+            foreach (var child in element.LocalName is "input" or "textarea" ? [] : element.ChildNodes)
             {
                 cancellation.ThrowIfCancellationRequested();
                 if (child is DomElement e && Display(e) == "none") { continue; }
@@ -379,7 +379,7 @@ public static class StaticLayout
                     foreach (var child in element.ChildNodes) { Gather(child, buttonStyle, output, depth + 1); }
                     return;
                 }
-                if (element.LocalName is "input" or "button" && Display(element) == "inline-block")
+                if (element.LocalName is "input" or "button" or "textarea" && Display(element) == "inline-block")
                 {
                     output.Add(new(null, Style(element), "", UnitKind.Widget, true) { Widget = element });
                     return;
@@ -458,7 +458,7 @@ public static class StaticLayout
                 if (unit.Kind == UnitKind.Widget)
                 {
                     var widget = unit.Widget ?? throw new InvalidOperationException("Inline widget is missing its element.");
-                    var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width);
+                    var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width, widget);
                     var widgetGap = space is not null && hasContent ? Shape(" ", space.Style) : null;
                     if (hasContent && (space?.Wrap == true || previousWidget)
                         && advance + (widgetGap?.Width ?? 0) + widgetWidth > width)
@@ -542,7 +542,17 @@ public static class StaticLayout
             }
         }
 
-        private static (double Width, double Height) WidgetSize(CssComputedStyle style, double containingWidth)
+        private static int TextareaDimension(DomElement element, string attribute, int fallback, int maximum)
+        {
+            if (element.GetAttribute(attribute) is not { } raw) { return fallback; }
+            var value = raw.TrimStart(' ', '\t', '\n', '\f', '\r');
+            var digits = value.TakeWhile(char.IsAsciiDigit).Count();
+            if (digits == 0 || !int.TryParse(value.AsSpan(0, digits), out var parsed) || parsed == 0) { return fallback; }
+            if (parsed > maximum) { throw new LayoutLimitException($"<textarea> {attribute} exceeds the supported limit ({maximum})."); }
+            return parsed;
+        }
+
+        private static (double Width, double Height) WidgetSize(CssComputedStyle style, double containingWidth, DomElement element)
         {
             var margin = Edges(style, "margin", containingWidth);
             if (margin != default)
@@ -556,8 +566,10 @@ public static class StaticLayout
             var maxWidth = Dimension(style["max-width"], containingWidth) ?? double.PositiveInfinity;
             var minHeight = Dimension(style["min-height"], null) ?? 0;
             var maxHeight = Dimension(style["max-height"], null) ?? double.PositiveInfinity;
-            var width = Dimension(style["width"], containingWidth) ?? 160;
-            var height = Dimension(style["height"], null) ?? 20;
+            var width = Dimension(style["width"], containingWidth) ?? (element.LocalName == "textarea"
+                ? TextareaDimension(element, "cols", 20, 128) * 8 : 160);
+            var height = Dimension(style["height"], null) ?? (element.LocalName == "textarea"
+                ? TextareaDimension(element, "rows", 2, 64) * 20 : 20);
             if (sizing == "border-box")
             {
                 minWidth = Math.Max(0, minWidth - horizontal);

@@ -370,6 +370,7 @@ public sealed class DevelopmentShell : IDisposable
             { return; }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
+                if (Controller.IsMultilineFormControl(tab.Id)) { Controller.InsertFormText(tab.Id, "\n"); return; }
                 if (view.KeyboardTarget is { } target) { Action(window, view, target.Action, target.Tab); }
                 else if (Controller.PageHasFocus(tab.Id))
                 { Controller.ActivateFocusedLink(tab.Id, ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity)); }

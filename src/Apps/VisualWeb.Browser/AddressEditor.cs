@@ -11,10 +11,11 @@ public sealed class AddressEditor
         ArgumentNullException.ThrowIfNull(text);
         Text = text; Caret = text.Length; SelectAll = selectAll;
     }
-    public string Insert(string value, int maximum)
+    public string Insert(string value, int maximum, bool allowLineFeed = false)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (value.Any(char.IsControl)) { throw new PageNavigationException("Control characters are not accepted in the address bar."); }
+        if (value.Any(c => char.IsControl(c) && !(allowLineFeed && c == '\n')))
+        { throw new PageNavigationException("Control characters are not accepted in the address bar."); }
         var length = (SelectAll ? 0 : Text.Length) + (long)value.Length;
         if (length > maximum) { throw new BrowserLimitException("Address length limit exceeded."); }
         var prefix = SelectAll ? "" : Text[..Caret];

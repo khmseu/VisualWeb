@@ -29,20 +29,21 @@ data-only IPC-contract targets. Each anchor is one target containing all its
 visible rectangles; groups follow first-fragment order, without exposing element
 identity. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
 text fragments with clipped rectangles for browser-owned selection; it exposes no
-DOM identity. The shared v10 contract caps 4096 anchors, 64 rectangles per anchor,
+DOM identity. The shared v11 contract caps 4096 anchors, 64 rectangles per anchor,
 8192 characters per URL and 1 MiB serialized metadata locally and in workers.
 
 `BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
 subset collected after optional script mutations: `form` action/error, and
-`input` text/search/tel/hidden/submit plus `button` submit/plain-button controls.
-Supported controls use finite inline-block layout with 160 by 20 CSS-pixel fallback
-dimensions and expose name, current value attribute, label,
-disabled/readonly/required/maxlength, merged traversal position before a link
-group and clipped visible border box.
+`input` text/search/tel/hidden/submit, `textarea`, plus `button` submit/plain-button
+controls. Supported controls use finite inline-block layout: input/button fallback
+dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
+with bounded cols/rows and exposes its text content as its initial value. Controls
+expose name, initial value, label, disabled/readonly/required/maxlength, merged
+traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
 `novalidate`, non-UTF-8 `accept-charset`, `<base>`, `form=` owners, submitter
-overrides, other input types, reset buttons, textarea/select/output/object,
-datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
+overrides, other input types, reset buttons, textarea dirname/minlength/wrap=hard,
+select/output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
 when that form is submitted. The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
