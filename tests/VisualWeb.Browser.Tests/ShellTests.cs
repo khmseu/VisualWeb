@@ -80,6 +80,42 @@ public sealed class ShellTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PointerClickFocusesTextFieldWithoutStartingPageTextSelection(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;width:160px;height:24px}</style>" +
+            "<form><input name=q value=start></form>"));
+        Wait();
+
+        var field = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(field.X + 8), (float)(ShellChrome.Height + field.Y + 8)));
+
+        Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.True(shell.Controller.EditingFormControl(tab.Id));
+        Assert.Empty(shell.Controller.SelectedTextRects(tab.Id));
+        Assert.True(native.TextInput);
+        shell.Dispatch(new TextEntered(native.Id, "typed"));
+        Assert.Equal("starttyped", shell.Controller.FormControlValue(tab.Id, 0));
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Theory]
     [InlineData(false, 1)]
     [InlineData(true, 1)]
     [InlineData(false, 1.25)]

@@ -443,7 +443,8 @@ public sealed class BrowserController : IDisposable
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
             if (control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
-            return control.Kind is "submit" or "button" && ActivateControl(id, owner, index);
+            return control.Kind is "submit" or "button" ? ActivateControl(id, owner, index)
+                : control.Kind is "text" or "search";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {

@@ -212,8 +212,9 @@ rectangles. These defaults are a bounded layout accommodation, not complete UA
 widget sizing or styling.
 
 Tab/Shift+Tab visit visible, enabled controls merged in tree order with anchor
-groups; focusing a text/search field enables SDL committed text input, which is
-disabled again when focus leaves. Values are inserted without control
+groups; primary-clicking a visible text/search field focuses it without starting
+page text selection. Focusing a text/search field enables SDL committed text
+input, which is disabled again when focus leaves. Values are inserted without control
 characters, truncated to `maxlength` (whole UTF-16 surrogate pairs) and capped
 at 8192 characters. Enter in a field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the

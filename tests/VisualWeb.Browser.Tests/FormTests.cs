@@ -267,7 +267,7 @@ public sealed class FormTests
         var page = controller.Page(tab)!;
         var field = page.FormControls[0].Rect!;
         controller.FocusPage(tab);
-        Assert.False(controller.ActivateLink(tab, field.X + 1, field.Y + 1, harness.Viewport));
+        Assert.True(controller.ActivateLink(tab, field.X + 1, field.Y + 1, harness.Viewport));
         Assert.Equal(0, controller.FocusedControlIndex(tab));
         Assert.Single(harness.Source.Requests);
         var other = page.FormControls[5].Rect!;

@@ -50,7 +50,7 @@ broader page interaction is still missing:
   via IPC v8 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
-  General forms remain missing: POST/multipart, other input types, textarea/select,
+  Visible text/search fields support pointer focus without starting page text selection. General forms remain missing: POST/multipart, other input types, textarea/select,
   constraint validation UI, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
   encodings. See
