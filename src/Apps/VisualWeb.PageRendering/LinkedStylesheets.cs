@@ -74,10 +74,11 @@ internal static class LinkedStylesheets
         var parsed = BrowserUrl.ParseResult(href, documentUrl);
         var url = parsed.Url ?? throw new PageNavigationException("Invalid linked stylesheet URL: " + parsed.Error);
         if (url.Href.Length > RendererProtocol.MaxTextCharacters) { throw new PageNavigationException("Linked stylesheet URL limit exceeded."); }
-        if (url.Protocol is not ("http:" or "https:" or "data:") && !(url.Protocol == "file:" && documentUrl.Protocol == "file:"))
+        if (url.Protocol is not ("http:" or "https:" or "data:"))
         {
-            throw new PageNavigationException($"Linked stylesheet scheme {url.Protocol} is unsupported"
-                + (url.Protocol == "file:" ? " from non-file documents." : "."));
+            throw new PageNavigationException(url.Protocol == "file:"
+                ? "Linked file stylesheets are blocked; file documents cannot request local files."
+                : $"Linked stylesheet scheme {url.Protocol} is unsupported.");
         }
         return url.Href;
     }

@@ -345,12 +345,13 @@ before the document is published. Requests keep cookies disabled and the bad-por
 and HSTS checks. HTTPS documents block HTTP stylesheet URLs before fetching and
 block HTTPS-to-HTTP redirects before the downgraded request is sent. This is limited
 to linked stylesheets, not a general mixed-content policy. Only HTTP(S) and data URLs
-are allowed, plus file URLs from file documents. Links without a nonempty `href` create no sheet, as in HTML.
+are allowed. File URLs are rejected even from local file documents, preventing
+page content from asking the privileged browser broker to read additional local
+files. Links without a nonempty `href` create no sheet, as in HTML.
 Alternate/titled/disabled links, `media` other than absent/`all`, `type` other than
 absent/empty/`text/css`, `crossorigin`, `integrity`, `referrerpolicy`, the obsolete
 `charset` attribute, `<base href>` and other schemes fail navigation. Each response
-must be 2xx `text/css` (a MIME-less file only from a file document; no sniffing
-or quirks-mode fallback), at most 1 MiB of body bytes and 256 Ki decoded characters.
+must be 2xx `text/css` (no sniffing or quirks-mode fallback), at most 1 MiB of body bytes and 256 Ki decoded characters.
 Decoding follows the CSS fallback encoding order (BOM, Content-Type charset,
 exact `@charset "…";` prefix with UTF-16 mapped to UTF-8, document encoding).
 A valid leading `@charset` marker is consumed as an encoding signature before

@@ -158,6 +158,29 @@ public sealed class StylesheetTests
     }
 
     [Fact]
+    public async Task LocalFileDocumentCannotLoadLinkedFileStylesheets()
+    {
+        var htmlPath = Path.GetTempFileName();
+        var cssPath = htmlPath + ".css";
+        try
+        {
+            await File.WriteAllTextAsync(htmlPath, "<!doctype html><link rel=stylesheet href='" + Path.GetFileName(cssPath) + "'>", Cancellation);
+            await File.WriteAllTextAsync(cssPath, "body{color:red}", Cancellation);
+            using var source = new GetPageSource();
+
+            var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+                source.LoadAsync(BrowserUrl.Parse(new Uri(htmlPath).AbsoluteUri), Cancellation));
+
+            Assert.Contains("Linked file stylesheets are blocked", error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(htmlPath);
+            File.Delete(cssPath);
+        }
+    }
+
+    [Fact]
     public async Task HttpsDocumentDoesNotFetchHttpStylesheet()
     {
         var requests = new List<string>();
