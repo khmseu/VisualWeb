@@ -42,7 +42,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(6, RendererProtocol.Version);
+        Assert.Equal(7, RendererProtocol.Version);
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -145,6 +145,26 @@ public sealed class ProtocolTests
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with { Version = 4 }, 16));
     }
 
+    [Fact]
+    public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
+    {
+        Assert.Equal(7, RendererProtocol.Version);
+        Assert.Equal(64, RendererProtocol.MaxLinkRects);
+        var link = LinkFrame.LinkTargets![0];
+        var rect = link.Rects[0];
+        RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [link with { Rects = Enumerable.Repeat(rect, 64).ToArray() }] }, 16);
+        foreach (var rects in new IReadOnlyList<PageLinkRect>[] { [], Enumerable.Repeat(rect, 65).ToArray(), [rect with { X = -1 }] })
+        {
+            Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+            { LinkTargets = [link with { Rects = rects }] }, 16));
+        }
+        var json = JsonSerializer.Serialize(link);
+        Assert.Contains("\"Rects\"", json);
+        Assert.DoesNotContain("\"X\":0,\"Y\":0,\"Width\":2,\"Height\":2,\"Url\"", json);
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>("{\"Url\":\"https://example.com/\"}"));
+    }
+
     [Theory]
     [InlineData(double.NaN, 0, 1, 1)]
     [InlineData(0, double.PositiveInfinity, 1, 1)]
@@ -189,9 +209,14 @@ public sealed class ProtocolTests
     }
 
     [Theory]
-    [InlineData("\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1,\"Url\":\"https://example.com/\",\"X\":1")]
-    [InlineData("\"X\":0,\"Y\":0,\"Height\":1,\"Url\":\"https://example.com/\"")]
-    [InlineData("\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1,\"Url\":\"https://example.com/\",\"NativeHandle\":1")]
+    [InlineData("\"Rects\":[{\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1,\"X\":1}],\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":[{\"X\":0,\"Y\":0,\"Height\":1}],\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":[{\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1,\"NativeHandle\":1}],\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":[],\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":null,\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":[null],\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":[{\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1}],\"Url\":\"https://example.com/\",\"Url\":\"https://example.com/\"")]
+    [InlineData("\"Rects\":[{\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1}],\"Url\":\"https://example.com/\",\"ElementId\":1")]
     public async Task LinkObjectsRejectDuplicateMissingAndUnknownFields(string fields)
     {
         var json = JsonSerializer.Serialize(LinkFrame);

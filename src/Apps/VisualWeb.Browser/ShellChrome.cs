@@ -44,7 +44,8 @@ public sealed class ShellChrome : IDisposable
         if (Math.Ceiling(css * density) != physical) { throw new ArgumentOutOfRangeException(nameof(density), "Pixel density cannot represent the surface viewport."); }
         return css;
     }
-    public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null)
+    public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
+        int focusedLink = -1, ChromeTarget? focusedChrome = null)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -92,6 +93,16 @@ public sealed class ShellChrome : IDisposable
         }
         Label(tab?.Status ?? "No active tab", 8, 111, width - 16,
             tab?.Error is null ? ink : new(170, 0, 0));
+        if (focusedChrome is not null && targets.FirstOrDefault(target =>
+            target.Action == focusedChrome.Action && target.Tab == focusedChrome.Tab) is { } selected)
+        {
+            var rect = selected.Bounds;
+            var color = new CssColor(64, 96, 128);
+            Fill(new(rect.X, rect.Y, rect.Width, 1), color);
+            Fill(new(rect.X, rect.Y + rect.Height - 1, rect.Width, 1), color);
+            Fill(new(rect.X, rect.Y, 1, rect.Height), color);
+            Fill(new(rect.X + rect.Width - 1, rect.Y, 1, rect.Height), color);
+        }
         var chrome = CpuRasterizer.Render(new(width, height, commands), fonts, density, options: options);
         var pixels = chrome.Pixels.ToArray();
         var headerPixels = (int)Math.Min(size.Height, Math.Ceiling(Height * density));
@@ -99,10 +110,27 @@ public sealed class ShellChrome : IDisposable
         if (page is not null && page.Frame.Size == new PixelSize(size.Width, size.Height - headerPixels))
         {
             page.Frame.Pixels.Span.CopyTo(pixels.AsSpan(headerPixels * chrome.Stride));
+            if (focusedLink >= 0 && focusedLink < page.LinkTargets.Count)
+            {
+                foreach (var rect in page.LinkTargets[focusedLink].Rects)
+                {
+                    var left = Math.Clamp((int)Math.Floor(rect.X * density), 0, size.Width - 1);
+                    var right = Math.Clamp((int)Math.Ceiling((rect.X + rect.Width) * density) - 1, left, size.Width - 1);
+                    var top = Math.Clamp(headerPixels + (int)Math.Floor(rect.Y * density), headerPixels, size.Height - 1);
+                    var bottom = Math.Clamp(headerPixels + (int)Math.Ceiling((rect.Y + rect.Height) * density) - 1, top, size.Height - 1);
+                    for (var x = left; x <= right; x++) { FocusPixel(x, top); FocusPixel(x, bottom); }
+                    for (var y = top; y <= bottom; y++) { FocusPixel(left, y); FocusPixel(right, y); }
+                }
+            }
         }
         return new(pixels, chrome.Size, chrome.Stride, targets.AsReadOnly());
 
         void Fill(LayoutRect rect, CssColor color) => commands.Add(new FillRectangle(rect, color));
+        void FocusPixel(int x, int y)
+        {
+            var offset = y * chrome.Stride + x * 4;
+            pixels[offset] = 128; pixels[offset + 1] = 96; pixels[offset + 2] = 64; pixels[offset + 3] = 255;
+        }
         void Button(string label, LayoutRect rect, ChromeAction action, bool enabled = true)
         {
             Fill(rect, enabled ? white : new(209, 214, 220));

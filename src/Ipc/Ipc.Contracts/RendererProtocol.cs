@@ -7,16 +7,32 @@ namespace VisualWeb.Ipc.Contracts;
 
 public sealed class IpcProtocolException(string message) : IOException(message);
 
-/// <summary>Data-only visible CSS viewport rectangle and serialized absolute destination.</summary>
-public sealed record PageLinkTarget(
+/// <summary>Data-only clipped visible CSS viewport rectangle.</summary>
+public sealed record PageLinkRect(
     [property: JsonRequired] double X,
     [property: JsonRequired] double Y,
     [property: JsonRequired] double Width,
-    [property: JsonRequired] double Height,
-    [property: JsonRequired] string Url)
+    [property: JsonRequired] double Height)
 {
     public bool Contains(double x, double y) =>
         x >= X && y >= Y && x < X + Width && y < Y + Height;
+}
+
+/// <summary>One textual anchor, with ordered visible rectangles and an absolute destination; no element identity.</summary>
+[method: JsonConstructor]
+public sealed record PageLinkTarget(
+    [property: JsonRequired] IReadOnlyList<PageLinkRect> Rects,
+    [property: JsonRequired] string Url)
+{
+    public PageLinkTarget(double x, double y, double width, double height, string url)
+        : this(new[] { new PageLinkRect(x, y, width, height) }, url) { }
+
+    // Compatibility accessors expose the first rectangle only; Rects is the wire and focus geometry.
+    [JsonIgnore] public double X => Rects[0].X;
+    [JsonIgnore] public double Y => Rects[0].Y;
+    [JsonIgnore] public double Width => Rects[0].Width;
+    [JsonIgnore] public double Height => Rects[0].Height;
+    public bool Contains(double x, double y) => Rects.Any(rect => rect.Contains(x, y));
 }
 
 /// <summary>Browser-fetched, decoded linked stylesheet text keyed by its serialized absolute request URL.</summary>
@@ -59,7 +75,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 6;
+    public const int Version = 7;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -67,6 +83,7 @@ public static class RendererProtocol
     public const int MaxHtmlCharacters = 4 * 1024 * 1024;
     public const int MaxTextCharacters = 8192;
     public const int MaxLinkTargets = 4096;
+    public const int MaxLinkRects = 64;
     public const int MaxLinkMetadataBytes = 1024 * 1024;
     public const int MaxStylesheets = 32;
     public const int MaxStylesheetCharacters = 256 * 1024;
@@ -143,12 +160,17 @@ public static class RendererProtocol
         long urlBytes = 0;
         foreach (var link in links)
         {
-            if (link is null || !double.IsFinite(link.X) || !double.IsFinite(link.Y)
-                || !double.IsFinite(link.Width) || !double.IsFinite(link.Height)
-                || link.X < 0 || link.Y < 0 || link.Width <= 0 || link.Height <= 0
-                || link.X + link.Width > width || link.Y + link.Height > height
+            if (link is null || link.Rects is null || link.Rects.Count is < 1 or > MaxLinkRects
                 || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters)
-            { throw new IpcProtocolException("Invalid renderer link rectangle or URL limit."); }
+            { throw new IpcProtocolException("Invalid renderer link rectangle count or URL limit."); }
+            foreach (var rect in link.Rects)
+            {
+                if (rect is null || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
+                    || !double.IsFinite(rect.Width) || !double.IsFinite(rect.Height)
+                    || rect.X < 0 || rect.Y < 0 || rect.Width <= 0 || rect.Height <= 0
+                    || rect.X + rect.Width > width || rect.Y + rect.Height > height)
+                { throw new IpcProtocolException("Invalid renderer link rectangle."); }
+            }
             urlBytes += Encoding.UTF8.GetByteCount(link.Url);
             if (urlBytes > MaxLinkMetadataBytes)
             { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }

@@ -35,14 +35,21 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux arch
 The shell supports bounded textual link activation and vertical document scrolling;
 broader page interaction is still missing:
 
-- Textual `<a href>` links now support primary left-click hit-testing in local
-  and process modes, with visible clipped renderer-owned rectangles and resolved
-  URLs. General hit-testing, page input focus, keyboard links and form controls
-  remain missing.
+- Textual `<a href>` links support primary left-click and Tab/Shift+Tab/Enter
+  navigation in shell, local and actual renderer-process paths. Enabled drawn
+  chrome controls precede visible links in traversal; Ctrl+L retains address
+  editing. Focus is per-tab, with shell-only outlines across all rectangles of
+  one anchor and no page raster changes without focus. IPC v7 groups visible
+  rectangles per anchor (4096 anchors, 64 rectangles each, 1 MiB metadata),
+  without element IDs/DOM/native handles. Successful document commits/repaints
+  clear the frame-local selection; failed navigation preserves it. General
+  hit-testing, DOM focus/events, offscreen-link traversal and form controls remain
+  missing. See [shell controls](../docs/browser-shell.md#controls).
 - No text selection. Basic vertical document scrolling is implemented via wheel
   and Page Up/Down/Home/End, retaining DOM/scripts across local/process repaints.
   Scrollbars, horizontal/nested scrolling and general CSS overflow remain missing.
-- No automatic page mouse/keyboard events or their default actions.
+- No automatic page mouse/keyboard events or general default actions beyond
+  ordinary current-tab textual link navigation.
 - No downloads, persistent browser sessions, or complete history behavior. History currently stores URLs and reloads documents; same-document navigation, script History API, and bfcache are absent.
 
 This is a substantial gap even for a modest usable browser.

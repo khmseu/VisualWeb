@@ -39,6 +39,7 @@ public sealed class DevelopmentShell : IDisposable
         internal TabId? LastTab { get; set; }
         internal bool SizeLimitReported { get; set; }
         internal double? PointerY { get; set; }
+        internal ChromeTarget? KeyboardTarget { get; set; }
     }
     private readonly IWindowSystem system;
     private readonly ShellChrome chrome;
@@ -162,6 +163,7 @@ public sealed class DevelopmentShell : IDisposable
             var window = Controller.Session.Window(id);
             if (view.LastTab != window.ActiveTabId)
             {
+                view.KeyboardTarget = null;
                 Edit(view, window, false);
                 view.Editor.Reset(window.ActiveTab?.AddressText ?? "");
                 view.LastTab = window.ActiveTabId;
@@ -177,7 +179,10 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (!view.Dirty) { continue; }
             var frame = chrome.Render(window, window.ActiveTabId is { } active ? Controller.Page(active) : null,
-                size, density, view.Editing ? view.Editor : null);
+                size, density, view.Editing ? view.Editor : null,
+                window.ActiveTabId is { } focused && Controller.PageHasFocus(focused)
+                    ? Controller.FocusedLinkIndex(focused) : -1,
+                window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -211,11 +216,16 @@ public sealed class DevelopmentShell : IDisposable
                     else
                     {
                         Edit(view, window, false);
+                        view.KeyboardTarget = null;
                         if (pointer.Y >= ShellChrome.Height && window.ActiveTab is { } pageTab
                             && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } pageViewport
                             && pointer.X >= 0 && pointer.X < pageViewport.Width
                             && pointer.Y < ShellChrome.Height + pageViewport.Height)
-                        { Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport); }
+                        {
+                            Controller.FocusPage(pageTab.Id);
+                            Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport);
+                        }
+                        else if (window.ActiveTabId is { } unfocused) { Controller.FocusPage(unfocused, false); }
                     }
                     break;
                 case KeyChanged { Pressed: true } key: Key(window, view, key); break;
@@ -262,8 +272,20 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (code == SDL.Scancode.F5 && !key.Repeat) { Action(window, view, ChromeAction.Reload); return; }
         if (window.ActiveTab is not { } tab) { return; }
+        if (!control && !alt && code == SDL.Scancode.Tab)
+        {
+            TraverseFocus(window, view, shift);
+            return;
+        }
         if (!view.Editing)
         {
+            if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
+            {
+                if (view.KeyboardTarget is { } target) { Action(window, view, target.Action, target.Tab); }
+                else if (Controller.PageHasFocus(tab.Id))
+                { Controller.ActivateFocusedLink(tab.Id, ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity)); }
+                return;
+            }
             if (!control && !alt && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport)
             {
                 switch (code)
@@ -296,11 +318,58 @@ public sealed class DevelopmentShell : IDisposable
         }
         view.Dirty = true;
     }
+    private void TraverseFocus(BrowserWindow window, View view, bool backwards)
+    {
+        if (window.ActiveTab is not { } tab) { return; }
+        var targets = view.Targets;
+        var links = Controller.Page(tab.Id)?.LinkTargets.Count ?? 0;
+        if (Controller.PageHasFocus(tab.Id))
+        {
+            var index = Controller.FocusedLinkIndex(tab.Id);
+            if (links > 0 && (index < 0 || (backwards ? index > 0 : index < links - 1)))
+            {
+                view.KeyboardTarget = null;
+                Controller.MoveLinkFocus(tab.Id, backwards);
+                return;
+            }
+            SelectChrome(backwards ? targets.Count - 1 : 0);
+            return;
+        }
+        var current = view.Editing ? targets.ToList().FindIndex(target => target.Action == ChromeAction.Address)
+            : view.KeyboardTarget is { } focused
+                ? targets.ToList().FindIndex(target => target.Action == focused.Action && target.Tab == focused.Tab) : -1;
+        var next = current < 0 ? backwards ? targets.Count : 0 : current + (backwards ? -1 : 1);
+        if (next < 0 || next >= targets.Count)
+        {
+            if (links > 0)
+            {
+                Edit(view, window, false);
+                view.KeyboardTarget = null;
+                Controller.FocusLink(tab.Id, backwards ? links - 1 : 0);
+                return;
+            }
+            next = backwards ? targets.Count - 1 : 0;
+        }
+        SelectChrome(next);
+
+        void SelectChrome(int index)
+        {
+            Controller.FocusPage(tab.Id, false);
+            var target = index >= 0 && index < targets.Count ? targets[index] : null;
+            Edit(view, window, target?.Action == ChromeAction.Address);
+            view.KeyboardTarget = target;
+            view.Dirty = true;
+        }
+    }
     private void Action(BrowserWindow window, View view, ChromeAction action, TabId? target = null)
     {
         var tab = window.ActiveTab;
         if (action == ChromeAction.Address) { Edit(view, window, true); return; }
         Edit(view, window, false);
+        view.KeyboardTarget = null;
+        if (tab is not null && action is not (ChromeAction.ActivateTab or ChromeAction.PreviousTab or ChromeAction.NextTab
+            or ChromeAction.MoveTab or ChromeAction.NewTab or ChromeAction.NewWindow))
+        { Controller.FocusPage(tab.Id, false); }
         switch (action)
         {
             case ChromeAction.Back when tab?.History.CanGoBack == true: Controller.Back(tab.Id); break;
@@ -332,7 +401,12 @@ public sealed class DevelopmentShell : IDisposable
         if (enabled && window.ActiveTab is null) { return; }
         if (textInput) { view.Native.SetTextInput(enabled); }
         view.Editing = enabled;
-        if (enabled) { view.Editor.Reset(window.ActiveTab!.AddressText, selectAll: true); }
+        if (enabled)
+        {
+            Controller.FocusPage(window.ActiveTab!.Id, false);
+            view.KeyboardTarget = view.Targets.LastOrDefault(target => target.Action == ChromeAction.Address);
+            view.Editor.Reset(window.ActiveTab.AddressText, selectAll: true);
+        }
         view.Dirty = true;
     }
     private string WindowTitle(string? title)

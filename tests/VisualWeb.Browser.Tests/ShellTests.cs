@@ -8,6 +8,171 @@ namespace VisualWeb.Browser.Tests;
 public sealed class ShellTests
 {
     [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, 1.25)]
+    [InlineData(true, 2)]
+    public void KeyboardLinksTraverseFromAddressOutlineEveryRectAndActivate(bool multiprocess, float density)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        native.Density = density;
+        var tab = window.ActiveTab!;
+        var destination = "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><title>Keyboard destination</title><p>done</p>");
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            $"<!doctype html><style>*{{margin:0}}</style><a href='{destination}'>one <span>two</span> three</a> " +
+            "<a href='javascript:alert(1)'>unsupported</a>"));
+        Wait();
+        var page = shell.Controller.Page(tab.Id)!;
+        var original = page.Frame.Pixels.ToArray();
+        var header = (int)Math.Ceiling(ShellChrome.Height * density);
+        Assert.Equal(original, native.Pixels!.Skip(header * page.Frame.Stride));
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        shell.Tick();
+        Assert.False(native.TextInput);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(tab.Id));
+        Assert.Equal(original, page.Frame.Pixels.ToArray());
+        foreach (var rect in page.LinkTargets[0].Rects)
+        {
+            var left = (int)Math.Floor(rect.X * density);
+            var right = (int)Math.Ceiling((rect.X + rect.Width) * density) - 1;
+            var top = header + (int)Math.Floor(rect.Y * density);
+            var bottom = header + (int)Math.Ceiling((rect.Y + rect.Height) * density) - 1;
+            for (var x = left; x <= right; x++) { BorderPixel(x, top); BorderPixel(x, bottom); }
+            for (var y = top; y <= bottom; y++) { BorderPixel(left, y); BorderPixel(right, y); }
+        }
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedLinkIndex(tab.Id));
+        Key(SDL.Scancode.Return);
+        Assert.Contains("Unsupported link URL scheme: javascript:", tab.Error);
+        Assert.Same(page, shell.Controller.Page(tab.Id));
+        Key(SDL.Scancode.Tab, SDL.Keymod.Shift);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(tab.Id));
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        shell.Tick();
+        Assert.Equal(original, native.Pixels!.Skip(header * page.Frame.Stride));
+        Key(SDL.Scancode.Return);
+        Wait();
+        Assert.Equal(-1, shell.Controller.FocusedLinkIndex(tab.Id));
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        Key(SDL.Scancode.Return);
+        Wait();
+        Assert.Equal("Keyboard destination", tab.Title);
+        Assert.Equal(-1, shell.Controller.FocusedLinkIndex(tab.Id));
+
+        void BorderPixel(int x, int y) => Assert.Equal(new byte[] { 128, 96, 64, 255 },
+            native.Pixels!.Skip(y * page.Frame.Stride + x * 4).Take(4));
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KeyboardFocusTraversesChromeAndRestoresIndependentTabFocus(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var first = window.ActiveTab!;
+        Load(first);
+        Key(SDL.Scancode.Tab);
+        Assert.False(shell.Controller.PageHasFocus(first.Id));
+        Assert.Equal(-1, shell.Controller.FocusedLinkIndex(first.Id));
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(first.Id));
+        Key(SDL.Scancode.Tab, SDL.Keymod.Shift);
+        Assert.True(native.TextInput);
+        Assert.False(shell.Controller.PageHasFocus(first.Id));
+        Key(SDL.Scancode.Tab);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedLinkIndex(first.Id));
+        var second = shell.Controller.CreateTab(window.Id);
+        Load(second);
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(second.Id));
+        Key(SDL.Scancode.Tab, SDL.Keymod.Ctrl);
+        shell.Tick();
+        Assert.Equal(first.Id, window.ActiveTabId);
+        Assert.True(shell.Controller.PageHasFocus(first.Id));
+        Assert.Equal(1, shell.Controller.FocusedLinkIndex(first.Id));
+        Key(SDL.Scancode.Tab);
+        Assert.False(shell.Controller.PageHasFocus(first.Id));
+        Assert.False(native.TextInput);
+        Key(SDL.Scancode.Tab, SDL.Keymod.Shift);
+        Assert.True(shell.Controller.PageHasFocus(first.Id));
+        Assert.Equal(1, shell.Controller.FocusedLinkIndex(first.Id));
+        Key(SDL.Scancode.Tab, SDL.Keymod.Ctrl);
+        shell.Tick();
+        Assert.Equal(second.Id, window.ActiveTabId);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(second.Id));
+        Assert.True(shell.Controller.PageHasFocus(second.Id));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, 499, 300));
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedLinkIndex(second.Id));
+
+        void Load(BrowserTab tab)
+        {
+            shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+                "<!doctype html><style>*{margin:0}</style><a href='#one'>one</a> <a href='#two'>two</a>"));
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
+    }
+
+    [Fact]
+    public void TabTraversesDrawnChromeBeforeLinksAndNoLinksWrapInChrome()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        shell.Tick();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var targets = chrome.Render(window, shell.Controller.Page(tab.Id), native.Size, native.Density).Targets;
+        Assert.Empty(shell.Controller.Page(tab.Id)!.LinkTargets);
+        foreach (var target in targets)
+        {
+            Key(SDL.Keymod.None);
+            shell.Tick();
+            Assert.False(shell.Controller.PageHasFocus(tab.Id));
+            Assert.Equal(target.Action == ChromeAction.Address, native.TextInput);
+            var offset = (int)target.Bounds.Y * native.Size.Width * 4 + (int)target.Bounds.X * 4;
+            Assert.Equal(new byte[] { 128, 96, 64, 255 }, native.Pixels!.Skip(offset).Take(4));
+        }
+        Key(SDL.Keymod.None);
+        Assert.False(native.TextInput);
+        Key(SDL.Keymod.Shift);
+        Assert.True(native.TextInput);
+        Assert.Single(tab.History.Entries);
+
+        void Key(SDL.Keymod mod) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Tab, 0, (ushort)mod, true, false));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void UnsupportedLinkClickReportsVisibleErrorWithoutReplacingPage(bool multiprocess)

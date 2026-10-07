@@ -94,7 +94,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         CancellationToken cancellationToken)
     {
         var links = new List<PageLinkTarget>();
-        var destinations = new Dictionary<DomElement, string>();
+        var anchors = new Dictionary<DomElement, List<PageLinkRect>>();
         long urlBytes = 0;
         if (layout.Root is { } root) { Visit(root); }
         try { RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight); }
@@ -124,22 +124,26 @@ public sealed class StaticPageRenderer : IPageRenderer
                         var top = Math.Clamp(line.Line.Bounds.Y - scrollY, 0, layout.ViewportHeight);
                         var bottom = Math.Clamp(line.Line.Bounds.Y + line.Line.Bounds.Height - scrollY, 0, layout.ViewportHeight);
                         if (right <= left || bottom <= top) { continue; }
-                        if (links.Count >= RendererProtocol.MaxLinkTargets)
-                        { throw new PageNavigationException("Renderer link count limit exceeded."); }
-                        if (!destinations.TryGetValue(anchor, out var destination))
+                        if (!anchors.TryGetValue(anchor, out var target))
                         {
+                            if (links.Count >= RendererProtocol.MaxLinkTargets)
+                            { throw new PageNavigationException("Renderer link count limit exceeded."); }
                             if (href.Length > RendererProtocol.MaxTextCharacters)
                             { throw new PageNavigationException("Renderer link URL limit exceeded."); }
                             var parsed = BrowserUrl.ParseResult(href, url);
-                            destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
+                            var destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
                             if (destination.Length > RendererProtocol.MaxTextCharacters)
                             { throw new PageNavigationException("Renderer link URL limit exceeded."); }
-                            destinations.Add(anchor, destination);
+                            urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
+                            if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
+                            { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
+                            target = [];
+                            anchors.Add(anchor, target);
+                            links.Add(new(target.AsReadOnly(), destination));
                         }
-                        urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
-                        if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
-                        { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
-                        links.Add(new(left, top, right - left, bottom - top, destination));
+                        if (target.Count >= RendererProtocol.MaxLinkRects)
+                        { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
+                        target.Add(new(left, top, right - left, bottom - top));
                     }
                 }
             }

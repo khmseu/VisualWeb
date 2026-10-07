@@ -79,11 +79,37 @@ The native window title retains the same warning alongside the active page title
 | M / Ctrl+M | Move active tab to the first other window, or create an empty destination |
 | Native window close | Close that window and only its tabs |
 | Primary left click on visible anchor text | Navigate the current tab to its resolved href |
+| Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
+| Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
+| Primary left click on blank page | Give the active page keyboard focus; next Tab/Shift+Tab selects the first/last visible anchor if none is selected |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Browser windows and tab IDs are distinct; tab identity/history/content survives
 moving. Text input activation uses SDL committed text; clipboard, selection
 ranges, IME preedit and richer editing/accessibility remain deferred.
+Keyboard traversal starts with enabled, drawn chrome targets in drawing order:
+tab arrows, visible tab labels/close buttons, navigation/window controls, then
+the address editor, followed by visible textual anchors in first-fragment paint
+order. Ctrl+L still selects the address; Tab leaves editing for the first visible
+anchor, while Shift+Tab returns to the preceding chrome control. At the first
+page anchor Shift+Tab returns to the address (or last drawn chrome control);
+at the last anchor Tab wraps to the first chrome control. Disabled/undrawn controls
+and anchors without visible text rectangles are skipped. With no visible links,
+traversal wraps among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab retain tab switching,
+and editing, navigation and scrolling shortcuts retain their existing meanings.
+
+Page keyboard ownership and selected anchor are per-tab and survive switching
+or moving tabs. Clicking chrome gives it keyboard ownership; clicking a page link
+still navigates immediately. A subtle shell-owned blue-gray border outlines **all**
+visible rectangles of the selected anchor, including wrapped/nested text; one
+anchor is one stop even if it has many fragments, while identical URLs on different
+anchors remain separate stops. Without page focus, page pixels are copied unchanged;
+the renderer raster is never modified by focus. Successful document commits,
+scroll and resize repaints clear the selected anchor because groups are frame-local,
+without guessing element identity across frames. Failed navigation keeps the old
+page and focus; closing a tab discards its focus. Enter performs only ordinary
+current-tab link navigation, with existing unsupported-scheme errors; it does not
+dispatch DOM keyboard/mouse events, run JavaScript URLs or synthesize native focus.
 Chrome labels are bounded ASCII displays (unsupported characters become `?`);
 the underlying URL and page title are not modified by that display conversion.
 Long labels/statuses are clipped; full navigation errors are also written to
@@ -125,8 +151,9 @@ Both rendering modes collect visible rectangles from shaped text fragments,
 using the nearest HTML `a` ancestor with `href`, after optional script mutations.
 Each rectangle uses the run's width and line's height, clipped to the CSS viewport
 after the clamped scroll translation. Retained resize/scroll recomputes targets
-without rerunning scripts. Targets follow text paint order; the last matching
-rectangle wins. Empty anchors and non-link text have no targets.
+without rerunning scripts. Each anchor groups all its visible rectangles, in
+first-fragment paint order; the last matching group wins hit-testing. Empty anchors
+and non-link text have no targets.
 
 The renderer resolves destinations with Core.Url against the final `LoadedPage.Url`
 before returning data-only rectangles and absolute URLs; it never navigates or
@@ -144,8 +171,9 @@ metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
 Relative and fragment URL components are preserved, but fragment activation
 currently performs a full navigation, not same-document scrolling.
-`target`, downloads, `<base>` semantics, image/area links, link decoration,
-keyboard activation, page mouse events and JavaScript default-action cancellation
+`target`, `tabindex`, DOM focus APIs, offscreen-anchor traversal, downloads,
+`<base>` semantics, image/area links, CSS link decoration,
+page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
 (cached standard ID `html`), not a full DOM event/default-action implementation.

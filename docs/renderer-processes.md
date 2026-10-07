@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v6
+## Private stream protocol v7
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -102,7 +102,8 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Startup/render/exchange deadline | 30 seconds by default |
 | Request scroll offset | finite, 0 through 1e9 CSS pixels |
 | Frame/document scroll height | finite, 0 through 10,000,000 CSS pixels |
-| Visible link rectangles per frame | 4096 |
+| Visible textual anchors per frame | 4096 |
+| Visible rectangles per anchor | 64 |
 | Absolute destination URL | 8192 UTF-16 characters each |
 | Serialized link metadata | 1 MiB UTF-8 JSON total |
 | Linked stylesheets per render request | 32 unique absolute serialized URLs (8192 characters each) |
@@ -115,7 +116,8 @@ confinement confirms `windows-appcontainer-job-v1`. This metadata requires
 protocol v2 originally; phase 11d advanced to v3 for document/repaint/script policy,
 basic scrolling advanced to v4 for request `ScrollY` and reply `ScrollHeight`,
 textual links advanced to v5 for frame-only `LinkTargets` and exact CSS viewport/scale,
-and linked stylesheets advance to v6 for the required request-only `Stylesheets` array,
+linked stylesheets advanced to v6 for the required request-only `Stylesheets` array,
+and keyboard links advance to v7 for per-anchor grouped `LinkTargets` rectangles,
 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
@@ -133,13 +135,16 @@ the [finite scripting policy](scripting.md); input, event loops and display-list
 IPC are deferred except for bounded textual link activation in the browser.
 
 Every frame supplies a link array, empty when there are no visible links; requests,
-errors and handshakes cannot carry one. Each target has exactly required numeric
-X/Y/Width/Height and an absolute serialized URL, with no DOM or native handles.
+errors and handshakes cannot carry one. Each target has a required nonempty `Rects`
+array (at most 64 rectangles) and an absolute serialized `Url`. Each rectangle has
+required numeric X/Y/Width/Height. Groups follow first-visible-fragment paint order;
+separate anchors remain separate even when their URLs are identical. There are no
+DOM/native handles, element identifiers or hidden IDs. Group indices are frame-local.
 Coordinates are finite and nonnegative, extents are positive and contained in the
 CSS viewport. Missing, duplicate and unknown rectangle fields fail closed.
 The browser verifies the exact requested CSS viewport/scale, not just rounded
 physical dimensions, before accepting the frame and its targets. URL parsing,
-rectangle count and total serialized UTF-8 link bytes are bounded in both modes;
+anchor count, per-anchor rectangle count and total serialized UTF-8 link bytes are bounded in both modes;
 the existing 32 MiB complete-header bound also remains enforced.
 Unsupported destination schemes are rejected visibly by browser activation,
 never executed by a worker.

@@ -20,6 +20,69 @@ public sealed class LinkTests
         new(BrowserUrl.Parse("https://example.com/final/index.html"), html, 200, []);
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FragmentedAnchorsAreSingleOrderedFocusTargets(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var page = await renderer.RenderAsync(Document("""
+            <!doctype html><style>*{margin:0}</style>
+            <a href='/same'><span>one two three four five six</span></a>
+            <a href='/same'>another</a> <a>ignored</a> <a href='/last'>last</a>
+            """), new(80, 300, 1), Cancellation);
+        Assert.Equal(3, page.LinkTargets.Count);
+        Assert.True(page.LinkTargets[0].Rects.Count > 1);
+        Assert.Equal(["https://example.com/same", "https://example.com/same", "https://example.com/last"],
+            page.LinkTargets.Select(link => link.Url));
+        foreach (var rect in page.LinkTargets[0].Rects)
+        { Assert.True(page.LinkTargets[0].Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)); }
+    }
+
+    [Fact]
+    public void KeyboardFocusWrapsIsTabLocalAndResetsOnlyOnSuccessfulCommit()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new TargetsRenderer());
+        var window = controller.Session.CreateWindow();
+        var first = controller.CreateTab(window.Id);
+        var second = controller.CreateTab(window.Id);
+        foreach (var tab in new[] { first, second })
+        {
+            controller.Navigate(tab.Id, "https://example.com/");
+            source.Requests[^1].Completion.SetResult(Document());
+            controller.Pump(_ => new(100, 50, 1));
+        }
+        controller.FocusPage(first.Id);
+        Assert.Equal(1, controller.MoveLinkFocus(first.Id, backwards: true));
+        Assert.Equal(0, controller.MoveLinkFocus(first.Id));
+        Assert.Equal(1, controller.MoveLinkFocus(first.Id));
+        Assert.Equal(-1, controller.FocusedLinkIndex(second.Id));
+        Assert.False(controller.PageHasFocus(second.Id));
+        controller.Session.MoveTab(first.Id, controller.Session.CreateWindow().Id);
+        Assert.Equal(1, controller.FocusedLinkIndex(first.Id));
+        Assert.True(controller.PageHasFocus(first.Id));
+        Assert.False(controller.ActivateFocusedLink(first.Id, new(200, 50, 1)));
+        Assert.Equal(2, source.Requests.Count);
+        Assert.True(controller.ActivateFocusedLink(first.Id));
+        Assert.Equal("https://example.com/last", source.Requests[^1].Url.Href);
+        source.Requests[^1].Completion.SetException(new PageNavigationException("failed"));
+        controller.Pump(_ => new(100, 50, 1));
+        Assert.Equal(1, controller.FocusedLinkIndex(first.Id));
+        Assert.True(controller.ActivateFocusedLink(first.Id));
+        source.Requests[^1].Completion.SetResult(Document());
+        controller.Pump(_ => new(100, 50, 1));
+        Assert.Equal(-1, controller.FocusedLinkIndex(first.Id));
+        controller.FocusLink(first.Id, int.MaxValue);
+        Assert.Equal(1, controller.FocusedLinkIndex(first.Id));
+        controller.Resize(first.Id, new(200, 50, 1));
+        controller.Pump(_ => new(200, 50, 1));
+        Assert.Equal(-1, controller.FocusedLinkIndex(first.Id));
+        controller.CloseTab(first.Id);
+        Assert.Equal(-1, controller.FocusedLinkIndex(second.Id));
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -41,12 +104,12 @@ public sealed class LinkTests
         Assert.NotEmpty(first.LinkTargets);
         var expected = scripts ? "https://example.com/final/changed#script" : "https://example.com/next?q=1#part";
         Assert.All(first.LinkTargets, link => Assert.Equal(expected, link.Url));
-        Assert.True(first.LinkTargets.Select(link => link.Y).Distinct().Count() > 1);
+        Assert.True(first.LinkTargets.SelectMany(link => link.Rects).Select(rect => rect.Y).Distinct().Count() > 1);
         var wide = await renderer.RenderRetainedAsync(document, new(300, 50, 1), Cancellation);
-        Assert.Single(wide.LinkTargets.Select(link => link.Y).Distinct());
+        Assert.Single(wide.LinkTargets.SelectMany(link => link.Rects).Select(rect => rect.Y).Distinct());
         var bottom = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 1e9 }, Cancellation);
         Assert.Contains(bottom.LinkTargets, link => link.Url == document.Url.Href + "#end");
-        Assert.All(bottom.LinkTargets, link =>
+        Assert.All(bottom.LinkTargets.SelectMany(link => link.Rects), link =>
         {
             Assert.InRange(link.X, 0, viewport.Width);
             Assert.InRange(link.Y, 0, viewport.Height);
@@ -186,11 +249,12 @@ public sealed class LinkTests
         var error = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(huge, viewport, Cancellation));
         Assert.Contains("URL limit", error.Message);
         var retained = await renderer.RenderRetainedAsync(old, viewport, Cancellation);
-        Assert.Equal(first.LinkTargets, retained.LinkTargets);
+        Assert.Equal(Assert.Single(first.LinkTargets).Url, Assert.Single(retained.LinkTargets).Url);
+        Assert.Equal(first.LinkTargets[0].Rects, retained.LinkTargets[0].Rects);
     }
 
     [Fact]
-    public async Task RendererEnforcesExactRectangleCountLimit()
+    public async Task RendererEnforcesExactAnchorCountLimit()
     {
         using var renderer = new StaticPageRenderer(FontPath, 2_000_000);
         var html = "<!doctype html><style>*{margin:0}</style>"
@@ -201,6 +265,27 @@ public sealed class LinkTests
         var failure = await Assert.ThrowsAsync<PageNavigationException>(() =>
             renderer.RenderAsync(Document(html + "<a href='./x'>x</a>"), viewport, Cancellation));
         Assert.Contains("count limit", failure.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PerAnchorRectangleLimitIsExactAndPreservesCommittedDocument(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var viewport = new PageViewport(40, 2000, 1);
+        var html = "<!doctype html><style>*{margin:0}a{display:block}</style><a href='./x'>"
+            + string.Concat(Enumerable.Repeat("<div>x</div>", RendererProtocol.MaxLinkRects));
+        var document = Document(html + "</a>");
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        Assert.Equal(RendererProtocol.MaxLinkRects, Assert.Single(first.LinkTargets).Rects.Count);
+        renderer.CommitDocument(document.DocumentId);
+        var failure = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(
+            Document(html + "<div>x</div></a>"), viewport, Cancellation));
+        Assert.Contains("per-anchor rectangle limit", failure.Message);
+        var retained = await renderer.RenderRetainedAsync(document, viewport, Cancellation);
+        Assert.Equal(first.LinkTargets[0].Rects, Assert.Single(retained.LinkTargets).Rects);
     }
 
     [Theory]

@@ -25,8 +25,10 @@ translation only, not layout viewport geometry or frame size.
 Rendering gathers nearest-anchor ancestry from shaped text fragments in paint
 order, using run widths and line heights, then translates/clips to visible CSS
 viewport space. URLs resolve against the final source URL before returning
-data-only IPC-contract targets. The shared contract enforces the same count,
-URL and serialized byte bounds locally and in workers.
+data-only IPC-contract targets. Each anchor is one target containing all its
+visible rectangles; groups follow first-fragment order, without exposing element
+identity. The shared v7 contract caps 4096 anchors, 64 rectangles per anchor,
+8192 characters per URL and 1 MiB serialized metadata locally and in workers.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL

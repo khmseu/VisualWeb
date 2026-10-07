@@ -4,8 +4,11 @@ Runnable development-only browser executable. Draws SDL
 address/tab chrome, navigates GET HTML into the static engine, and manages
 history, tabs and multiple windows.
 Visible textual HTML anchors activate through the current tab's GET navigation
-on primary left click, using renderer-owned clipped CSS rectangles. Unsupported
-schemes fail visibly; no page mouse events or target/new-tab semantics are implied.
+on primary left click or Tab/Shift+Tab/Enter, using renderer-owned clipped CSS
+rectangle groups. Keyboard traversal visits chrome before visible anchors;
+per-tab page focus is outlined by the shell without changing the renderer raster.
+Unsupported schemes fail visibly; no DOM input events or target/new-tab semantics
+are implied. See [controls](../../../docs/browser-shell.md#controls).
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and

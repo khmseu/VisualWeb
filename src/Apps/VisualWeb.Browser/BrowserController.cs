@@ -26,6 +26,8 @@ public sealed class BrowserController : IDisposable
         internal PageViewport? Viewport { get; set; }
         internal double ScrollY { get; set; }
         internal bool ResizeFailed { get; set; }
+        internal bool PageFocused { get; set; }
+        internal int FocusedLink { get; set; } = -1;
     }
     private sealed class Operation(TabId tab, long generation, Task<LoadedPage> load, CancellationTokenSource cancellation,
         int? traversal, bool replace, bool resize = false, bool scroll = false)
@@ -88,6 +90,55 @@ public sealed class BrowserController : IDisposable
     }
     public BrowserPage? Page(TabId tab) { Check(); return content[tab].Page; }
     public double ScrollY(TabId tab) { Check(); return content[tab].ScrollY; }
+    public bool PageHasFocus(TabId tab) { Check(); return content[tab].PageFocused; }
+    public int FocusedLinkIndex(TabId tab) { Check(); return content[tab].FocusedLink; }
+    public void FocusPage(TabId id, bool focused = true)
+    {
+        Check();
+        content[id].PageFocused = focused && content[id].Page is not null;
+        Changed?.Invoke(id);
+    }
+    public void FocusLink(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        var count = owner.Page?.LinkTargets.Count ?? 0;
+        owner.PageFocused = owner.Page is not null;
+        owner.FocusedLink = count == 0 ? -1 : Math.Clamp(index, -1, count - 1);
+        Changed?.Invoke(id);
+    }
+    public int MoveLinkFocus(TabId id, bool backwards = false)
+    {
+        Check();
+        var owner = content[id];
+        var count = owner.Page?.LinkTargets.Count ?? 0;
+        owner.PageFocused = owner.Page is not null;
+        owner.FocusedLink = count == 0 ? -1
+            : owner.FocusedLink < 0 ? backwards ? count - 1 : 0
+            : (Math.Clamp(owner.FocusedLink, 0, count - 1) + (backwards ? count - 1 : 1)) % count;
+        Changed?.Invoke(id);
+        return owner.FocusedLink;
+    }
+    public bool ActivateFocusedLink(TabId id, PageViewport? displayedViewport = null)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is null
+            || owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count
+            || !MatchesViewport(owner, displayedViewport)) { return false; }
+        return NavigateLink(id, owner.Page.LinkTargets[owner.FocusedLink].Url);
+    }
+    private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
+        owner.Viewport is { } viewport && (displayedViewport is not { } visible
+            || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
+    private bool NavigateLink(TabId id, string destination)
+    {
+        var url = BrowserUrl.Parse(destination);
+        if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
+        { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
+        Navigate(id, url.Href);
+        return true;
+    }
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
     {
         Check();
@@ -96,18 +147,14 @@ public sealed class BrowserController : IDisposable
         { throw new PageNavigationException("Link coordinates must be finite."); }
         if (owner.Page is null || owner.Viewport is not { } viewport
             || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height) { return false; }
-        if (displayedViewport is { } visible
-            && (viewport.Width != visible.Width || viewport.Height != visible.Height || viewport.Scale != visible.Scale))
+        if (!MatchesViewport(owner, displayedViewport))
         { return false; }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
-            var url = BrowserUrl.Parse(link.Url);
-            if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
-            { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
-            Navigate(id, url.Href);
-            return true;
+            if (owner.PageFocused) { FocusLink(id, index); }
+            return NavigateLink(id, link.Url);
         }
         return false;
     }
@@ -230,6 +277,8 @@ public sealed class BrowserController : IDisposable
             owner.ScrollY = Math.Min(operation.Viewport!.Value.ScrollY,
                 Math.Max(0, rendered.ScrollHeight - operation.Viewport.Value.Height));
             owner.Document = document; owner.Page = rendered;
+            // Frame-local groups have no DOM identity: never retarget a focused anchor after repaint.
+            owner.FocusedLink = -1;
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;
             if (operation.Resize)
