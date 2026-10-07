@@ -76,8 +76,10 @@ public sealed class StaticPageRenderer : IPageRenderer
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url, state.Source.Stylesheets);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
-        var links = CollectLinks(rendered.Layout, page.Url,
+        var (links, controlGeometry) = CollectLinks(rendered.Layout, page.Url,
             Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken);
+        var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, links.Count,
+            rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
@@ -88,25 +90,39 @@ public sealed class StaticPageRenderer : IPageRenderer
             status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
         }
         return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
-        { ScrollHeight = rendered.ScrollHeight, LinkTargets = links };
+        { ScrollHeight = rendered.ScrollHeight, LinkTargets = links, Forms = forms, FormControls = controls };
     }
-    private static IReadOnlyList<PageLinkTarget> CollectLinks(LayoutResult layout, BrowserUrl url, double scrollY,
-        CancellationToken cancellationToken)
+    private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls)
+        CollectLinks(LayoutResult layout, BrowserUrl url, double scrollY, CancellationToken cancellationToken)
     {
         var links = new List<PageLinkTarget>();
+        var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var anchors = new Dictionary<DomElement, List<PageLinkRect>>();
         long urlBytes = 0;
         if (layout.Root is { } root) { Visit(root); }
         try { RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight); }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
-        return links.AsReadOnly();
+        return (links.AsReadOnly(), controls);
 
         void Visit(LayoutBox box)
         {
             foreach (var item in box.Flow)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (item is LayoutBlockItem block) { Visit(block.Box); }
+                if (item is LayoutBlockItem block)
+                {
+                    if (block.Box.Element.LocalName is "input" or "button")
+                    {
+                        var border = block.Box.BorderBox;
+                        var left = Math.Clamp(border.X, 0, layout.ViewportWidth);
+                        var right = Math.Clamp(border.X + border.Width, 0, layout.ViewportWidth);
+                        var top = Math.Clamp(border.Y - scrollY, 0, layout.ViewportHeight);
+                        var bottom = Math.Clamp(border.Y + border.Height - scrollY, 0, layout.ViewportHeight);
+                        if (right > left && bottom > top)
+                        { controls[block.Box.Element] = (new(left, top, right - left, bottom - top), links.Count); }
+                    }
+                    Visit(block.Box);
+                }
                 else if (item is LayoutLineItem line)
                 {
                     foreach (var fragment in line.Line.Fragments)

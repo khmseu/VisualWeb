@@ -188,7 +188,12 @@ public sealed class ProcessPageRenderer : IPageRenderer
             // Drain superseded exchanges under the deadline so retained DOM survives and replies stay aligned.
             cancellationToken.ThrowIfCancellationRequested();
             return new(frame, packet.Message.Title!, packet.Message.Status!)
-            { ScrollHeight = packet.Message.ScrollHeight, LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!) };
+            {
+                ScrollHeight = packet.Message.ScrollHeight,
+                LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
+                Forms = Array.AsReadOnly(packet.Message.Forms!),
+                FormControls = Array.AsReadOnly(packet.Message.FormControls!)
+            };
         }
         catch (OperationCanceledException)
         {

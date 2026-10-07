@@ -5,7 +5,7 @@ namespace VisualWeb.Engine.Html;
 
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>.
-/// No tables, templates, foreign content, forms, frames, fragment parsing, scripting,
+/// No tables, templates, foreign content beyond the basic form tree subset, frames, fragment parsing, scripting,
 /// active-formatting reconstruction or adoption agency algorithm are implemented.</remarks>
 public static class HtmlParser
 {
@@ -26,6 +26,7 @@ public static class HtmlParser
         private Mode originalMode;
         private int nodes = 1;
         private bool ignoreNextLineFeed;
+        private DomElement? formPointer;
         private DomText? bufferedText;
         private readonly StringBuilder textBuffer = new();
 
@@ -347,6 +348,12 @@ public static class HtmlParser
                         Insert(tag);
                         ignoreNextLineFeed = true;
                         return;
+                    case "form":
+                        // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody (start tag "form").
+                        if (formPointer is not null) { Error("nested-form"); return; }
+                        CloseParagraph();
+                        formPointer = Insert(tag);
+                        return;
                     case "button":
                         if (InScope("button")) { Error("nested-button"); Close("button"); }
                         Insert(tag);
@@ -397,6 +404,22 @@ public static class HtmlParser
                     if (!InScope(tag.Name)) { Error("unexpected-end-tag"); return; }
                     Close(tag.Name);
                     return;
+                case "form":
+                    {
+                        // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody (end tag "form").
+                        var node = formPointer;
+                        formPointer = null;
+                        if (node is null || !InScope("form")) { Error("unexpected-form-end-tag"); return; }
+                        FlushText();
+                        while (open[^1] != node && open[^1].LocalName is "dd" or "dt" or "li" or "p") { open.RemoveAt(open.Count - 1); }
+                        if (open[^1] != node)
+                        {
+                            throw Unsupported("Misnested form end tags would split form ownership from tree ancestry.");
+                        }
+
+                        open.RemoveAt(open.Count - 1);
+                        return;
+                    }
                 case "br":
                     Error("br-end-tag");
                     Insert(Synthetic("br"), push: false);
@@ -557,6 +580,11 @@ public static class HtmlParser
                 throw Unsupported("Closing this element requires active-formatting reconstruction.");
             }
 
+            if (formPointer is not null && open.Skip(index).Contains(formPointer))
+            {
+                throw Unsupported("Implicitly closing an open form would split form ownership from tree ancestry.");
+            }
+
             if (index != open.Count - 1) { Error("implicitly-closed-descendants"); }
             open.RemoveRange(index, open.Count - index);
         }
@@ -585,7 +613,7 @@ public static class HtmlParser
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
         "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th", "template",
-        "svg", "math", "select", "option", "optgroup", "form", "frameset", "frame", "noscript",
+        "svg", "math", "select", "option", "optgroup", "frameset", "frame", "noscript",
         "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
     };
     private static readonly HashSet<string> VoidTags = new(StringComparer.Ordinal)
@@ -609,7 +637,7 @@ public static class HtmlParser
         "search", "section", "summary", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "listing"
     };
     private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags)
-        .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "textarea", "title", "script",
+        .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script",
             "style", "xmp", "plaintext", "iframe", "noembed", "noframes"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)
     {

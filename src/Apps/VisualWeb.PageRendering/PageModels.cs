@@ -32,6 +32,10 @@ public sealed record LoadedPage
     public int StatusCode { get; init; }
     public IReadOnlyList<string> Diagnostics { get; init; }
     public Guid DocumentId { get; init; } = Guid.NewGuid();
+    /// <summary>Canonical WHATWG encoding name used to decode the document; selects the form submission encoding.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#pick-an-encoding-for-the-form">pick
+    /// an encoding for the form</see>. Browser-only metadata; it is not sent to renderers.</remarks>
+    public string CharacterEncoding { get; init; } = "UTF-8";
     private readonly IReadOnlyList<PageStylesheet> stylesheets = Array.Empty<PageStylesheet>();
     /// <summary>Browser-fetched linked stylesheet texts keyed by resolved request URL; published with the document.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
@@ -67,6 +71,10 @@ public readonly record struct PageViewport(double Width, double Height, double S
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 {
     public IReadOnlyList<PageLinkTarget> LinkTargets { get; init; } = Array.Empty<PageLinkTarget>();
+    /// <summary>Bounded form owners in tree order; see <see cref="RendererProtocol.ValidateForms"/>.</summary>
+    public IReadOnlyList<PageForm> Forms { get; init; } = Array.Empty<PageForm>();
+    /// <summary>Supported controls in tree order with initial values; the browser owns edits and submission.</summary>
+    public IReadOnlyList<PageFormControl> FormControls { get; init; } = Array.Empty<PageFormControl>();
     private readonly double scrollHeight;
     public double ScrollHeight
     {

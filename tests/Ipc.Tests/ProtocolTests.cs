@@ -31,6 +31,8 @@ public sealed class ProtocolTests
             Height = 1,
             Scale = 1,
             LinkTargets = [],
+            Forms = [],
+            FormControls = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,
@@ -42,7 +44,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(7, RendererProtocol.Version);
+        Assert.Equal(8, RendererProtocol.Version);
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -63,8 +65,102 @@ public sealed class ProtocolTests
         Title = "",
         Status = "",
         ScrollHeight = 2,
-        LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")]
+        LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")],
+        Forms = [],
+        FormControls = []
     };
+    private static RendererMessage FormFrame => LinkFrame with
+    {
+        Forms = [new("https://example.com/search?old#frag", null), new("", "Unsupported form method: post.")],
+        FormControls =
+        [
+            new(0, "text", "q", "café", "", false, false, true, 10, 0, new(0, 0, 2, 1)),
+            new(0, "hidden", "h", "v", "", false, false, false, -1, 0, null),
+            new(0, "submit", "go", "", "Submit", false, false, false, -1, 1, new(0, 1, 2, 1)),
+            new(1, "button", "", "", "", true, false, false, -1, 1, null),
+            new(-1, "search", "", "", "", false, true, false, -1, 1, null)
+        ]
+    };
+
+    [Fact]
+    public void FormMetadataIsRequiredOnFramesOnlyAndRoundTrips()
+    {
+        RendererProtocol.Validate(FormFrame, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![3] with { Label = "Search", Rect = new(0, 1, 2, 1) }]
+        }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with { Forms = null }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with { FormControls = null }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Forms = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { FormControls = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Forms = [] }, 0));
+        var json = JsonSerializer.Serialize(FormFrame);
+        var parsed = JsonSerializer.Deserialize<RendererMessage>(json)!;
+        Assert.Equal(FormFrame.FormControls!, parsed.FormControls!);
+        Assert.Equal(FormFrame.Forms!, parsed.Forms!);
+    }
+
+    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 21));
+
+    [Theory]
+    [MemberData(nameof(InvalidFormCases))]
+    public void InvalidFormMetadataFails(int index)
+    {
+        var form = FormFrame.Forms![0];
+        var control = FormFrame.FormControls![0];
+        var frame = index switch
+        {
+            0 => FormFrame with { Forms = [form with { Action = "../relative" }] },
+            1 => FormFrame with { Forms = [form with { Action = "javascript:alert(1)" }] },
+            2 => FormFrame with { Forms = [form with { Action = "ftp://example.com/" }] },
+            3 => FormFrame with { Forms = [form with { Action = "" }] },
+            4 => FormFrame with { Forms = [form with { Action = "https://example.com/", Error = "" }] },
+            5 => FormFrame with { Forms = [form with { Error = new string('e', 8193), Action = "" }] },
+            6 => FormFrame with { Forms = Enumerable.Repeat(form, 257).ToArray() },
+            7 => FormFrame with { FormControls = Enumerable.Repeat(control with { Rect = null }, 1025).ToArray() },
+            8 => FormFrame with { FormControls = [control with { Form = 2 }] },
+            9 => FormFrame with { FormControls = [control with { Form = -2 }] },
+            10 => FormFrame with { FormControls = [control with { Kind = "password" }] },
+            11 => FormFrame with { FormControls = [control with { Name = new string('n', 8193) }] },
+            12 => FormFrame with { FormControls = [control with { Value = new string('v', 8193) }] },
+            13 => FormFrame with { FormControls = [control with { Label = "x" }] },
+            14 => FormFrame with { FormControls = [control with { MaxLength = -2 }] },
+            15 => FormFrame with { FormControls = [control with { BeforeLink = 2 }] },
+            16 => FormFrame with { FormControls = [control with { Rect = new(0, 0, 3, 1) }] },
+            17 => FormFrame with { FormControls = [FormFrame.FormControls[1] with { Rect = new(0, 0, 1, 1) }] },
+            18 => FormFrame with { FormControls = [control with { BeforeLink = 1 }, control with { BeforeLink = 0 }] },
+            19 => FormFrame with { FormControls = [control with { Name = null! }] },
+            _ => FormFrame with { FormControls = [null!] },
+        };
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame, 16));
+    }
+
+    [Fact]
+    public void ExactFormCountsAndStringLimitsAreAccepted()
+    {
+        var form = FormFrame.Forms![0];
+        var control = FormFrame.FormControls![0] with { Rect = null, Name = new string('n', 8192), Value = "" };
+        RendererProtocol.Validate(FormFrame with { Forms = Enumerable.Repeat(form, 256).ToArray() }, 16);
+        RendererProtocol.Validate(FormFrame with { FormControls = Enumerable.Repeat(control, 100).ToArray() }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        { FormControls = Enumerable.Repeat(control with { Value = new string('v', 8192) }, 70).ToArray() }, 16));
+        RendererProtocol.Validate(FormFrame with
+        { FormControls = Enumerable.Repeat(FormFrame.FormControls[1] with { Name = "" }, 1024).ToArray() }, 16);
+    }
+
+    [Theory]
+    [InlineData("\"Action\":\"https://example.com/\",\"Error\":null,\"Method\":\"post\"")]
+    [InlineData("\"Error\":null")]
+    public async Task FormObjectsRejectUnknownAndMissingFields(string fields)
+    {
+        var json = JsonSerializer.Serialize(FormFrame);
+        var start = json.IndexOf("\"Forms\":", StringComparison.Ordinal);
+        var end = json.IndexOf("\"FormControls\":", StringComparison.Ordinal);
+        json = json[..start] + "\"Forms\":[{" + fields + "}]," + json[end..];
+        using var wire = Wire(json, new byte[16]);
+        await Assert.ThrowsAsync<IpcProtocolException>(() => new RendererChannel(wire, Stream.Null).ReadAsync(Cancellation));
+    }
 
     [Fact]
     public void LinkedStylesheetsAreRequiredOnRenderRequestsOnly()
@@ -148,7 +244,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(7, RendererProtocol.Version);
+        Assert.Equal(8, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -263,6 +359,8 @@ public sealed class ProtocolTests
             Height = 1,
             Scale = 1,
             LinkTargets = [],
+            Forms = [],
+            FormControls = [],
             PixelWidth = 2,
             PixelHeight = 1,
             Stride = 8,
@@ -344,6 +442,8 @@ public sealed class ProtocolTests
             Height = 1,
             Scale = 1,
             LinkTargets = [],
+            Forms = [],
+            FormControls = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,

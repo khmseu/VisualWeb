@@ -27,8 +27,21 @@ order, using run widths and line heights, then translates/clips to visible CSS
 viewport space. URLs resolve against the final source URL before returning
 data-only IPC-contract targets. Each anchor is one target containing all its
 visible rectangles; groups follow first-fragment order, without exposing element
-identity. The shared v7 contract caps 4096 anchors, 64 rectangles per anchor,
+identity. The shared v8 contract caps 4096 anchors, 64 rectangles per anchor,
 8192 characters per URL and 1 MiB serialized metadata locally and in workers.
+
+`BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
+subset collected after optional script mutations: `form` action/error, and
+`input` text/search/hidden/submit plus `button` submit/plain-button controls (the
+minimal UA sheet displays supported controls as blocks until inline-block layout
+is implemented) with
+name, current value attribute, label, disabled/readonly/required/maxlength,
+merged traversal position before a link group and clipped visible border box.
+Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
+`novalidate`, non-UTF-8 `accept-charset`, `<base>`, `form=` owners, submitter
+overrides, other input types, reset buttons, textarea/select/output/object,
+datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
+when that form is submitted. The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL

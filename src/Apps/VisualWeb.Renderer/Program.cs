@@ -73,7 +73,9 @@ try
                     Title = Bounded(rendered.Title),
                     Status = Bounded(rendered.Status),
                     ScrollHeight = rendered.ScrollHeight,
-                    LinkTargets = rendered.LinkTargets.ToArray()
+                    LinkTargets = rendered.LinkTargets.ToArray(),
+                    Forms = rendered.Forms.ToArray(),
+                    FormControls = rendered.FormControls.ToArray()
                 }, frame.Pixels).GetAwaiter().GetResult();
             }
             catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)

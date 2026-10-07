@@ -95,7 +95,7 @@ public static class StaticLayout
         private CssComputedStyle Style(DomElement element) => styles.Styles.TryGetValue(element, out var style) ? style
             : throw new InvalidOperationException("Styles are incomplete or stale; recompute for the current DOM.");
         private string Display(DomElement element) => ((CssKeyword)Style(element)["display"]).Value;
-        private void Check(DomElement element, int depth)
+        private void Check(DomElement element, int depth, bool block = false)
         {
             cancellation.ThrowIfCancellationRequested();
             if (depth > options.MaxDepth) { throw new LayoutLimitException("Layout nesting limit exceeded."); }
@@ -108,7 +108,17 @@ public static class StaticLayout
             {
                 throw new UnsupportedLayoutException("Language-dependent shaping/segment-break handling beyond English is deferred.");
             }
-            if (element.LocalName is "bdi" or "bdo" or "img" or "input" or "button" or "textarea" or "select"
+            if (element.LocalName is "input" or "button")
+            {
+                if (!block) { throw new UnsupportedLayoutException("Inline form controls require deferred inline-block layout."); }
+                if (element.LocalName == "input" && DomFormControls.InputType(element) is not ("text" or "search" or "submit"))
+                {
+                    throw new UnsupportedLayoutException($"<input type={DomFormControls.InputType(element)}> requires unsupported widget layout.");
+                }
+
+                return;
+            }
+            if (element.LocalName is "bdi" or "bdo" or "img" or "textarea" or "select"
                 or "video" or "audio" or "canvas" or "iframe" or "object" or "embed" or "ul" or "ol" or "li"
                 or "table" or "ruby")
             {
@@ -119,7 +129,7 @@ public static class StaticLayout
         private LayoutBox Block(DomElement element, double containingX, double top, double containingWidth,
             double? containingHeight, int depth)
         {
-            Check(element, depth);
+            Check(element, depth, block: true);
             Visit();
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             var style = Style(element);
@@ -173,7 +183,14 @@ public static class StaticLayout
             var flow = new List<LayoutFlowItem>();
             var inline = new List<InlineUnit>();
             var cursor = contentY;
-            foreach (var child in element.ChildNodes)
+            if (element.LocalName == "input")
+            {
+                // Spec: html; https://html.spec.whatwg.org/multipage/rendering.html#the-input-element-as-a-text-entry-widget
+                // The value/label is shell-painted, so the box reserves exactly one strut line of content height.
+                var (ascent, descent) = Extents(Shape("", style), style);
+                cursor += ascent + descent;
+            }
+            foreach (var child in element.LocalName == "input" ? [] : element.ChildNodes)
             {
                 cancellation.ThrowIfCancellationRequested();
                 if (child is DomElement e && Display(e) == "none") { continue; }

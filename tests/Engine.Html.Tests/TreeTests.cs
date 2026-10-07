@@ -83,7 +83,9 @@ public sealed class TreeTests
     [InlineData("<template>x")]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
-    [InlineData("<form>x")]
+    [InlineData("<form><div></form>x")]
+    [InlineData("<div><form></div><input>")]
+    [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
     [InlineData("<select><option>x")]
     [InlineData("<ruby>x")]
@@ -94,6 +96,56 @@ public sealed class TreeTests
     [InlineData("<!doctype html PUBLIC 'legacy'>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Fact]
+    public void SimpleFormsUseFormPointerAndKeepControlsVoid()
+    {
+        var result = Parse("<!doctype html><p>a<form action=/s><p>b<input name=q>text<button>go</button></form>after");
+        var body = result.Document.Body!;
+        Assert.Equal(new[] { "p", "form" }, body.ChildNodes.OfType<DomElement>().Select(e => e.LocalName));
+        var form = body.ChildNodes.OfType<DomElement>().Single(e => e.LocalName == "form");
+        var paragraph = Assert.IsType<DomElement>(form.FirstChild);
+        Assert.Equal("p", paragraph.LocalName);
+        var input = paragraph.ChildNodes.OfType<DomElement>().Single(e => e.LocalName == "input");
+        Assert.Empty(input.ChildNodes);
+        Assert.IsType<DomText>(input.NextSibling);
+        Assert.Equal("after", Assert.IsType<DomText>(body.LastChild).Data);
+        Assert.DoesNotContain(result.Errors, e => e.Code == "implicitly-closed-descendants");
+    }
+
+    [Theory]
+    [InlineData("<!doctype html><form id=a><form id=b><input></form>x", "nested-form")]
+    [InlineData("<!doctype html><p></form>x", "unexpected-form-end-tag")]
+    [InlineData("<!doctype html><form></form></form>x", "unexpected-form-end-tag")]
+    public void FormParseErrorsAreReportedAndIgnoredTagsDoNotNest(string input, string code)
+    {
+        var result = Parse(input);
+        Assert.Contains(result.Errors, e => e.Code == code);
+        var forms = Descendants(result.Document).Where(e => e.LocalName == "form").ToList();
+        Assert.True(forms.Count <= 1);
+        Assert.All(forms, form => Assert.DoesNotContain(Descendants(form), e => e.LocalName == "form"));
+        Assert.EndsWith("x", result.Document.Body!.TextContent, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FormPointerClosesAtEndTagAndAllowsLaterForm()
+    {
+        var result = Parse("<!doctype html><form id=a></form><form id=b><input></form>");
+        Assert.Equal(new[] { "a", "b" }, Descendants(result.Document).Where(e => e.LocalName == "form").Select(e => e.GetAttribute("id")));
+        Assert.Empty(result.Errors);
+    }
+
+    private static IEnumerable<DomElement> Descendants(DomNode node)
+    {
+        foreach (var child in node.ChildNodes)
+        {
+            if (child is DomElement element)
+            {
+                yield return element;
+                foreach (var nested in Descendants(element)) { yield return nested; }
+            }
+        }
+    }
 
     [Fact]
     public void VoidElementsDoNotPushAndSelfClosingNonVoidRemainsOpen()

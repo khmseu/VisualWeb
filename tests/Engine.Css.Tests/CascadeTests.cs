@@ -171,6 +171,16 @@ public sealed class CascadeTests
     }
 
     [Fact]
+    public void UaFormRulesBlockFormsAndHideHiddenInputsImportantly()
+    {
+        var doc = Document("<form id=f><input id=h type=HiDdEn><input id=t></form>");
+        var result = Compute(doc, new CssStyleSource("input{display:block !important}"));
+        Assert.Equal(new CssKeyword("block"), result.Styles[doc.GetElementById("f")!]["display"]);
+        Assert.Equal(new CssKeyword("none"), result.Styles[doc.GetElementById("h")!]["display"]);
+        Assert.Equal(new CssKeyword("block"), result.Styles[doc.GetElementById("t")!]["display"]);
+    }
+
+    [Fact]
     public void UnsupportedFeaturesProduceDiagnosticsAndNeverExecuteOrFetch()
     {
         var doc = Document();

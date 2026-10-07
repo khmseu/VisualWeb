@@ -2,6 +2,7 @@ using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Engine.Text;
+using VisualWeb.Ipc.Contracts;
 using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
@@ -45,7 +46,7 @@ public sealed class ShellChrome : IDisposable
         return css;
     }
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
-        int focusedLink = -1, ChromeTarget? focusedChrome = null)
+        int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -103,29 +104,72 @@ public sealed class ShellChrome : IDisposable
             Fill(new(rect.X, rect.Y, 1, rect.Height), color);
             Fill(new(rect.X + rect.Width - 1, rect.Y, 1, rect.Height), color);
         }
+        var headerPixels = (int)Math.Min(size.Height, Math.Ceiling(Height * density));
+        var pageFits = page is not null && page.Frame.Size == new PixelSize(size.Width, size.Height - headerPixels);
+        if (pageFits && forms is not null && forms.Values.Count == page!.FormControls.Count)
+        {
+            // Shell-owned widget overlay: renderer pixels never contain browser-edited values. Offsetting by the
+            // device header keeps chrome rasterization aligned with the copied page rows at fractional densities.
+            var offset = headerPixels / density;
+            for (var index = 0; index < page.FormControls.Count; index++)
+            {
+                var control = page.FormControls[index];
+                if (control.Rect is not { } rect || control.Kind == "hidden") { continue; }
+                var box = new LayoutRect(rect.X, rect.Y + offset, rect.Width, rect.Height);
+                var gray = new CssColor(118, 118, 118);
+                Fill(box, gray);
+                Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
+                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" ? new(225, 225, 225) : white);
+                var text = control.Kind is "submit" or "button" ? control.Label
+                    : index == forms.Focused && forms.Caret >= 0 ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
+                    : forms.Values[index];
+                Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
+                    control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind == "button");
+            }
+        }
         var chrome = CpuRasterizer.Render(new(width, height, commands), fonts, density, options: options);
         var pixels = chrome.Pixels.ToArray();
-        var headerPixels = (int)Math.Min(size.Height, Math.Ceiling(Height * density));
         if (chrome.Size != size) { throw new PlatformException("Chrome framebuffer does not match the native surface size."); }
-        if (page is not null && page.Frame.Size == new PixelSize(size.Width, size.Height - headerPixels))
+        if (pageFits)
         {
-            page.Frame.Pixels.Span.CopyTo(pixels.AsSpan(headerPixels * chrome.Stride));
+            page!.Frame.Pixels.Span.CopyTo(pixels.AsSpan(headerPixels * chrome.Stride));
+            if (forms is not null && forms.Values.Count == page.FormControls.Count)
+            {
+                foreach (var control in page.FormControls)
+                {
+                    if (control.Rect is not { } rect || control.Kind == "hidden") { continue; }
+                    var (left, top, right, bottom) = Device(rect);
+                    for (var y = top; y <= bottom; y++)
+                    {
+                        chrome.Pixels.Span.Slice(y * chrome.Stride + left * 4, (right - left + 1) * 4)
+                            .CopyTo(pixels.AsSpan(y * chrome.Stride + left * 4));
+                    }
+                }
+                if (forms.Focused >= 0 && forms.Focused < page.FormControls.Count && page.FormControls[forms.Focused].Rect is { } focus)
+                { Outline(focus); }
+            }
             if (focusedLink >= 0 && focusedLink < page.LinkTargets.Count)
             {
-                foreach (var rect in page.LinkTargets[focusedLink].Rects)
-                {
-                    var left = Math.Clamp((int)Math.Floor(rect.X * density), 0, size.Width - 1);
-                    var right = Math.Clamp((int)Math.Ceiling((rect.X + rect.Width) * density) - 1, left, size.Width - 1);
-                    var top = Math.Clamp(headerPixels + (int)Math.Floor(rect.Y * density), headerPixels, size.Height - 1);
-                    var bottom = Math.Clamp(headerPixels + (int)Math.Ceiling((rect.Y + rect.Height) * density) - 1, top, size.Height - 1);
-                    for (var x = left; x <= right; x++) { FocusPixel(x, top); FocusPixel(x, bottom); }
-                    for (var y = top; y <= bottom; y++) { FocusPixel(left, y); FocusPixel(right, y); }
-                }
+                foreach (var rect in page.LinkTargets[focusedLink].Rects) { Outline(rect); }
             }
         }
         return new(pixels, chrome.Size, chrome.Stride, targets.AsReadOnly());
 
         void Fill(LayoutRect rect, CssColor color) => commands.Add(new FillRectangle(rect, color));
+        (int Left, int Top, int Right, int Bottom) Device(PageLinkRect rect)
+        {
+            var left = Math.Clamp((int)Math.Floor(rect.X * density), 0, size.Width - 1);
+            var right = Math.Clamp((int)Math.Ceiling((rect.X + rect.Width) * density) - 1, left, size.Width - 1);
+            var top = Math.Clamp(headerPixels + (int)Math.Floor(rect.Y * density), headerPixels, size.Height - 1);
+            var bottom = Math.Clamp(headerPixels + (int)Math.Ceiling((rect.Y + rect.Height) * density) - 1, top, size.Height - 1);
+            return (left, top, right, bottom);
+        }
+        void Outline(PageLinkRect rect)
+        {
+            var (left, top, right, bottom) = Device(rect);
+            for (var x = left; x <= right; x++) { FocusPixel(x, top); FocusPixel(x, bottom); }
+            for (var y = top; y <= bottom; y++) { FocusPixel(left, y); FocusPixel(right, y); }
+        }
         void FocusPixel(int x, int y)
         {
             var offset = y * chrome.Stride + x * 4;
@@ -166,3 +210,6 @@ public sealed class ShellChrome : IDisposable
             && x < target.Bounds.X + target.Bounds.Width && y < target.Bounds.Y + target.Bounds.Height);
     public void Dispose() { fonts.Dispose(); font.Dispose(); }
 }
+
+/// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
+public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret);

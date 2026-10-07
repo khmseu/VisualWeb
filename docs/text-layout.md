@@ -130,7 +130,13 @@ mode or silent geometry approximation.
   stops, justification and cross-node/style shaping inside an unbroken word.
 - Margin collapse, floats, positioning, inline-block, decorated inline boxes
   (including backgrounds), tables, ruby, lists/markers, replaced elements,
-  controls, images/media/iframes and specialized element layout.
+  general controls, images/media/iframes and specialized element layout.
+  The bounded forms subset lays out `input` text/search/submit and `button`
+  elements as blocks through a temporary UA `display:block` default; this is a
+  layout accommodation, not standard inline-block rendering. An `input` ignores
+  children and its content height is one strut line of its font unless the author
+  sets a height; a block `button` lays out its children normally. Author-overridden
+  inline controls, other input types and `textarea`/`select` still fail visibly.
 - Vertical writing, fragmentation, scrolling/overflow clipping, device-pixel
   border snapping, text decoration and content generation.
   Initial normal-flow painting is now documented in the [painting guide](painting.md).

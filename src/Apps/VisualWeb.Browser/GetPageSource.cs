@@ -51,7 +51,8 @@ public sealed class GetPageSource : IPageSource
         var diagnostics = response.Diagnostics.Append(Describe(sniffed)).ToList();
         var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, diagnostics, cancellationToken)
             .ConfigureAwait(false);
-        return new(response.Url, decoded.Text, response.StatusCode, diagnostics.ToArray()) { Stylesheets = stylesheets };
+        return new(response.Url, decoded.Text, response.StatusCode, diagnostics.ToArray())
+        { Stylesheets = stylesheets, CharacterEncoding = sniffed.Encoding.Name };
     }
 
     private async Task<PageStylesheet[]> LoadStylesheetsAsync(BrowserUrl documentUrl, string html, WebEncoding documentEncoding,

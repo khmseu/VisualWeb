@@ -76,16 +76,27 @@ after-after-body modes. Supported behavior includes:
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
 
+Simple `form` elements use the form element pointer: `<form>` closes an open
+`p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
+without an in-scope pointer reports `unexpected-form-end-tag`. A matching
+`</form>` closes implied `dd`/`dt`/`li`/`p` ends; any other misnesting, or an
+implied closure (for example `</div>` or `</dl>`) that would pop an open form,
+throws instead of producing a form-owner/tree-ancestry split. `input` stays a
+void element and `button` an ordinary element, so control text never renders
+as raw markup. The parser therefore guarantees that a form owner is the
+nearest ancestor `form`.
+
 The following throw explicitly: tables and table parts, templates, SVG/MathML,
-select/options, forms, framesets/frames, noscript, ruby and
+select/options, textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
 applet/marquee/object-specific algorithms. Legacy public/system doctype mode
 selection (except `about:legacy-compat`) also throws. Fragment parsing is not
 offered. Nested anchors/nobr, misnested formatting and closures requiring
 active-formatting reconstruction/adoption agency throw instead of returning
 an incorrect tree.
 
-There are no specialized HTML element classes, custom-element reactions,
-form state, stylesheet application, navigation or V8 integration.
+`DomFormControls` exposes only `input type` and `button type` keyword
+normalization. There are no specialized HTML element classes, custom-element reactions,
+DOM form state, form-associated custom elements, constraint-validation APIs, stylesheet application, navigation or V8 integration.
 Well-formed unsupported tags are still unsupported; this is a finite static
 subset, not general browser HTML tree-construction conformance.
 

@@ -81,6 +81,9 @@ The native window title retains the same warning alongside the active page title
 | Primary left click on visible anchor text | Navigate the current tab to its resolved href |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
+| Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
+| Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search field | Edit the shell-owned field value (no page scrolling) |
+| Enter in a focused field / on a submit control, or primary click on a submit control | Submit the [simple GET form](#simple-get-forms) in the current tab |
 | Primary left click on blank page | Give the active page keyboard focus; next Tab/Shift+Tab selects the first/last visible anchor if none is selected |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
@@ -177,6 +180,58 @@ page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
 (cached standard ID `html`), not a full DOM event/default-action implementation.
+
+## Simple GET forms
+
+This is a deliberately narrow subset of HTML
+[form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
+(cached standard ID `html`); general forms remain unsupported. The renderer
+reports data-only form/control snapshots (IPC v8); the browser owns all values,
+focus, carets and submission. Supported controls are `input` text/search
+(editable), hidden and submit, plus `button` submit (and inert `type=button`),
+with a temporary user-agent `display:block` default because inline-block
+control layout is not implemented; author `display:none` still hides controls.
+Fields and submit buttons are drawn by a shell-owned overlay (white field or
+gray button, gray border, bounded ASCII label with `|` caret when focused),
+including button text; the renderer raster is untouched outside control
+rectangles. This display default is a layout accommodation, not full UA styling.
+
+Tab/Shift+Tab visit visible, enabled controls merged in tree order with anchor
+groups; focusing a text/search field enables SDL committed text input, which is
+disabled again when focus leaves. Values are inserted without control
+characters, truncated to `maxlength` (whole UTF-16 surrogate pairs) and capped
+at 8192 characters. Enter in a field submits through the form's first submit
+button (a disabled default button does nothing) or, without one, only when the
+form has at most one text/search field (implicit submission). Field state is
+tab-local and survives tab switches and same-document scroll/resize repaints
+whose control metadata is unchanged; new document commits reset it, failed
+navigations keep it.
+
+Submission includes named, non-disabled text/search/hidden controls plus the
+named activating submitter, in tree order. `_charset_` hidden fields submit
+`UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
+`application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as
+`+`, everything else `%XX`, lone surrogates as U+FFFD), replacing the action's
+query and keeping its fragment. The result is navigated with the ordinary
+current-tab `Navigate` transaction (HSTS, redirects, origin rotation, history),
+so `file:` and `data:` actions also receive the query. The query is capped at
+8192 characters and the resulting URL at the existing URL limit.
+
+Visible failures, without navigation and keeping the committed page: a form
+with `method` post/dialog, `enctype` multipart/form-data or text/plain, a
+`target` other than `_self` (or an inherited `<base target>`), `novalidate`,
+a non-UTF-8 `accept-charset`, any `<base href>`, any `form=` attribute,
+`formaction`/`formmethod`/`formenctype`/`formtarget`/`formnovalidate`, text-field
+`pattern`/`minlength`/`dirname`/`list`, other input types, reset buttons,
+`textarea`/`select`/`output`/`object`, `datalist` or disabled `fieldset`
+ancestors, an action that is unparsable, over 8192 characters or outside
+`http`/`https`/`file`/`data`; a document whose encoding is not UTF-8/UTF-16
+(stricter than the standard's charset selection); an empty `required` field or
+an edited value over `maxlength`; and query/URL limit overflow. There is no
+POST, no constraint-validation UI, no `submit`/`input`/`change`/`keydown`
+events or `requestSubmit`, and scripts cannot submit forms or bypass the broker.
+Implicit submission through `<input type=image>`, autofill, autocomplete,
+`dirname`, IME preedit, clipboard and selection ranges are deferred.
 
 ## Navigation and page policy
 

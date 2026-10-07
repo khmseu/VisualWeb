@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v7
+## Private stream protocol v8
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 6, explicitly present; v1 through v5 rejected |
+| Protocol version | 8, explicitly present; v1 through v7 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -106,6 +106,9 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Visible rectangles per anchor | 64 |
 | Absolute destination URL | 8192 UTF-16 characters each |
 | Serialized link metadata | 1 MiB UTF-8 JSON total |
+| Forms / form controls per frame | 256 / 1024 |
+| Form action, control name/value/label | 8192 UTF-16 characters each |
+| Serialized form metadata | 1 MiB UTF-8 JSON total |
 | Linked stylesheets per render request | 32 unique absolute serialized URLs (8192 characters each) |
 | Linked stylesheet text | 256 Ki UTF-16 characters each |
 | Serialized linked stylesheets | 1 MiB UTF-8 JSON total |
@@ -117,7 +120,8 @@ protocol v2 originally; phase 11d advanced to v3 for document/repaint/script pol
 basic scrolling advanced to v4 for request `ScrollY` and reply `ScrollHeight`,
 textual links advanced to v5 for frame-only `LinkTargets` and exact CSS viewport/scale,
 linked stylesheets advanced to v6 for the required request-only `Stylesheets` array,
-and keyboard links advance to v7 for per-anchor grouped `LinkTargets` rectangles,
+keyboard links advanced to v7 for per-anchor grouped `LinkTargets` rectangles,
+and simple forms advance to v8 for required frame-only `Forms` and `FormControls`,
 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
@@ -148,6 +152,21 @@ anchor count, per-anchor rectangle count and total serialized UTF-8 link bytes a
 the existing 32 MiB complete-header bound also remains enforced.
 Unsupported destination schemes are rejected visibly by browser activation,
 never executed by a worker.
+
+Every v8 frame also supplies required `Forms` and `FormControls` arrays (empty
+when absent); other messages cannot carry them. A form is `{Action, Error}`:
+either an absolute serialized `http`/`https`/`file`/`data` action with a null
+error, or an empty action plus a nonempty renderer diagnostic for an
+unsupported form (method/enctype/target/novalidate/accept-charset/base/control
+cases). A control is `{Form, Kind, Name, Value, Label, Disabled, ReadOnly,
+Required, MaxLength, BeforeLink, Rect}` with kind `text`/`search`/`hidden`/
+`submit`/`button`, a form index or -1, a label for submit controls, `MaxLength` -1
+when absent, and `BeforeLink` in `[0, LinkTargets.Count]` giving merged
+tree-order traversal against link groups. Visible controls carry one
+viewport-contained CSS-pixel border box; hidden controls never have one.
+These are data-only snapshots of parsed/mutated DOM attributes: no element
+handles, no script events and no submission command cross IPC. The browser
+alone edits values, builds the GET URL and navigates through its broker.
 
 Document-origin association does not add principal fields to IPC: the browser keeps its
 `LoadedPage.Origin`, while worker reconstruction from the URL creates a local

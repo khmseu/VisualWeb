@@ -80,6 +80,150 @@ public sealed class ShellTests
     }
 
     [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, 1.25)]
+    public void FormFieldsTakeTabFocusTextEntryAndEnterSubmitsSameTabGet(bool multiprocess, float density)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        native.Density = density;
+        var tab = window.ActiveTab!;
+        var destination = "data:text/html," + Uri.EscapeDataString("<!doctype html><title>Result</title><style>*{margin:0}</style><p>done</p><!--");
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0} input{display:block;width:150px;height:24px}</style>" +
+            $"<a href='{destination}'>link</a><form action='{destination}'><input name=q value=a>" +
+            "<input type=submit value=Send></form><div style='height:2000px'></div>"));
+        Wait();
+        var page = shell.Controller.Page(tab.Id)!;
+        var original = page.Frame.Pixels.ToArray();
+        var header = (int)Math.Ceiling(ShellChrome.Height * density);
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(tab.Id));
+        Assert.False(native.TextInput);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.True(native.TextInput);
+        shell.Tick();
+        Assert.Equal(original, page.Frame.Pixels.ToArray());
+        var field = page.FormControls[0].Rect!;
+        var row = header + (int)Math.Floor(field.Y * density);
+        var left = (int)Math.Floor(field.X * density);
+        Assert.Equal(new byte[] { 128, 96, 64, 255 }, native.Pixels!.Skip(row * page.Frame.Stride + left * 4).Take(4));
+        Assert.NotEqual(original.Skip(((int)Math.Floor((field.Y + 4) * density)) * page.Frame.Stride).Take(page.Frame.Stride),
+            native.Pixels!.Skip((header + (int)Math.Floor((field.Y + 4) * density)) * page.Frame.Stride).Take(page.Frame.Stride));
+        shell.Dispatch(new TextEntered(native.Id, "b c"));
+        Assert.Equal("ab c", shell.Controller.FormControlValue(tab.Id, 0));
+        Key(SDL.Scancode.Backspace);
+        Key(SDL.Scancode.Home);
+        Key(SDL.Scancode.End);
+        Key(SDL.Scancode.Pagedown);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        Assert.Equal("ab ", shell.Controller.FormControlValue(tab.Id, 0));
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.False(native.TextInput);
+        Key(SDL.Scancode.Tab, SDL.Keymod.Shift);
+        Assert.True(native.TextInput);
+        Key(SDL.Scancode.Return);
+        Wait();
+        Assert.Equal("Result", tab.Title);
+        Assert.EndsWith("?q=ab+", tab.History.Current!.Href, StringComparison.Ordinal);
+        Assert.Equal(-1, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.False(native.TextInput);
+
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnstyledFormButtonIsPaintedAndSubmitsByClickOrEnter(bool click)
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var destination = "data:text/html," + Uri.EscapeDataString("<!doctype html><style>body{margin:0}</style><title>Submitted</title>done<!--");
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            $"<!doctype html><style>body{{margin:0}}</style><form action='{destination}'><input name=q value=x><button name=go value=1>Search</button></form>"));
+        Wait();
+        var page = shell.Controller.Page(tab.Id)!;
+        var button = page.FormControls[1];
+        Assert.Equal("Search", button.Label);
+        Assert.NotNull(button.Rect);
+        shell.Tick();
+        var header = (int)Math.Ceiling(ShellChrome.Height * native.Density);
+        var bounds = button.Rect!;
+        var left = (int)Math.Floor(bounds.X * native.Density);
+        var right = (int)Math.Ceiling((bounds.X + bounds.Width) * native.Density);
+        var top = header + (int)Math.Floor(bounds.Y * native.Density);
+        var bottom = header + (int)Math.Ceiling((bounds.Y + bounds.Height) * native.Density);
+        Assert.Contains(Enumerable.Range(top, bottom - top).SelectMany(y => Enumerable.Range(left, right - left)
+            .Select(x => native.Pixels!.Skip(y * page.Frame.Stride + x * 4).Take(3).ToArray())),
+            pixel => pixel.All(channel => channel < 60));
+
+        if (click)
+        {
+            shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+                (float)(bounds.X + 1), (float)(ShellChrome.Height + bounds.Y + 1)));
+        }
+        else
+        {
+            shell.Controller.FocusControl(tab.Id, 0);
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        }
+        Wait();
+        Assert.Equal("Submitted", tab.Title);
+        Assert.EndsWith("?q=x&go=1", tab.History.Current!.Href, StringComparison.Ordinal);
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Fact]
+    public void UnsupportedFormSubmissionIsReportedInTheTabWithoutNavigation()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0} input{display:block}</style><form method=post><input name=q></form>"));
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading);
+        var page = shell.Controller.Page(tab.Id);
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
+        Key(SDL.Scancode.Return);
+        Assert.Contains("Unsupported form method: post", tab.Error, StringComparison.Ordinal);
+        Assert.False(tab.IsLoading);
+        Assert.Same(page, shell.Controller.Page(tab.Id));
+
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void KeyboardFocusTraversesChromeAndRestoresIndependentTabFocus(bool multiprocess)

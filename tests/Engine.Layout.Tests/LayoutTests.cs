@@ -169,11 +169,36 @@ public sealed class LayoutTests
     [InlineData("<span>x</span>", "span{background-color:red}")]
     [InlineData("<p>a <span>bb cc</span></p>", "span{white-space:nowrap}")]
     [InlineData("<img>", "")]
+    [InlineData("<input>", "")]
+    [InlineData("<button>x</button>", "")]
+    [InlineData("<input type=checkbox>", "input{display:block}")]
+    [InlineData("<input type=password>", "input{display:block}")]
+    [InlineData("<input type=hidden>", "input{display:block}")]
+    [InlineData("<textarea>x</textarea>", "textarea{display:block}")]
     [InlineData("<ul><li>x</li></ul>", "")]
     public void DeferredAlgorithmsNeverReturnApproximateGeometry(string html, string css)
     {
         var exception = Record.Exception(() => Layout(html, css));
         Assert.True(exception is UnsupportedLayoutException or UnsupportedTextException, exception?.ToString());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" type=search")]
+    [InlineData(" type=SUBMIT")]
+    [InlineData(" type=bogus")]
+    public void BlockTextAndSubmitInputsUseOneLineHeightWithoutChildren(string type)
+    {
+        var root = Layout($"<form id=f><input id=x{type} value='not painted'><button id=b>go</button></form>",
+            "form,input,button{display:block} input{border:1px solid;padding:2px}").Root!;
+        var input = Find(root, "x");
+        Assert.Equal(new LayoutRect(3, 3, 94, 10), input.Content);
+        Assert.Equal(16, input.BorderBox.Height);
+        Assert.Empty(input.Lines);
+        Assert.Empty(input.Children);
+        var button = Find(root, "b");
+        Assert.Equal(16, button.BorderBox.Y);
+        Assert.Single(button.Lines);
     }
 
     [Fact]

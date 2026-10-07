@@ -8,7 +8,10 @@ on primary left click or Tab/Shift+Tab/Enter, using renderer-owned clipped CSS
 rectangle groups. Keyboard traversal visits chrome before visible anchors;
 per-tab page focus is outlined by the shell without changing the renderer raster.
 Unsupported schemes fail visibly; no DOM input events or target/new-tab semantics
-are implied. See [controls](../../../docs/browser-shell.md#controls).
+are implied. A narrow forms subset adds shell-edited text/search fields with
+Tab focus, committed-text entry and Enter/click submission of same-tab GET
+`application/x-www-form-urlencoded` queries through the ordinary navigation
+transaction; POST and general form controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and

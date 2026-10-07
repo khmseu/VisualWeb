@@ -43,8 +43,17 @@ broader page interaction is still missing:
   rectangles per anchor (4096 anchors, 64 rectangles each, 1 MiB metadata),
   without element IDs/DOM/native handles. Successful document commits/repaints
   clear the frame-local selection; failed navigation preserves it. General
-  hit-testing, DOM focus/events, offscreen-link traversal and form controls remain
-  missing. See [shell controls](../docs/browser-shell.md#controls).
+  hit-testing, DOM focus/events and offscreen-link traversal remain missing.
+  See [shell controls](../docs/browser-shell.md#controls).
+- A bounded simple-forms subset submits same-tab GET urlencoded queries from
+  shell-edited `input` text/search/hidden/submit and `button` submit controls
+  (author `display:block` only) via IPC v8 data-only metadata and the ordinary
+  navigation transaction; unsupported form semantics fail visibly. General forms
+  remain missing: POST/multipart, other input types, textarea/select, constraint
+  validation UI, form events/scripted submission, `form=` owners, inline-block
+  control layout, autofill and non-UTF-8 submission encodings. Supported controls
+  currently use a documented UA `display:block` accommodation. See
+  [simple GET forms](../docs/browser-shell.md#simple-get-forms).
 - No text selection. Basic vertical document scrolling is implemented via wheel
   and Page Up/Down/Home/End, retaining DOM/scripts across local/process repaints.
   Scrollbars, horizontal/nested scrolling and general CSS overflow remain missing.
@@ -82,7 +91,7 @@ Evidence: `stylesheet collection`, `script classification`, `HTML loading policy
 
 The tokenizer is considerably more complete than the tree builder. Remaining parser work includes:
 
-- Tables, templates, forms, select/options, SVG/MathML, and other specialized parsing algorithms.
+- Tables, templates, general forms (only the simple form-pointer subset exists), select/options, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 - Broader legacy doctype handling.
@@ -152,12 +161,13 @@ Some older passages incorrectly say JavaScript/V8 or page scripting is still abs
 
 1. **Security model and mandatory supported isolation** before untrusted browsing.
 2. **Links, page input, and subresource loading** for basic usability. Basic
-   bounded textual links, vertical document scrolling and bounded classic linked
-   stylesheets are implemented; broader page input, other subresources and overflow remain.
+   bounded textual links, vertical document scrolling, bounded classic linked
+   stylesheets and simple same-tab GET forms are implemented; broader page input, other subresources and overflow remain.
 3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
 *The original audit was read-only and did not independently verify builds/tests
 or CI. The interaction and loading entries above were subsequently updated for the
-implemented bounded textual-link, vertical-scrolling and linked-stylesheet subsets.*
+implemented bounded textual-link, vertical-scrolling, linked-stylesheet and
+simple GET form subsets.*

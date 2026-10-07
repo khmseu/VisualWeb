@@ -162,8 +162,10 @@ size keywords map to 9/10/13/16/18/24/32/48px; larger/smaller scale by 1.2;
 thin/medium/thick borders are 1/3/5px. Colors are clamped and rounded to 8-bit
 sRGB/alpha channels, not high-precision color-management values. The minimal
 UA sheet handles ordinary blocks/head metadata, body margin, headings,
-paragraphs/lists, emphasis and monospace text; it is **not** the complete HTML
-rendering stylesheet. List markers, decoration and replaced-element sizing are
+paragraphs/lists, emphasis and monospace text, plus `form { display: block }`
+and `input[type=hidden i] { display: none !important }`; it is **not** the
+complete HTML rendering stylesheet (controls keep `display: inline` rather
+than inline-block, and have no UA borders/padding/fonts). List markers, decoration and replaced-element sizing are
 not yet implemented.
 
 Unsupported: custom properties/var()/env(), calculations, cascade layers,

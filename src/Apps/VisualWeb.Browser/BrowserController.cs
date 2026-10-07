@@ -1,5 +1,6 @@
 using VisualWeb.Core.Encoding;
 using VisualWeb.Core.Url;
+using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.Browser;
 
@@ -28,6 +29,11 @@ public sealed class BrowserController : IDisposable
         internal bool ResizeFailed { get; set; }
         internal bool PageFocused { get; set; }
         internal int FocusedLink { get; set; } = -1;
+        /// <summary>Tree-order index into the page's form controls; mutually exclusive with <see cref="FocusedLink"/>.</summary>
+        internal int FocusedControl { get; set; } = -1;
+        /// <summary>Browser-owned edited values of the committed document's fields, keyed by control index.</summary>
+        internal Dictionary<int, AddressEditor> Fields { get; } = [];
+        internal HashSet<int> Dirty { get; } = [];
     }
     private sealed class Operation(TabId tab, long generation, Task<LoadedPage> load, CancellationTokenSource cancellation,
         int? traversal, bool replace, bool resize = false, bool scroll = false)
@@ -105,28 +111,209 @@ public sealed class BrowserController : IDisposable
         var count = owner.Page?.LinkTargets.Count ?? 0;
         owner.PageFocused = owner.Page is not null;
         owner.FocusedLink = count == 0 ? -1 : Math.Clamp(index, -1, count - 1);
+        owner.FocusedControl = -1;
         Changed?.Invoke(id);
     }
+    /// <summary>Moves page focus through the merged tree order of focusable form controls and links, wrapping.</summary>
+    /// <returns>The focused link index, or -1 when a form control (or nothing) is focused.</returns>
     public int MoveLinkFocus(TabId id, bool backwards = false)
     {
         Check();
         var owner = content[id];
-        var count = owner.Page?.LinkTargets.Count ?? 0;
-        owner.PageFocused = owner.Page is not null;
-        owner.FocusedLink = count == 0 ? -1
-            : owner.FocusedLink < 0 ? backwards ? count - 1 : 0
-            : (Math.Clamp(owner.FocusedLink, 0, count - 1) + (backwards ? count - 1 : 1)) % count;
+        var targets = Targets(owner.Page);
+        var position = Position(owner, targets);
+        var count = targets.Count;
+        SetPosition(owner, targets, count == 0 ? -1
+            : position < 0 ? backwards ? count - 1 : 0
+            : (position + (backwards ? count - 1 : 1)) % count);
         Changed?.Invoke(id);
         return owner.FocusedLink;
     }
+    public int FocusedControlIndex(TabId tab) { Check(); return content[tab].FocusedControl; }
+    /// <summary>Number of keyboard focus targets on the page: visible enabled non-hidden controls plus links.</summary>
+    public int PageFocusCount(TabId tab) { Check(); return Targets(content[tab].Page).Count; }
+    public int PageFocusPosition(TabId tab) { Check(); var owner = content[tab]; return Position(owner, Targets(owner.Page)); }
+    public void FocusPagePosition(TabId id, int position)
+    {
+        Check();
+        var owner = content[id];
+        var targets = Targets(owner.Page);
+        SetPosition(owner, targets, targets.Count == 0 ? -1 : Math.Clamp(position, -1, targets.Count - 1));
+        Changed?.Invoke(id);
+    }
+    /// <summary>Focuses a visible, enabled, non-hidden control; returns false (leaving focus unchanged) otherwise.</summary>
+    public bool FocusControl(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count || !Focusable(page.FormControls[index]))
+        { return false; }
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = index;
+        Changed?.Invoke(id);
+        return true;
+    }
+    /// <summary>Whether committed text should be routed to the focused page text field.</summary>
+    public bool EditingFormControl(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        return owner.PageFocused && owner.Page is { } page && owner.FocusedControl >= 0
+            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search", ReadOnly: false, Disabled: false };
+    }
+    /// <summary>Current value: the browser-owned edit when present, otherwise the renderer-reported initial value.</summary>
+    public string FormControlValue(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count)
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return Value(owner, index);
+    }
+    /// <summary>UTF-16 caret of the focused text field, or -1.</summary>
+    public int FormControlCaret(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search"
+            ? Field(owner, owner.FocusedControl).Caret : -1;
+    }
+    /// <summary>Inserts committed text at the caret, truncating to maxlength like user input and bounding total length.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fe-maxlength">maxlength</see>
+    /// (UTF-16 code units). Inserted CR/LF and other control characters are rejected rather than stripped.</remarks>
+    public string InsertFormText(TabId id, string text)
+    {
+        Check();
+        ArgumentNullException.ThrowIfNull(text);
+        if (!EditingFormControl(id)) { throw new PageNavigationException("No editable form field is focused."); }
+        if (text.Any(char.IsControl)) { throw new PageNavigationException("Control characters are not accepted in form fields."); }
+        var owner = content[id];
+        var index = owner.FocusedControl;
+        var control = owner.Page!.FormControls[index];
+        var editor = Field(owner, index);
+        if (control.MaxLength >= 0)
+        {
+            var room = Math.Max(0, control.MaxLength - editor.Text.Length);
+            if (text.Length > room) { text = text[..room]; }
+            if (text.Length > 0 && char.IsHighSurrogate(text[^1])) { text = text[..^1]; }
+        }
+        if ((long)editor.Text.Length + text.Length > RendererProtocol.MaxTextCharacters)
+        { throw new BrowserLimitException("Form field length limit exceeded."); }
+        editor.Insert(text, RendererProtocol.MaxTextCharacters);
+        owner.Dirty.Add(index);
+        Changed?.Invoke(id);
+        return editor.Text;
+    }
+    public string EditFormControl(TabId id, FormEdit edit)
+    {
+        Check();
+        if (!EditingFormControl(id)) { throw new PageNavigationException("No editable form field is focused."); }
+        var owner = content[id];
+        var editor = Field(owner, owner.FocusedControl);
+        switch (edit)
+        {
+            case FormEdit.Backspace: editor.Backspace(); owner.Dirty.Add(owner.FocusedControl); break;
+            case FormEdit.Delete: editor.Delete(); owner.Dirty.Add(owner.FocusedControl); break;
+            case FormEdit.Left: editor.Left(); break;
+            case FormEdit.Right: editor.Right(); break;
+            case FormEdit.Home: editor.Home(); break;
+            case FormEdit.End: editor.End(); break;
+            default: throw new ArgumentOutOfRangeException(nameof(edit));
+        }
+        Changed?.Invoke(id);
+        return editor.Text;
+    }
+    private static bool Focusable(PageFormControl control) => control.Kind != "hidden" && !control.Disabled && control.Rect is not null;
+    private static List<(bool Control, int Index)> Targets(BrowserPage? page)
+    {
+        var targets = new List<(bool, int)>();
+        if (page is null) { return targets; }
+        var control = 0;
+        for (var link = 0; link <= page.LinkTargets.Count; link++)
+        {
+            for (; control < page.FormControls.Count && page.FormControls[control].BeforeLink <= link; control++)
+            {
+                if (Focusable(page.FormControls[control])) { targets.Add((true, control)); }
+            }
+            if (link < page.LinkTargets.Count) { targets.Add((false, link)); }
+        }
+        return targets;
+    }
+    private static int Position(Content owner, List<(bool Control, int Index)> targets) =>
+        owner.FocusedControl >= 0 ? targets.IndexOf((true, owner.FocusedControl))
+        : owner.FocusedLink >= 0 ? targets.IndexOf((false, owner.FocusedLink)) : -1;
+    private static void SetPosition(Content owner, List<(bool Control, int Index)> targets, int position)
+    {
+        owner.PageFocused = owner.Page is not null;
+        var target = position < 0 ? ((bool, int)?)null : targets[position];
+        owner.FocusedLink = target is (false, var link) ? link : -1;
+        owner.FocusedControl = target is (true, var control) ? control : -1;
+    }
+    private static AddressEditor Field(Content owner, int index)
+    {
+        if (!owner.Fields.TryGetValue(index, out var editor))
+        {
+            editor = new AddressEditor();
+            editor.Reset(owner.Page!.FormControls[index].Value);
+            owner.Fields.Add(index, editor);
+        }
+        return editor;
+    }
+    private static string Value(Content owner, int index) =>
+        owner.Fields.TryGetValue(index, out var editor) ? editor.Text : owner.Page!.FormControls[index].Value;
     public bool ActivateFocusedLink(TabId id, PageViewport? displayedViewport = null)
     {
         Check();
         var owner = content[id];
-        if (!owner.PageFocused || owner.Page is null
-            || owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count
-            || !MatchesViewport(owner, displayedViewport)) { return false; }
+        if (!owner.PageFocused || owner.Page is null || !MatchesViewport(owner, displayedViewport)) { return false; }
+        if (owner.FocusedControl >= 0) { return ActivateControl(id, owner, owner.FocusedControl); }
+        if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         return NavigateLink(id, owner.Page.LinkTargets[owner.FocusedLink].Url);
+    }
+    /// <summary>Enter/click activation: submit buttons submit; text fields perform implicit submission.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
+    /// submission</see>. The default button is the first submit button of the form in tree order.</remarks>
+    private bool ActivateControl(TabId id, Content owner, int index)
+    {
+        var controls = owner.Page!.FormControls;
+        var control = controls[index];
+        if (control.Disabled || control.Form < 0) { return false; }
+        if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
+        if (control.Kind is not ("text" or "search")) { return false; }
+        for (var candidate = 0; candidate < controls.Count; candidate++)
+        {
+            if (controls[candidate].Form == control.Form && controls[candidate].Kind is "submit" or "button")
+            { return !controls[candidate].Disabled && Submit(id, owner, control.Form, candidate); }
+        }
+        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search") > 1) { return false; }
+        return Submit(id, owner, control.Form, -1);
+    }
+    /// <summary>Validates and submits one form as a same-tab GET through <see cref="Navigate"/> (HSTS, redirects, origin commit).</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
+    /// submission algorithm</see> and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#interactively-validate-the-constraints">interactive
+    /// validation</see> (valueMissing and dirty tooLong only). Failures throw before any request.</remarks>
+    private bool Submit(TabId id, Content owner, int formIndex, int submitter)
+    {
+        var page = owner.Page!;
+        var form = page.Forms[formIndex];
+        if (form.Error is { } error) { throw new PageNavigationException(error); }
+        var encoding = owner.Document?.CharacterEncoding ?? "UTF-8";
+        if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
+        { throw new PageNavigationException($"Form submission encoding {encoding} is unsupported; only UTF-8 is implemented."); }
+        for (var index = 0; index < page.FormControls.Count; index++)
+        {
+            var control = page.FormControls[index];
+            if (control.Form != formIndex || control.Kind is not ("text" or "search") || control.Disabled || control.ReadOnly) { continue; }
+            var value = Value(owner, index);
+            if (control.Required && value.Length == 0)
+            { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
+            if (control.MaxLength >= 0 && owner.Dirty.Contains(index) && value.Length > control.MaxLength)
+            { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
+        }
+        var limit = Session.Options.MaxAddressCharacters;
+        var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i)), limit);
+        return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href);
     }
     private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
@@ -149,6 +336,14 @@ public sealed class BrowserController : IDisposable
             || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height) { return false; }
         if (!MatchesViewport(owner, displayedViewport))
         { return false; }
+        for (var index = owner.Page.FormControls.Count - 1; index >= 0; index--)
+        {
+            var control = owner.Page.FormControls[index];
+            if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
+            if (control.Disabled) { return false; }
+            if (owner.PageFocused) { FocusControl(id, index); }
+            return control.Kind is "submit" or "button" && ActivateControl(id, owner, index);
+        }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {
             var link = owner.Page.LinkTargets[index];
@@ -276,9 +471,14 @@ public sealed class BrowserController : IDisposable
             }
             owner.ScrollY = Math.Min(operation.Viewport!.Value.ScrollY,
                 Math.Max(0, rendered.ScrollHeight - operation.Viewport.Value.Height));
+            var sameControls = operation.Resize && owner.Document?.DocumentId == document.DocumentId
+                && owner.Page is { } old && SameControls(old, rendered);
             owner.Document = document; owner.Page = rendered;
             // Frame-local groups have no DOM identity: never retarget a focused anchor after repaint.
             owner.FocusedLink = -1;
+            // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
+            if (!sameControls) { owner.Fields.Clear(); owner.Dirty.Clear(); owner.FocusedControl = -1; }
+            else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;
             if (operation.Resize)
@@ -326,6 +526,10 @@ public sealed class BrowserController : IDisposable
             }
         }
     }
+    private static bool SameControls(BrowserPage old, BrowserPage rendered) =>
+        old.Forms.SequenceEqual(rendered.Forms) && old.FormControls.Count == rendered.FormControls.Count
+        && old.FormControls.Zip(rendered.FormControls).All(pair =>
+            pair.First with { Rect = null, BeforeLink = 0 } == pair.Second with { Rect = null, BeforeLink = 0 });
     /// <summary>Choose the renderer for a loaded document: the committed one or a fresh origin-isolation candidate.</summary>
     private IPageRenderer Select(Content owner, Operation operation, LoadedPage document)
     {

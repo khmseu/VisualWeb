@@ -32,6 +32,7 @@ public sealed class DevelopmentShell : IDisposable
         internal IPlatformWindow Native { get; } = native;
         internal AddressEditor Editor { get; } = new();
         internal bool Editing { get; set; }
+        internal bool TextInput { get; set; }
         internal bool Dirty { get; set; } = true;
         internal IReadOnlyList<ChromeTarget> Targets { get; set; } = [];
         internal PixelSize LastSize { get; set; }
@@ -177,12 +178,14 @@ public sealed class DevelopmentShell : IDisposable
                 try { Controller.Resize(tab.Id, viewport); }
                 catch (BrowserLimitException exception) { Controller.Report(tab.Id, exception.Message); }
             }
+            SyncTextInput(view, window);
             if (!view.Dirty) { continue; }
             var frame = chrome.Render(window, window.ActiveTabId is { } active ? Controller.Page(active) : null,
                 size, density, view.Editing ? view.Editor : null,
                 window.ActiveTabId is { } focused && Controller.PageHasFocus(focused)
                     ? Controller.FocusedLinkIndex(focused) : -1,
-                window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget);
+                window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
+                Forms(window));
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -233,6 +236,10 @@ public sealed class DevelopmentShell : IDisposable
                     Controller.SetAddress(tab.Id, view.Editor.Insert(text.Text, Controller.Session.Options.MaxAddressCharacters));
                     view.Dirty = true;
                     break;
+                case TextEntered text when window.ActiveTab is { } fieldTab && Controller.EditingFormControl(fieldTab.Id):
+                    Controller.InsertFormText(fieldTab.Id, text.Text);
+                    view.Dirty = true;
+                    break;
             }
         }
         catch (Exception exception) when (BrowserController.IsPageFailure(exception))
@@ -240,6 +247,7 @@ public sealed class DevelopmentShell : IDisposable
             if (window.ActiveTab is { } tab) { Controller.Report(tab.Id, exception.Message); }
             else { Console.Error.WriteLine(exception.Message); }
         }
+        if (views.ContainsKey(pair.Key)) { SyncTextInput(view, window); }
         SynchronizeWindows();
     }
     private void Key(BrowserWindow window, View view, KeyChanged key)
@@ -279,6 +287,22 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (!view.Editing)
         {
+            if (!control && !alt && Controller.EditingFormControl(tab.Id) && code switch
+            {
+                SDL.Scancode.Backspace => FormEdit.Backspace,
+                SDL.Scancode.Delete => FormEdit.Delete,
+                SDL.Scancode.Left => FormEdit.Left,
+                SDL.Scancode.Right => FormEdit.Right,
+                SDL.Scancode.Home => FormEdit.Home,
+                SDL.Scancode.End => FormEdit.End,
+                _ => (FormEdit?)null,
+            } is { } edit)
+            {
+                Controller.EditFormControl(tab.Id, edit);
+                return;
+            }
+            if (!control && !alt && Controller.EditingFormControl(tab.Id) && code is SDL.Scancode.Pageup or SDL.Scancode.Pagedown)
+            { return; }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
                 if (view.KeyboardTarget is { } target) { Action(window, view, target.Action, target.Tab); }
@@ -322,11 +346,11 @@ public sealed class DevelopmentShell : IDisposable
     {
         if (window.ActiveTab is not { } tab) { return; }
         var targets = view.Targets;
-        var links = Controller.Page(tab.Id)?.LinkTargets.Count ?? 0;
+        var count = Controller.PageFocusCount(tab.Id);
         if (Controller.PageHasFocus(tab.Id))
         {
-            var index = Controller.FocusedLinkIndex(tab.Id);
-            if (links > 0 && (index < 0 || (backwards ? index > 0 : index < links - 1)))
+            var position = Controller.PageFocusPosition(tab.Id);
+            if (count > 0 && (position < 0 || (backwards ? position > 0 : position < count - 1)))
             {
                 view.KeyboardTarget = null;
                 Controller.MoveLinkFocus(tab.Id, backwards);
@@ -341,11 +365,11 @@ public sealed class DevelopmentShell : IDisposable
         var next = current < 0 ? backwards ? targets.Count : 0 : current + (backwards ? -1 : 1);
         if (next < 0 || next >= targets.Count)
         {
-            if (links > 0)
+            if (count > 0)
             {
                 Edit(view, window, false);
                 view.KeyboardTarget = null;
-                Controller.FocusLink(tab.Id, backwards ? links - 1 : 0);
+                Controller.FocusPagePosition(tab.Id, backwards ? count - 1 : 0);
                 return;
             }
             next = backwards ? targets.Count - 1 : 0;
@@ -399,8 +423,8 @@ public sealed class DevelopmentShell : IDisposable
     private void Edit(View view, BrowserWindow window, bool enabled)
     {
         if (enabled && window.ActiveTab is null) { return; }
-        if (textInput) { view.Native.SetTextInput(enabled); }
         view.Editing = enabled;
+        SyncTextInput(view, window);
         if (enabled)
         {
             Controller.FocusPage(window.ActiveTab!.Id, false);
@@ -408,6 +432,21 @@ public sealed class DevelopmentShell : IDisposable
             view.Editor.Reset(window.ActiveTab.AddressText, selectAll: true);
         }
         view.Dirty = true;
+    }
+    /// <summary>Enables committed text input only while the address bar or a page text field is being edited.</summary>
+    private void SyncTextInput(View view, BrowserWindow window)
+    {
+        var enabled = view.Editing || window.ActiveTabId is { } id && Controller.EditingFormControl(id);
+        if (enabled == view.TextInput) { return; }
+        view.TextInput = enabled;
+        if (textInput) { view.Native.SetTextInput(enabled); }
+    }
+    private ShellFormState? Forms(BrowserWindow window)
+    {
+        if (window.ActiveTabId is not { } id || Controller.Page(id) is not { FormControls.Count: > 0 } page) { return null; }
+        var values = Enumerable.Range(0, page.FormControls.Count).Select(index => Controller.FormControlValue(id, index)).ToArray();
+        var focused = Controller.PageHasFocus(id) ? Controller.FocusedControlIndex(id) : -1;
+        return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1);
     }
     private string WindowTitle(string? title)
     {
