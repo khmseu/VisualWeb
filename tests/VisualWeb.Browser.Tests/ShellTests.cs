@@ -443,6 +443,42 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void VerticalScrollbarCanJumpAndDrag(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var html = "<!doctype html><style>*{margin:0}div{height:2000px;background-color:red}</style><div></div>";
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(html));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var x = native.Size.Width - 5;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, 250));
+        Wait(() => !tab.IsLoading);
+        Assert.True(shell.Controller.ScrollY(tab.Id) > 0);
+        Assert.NotEqual(new byte[] { 255, 0, 0, 255 }, native.Pixels!.AsSpan(150 * native.Size.Width * 4 + x * 4, 4).ToArray());
+
+        shell.Dispatch(new PointerMoved(native.Id, x, native.Size.Height - 1));
+        Wait(() => !tab.IsLoading);
+        var maximum = shell.Controller.Page(tab.Id)!.ScrollHeight - ShellChrome.Viewport(native.Size, 1)!.Value.Height;
+        Assert.Equal(maximum, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, native.Size.Height - 1));
+
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (!ready() && DateTime.UtcNow < deadline) { shell.Tick(); Thread.Sleep(5); }
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WheelAndPageKeysScrollActivePageButNotChromeOrAddressEditor(bool multiprocess)
     {
         using var system = new Windows();

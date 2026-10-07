@@ -81,6 +81,7 @@ The native window title retains the same warning alongside the active page title
 | Primary left click on visible anchor text | Navigate the current tab to its resolved href |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
+| Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
 | Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search field | Edit the shell-owned field value (no page scrolling) |
 | Enter in a focused field / on a submit control, or primary click on a submit control | Submit the [simple GET form](#simple-get-forms) in the current tab |

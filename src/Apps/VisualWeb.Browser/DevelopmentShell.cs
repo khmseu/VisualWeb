@@ -22,7 +22,7 @@ public sealed class DevelopmentShell : IDisposable
         <p>Ctrl T creates a tab. Ctrl W closes it. Ctrl N opens a window.</p>
         <p>Ctrl M moves the active tab to another window.</p>
         <p>Alt Left and Alt Right navigate history. F5 reloads.</p>
-        <p>Wheel, Page Up, Page Down, Home and End scroll outside address editing.</p>
+        <p>Wheel, Page Up, Page Down, Home and End scroll outside address editing. The page scrollbar can be clicked or dragged.</p>
         <p>Basic links, GET forms and visible text selection are available; general page events remain deferred.</p>
         </body></html>
         """;
@@ -34,6 +34,7 @@ public sealed class DevelopmentShell : IDisposable
         internal bool Editing { get; set; }
         internal bool TextInput { get; set; }
         internal bool SelectingText { get; set; }
+        internal bool DraggingScrollbar { get; set; }
         internal bool Dirty { get; set; } = true;
         internal IReadOnlyList<ChromeTarget> Targets { get; set; } = [];
         internal PixelSize LastSize { get; set; }
@@ -165,6 +166,7 @@ public sealed class DevelopmentShell : IDisposable
             var window = Controller.Session.Window(id);
             if (view.LastTab != window.ActiveTabId)
             {
+                view.DraggingScrollbar = false;
                 view.KeyboardTarget = null;
                 Edit(view, window, false);
                 view.Editor.Reset(window.ActiveTab?.AddressText ?? "");
@@ -186,7 +188,8 @@ public sealed class DevelopmentShell : IDisposable
                 window.ActiveTabId is { } focused && Controller.PageHasFocus(focused)
                     ? Controller.FocusedLinkIndex(focused) : -1,
                 window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
-                Forms(window), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null);
+                Forms(window), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
+                window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -208,10 +211,12 @@ public sealed class DevelopmentShell : IDisposable
                 case FocusChanged { Focused: false }:
                     Edit(view, window, false);
                     view.SelectingText = false;
+                    view.DraggingScrollbar = false;
                     if (window.ActiveTab is { } blurredTab) { Controller.EndTextSelection(blurredTab.Id); }
                     break;
                 case PointerMoved moved:
                     view.PointerY = moved.Y;
+                    if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
                     if (view.SelectingText && window.ActiveTab is { } selectingTab
                         && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } selectionViewport
                         && moved.Y >= ShellChrome.Height && moved.Y < ShellChrome.Height + selectionViewport.Height)
@@ -226,8 +231,15 @@ public sealed class DevelopmentShell : IDisposable
                 case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
                     view.PointerY = pointer.Y;
                     view.SelectingText = false;
+                    view.DraggingScrollbar = false;
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
-                    if (target is not null) { Action(window, view, target.Action, target.Tab); }
+                    if (target?.Action == ChromeAction.Scrollbar)
+                    {
+                        Action(window, view, target.Action, target.Tab);
+                        view.DraggingScrollbar = true;
+                        ScrollScrollbar(window, view, pointer.Y);
+                    }
+                    else if (target is not null) { Action(window, view, target.Action, target.Tab); }
                     else
                     {
                         Edit(view, window, false);
@@ -249,6 +261,7 @@ public sealed class DevelopmentShell : IDisposable
                     }
                     break;
                 case PointerButtonChanged { Pressed: false, Button: 1 } when window.ActiveTab is { } releasedTab:
+                    view.DraggingScrollbar = false;
                     view.SelectingText = false;
                     Controller.EndTextSelection(releasedTab.Id);
                     break;
@@ -270,6 +283,17 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (views.ContainsKey(pair.Key)) { SyncTextInput(view, window); }
         SynchronizeWindows();
+    }
+    private void ScrollScrollbar(BrowserWindow window, View view, double pointerY)
+    {
+        if (window.ActiveTab is not { } tab || Controller.Page(tab.Id) is not { } page
+            || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } viewport) { return; }
+        var maximum = Math.Max(0, page.ScrollHeight - viewport.Height);
+        if (maximum <= 0) { return; }
+        var thumbHeight = ShellChrome.ScrollbarThumbHeight(viewport.Height, page.ScrollHeight);
+        var trackRange = viewport.Height - thumbHeight;
+        var fraction = trackRange <= 0 ? 0 : Math.Clamp((pointerY - ShellChrome.Height - thumbHeight / 2) / trackRange, 0, 1);
+        Controller.Scroll(tab.Id, fraction * maximum - Controller.ScrollY(tab.Id));
     }
     private void Key(BrowserWindow window, View view, KeyChanged key)
     {
@@ -368,7 +392,7 @@ public sealed class DevelopmentShell : IDisposable
     private void TraverseFocus(BrowserWindow window, View view, bool backwards)
     {
         if (window.ActiveTab is not { } tab) { return; }
-        var targets = view.Targets;
+        var targets = view.Targets.Where(target => target.Action != ChromeAction.Scrollbar).ToArray();
         var count = Controller.PageFocusCount(tab.Id);
         if (Controller.PageHasFocus(tab.Id))
         {
@@ -379,14 +403,14 @@ public sealed class DevelopmentShell : IDisposable
                 Controller.MoveLinkFocus(tab.Id, backwards);
                 return;
             }
-            SelectChrome(backwards ? targets.Count - 1 : 0);
+            SelectChrome(backwards ? targets.Length - 1 : 0);
             return;
         }
         var current = view.Editing ? targets.ToList().FindIndex(target => target.Action == ChromeAction.Address)
             : view.KeyboardTarget is { } focused
                 ? targets.ToList().FindIndex(target => target.Action == focused.Action && target.Tab == focused.Tab) : -1;
-        var next = current < 0 ? backwards ? targets.Count : 0 : current + (backwards ? -1 : 1);
-        if (next < 0 || next >= targets.Count)
+        var next = current < 0 ? backwards ? targets.Length : 0 : current + (backwards ? -1 : 1);
+        if (next < 0 || next >= targets.Length)
         {
             if (count > 0)
             {
@@ -395,14 +419,14 @@ public sealed class DevelopmentShell : IDisposable
                 Controller.FocusPagePosition(tab.Id, backwards ? count - 1 : 0);
                 return;
             }
-            next = backwards ? targets.Count - 1 : 0;
+            next = backwards ? targets.Length - 1 : 0;
         }
         SelectChrome(next);
 
         void SelectChrome(int index)
         {
             Controller.FocusPage(tab.Id, false);
-            var target = index >= 0 && index < targets.Count ? targets[index] : null;
+            var target = index >= 0 && index < targets.Length ? targets[index] : null;
             Edit(view, window, target?.Action == ChromeAction.Address);
             view.KeyboardTarget = target;
             view.Dirty = true;

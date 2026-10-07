@@ -7,7 +7,7 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address }
+public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar }
 public sealed record ChromeTarget(LayoutRect Bounds, ChromeAction Action, TabId? Tab = null);
 public sealed record ShellFrame(byte[] Pixels, PixelSize Size, int Stride, IReadOnlyList<ChromeTarget> Targets);
 
@@ -30,6 +30,12 @@ public sealed class ShellChrome : IDisposable
         try { fonts.Register(font); }
         catch { fonts.Dispose(); font.Dispose(); throw; }
     }
+    internal static double ScrollbarThumbHeight(double viewportHeight, double scrollHeight)
+    {
+        if (!double.IsFinite(viewportHeight) || viewportHeight <= 0 || !double.IsFinite(scrollHeight) || scrollHeight <= viewportHeight)
+        { throw new ArgumentOutOfRangeException(nameof(scrollHeight)); }
+        return Math.Min(viewportHeight, Math.Max(Math.Min(24, viewportHeight), viewportHeight * viewportHeight / scrollHeight));
+    }
     public static PageViewport? Viewport(PixelSize size, double density)
     {
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -47,7 +53,7 @@ public sealed class ShellChrome : IDisposable
     }
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
-        IReadOnlyList<PageLinkRect>? selectedText = null)
+        IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -107,6 +113,8 @@ public sealed class ShellChrome : IDisposable
         }
         var headerPixels = (int)Math.Min(size.Height, Math.Ceiling(Height * density));
         var pageFits = page is not null && page.Frame.Size == new PixelSize(size.Width, size.Height - headerPixels);
+        var pageViewport = pageFits ? Viewport(size, density) : null;
+        var scrollRange = pageViewport is { } scrollViewport ? Math.Max(0, page!.ScrollHeight - scrollViewport.Height) : 0;
         if (pageFits && forms is not null && forms.Values.Count == page!.FormControls.Count)
         {
             // Shell-owned widget overlay: renderer pixels never contain browser-edited values. Offsetting by the
@@ -170,10 +178,35 @@ public sealed class ShellChrome : IDisposable
             {
                 foreach (var rect in page.LinkTargets[focusedLink].Rects) { Outline(rect); }
             }
+            if (scrollRange > 0 && pageViewport is { } visible)
+            {
+                var track = new LayoutRect(Math.Max(0, width - 12), Height, Math.Min(width, 12), visible.Height);
+                var thumbHeight = ScrollbarThumbHeight(visible.Height, page!.ScrollHeight);
+                var thumbRange = visible.Height - thumbHeight;
+                var thumbY = Height + (thumbRange <= 0 ? 0 : thumbRange * Math.Clamp(scrollY / scrollRange, 0, 1));
+                targets.Add(new(track, ChromeAction.Scrollbar, tab?.Id));
+                FillSurface(track, 222, 226, 232);
+                FillSurface(new(track.X + 2, thumbY, Math.Max(0, track.Width - 4), thumbHeight), 105, 117, 132);
+            }
         }
         return new(pixels, chrome.Size, chrome.Stride, targets.AsReadOnly());
 
         void Fill(LayoutRect rect, CssColor color) => commands.Add(new FillRectangle(rect, color));
+        void FillSurface(LayoutRect rect, byte red, byte green, byte blue)
+        {
+            var left = Math.Clamp((int)Math.Floor(rect.X * density), 0, size.Width - 1);
+            var right = Math.Clamp((int)Math.Ceiling((rect.X + rect.Width) * density) - 1, left, size.Width - 1);
+            var top = Math.Clamp(headerPixels + (int)Math.Floor((rect.Y - Height) * density), headerPixels, size.Height - 1);
+            var bottom = Math.Clamp(headerPixels + (int)Math.Ceiling((rect.Y + rect.Height - Height) * density) - 1, top, size.Height - 1);
+            for (var y = top; y <= bottom; y++)
+            {
+                for (var x = left; x <= right; x++)
+                {
+                    var offset = y * chrome.Stride + x * 4;
+                    pixels[offset] = red; pixels[offset + 1] = green; pixels[offset + 2] = blue; pixels[offset + 3] = 255;
+                }
+            }
+        }
         (int Left, int Top, int Right, int Bottom) Device(PageLinkRect rect)
         {
             var left = Math.Clamp((int)Math.Floor(rect.X * density), 0, size.Width - 1);

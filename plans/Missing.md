@@ -63,7 +63,8 @@ broader page interaction is still missing:
   Basic vertical document scrolling is implemented via wheel and Page
   Up/Down/Home/End, retaining DOM/scripts across
   local/process repaints.
-  Scrollbars, horizontal/nested scrolling and general CSS overflow remain missing.
+  A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
+  Horizontal/nested scrolling and general CSS overflow remain missing.
 - No automatic page mouse/keyboard events or general default actions beyond
   ordinary current-tab textual link navigation.
 - No downloads, persistent browser sessions, or complete history behavior. History currently stores URLs and reloads documents; same-document navigation, script History API, and bfcache are absent.
