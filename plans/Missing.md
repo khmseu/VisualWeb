@@ -144,7 +144,8 @@ Evidence: `scripting scope` and `short-lived page script host`.
 Remaining areas include:
 
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
-- IME composition/preedit, clipboard support, and accessibility integration.
+- IME composition/preedit, clipboard read/paste (selection copy with Ctrl+C is
+  implemented), and accessibility integration.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
 Evidence: `text/layout exclusions`, `platform input limitations`, and `standards-growth roadmap`.
@@ -162,9 +163,14 @@ Still outstanding:
 
 Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windows CI`, and `deployment prerequisites`.
 
-## Documentation also needs reconciliation
+## Documentation reconciliation still needed
 
-Some older passages incorrectly say JavaScript/V8 or page scripting is still absent, despite the implemented opt-in scripting pipeline. Examples appear in the `shell limitations` and `Windows validation notes`. These can obscure the actual remaining work.
+The opt-in page-script pipeline exists, so documentation should distinguish
+"disabled by default / unavailable in ordinary modes" from "not implemented."
+The current Windows confinement note still says page scripting is deferred;
+update it to describe the existing development opt-in and its limitations. The
+phase-by-phase statements in the browser foundation plan describe earlier
+milestones and should be read as historical status, not current capability.
 
 ## Recommended priority
 
@@ -176,7 +182,8 @@ Some older passages incorrectly say JavaScript/V8 or page scripting is still abs
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*The original audit was read-only and did not independently verify builds/tests
-or CI. The interaction and loading entries above were subsequently updated for the
-implemented bounded textual-link, vertical-scrolling, linked-stylesheet and
-simple GET form subsets.*
+*Status cross-checked against the repository at `b534fdc` (2026-10-07), including
+current source, docs and implementation history. The focused stylesheet suite
+(50 tests), full browser suite (495 tests), solution build (0 warnings/errors),
+and changed-file formatting passed for that snapshot. These checks are not a
+full conformance, security, CI-matrix or real-desktop validation.
