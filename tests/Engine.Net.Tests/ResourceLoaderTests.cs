@@ -88,6 +88,40 @@ public sealed class ResourceLoaderTests
         Assert.Equal("done", Encoding.UTF8.GetString(response.Body.Span));
     }
 
+    [Fact]
+    public async Task SecureRequestPolicyBlocksInitialHttpUrlBeforeTransport()
+    {
+        var calls = 0;
+        using var loader = new ResourceLoader(handler: new Handler(_ =>
+        {
+            calls++;
+            return Text("unexpected");
+        }));
+
+        var error = await Assert.ThrowsAsync<ResourceLoadException>(() => loader.LoadAsync(
+            BrowserUrl.Parse("http://example.org/style.css"), cancellationToken: Token, preventHttpsDowngrade: true));
+
+        Assert.Equal(ResourceError.InsecureTransport, error.Error);
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    public async Task SecureRequestPolicyBlocksHttpsRedirectToHttpBeforeNextRequest()
+    {
+        var seen = new List<string>();
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            seen.Add(request.RequestUri!.AbsoluteUri);
+            return Redirect(302, "http://example.org/style.css");
+        }));
+
+        var error = await Assert.ThrowsAsync<ResourceLoadException>(() => loader.LoadAsync(
+            BrowserUrl.Parse("https://example.org/style.css"), cancellationToken: Token, preventHttpsDowngrade: true));
+
+        Assert.Equal(ResourceError.InsecureTransport, error.Error);
+        Assert.Equal(["https://example.org/style.css"], seen);
+    }
+
     [Theory]
     [InlineData("/next#", "https://example.org/next#")]
     [InlineData("/next#new", "https://example.org/next#new")]

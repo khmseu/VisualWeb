@@ -60,15 +60,21 @@ public sealed class ResourceLoader : IDisposable
     /// redirects to any HTTP(S) origin. Not an authorization boundary; see <see cref="LoadSameOriginAsync"/>.</summary>
     /// <remarks>Spec: fetch; HTTP(S) URLs and redirect targets on a
     /// <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see> throw <see cref="ResourceLoadException"/> with
-    /// <see cref="ResourceError.BlockedPort"/> before any transport or cookie work.</remarks>
+    /// <see cref="ResourceError.BlockedPort"/> before any transport or cookie work. Callers may opt in to
+    /// <paramref name="preventHttpsDowngrade"/> to reject an HTTP initial URL or HTTPS-to-HTTP redirect before sending it.</remarks>
     public async Task<ResourceResponse> LoadAsync(BrowserUrl url, bool includeCookies = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
         url = hstsPolicyStore?.Upgrade(url) ?? url;
+        if (preventHttpsDowngrade && url.Protocol == "http:")
+        {
+            throw InsecureTransport();
+        }
+
         BadPortPolicy.ThrowIfBlocked(url);
-        return await LoadCoreAsync(url, null, includeCookies, cancellationToken);
+        return await LoadCoreAsync(url, null, includeCookies, preventHttpsDowngrade, cancellationToken);
     }
 
     /// <summary>Opt-in restricted GET: loads only HTTP(S) URLs same origin with a fixed HTTP(S) tuple request origin.</summary>
@@ -100,11 +106,11 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
-        return await LoadCoreAsync(url, requestOrigin, includeCookies, cancellationToken);
+        return await LoadCoreAsync(url, requestOrigin, includeCookies, preventHttpsDowngrade: false, cancellationToken);
     }
 
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin, bool includeCookies,
-        CancellationToken cancellationToken)
+        bool preventHttpsDowngrade, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -115,7 +121,7 @@ public sealed class ResourceLoader : IDisposable
             {
                 "data:" => DataUrlProcessor.Load(url, options.MaxResponseBytes, deadline.Token),
                 "file:" => await LoadFileAsync(url, deadline.Token),
-                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, includeCookies, deadline.Token),
+                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, includeCookies, preventHttpsDowngrade, deadline.Token),
                 _ => throw new ResourceLoadException(ResourceError.UnsupportedScheme, "Unsupported resource URL scheme.")
             };
         }
@@ -139,7 +145,7 @@ public sealed class ResourceLoader : IDisposable
     }
 
     private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin, bool includeCookies,
-        CancellationToken token)
+        bool preventHttpsDowngrade, CancellationToken token)
     {
         var url = initial;
         var diagnostics = new List<string>();
@@ -193,6 +199,11 @@ public sealed class ResourceLoader : IDisposable
                 }
 
                 next = hstsPolicyStore?.Upgrade(next) ?? next;
+                if (preventHttpsDowngrade && url.Protocol == "https:" && next.Protocol == "http:")
+                {
+                    throw InsecureTransport();
+                }
+
                 BadPortPolicy.ThrowIfBlocked(next);
                 if (requestOrigin is not null)
                 {
@@ -319,6 +330,9 @@ public sealed class ResourceLoader : IDisposable
             throw new ResourceLoadException(ResourceError.UrlCredentials, "Credentials in resource URLs are not supported.");
         }
     }
+
+    private static ResourceLoadException InsecureTransport() => new(ResourceError.InsecureTransport,
+        "HTTPS resource policy blocks HTTP loads and HTTPS-to-HTTP redirects.");
 
     internal static ResourceLoadException BodyLimit() => new(ResourceError.BodyLimit, "Resource body exceeds the configured byte limit.");
 

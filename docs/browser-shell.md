@@ -338,8 +338,10 @@ then fetches each supported classic `link rel=stylesheet` (tokens ASCII
 case-insensitive; `href` resolved with Core.Url against the final response URL)
 through the same tab-local `ResourceLoader`, sharing the shell session HSTS store,
 before the document is published. Requests keep cookies disabled and the bad-port
-and HSTS checks; only HTTP(S) and data URLs are allowed, plus file URLs from file
-documents. Links without a nonempty `href` create no sheet, as in HTML.
+and HSTS checks. HTTPS documents block HTTP stylesheet URLs before fetching and
+block HTTPS-to-HTTP redirects before the downgraded request is sent. This is limited
+to linked stylesheets, not a general mixed-content policy. Only HTTP(S) and data URLs
+are allowed, plus file URLs from file documents. Links without a nonempty `href` create no sheet, as in HTML.
 Alternate/titled/disabled links, `media` other than absent/`all`, `type` other than
 absent/empty/`text/css`, `crossorigin`, `integrity`, `referrerpolicy`, the obsolete
 `charset` attribute, `<base href>` and other schemes fail navigation. Each response
@@ -356,8 +358,10 @@ so the committed document, frame, history and origin are retained and no partial
 document is published. Cross-origin candidates receive only this data, never
 fetch authority. Renderers look up each link's resolved URL and fail
 visibly when a link added or changed by an enabled inline script was not provided.
-`@import`, `url()` resources, fonts, images, CORS/SOP/mixed-content policy and
-caching remain unimplemented; unsupported CSS still yields diagnostics that fail layout.
+`@import`, `url()` resources, fonts, images, CORS/SOP and general mixed-content policy
+for other subresources remain unimplemented; the narrow HTTPS stylesheet downgrade
+guard does not provide those policies. Caching remains unimplemented; unsupported CSS
+still yields diagnostics that fail layout.
 Scripts are inert by default; the explicit
 `--enable-inline-scripts` phase-11d option executes a bounded inline classic batch
 after parsing and before stylesheet collection. See the

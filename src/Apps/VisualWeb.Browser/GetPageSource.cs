@@ -77,10 +77,19 @@ public sealed class GetPageSource : IPageSource
     private async Task<string> LoadStylesheetAsync(BrowserUrl url, BrowserUrl documentUrl, WebEncoding documentEncoding,
         CancellationToken cancellationToken)
     {
+        var secureDocument = documentUrl.Protocol == "https:";
         ResourceResponse response;
-        try { response = await loader.LoadAsync(url, includeCookies: false, cancellationToken).ConfigureAwait(false); }
+        try
+        {
+            response = await loader.LoadAsync(url, includeCookies: false, cancellationToken,
+                preventHttpsDowngrade: secureDocument).ConfigureAwait(false);
+        }
         catch (ResourceLoadException exception)
         { throw new PageNavigationException($"Linked stylesheet {url.Href} failed to load: {exception.Message}"); }
+        if (secureDocument && response.Url.Protocol == "http:")
+        {
+            throw new PageNavigationException($"Linked stylesheet {url.Href} is blocked: an HTTPS stylesheet redirected to HTTP.");
+        }
         if (response.StatusCode is < 200 or > 299)
         { throw new PageNavigationException($"Linked stylesheet {url.Href} returned HTTP {response.StatusCode}."); }
         if (response.ContentType?.Essence != "text/css"

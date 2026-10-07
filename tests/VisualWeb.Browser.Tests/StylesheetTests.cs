@@ -157,6 +157,45 @@ public sealed class StylesheetTests
             BrowserUrl.Parse("http://example.test/page"), [new("http://example.test/s.css", "p{}")]));
     }
 
+    [Fact]
+    public async Task HttpsDocumentDoesNotFetchHttpStylesheet()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Text("<!doctype html><link rel=stylesheet href='http://insecure.example/s.css'>", "text/html");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
+
+        Assert.Contains("HTTPS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/"], requests);
+    }
+
+    [Fact]
+    public async Task HttpsStylesheetRedirectToHttpIsBlockedBeforeDowngradeRequest()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri!.AbsoluteUri switch
+            {
+                "https://secure.example/" => Text("<!doctype html><link rel=stylesheet href=s.css>", "text/html"),
+                "https://secure.example/s.css" => Redirect("http://insecure.example/s.css"),
+                _ => throw new InvalidOperationException("An insecure stylesheet request was sent.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
+
+        Assert.Contains("HTTPS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/", "https://secure.example/s.css"], requests);
+    }
+
     [Theory]
     [InlineData("text/plain", 200)]
     [InlineData(null, 200)]

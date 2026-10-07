@@ -78,7 +78,10 @@ public enum ResourceError
     BlockedPort,
 
     /// <summary>The finite session HSTS store is full; no active protection was evicted.</summary>
-    HstsCapacity
+    HstsCapacity,
+
+    /// <summary>A caller's secure-transport policy denied an HTTP load or HTTPS-to-HTTP redirect before sending it.</summary>
+    InsecureTransport
 }
 
 public sealed class ResourceLoadException(ResourceError error, string message, Exception? innerException = null)
