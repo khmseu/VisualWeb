@@ -27,6 +27,7 @@ public interface IPlatformWindow : IDisposable
     event Action<WindowEvent>? EventReceived;
     void SetTitle(string title);
     void SetTextInput(bool enabled);
+    void SetClipboardText(string text);
 }
 
 /// <summary>Presents opaque BGRA32 pixels at the window's current physical pixel size.</summary>

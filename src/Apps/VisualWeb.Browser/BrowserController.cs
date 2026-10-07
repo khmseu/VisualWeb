@@ -34,6 +34,9 @@ public sealed class BrowserController : IDisposable
         /// <summary>Browser-owned edited values of the committed document's fields, keyed by control index.</summary>
         internal Dictionary<int, AddressEditor> Fields { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
+        internal int TextSelectionStart { get; set; } = -1;
+        internal int TextSelectionEnd { get; set; } = -1;
+        internal bool SelectingText { get; set; }
     }
     private sealed class Operation(TabId tab, long generation, Task<LoadedPage> load, CancellationTokenSource cancellation,
         int? traversal, bool replace, bool resize = false, bool scroll = false)
@@ -140,6 +143,102 @@ public sealed class BrowserController : IDisposable
         var targets = Targets(owner.Page);
         SetPosition(owner, targets, targets.Count == 0 ? -1 : Math.Clamp(position, -1, targets.Count - 1));
         Changed?.Invoke(id);
+    }
+    /// <summary>Begins a browser-owned selection on the visible shaped text fragment under the pointer.</summary>
+    public bool StartTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
+    {
+        Check();
+        var owner = content[id];
+        if (!double.IsFinite(x) || !double.IsFinite(y))
+        { throw new PageNavigationException("Text selection coordinates must be finite."); }
+        if (owner.Page is null || owner.Viewport is not { } viewport || !MatchesViewport(owner, displayedViewport)
+            || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height)
+        {
+            var changed = owner.TextSelectionStart >= 0;
+            ClearTextSelection(owner);
+            if (changed) { Changed?.Invoke(id); }
+            return false;
+        }
+        var index = HitText(owner.Page, x, y);
+        if (index < 0)
+        {
+            var changed = owner.TextSelectionStart >= 0;
+            ClearTextSelection(owner);
+            if (changed) { Changed?.Invoke(id); }
+            return false;
+        }
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.TextSelectionStart = index;
+        owner.TextSelectionEnd = index;
+        owner.SelectingText = true;
+        Changed?.Invoke(id);
+        return true;
+    }
+    /// <summary>Extends a pointer selection to a visible shaped text fragment.</summary>
+    public bool ExtendTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
+    {
+        Check();
+        var owner = content[id];
+        if (!double.IsFinite(x) || !double.IsFinite(y))
+        { throw new PageNavigationException("Text selection coordinates must be finite."); }
+        if (!owner.SelectingText || owner.Page is null || owner.Viewport is not { } viewport
+            || !MatchesViewport(owner, displayedViewport) || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height)
+        { return false; }
+        var index = HitText(owner.Page, x, y);
+        if (index < 0 || index == owner.TextSelectionEnd) { return false; }
+        owner.TextSelectionEnd = index;
+        Changed?.Invoke(id);
+        return true;
+    }
+    public void EndTextSelection(TabId id)
+    {
+        Check();
+        content[id].SelectingText = false;
+    }
+    /// <summary>Selected fragment text in paint order, with line breaks between visibly distinct lines.</summary>
+    public string SelectedText(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is null || owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return ""; }
+        var first = Math.Min(owner.TextSelectionStart, owner.TextSelectionEnd);
+        var last = Math.Max(owner.TextSelectionStart, owner.TextSelectionEnd);
+        var output = new System.Text.StringBuilder();
+        var previousY = owner.Page.TextTargets[first].Rect.Y;
+        for (var index = first; index <= last; index++)
+        {
+            var target = owner.Page.TextTargets[index];
+            if (index > first && target.Rect.Y > previousY + 0.5) { output.Append('\n'); }
+            output.Append(target.Text);
+            previousY = target.Rect.Y;
+        }
+        return output.ToString();
+    }
+    public IReadOnlyList<PageLinkRect> SelectedTextRects(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is null || owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0)
+        { return Array.Empty<PageLinkRect>(); }
+        var first = Math.Min(owner.TextSelectionStart, owner.TextSelectionEnd);
+        var last = Math.Max(owner.TextSelectionStart, owner.TextSelectionEnd);
+        return owner.Page.TextTargets.Skip(first).Take(last - first + 1).Select(target => target.Rect).ToArray();
+    }
+    private static int HitText(BrowserPage page, double x, double y)
+    {
+        for (var index = page.TextTargets.Count - 1; index >= 0; index--)
+        {
+            if (page.TextTargets[index].Rect.Contains(x, y)) { return index; }
+        }
+        return -1;
+    }
+    private static void ClearTextSelection(Content owner)
+    {
+        owner.TextSelectionStart = -1;
+        owner.TextSelectionEnd = -1;
+        owner.SelectingText = false;
     }
     /// <summary>Focuses a visible, enabled, non-hidden control; returns false (leaving focus unchanged) otherwise.</summary>
     public bool FocusControl(TabId id, int index)
@@ -476,6 +575,7 @@ public sealed class BrowserController : IDisposable
             owner.Document = document; owner.Page = rendered;
             // Frame-local groups have no DOM identity: never retarget a focused anchor after repaint.
             owner.FocusedLink = -1;
+            ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls) { owner.Fields.Clear(); owner.Dirty.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }

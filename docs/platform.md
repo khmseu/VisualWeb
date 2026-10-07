@@ -53,8 +53,10 @@ frame dimensions. Native surface pointers never escape the portable contract.
 
 Events are routed by window ID and copied to managed values. Close requests
 must be accepted by the owner via Dispose. Disposing one window does not close
-others. TextEntered holds copied UTF-8 committed text. Preedit/IME composition,
-touch, clipboard, accessibility and richer keyboard semantics remain future work.
+others. TextEntered holds copied UTF-8 committed text. The window contract exposes
+clipboard text writes for browser-owned selection copy, but not clipboard reads or
+paste. Preedit/IME composition, touch, accessibility and richer keyboard semantics
+remain future work.
 
 ## Fonts, paths and processes
 

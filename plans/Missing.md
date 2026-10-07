@@ -42,20 +42,26 @@ broader page interaction is still missing:
   one anchor and no page raster changes without focus. IPC v7 groups visible
   rectangles per anchor (4096 anchors, 64 rectangles each, 1 MiB metadata),
   without element IDs/DOM/native handles. Successful document commits/repaints
-  clear the frame-local selection; failed navigation preserves it. General
+  clear the frame-local anchor focus; failed navigation preserves it. General
   hit-testing, DOM focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
   shell-edited `input` text/search/hidden/submit and `button` submit controls
-  (author `display:block` only) via IPC v8 data-only metadata and the ordinary
+  via IPC v8 data-only metadata and the ordinary
   navigation transaction; unsupported form semantics fail visibly. General forms
   remain missing: POST/multipart, other input types, textarea/select, constraint
   validation UI, form events/scripted submission, `form=` owners, inline-block
   control layout, autofill and non-UTF-8 submission encodings. Supported controls
   currently use a documented UA `display:block` accommodation. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
-- No text selection. Basic vertical document scrolling is implemented via wheel
-  and Page Up/Down/Home/End, retaining DOM/scripts across local/process repaints.
+- A bounded browser-owned selection supports mouse drag across visible non-link
+  shaped text fragments and Ctrl+C to the system clipboard. Selection is fragment-
+  level (not character-level); a primary press beginning on an anchor retains
+  immediate navigation, while a drag begun in ordinary text can include anchor
+  fragments. Selection resets on successful document/scroll/resize publication.
+  Basic vertical document scrolling is implemented via wheel and Page
+  Up/Down/Home/End, retaining DOM/scripts across
+  local/process repaints.
   Scrollbars, horizontal/nested scrolling and general CSS overflow remain missing.
 - No automatic page mouse/keyboard events or general default actions beyond
   ordinary current-tab textual link navigation.

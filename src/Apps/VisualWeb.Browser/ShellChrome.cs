@@ -46,7 +46,8 @@ public sealed class ShellChrome : IDisposable
         return css;
     }
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
-        int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null)
+        int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
+        IReadOnlyList<PageLinkRect>? selectedText = null)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -133,6 +134,23 @@ public sealed class ShellChrome : IDisposable
         if (pageFits)
         {
             page!.Frame.Pixels.Span.CopyTo(pixels.AsSpan(headerPixels * chrome.Stride));
+            if (selectedText is not null)
+            {
+                foreach (var rect in selectedText)
+                {
+                    var (left, top, right, bottom) = Device(rect);
+                    for (var y = top; y <= bottom; y++)
+                    {
+                        for (var x = left; x <= right; x++)
+                        {
+                            var offset = y * chrome.Stride + x * 4;
+                            pixels[offset] = (byte)((pixels[offset] + 245) / 2);
+                            pixels[offset + 1] = (byte)((pixels[offset + 1] + 205) / 2);
+                            pixels[offset + 2] = (byte)((pixels[offset + 2] + 180) / 2);
+                        }
+                    }
+                }
+            }
             if (forms is not null && forms.Values.Count == page.FormControls.Count)
             {
                 foreach (var control in page.FormControls)

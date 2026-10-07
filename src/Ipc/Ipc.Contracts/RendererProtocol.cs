@@ -42,6 +42,11 @@ public sealed record PageStylesheet(
     [property: JsonRequired] string Url,
     [property: JsonRequired] string Css);
 
+/// <summary>One bounded visible text fragment and its clipped viewport rectangle for browser-owned selection.</summary>
+public sealed record PageTextTarget(
+    [property: JsonRequired] string Text,
+    [property: JsonRequired] PageLinkRect Rect);
+
 /// <summary>One parsed form owner: an absolute GET action, or a visible unsupported-semantics diagnostic.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
 /// submission algorithm</see>. Only the bounded same-tab GET/urlencoded subset is representable; Error is set
@@ -98,11 +103,12 @@ public sealed record RendererMessage
     public PageStylesheet[]? Stylesheets { get; init; }
     public PageForm[]? Forms { get; init; }
     public PageFormControl[]? FormControls { get; init; }
+    public PageTextTarget[]? TextTargets { get; init; }
 }
 
 public static class RendererProtocol
 {
-    public const int Version = 8;
+    public const int Version = 9;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -116,6 +122,9 @@ public static class RendererProtocol
     public const int MaxFormControls = 1024;
     /// <summary>Budget for the UTF-8 JSON serialization of forms plus controls.</summary>
     public const int MaxFormMetadataBytes = 1024 * 1024;
+    public const int MaxTextTargets = 32_768;
+    /// <summary>Budget for serialized text-selection target data, separate from frame pixels and form metadata.</summary>
+    public const int MaxTextMetadataBytes = 1024 * 1024;
     public const int MaxStylesheets = 32;
     public const int MaxStylesheetCharacters = 256 * 1024;
     /// <summary>Budget for the UTF-8 JSON serialization of the whole linked stylesheet collection.</summary>
@@ -129,6 +138,8 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Link targets belong only to frame replies."); }
         if (message.Kind != "frame" && (message.Forms is not null || message.FormControls is not null))
         { throw new IpcProtocolException("Form metadata belongs only to frame replies."); }
+        if (message.Kind != "frame" && message.TextTargets is not null)
+        { throw new IpcProtocolException("Text targets belong only to frame replies."); }
         if (message.Kind != "render" && message.Stylesheets is not null)
         { throw new IpcProtocolException("Linked stylesheets belong only to render requests."); }
         if ((message.Kind != "render" && message.ScrollY != 0) || (message.Kind != "frame" && message.ScrollHeight != 0))
@@ -176,6 +187,7 @@ public static class RendererProtocol
                 { throw new IpcProtocolException("Invalid renderer scroll height."); }
                 ValidateLinks(message.LinkTargets, message.Width, message.Height);
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
+                ValidateTextTargets(message.TextTargets, message.Width, message.Height);
                 break;
             case "error":
                 if (payloadLength != 0 || string.IsNullOrEmpty(message.Error) || message.Error.Length > MaxTextCharacters)
@@ -257,6 +269,29 @@ public static class RendererProtocol
         if (JsonSerializer.SerializeToUtf8Bytes(forms).Length + (long)JsonSerializer.SerializeToUtf8Bytes(controls).Length
             > MaxFormMetadataBytes)
         { throw new IpcProtocolException("Renderer form metadata byte limit exceeded."); }
+    }
+    /// <summary>Checks the bounded visible text-selection snapshot and its viewport geometry.</summary>
+    public static void ValidateTextTargets(IReadOnlyList<PageTextTarget>? targets, double width, double height)
+    {
+        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0
+            || targets is null || targets.Count > MaxTextTargets)
+        { throw new IpcProtocolException("Invalid renderer text target viewport or count."); }
+        long textBytes = 0;
+        foreach (var target in targets)
+        {
+            var rect = target?.Rect;
+            if (target is null || string.IsNullOrEmpty(target.Text) || target.Text.Length > MaxTextCharacters
+                || rect is null || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
+                || !double.IsFinite(rect.Width) || !double.IsFinite(rect.Height)
+                || rect.X < 0 || rect.Y < 0 || rect.Width <= 0 || rect.Height <= 0
+                || rect.X + rect.Width > width || rect.Y + rect.Height > height)
+            { throw new IpcProtocolException("Invalid renderer text target fields or rectangle."); }
+            textBytes += Encoding.UTF8.GetByteCount(target.Text);
+            if (textBytes > MaxTextMetadataBytes)
+            { throw new IpcProtocolException("Renderer text target byte limit exceeded."); }
+        }
+        if (JsonSerializer.SerializeToUtf8Bytes(targets).Length > MaxTextMetadataBytes)
+        { throw new IpcProtocolException("Renderer text target metadata byte limit exceeded."); }
     }
     /// <summary>Checks count, per-sheet characters, unique serialized absolute URLs and the UTF-8 JSON wire budget.</summary>
     public static void ValidateStylesheets(IReadOnlyList<PageStylesheet>? stylesheets)

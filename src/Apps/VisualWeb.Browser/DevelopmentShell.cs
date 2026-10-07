@@ -23,7 +23,7 @@ public sealed class DevelopmentShell : IDisposable
         <p>Ctrl M moves the active tab to another window.</p>
         <p>Alt Left and Alt Right navigate history. F5 reloads.</p>
         <p>Wheel, Page Up, Page Down, Home and End scroll outside address editing.</p>
-        <p>Page interaction and linked stylesheets are deferred.</p>
+        <p>Basic links, GET forms and visible text selection are available; general page events remain deferred.</p>
         </body></html>
         """;
     public static string HomeUrl => "data:text/html;charset=utf-8," + Uri.EscapeDataString(HomeHtml);
@@ -33,6 +33,7 @@ public sealed class DevelopmentShell : IDisposable
         internal AddressEditor Editor { get; } = new();
         internal bool Editing { get; set; }
         internal bool TextInput { get; set; }
+        internal bool SelectingText { get; set; }
         internal bool Dirty { get; set; } = true;
         internal IReadOnlyList<ChromeTarget> Targets { get; set; } = [];
         internal PixelSize LastSize { get; set; }
@@ -185,7 +186,7 @@ public sealed class DevelopmentShell : IDisposable
                 window.ActiveTabId is { } focused && Controller.PageHasFocus(focused)
                     ? Controller.FocusedLinkIndex(focused) : -1,
                 window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
-                Forms(window));
+                Forms(window), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -204,8 +205,18 @@ public sealed class DevelopmentShell : IDisposable
             {
                 case CloseRequested: Controller.CloseWindow(window.Id); break;
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
-                case FocusChanged { Focused: false }: Edit(view, window, false); break;
-                case PointerMoved moved: view.PointerY = moved.Y; break;
+                case FocusChanged { Focused: false }:
+                    Edit(view, window, false);
+                    view.SelectingText = false;
+                    if (window.ActiveTab is { } blurredTab) { Controller.EndTextSelection(blurredTab.Id); }
+                    break;
+                case PointerMoved moved:
+                    view.PointerY = moved.Y;
+                    if (view.SelectingText && window.ActiveTab is { } selectingTab
+                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } selectionViewport
+                        && moved.Y >= ShellChrome.Height && moved.Y < ShellChrome.Height + selectionViewport.Height)
+                    { Controller.ExtendTextSelection(selectingTab.Id, moved.X, moved.Y - ShellChrome.Height, selectionViewport); }
+                    break;
                 case PointerScrolled wheel when !view.Editing && view.PointerY is not < ShellChrome.Height
                     && window.ActiveTab is { } active:
                     if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
@@ -214,6 +225,7 @@ public sealed class DevelopmentShell : IDisposable
                     break;
                 case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
                     view.PointerY = pointer.Y;
+                    view.SelectingText = false;
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
                     if (target is not null) { Action(window, view, target.Action, target.Tab); }
                     else
@@ -226,10 +238,19 @@ public sealed class DevelopmentShell : IDisposable
                             && pointer.Y < ShellChrome.Height + pageViewport.Height)
                         {
                             Controller.FocusPage(pageTab.Id);
-                            Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport);
+                            var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport);
+                            if (!activated)
+                            {
+                                view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X,
+                                    pointer.Y - ShellChrome.Height, pageViewport);
+                            }
                         }
                         else if (window.ActiveTabId is { } unfocused) { Controller.FocusPage(unfocused, false); }
                     }
+                    break;
+                case PointerButtonChanged { Pressed: false, Button: 1 } when window.ActiveTab is { } releasedTab:
+                    view.SelectingText = false;
+                    Controller.EndTextSelection(releasedTab.Id);
                     break;
                 case KeyChanged { Pressed: true } key: Key(window, view, key); break;
                 case TextEntered text when view.Editing && window.ActiveTab is { } tab:
@@ -287,6 +308,8 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (!view.Editing)
         {
+            if (control && !alt && !key.Repeat && code == SDL.Scancode.C && Controller.SelectedText(tab.Id) is { Length: > 0 } selected)
+            { view.Native.SetClipboardText(selected); return; }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code switch
             {
                 SDL.Scancode.Backspace => FormEdit.Backspace,

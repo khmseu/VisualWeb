@@ -1,6 +1,6 @@
 # Ipc.Contracts
 
-Version-8 data-only hello/render/frame/error messages, confirmed sandbox
+Version-9 data-only hello/render/frame/error messages, confirmed sandbox
 profile handshake and exact
 viewport/text/frame budgets. No DOM, V8, native handles or broker capabilities.
 Each private channel serves one tab with monotonically increasing request IDs.
@@ -27,3 +27,7 @@ Render requests require a `Stylesheets` array (rejected on other kinds): at most
 32 unique absolute serialized URLs (8192 characters each) with decoded CSS text of
 at most 256 Ki characters each and a 1 MiB UTF-8 JSON budget for the whole array.
 These are browser-fetched data; the renderer never receives fetch capability.
+Frame replies also require `TextTargets`: up to 32,768 visible shaped text fragments,
+with nonempty bounded text, clipped viewport rectangles and a 1 MiB UTF-8 JSON
+budget. The browser uses this snapshot for coarse fragment-level drag selection;
+no DOM identity or native object crosses IPC.

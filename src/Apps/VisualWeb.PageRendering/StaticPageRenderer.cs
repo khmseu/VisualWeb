@@ -76,7 +76,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url, state.Source.Stylesheets);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
-        var (links, controlGeometry) = CollectLinks(rendered.Layout, page.Url,
+        var (links, controlGeometry, textTargets) = CollectLinks(rendered.Layout, page.Url,
             Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, links.Count,
             rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken);
@@ -90,19 +90,26 @@ public sealed class StaticPageRenderer : IPageRenderer
             status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
         }
         return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
-        { ScrollHeight = rendered.ScrollHeight, LinkTargets = links, Forms = forms, FormControls = controls };
+        { ScrollHeight = rendered.ScrollHeight, LinkTargets = links, Forms = forms, FormControls = controls, TextTargets = textTargets };
     }
-    private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls)
+    private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
+        IReadOnlyList<PageTextTarget> TextTargets)
         CollectLinks(LayoutResult layout, BrowserUrl url, double scrollY, CancellationToken cancellationToken)
     {
         var links = new List<PageLinkTarget>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var anchors = new Dictionary<DomElement, List<PageLinkRect>>();
+        var textTargets = new List<PageTextTarget>();
         long urlBytes = 0;
+        long textBytes = 0;
         if (layout.Root is { } root) { Visit(root); }
-        try { RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight); }
+        try
+        {
+            RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight);
+            RendererProtocol.ValidateTextTargets(textTargets, layout.ViewportWidth, layout.ViewportHeight);
+        }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
-        return (links.AsReadOnly(), controls);
+        return (links.AsReadOnly(), controls, textTargets.AsReadOnly());
 
         void Visit(LayoutBox box)
         {
@@ -128,6 +135,19 @@ public sealed class StaticPageRenderer : IPageRenderer
                     foreach (var fragment in line.Line.Fragments)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+                        var left = Math.Clamp(fragment.X, 0, layout.ViewportWidth);
+                        var right = Math.Clamp(fragment.X + fragment.Run.Width, 0, layout.ViewportWidth);
+                        var top = Math.Clamp(line.Line.Bounds.Y - scrollY, 0, layout.ViewportHeight);
+                        var bottom = Math.Clamp(line.Line.Bounds.Y + line.Line.Bounds.Height - scrollY, 0, layout.ViewportHeight);
+                        if (right <= left || bottom <= top) { continue; }
+                        var rect = new PageLinkRect(left, top, right - left, bottom - top);
+                        var text = fragment.Run.Text;
+                        if (textTargets.Count >= RendererProtocol.MaxTextTargets)
+                        { throw new PageNavigationException("Renderer text target count limit exceeded."); }
+                        textBytes += System.Text.Encoding.UTF8.GetByteCount(text);
+                        if (textBytes > RendererProtocol.MaxTextMetadataBytes)
+                        { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
+                        textTargets.Add(new(text, rect));
                         DomElement? anchor = null;
                         for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
                         {
@@ -135,11 +155,6 @@ public sealed class StaticPageRenderer : IPageRenderer
                             { anchor = element; break; }
                         }
                         if (anchor?.GetAttribute("href") is not { } href) { continue; }
-                        var left = Math.Clamp(fragment.X, 0, layout.ViewportWidth);
-                        var right = Math.Clamp(fragment.X + fragment.Run.Width, 0, layout.ViewportWidth);
-                        var top = Math.Clamp(line.Line.Bounds.Y - scrollY, 0, layout.ViewportHeight);
-                        var bottom = Math.Clamp(line.Line.Bounds.Y + line.Line.Bounds.Height - scrollY, 0, layout.ViewportHeight);
-                        if (right <= left || bottom <= top) { continue; }
                         if (!anchors.TryGetValue(anchor, out var target))
                         {
                             if (links.Count >= RendererProtocol.MaxLinkTargets)
@@ -159,7 +174,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                         }
                         if (target.Count >= RendererProtocol.MaxLinkRects)
                         { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
-                        target.Add(new(left, top, right - left, bottom - top));
+                        target.Add(rect);
                     }
                 }
             }

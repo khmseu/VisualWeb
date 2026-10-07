@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v8
+## Private stream protocol v9
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 8, explicitly present; v1 through v7 rejected |
+| Protocol version | 9, explicitly present; v1 through v8 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -109,6 +109,8 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Forms / form controls per frame | 256 / 1024 |
 | Form action, control name/value/label | 8192 UTF-16 characters each |
 | Serialized form metadata | 1 MiB UTF-8 JSON total |
+| Visible text fragments per frame | 32,768 |
+| Serialized text-selection metadata | 1 MiB UTF-8 JSON total |
 | Linked stylesheets per render request | 32 unique absolute serialized URLs (8192 characters each) |
 | Linked stylesheet text | 256 Ki UTF-16 characters each |
 | Serialized linked stylesheets | 1 MiB UTF-8 JSON total |
@@ -122,7 +124,8 @@ textual links advanced to v5 for frame-only `LinkTargets` and exact CSS viewport
 linked stylesheets advanced to v6 for the required request-only `Stylesheets` array,
 keyboard links advanced to v7 for per-anchor grouped `LinkTargets` rectangles,
 and simple forms advance to v8 for required frame-only `Forms` and `FormControls`,
-because older receivers strictly reject unknown fields.
+then bounded text selection advances to v9 for frame-only `TextTargets`, because
+older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
 linked stylesheet collection (request URL plus decoded CSS text only) and CSS viewport/
@@ -132,11 +135,12 @@ inline-script opt-in and retained-document repaint intent. Script policy is
 fixed by the first request and cannot change within a tab channel. Publication
 acknowledgement pins the worker's prior candidate on the next request; another
 candidate cannot evict the committed DOM. These fields are rejected on replies
-and handshakes. A reply is `frame` (title/status/CSS viewport/scale/pixel dimensions/stride/pixels/scroll height/link targets) or `error`
+and handshakes. A reply is `frame` (title/status/CSS viewport/scale/pixel dimensions/stride/pixels/scroll height and bounded link/form/text targets) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
 worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
-the [finite scripting policy](scripting.md); input, event loops and display-list
-IPC are deferred except for bounded textual link activation in the browser.
+the [finite scripting policy](scripting.md); general DOM input/events, event loops
+and display-list IPC remain deferred. The browser separately brokers bounded link,
+form and fragment-selection behavior.
 
 Every frame supplies a link array, empty when there are no visible links; requests,
 errors and handshakes cannot carry one. Each target has a required nonempty `Rects`
@@ -153,20 +157,25 @@ the existing 32 MiB complete-header bound also remains enforced.
 Unsupported destination schemes are rejected visibly by browser activation,
 never executed by a worker.
 
-Every v8 frame also supplies required `Forms` and `FormControls` arrays (empty
-when absent); other messages cannot carry them. A form is `{Action, Error}`:
+Every v9 frame also supplies required `Forms`, `FormControls` and `TextTargets`
+arrays (empty when absent); other messages cannot carry them. A form is `{Action, Error}`:
 either an absolute serialized `http`/`https`/`file`/`data` action with a null
 error, or an empty action plus a nonempty renderer diagnostic for an
 unsupported form (method/enctype/target/novalidate/accept-charset/base/control
 cases). A control is `{Form, Kind, Name, Value, Label, Disabled, ReadOnly,
 Required, MaxLength, BeforeLink, Rect}` with kind `text`/`search`/`hidden`/
-`submit`/`button`, a form index or -1, a label for submit controls, `MaxLength` -1
+`submit`/`button`, a form index or -1, a label for submit controls/button text, `MaxLength` -1
 when absent, and `BeforeLink` in `[0, LinkTargets.Count]` giving merged
 tree-order traversal against link groups. Visible controls carry one
 viewport-contained CSS-pixel border box; hidden controls never have one.
 These are data-only snapshots of parsed/mutated DOM attributes: no element
 handles, no script events and no submission command cross IPC. The browser
 alone edits values, builds the GET URL and navigates through its broker.
+`TextTargets` contains visible shaped text fragments and clipped viewport rectangles
+(up to 32,768 targets/1 MiB JSON). The browser uses it for coarse fragment-level
+drag selection and copy; it carries neither DOM identity nor renderer capabilities.
+Text target count, character and UTF-8 JSON limits are checked in both local
+and process renderers before accepting a page frame.
 
 Document-origin association does not add principal fields to IPC: the browser keeps its
 `LoadedPage.Origin`, while worker reconstruction from the URL creates a local

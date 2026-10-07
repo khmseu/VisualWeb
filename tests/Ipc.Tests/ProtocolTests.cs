@@ -33,6 +33,7 @@ public sealed class ProtocolTests
             LinkTargets = [],
             Forms = [],
             FormControls = [],
+            TextTargets = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,
@@ -44,7 +45,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(8, RendererProtocol.Version);
+        Assert.Equal(9, RendererProtocol.Version);
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -67,7 +68,8 @@ public sealed class ProtocolTests
         ScrollHeight = 2,
         LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")],
         Forms = [],
-        FormControls = []
+        FormControls = [],
+        TextTargets = []
     };
     private static RendererMessage FormFrame => LinkFrame with
     {
@@ -86,6 +88,7 @@ public sealed class ProtocolTests
     public void FormMetadataIsRequiredOnFramesOnlyAndRoundTrips()
     {
         RendererProtocol.Validate(FormFrame, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with { TextTargets = null }, 16));
         RendererProtocol.Validate(FormFrame with
         {
             FormControls = [FormFrame.FormControls![3] with { Label = "Search", Rect = new(0, 1, 2, 1) }]
@@ -94,11 +97,14 @@ public sealed class ProtocolTests
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with { FormControls = null }, 16));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Forms = [] }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { FormControls = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { TextTargets = [] }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Forms = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", TextTargets = [] }, 0));
         var json = JsonSerializer.Serialize(FormFrame);
         var parsed = JsonSerializer.Deserialize<RendererMessage>(json)!;
         Assert.Equal(FormFrame.FormControls!, parsed.FormControls!);
         Assert.Equal(FormFrame.Forms!, parsed.Forms!);
+        Assert.Equal(FormFrame.TextTargets!, parsed.TextTargets!);
     }
 
     public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 21));
@@ -136,6 +142,17 @@ public sealed class ProtocolTests
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame, 16));
     }
 
+    [Fact]
+    public void TextTargetsAreBoundedAndViewportContained()
+    {
+        RendererProtocol.ValidateTextTargets([new("word", new(0, 0, 2, 2))], 2, 2);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateTextTargets(null, 2, 2));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateTextTargets([new("", new(0, 0, 1, 1))], 2, 2));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateTextTargets([new("word", new(double.NaN, 0, 1, 1))], 2, 2));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateTextTargets([new("word", new(0, 0, 3, 1))], 2, 2));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateTextTargets(
+            Enumerable.Repeat(new PageTextTarget("x", new(0, 0, 1, 1)), RendererProtocol.MaxTextTargets + 1).ToArray(), 2, 2));
+    }
     [Fact]
     public void ExactFormCountsAndStringLimitsAreAccepted()
     {
@@ -244,7 +261,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(8, RendererProtocol.Version);
+        Assert.Equal(9, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -361,6 +378,7 @@ public sealed class ProtocolTests
             LinkTargets = [],
             Forms = [],
             FormControls = [],
+            TextTargets = [],
             PixelWidth = 2,
             PixelHeight = 1,
             Stride = 8,
@@ -444,6 +462,7 @@ public sealed class ProtocolTests
             LinkTargets = [],
             Forms = [],
             FormControls = [],
+            TextTargets = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,

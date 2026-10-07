@@ -75,6 +75,8 @@ public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
     public IReadOnlyList<PageForm> Forms { get; init; } = Array.Empty<PageForm>();
     /// <summary>Supported controls in tree order with initial values; the browser owns edits and submission.</summary>
     public IReadOnlyList<PageFormControl> FormControls { get; init; } = Array.Empty<PageFormControl>();
+    /// <summary>Visible shaped text fragments in paint order, with browser-only selection geometry.</summary>
+    public IReadOnlyList<PageTextTarget> TextTargets { get; init; } = Array.Empty<PageTextTarget>();
     private readonly double scrollHeight;
     public double ScrollHeight
     {

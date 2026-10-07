@@ -199,6 +199,55 @@ public sealed class ShellTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DragSelectsVisibleTextAndCtrlCCopiesSelection(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>body{margin:0} p{margin:0}</style><p>Hello world!</p><div style='height:1000px'></div>"));
+        Wait();
+        var page = shell.Controller.Page(tab.Id)!;
+        Assert.Equal("Hello world!", string.Concat(page.TextTargets.Select(target => target.Text)));
+        var first = page.TextTargets[0].Rect;
+        var last = page.TextTargets[^1].Rect;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(first.X + first.Width / 2),
+            (float)(ShellChrome.Height + first.Y + first.Height / 2)));
+        shell.Dispatch(new PointerMoved(native.Id, (float)(last.X + last.Width / 2),
+            (float)(ShellChrome.Height + last.Y + last.Height / 2)));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, (float)(last.X + last.Width / 2),
+            (float)(ShellChrome.Height + last.Y + last.Height / 2)));
+        Assert.Equal("Hello world!", shell.Controller.SelectedText(tab.Id));
+        shell.Tick();
+        var pixelX = (int)Math.Floor(first.X * native.Density);
+        var pixelY = (int)Math.Floor(first.Y * native.Density);
+        var pageOffset = pixelY * page.Frame.Stride + pixelX * 4;
+        var chromeOffset = ((int)Math.Ceiling(ShellChrome.Height * native.Density) + pixelY) * page.Frame.Stride + pixelX * 4;
+        Assert.False(page.Frame.Pixels.Span.Slice(pageOffset, 4).SequenceEqual(native.Pixels!.AsSpan(chromeOffset, 4)));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.C, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+        Assert.Equal("Hello world!", native.ClipboardText);
+        shell.Controller.Scroll(tab.Id, 20);
+        var scrollDeadline = DateTime.UtcNow.AddSeconds(30);
+        while (shell.Controller.SelectedText(tab.Id).Length > 0 && DateTime.UtcNow < scrollDeadline)
+        { shell.Tick(); Thread.Sleep(5); }
+        Assert.Equal("", shell.Controller.SelectedText(tab.Id));
+        Assert.True(shell.Controller.ScrollY(tab.Id) > 0);
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
     [Fact]
     public void UnsupportedFormSubmissionIsReportedInTheTabWithoutNavigation()
     {
@@ -741,6 +790,8 @@ public sealed class ShellTests
         internal void Dispatch(WindowEvent input) => EventReceived?.Invoke(input);
         public void SetTitle(string title) => Title = title;
         public void SetTextInput(bool enabled) => TextInput = enabled;
+        internal string ClipboardText { get; private set; } = "";
+        public void SetClipboardText(string text) => ClipboardText = text;
         public void Present(ReadOnlySpan<byte> pixels, PixelSize frameSize, int stride)
         {
             Assert.Equal(Size, frameSize);

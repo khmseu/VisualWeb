@@ -84,12 +84,23 @@ The native window title retains the same warning alongside the active page title
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
 | Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search field | Edit the shell-owned field value (no page scrolling) |
 | Enter in a focused field / on a submit control, or primary click on a submit control | Submit the [simple GET form](#simple-get-forms) in the current tab |
-| Primary left click on blank page | Give the active page keyboard focus; next Tab/Shift+Tab selects the first/last visible anchor if none is selected |
+| Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
+| Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
+| Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
+Page text hit geometry is a bounded v9 data-only snapshot of shaped fragments
+(up to 32,768 entries and 1 MiB of JSON); no DOM nodes cross the renderer boundary.
+Selection uses whole-fragment rectangles, with line breaks inserted on visible line
+changes when copied. This is not character-level selection or browser text shaping.
 Browser windows and tab IDs are distinct; tab identity/history/content survives
-moving. Text input activation uses SDL committed text; clipboard, selection
-ranges, IME preedit and richer editing/accessibility remain deferred.
+moving. Text input activation uses SDL committed text. Page selection is limited
+to whole visible shaped fragments (not character offsets). A primary press beginning
+on an anchor still activates it immediately; a drag that begins in ordinary text
+can include anchor fragments. Selection is cleared on successful document, scroll
+or resize publications.
+Ctrl+C copies selected fragment text; editing text fields still have no selection,
+IME preedit or clipboard editing. Richer accessibility remains deferred.
 Keyboard traversal starts with enabled, drawn chrome targets in drawing order:
 tab arrows, visible tab labels/close buttons, navigation/window controls, then
 the address editor, followed by visible textual anchors in first-fragment paint
@@ -106,8 +117,8 @@ or moving tabs. Clicking chrome gives it keyboard ownership; clicking a page lin
 still navigates immediately. A subtle shell-owned blue-gray border outlines **all**
 visible rectangles of the selected anchor, including wrapped/nested text; one
 anchor is one stop even if it has many fragments, while identical URLs on different
-anchors remain separate stops. Without page focus, page pixels are copied unchanged;
-the renderer raster is never modified by focus. Successful document commits,
+anchors remain separate stops. Without page focus or an active text selection,
+page pixels are copied unchanged; the renderer raster is never modified by either overlay. Successful document commits,
 scroll and resize repaints clear the selected anchor because groups are frame-local,
 without guessing element identity across frames. Failed navigation keeps the old
 page and focus; closing a tab discards its focus. Enter performs only ordinary

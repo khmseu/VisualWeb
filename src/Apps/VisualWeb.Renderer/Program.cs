@@ -75,7 +75,8 @@ try
                     ScrollHeight = rendered.ScrollHeight,
                     LinkTargets = rendered.LinkTargets.ToArray(),
                     Forms = rendered.Forms.ToArray(),
-                    FormControls = rendered.FormControls.ToArray()
+                    FormControls = rendered.FormControls.ToArray(),
+                    TextTargets = rendered.TextTargets.ToArray()
                 }, frame.Pixels).GetAwaiter().GetResult();
             }
             catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)

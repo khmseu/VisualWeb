@@ -192,7 +192,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 ScrollHeight = packet.Message.ScrollHeight,
                 LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
                 Forms = Array.AsReadOnly(packet.Message.Forms!),
-                FormControls = Array.AsReadOnly(packet.Message.FormControls!)
+                FormControls = Array.AsReadOnly(packet.Message.FormControls!),
+                TextTargets = Array.AsReadOnly(packet.Message.TextTargets!)
             };
         }
         catch (OperationCanceledException)

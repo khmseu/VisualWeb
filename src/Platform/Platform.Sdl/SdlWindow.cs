@@ -88,6 +88,13 @@ internal sealed class SdlWindow(SdlWindowSystem owner, IntPtr handle, WindowId i
         }
     }
 
+    public void SetClipboardText(string text)
+    {
+        EnsureAccess();
+        ArgumentNullException.ThrowIfNull(text);
+        if (!SDL.SetClipboardText(text)) { throw SdlWindowSystem.Error("Set clipboard text"); }
+    }
+
     public void Present(ReadOnlySpan<byte> pixels, PixelSize size, int stride)
     {
         EnsureAccess();
