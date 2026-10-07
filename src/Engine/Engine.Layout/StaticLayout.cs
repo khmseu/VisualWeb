@@ -13,7 +13,11 @@ public sealed class LayoutLimitException(string message) : Exception(message);
 public readonly record struct LayoutRect(double X, double Y, double Width, double Height);
 public readonly record struct LayoutEdges(double Top, double Right, double Bottom, double Left);
 public sealed record LayoutTextFragment(DomText Source, ShapedRun Run, double X, double Baseline, CssComputedStyle Style);
-public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments);
+public sealed record LayoutInlineWidget(DomElement Element, LayoutRect Bounds);
+public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments)
+{
+    public IReadOnlyList<LayoutInlineWidget> Widgets { get; init; } = Array.Empty<LayoutInlineWidget>();
+}
 public abstract record LayoutFlowItem;
 public sealed record LayoutBlockItem(LayoutBox Box) : LayoutFlowItem;
 public sealed record LayoutLineItem(LayoutLine Line) : LayoutFlowItem;
@@ -47,7 +51,7 @@ public sealed record LayoutOptions
 /// <remarks>Specs: css2-visual/css2-sizing;
 /// <see href="https://www.w3.org/TR/CSS22/visuren.html#block-formatting">block formatting</see>,
 /// <see href="https://www.w3.org/TR/CSS22/visuren.html#inline-formatting">inline formatting</see>.
-/// Margin collapse, bidi, floats, replaced elements and complex line breaking fail explicitly.</remarks>
+/// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
 public static class StaticLayout
 {
     public static LayoutResult Layout(DomDocument document, CssStyleResult styles, ITextShaper shaper,
@@ -110,7 +114,8 @@ public static class StaticLayout
             }
             if (element.LocalName is "input" or "button")
             {
-                if (!block) { throw new UnsupportedLayoutException("Inline form controls require deferred inline-block layout."); }
+                if (!block && Display(element) != "inline-block")
+                { throw new UnsupportedLayoutException("Form controls require block or supported inline-block layout."); }
                 if (element.LocalName == "input" && DomFormControls.InputType(element) is not ("text" or "search" or "submit"))
                 {
                     throw new UnsupportedLayoutException($"<input type={DomFormControls.InputType(element)}> requires unsupported widget layout.");
@@ -290,6 +295,18 @@ public static class StaticLayout
             {
                 if (Display(element) == "none") { return; }
                 Check(element, depth);
+                if (element.LocalName == "button" && DomFormControls.ButtonType(element) != "submit"
+                    && Display(element) == "inline-block")
+                {
+                    var buttonStyle = Style(element);
+                    foreach (var child in element.ChildNodes) { Gather(child, buttonStyle, output, depth + 1); }
+                    return;
+                }
+                if (element.LocalName is "input" or "button" && Display(element) == "inline-block")
+                {
+                    output.Add(new(null, Style(element), "", UnitKind.Widget, true) { Widget = element });
+                    return;
+                }
                 if (Display(element) != "inline")
                 {
                     throw new UnsupportedLayoutException("Inline-block or block descendants inside inline elements are unsupported.");
@@ -332,6 +349,7 @@ public static class StaticLayout
             var hasContent = false;
             InlineUnit? space = null;
             var previousWord = false;
+            var previousWidget = false;
             foreach (var unit in input)
             {
                 cancellation.ThrowIfCancellationRequested();
@@ -357,6 +375,31 @@ public static class StaticLayout
                     space = null;
                     Emit(true);
                     previousWord = false;
+                    previousWidget = false;
+                    continue;
+                }
+                if (unit.Kind == UnitKind.Widget)
+                {
+                    var widget = unit.Widget ?? throw new InvalidOperationException("Inline widget is missing its element.");
+                    var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width);
+                    var widgetGap = space is not null && hasContent ? Shape(" ", space.Style) : null;
+                    if (hasContent && (space?.Wrap == true || previousWidget)
+                        && advance + (widgetGap?.Width ?? 0) + widgetWidth > width)
+                    {
+                        Emit(false);
+                        widgetGap = null;
+                    }
+                    if (widgetGap is not null)
+                    {
+                        pending.Add(new(space!.Source!, widgetGap, space.Style, advance));
+                        advance += widgetGap.Width;
+                    }
+                    space = null;
+                    pending.Add(new(null, Shape("", unit.Style), unit.Style, advance, widget, widgetWidth, widgetHeight));
+                    advance += widgetWidth;
+                    hasContent = true;
+                    previousWord = false;
+                    previousWidget = true;
                     continue;
                 }
                 if (previousWord && unit.Kind == UnitKind.Word)
@@ -381,6 +424,7 @@ public static class StaticLayout
                 advance += run.Width;
                 hasContent = true;
                 previousWord = unit.Kind == UnitKind.Word;
+                previousWidget = false;
             }
             if (hasContent) { Emit(false); }
             return output;
@@ -393,6 +437,11 @@ public static class StaticLayout
                 var (ascent, descent) = Extents(strut, blockStyle);
                 foreach (var placed in pending)
                 {
+                    if (placed.Widget is not null)
+                    {
+                        ascent = Math.Max(ascent, placed.Height);
+                        continue;
+                    }
                     var extents = Extents(placed.Run, placed.Style);
                     ascent = Math.Max(ascent, extents.Ascent);
                     descent = Math.Max(descent, extents.Descent);
@@ -403,13 +452,47 @@ public static class StaticLayout
                 var baseline = y + ascent;
                 var fragments = pending.Where(p => p.Source is not null).Select(p => new LayoutTextFragment(p.Source!, p.Run,
                     x + offset + p.Advance, baseline, p.Style)).ToList().AsReadOnly();
-                output.Add(new(Rect(x, y, width, ascent + descent), Finite(baseline), fragments));
+                var widgets = pending.Where(placed => placed.Widget is not null).Select(placed =>
+                    new LayoutInlineWidget(placed.Widget!, Rect(x + offset + placed.Advance, y + ascent - placed.Height,
+                        placed.Width, placed.Height))).ToArray();
+                output.Add(new LayoutLine(Rect(x, y, width, ascent + descent), Finite(baseline), fragments)
+                { Widgets = Array.AsReadOnly(widgets) });
                 y += ascent + descent;
                 pending.Clear();
                 advance = 0;
                 hasContent = false;
                 foreach (var style in activeInline) { pending.Add(new(null, Shape("", style), style, 0)); }
             }
+        }
+
+        private static (double Width, double Height) WidgetSize(CssComputedStyle style, double containingWidth)
+        {
+            var margin = Edges(style, "margin", containingWidth);
+            if (margin != default)
+            { throw new UnsupportedLayoutException("Margins on inline form controls require deferred inline-block margin layout."); }
+            var padding = Edges(style, "padding", containingWidth);
+            var border = Edges(style, "border", containingWidth, "-width");
+            var horizontal = padding.Left + padding.Right + border.Left + border.Right;
+            var vertical = padding.Top + padding.Bottom + border.Top + border.Bottom;
+            var sizing = ((CssKeyword)style["box-sizing"]).Value;
+            var minWidth = Dimension(style["min-width"], containingWidth) ?? 0;
+            var maxWidth = Dimension(style["max-width"], containingWidth) ?? double.PositiveInfinity;
+            var minHeight = Dimension(style["min-height"], null) ?? 0;
+            var maxHeight = Dimension(style["max-height"], null) ?? double.PositiveInfinity;
+            var width = Dimension(style["width"], containingWidth) ?? 160;
+            var height = Dimension(style["height"], null) ?? 20;
+            if (sizing == "border-box")
+            {
+                minWidth = Math.Max(0, minWidth - horizontal);
+                maxWidth = double.IsPositiveInfinity(maxWidth) ? maxWidth : Math.Max(0, maxWidth - horizontal);
+                minHeight = Math.Max(0, minHeight - vertical);
+                maxHeight = double.IsPositiveInfinity(maxHeight) ? maxHeight : Math.Max(0, maxHeight - vertical);
+                width = Math.Max(0, width - horizontal);
+                height = Math.Max(0, height - vertical);
+            }
+            width = Math.Max(minWidth, Math.Min(width, maxWidth));
+            height = Math.Max(minHeight, Math.Min(height, maxHeight));
+            return (Finite(width + horizontal), Finite(height + vertical));
         }
 
         private ShapedRun Shape(string text, CssComputedStyle style)
@@ -463,8 +546,12 @@ public static class StaticLayout
             : throw new LayoutLimitException("Layout geometry exceeds finite numeric range.");
         private static LayoutRect Rect(double x, double y, double width, double height)
             => new(Finite(x), Finite(y), Finite(width), Finite(height));
-        private enum UnitKind { Word, Space, PreservedSpace, Break, Strut, EndStrut }
-        private sealed record InlineUnit(DomText? Source, CssComputedStyle Style, string Text, UnitKind Kind, bool Wrap);
-        private sealed record Placed(DomText? Source, ShapedRun Run, CssComputedStyle Style, double Advance);
+        private enum UnitKind { Word, Space, PreservedSpace, Break, Strut, EndStrut, Widget }
+        private sealed record InlineUnit(DomText? Source, CssComputedStyle Style, string Text, UnitKind Kind, bool Wrap)
+        {
+            public DomElement? Widget { get; init; }
+        }
+        private sealed record Placed(DomText? Source, ShapedRun Run, CssComputedStyle Style, double Advance,
+            DomElement? Widget = null, double Width = 0, double Height = 0);
     }
 }

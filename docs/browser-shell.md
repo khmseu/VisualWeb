@@ -200,12 +200,15 @@ This is a deliberately narrow subset of HTML
 reports data-only form/control snapshots (IPC v8); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search
 (editable), hidden and submit, plus `button` submit (and inert `type=button`),
-with a temporary user-agent `display:block` default because inline-block
-control layout is not implemented; author `display:none` still hides controls.
+with a user-agent `display:inline-block` default and bounded fallback dimensions
+(160 by 20 CSS pixels) when sizes are unspecified; author `display:none` still
+hides controls. Form-control inline boxes wrap atomically with text; nonzero
+control margins and general inline-block/replaced-element layout remain unsupported.
 Fields and submit buttons are drawn by a shell-owned overlay (white field or
 gray button, gray border, bounded ASCII label with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
-rectangles. This display default is a layout accommodation, not full UA styling.
+rectangles. These defaults are a bounded layout accommodation, not complete UA
+widget sizing or styling.
 
 Tab/Shift+Tab visit visible, enabled controls merged in tree order with anchor
 groups; focusing a text/search field enables SDL committed text input, which is

@@ -132,6 +132,9 @@ public sealed class StaticPageRenderer : IPageRenderer
                 }
                 else if (item is LayoutLineItem line)
                 {
+                    var linksBeforeLine = links.Count;
+                    var lineAnchors = new Dictionary<DomElement, double>();
+                    var lineNewAnchors = new HashSet<DomElement>();
                     foreach (var fragment in line.Line.Fragments)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -170,11 +173,28 @@ public sealed class StaticPageRenderer : IPageRenderer
                             { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
                             target = [];
                             anchors.Add(anchor, target);
+                            lineNewAnchors.Add(anchor);
                             links.Add(new(target.AsReadOnly(), destination));
                         }
                         if (target.Count >= RendererProtocol.MaxLinkRects)
                         { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
                         target.Add(rect);
+                        lineAnchors[anchor] = lineAnchors.TryGetValue(anchor, out var firstX) ? Math.Min(firstX, fragment.X) : fragment.X;
+                    }
+                    foreach (var widget in line.Line.Widgets)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var bounds = widget.Bounds;
+                        var left = Math.Clamp(bounds.X, 0, layout.ViewportWidth);
+                        var right = Math.Clamp(bounds.X + bounds.Width, 0, layout.ViewportWidth);
+                        var top = Math.Clamp(bounds.Y - scrollY, 0, layout.ViewportHeight);
+                        var bottom = Math.Clamp(bounds.Y + bounds.Height - scrollY, 0, layout.ViewportHeight);
+                        if (right > left && bottom > top)
+                        {
+                            var beforeLink = linksBeforeLine + lineNewAnchors.Count(anchor =>
+                                lineAnchors.TryGetValue(anchor, out var anchorX) && anchorX < bounds.X);
+                            controls[widget.Element] = (new(left, top, right - left, bottom - top), beforeLink);
+                        }
                     }
                 }
             }

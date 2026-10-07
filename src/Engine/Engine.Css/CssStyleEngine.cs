@@ -32,7 +32,7 @@ public static class CssStyleEngine
     public const string UserAgentStyleSheet = """
         html, body, div, p, section, article, aside, nav, header, footer, main, address,
         blockquote, pre, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, figure, figcaption, hr, form { display: block }
-        input, button { display: block }
+        input, button { display: inline-block }
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }
         body { margin: 8px }

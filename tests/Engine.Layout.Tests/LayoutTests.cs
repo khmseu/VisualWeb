@@ -153,6 +153,19 @@ public sealed class LayoutTests
         Assert.Equal(30, box.Content.Height);
     }
 
+    [Fact]
+    public void InlineFormControlsAreAtomicAndWrapWithTextFlow()
+    {
+        var root = Layout("<body id=container><input id=a><input id=b></body>",
+            "input{display:inline-block;width:25px;height:12px}", width: 40).Root!;
+        var lines = Find(root, "container").Lines;
+        Assert.Equal(2, lines.Count);
+        Assert.Equal(0, lines[0].Widgets.Single().Bounds.X);
+        Assert.Equal(25, lines[0].Widgets.Single().Bounds.Width);
+        Assert.Equal(12, lines[0].Widgets.Single().Bounds.Height);
+        Assert.Equal(lines[0].Bounds.Height, lines[1].Widgets.Single().Bounds.Y);
+    }
+
     [Theory]
     [InlineData("<p>text</p>", "p{margin-top:1px}")]
     [InlineData("<span><div>x</div></span>", "")]

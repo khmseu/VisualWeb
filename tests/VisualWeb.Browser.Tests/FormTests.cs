@@ -126,6 +126,23 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task InlineControlsAndLinksKeepTreeTraversalOrder(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.com/"),
+            "<!doctype html><style>*{margin:0}</style><form><input name=a><a href=/next>x</a><input name=b></form>", 200, []);
+        var rendered = await renderer.RenderAsync(page, new(360, 100, 1), Cancellation);
+
+        Assert.Equal([0, 1], rendered.FormControls.Select(control => control.BeforeLink));
+        Assert.Single(rendered.LinkTargets);
+        Assert.True(rendered.FormControls[1].Rect!.X > rendered.LinkTargets[0].Rects[0].X);
+        Assert.All(rendered.FormControls, control => Assert.Equal(160, control.Rect!.Width));
+        Assert.All(rendered.FormControls, control => Assert.Equal(20, control.Rect!.Height));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task OffscreenControlsHaveNoGeometryAndScrolledControlsAreClipped(bool process)
     {
         using var renderer = Renderer(process);

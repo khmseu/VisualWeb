@@ -34,11 +34,11 @@ DOM identity. The shared v9 contract caps 4096 anchors, 64 rectangles per anchor
 
 `BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
 subset collected after optional script mutations: `form` action/error, and
-`input` text/search/hidden/submit plus `button` submit/plain-button controls (the
-minimal UA sheet displays supported controls as blocks until inline-block layout
-is implemented) with
-name, current value attribute, label, disabled/readonly/required/maxlength,
-merged traversal position before a link group and clipped visible border box.
+`input` text/search/hidden/submit plus `button` submit/plain-button controls.
+Supported controls use finite inline-block layout with 160 by 20 CSS-pixel fallback
+dimensions and expose name, current value attribute, label,
+disabled/readonly/required/maxlength, merged traversal position before a link
+group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
 `novalidate`, non-UTF-8 `accept-charset`, `<base>`, `form=` owners, submitter
 overrides, other input types, reset buttons, textarea/select/output/object,

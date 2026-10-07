@@ -48,12 +48,12 @@ broader page interaction is still missing:
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
   shell-edited `input` text/search/hidden/submit and `button` submit controls
   via IPC v8 data-only metadata and the ordinary
-  navigation transaction; unsupported form semantics fail visibly. The renderer
-  applies its documented UA `display:block` layout accommodation. General forms
-  remain missing: POST/multipart, other input types, textarea/select, constraint
-  validation UI, form events/scripted submission, `form=` owners, inline-block
-  control layout, autofill and non-UTF-8 submission encodings. Supported controls
-  use a documented UA `display:block` accommodation. See
+  navigation transaction; supported controls use finite inline-block layout with
+  bounded fallback dimensions and unsupported form semantics fail visibly.
+  General forms remain missing: POST/multipart, other input types, textarea/select,
+  constraint validation UI, form events/scripted submission, `form=` owners,
+  intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
+  encodings. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
 - A bounded browser-owned selection supports mouse drag across visible non-link
   shaped text fragments and Ctrl+C to the system clipboard. Selection is fragment-
