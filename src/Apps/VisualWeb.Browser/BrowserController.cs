@@ -429,7 +429,7 @@ public sealed class BrowserController : IDisposable
         }
         var limit = Session.Options.MaxAddressCharacters;
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i)), limit);
-        var preventHttpsDowngrade = owner.Document?.Url.Protocol == "https:";
+        var preventHttpsDowngrade = owner.Document?.Url.Protocol is "https:" or "data:";
         return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href,
             preventHttpsDowngrade);
     }

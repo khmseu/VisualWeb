@@ -332,7 +332,7 @@ public sealed class ResourceLoader : IDisposable
     }
 
     private static ResourceLoadException InsecureTransport() => new(ResourceError.InsecureTransport,
-        "HTTPS resource policy blocks HTTP loads and HTTPS-to-HTTP redirects.");
+        "Secure transport policy blocks HTTP loads and HTTPS-to-HTTP redirects.");
 
     internal static ResourceLoadException BodyLimit() => new(ResourceError.BodyLimit, "Resource body exceeds the configured byte limit.");
 

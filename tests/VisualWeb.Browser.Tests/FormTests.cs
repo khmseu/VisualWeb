@@ -404,10 +404,54 @@ public sealed class FormTests
         Assert.True(controller.ActivateFocusedLink(tab.Id));
         PumpUntilComplete();
 
-        Assert.Contains("HTTPS resource policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
         Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void OpaqueDataDocumentCannotSubmitFormValuesOverHttp()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent("<!doctype html>", System.Text.Encoding.UTF8, "text/html")
+            };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        var html = Style + "<form action='http://outside.example/search'><input name=q value=private>"
+            + "<input type=submit></form>";
+        var dataUrl = "data:text/html," + Uri.EscapeDataString(html);
+        controller.Navigate(tab.Id, dataUrl);
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Empty(requests);
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal(dataUrl, tab.History.Current!.Href);
 
         void PumpUntilComplete()
         {
@@ -450,7 +494,7 @@ public sealed class FormTests
         Assert.True(controller.ActivateFocusedLink(tab.Id));
         PumpUntilComplete();
 
-        Assert.Contains("HTTPS resource policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
         Assert.Equal(["https://secure.example/secure", "https://secure.example/search?q=private"],
             requests.Select(request => request.AbsoluteUri));
         Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);

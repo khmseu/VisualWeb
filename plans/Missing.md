@@ -26,7 +26,7 @@ This is the most important gap before accepting arbitrary web content.
 - Top-level navigation renderer swaps are implemented: every multiprocess shell mode (confined or explicitly unsandboxed) rotates to a fresh renderer for cross-origin final origins and every new opaque document, transactionally after render/commit/history success, reusing it for same-origin navigation. Low-level controllers keep the per-tab default. There are no cross-site frames or frame isolation, no site computation, no inherited/sandbox origin selection, and no SOP/CORS/CSP or production request authorization.
 - The CLI secure-by-default renderer milestone is delivered: recommended `--multiprocess` and legacy `--development-multiprocess` require supported confinement before SDL/content/worker startup, without fallback. Unsandboxed execution requires explicit `--allow-unsandboxed-development` trusted-content acknowledgement in a development mode (mandatory for single-process), rejected with normal mode or `--require-sandbox`. `--require-sandbox` remains a redundant compatible assertion; low-level library/test renderer defaults are unchanged. This does not deliver production request authorization or complete web security.
 - Linux ARM64 confinement is explicitly unsupported and fails closed.
-- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:` links/forms and linked file stylesheets are rejected, while explicit address-bar file navigation remains available. Local file documents also cannot initiate HTTP(S) link/form navigation; HTTPS form submissions block cleartext requests and downgrade redirects unless HSTS upgrades the destination before transport. Explicit address-bar navigation remains available. Local file and opaque `data:` documents cannot trigger linked HTTP(S) stylesheet requests (`data:` stylesheets remain allowed); these are narrow restrictions, not local-document confinement or general request authorization. Linked stylesheet discovery rejects `file:` destinations, and HTTPS documents block HTTP linked stylesheets and downgrade redirects.
+- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:` links/forms and linked file stylesheets are rejected, while explicit address-bar file navigation remains available. Local file documents also cannot initiate HTTP(S) link/form navigation; HTTPS and opaque `data:` form submissions block cleartext requests and downgrade redirects unless HSTS upgrades the destination before transport. Explicit address-bar navigation remains available. Local file and opaque `data:` documents cannot trigger linked HTTP(S) stylesheet requests (`data:` stylesheets remain allowed); these are narrow restrictions, not local-document confinement or general request authorization. Linked stylesheet discovery rejects `file:` destinations, and HTTPS documents block HTTP linked stylesheets and downgrade redirects.
 
 Evidence: `networking trust boundary`, `isolation architecture`, and `Linux architecture guard`.
 
@@ -188,12 +188,10 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `588e53b` and working-tree changes on
+*Status cross-checked against `4c4a26e` and working-tree changes on
 2026-10-07. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; local file documents cannot initiate HTTP(S) link/form navigation, and
-HTTPS forms cannot submit directly to HTTP actions. The browser suite (507 tests),
-platform suite (24 tests), solution build (0 warnings/errors), and changed-file
-formatting passed. A full solution test run had one
-unrelated failure in `CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
-in Engine.Scripting.Tests. These checks are not full conformance, security,
-CI-matrix or real-desktop validation.
+HTTPS or opaque `data:` forms cannot send data over cleartext HTTP. The browser
+suite (508 tests), Engine.Net suite (715 tests), solution build (0 warnings/errors),
+changed-file formatting, and `git diff --check` pass. These checks are not full
+conformance, security, CI-matrix or real-desktop validation.

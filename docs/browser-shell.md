@@ -262,9 +262,11 @@ behavior are deferred.
 Page-initiated link and form navigation to `file:` URLs is blocked to prevent a
 web document from using the browser's privileged local-file loader. Local `file:`
 documents also cannot initiate HTTP(S) link or form navigation, preventing an
-untrusted local page from sending form values to a remote endpoint; users can
-still enter an explicit URL in the address bar. This is a narrow navigation
-guard, not filesystem sandboxing: locally selected file documents
+untrusted local page from sending form values to a remote endpoint. Forms in
+opaque `data:` documents also block HTTP submissions (subject to a prior HSTS
+upgrade), preventing cleartext form-data disclosure. Users can still enter an
+explicit URL in the address bar. These are narrow guards, not filesystem
+sandboxing: locally selected file documents
 remain privileged/trusted content, and there is no general origin/CORS/CSP or
 local-file isolation policy yet.
 
