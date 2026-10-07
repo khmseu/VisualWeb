@@ -306,6 +306,42 @@ public sealed class FormTests
         Assert.Same(page, harness.Controller.Page(harness.Tab.Id));
     }
 
+    [Theory]
+    [InlineData("<a href='file:///etc/passwd'>local</a>", false)]
+    [InlineData("<form action='file:///etc/passwd'><input type=submit value=Go></form>", true)]
+    public void PageInitiatedFileNavigationIsBlockedTransactionally(string body, bool form)
+    {
+        using var harness = new Harness(body);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        var committed = controller.Page(tab)!;
+        controller.FocusPage(tab);
+        if (form)
+        {
+            Assert.True(controller.FocusControl(tab, 0));
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab));
+            Assert.Contains("Page-initiated file navigation is blocked", error.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            var rect = Assert.Single(committed.LinkTargets).Rects[0];
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab,
+                rect.X + rect.Width / 2, rect.Y + rect.Height / 2, harness.Viewport));
+            Assert.Contains("Page-initiated file navigation is blocked", error.Message, StringComparison.Ordinal);
+        }
+        Assert.Single(harness.Source.Requests);
+        Assert.Same(committed, controller.Page(tab));
+        Assert.Null(harness.Tab.Error);
+    }
+
+    [Fact]
+    public void UserAddressNavigationStillAllowsExplicitFileUrl()
+    {
+        using var harness = new Harness("<p>initial</p>");
+        harness.Controller.Navigate(harness.Tab.Id, "file:///etc/passwd");
+        Assert.Equal("file:///etc/passwd", harness.Source.Requests[^1].Url.Href);
+    }
+
     [Fact]
     public void NonUtf8DocumentEncodingIsRejected()
     {

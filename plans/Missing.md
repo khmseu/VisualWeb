@@ -26,7 +26,7 @@ This is the most important gap before accepting arbitrary web content.
 - Top-level navigation renderer swaps are implemented: every multiprocess shell mode (confined or explicitly unsandboxed) rotates to a fresh renderer for cross-origin final origins and every new opaque document, transactionally after render/commit/history success, reusing it for same-origin navigation. Low-level controllers keep the per-tab default. There are no cross-site frames or frame isolation, no site computation, no inherited/sandbox origin selection, and no SOP/CORS/CSP or production request authorization.
 - The CLI secure-by-default renderer milestone is delivered: recommended `--multiprocess` and legacy `--development-multiprocess` require supported confinement before SDL/content/worker startup, without fallback. Unsandboxed execution requires explicit `--allow-unsandboxed-development` trusted-content acknowledgement in a development mode (mandatory for single-process), rejected with normal mode or `--require-sandbox`. `--require-sandbox` remains a redundant compatible assertion; low-level library/test renderer defaults are unchanged. This does not deliver production request authorization or complete web security.
 - Linux ARM64 confinement is explicitly unsupported and fails closed.
-- The browser/network broker remains privileged; production request authorization is unfinished.
+- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:` links and forms are now rejected, while explicit address-bar file navigation remains available; local-document confinement is still absent. Linked stylesheet discovery already rejects `file:` destinations for non-file documents.
 
 Evidence: `networking trust boundary`, `isolation architecture`, and `Linux architecture guard`.
 
@@ -48,11 +48,12 @@ broader page interaction is still missing:
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
   shell-edited `input` text/search/hidden/submit and `button` submit controls
   via IPC v8 data-only metadata and the ordinary
-  navigation transaction; unsupported form semantics fail visibly. General forms
+  navigation transaction; unsupported form semantics fail visibly. The renderer
+  applies its documented UA `display:block` layout accommodation. General forms
   remain missing: POST/multipart, other input types, textarea/select, constraint
   validation UI, form events/scripted submission, `form=` owners, inline-block
   control layout, autofill and non-UTF-8 submission encodings. Supported controls
-  currently use a documented UA `display:block` accommodation. See
+  use a documented UA `display:block` accommodation. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
 - A bounded browser-owned selection supports mouse drag across visible non-link
   shaped text fragments and Ctrl+C to the system clipboard. Selection is fragment-

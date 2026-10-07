@@ -246,6 +246,13 @@ Implicit submission through `<input type=image>`, autofill, autocomplete,
 
 ## Navigation and page policy
 
+Page-initiated link and form navigation to `file:` URLs is blocked to prevent a
+web document from using the browser's privileged local-file loader. Users can
+still enter an explicit local file URL in the address bar. This is a narrow
+navigation guard, not filesystem sandboxing: locally selected file documents
+remain privileged/trusted content, and there is no general origin/CORS/CSP or
+local-file isolation policy yet.
+
 BrowserController owns independent per-tab IPageSource/IPageRenderer instances.
 GetPageSource uses a separate ResourceLoader per tab, with **4 MiB responses**,
 existing redirect/deadline limits and cookies **off**. Fetch is asynchronous;

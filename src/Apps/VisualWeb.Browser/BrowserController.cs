@@ -422,6 +422,8 @@ public sealed class BrowserController : IDisposable
         var url = BrowserUrl.Parse(destination);
         if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
+        if (url.Protocol == "file:")
+        { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
         Navigate(id, url.Href);
         return true;
     }

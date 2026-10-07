@@ -161,7 +161,6 @@ public sealed class LinkTests
     [InlineData("", "https://example.com/final/index.html")]
     [InlineData("//other.example/path", "https://other.example/path")]
     [InlineData("http://example.com/path", "http://example.com/path")]
-    [InlineData("file:///tmp/page.html#part", "file:///tmp/page.html#part")]
     [InlineData("data:text/html,hello#part", "data:text/html,hello#part")]
     public void SupportedDestinationsUseNormalNavigation(string href, string absolute)
     {
