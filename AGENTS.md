@@ -84,6 +84,8 @@
   render/commit/history success; dispose failed/stale/closed candidates and keep
   resize on the committed renderer. Not site/frame isolation or SOP/CORS/CSP.
   Shared app-layer stylesheet discovery must not leak into offline Engine.Content policy.
+  Linked stylesheets are fetched only by the browser's tab GetPageSource (shared HSTS,
+  cookies off, bounded) and sent as data; renderers never fetch and fail on unprovided links.
 - Read the [process guide](docs/renderer-processes.md) before IPC/worker changes.
   Preserve exact framing/budgets/identity/viewport checks, per-tab deadlines,
   cancellation and crash recovery. Stdout is protocol only; drain stderr.

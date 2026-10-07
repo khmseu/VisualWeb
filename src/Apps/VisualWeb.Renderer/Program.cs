@@ -55,7 +55,7 @@ try
                     : renderer;
                 if (active.HasDocument(request.CommittedDocumentId)) { active.CommitDocument(request.CommittedDocumentId); }
                 var page = new LoadedPage(BrowserUrl.Parse(request.Url!), request.Html!, request.StatusCode, request.Diagnostics!)
-                { DocumentId = request.DocumentId };
+                { DocumentId = request.DocumentId, Stylesheets = request.Stylesheets! };
                 var rendered = active.Render(page,
                     new(request.Width, request.Height, request.Scale) { ScrollY = request.ScrollY },
                     CancellationToken.None, request.ReuseDocument);

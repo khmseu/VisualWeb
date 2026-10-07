@@ -19,6 +19,13 @@ public sealed record PageLinkTarget(
         x >= X && y >= Y && x < X + Width && y < Y + Height;
 }
 
+/// <summary>Browser-fetched, decoded linked stylesheet text keyed by its serialized absolute request URL.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
+/// "stylesheet"</see>. Data only: no response headers, final redirect URL, DOM node or fetch capability crosses IPC.</remarks>
+public sealed record PageStylesheet(
+    [property: JsonRequired] string Url,
+    [property: JsonRequired] string Css);
+
 /// <summary>Versioned data-only renderer messages. No DOM, native handles, paths or broker capabilities.</summary>
 /// <remarks>Internal protocol; not a web interface. Each channel serves exactly one tab.</remarks>
 public sealed record RendererMessage
@@ -47,11 +54,12 @@ public sealed record RendererMessage
     public bool ExecuteInlineScripts { get; init; }
     public bool ReuseDocument { get; init; }
     public PageLinkTarget[]? LinkTargets { get; init; }
+    public PageStylesheet[]? Stylesheets { get; init; }
 }
 
 public static class RendererProtocol
 {
-    public const int Version = 5;
+    public const int Version = 6;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -60,6 +68,10 @@ public static class RendererProtocol
     public const int MaxTextCharacters = 8192;
     public const int MaxLinkTargets = 4096;
     public const int MaxLinkMetadataBytes = 1024 * 1024;
+    public const int MaxStylesheets = 32;
+    public const int MaxStylesheetCharacters = 256 * 1024;
+    /// <summary>Budget for the UTF-8 JSON serialization of the whole linked stylesheet collection.</summary>
+    public const int MaxStylesheetBytes = 1024 * 1024;
 
     public static void Validate(RendererMessage message, int payloadLength)
     {
@@ -67,6 +79,8 @@ public static class RendererProtocol
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
         if (message.Kind != "frame" && message.LinkTargets is not null)
         { throw new IpcProtocolException("Link targets belong only to frame replies."); }
+        if (message.Kind != "render" && message.Stylesheets is not null)
+        { throw new IpcProtocolException("Linked stylesheets belong only to render requests."); }
         if ((message.Kind != "render" && message.ScrollY != 0) || (message.Kind != "frame" && message.ScrollHeight != 0))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
         if (message.Kind != "render" && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
@@ -91,6 +105,7 @@ public static class RendererProtocol
                 {
                     throw new IpcProtocolException("Invalid renderer request fields or limits.");
                 }
+                ValidateStylesheets(message.Stylesheets);
                 Dimensions(message.Width, message.Height, message.Scale);
                 if (!double.IsFinite(message.ScrollY) || message.ScrollY < 0 || message.ScrollY > 1e9)
                 { throw new IpcProtocolException("Invalid renderer scroll offset."); }
@@ -143,6 +158,24 @@ public static class RendererProtocol
         }
         if (JsonSerializer.SerializeToUtf8Bytes(links).Length > MaxLinkMetadataBytes)
         { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }
+    }
+    /// <summary>Checks count, per-sheet characters, unique serialized absolute URLs and the UTF-8 JSON wire budget.</summary>
+    public static void ValidateStylesheets(IReadOnlyList<PageStylesheet>? stylesheets)
+    {
+        if (stylesheets is null || stylesheets.Count > MaxStylesheets)
+        { throw new IpcProtocolException("Invalid linked stylesheet collection or count."); }
+        var urls = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var sheet in stylesheets)
+        {
+            if (sheet is null || string.IsNullOrEmpty(sheet.Url) || sheet.Url.Length > MaxTextCharacters
+                || sheet.Css is null || sheet.Css.Length > MaxStylesheetCharacters)
+            { throw new IpcProtocolException("Invalid linked stylesheet URL or character limit."); }
+            if (BrowserUrl.ParseResult(sheet.Url).Url?.Href != sheet.Url)
+            { throw new IpcProtocolException("Linked stylesheet URL must be serialized and absolute."); }
+            if (!urls.Add(sheet.Url)) { throw new IpcProtocolException("Linked stylesheet URLs must be unique."); }
+        }
+        if (JsonSerializer.SerializeToUtf8Bytes(stylesheets).Length > MaxStylesheetBytes)
+        { throw new IpcProtocolException("Linked stylesheet byte limit exceeded."); }
     }
     public static (int Width, int Height) Dimensions(double width, double height, double scale)
     {

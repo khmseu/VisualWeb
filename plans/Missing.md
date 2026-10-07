@@ -51,15 +51,23 @@ Evidence: `page limitations`, `input dispatch`, and `history implementation`.
 
 ### 3. Loading complete web pages
 
-Only the main HTML resource is loaded. Missing pieces include:
+Besides the main HTML resource, only bounded classic linked stylesheets are loaded:
+the browser (never the renderer) fetches supported `link rel=stylesheet` sheets
+(media absent/`all`, type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
+with the tab loader and shared session HSTS store, cookies off, resolved against the
+final response URL, as at most 32 sheets of 256 Ki characters within a 1 MiB IPC
+budget. Any stylesheet failure fails the navigation. Missing pieces include:
 
-- Linked stylesheets, CSS imports, external scripts, images, fonts, media, and frame resources.
-- Resource discovery, scheduling, and lifecycle integration.
+- CSS `@import`, `url()` resources, external scripts, images, fonts, media, and frame resources;
+  media-conditional/alternate/titled sheets, `<base href>` resolution and CORS/SOP/mixed-content policy for subresources.
+- General resource discovery, scheduling, and lifecycle integration (stylesheets are
+  discovered from the pre-script parse only; script-added or changed links fail visibly,
+  and there are no load/error events or incremental rendering).
 - General HTTP methods/request bodies, streaming responses, HTTP caching, and authentication challenges.
 - Full cookie policy and persistence. The browser currently disables cookies; the networking library’s optional cookie subset rejects Domain, SameSite, and Partitioned attributes.
 - MIME sniffing. The byte-level HTML charset prescan (`<meta charset>`, pragma, XML declaration; first 1024 bytes) now feeds navigation decoding, but statistical/locale encoding detection, container inheritance and the parser's reparse on a later conflicting declaration are absent.
 
-Linked stylesheets and external scripts are explicitly rejected rather than merely ignored.
+Unsupported linked-stylesheet semantics and external scripts are explicitly rejected rather than merely ignored.
 
 Evidence: `stylesheet collection`, `script classification`, `HTML loading policy`, and `networking scope`.
 
@@ -137,12 +145,12 @@ Some older passages incorrectly say JavaScript/V8 or page scripting is still abs
 
 1. **Security model and mandatory supported isolation** before untrusted browsing.
 2. **Links, page input, and subresource loading** for basic usability. Basic
-   bounded textual links and vertical document scrolling are implemented; broader
-   page input, subresources and overflow remain.
+   bounded textual links, vertical document scrolling and bounded classic linked
+   stylesheets are implemented; broader page input, other subresources and overflow remain.
 3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
 *The original audit was read-only and did not independently verify builds/tests
-or CI. The interaction entries above were subsequently updated for the implemented
-bounded textual-link and vertical-scrolling subsets.*
+or CI. The interaction and loading entries above were subsequently updated for the
+implemented bounded textual-link, vertical-scrolling and linked-stylesheet subsets.*

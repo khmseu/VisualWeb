@@ -32,6 +32,22 @@ public sealed record LoadedPage
     public int StatusCode { get; init; }
     public IReadOnlyList<string> Diagnostics { get; init; }
     public Guid DocumentId { get; init; } = Guid.NewGuid();
+    private readonly IReadOnlyList<PageStylesheet> stylesheets = Array.Empty<PageStylesheet>();
+    /// <summary>Browser-fetched linked stylesheet texts keyed by resolved request URL; published with the document.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
+    /// "stylesheet"</see>. A bounded immutable data snapshot (<see cref="RendererProtocol.ValidateStylesheets"/>);
+    /// renderers never fetch, so links absent from this collection fail rendering.</remarks>
+    public IReadOnlyList<PageStylesheet> Stylesheets
+    {
+        get => stylesheets;
+        init
+        {
+            var copy = value?.ToArray();
+            try { RendererProtocol.ValidateStylesheets(copy); }
+            catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+            stylesheets = Array.AsReadOnly(copy!);
+        }
+    }
 
     public void Deconstruct(out BrowserUrl Url, out string Html, out int StatusCode, out IReadOnlyList<string> Diagnostics)
     {

@@ -163,6 +163,8 @@ stay on the browser UI thread in both modes.
 
 Only `text/html` is accepted, except that explicitly selected local files
 without MIME metadata are treated as HTML. There is **no MIME sniffing**.
+The same tab loader also fetches supported linked stylesheets before publication
+(see the stylesheet policy below); a stylesheet failure fails the navigation.
 Decoding uses `HtmlEncodingSniffer`: a BOM first (even when the Content-Type
 charset is unknown), then a valid MIME charset, then the HTML prescan of the
 first 1024 bytes (`<meta charset>`, `http-equiv` pragma, XML declaration), then
@@ -224,10 +226,38 @@ computation, cross-site frame isolation, inherited origin selection,
 same-origin/CORS/CSP policy or production request authorization.
 
 The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
-in document order, taking their child text. Inline attributes also participate.
-Named stylesheet sets, non-CSS type values, media other than empty/`all`,
-linked stylesheets and CSS imports fail explicitly rather than silently
-producing a partially styled page. No subresource is fetched. Scripts are inert by default; the explicit
+and supported linked stylesheets in document (cascade) order, taking style child text. Inline attributes also participate.
+Named stylesheet sets, non-CSS type values, media other than absent/`all`
+and CSS imports fail explicitly rather than silently producing a partially styled page.
+
+Bounded linked stylesheets are brokered by the browser, never by renderers.
+`GetPageSource` parses the decoded document with the renderer's exact parser
+options (bounded managed parsing in the browser process, for discovery only),
+then fetches each supported classic `link rel=stylesheet` (tokens ASCII
+case-insensitive; `href` resolved with Core.Url against the final response URL)
+through the same tab-local `ResourceLoader`, sharing the shell session HSTS store,
+before the document is published. Requests keep cookies disabled and the bad-port
+and HSTS checks; only HTTP(S) and data URLs are allowed, plus file URLs from file
+documents. Links without a nonempty `href` create no sheet, as in HTML.
+Alternate/titled/disabled links, `media` other than absent/`all`, `type` other than
+absent/empty/`text/css`, `crossorigin`, `integrity`, `referrerpolicy`, the obsolete
+`charset` attribute, `<base href>` and other schemes fail navigation. Each response
+must be 2xx `text/css` (a MIME-less file only from a file document; no sniffing
+or quirks-mode fallback), at most 1 MiB of body bytes and 256 Ki decoded characters.
+Decoding follows the CSS fallback encoding order (BOM, Content-Type charset,
+exact `@charset "…";` prefix with UTF-16 mapped to UTF-8, document encoding).
+A valid leading `@charset` marker is consumed as an encoding signature before
+CSS parsing; unknown labels fail instead of falling through. At most 32 unique URLs, with
+a 1 MiB UTF-8 JSON budget for the whole collection, are published on
+`LoadedPage.Stylesheets` as data only (request URL and decoded text; no headers,
+redirect URL, DOM or capability). Any stylesheet failure fails the whole navigation,
+so the committed document, frame, history and origin are retained and no partial
+document is published. Cross-origin candidates receive only this data, never
+fetch authority. Renderers look up each link's resolved URL and fail
+visibly when a link added or changed by an enabled inline script was not provided.
+`@import`, `url()` resources, fonts, images, CORS/SOP/mixed-content policy and
+caching remain unimplemented; unsupported CSS still yields diagnostics that fail layout.
+Scripts are inert by default; the explicit
 `--enable-inline-scripts` phase-11d option executes a bounded inline classic batch
 after parsing and before stylesheet collection. See the
 [scripting guide](scripting.md) for exact classification, limits and deviations.
@@ -353,7 +383,8 @@ are shell-level resources.
 Pages support bounded textual anchor hit-testing and primary-click navigation,
 but no general DOM input, controls or selection.
 Basic vertical document scrolling is available; general/nested CSS overflow is
-not. There are no downloads, storage, automatic linked CSS or images/media.
+not. Bounded classic linked stylesheets load as described above; there are no
+downloads, storage, images or media.
 Post-parse inline scripting remains explicit opt-in, not a full event loop. Native page crashes
 can terminate the entire shell in single-process mode; multiprocess mode
 contains worker failures to their tab. Browser-native chrome/platform crashes

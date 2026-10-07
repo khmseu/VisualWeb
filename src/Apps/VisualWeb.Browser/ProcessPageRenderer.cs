@@ -129,6 +129,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             Html = page.Html,
             StatusCode = page.StatusCode,
             Diagnostics = page.Diagnostics.ToArray(),
+            Stylesheets = page.Stylesheets.ToArray(),
             Width = viewport.Width,
             Height = viewport.Height,
             Scale = viewport.Scale,

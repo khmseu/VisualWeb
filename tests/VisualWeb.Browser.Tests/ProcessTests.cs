@@ -700,7 +700,7 @@ public sealed class ProcessTests
         source.Html = "<!doctype html><link rel=stylesheet href=a.css>";
         controller.Navigate(tab.Id, "https://second.example/");
         Wait();
-        Assert.Contains("Linked stylesheets", tab.Error);
+        Assert.Contains("was not provided by the browser", tab.Error);
         Assert.Same(origin, tab.Origin);
         Assert.Same(page, controller.Page(tab.Id));
         Assert.Equal("https://first.example/", tab.History.Current!.Href);

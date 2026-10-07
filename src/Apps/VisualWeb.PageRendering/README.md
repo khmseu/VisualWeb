@@ -2,7 +2,13 @@
 
 Shared app-layer static-page models and rendering policy for the browser's
 local development mode and renderer executable. Owns explicit native font
-configuration, embedded stylesheet discovery and offline Engine.Content calls.
+configuration, embedded and linked stylesheet discovery and offline Engine.Content calls.
+`LoadedPage.Stylesheets` is a bounded immutable data collection (request URL and
+decoded CSS) validated by the shared IPC contract. `DiscoverStylesheets` gives the
+browser the supported classic `link rel=stylesheet` URLs (resolved against the final
+document URL) from the same parser options; `CollectStyles` interleaves embedded and
+provided linked sources in document order and throws for unsupported link semantics
+or links (for example, script-changed ones) whose text was not provided.
 Phase 11d adds explicit `executeInlineScripts: true` post-parse inline classics
 with live DOM bindings before style/layout/paint. Default rendering remains
 script-free. Publication pins every successful parsed DOM for scroll/resize; at most one
@@ -34,7 +40,7 @@ same-origin enforcement, CORS or CSP. IPC remains
 unchanged; worker reconstruction has a local identity, not a transmitted browser
 opaque principal.
 
-No networking, window backend or browser chrome dependencies. Unsupported page
+No networking (linked stylesheet text is supplied by the browser), window backend or browser chrome dependencies. Unsupported page
 features fail explicitly. See the [shell guide](../../../docs/browser-shell.md)
 and [process guide](../../../docs/renderer-processes.md), plus the
 [scripting guide](../../../docs/scripting.md) for exact policy and budgets.

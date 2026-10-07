@@ -141,7 +141,10 @@ for their ephemeral loopback servers.
 `LoadAsync` stays the trusted, unrestricted developer navigation entry point:
 HTTP(S), local file and data URLs, with redirects to any HTTP(S) origin. The
 browser's `GetPageSource` top-level navigation keeps using it without a
-same-origin restriction; the bad-port policy above still applies.
+same-origin restriction; the bad-port policy above still applies. Its brokered
+linked-stylesheet subresources use the same tab loader, session HSTS store and
+bad-port policy with cookies off; this is not CORS, SOP, mixed-content or request
+authorization (see the [shell guide](browser-shell.md)).
 
 `LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken)`
 is a separate, opt-in GET entry point. It shares the same HTTP pipeline, so

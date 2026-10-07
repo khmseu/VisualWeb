@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v5
+## Private stream protocol v6
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 5, explicitly present; v1/v2/v3/v4 rejected |
+| Protocol version | 6, explicitly present; v1 through v5 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -105,16 +105,21 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Visible link rectangles per frame | 4096 |
 | Absolute destination URL | 8192 UTF-16 characters each |
 | Serialized link metadata | 1 MiB UTF-8 JSON total |
+| Linked stylesheets per render request | 32 unique absolute serialized URLs (8192 characters each) |
+| Linked stylesheet text | 256 Ki UTF-16 characters each |
+| Serialized linked stylesheets | 1 MiB UTF-8 JSON total |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
 confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows
 confinement confirms `windows-appcontainer-job-v1`. This metadata requires
 protocol v2 originally; phase 11d advanced to v3 for document/repaint/script policy,
 basic scrolling advanced to v4 for request `ScrollY` and reply `ScrollHeight`,
-and textual links advance to v5 for frame-only `LinkTargets` and exact CSS viewport/scale,
+textual links advanced to v5 for frame-only `LinkTargets` and exact CSS viewport/scale,
+and linked stylesheets advance to v6 for the required request-only `Stylesheets` array,
 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
-`render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/
+`render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
+linked stylesheet collection (request URL plus decoded CSS text only) and CSS viewport/
 scale and a nonnegative bounded CSS-pixel scroll offset, a nonempty document GUID,
 the last committed document GUID, explicit
 inline-script opt-in and retained-document repaint intent. Script policy is

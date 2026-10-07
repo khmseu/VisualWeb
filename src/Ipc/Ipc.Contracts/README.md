@@ -1,6 +1,6 @@
 # Ipc.Contracts
 
-Version-5 data-only hello/render/frame/error messages, confirmed sandbox
+Version-6 data-only hello/render/frame/error messages, confirmed sandbox
 profile handshake and exact
 viewport/text/frame budgets. No DOM, V8, native handles or broker capabilities.
 Each private channel serves one tab with monotonically increasing request IDs.
@@ -18,3 +18,7 @@ unknown target fields fail closed. Scheme policy belongs to browser activation.
 
 These are internal contracts, not a web standard. See the
 [process guide](../../../docs/renderer-processes.md).
+Render requests require a `Stylesheets` array (rejected on other kinds): at most
+32 unique absolute serialized URLs (8192 characters each) with decoded CSS text of
+at most 256 Ki characters each and a 1 MiB UTF-8 JSON budget for the whole array.
+These are browser-fetched data; the renderer never receives fetch capability.

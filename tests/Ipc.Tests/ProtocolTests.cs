@@ -42,7 +42,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(5, RendererProtocol.Version);
+        Assert.Equal(6, RendererProtocol.Version);
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -65,6 +65,67 @@ public sealed class ProtocolTests
         ScrollHeight = 2,
         LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")]
     };
+
+    [Fact]
+    public void LinkedStylesheetsAreRequiredOnRenderRequestsOnly()
+    {
+        RendererProtocol.Validate(Request, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = null }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Stylesheets = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with { Stylesheets = [] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(
+            new() { Kind = "error", Id = 1, Error = "x", Stylesheets = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 5 }, 0));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a.css")]
+    [InlineData("HTTPS://EXAMPLE.COM/a.css")]
+    [InlineData("https://example.com/a b.css")]
+    public void LinkedStylesheetUrlsMustBeSerializedAbsoluteUrls(string url) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = [new(url, "")] }, 0));
+
+    [Fact]
+    public void LinkedStylesheetCountCharacterUrlAndUtf8WireLimitsAreExact()
+    {
+        Assert.Equal(32, RendererProtocol.MaxStylesheets);
+        Assert.Equal(256 * 1024, RendererProtocol.MaxStylesheetCharacters);
+        Assert.Equal(1024 * 1024, RendererProtocol.MaxStylesheetBytes);
+        static PageStylesheet Sheet(int index, string css = "") => new($"https://example.com/{index}.css", css);
+        RendererProtocol.Validate(Request with { Stylesheets = Enumerable.Range(0, 32).Select(i => Sheet(i)).ToArray() }, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(
+            Request with { Stylesheets = Enumerable.Range(0, 33).Select(i => Sheet(i)).ToArray() }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = [Sheet(0), Sheet(0)] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = [Sheet(0, null!)] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = [null!] }, 0));
+        RendererProtocol.Validate(Request with { Stylesheets = [Sheet(0, new string('a', 256 * 1024))] }, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(
+            Request with { Stylesheets = [Sheet(0, new string('a', 256 * 1024 + 1))] }, 0));
+        RendererProtocol.Validate(Request with { Stylesheets = [new("data:," + new string('a', 8186), "")] }, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(
+            Request with { Stylesheets = [new("data:," + new string('a', 8187), "")] }, 0));
+
+        var sheets = Enumerable.Range(0, 3).Select(i => Sheet(i, new string('a', 256 * 1024))).ToList();
+        sheets.Add(Sheet(3));
+        var remaining = RendererProtocol.MaxStylesheetBytes - JsonSerializer.SerializeToUtf8Bytes(sheets).Length;
+        Assert.InRange(remaining, 1, 256 * 1024);
+        sheets[^1] = Sheet(3, new string('a', remaining));
+        Assert.Equal(RendererProtocol.MaxStylesheetBytes, JsonSerializer.SerializeToUtf8Bytes(sheets).Length);
+        RendererProtocol.Validate(Request with { Stylesheets = sheets.ToArray() }, 0);
+        sheets[^1] = Sheet(3, new string('a', remaining + 1));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = sheets.ToArray() }, 0));
+    }
+
+    [Fact]
+    public void EscapedCssCharactersCountTowardTheStylesheetWireBudget()
+    {
+        var sheets = Enumerable.Range(0, 4).Select(i => new PageStylesheet($"https://example.com/{i}.css",
+            new string('<', 50_000))).ToArray();
+        Assert.True(sheets.Sum(sheet => Encoding.UTF8.GetByteCount(sheet.Css)) < RendererProtocol.MaxStylesheetBytes);
+        Assert.True(JsonSerializer.SerializeToUtf8Bytes(sheets).Length > RendererProtocol.MaxStylesheetBytes);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = sheets }, 0));
+    }
 
     [Fact]
     public void LinkMetadataIsBoundedAndBelongsOnlyToFrames()
@@ -148,6 +209,7 @@ public sealed class ProtocolTests
         Html = "<!doctype html><p>café</p>",
         StatusCode = 200,
         Diagnostics = ["UTF-8"],
+        Stylesheets = [],
         Width = 2,
         Height = 2,
         Scale = 1
@@ -158,7 +220,14 @@ public sealed class ProtocolTests
         using var wire = new MemoryStream();
         var writer = new RendererChannel(Stream.Null, wire);
         await writer.WriteAsync(new() { Kind = "hello", SandboxProfile = "linux-bwrap-seccomp-cgroup-v2" }, cancellationToken: Cancellation);
-        var input = Request with { ExecuteInlineScripts = true, ReuseDocument = true, CommittedDocumentId = Request.DocumentId, ScrollY = 48 };
+        var input = Request with
+        {
+            ExecuteInlineScripts = true,
+            ReuseDocument = true,
+            CommittedDocumentId = Request.DocumentId,
+            ScrollY = 48,
+            Stylesheets = [new("https://example.com/a.css", "p{content:\"café <&>\"}")]
+        };
         await writer.WriteAsync(input, cancellationToken: Cancellation);
         var pixels = new byte[] { 1, 2, 3, 255, 4, 5, 6, 255 };
         var reply = new RendererMessage
@@ -190,6 +259,7 @@ public sealed class ProtocolTests
         Assert.Equal(input.CommittedDocumentId, request.CommittedDocumentId);
         Assert.True(request.ExecuteInlineScripts); Assert.True(request.ReuseDocument);
         Assert.Equal(input.ScrollY, request.ScrollY);
+        Assert.Equal(input.Stylesheets, request.Stylesheets);
         var frame = (await reader.ReadAsync(Cancellation))!;
         Assert.Equal(pixels, frame.Pixels); Assert.Equal(reply.Title, frame.Message.Title);
         Assert.Equal(reply.ScrollHeight, frame.Message.ScrollHeight);

@@ -21,7 +21,10 @@ Neither mode is production-safe browsing.
 Every shell session owns one bounded in-memory HSTS store shared across all
 tab-local GET loaders/windows, in local and multiprocess modes. Independent
 shells are isolated; cookies remain disabled. Standalone `GetPageSource` accepts
-explicit store injection. Final upgraded URLs feed document origins and
+explicit store injection. Supported classic linked stylesheets are fetched by
+each tab's `GetPageSource` with that same loader/store (cookies off) before
+publication and sent to renderers only as bounded data; renderers never fetch.
+Final upgraded URLs feed document origins and
 transactional swaps. See [session HSTS](../../../docs/networking.md#session-hsts)
 (official source ID `rfc6797`); persistence/preload/public-suffix policy is deferred.
 

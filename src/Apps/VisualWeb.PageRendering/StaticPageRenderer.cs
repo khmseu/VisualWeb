@@ -21,6 +21,7 @@ public sealed class StaticPageRenderer : IPageRenderer
     private readonly PaintFontRegistry paint;
     private readonly PageRenderOptions options;
     private sealed record DocumentState(LoadedPage Source, HtmlParseResult Parsed, int Scripts);
+    private static readonly HtmlParserOptions DocumentHtmlOptions = new();
     private readonly bool executeInlineScripts;
     private DocumentState? committed;
     private DocumentState? candidate;
@@ -28,7 +29,7 @@ public sealed class StaticPageRenderer : IPageRenderer
     public StaticPageRenderer(string fontPath, int maxPixels, bool executeInlineScripts = false)
     {
         this.executeInlineScripts = executeInlineScripts;
-        options = new() { Paint = new() { MaxPixels = maxPixels } };
+        options = new() { Html = DocumentHtmlOptions, Paint = new() { MaxPixels = maxPixels } };
         font = new(fontPath);
         paint = new(options.Paint);
         try
@@ -61,7 +62,8 @@ public sealed class StaticPageRenderer : IPageRenderer
             state = committed?.Source.DocumentId == page.DocumentId ? committed
                 : candidate?.Source.DocumentId == page.DocumentId ? candidate
                 : throw new PageNavigationException("Retained document was lost; reload explicitly rather than reparsing or rerunning scripts.");
-            if (state.Source.Html != page.Html || state.Source.Url.Href != page.Url.Href)
+            if (state.Source.Html != page.Html || state.Source.Url.Href != page.Url.Href
+                || !state.Source.Stylesheets.SequenceEqual(page.Stylesheets))
             { throw new PageNavigationException("Retained document identity does not match its source."); }
         }
         else
@@ -71,7 +73,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             state = new(page, fresh, scripts);
         }
         var parsed = state.Parsed;
-        var sources = CollectStyles(parsed.Document, options.Css, cancellationToken);
+        var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url, state.Source.Stylesheets);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
         var links = CollectLinks(rendered.Layout, page.Url,
@@ -143,21 +145,43 @@ public sealed class StaticPageRenderer : IPageRenderer
             }
         }
     }
+    /// <summary>Unique resolved request URLs of supported linked stylesheets in document order, before scripts run.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
+    /// "stylesheet"</see>. Used by the browser to broker fetches with the renderer's exact parser options;
+    /// unsupported link semantics throw.</remarks>
+    public static IReadOnlyList<string> DiscoverStylesheets(string html, BrowserUrl documentUrl,
+        CancellationToken cancellationToken = default) =>
+        DiscoverStylesheets(HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document, documentUrl, cancellationToken);
+    /// <inheritdoc cref="DiscoverStylesheets(string, BrowserUrl, CancellationToken)"/>
+    public static IReadOnlyList<string> DiscoverStylesheets(DomDocument document, BrowserUrl documentUrl,
+        CancellationToken cancellationToken = default) => LinkedStylesheets.Discover(document, documentUrl, cancellationToken);
+    /// <summary>Embedded and browser-provided linked author sources in document (cascade) order.</summary>
+    /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#cascade-order">order of appearance</see>.
+    /// Links whose resolved URL is absent from <paramref name="stylesheets"/> (for example, added or changed by scripts)
+    /// throw; nothing is fetched here.</remarks>
     public static IReadOnlyList<CssStyleSource> CollectStyles(DomDocument document, CssOptions? options = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, BrowserUrl? documentUrl = null,
+        IReadOnlyList<PageStylesheet>? stylesheets = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         var limits = options ?? new();
         if (limits.MaxStyleSources <= 0 || limits.MaxInputCharacters <= 0) { throw new ArgumentOutOfRangeException(nameof(options)); }
+        var provided = (stylesheets ?? []).ToDictionary(sheet => sheet.Url, sheet => sheet.Css, StringComparer.Ordinal);
         var sources = new List<CssStyleSource>();
         long characters = 0;
+        var baseHref = LinkedStylesheets.BaseHref(document);
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (element.LocalName == "link" && (element.GetAttribute("rel") ?? "").Split([' ', '\t', '\n', '\r', '\f'],
-                StringSplitOptions.RemoveEmptyEntries).Any(token => token.Equals("stylesheet", StringComparison.OrdinalIgnoreCase)))
+            if (LinkedStylesheets.Resolve(element, documentUrl, baseHref) is { } url)
             {
-                throw new PageNavigationException("Linked stylesheets are deferred; no stylesheet was fetched.");
+                if (!provided.TryGetValue(url, out var linked))
+                {
+                    throw new PageNavigationException($"Linked stylesheet {url} was not provided by the browser; "
+                        + "renderers never fetch and links added or changed by scripts are unsupported.");
+                }
+                Add(LinkedStylesheets.StripCharsetRule(linked), "Linked");
+                continue;
             }
             if (element.LocalName != "style") { continue; }
             var type = element.GetAttribute("type");
@@ -174,13 +198,17 @@ public sealed class StaticPageRenderer : IPageRenderer
             {
                 throw new PageNavigationException("Named/alternate stylesheet sets are deferred.");
             }
-            if (sources.Count >= limits.MaxStyleSources) { throw new CssLimitException("Embedded stylesheet source limit exceeded."); }
-            var css = string.Concat(element.ChildNodes.OfType<DomText>().Select(node => node.Data));
-            characters += css.Length;
-            if (characters > limits.MaxInputCharacters) { throw new CssLimitException("Embedded stylesheet character limit exceeded."); }
-            sources.Add(new(css));
+            Add(string.Concat(element.ChildNodes.OfType<DomText>().Select(node => node.Data)), "Embedded");
         }
         return sources.AsReadOnly();
+
+        void Add(string css, string kind)
+        {
+            if (sources.Count >= limits.MaxStyleSources) { throw new CssLimitException(kind + " stylesheet source limit exceeded."); }
+            characters += css.Length;
+            if (characters > limits.MaxInputCharacters) { throw new CssLimitException(kind + " stylesheet character limit exceeded."); }
+            sources.Add(new(css));
+        }
     }
     public static bool IsRenderFailure(Exception exception) => exception is PageNavigationException or HtmlLimitException
         or UnsupportedHtmlException or CssLimitException or UnsupportedCssException or LayoutLimitException or UnsupportedLayoutException

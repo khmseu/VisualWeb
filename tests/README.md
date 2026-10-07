@@ -52,7 +52,10 @@ presentation. The [content suite](Engine.Content.Tests/) checks the offline
 HTML/CSS-to-frame pipeline. Both link the existing font fixture and use CPU
 Skia without displays, scripts or resource fetching.
 The [browser suite](VisualWeb.Browser.Tests/) checks window/tab/history models,
-transactional loading, MIME/encoding and embedded styles, address/shortcut
+transactional loading, MIME/encoding and embedded styles, fake-handler linked
+stylesheet brokering (final-URL resolution, redirects, MIME/charset/limits,
+unsupported link semantics, shared HSTS, local/process cascade parity,
+script-changed links and failed-navigation retention), address/shortcut
 events and native CPU chrome/page composition with fake window surfaces.
 It also checks asynchronous render publication and launches real per-tab
 workers for exact pixels, PID reuse, crash containment/reload, deadlines and
@@ -64,7 +67,8 @@ budgets, title/style mutations reaching pixels, fresh navigation contexts,
 committed DOM retention on resize/failed candidates, transactional script errors,
 lost-worker reload requirements and actual confined V8 deadline recovery.
 The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
-budgets, strict JSON, opacity, truncation and cancellation, plus v5 link rectangles,
+budgets, strict JSON, opacity, truncation and cancellation, plus v6 request-only
+linked stylesheet count/character/URL/UTF-8 JSON bounds, v5 link rectangles,
 exact CSS viewport/scale, scroll extent/offset and document/
 publication/script policy fields and rejection of previous protocol versions.
 Scrolling cases cover fixed viewport/scale/clipping, below-viewport pixels/text,
