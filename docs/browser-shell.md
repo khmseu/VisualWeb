@@ -78,6 +78,7 @@ The native window title retains the same warning alongside the active page title
 | +W / Ctrl+N | New window with welcome tab |
 | M / Ctrl+M | Move active tab to the first other window, or create an empty destination |
 | Native window close | Close that window and only its tabs |
+| Primary left click on visible anchor text | Navigate the current tab to its resolved href |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Browser windows and tab IDs are distinct; tab identity/history/content survives
@@ -95,7 +96,7 @@ at 100 lines per event). Wheel input targets only the active tab, is suppressed
 while editing the address, and is ignored over chrome when the last logical
 pointer position is known. Wheel events themselves carry no pointer coordinates.
 Page Up/Down move one viewport; Home/End select the document top/bottom outside
-address editing. Horizontal scrolling, painted scrollbars and DOM input/default
+address editing. Horizontal scrolling, painted scrollbars and general DOM input/default
 actions are not implemented.
 
 Each tab's controller content owns its scroll position, including across tab
@@ -117,6 +118,37 @@ process exchanges drain under their existing deadline to keep the DOM/channel
 alive; stale frames cannot publish. New-document candidates still commit
 transactionally, and viewport changes during navigation repaint that candidate
 before publication without rerunning scripts.
+
+## Textual link activation
+
+Both rendering modes collect visible rectangles from shaped text fragments,
+using the nearest HTML `a` ancestor with `href`, after optional script mutations.
+Each rectangle uses the run's width and line's height, clipped to the CSS viewport
+after the clamped scroll translation. Retained resize/scroll recomputes targets
+without rerunning scripts. Targets follow text paint order; the last matching
+rectangle wins. Empty anchors and non-link text have no targets.
+
+The renderer resolves destinations with Core.Url against the final `LoadedPage.Url`
+before returning data-only rectangles and absolute URLs; it never navigates or
+fetches. Primary left-button presses in the page region subtract the 120-logical-
+pixel chrome height. SDL window-local logical coordinates already match CSS
+pixels: pixel density scales the raster, not pointer coordinates. Chrome,
+other buttons, releases and misses do not navigate. A frame whose viewport/scale
+does not match the current window (for example, during asynchronous resize)
+cannot activate links.
+
+Activation uses the current tab's ordinary `Navigate` transaction and shared
+session HSTS loader. Only `http:`, `https:`, `file:` and `data:` are supported;
+other schemes, including `javascript:`, fail visibly before loading. URL/count/
+metadata limits and malformed hrefs fail visibly during rendering. Failed
+navigation keeps the old frame, link targets, scroll position, origin and history.
+Relative and fragment URL components are preserved, but fragment activation
+currently performs a full navigation, not same-document scrolling.
+`target`, downloads, `<base>` semantics, image/area links, link decoration,
+keyboard activation, page mouse events and JavaScript default-action cancellation
+remain deferred. This is a bounded subset of HTML
+[following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
+(cached standard ID `html`), not a full DOM event/default-action implementation.
 
 ## Navigation and page policy
 
@@ -318,7 +350,8 @@ Render-stage objects are not shared between tabs or retained as a history cache.
 tab-local, while immutable configured font file paths and the chrome renderer
 are shell-level resources.
 
-Pages have no DOM input/hit-testing, clickable links, controls or selection.
+Pages support bounded textual anchor hit-testing and primary-click navigation,
+but no general DOM input, controls or selection.
 Basic vertical document scrolling is available; general/nested CSS overflow is
 not. There are no downloads, storage, automatic linked CSS or images/media.
 Post-parse inline scripting remains explicit opt-in, not a full event loop. Native page crashes

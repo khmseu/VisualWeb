@@ -1,5 +1,6 @@
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
+using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.PageRendering;
 
@@ -49,6 +50,7 @@ public readonly record struct PageViewport(double Width, double Height, double S
 }
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 {
+    public IReadOnlyList<PageLinkTarget> LinkTargets { get; init; } = Array.Empty<PageLinkTarget>();
     private readonly double scrollHeight;
     public double ScrollHeight
     {

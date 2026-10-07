@@ -1,3 +1,4 @@
+using VisualWeb.Core.Url;
 using VisualWeb.Engine.Content;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
@@ -6,6 +7,7 @@ using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Engine.Scripting;
 using VisualWeb.Engine.Text;
+using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.PageRendering;
 
@@ -72,6 +74,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
+        var links = CollectLinks(rendered.Layout, page.Url,
+            Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
@@ -82,7 +86,62 @@ public sealed class StaticPageRenderer : IPageRenderer
             status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
         }
         return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
-        { ScrollHeight = rendered.ScrollHeight };
+        { ScrollHeight = rendered.ScrollHeight, LinkTargets = links };
+    }
+    private static IReadOnlyList<PageLinkTarget> CollectLinks(LayoutResult layout, BrowserUrl url, double scrollY,
+        CancellationToken cancellationToken)
+    {
+        var links = new List<PageLinkTarget>();
+        var destinations = new Dictionary<DomElement, string>();
+        long urlBytes = 0;
+        if (layout.Root is { } root) { Visit(root); }
+        try { RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight); }
+        catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+        return links.AsReadOnly();
+
+        void Visit(LayoutBox box)
+        {
+            foreach (var item in box.Flow)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (item is LayoutBlockItem block) { Visit(block.Box); }
+                else if (item is LayoutLineItem line)
+                {
+                    foreach (var fragment in line.Line.Fragments)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        DomElement? anchor = null;
+                        for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
+                        {
+                            if (node is DomElement { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } element)
+                            { anchor = element; break; }
+                        }
+                        if (anchor?.GetAttribute("href") is not { } href) { continue; }
+                        var left = Math.Clamp(fragment.X, 0, layout.ViewportWidth);
+                        var right = Math.Clamp(fragment.X + fragment.Run.Width, 0, layout.ViewportWidth);
+                        var top = Math.Clamp(line.Line.Bounds.Y - scrollY, 0, layout.ViewportHeight);
+                        var bottom = Math.Clamp(line.Line.Bounds.Y + line.Line.Bounds.Height - scrollY, 0, layout.ViewportHeight);
+                        if (right <= left || bottom <= top) { continue; }
+                        if (links.Count >= RendererProtocol.MaxLinkTargets)
+                        { throw new PageNavigationException("Renderer link count limit exceeded."); }
+                        if (!destinations.TryGetValue(anchor, out var destination))
+                        {
+                            if (href.Length > RendererProtocol.MaxTextCharacters)
+                            { throw new PageNavigationException("Renderer link URL limit exceeded."); }
+                            var parsed = BrowserUrl.ParseResult(href, url);
+                            destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
+                            if (destination.Length > RendererProtocol.MaxTextCharacters)
+                            { throw new PageNavigationException("Renderer link URL limit exceeded."); }
+                            destinations.Add(anchor, destination);
+                        }
+                        urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
+                        if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
+                        { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
+                        links.Add(new(left, top, right - left, bottom - top, destination));
+                    }
+                }
+            }
+        }
     }
     public static IReadOnlyList<CssStyleSource> CollectStyles(DomDocument document, CssOptions? options = null,
         CancellationToken cancellationToken = default)

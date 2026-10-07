@@ -31,10 +31,10 @@ Low-level renderer/library defaults remain unchanged.
 | [Engine.Paint](../src/Engine/Engine.Paint/) | Immutable display lists, Skia CPU pixels and portable presentation | Engine.Layout, Platform.Abstractions, SkiaSharp; [scope](painting.md) |
 | [Engine.Scripting](../src/Engine/Engine.Scripting/) | Private V8 host, classic batches, live DOM mutation/queries/class tokens, finite microtasks/events/document readiness; full Web IDL deferred | Engine.Dom/Css, ClearScript + Linux/Windows x64/arm64 native assets; [scope](scripting.md) |
 | [Engine.Content](../src/Engine/Engine.Content/) | Offline decoded HTML/CSS-to-frame orchestration | Engine.Html/Paint, no loading/shell/backend dependency; [scope](painting.md) |
-| [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages | No DOM/native object dependencies |
+| [Ipc.Contracts](../src/Ipc/Ipc.Contracts/) | Versioned data-only messages and bounded link rectangles/URLs | Core.Url; no DOM/native object dependencies |
 | [Ipc.Transport](../src/Ipc/Ipc.Transport/) | Private bounded framed streams, exact reads and pixel validation | Ipc.Contracts; [scope](renderer-processes.md) |
 | [VisualWeb.Browser](../src/Apps/VisualWeb.Browser/) | Development windows/tabs/chrome, broker GET/history, asynchronous worker supervision | Platform.Linux/Windows, Engine.Net, PageRendering, IPC; [scope](browser-shell.md) |
-| [VisualWeb.PageRendering](../src/Apps/VisualWeb.PageRendering/) | Explicit fonts/CSS collection, optional inline classics and retained DOM repainting | Engine.Content/Scripting/Css/Text/Paint; no networking/backend/chrome |
+| [VisualWeb.PageRendering](../src/Apps/VisualWeb.PageRendering/) | Explicit fonts/CSS collection, optional inline classics, retained DOM repainting and textual-link metadata | Engine.Content/Scripting/Css/Text/Paint, Ipc.Contracts; no networking/backend/chrome |
 | [VisualWeb.Renderer](../src/Apps/VisualWeb.Renderer/) | One-tab static renderer executable, optionally Linux-confined | PageRendering, IPC, Platform.Linux.Sandbox; [scope](renderer-processes.md) |
 | [SpecCache](../tools/SpecCache/) | Local official documentation cache | .NET BCL only; independent of engine/test data |
 | [PlatformSmoke](../tools/PlatformSmoke/) | Explicit native platform integration checks | Platform.Linux/Windows; real SDL |

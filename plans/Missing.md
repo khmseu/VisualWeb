@@ -32,9 +32,13 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux arch
 
 ### 2. Basic interaction with pages
 
-The shell can navigate through its address bar, but rendered pages are not yet interactive:
+The shell supports bounded textual link activation and vertical document scrolling;
+broader page interaction is still missing:
 
-- No clickable links, page hit-testing, input focus, or form controls.
+- Textual `<a href>` links now support primary left-click hit-testing in local
+  and process modes, with visible clipped renderer-owned rectangles and resolved
+  URLs. General hit-testing, page input focus, keyboard links and form controls
+  remain missing.
 - No text selection. Basic vertical document scrolling is implemented via wheel
   and Page Up/Down/Home/End, retaining DOM/scripts across local/process repaints.
   Scrollbars, horizontal/nested scrolling and general CSS overflow remain missing.
@@ -133,11 +137,12 @@ Some older passages incorrectly say JavaScript/V8 or page scripting is still abs
 
 1. **Security model and mandatory supported isolation** before untrusted browsing.
 2. **Links, page input, and subresource loading** for basic usability. Basic
-   bounded vertical document scrolling is implemented; broader overflow remains.
+   bounded textual links and vertical document scrolling are implemented; broader
+   page input, subresources and overflow remain.
 3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
 *The original audit was read-only and did not independently verify builds/tests
-or CI. The scrolling entries above were subsequently updated for the implemented
-bounded vertical scrolling subset.*
+or CI. The interaction entries above were subsequently updated for the implemented
+bounded textual-link and vertical-scrolling subsets.*

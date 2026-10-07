@@ -530,6 +530,8 @@ public sealed class ProcessTests
     [InlineData("wrong-id")]
     [InlineData("wrong-size")]
     [InlineData("wrong-scroll-height")]
+    [InlineData("wrong-css-viewport")]
+    [InlineData("wrong-link-bounds")]
     [InlineData("transparent")]
     [InlineData("mid-message-exit")]
     public async Task FaultyRepliesInvalidateAndTerminateTheirWorker(string scenario)

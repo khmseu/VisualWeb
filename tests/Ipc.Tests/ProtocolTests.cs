@@ -27,6 +27,10 @@ public sealed class ProtocolTests
         {
             Kind = "frame",
             Id = 1,
+            Width = 1,
+            Height = 1,
+            Scale = 1,
+            LinkTargets = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,
@@ -38,7 +42,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(4, RendererProtocol.Version);
+        Assert.Equal(5, RendererProtocol.Version);
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -46,6 +50,95 @@ public sealed class ProtocolTests
     }
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+    private static RendererMessage LinkFrame => new()
+    {
+        Kind = "frame",
+        Id = 1,
+        Width = 2,
+        Height = 2,
+        Scale = 1,
+        PixelWidth = 2,
+        PixelHeight = 2,
+        Stride = 8,
+        Title = "",
+        Status = "",
+        ScrollHeight = 2,
+        LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")]
+    };
+
+    [Fact]
+    public void LinkMetadataIsBoundedAndBelongsOnlyToFrames()
+    {
+        RendererProtocol.Validate(LinkFrame, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { LinkTargets = LinkFrame.LinkTargets }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", LinkTargets = [] }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with { LinkTargets = null }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = Enumerable.Repeat(LinkFrame.LinkTargets![0], 4097).ToArray() }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [new(0, 0, 1, 1, "https://example.com/" + new string('a', 8192))] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = Enumerable.Repeat(new PageLinkTarget(0, 0, 1, 1, "data:," + new string('a', 8190 - 6)), 200).ToArray() }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [new(0, 0, 1, 1, "../relative")] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with { Version = 4 }, 16));
+    }
+
+    [Theory]
+    [InlineData(double.NaN, 0, 1, 1)]
+    [InlineData(0, double.PositiveInfinity, 1, 1)]
+    [InlineData(-1, 0, 1, 1)]
+    [InlineData(0, 0, -1, 1)]
+    [InlineData(0, 0, 0, 1)]
+    [InlineData(1, 0, 2, 1)]
+    [InlineData(0, 1, 1, 2)]
+    public void InvalidLinkRectanglesFail(double x, double y, double width, double height) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [new(x, y, width, height, "https://example.com/")] }, 16));
+
+    [Fact]
+    public void ExactLinkCountUrlAndUtf8WireLimitsAreAccepted()
+    {
+        var link = LinkFrame.LinkTargets![0];
+        RendererProtocol.Validate(LinkFrame with { LinkTargets = Enumerable.Repeat(link, 4096).ToArray() }, 16);
+        RendererProtocol.Validate(LinkFrame with { LinkTargets = [link with { Url = "data:," + new string('a', 8186) }] }, 16);
+        var links = Enumerable.Repeat(link with { Url = "data:," + new string('a', 8186) }, 126).ToList();
+        links.Add(link with { Url = "data:," });
+        var remaining = RendererProtocol.MaxLinkMetadataBytes - JsonSerializer.SerializeToUtf8Bytes(links).Length;
+        while (remaining > 8186)
+        {
+            links.Add(link with { Url = "data:," });
+            remaining = RendererProtocol.MaxLinkMetadataBytes - JsonSerializer.SerializeToUtf8Bytes(links).Length;
+        }
+        links[^1] = links[^1] with { Url = "data:," + new string('a', remaining) };
+        Assert.Equal(RendererProtocol.MaxLinkMetadataBytes, JsonSerializer.SerializeToUtf8Bytes(links).Length);
+        RendererProtocol.Validate(LinkFrame with { LinkTargets = links.ToArray() }, 16);
+        links[^1] = links[^1] with { Url = links[^1].Url + "a" };
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with { LinkTargets = links.ToArray() }, 16));
+    }
+
+    [Fact]
+    public void EscapedUnicodeBytesCountTowardTheLinkWireBudget()
+    {
+        var url = "data:," + new string('\u00e9', 2000);
+        var links = Enumerable.Repeat(new PageLinkTarget(0, 0, 1, 1, url), 100).ToArray();
+        Assert.True(Encoding.UTF8.GetByteCount(url) * links.Length < RendererProtocol.MaxLinkMetadataBytes);
+        Assert.True(JsonSerializer.SerializeToUtf8Bytes(links).Length > RendererProtocol.MaxLinkMetadataBytes);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with { LinkTargets = links }, 16));
+    }
+
+    [Theory]
+    [InlineData("\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1,\"Url\":\"https://example.com/\",\"X\":1")]
+    [InlineData("\"X\":0,\"Y\":0,\"Height\":1,\"Url\":\"https://example.com/\"")]
+    [InlineData("\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1,\"Url\":\"https://example.com/\",\"NativeHandle\":1")]
+    public async Task LinkObjectsRejectDuplicateMissingAndUnknownFields(string fields)
+    {
+        var json = JsonSerializer.Serialize(LinkFrame);
+        var start = json.IndexOf("\"LinkTargets\":", StringComparison.Ordinal);
+        json = json[..start] + "\"LinkTargets\":[{" + fields + "}]}";
+        using var wire = Wire(json, new byte[16]);
+        await Assert.ThrowsAsync<IpcProtocolException>(() => new RendererChannel(wire, Stream.Null).ReadAsync(Cancellation));
+    }
     private static RendererMessage Request => new()
     {
         Kind = "render",
@@ -68,7 +161,21 @@ public sealed class ProtocolTests
         var input = Request with { ExecuteInlineScripts = true, ReuseDocument = true, CommittedDocumentId = Request.DocumentId, ScrollY = 48 };
         await writer.WriteAsync(input, cancellationToken: Cancellation);
         var pixels = new byte[] { 1, 2, 3, 255, 4, 5, 6, 255 };
-        var reply = new RendererMessage { Kind = "frame", Id = 1, PixelWidth = 2, PixelHeight = 1, Stride = 8, Title = "café", Status = "Ready", ScrollHeight = 100 };
+        var reply = new RendererMessage
+        {
+            Kind = "frame",
+            Id = 1,
+            Width = 2,
+            Height = 1,
+            Scale = 1,
+            LinkTargets = [],
+            PixelWidth = 2,
+            PixelHeight = 1,
+            Stride = 8,
+            Title = "café",
+            Status = "Ready",
+            ScrollHeight = 100
+        };
         await writer.WriteAsync(reply, pixels, Cancellation);
         await writer.WriteAsync(new() { Kind = "error", Id = 2, Error = "Unsupported page" }, cancellationToken: Cancellation);
         wire.Position = 0;
@@ -134,7 +241,20 @@ public sealed class ProtocolTests
         var prefix = Prefix(1, 0); prefix[0] = 0;
         using var wrong = new MemoryStream(prefix);
         await Assert.ThrowsAsync<IpcProtocolException>(() => new RendererChannel(wrong, Stream.Null).ReadAsync(Cancellation));
-        var frame = new RendererMessage { Kind = "frame", Id = 1, PixelWidth = 1, PixelHeight = 1, Stride = 4, Title = "", Status = "" };
+        var frame = new RendererMessage
+        {
+            Kind = "frame",
+            Id = 1,
+            Width = 1,
+            Height = 1,
+            Scale = 1,
+            LinkTargets = [],
+            PixelWidth = 1,
+            PixelHeight = 1,
+            Stride = 4,
+            Title = "",
+            Status = ""
+        };
         using var transparent = Wire(JsonSerializer.Serialize(frame), [0, 0, 0, 0]);
         await Assert.ThrowsAsync<IpcProtocolException>(() => new RendererChannel(transparent, Stream.Null).ReadAsync(Cancellation));
     }

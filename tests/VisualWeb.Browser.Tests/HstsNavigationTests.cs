@@ -11,6 +11,40 @@ public sealed class HstsNavigationTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
+    public void LinkNavigationUsesTheExistingSessionHstsLoaderAndCommittedOrigin()
+    {
+        var store = new HstsPolicyStore();
+        var requests = new List<Uri>();
+        var font = Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    <!doctype html><style>*{margin:0}</style>
+                    <a href='http://example.test/next#part'>link</a>
+                    """, System.Text.Encoding.UTF8, "text/html")
+            };
+            response.Headers.TryAddWithoutValidation("Strict-Transport-Security", "max-age=60");
+            return response;
+        }), store), () => new StaticPageRenderer(font, 100000), isolateOrigins: true);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://example.test/start");
+        controller.Pump(_ => viewport);
+        Assert.Null(tab.Error);
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
+        controller.Pump(_ => viewport);
+        Assert.Null(tab.Error);
+        Assert.Equal("https://example.test/next#part", tab.History.Current!.Href);
+        Assert.Equal("https://example.test", tab.Origin!.Serialize());
+        Assert.Equal(2, requests.Count);
+        Assert.All(requests, request => Assert.Equal("https", request.Scheme));
+    }
+
+    [Fact]
     public async Task InjectedStoreIsSharedAcrossSourcesButCookiesRemainDisabled()
     {
         var store = new HstsPolicyStore();

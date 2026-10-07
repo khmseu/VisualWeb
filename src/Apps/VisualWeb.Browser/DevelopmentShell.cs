@@ -208,7 +208,15 @@ public sealed class DevelopmentShell : IDisposable
                     view.PointerY = pointer.Y;
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
                     if (target is not null) { Action(window, view, target.Action, target.Tab); }
-                    else { Edit(view, window, false); }
+                    else
+                    {
+                        Edit(view, window, false);
+                        if (pointer.Y >= ShellChrome.Height && window.ActiveTab is { } pageTab
+                            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } pageViewport
+                            && pointer.X >= 0 && pointer.X < pageViewport.Width
+                            && pointer.Y < ShellChrome.Height + pageViewport.Height)
+                        { Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport); }
+                    }
                     break;
                 case KeyChanged { Pressed: true } key: Key(window, view, key); break;
                 case TextEntered text when view.Editing && window.ActiveTab is { } tab:

@@ -1,5 +1,7 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using VisualWeb.Platform.Linux.Sandbox;
@@ -49,6 +51,10 @@ if (args is ["--windows-sandbox-worker", "--font", _])
         {
             Kind = "frame",
             Id = message.Id,
+            Width = message.Width,
+            Height = message.Height,
+            Scale = message.Scale,
+            LinkTargets = [],
             PixelWidth = dimensions.Width,
             PixelHeight = dimensions.Height,
             Stride = dimensions.Width * 4,
@@ -81,6 +87,10 @@ if (args is ["--linux-sandbox-worker", "--font", _])
         {
             Kind = "frame",
             ScrollHeight = message.Height,
+            Width = message.Width,
+            Height = message.Height,
+            Scale = message.Scale,
+            LinkTargets = [],
             Id = message.Id,
             PixelWidth = dimensions.Width,
             PixelHeight = dimensions.Height,
@@ -129,9 +139,13 @@ var size = RendererProtocol.Dimensions(request.Width, request.Height, request.Sc
 if (scenario == "wrong-size") { size = (1, 1); }
 var pixels = new byte[size.Width * size.Height * 4];
 for (var i = 3; i < pixels.Length; i += 4) { pixels[i] = scenario == "transparent" ? (byte)0 : (byte)255; }
-await channel.WriteAsync(new()
+var reply = new RendererMessage
 {
     Kind = "frame",
+    Width = scenario == "wrong-css-viewport" ? request.Width - 0.5 : request.Width,
+    Height = request.Height,
+    Scale = request.Scale,
+    LinkTargets = scenario == "wrong-link-bounds" ? [new(0, 0, request.Width + 1, 1, "https://example.com/")] : [],
     Id = scenario == "wrong-id" ? request.Id + 1 : request.Id,
     PixelWidth = size.Width,
     PixelHeight = size.Height,
@@ -139,7 +153,20 @@ await channel.WriteAsync(new()
     Title = "Test peer",
     ScrollHeight = scenario == "wrong-scroll-height" ? 0 : request.Height,
     Status = "Fixture"
-}, pixels);
+};
+if (scenario == "wrong-link-bounds")
+{
+    var metadata = JsonSerializer.SerializeToUtf8Bytes(reply);
+    var prefix = new byte[12];
+    BinaryPrimitives.WriteUInt32LittleEndian(prefix, 0x31525756);
+    BinaryPrimitives.WriteInt32LittleEndian(prefix.AsSpan(4), metadata.Length);
+    BinaryPrimitives.WriteInt32LittleEndian(prefix.AsSpan(8), pixels.Length);
+    await output.WriteAsync(prefix);
+    await output.WriteAsync(metadata);
+    await output.WriteAsync(pixels);
+    await output.FlushAsync();
+}
+else { await channel.WriteAsync(reply, pixels); }
 await channel.ReadAsync();
 return 0;
 

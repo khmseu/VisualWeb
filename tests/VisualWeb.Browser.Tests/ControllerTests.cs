@@ -527,12 +527,15 @@ public sealed class ControllerTests
     }
     internal sealed class Source : IPageSource
     {
-        internal sealed record Request(TaskCompletionSource<LoadedPage> Completion, CancellationToken Token);
+        internal sealed record Request(TaskCompletionSource<LoadedPage> Completion, CancellationToken Token)
+        {
+            internal required BrowserUrl Url { get; init; }
+        }
         internal List<Request> Requests { get; } = [];
         internal bool Disposed { get; private set; }
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
         {
-            var request = new Request(new(), cancellationToken);
+            var request = new Request(new(), cancellationToken) { Url = url };
             Requests.Add(request);
             return request.Completion.Task;
         }

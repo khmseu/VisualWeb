@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v4
+## Private stream protocol v5
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 4, explicitly present; v1/v2/v3 rejected |
+| Protocol version | 5, explicitly present; v1/v2/v3/v4 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -102,12 +102,16 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Startup/render/exchange deadline | 30 seconds by default |
 | Request scroll offset | finite, 0 through 1e9 CSS pixels |
 | Frame/document scroll height | finite, 0 through 10,000,000 CSS pixels |
+| Visible link rectangles per frame | 4096 |
+| Absolute destination URL | 8192 UTF-16 characters each |
+| Serialized link metadata | 1 MiB UTF-8 JSON total |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
 confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows
 confinement confirms `windows-appcontainer-job-v1`. This metadata requires
 protocol v2 originally; phase 11d advanced to v3 for document/repaint/script policy,
-and basic scrolling advances to v4 for request `ScrollY` and reply `ScrollHeight`,
+basic scrolling advanced to v4 for request `ScrollY` and reply `ScrollHeight`,
+and textual links advance to v5 for frame-only `LinkTargets` and exact CSS viewport/scale,
 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/
@@ -117,13 +121,25 @@ inline-script opt-in and retained-document repaint intent. Script policy is
 fixed by the first request and cannot change within a tab channel. Publication
 acknowledgement pins the worker's prior candidate on the next request; another
 candidate cannot evict the committed DOM. These fields are rejected on replies
-and handshakes. A reply is `frame` (title/status/dimensions/stride/pixels/scroll height) or `error`
+and handshakes. A reply is `frame` (title/status/CSS viewport/scale/pixel dimensions/stride/pixels/scroll height/link targets) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
 worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
 the [finite scripting policy](scripting.md); input, event loops and display-list
-IPC are deferred.
+IPC are deferred except for bounded textual link activation in the browser.
 
-Document-origin association does not change IPC v4: the browser keeps its
+Every frame supplies a link array, empty when there are no visible links; requests,
+errors and handshakes cannot carry one. Each target has exactly required numeric
+X/Y/Width/Height and an absolute serialized URL, with no DOM or native handles.
+Coordinates are finite and nonnegative, extents are positive and contained in the
+CSS viewport. Missing, duplicate and unknown rectangle fields fail closed.
+The browser verifies the exact requested CSS viewport/scale, not just rounded
+physical dimensions, before accepting the frame and its targets. URL parsing,
+rectangle count and total serialized UTF-8 link bytes are bounded in both modes;
+the existing 32 MiB complete-header bound also remains enforced.
+Unsupported destination schemes are rejected visibly by browser activation,
+never executed by a worker.
+
+Document-origin association does not add principal fields to IPC: the browser keeps its
 `LoadedPage.Origin`, while worker reconstruction from the URL creates a local
 origin. Neither tuple nor opaque browser principals are transmitted or used
 for renderer authorization. Retained repaint uses the existing document GUID
@@ -134,8 +150,8 @@ a fresh reload publishes. With origin isolation (always on in multiprocess
 shells) a cross-origin or new opaque document renders in a new
 `ProcessPageRenderer` worker; the previous worker and committed document stay
 retained until the candidate commits, then the previous worker is disposed. A failed or stale candidate worker is
-killed without affecting the committed worker. No principal crosses IPC; IPC v4
-is unchanged. Cross-process principal sharing, site computation and cross-site
+killed without affecting the committed worker. No principal crosses IPC.
+Cross-process principal sharing, site computation and cross-site
 frame isolation remain later work.
 
 Receivers reject wrong magic/version, missing version/kind, duplicate or

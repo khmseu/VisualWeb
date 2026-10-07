@@ -64,11 +64,16 @@ budgets, title/style mutations reaching pixels, fresh navigation contexts,
 committed DOM retention on resize/failed candidates, transactional script errors,
 lost-worker reload requirements and actual confined V8 deadline recovery.
 The [IPC suite](Ipc.Tests/) verifies exact wire shapes, fragmentation, byte
-budgets, strict JSON, opacity, truncation and cancellation, plus v4 scroll extent/offset and document/
+budgets, strict JSON, opacity, truncation and cancellation, plus v5 link rectangles,
+exact CSS viewport/scale, scroll extent/offset and document/
 publication/script policy fields and rejection of previous protocol versions.
 Scrolling cases cover fixed viewport/scale/clipping, below-viewport pixels/text,
 bounded extents, tab-local positions, resize/navigation transactions and stale
 repaints, wheel/key routing, and real child-process retained repaint cancellation.
+Link cases cover final/script-mutated href resolution, shaped geometry, wrapping,
+retained resize/scroll clipping, count/URL/exact UTF-8 budgets, unsupported schemes,
+transactional failures, HSTS reuse and primary-only logical-coordinate clicks
+in local and real worker shells at normal/fractional/high pixel density.
 The [scripting suite](Engine.Scripting.Tests/) runs native V8 primitive/type
 copying, intrinsic-tampering, isolate separation, source/result/stack/buffer
 limits, thread ownership and deadline/cancellation tests.

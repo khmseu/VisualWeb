@@ -1,6 +1,23 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using VisualWeb.Core.Url;
+
 namespace VisualWeb.Ipc.Contracts;
 
 public sealed class IpcProtocolException(string message) : IOException(message);
+
+/// <summary>Data-only visible CSS viewport rectangle and serialized absolute destination.</summary>
+public sealed record PageLinkTarget(
+    [property: JsonRequired] double X,
+    [property: JsonRequired] double Y,
+    [property: JsonRequired] double Width,
+    [property: JsonRequired] double Height,
+    [property: JsonRequired] string Url)
+{
+    public bool Contains(double x, double y) =>
+        x >= X && y >= Y && x < X + Width && y < Y + Height;
+}
 
 /// <summary>Versioned data-only renderer messages. No DOM, native handles, paths or broker capabilities.</summary>
 /// <remarks>Internal protocol; not a web interface. Each channel serves exactly one tab.</remarks>
@@ -29,22 +46,27 @@ public sealed record RendererMessage
     public Guid CommittedDocumentId { get; init; }
     public bool ExecuteInlineScripts { get; init; }
     public bool ReuseDocument { get; init; }
+    public PageLinkTarget[]? LinkTargets { get; init; }
 }
 
 public static class RendererProtocol
 {
-    public const int Version = 4;
+    public const int Version = 5;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
     public const int MaxPayloadBytes = MaxPixels * 4;
     public const int MaxHtmlCharacters = 4 * 1024 * 1024;
     public const int MaxTextCharacters = 8192;
+    public const int MaxLinkTargets = 4096;
+    public const int MaxLinkMetadataBytes = 1024 * 1024;
 
     public static void Validate(RendererMessage message, int payloadLength)
     {
         ArgumentNullException.ThrowIfNull(message);
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
+        if (message.Kind != "frame" && message.LinkTargets is not null)
+        { throw new IpcProtocolException("Link targets belong only to frame replies."); }
         if ((message.Kind != "render" && message.ScrollY != 0) || (message.Kind != "frame" && message.ScrollHeight != 0))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
         if (message.Kind != "render" && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
@@ -74,7 +96,9 @@ public static class RendererProtocol
                 { throw new IpcProtocolException("Invalid renderer scroll offset."); }
                 break;
             case "frame":
+                var dimensions = Dimensions(message.Width, message.Height, message.Scale);
                 if (message.PixelWidth <= 0 || message.PixelHeight <= 0
+                    || message.PixelWidth != dimensions.Width || message.PixelHeight != dimensions.Height
                     || (long)message.PixelWidth * message.PixelHeight > MaxPixels
                     || (long)message.PixelWidth * 4 != message.Stride
                     || (long)message.Stride * message.PixelHeight != payloadLength
@@ -85,6 +109,7 @@ public static class RendererProtocol
                 }
                 if (!double.IsFinite(message.ScrollHeight) || message.ScrollHeight < 0 || message.ScrollHeight > MaxScrollHeight)
                 { throw new IpcProtocolException("Invalid renderer scroll height."); }
+                ValidateLinks(message.LinkTargets, message.Width, message.Height);
                 break;
             case "error":
                 if (payloadLength != 0 || string.IsNullOrEmpty(message.Error) || message.Error.Length > MaxTextCharacters)
@@ -94,6 +119,30 @@ public static class RendererProtocol
                 break;
             default: throw new IpcProtocolException("Unknown renderer message kind.");
         }
+    }
+    public static void ValidateLinks(IReadOnlyList<PageLinkTarget>? links, double width, double height)
+    {
+        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0
+            || links is null || links.Count > MaxLinkTargets)
+        { throw new IpcProtocolException("Invalid renderer link viewport or count."); }
+        long urlBytes = 0;
+        foreach (var link in links)
+        {
+            if (link is null || !double.IsFinite(link.X) || !double.IsFinite(link.Y)
+                || !double.IsFinite(link.Width) || !double.IsFinite(link.Height)
+                || link.X < 0 || link.Y < 0 || link.Width <= 0 || link.Height <= 0
+                || link.X + link.Width > width || link.Y + link.Height > height
+                || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters)
+            { throw new IpcProtocolException("Invalid renderer link rectangle or URL limit."); }
+            urlBytes += Encoding.UTF8.GetByteCount(link.Url);
+            if (urlBytes > MaxLinkMetadataBytes)
+            { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }
+            var parsed = BrowserUrl.ParseResult(link.Url);
+            if (parsed.Url?.Href != link.Url)
+            { throw new IpcProtocolException("Renderer link URL must be serialized and absolute."); }
+        }
+        if (JsonSerializer.SerializeToUtf8Bytes(links).Length > MaxLinkMetadataBytes)
+        { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }
     }
     public static (int Width, int Height) Dimensions(double width, double height, double scale)
     {

@@ -175,7 +175,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
             var packet = await Receive(current, deadline.Token).ConfigureAwait(false);
             if (packet.Message.Id != request.Id) { throw new IpcProtocolException("Renderer reply identity does not match its request."); }
             if (packet.Message.Kind == "error") { throw new PageNavigationException(packet.Message.Error!); }
-            if (packet.Message.Kind != "frame" || packet.Message.PixelWidth != expected.Width || packet.Message.PixelHeight != expected.Height)
+            if (packet.Message.Kind != "frame" || packet.Message.PixelWidth != expected.Width || packet.Message.PixelHeight != expected.Height
+                || packet.Message.Width != viewport.Width || packet.Message.Height != viewport.Height || packet.Message.Scale != viewport.Scale)
             {
                 throw new IpcProtocolException("Renderer frame does not match the requested physical viewport.");
             }
@@ -185,7 +186,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 new(packet.Message.PixelWidth, packet.Message.PixelHeight), packet.Message.Stride);
             // Drain superseded exchanges under the deadline so retained DOM survives and replies stay aligned.
             cancellationToken.ThrowIfCancellationRequested();
-            return new(frame, packet.Message.Title!, packet.Message.Status!) { ScrollHeight = packet.Message.ScrollHeight };
+            return new(frame, packet.Message.Title!, packet.Message.Status!)
+            { ScrollHeight = packet.Message.ScrollHeight, LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!) };
         }
         catch (OperationCanceledException)
         {

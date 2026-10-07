@@ -10,6 +10,81 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void UnsupportedLinkClickReportsVisibleErrorWithoutReplacingPage(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><a href='javascript:alert(1)'>link</a>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (tab.IsLoading && DateTime.UtcNow < deadline) { shell.Tick(); Thread.Sleep(5); }
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        var old = shell.Controller.Page(tab.Id)!;
+        var link = Assert.Single(old.LinkTargets);
+        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true,
+            (float)(link.X + 1), (float)(ShellChrome.Height + link.Y + 1)));
+        Assert.Contains("Unsupported link URL scheme: javascript:", tab.Error);
+        Assert.Same(old, shell.Controller.Page(tab.Id));
+        Assert.Single(tab.History.Entries);
+        Assert.False(tab.IsLoading);
+    }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 2)]
+    [InlineData(false, 1.25)]
+    [InlineData(true, 1.25)]
+    public void PrimaryPageClicksNavigateInLogicalCoordinatesOnly(bool multiprocess, float density)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        native.Density = density;
+        var tab = window.ActiveTab!;
+        var destination = "data:text/html," + Uri.EscapeDataString("<!doctype html><style>*{margin:0}</style><title>Clicked</title><p>destination</p>");
+        var html = $"<!doctype html><style>*{{margin:0}}div{{height:800px}}</style><div></div><a href='{destination}'>visible link</a>";
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(html));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        shell.Controller.Scroll(tab.Id, double.MaxValue);
+        Wait(() => shell.Controller.Page(tab.Id)!.LinkTargets.Count > 0);
+        var old = shell.Controller.Page(tab.Id)!;
+        var link = old.LinkTargets[0];
+        var x = (float)(link.X + link.Width / 2);
+        var y = (float)(link.Y + link.Height / 2 + ShellChrome.Height);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 3, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 2, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, 110));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, -1, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, 500, y));
+        Assert.Same(old, shell.Controller.Page(tab.Id));
+        Assert.False(tab.IsLoading);
+        Assert.Single(tab.History.Entries);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        Wait(() => !tab.IsLoading && tab.Title == "Clicked");
+        Assert.Equal(destination, tab.History.Current!.Href);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        Assert.Empty(shell.Controller.Page(tab.Id)!.LinkTargets);
+
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (!ready() && DateTime.UtcNow < deadline) { shell.Tick(); Thread.Sleep(5); }
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WheelAndPageKeysScrollActivePageButNotChromeOrAddressEditor(bool multiprocess)
     {
         using var system = new Windows();
@@ -343,10 +418,11 @@ public sealed class ShellTests
     {
         public WindowId Id => id;
         internal PixelSize Size { get; set; } = size;
-        public PixelSize LogicalSize => Size;
+        internal float Density { get; set; } = 1;
+        public PixelSize LogicalSize => new((int)(Size.Width / Density), (int)(Size.Height / Density));
         public PixelSize PixelSize => Size;
         public float DisplayScale => 1;
-        public float PixelDensity => 1;
+        public float PixelDensity => Density;
         public IPixelSurface Surface => this;
         public event Action<WindowEvent>? EventReceived;
         internal bool TextInput { get; private set; }

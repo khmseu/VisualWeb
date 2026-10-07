@@ -7,5 +7,6 @@
     <ProjectReference Include="../../Engine/Engine.Content/Engine.Content.csproj" />
     <ProjectReference Include="../../Engine/Engine.Scripting/Engine.Scripting.csproj" />
     <ProjectReference Include="../../Core/Core.Url/Core.Url.csproj" />
+    <ProjectReference Include="../../Ipc/Ipc.Contracts/Ipc.Contracts.csproj" />
   </ItemGroup>
 </Project>

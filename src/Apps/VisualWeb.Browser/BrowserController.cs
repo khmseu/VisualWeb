@@ -88,6 +88,29 @@ public sealed class BrowserController : IDisposable
     }
     public BrowserPage? Page(TabId tab) { Check(); return content[tab].Page; }
     public double ScrollY(TabId tab) { Check(); return content[tab].ScrollY; }
+    public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
+    {
+        Check();
+        var owner = content[id];
+        if (!double.IsFinite(x) || !double.IsFinite(y))
+        { throw new PageNavigationException("Link coordinates must be finite."); }
+        if (owner.Page is null || owner.Viewport is not { } viewport
+            || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height) { return false; }
+        if (displayedViewport is { } visible
+            && (viewport.Width != visible.Width || viewport.Height != visible.Height || viewport.Scale != visible.Scale))
+        { return false; }
+        for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
+        {
+            var link = owner.Page.LinkTargets[index];
+            if (!link.Contains(x, y)) { continue; }
+            var url = BrowserUrl.Parse(link.Url);
+            if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
+            { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
+            Navigate(id, url.Href);
+            return true;
+        }
+        return false;
+    }
     public void SetAddress(TabId id, string value)
     {
         Check();

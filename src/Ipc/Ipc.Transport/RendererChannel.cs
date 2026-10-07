@@ -76,11 +76,15 @@ public sealed class RendererChannel(Stream input, Stream output)
     {
         var reader = new Utf8JsonReader(header, new JsonReaderOptions { MaxDepth = 16 });
         var fields = new HashSet<string>(StringComparer.Ordinal);
+        var objects = new Stack<HashSet<string>>();
         while (reader.Read())
         {
-            if (reader.TokenType == JsonTokenType.PropertyName && reader.CurrentDepth == 1)
+            if (reader.TokenType == JsonTokenType.StartObject)
+            { objects.Push(reader.CurrentDepth == 0 ? fields : new(StringComparer.Ordinal)); }
+            else if (reader.TokenType == JsonTokenType.EndObject) { objects.Pop(); }
+            else if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                if (!fields.Add(reader.GetString()!)) { throw new IpcProtocolException("Duplicate renderer metadata field."); }
+                if (!objects.Peek().Add(reader.GetString()!)) { throw new IpcProtocolException("Duplicate renderer metadata field."); }
             }
         }
         if (!fields.Contains("Version") || !fields.Contains("Kind"))

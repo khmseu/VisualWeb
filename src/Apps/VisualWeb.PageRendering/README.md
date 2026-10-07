@@ -15,6 +15,12 @@ to the browser client, not this synchronous native policy.
 constructor/deconstruction are unchanged. `BrowserPage.ScrollHeight` reports the
 bounded root extent (at least the viewport height). Scroll changes raster
 translation only, not layout viewport geometry or frame size.
+`BrowserPage.LinkTargets` is a nonpositional read-only list, empty by default.
+Rendering gathers nearest-anchor ancestry from shaped text fragments in paint
+order, using run widths and line heights, then translates/clips to visible CSS
+viewport space. URLs resolve against the final source URL before returning
+data-only IPC-contract targets. The shared contract enforces the same count,
+URL and serialized byte bounds locally and in workers.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL

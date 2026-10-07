@@ -64,12 +64,16 @@ try
                 {
                     Kind = "frame",
                     Id = request.Id,
+                    Width = request.Width,
+                    Height = request.Height,
+                    Scale = request.Scale,
                     PixelWidth = frame.Size.Width,
                     PixelHeight = frame.Size.Height,
                     Stride = frame.Stride,
                     Title = Bounded(rendered.Title),
                     Status = Bounded(rendered.Status),
-                    ScrollHeight = rendered.ScrollHeight
+                    ScrollHeight = rendered.ScrollHeight,
+                    LinkTargets = rendered.LinkTargets.ToArray()
                 }, frame.Pixels).GetAwaiter().GetResult();
             }
             catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)
