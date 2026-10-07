@@ -180,6 +180,32 @@ public sealed class StylesheetTests
         }
     }
 
+    [Theory]
+    [InlineData("http://internal.example/style.css")]
+    [InlineData("https://internal.example/style.css")]
+    public async Task LocalFileDocumentCannotTriggerNetworkStylesheetRequests(string stylesheetUrl)
+    {
+        var htmlPath = Path.GetTempFileName();
+        var requests = new List<string>();
+        try
+        {
+            await File.WriteAllTextAsync(htmlPath,
+                "<!doctype html><link rel=stylesheet href='" + stylesheetUrl + "'>", Cancellation);
+            using var source = new GetPageSource(new Handler(request =>
+            {
+                requests.Add(request.RequestUri!.AbsoluteUri);
+                return Text("body{color:red}", "text/css");
+            }));
+
+            var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+                source.LoadAsync(BrowserUrl.Parse(new Uri(htmlPath).AbsoluteUri), Cancellation));
+
+            Assert.Contains("blocked from local file documents", error.Message, StringComparison.Ordinal);
+            Assert.Empty(requests);
+        }
+        finally { File.Delete(htmlPath); }
+    }
+
     [Fact]
     public async Task HttpsDocumentDoesNotFetchHttpStylesheet()
     {

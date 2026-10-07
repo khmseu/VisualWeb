@@ -74,6 +74,10 @@ internal static class LinkedStylesheets
         var parsed = BrowserUrl.ParseResult(href, documentUrl);
         var url = parsed.Url ?? throw new PageNavigationException("Invalid linked stylesheet URL: " + parsed.Error);
         if (url.Href.Length > RendererProtocol.MaxTextCharacters) { throw new PageNavigationException("Linked stylesheet URL limit exceeded."); }
+        if (documentUrl.Protocol == "file:" && url.Protocol is ("http:" or "https:"))
+        {
+            throw new PageNavigationException("Linked network stylesheets are blocked from local file documents.");
+        }
         if (url.Protocol is not ("http:" or "https:" or "data:"))
         {
             throw new PageNavigationException(url.Protocol == "file:"
