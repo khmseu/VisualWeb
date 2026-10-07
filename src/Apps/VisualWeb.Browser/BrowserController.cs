@@ -24,10 +24,11 @@ public sealed class BrowserController : IDisposable
         internal LoadedPage? Document { get; set; }
         internal BrowserPage? Page { get; set; }
         internal PageViewport? Viewport { get; set; }
+        internal double ScrollY { get; set; }
         internal bool ResizeFailed { get; set; }
     }
     private sealed class Operation(TabId tab, long generation, Task<LoadedPage> load, CancellationTokenSource cancellation,
-        int? traversal, bool replace, bool resize = false)
+        int? traversal, bool replace, bool resize = false, bool scroll = false)
     {
         internal TabId Tab { get; } = tab;
         internal long Generation { get; } = generation;
@@ -36,6 +37,7 @@ public sealed class BrowserController : IDisposable
         internal int? Traversal { get; } = traversal;
         internal bool Replace { get; } = replace;
         internal bool Resize { get; } = resize;
+        internal bool Scroll { get; } = scroll;
         internal LoadedPage? Document { get; set; }
         internal Task<BrowserPage>? Render { get; set; }
         internal PageViewport? Viewport { get; set; }
@@ -85,6 +87,7 @@ public sealed class BrowserController : IDisposable
         catch { source?.Dispose(); Session.CloseTab(tab.Id); throw; }
     }
     public BrowserPage? Page(TabId tab) { Check(); return content[tab].Page; }
+    public double ScrollY(TabId tab) { Check(); return content[tab].ScrollY; }
     public void SetAddress(TabId id, string value)
     {
         Check();
@@ -127,6 +130,8 @@ public sealed class BrowserController : IDisposable
     {
         Limit();
         Cancel(tab.Id);
+        var owner = content[tab.Id];
+        owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
         var cancellation = new CancellationTokenSource();
         Task<LoadedPage> task;
         try { task = content[tab.Id].Source.LoadAsync(url, cancellation.Token); }
@@ -167,14 +172,27 @@ public sealed class BrowserController : IDisposable
                 var size = operation.Viewport ?? viewport();
                 if (size is null) { finished = false; return; }
                 operation.Document = document;
-                operation.Viewport = size;
+                operation.Viewport = operation.Resize ? size : size.Value with { ScrollY = 0 };
                 var renderer = operation.Renderer = Select(content[operation.Tab], operation, document);
                 operation.Render = operation.Resize
-                    ? renderer.RenderRetainedAsync(document, size.Value, operation.Cancellation.Token)
-                    : renderer.RenderAsync(document, size.Value, operation.Cancellation.Token);
+                    ? renderer.RenderRetainedAsync(document, operation.Viewport.Value, operation.Cancellation.Token)
+                    : renderer.RenderAsync(document, operation.Viewport.Value, operation.Cancellation.Token);
                 if (!operation.Render.IsCompleted) { finished = false; return; }
             }
             var rendered = operation.Render.GetAwaiter().GetResult();
+            if (!operation.Resize)
+            {
+                var latest = viewport();
+                if (latest is null) { finished = false; return; }
+                var geometry = latest.Value with { ScrollY = 0 };
+                if (geometry != operation.Viewport)
+                {
+                    operation.Viewport = geometry;
+                    operation.Render = operation.Renderer!.RenderRetainedAsync(document, geometry, operation.Cancellation.Token);
+                    finished = false;
+                    return;
+                }
+            }
             var owner = content[operation.Tab];
             var tab = Session.Tab(operation.Tab);
             // Throwing steps precede publication so a rejected commit leaves renderer, document, origin and history intact.
@@ -186,7 +204,10 @@ public sealed class BrowserController : IDisposable
                 operation.Candidate = null;
                 owner.Renderer = candidate; owner.Used = true;
             }
-            owner.Document = document; owner.Page = rendered; owner.Viewport = operation.Viewport;
+            owner.ScrollY = Math.Min(operation.Viewport!.Value.ScrollY,
+                Math.Max(0, rendered.ScrollHeight - operation.Viewport.Value.Height));
+            owner.Document = document; owner.Page = rendered;
+            owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;
             if (operation.Resize)
             {
@@ -204,7 +225,11 @@ public sealed class BrowserController : IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (current) { Report(operation.Tab, "Navigation/rendering canceled."); }
+            if (current)
+            {
+                if (operation.Resize) { content[operation.Tab].ScrollY = content[operation.Tab].Viewport?.ScrollY ?? 0; }
+                Report(operation.Tab, "Navigation/rendering canceled.");
+            }
         }
         catch (Exception exception) when (IsPageFailure(exception))
         {
@@ -213,9 +238,11 @@ public sealed class BrowserController : IDisposable
                 if (operation.Resize)
                 {
                     var owner = content[operation.Tab];
-                    owner.Page = null; owner.Viewport = operation.Viewport; owner.ResizeFailed = true;
+                    owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
+                    if (!operation.Scroll)
+                    { owner.Page = null; owner.Viewport = operation.Viewport; owner.ResizeFailed = true; }
                 }
-                Report(operation.Tab, (operation.Resize ? "Resize rendering failed: " : "") + exception.Message);
+                Report(operation.Tab, (operation.Scroll ? "Scroll rendering failed: " : operation.Resize ? "Resize rendering failed: " : "") + exception.Message);
             }
         }
         finally
@@ -254,6 +281,7 @@ public sealed class BrowserController : IDisposable
         var owner = content[id];
         var tab = Session.Tab(id);
         if (tab.IsLoading || owner.Document is null) { return; }
+        viewport = viewport with { ScrollY = owner.ScrollY };
         var pending = operations.FirstOrDefault(op => op.Tab == id && op.Generation == tab.Generation);
         if (pending?.Viewport == viewport) { return; }
         if (owner.Viewport == viewport)
@@ -265,6 +293,29 @@ public sealed class BrowserController : IDisposable
         Cancel(id);
         var operation = new Operation(id, checked(++tab.Generation), Task.FromResult(owner.Document),
             new(), null, false, resize: true)
+        { Viewport = viewport };
+        operations.Add(operation);
+        Advance(operation, () => viewport);
+    }
+    /// <summary>Scroll the active retained document in CSS pixels; finite deltas saturate at its extent.</summary>
+    public void Scroll(TabId id, double delta)
+    {
+        Check();
+        if (!double.IsFinite(delta)) { throw new ArgumentOutOfRangeException(nameof(delta), "Scroll delta must be finite."); }
+        var owner = content[id];
+        var tab = Session.Tab(id);
+        if (tab.IsLoading || owner.Document is null || owner.Page is null || owner.Viewport is null || delta == 0) { return; }
+        var pending = operations.FirstOrDefault(op => op.Tab == id && op.Generation == tab.Generation);
+        var viewport = pending?.Viewport ?? owner.Viewport.Value;
+        var maximum = Math.Max(0, owner.Page.ScrollHeight - viewport.Height);
+        var offset = Math.Clamp(owner.ScrollY + delta, 0, maximum);
+        if (offset == owner.ScrollY) { return; }
+        Limit();
+        Cancel(id);
+        owner.ScrollY = offset;
+        viewport = viewport with { ScrollY = offset };
+        var operation = new Operation(id, checked(++tab.Generation), Task.FromResult(owner.Document),
+            new(), null, false, resize: true, scroll: true)
         { Viewport = viewport };
         operations.Add(operation);
         Advance(operation, () => viewport);

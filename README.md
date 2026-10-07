@@ -90,7 +90,7 @@ also exposes deep/shallow `cloneNode` for non-Document DOM nodes with detached
 fresh identities, preflighted subtree/attribute/text limits and no copied
 listeners; Document cloning remains outside the script bridge. It
 explicitly enables a bounded post-parse inline classic subset in either
-development mode; mutations feed style/layout/paint, and resize retains the
+development mode; mutations feed style/layout/paint, and scroll/resize retain the
 committed scripted DOM without reexecution. External scripts, HTML scheduling,
 full Web IDL, event loops and production web security remain deferred.
 

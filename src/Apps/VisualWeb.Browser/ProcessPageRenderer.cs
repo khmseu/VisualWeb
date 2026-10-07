@@ -131,13 +131,17 @@ public sealed class ProcessPageRenderer : IPageRenderer
             Diagnostics = page.Diagnostics.ToArray(),
             Width = viewport.Width,
             Height = viewport.Height,
-            Scale = viewport.Scale
+            Scale = viewport.Scale,
+            ScrollY = viewport.ScrollY
         };
         RendererProtocol.Validate(request, 0);
         var expected = RendererProtocol.Dimensions(viewport.Width, viewport.Height, viewport.Scale);
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetime.Token);
+        using var deadline = reuseDocument
+            ? CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetime.Token);
         deadline.CancelAfter(timeout);
-        try { await exchange.WaitAsync(deadline.Token).ConfigureAwait(false); }
+        using var queued = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
+        try { await exchange.WaitAsync(queued.Token).ConfigureAwait(false); }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && !lifetime.IsCancellationRequested)
         {
             throw new RendererProcessException("Renderer exchange queue deadline exceeded.");
@@ -146,6 +150,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
         Connection? current = null;
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             bool started;
             lock (sync)
             {
@@ -174,13 +179,17 @@ public sealed class ProcessPageRenderer : IPageRenderer
             {
                 throw new IpcProtocolException("Renderer frame does not match the requested physical viewport.");
             }
+            if (packet.Message.ScrollHeight < viewport.Height)
+            { throw new IpcProtocolException("Renderer scroll height is smaller than its CSS viewport."); }
             var frame = RasterFrame.CopyFrom(packet.Pixels,
                 new(packet.Message.PixelWidth, packet.Message.PixelHeight), packet.Message.Stride);
-            return new(frame, packet.Message.Title!, packet.Message.Status!);
+            // Drain superseded exchanges under the deadline so retained DOM survives and replies stay aligned.
+            cancellationToken.ThrowIfCancellationRequested();
+            return new(frame, packet.Message.Title!, packet.Message.Status!) { ScrollHeight = packet.Message.ScrollHeight };
         }
         catch (OperationCanceledException)
         {
-            Stop(current);
+            if (deadline.IsCancellationRequested) { Stop(current); }
             if (cancellationToken.IsCancellationRequested || lifetime.IsCancellationRequested) { throw; }
             throw new RendererProcessException("Renderer startup/render deadline exceeded; worker terminated.");
         }

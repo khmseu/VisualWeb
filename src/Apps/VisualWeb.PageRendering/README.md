@@ -5,11 +5,16 @@ local development mode and renderer executable. Owns explicit native font
 configuration, embedded stylesheet discovery and offline Engine.Content calls.
 Phase 11d adds explicit `executeInlineScripts: true` post-parse inline classics
 with live DOM bindings before style/layout/paint. Default rendering remains
-script-free. Publication pins the successful DOM for resize; at most one
+script-free. Publication pins every successful parsed DOM for scroll/resize; at most one
 unpublished candidate is retained alongside it. Navigation/reload uses a fresh
 host; lost DOM requires explicit reload rather than repeating execution.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
+
+`PageViewport.ScrollY` is an optional init-only CSS-pixel offset; its three-value
+constructor/deconstruction are unchanged. `BrowserPage.ScrollHeight` reports the
+bounded root extent (at least the viewport height). Scroll changes raster
+translation only, not layout viewport geometry or frame size.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL

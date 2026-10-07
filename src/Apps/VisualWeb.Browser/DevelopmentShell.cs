@@ -22,7 +22,8 @@ public sealed class DevelopmentShell : IDisposable
         <p>Ctrl T creates a tab. Ctrl W closes it. Ctrl N opens a window.</p>
         <p>Ctrl M moves the active tab to another window.</p>
         <p>Alt Left and Alt Right navigate history. F5 reloads.</p>
-        <p>Page interaction, scrolling and linked stylesheets are deferred.</p>
+        <p>Wheel, Page Up, Page Down, Home and End scroll outside address editing.</p>
+        <p>Page interaction and linked stylesheets are deferred.</p>
         </body></html>
         """;
     public static string HomeUrl => "data:text/html;charset=utf-8," + Uri.EscapeDataString(HomeHtml);
@@ -37,6 +38,7 @@ public sealed class DevelopmentShell : IDisposable
         internal float LastDensity { get; set; }
         internal TabId? LastTab { get; set; }
         internal bool SizeLimitReported { get; set; }
+        internal double? PointerY { get; set; }
     }
     private readonly IWindowSystem system;
     private readonly ShellChrome chrome;
@@ -195,7 +197,15 @@ public sealed class DevelopmentShell : IDisposable
                 case CloseRequested: Controller.CloseWindow(window.Id); break;
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
                 case FocusChanged { Focused: false }: Edit(view, window, false); break;
+                case PointerMoved moved: view.PointerY = moved.Y; break;
+                case PointerScrolled wheel when !view.Editing && view.PointerY is not < ShellChrome.Height
+                    && window.ActiveTab is { } active:
+                    if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
+                    { Controller.Report(active.Id, "Wheel delta must be finite."); break; }
+                    Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48);
+                    break;
                 case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
+                    view.PointerY = pointer.Y;
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
                     if (target is not null) { Action(window, view, target.Action, target.Tab); }
                     else { Edit(view, window, false); }
@@ -243,7 +253,21 @@ public sealed class DevelopmentShell : IDisposable
             return;
         }
         if (code == SDL.Scancode.F5 && !key.Repeat) { Action(window, view, ChromeAction.Reload); return; }
-        if (!view.Editing || window.ActiveTab is not { } tab) { return; }
+        if (window.ActiveTab is not { } tab) { return; }
+        if (!view.Editing)
+        {
+            if (!control && !alt && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport)
+            {
+                switch (code)
+                {
+                    case SDL.Scancode.Pagedown: Controller.Scroll(tab.Id, viewport.Height); break;
+                    case SDL.Scancode.Pageup: Controller.Scroll(tab.Id, -viewport.Height); break;
+                    case SDL.Scancode.Home: Controller.Scroll(tab.Id, -double.MaxValue); break;
+                    case SDL.Scancode.End: Controller.Scroll(tab.Id, double.MaxValue); break;
+                }
+            }
+            return;
+        }
         switch (code)
         {
             case SDL.Scancode.Return:

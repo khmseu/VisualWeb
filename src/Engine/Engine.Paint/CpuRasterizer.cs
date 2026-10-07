@@ -98,7 +98,8 @@ public sealed class RasterFrame
 public static class CpuRasterizer
 {
     public static RasterFrame Render(DisplayList list, PaintFontRegistry fonts, double scale = 1,
-        CssColor? backdrop = null, PaintOptions? options = null, CancellationToken cancellationToken = default)
+        CssColor? backdrop = null, PaintOptions? options = null, CancellationToken cancellationToken = default,
+        double scrollY = 0)
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(fonts);
@@ -107,6 +108,9 @@ public static class CpuRasterizer
         limits.Validate();
         cancellationToken.ThrowIfCancellationRequested();
         if (!double.IsFinite(scale) || scale <= 0) { throw new ArgumentOutOfRangeException(nameof(scale)); }
+        if (!double.IsFinite(scrollY) || scrollY < 0 || scrollY > 1e9) { throw new ArgumentOutOfRangeException(nameof(scrollY)); }
+        if (list.Height > PaintOptions.MaxDocumentHeight)
+        { throw new PaintLimitException("Raster viewport exceeds the CSS-pixel height bound."); }
         var clear = backdrop ?? new CssColor(255, 255, 255);
         if (clear.Alpha != 255) { throw new ArgumentException("Raster backdrop must be opaque.", nameof(backdrop)); }
         var width = Math.Ceiling(list.Width * scale);
@@ -143,6 +147,7 @@ public static class CpuRasterizer
                         if (++glyphCount > limits.MaxGlyphs) { throw new PaintLimitException("Raster glyph limit exceeded."); }
                         if (glyph.Id == 0 || glyph.Id >= typeface.GlyphCount) { throw new UnsupportedPaintException("Glyph is absent from the registered font."); }
                         Float(glyph.X); Float(glyph.Y);
+                        Vertical(glyph.Y);
                     }
                     break;
                 default: throw new UnsupportedPaintException("Unsupported paint command.");
@@ -155,6 +160,7 @@ public static class CpuRasterizer
         canvas.Clear(Color(clear));
         canvas.Scale(deviceScale);
         canvas.ClipRect(viewport);
+        canvas.Translate(0, -Float(scrollY));
         using var paint = new SKPaint { IsAntialias = false, Style = SKPaintStyle.Fill };
         foreach (var command in list.Commands)
         {
@@ -206,6 +212,12 @@ public static class CpuRasterizer
     private static SKRect Rect(LayoutRect rect)
     {
         if (rect.Width < 0 || rect.Height < 0) { throw new ArgumentException("Paint rectangle sizes cannot be negative."); }
+        Vertical(rect.Y); Vertical(rect.Y + rect.Height);
         return new(Float(rect.X), Float(rect.Y), Float(rect.X + rect.Width), Float(rect.Y + rect.Height));
+    }
+    private static void Vertical(double value)
+    {
+        if (!double.IsFinite(value) || Math.Abs(value) > PaintOptions.MaxDocumentHeight)
+        { throw new PaintLimitException("Paint geometry exceeds the CSS-pixel height bound."); }
     }
 }

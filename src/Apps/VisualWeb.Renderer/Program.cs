@@ -56,7 +56,9 @@ try
                 if (active.HasDocument(request.CommittedDocumentId)) { active.CommitDocument(request.CommittedDocumentId); }
                 var page = new LoadedPage(BrowserUrl.Parse(request.Url!), request.Html!, request.StatusCode, request.Diagnostics!)
                 { DocumentId = request.DocumentId };
-                var rendered = active.Render(page, new(request.Width, request.Height, request.Scale), CancellationToken.None, request.ReuseDocument);
+                var rendered = active.Render(page,
+                    new(request.Width, request.Height, request.Scale) { ScrollY = request.ScrollY },
+                    CancellationToken.None, request.ReuseDocument);
                 var frame = rendered.Frame;
                 channel.WriteAsync(new()
                 {
@@ -66,7 +68,8 @@ try
                     PixelHeight = frame.Size.Height,
                     Stride = frame.Stride,
                     Title = Bounded(rendered.Title),
-                    Status = Bounded(rendered.Status)
+                    Status = Bounded(rendered.Status),
+                    ScrollHeight = rendered.ScrollHeight
                 }, frame.Pixels).GetAwaiter().GetResult();
             }
             catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)

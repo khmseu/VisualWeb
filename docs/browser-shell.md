@@ -88,6 +88,36 @@ the underlying URL and page title are not modified by that display conversion.
 Long labels/statuses are clipped; full navigation errors are also written to
 stderr. The native window title is bounded to 120 Unicode scalars.
 
+## Basic vertical scrolling
+
+Wheel amounts use positive Y for scrolling down (48 CSS pixels per line, capped
+at 100 lines per event). Wheel input targets only the active tab, is suppressed
+while editing the address, and is ignored over chrome when the last logical
+pointer position is known. Wheel events themselves carry no pointer coordinates.
+Page Up/Down move one viewport; Home/End select the document top/bottom outside
+address editing. Horizontal scrolling, painted scrollbars and DOM input/default
+actions are not implemented.
+
+Each tab's controller content owns its scroll position, including across tab
+moves. Positions clamp to the rendered root document border-box bottom minus
+the current CSS viewport height. No-overflow pages stay at zero. Resize retains
+the document and preserves/clamps the offset; only successful new-document
+publication resets it. Failed navigation keeps the previous frame and position.
+Scrolling is inactive before a document commits and while navigation is loading.
+Failed scroll repaints report an error and retain the last published frame/offset.
+
+Both local and process renderers repaint the retained parsed DOM (including
+script mutations), with no fetch, parse or script reexecution. Scroll translation
+is applied only during rasterization under the same viewport clip; CSS viewport
+width/height, layout coordinates and opaque BGRA frame dimensions are unchanged.
+Root extent and vertical paint coordinates are limited to 10,000,000 CSS pixels;
+this is document scrolling, not general CSS overflow or nested scrolling.
+Newer scroll/resize requests cancel older publications. In-flight retained
+process exchanges drain under their existing deadline to keep the DOM/channel
+alive; stale frames cannot publish. New-document candidates still commit
+transactionally, and viewport changes during navigation repaint that candidate
+before publication without rerunning scripts.
+
 ## Navigation and page policy
 
 BrowserController owns independent per-tab IPageSource/IPageRenderer instances.
@@ -282,14 +312,16 @@ coordinates, not physical framebuffer coordinates.
 History evicts the oldest entry at its configured count limit. Other limits
 fail explicitly. Engine stage budgets still apply separately; these are not
 a single process-wide memory bound. Only the current decoded HTML and frame
-are retained per tab; render-stage DOM/style/layout objects are not shared
-between tabs or retained as a history cache. Font owners and loaders are
+are retained per tab; parsed DOM is retained in the renderer for scrolling/resize,
+with at most one unpublished candidate alongside the committed document.
+Render-stage objects are not shared between tabs or retained as a history cache. Font owners and loaders are
 tab-local, while immutable configured font file paths and the chrome renderer
 are shell-level resources.
 
-Pages have no input/hit-testing, clickable links, controls, selection or
-scrolling; overflow is clipped to the viewport. There are no downloads, storage,
-automatic linked CSS, images/media or JavaScript/V8 yet. Native page crashes
+Pages have no DOM input/hit-testing, clickable links, controls or selection.
+Basic vertical document scrolling is available; general/nested CSS overflow is
+not. There are no downloads, storage, automatic linked CSS or images/media.
+Post-parse inline scripting remains explicit opt-in, not a full event loop. Native page crashes
 can terminate the entire shell in single-process mode; multiprocess mode
 contains worker failures to their tab. Browser-native chrome/platform crashes
 remain shell failures. Production origin/CORS/CSP/confinement policy remains

@@ -189,7 +189,7 @@ public sealed class SdlWindowSystem : IWindowSystem
                 native.Button.X, native.Button.Y),
             SDL.EventType.MouseWheel => new PointerScrolled(new(native.Wheel.WindowID),
                 native.Wheel.X * (native.Wheel.Direction == SDL.MouseWheelDirection.Flipped ? -1 : 1),
-                native.Wheel.Y * (native.Wheel.Direction == SDL.MouseWheelDirection.Flipped ? -1 : 1)),
+                native.Wheel.Y * (native.Wheel.Direction == SDL.MouseWheelDirection.Flipped ? 1 : -1)),
             SDL.EventType.KeyDown or SDL.EventType.KeyUp => new KeyChanged(new(native.Key.WindowID),
                 (int)native.Key.Scancode, (uint)native.Key.Key, (ushort)native.Key.Mod,
                 type == SDL.EventType.KeyDown, native.Key.Repeat),

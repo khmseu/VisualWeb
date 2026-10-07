@@ -7,6 +7,40 @@ namespace VisualWeb.Engine.Content.Tests;
 
 public sealed class ContentTests
 {
+    [Fact]
+    public void ScrollingMovesTextOnlyInPaintAndKeepsLayoutViewportAndOpaqueBackground()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><div></div><p>Below viewport</p>";
+        var styles = new[] { new CssStyleSource(Css + " div{height:40px} body{background-color:blue} p{color:white}") };
+        var first = OfflinePageRenderer.Render(html, styles, text, fonts, 200, 20,
+            new() { IncludeUserAgentStyle = false }, Cancellation);
+        var scrolled = OfflinePageRenderer.RenderParsed(first.Html, styles, text, fonts, 200, 20,
+            new() { IncludeUserAgentStyle = false, ScrollY = 40 }, Cancellation);
+        Assert.Same(first.Html.Document, scrolled.Html.Document);
+        Assert.Equal(first.Layout.Root!.BorderBox, scrolled.Layout.Root!.BorderBox);
+        Assert.Equal(200, scrolled.Layout.ViewportWidth); Assert.Equal(20, scrolled.Layout.ViewportHeight);
+        Assert.Equal(60, scrolled.ScrollHeight);
+        Assert.Equal(first.Frame.Size, scrolled.Frame.Size);
+        Assert.Equal(first.DisplayList.Commands.OfType<DrawGlyphRun>().SelectMany(run => run.Glyphs),
+            scrolled.DisplayList.Commands.OfType<DrawGlyphRun>().SelectMany(run => run.Glyphs));
+        var pixels = scrolled.Frame.Pixels.ToArray();
+        Assert.Contains(pixels.Where((_, index) => index % 4 == 1), channel => channel > 0);
+        Assert.All(pixels.Where((_, index) => index % 4 == 3), alpha => Assert.Equal(255, alpha));
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, pixels[^4..]);
+    }
+
+    [Fact]
+    public void ExcessiveDocumentHeightFailsBeforeRasterAllocation()
+    {
+        using var fonts = new PaintFontRegistry();
+        Assert.Throws<PaintLimitException>(() => OfflinePageRenderer.Render("<!doctype html><div></div>",
+            [new(Css + " div{height:10000001px}")], new FontSet(), fonts, 20, 20,
+            new() { IncludeUserAgentStyle = false }, Cancellation));
+    }
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
     private const string Css = "html,body,p,div{display:block} head{display:none} *{margin:0;font-size:16px;line-height:20px}";

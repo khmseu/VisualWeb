@@ -12,7 +12,8 @@ dotnet run --project tools/PlatformSmoke -- windows
 
 With no backend, uses the OS composition root's automatic selection.
 Checks two real SDL windows, BGRA pixel values read back from the SDL surface,
-window-specific close/pointer events, independent disposal, thread affinity,
+window-specific close/pointer events, normal/flipped wheel polarity (positive down),
+independent disposal, thread affinity,
 font enumeration and teardown/reinitialization. Errors go to stderr with a
 nonzero exit code. It briefly creates small windows and exits; no long-running
 server or renderer is left behind.

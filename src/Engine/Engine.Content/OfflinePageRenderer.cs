@@ -14,9 +14,13 @@ public sealed record PageRenderOptions
     public PaintOptions Paint { get; init; } = new();
     public bool IncludeUserAgentStyle { get; init; } = true;
     public double Scale { get; init; } = 1;
+    public double ScrollY { get; init; }
 }
 public sealed record RenderedPage(HtmlParseResult Html, CssStyleResult Styles, LayoutResult Layout,
-    DisplayList DisplayList, RasterFrame Frame);
+    DisplayList DisplayList, RasterFrame Frame)
+{
+    public double ScrollHeight { get; init; }
+}
 
 /// <summary>Decoded HTML and explicitly ordered CSS to a renderer-local CPU frame.</summary>
 /// <remarks>Stages use html, css-cascade, css2-visual and css2-paint standards.
@@ -60,9 +64,15 @@ public static class OfflinePageRenderer
                 + string.Join(" ", styles.Diagnostics.Take(5).Select(diagnostic => diagnostic.Code + ": " + diagnostic.Message)));
         }
         var layout = StaticLayout.Layout(parsed.Document, styles, text, viewportWidth, viewportHeight, settings.Layout, cancellationToken);
+        var bottom = layout.Root is { } root ? root.BorderBox.Y + root.BorderBox.Height : 0;
+        var scrollHeight = Math.Max(viewportHeight, bottom);
+        if (!double.IsFinite(bottom) || bottom < 0 || scrollHeight > PaintOptions.MaxDocumentHeight)
+        { throw new PaintLimitException("Document scroll height exceeds the CSS-pixel bound."); }
         var list = DisplayListBuilder.Build(layout, styles, settings.Paint, cancellationToken);
-        var frame = CpuRasterizer.Render(list, fonts, settings.Scale, options: settings.Paint, cancellationToken: cancellationToken);
-        return new(parsed, styles, layout, list, frame);
+        var offset = Math.Min(settings.ScrollY, scrollHeight - viewportHeight);
+        var frame = CpuRasterizer.Render(list, fonts, settings.Scale, options: settings.Paint,
+            cancellationToken: cancellationToken, scrollY: offset);
+        return new(parsed, styles, layout, list, frame) { ScrollHeight = scrollHeight };
     }
     private static void Validate(PageRenderOptions settings, double viewportWidth, double viewportHeight)
     {
@@ -71,6 +81,8 @@ public static class OfflinePageRenderer
         ArgumentNullException.ThrowIfNull(settings.Layout);
         ArgumentNullException.ThrowIfNull(settings.Paint);
         if (!double.IsFinite(settings.Scale) || settings.Scale <= 0) { throw new ArgumentOutOfRangeException(nameof(settings), "Raster scale must be finite and positive."); }
+        if (!double.IsFinite(settings.ScrollY) || settings.ScrollY < 0 || settings.ScrollY > 1e9)
+        { throw new ArgumentOutOfRangeException(nameof(settings), "Scroll offset must be finite, nonnegative and bounded."); }
         if (!double.IsFinite(viewportWidth) || viewportWidth <= 0 || !double.IsFinite(viewportHeight) || viewportHeight <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(viewportWidth), "Viewport must be finite and positive.");

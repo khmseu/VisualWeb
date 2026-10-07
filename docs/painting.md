@@ -92,12 +92,23 @@ ReadOnlyMemory; IPixelSurface does not retain presentation memory.
 
 Images, gradients, advanced/differently colored borders, border radius,
 decorated inline boxes, text decoration, transforms, CSS opacity/blending,
-stacking contexts, clipping/scrolling beyond the viewport, GPU rendering and
+stacking contexts, general/nested overflow clipping, GPU rendering and
 browser UI are deferred. Unsupported CSS receives diagnostics and prevents
 rendering; unsupported visible border styles throw UnsupportedPaintException.
 This is a finite static subset, not general CSS painting conformance.
 
 ## Budgets and native boundaries
+
+`PageRenderOptions.ScrollY` requests a vertical CSS-pixel offset (finite,
+nonnegative, at most 1e9). Offline rendering keeps the original layout viewport,
+returns `RenderedPage.ScrollHeight` as the larger of viewport height and root
+border-box bottom, and clamps the offset before painting. `CpuRasterizer.Render`
+also accepts `scrollY` for callers supplying display lists: it scales, establishes
+the fixed viewport clip, then translates the canvas upward. No taller bitmap is
+allocated and display-command coordinates remain unchanged. Canvas backgrounds
+cover the scrollable extent. Root scroll height, raster viewport height and
+vertical paint geometry are bounded to 10,000,000 CSS pixels before raster allocation.
+This is a bounded document-scrolling primitive, not CSS overflow conformance.
 
 PaintOptions defaults:
 

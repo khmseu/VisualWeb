@@ -82,6 +82,21 @@ try
         }
     };
     Require(SDL.PushEvent(ref pointer), SDL.GetError());
+    foreach (var direction in new[] { SDL.MouseWheelDirection.Normal, SDL.MouseWheelDirection.Flipped })
+    {
+        var wheel = new SDL.Event
+        {
+            Wheel = new SDL.MouseWheelEvent
+            {
+                Type = SDL.EventType.MouseWheel,
+                WindowID = first.Id.Value,
+                X = 2,
+                Y = -3,
+                Direction = direction
+            }
+        };
+        Require(SDL.PushEvent(ref wheel), SDL.GetError());
+    }
     system.PumpEvents();
     Require(secondEvents.OfType<CloseRequested>().Any(), "Close event was not routed to second window.");
     Require(!firstEvents.OfType<CloseRequested>().Any(), "Close event leaked into first window.");
@@ -89,6 +104,10 @@ try
         "Pointer event coordinates were not translated.");
     Require(!secondEvents.OfType<PointerMoved>().Any(e => e.X == 12.5f && e.Y == 9.5f),
         "Pointer event leaked into second window.");
+    var wheels = firstEvents.OfType<PointerScrolled>().ToArray();
+    Require(wheels.Length == 2 && wheels[0].X == 2 && wheels[0].Y == 3
+        && wheels[1].X == -2 && wheels[1].Y == -3, "Wheel direction was not normalized to positive down.");
+    Require(!secondEvents.OfType<PointerScrolled>().Any(), "Wheel event leaked into second window.");
     second.Dispose();
     size = first.PixelSize;
     pixels = new byte[checked(size.Width * size.Height * 4)];

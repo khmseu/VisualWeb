@@ -67,16 +67,15 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 - Main-thread pumps observe asynchronous load/render tasks without blocking
   on worker replies. Only successful, current-generation frames commit URL,
   history, title and content. Stale/canceled results cannot publish.
-- Static resizing rerenders retained decoded HTML without a fetch. Opt-in
-  inline scripting retains the committed mutated DOM for repainting without
-  repeating execution. Superseded resizes
+- Scrolling/resizing repaint the retained parsed DOM without a fetch/reparse.
+  Opt-in inline scripting keeps mutations without repeating execution. Superseded repaints
   cannot publish; failed resizes clear wrong-sized frames. Moving tabs keeps
   their worker/state; closing tabs cancels their work and terminates their worker.
 
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v3
+## Private stream protocol v4
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -92,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 3, explicitly present; v1/v2 rejected |
+| Protocol version | 4, explicitly present; v1/v2/v3 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -101,26 +100,30 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Physical frame pixels | 4,194,304 |
 | Raw BGRA bytes | 16 MiB |
 | Startup/render/exchange deadline | 30 seconds by default |
+| Request scroll offset | finite, 0 through 1e9 CSS pixels |
+| Frame/document scroll height | finite, 0 through 10,000,000 CSS pixels |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
 confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows
 confinement confirms `windows-appcontainer-job-v1`. This metadata requires
-protocol v2 originally; phase 11d advances to v3 for document/repaint/script policy
+protocol v2 originally; phase 11d advanced to v3 for document/repaint/script policy,
+and basic scrolling advances to v4 for request `ScrollY` and reply `ScrollHeight`,
 because older receivers strictly reject unknown fields.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics and CSS viewport/
-scale, a nonempty document GUID, the last committed document GUID, explicit
+scale and a nonnegative bounded CSS-pixel scroll offset, a nonempty document GUID,
+the last committed document GUID, explicit
 inline-script opt-in and retained-document repaint intent. Script policy is
 fixed by the first request and cannot change within a tab channel. Publication
 acknowledgement pins the worker's prior candidate on the next request; another
 candidate cannot evict the committed DOM. These fields are rejected on replies
-and handshakes. A reply is `frame` (title/status/dimensions/stride/pixels) or `error`
+and handshakes. A reply is `frame` (title/status/dimensions/stride/pixels/scroll height) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
 worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
 the [finite scripting policy](scripting.md); input, event loops and display-list
 IPC are deferred.
 
-Document-origin association does not change IPC v3: the browser keeps its
+Document-origin association does not change IPC v4: the browser keeps its
 `LoadedPage.Origin`, while worker reconstruction from the URL creates a local
 origin. Neither tuple nor opaque browser principals are transmitted or used
 for renderer authorization. Retained repaint uses the existing document GUID
@@ -131,7 +134,7 @@ a fresh reload publishes. With origin isolation (always on in multiprocess
 shells) a cross-origin or new opaque document renders in a new
 `ProcessPageRenderer` worker; the previous worker and committed document stay
 retained until the candidate commits, then the previous worker is disposed. A failed or stale candidate worker is
-killed without affecting the committed worker. No principal crosses IPC; IPC v3
+killed without affecting the committed worker. No principal crosses IPC; IPC v4
 is unchanged. Cross-process principal sharing, site computation and cross-site
 frame isolation remain later work.
 
@@ -141,19 +144,28 @@ Metadata is validated before pixel allocation. Frames require finite bounded
 geometry, exact `width * 4` stride, exact byte count and alpha 255 everywhere.
 The browser additionally verifies the request ID and exact physical dimensions
 `ceil(CSS viewport * scale)` before copying/publishing a frame.
+Reply scroll height must be at least the requested CSS viewport height; scroll
+fields on other message kinds fail. The worker clamps the offset to the actual
+root border-box extent without altering layout or allocating a taller bitmap.
+Canvas backgrounds cover the document's scrollable extent under the viewport
+clip. Stage command/glyph/pixel budgets remain in force.
 
 A channel permits only one reader/writer; the client serializes complete
-request/reply exchanges and assigns IDs in wire order. Cancellation or a
-protocol failure invalidates the channel rather than attempting resynchronization.
+request/reply exchanges and assigns IDs in wire order. New-document cancellation
+or protocol failure invalidates the channel rather than attempting resynchronization.
+Canceled queued retained repaints never send a request; an already in-flight
+retained repaint drains its complete reply under the original deadline and then
+reports cancellation. Its successor keeps the same channel/DOM. This does not
+extend deadlines; timeouts, disposal or malformed replies still stop the worker.
 These are per-message/stage budgets, **not** a whole-browser memory cap.
 
 ## Failures, restart and validation
 
 Supported page-subset errors are explicit error replies and retain the worker
 for the next request. Disconnects, malformed/mismatched replies, startup/render
-deadlines and cancellation terminate only the client's owned worker. The next
-navigation starts a replacement. Scripted resize after worker loss explicitly
-requires reload, rather than reconstructing the DOM by rerunning scripts.
+deadlines and new-document cancellation terminate only the client's owned worker.
+The next navigation starts a replacement. Retained scroll/resize after worker loss
+explicitly requires reload, rather than reconstructing the DOM or rerunning scripts.
 Queue timeouts do not kill an unrelated active
 exchange. Idle exits are reported once to the owning tab, preserving its last
 frame/history and any pending browser fetch; reload or that pending navigation

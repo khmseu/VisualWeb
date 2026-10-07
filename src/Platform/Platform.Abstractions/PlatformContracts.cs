@@ -46,6 +46,9 @@ public sealed record FocusChanged(WindowId Window, bool Focused) : WindowEvent(W
 /// <summary>Coordinates are window-local logical units, not framebuffer pixels.</summary>
 public sealed record PointerMoved(WindowId Window, float X, float Y) : WindowEvent(Window);
 public sealed record PointerButtonChanged(WindowId Window, byte Button, bool Pressed, float X, float Y) : WindowEvent(Window);
+/// <summary>Wheel amounts, not pointer coordinates: positive X scrolls right and positive Y scrolls down.</summary>
+/// <remarks>Reference: sdl-events; <see href="https://wiki.libsdl.org/SDL3/SDL_MouseWheelEvent">SDL wheel event</see>.
+/// Native direction is normalized; pointer location is supplied separately by movement/button events.</remarks>
 public sealed record PointerScrolled(WindowId Window, float X, float Y) : WindowEvent(Window);
 public sealed record KeyChanged(WindowId Window, int ScanCode, uint Key, ushort Modifiers, bool Pressed, bool Repeat) : WindowEvent(Window);
 public sealed record TextEntered(WindowId Window, string Text) : WindowEvent(Window);

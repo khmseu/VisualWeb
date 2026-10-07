@@ -40,8 +40,27 @@ public sealed record LoadedPage
         Diagnostics = this.Diagnostics;
     }
 }
-public readonly record struct PageViewport(double Width, double Height, double Scale);
-public sealed record BrowserPage(RasterFrame Frame, string Title, string Status);
+/// <summary>Unchanged CSS viewport geometry and a vertical canvas offset.</summary>
+/// <remarks>Spec: css2-visual;
+/// <see href="https://www.w3.org/TR/CSS22/visuren.html#viewport">viewport</see>.</remarks>
+public readonly record struct PageViewport(double Width, double Height, double Scale)
+{
+    public double ScrollY { get; init; }
+}
+public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
+{
+    private readonly double scrollHeight;
+    public double ScrollHeight
+    {
+        get => scrollHeight;
+        init
+        {
+            if (!double.IsFinite(value) || value < 0 || value > PaintOptions.MaxDocumentHeight)
+            { throw new ArgumentOutOfRangeException(nameof(value), "Document scroll height exceeds the CSS-pixel bound."); }
+            scrollHeight = value;
+        }
+    }
+}
 
 public interface IPageRenderer : IDisposable
 {

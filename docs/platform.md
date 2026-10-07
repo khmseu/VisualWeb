@@ -42,6 +42,9 @@ test does not certify real IME/keyboard behavior or a compositor's decorations.
 LogicalSize is SDL window coordinate size. PixelSize is the physical framebuffer
 size. Pointer coordinates are logical; PixelDensity is the physical/logical
 ratio, while DisplayScale describes preferred UI scaling.
+PointerScrolled X/Y are wheel amounts, not pointer coordinates. Positive X means
+right and positive Y means down. SDL's away/toward Y polarity and flipped direction
+are normalized; pointer position comes from separate movement/button events.
 
 Present accepts opaque BGRA32, an explicit byte stride, and dimensions matching
 PixelSize. It checks bounds/overflow, copies synchronously, converts into the

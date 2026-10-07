@@ -8,6 +8,7 @@ public sealed class UnsupportedPaintException(string message) : Exception(messag
 
 public sealed record PaintOptions
 {
+    public const double MaxDocumentHeight = 10_000_000;
     public int MaxCommands { get; init; } = 1_000_000;
     public int MaxGlyphs { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
@@ -118,7 +119,12 @@ public static class DisplayListBuilder
                 rootColor = Color(body, "background-color");
                 propagated = body;
             }
-            if (rootColor.Alpha > 0) { Add(new FillRectangle(new(0, 0, layout.ViewportWidth, layout.ViewportHeight), rootColor)); }
+            // Canvas background must cover the visible region after a bounded scroll translation.
+            if (rootColor.Alpha > 0)
+            {
+                Add(new FillRectangle(new(0, 0, layout.ViewportWidth,
+                Math.Max(layout.ViewportHeight, root.BorderBox.Y + root.BorderBox.Height)), rootColor));
+            }
             Background(root, 1);
             Text(root, 1);
 

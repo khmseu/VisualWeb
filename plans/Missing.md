@@ -35,7 +35,9 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux arch
 The shell can navigate through its address bar, but rendered pages are not yet interactive:
 
 - No clickable links, page hit-testing, input focus, or form controls.
-- No text selection or page scrolling; overflow is clipped.
+- No text selection. Basic vertical document scrolling is implemented via wheel
+  and Page Up/Down/Home/End, retaining DOM/scripts across local/process repaints.
+  Scrollbars, horizontal/nested scrolling and general CSS overflow remain missing.
 - No automatic page mouse/keyboard events or their default actions.
 - No downloads, persistent browser sessions, or complete history behavior. History currently stores URLs and reloads documents; same-document navigation, script History API, and bfcache are absent.
 
@@ -78,7 +80,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 
 - Flexbox, grid, tables, floats, positioning, and margin collapse.
 - Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
-- Images/replaced elements, controls, list markers, decorations, scrolling, and overflow layout.
+- Images/replaced elements, controls, list markers, decorations, nested/horizontal scrolling, and general overflow layout.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 **A particularly restrictive current limitation:** non-root vertical margins must be zero. Ordinary default paragraph/body styling therefore requires overrides. Some CSS values parse successfully but remain unsupported downstream in layout or paint.
@@ -130,9 +132,12 @@ Some older passages incorrectly say JavaScript/V8 or page scripting is still abs
 ## Recommended priority
 
 1. **Security model and mandatory supported isolation** before untrusted browsing.
-2. **Scrolling, links, page input, and subresource loading** for basic usability.
+2. **Links, page input, and subresource loading** for basic usability. Basic
+   bounded vertical document scrolling is implemented; broader overflow remains.
 3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*This was a read-only repository audit. No files were changed, and builds/tests or CI results were not rerun or independently verified.*
+*The original audit was read-only and did not independently verify builds/tests
+or CI. The scrolling entries above were subsequently updated for the implemented
+bounded vertical scrolling subset.*

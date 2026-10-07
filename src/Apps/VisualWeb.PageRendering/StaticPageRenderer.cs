@@ -44,9 +44,8 @@ public sealed class StaticPageRenderer : IPageRenderer
     public void CommitDocument(Guid documentId)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (!executeInlineScripts) { return; }
         if (candidate?.Source.DocumentId == documentId) { committed = candidate; candidate = null; }
-        else if (committed?.Source.DocumentId != documentId) { throw new PageNavigationException("Scripted document is not retained."); }
+        else if (committed?.Source.DocumentId != documentId) { throw new PageNavigationException("Document is not retained."); }
     }
     public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken, bool reuseDocument = false)
     {
@@ -55,11 +54,11 @@ public sealed class StaticPageRenderer : IPageRenderer
         cancellationToken.ThrowIfCancellationRequested();
         if (page.DocumentId == Guid.Empty) { throw new PageNavigationException("Document identity must be nonempty."); }
         DocumentState state;
-        if (executeInlineScripts && reuseDocument)
+        if (reuseDocument)
         {
             state = committed?.Source.DocumentId == page.DocumentId ? committed
                 : candidate?.Source.DocumentId == page.DocumentId ? candidate
-                : throw new PageNavigationException("Scripted document was lost; reload explicitly rather than rerunning scripts on resize.");
+                : throw new PageNavigationException("Retained document was lost; reload explicitly rather than reparsing or rerunning scripts.");
             if (state.Source.Html != page.Html || state.Source.Url.Href != page.Url.Href)
             { throw new PageNavigationException("Retained document identity does not match its source."); }
         }
@@ -72,17 +71,18 @@ public sealed class StaticPageRenderer : IPageRenderer
         var parsed = state.Parsed;
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
-            viewport.Width, viewport.Height, options with { Scale = viewport.Scale }, cancellationToken);
+            viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!reuseDocument) { candidate = state; }
         if (executeInlineScripts)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!reuseDocument) { candidate = state; }
             status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
         }
-        return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status);
+        return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
+        { ScrollHeight = rendered.ScrollHeight };
     }
     public static IReadOnlyList<CssStyleSource> CollectStyles(DomDocument document, CssOptions? options = null,
         CancellationToken cancellationToken = default)

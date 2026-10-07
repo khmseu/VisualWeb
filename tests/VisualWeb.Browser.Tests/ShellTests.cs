@@ -7,6 +7,62 @@ namespace VisualWeb.Browser.Tests;
 
 public sealed class ShellTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WheelAndPageKeysScrollActivePageButNotChromeOrAddressEditor(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var html = "<!doctype html><style>*{margin:0}div{height:2000px;background-color:red}</style><div></div>";
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(html));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        shell.Dispatch(new PointerMoved(native.Id, 10, 200));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        Wait(() => !tab.IsLoading);
+        Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerMoved(native.Id, 220, 70));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        shell.Dispatch(new PointerMoved(native.Id, 10, 200));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        Key(SDL.Scancode.Pagedown);
+        Key(SDL.Scancode.Home);
+        Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.Escape);
+        Key(SDL.Scancode.Pagedown);
+        Assert.True(shell.Controller.ScrollY(tab.Id) > 48);
+        Key(SDL.Scancode.End);
+        var maximum = 2000 - ShellChrome.Viewport(native.Size, 1)!.Value.Height;
+        Assert.Equal(maximum, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, float.MaxValue));
+        Assert.Equal(maximum, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.Pageup);
+        Assert.True(shell.Controller.ScrollY(tab.Id) < maximum);
+        Key(SDL.Scancode.Home);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, float.NaN));
+        Assert.Contains("finite", tab.Error);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None)
+        {
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
+            shell.Tick();
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            do { shell.Tick(); Thread.Sleep(10); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), tab.Error);
+        }
+    }
+
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
     [Theory]
     [InlineData(false)]

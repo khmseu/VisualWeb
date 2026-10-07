@@ -53,6 +53,7 @@ if (args is ["--windows-sandbox-worker", "--font", _])
             PixelHeight = dimensions.Height,
             Stride = dimensions.Width * 4,
             Title = title,
+            ScrollHeight = message.Height,
             Status = "Fixture"
         }, blue);
     }
@@ -79,6 +80,7 @@ if (args is ["--linux-sandbox-worker", "--font", _])
         await confinedChannel.WriteAsync(new()
         {
             Kind = "frame",
+            ScrollHeight = message.Height,
             Id = message.Id,
             PixelWidth = dimensions.Width,
             PixelHeight = dimensions.Height,
@@ -135,6 +137,7 @@ await channel.WriteAsync(new()
     PixelHeight = size.Height,
     Stride = size.Width * 4,
     Title = "Test peer",
+    ScrollHeight = scenario == "wrong-scroll-height" ? 0 : request.Height,
     Status = "Fixture"
 }, pixels);
 await channel.ReadAsync();

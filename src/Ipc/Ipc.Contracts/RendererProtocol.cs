@@ -16,6 +16,8 @@ public sealed record RendererMessage
     public double Width { get; init; }
     public double Height { get; init; }
     public double Scale { get; init; }
+    public double ScrollY { get; init; }
+    public double ScrollHeight { get; init; }
     public int PixelWidth { get; init; }
     public int PixelHeight { get; init; }
     public int Stride { get; init; }
@@ -31,7 +33,8 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 3;
+    public const int Version = 4;
+    public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
     public const int MaxPayloadBytes = MaxPixels * 4;
@@ -42,6 +45,8 @@ public static class RendererProtocol
     {
         ArgumentNullException.ThrowIfNull(message);
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
+        if ((message.Kind != "render" && message.ScrollY != 0) || (message.Kind != "frame" && message.ScrollHeight != 0))
+        { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
         if (message.Kind != "render" && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
             || message.ExecuteInlineScripts || message.ReuseDocument))
         { throw new IpcProtocolException("Document policy fields belong only to render requests."); }
@@ -65,6 +70,8 @@ public static class RendererProtocol
                     throw new IpcProtocolException("Invalid renderer request fields or limits.");
                 }
                 Dimensions(message.Width, message.Height, message.Scale);
+                if (!double.IsFinite(message.ScrollY) || message.ScrollY < 0 || message.ScrollY > 1e9)
+                { throw new IpcProtocolException("Invalid renderer scroll offset."); }
                 break;
             case "frame":
                 if (message.PixelWidth <= 0 || message.PixelHeight <= 0
@@ -76,6 +83,8 @@ public static class RendererProtocol
                 {
                     throw new IpcProtocolException("Invalid renderer frame dimensions, stride, text or bytes.");
                 }
+                if (!double.IsFinite(message.ScrollHeight) || message.ScrollHeight < 0 || message.ScrollHeight > MaxScrollHeight)
+                { throw new IpcProtocolException("Invalid renderer scroll height."); }
                 break;
             case "error":
                 if (payloadLength != 0 || string.IsNullOrEmpty(message.Error) || message.Error.Length > MaxTextCharacters)
@@ -89,7 +98,7 @@ public static class RendererProtocol
     public static (int Width, int Height) Dimensions(double width, double height, double scale)
     {
         if (!double.IsFinite(width) || !double.IsFinite(height) || !double.IsFinite(scale)
-            || width <= 0 || height <= 0 || scale <= 0 || width > 1e9 || height > 1e9 || scale > 1e9)
+            || width <= 0 || height <= 0 || scale <= 0 || width > 1e9 || height > MaxScrollHeight || scale > 1e9)
         {
             throw new IpcProtocolException("Invalid renderer viewport.");
         }

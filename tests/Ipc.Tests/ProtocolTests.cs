@@ -9,6 +9,42 @@ namespace VisualWeb.Ipc.Tests;
 
 public sealed class ProtocolTests
 {
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(1e9 + 1)]
+    public void InvalidScrollRequestOffsetsFail(double offset) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollY = offset }, 0));
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(10_000_001)]
+    public void InvalidFrameScrollExtentsFail(double height) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
+        {
+            Kind = "frame",
+            Id = 1,
+            PixelWidth = 1,
+            PixelHeight = 1,
+            Stride = 4,
+            Title = "",
+            Status = "",
+            ScrollHeight = height
+        }, 4));
+
+    [Fact]
+    public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
+    {
+        Assert.Equal(4, RendererProtocol.Version);
+        RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollHeight = 1 }, 0));
+    }
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
     private static RendererMessage Request => new()
     {
@@ -29,10 +65,10 @@ public sealed class ProtocolTests
         using var wire = new MemoryStream();
         var writer = new RendererChannel(Stream.Null, wire);
         await writer.WriteAsync(new() { Kind = "hello", SandboxProfile = "linux-bwrap-seccomp-cgroup-v2" }, cancellationToken: Cancellation);
-        var input = Request with { ExecuteInlineScripts = true, ReuseDocument = true, CommittedDocumentId = Request.DocumentId };
+        var input = Request with { ExecuteInlineScripts = true, ReuseDocument = true, CommittedDocumentId = Request.DocumentId, ScrollY = 48 };
         await writer.WriteAsync(input, cancellationToken: Cancellation);
         var pixels = new byte[] { 1, 2, 3, 255, 4, 5, 6, 255 };
-        var reply = new RendererMessage { Kind = "frame", Id = 1, PixelWidth = 2, PixelHeight = 1, Stride = 8, Title = "café", Status = "Ready" };
+        var reply = new RendererMessage { Kind = "frame", Id = 1, PixelWidth = 2, PixelHeight = 1, Stride = 8, Title = "café", Status = "Ready", ScrollHeight = 100 };
         await writer.WriteAsync(reply, pixels, Cancellation);
         await writer.WriteAsync(new() { Kind = "error", Id = 2, Error = "Unsupported page" }, cancellationToken: Cancellation);
         wire.Position = 0;
@@ -46,8 +82,10 @@ public sealed class ProtocolTests
         Assert.Equal(Request.DocumentId, request.DocumentId);
         Assert.Equal(input.CommittedDocumentId, request.CommittedDocumentId);
         Assert.True(request.ExecuteInlineScripts); Assert.True(request.ReuseDocument);
+        Assert.Equal(input.ScrollY, request.ScrollY);
         var frame = (await reader.ReadAsync(Cancellation))!;
         Assert.Equal(pixels, frame.Pixels); Assert.Equal(reply.Title, frame.Message.Title);
+        Assert.Equal(reply.ScrollHeight, frame.Message.ScrollHeight);
         Assert.Equal("error", (await reader.ReadAsync(Cancellation))!.Message.Kind);
         Assert.Null(await reader.ReadAsync(Cancellation));
     }
@@ -67,12 +105,13 @@ public sealed class ProtocolTests
     [Theory]
     [InlineData("{\"Version\":1,\"Kind\":\"hello\"}")]
     [InlineData("{\"Version\":2,\"Kind\":\"hello\"}")]
-    [InlineData("{\"Version\":3,\"Kind\":\"unknown\",\"Id\":1}")]
-    [InlineData("{\"Version\":3,\"Kind\":\"hello\",\"Unknown\":true}")]
+    [InlineData("{\"Version\":3,\"Kind\":\"hello\"}")]
+    [InlineData("{\"Version\":4,\"Kind\":\"unknown\",\"Id\":1}")]
+    [InlineData("{\"Version\":4,\"Kind\":\"hello\",\"Unknown\":true}")]
     [InlineData("null")]
     [InlineData("{invalid")]
     [InlineData("{\"Kind\":\"hello\"}")]
-    [InlineData("{\"Version\":3,\"Kind\":\"hello\",\"Kind\":\"hello\"}")]
+    [InlineData("{\"Version\":4,\"Kind\":\"hello\",\"Kind\":\"hello\"}")]
     public async Task VersionKindsUnknownMembersAndMalformedJsonFail(string json)
     {
         using var wire = Wire(json, []);
