@@ -88,6 +88,7 @@ The native window title retains the same warning alongside the active page title
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
+| Ctrl+V while editing the address or a text/search field | Paste clipboard text at the caret or over the current field selection |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Page text hit geometry is a bounded v9 data-only snapshot of shaped fragments
@@ -100,8 +101,9 @@ to whole visible shaped fragments (not character offsets). A primary press begin
 on an anchor still activates it immediately; a drag that begins in ordinary text
 can include anchor fragments. Selection is cleared on successful document, scroll
 or resize publications.
-Ctrl+C copies selected fragment text; editing text fields still have no selection,
-IME preedit or clipboard editing. Richer accessibility remains deferred.
+Ctrl+C copies selected fragment text. Text/search fields support Ctrl+A
+select-all and Ctrl+V paste; address editing supports Ctrl+V over its existing
+Ctrl+L selection. IME preedit and richer accessibility remain deferred.
 Keyboard traversal starts with enabled, drawn chrome targets in drawing order:
 tab arrows, visible tab labels/close buttons, navigation/window controls, then
 the address editor, followed by visible textual anchors in first-fragment paint
@@ -214,9 +216,13 @@ widget sizing or styling.
 Tab/Shift+Tab visit visible, enabled controls merged in tree order with anchor
 groups; primary-clicking a visible text/search field focuses it without starting
 page text selection. Focusing a text/search field enables SDL committed text
-input, which is disabled again when focus leaves. Values are inserted without control
-characters, truncated to `maxlength` (whole UTF-16 surrogate pairs) and capped
-at 8192 characters. Enter in a field submits through the form's first submit
+input, which is disabled again when focus leaves. Values are inserted without
+control characters. Ctrl+A visibly selects the full field value, the next
+insertion replaces it, and Ctrl+V pastes clipboard text at the caret or over the
+selection. Address editing also supports Ctrl+V, replacing the current Ctrl+L
+selection; its existing length and control-character limits still apply. Values
+are truncated to `maxlength` (whole UTF-16 surrogate pairs) and capped at 8192
+characters. Enter in a field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the
 form has at most one text/search field (implicit submission). Field state is
 tab-local and survives tab switches and same-document scroll/resize repaints
@@ -242,19 +248,23 @@ a non-UTF-8 `accept-charset`, any `<base href>`, any `form=` attribute,
 `textarea`/`select`/`output`/`object`, `datalist` or disabled `fieldset`
 ancestors, an action that is unparsable, over 8192 characters or outside
 `http`/`https`/`file`/`data`; a document whose encoding is not UTF-8/UTF-16
-(stricter than the standard's charset selection); an empty `required` field or
-an edited value over `maxlength`; and query/URL limit overflow. There is no
+(stricter than the standard's charset selection); an HTTPS form submission that cannot be upgraded from HTTP by HSTS (including
+redirects to HTTP); an empty `required` field or an edited value over
+`maxlength`; and query/URL limit overflow. There is no
 POST, no constraint-validation UI, no `submit`/`input`/`change`/`keydown`
 events or `requestSubmit`, and scripts cannot submit forms or bypass the broker.
 Implicit submission through `<input type=image>`, autofill, autocomplete,
-`dirname`, IME preedit, clipboard and selection ranges are deferred.
+`dirname`, IME preedit, clipboard selection ranges and richer text-selection
+behavior are deferred.
 
 ## Navigation and page policy
 
 Page-initiated link and form navigation to `file:` URLs is blocked to prevent a
-web document from using the browser's privileged local-file loader. Users can
-still enter an explicit local file URL in the address bar. This is a narrow
-navigation guard, not filesystem sandboxing: locally selected file documents
+web document from using the browser's privileged local-file loader. Local `file:`
+documents also cannot initiate HTTP(S) link or form navigation, preventing an
+untrusted local page from sending form values to a remote endpoint; users can
+still enter an explicit URL in the address bar. This is a narrow navigation
+guard, not filesystem sandboxing: locally selected file documents
 remain privileged/trusted content, and there is no general origin/CORS/CSP or
 local-file isolation policy yet.
 

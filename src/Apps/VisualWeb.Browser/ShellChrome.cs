@@ -128,9 +128,11 @@ public sealed class ShellChrome : IDisposable
                 var gray = new CssColor(118, 118, 118);
                 Fill(box, gray);
                 Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
-                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" ? new(225, 225, 225) : white);
+                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" ? new(225, 225, 225)
+                    : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
                 var text = control.Kind is "submit" or "button" ? control.Label
-                    : index == forms.Focused && forms.Caret >= 0 ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
+                    : index == forms.Focused && !forms.SelectAll && forms.Caret >= 0
+                        ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
                     : forms.Values[index];
                 Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
                     control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind == "button");
@@ -263,4 +265,4 @@ public sealed class ShellChrome : IDisposable
 }
 
 /// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
-public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret);
+public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false);

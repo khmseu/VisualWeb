@@ -330,8 +330,26 @@ public sealed class DevelopmentShell : IDisposable
             TraverseFocus(window, view, shift);
             return;
         }
+        if (view.Editing && control && !alt && !key.Repeat && code == SDL.Scancode.V)
+        {
+            var clipboard = view.Native.GetClipboardText();
+            if (clipboard.Length > 0)
+            {
+                Controller.SetAddress(tab.Id, view.Editor.Insert(clipboard, Controller.Session.Options.MaxAddressCharacters));
+                view.Dirty = true;
+            }
+            return;
+        }
         if (!view.Editing)
         {
+            if (control && !alt && !key.Repeat && code == SDL.Scancode.A && Controller.EditingFormControl(tab.Id))
+            { Controller.SelectAllFormControl(tab.Id); return; }
+            if (control && !alt && !key.Repeat && code == SDL.Scancode.V && Controller.EditingFormControl(tab.Id))
+            {
+                var clipboard = view.Native.GetClipboardText();
+                if (clipboard.Length > 0) { Controller.InsertFormText(tab.Id, clipboard); }
+                return;
+            }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.C && Controller.SelectedText(tab.Id) is { Length: > 0 } selected)
             { view.Native.SetClipboardText(selected); return; }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code switch
@@ -493,7 +511,8 @@ public sealed class DevelopmentShell : IDisposable
         if (window.ActiveTabId is not { } id || Controller.Page(id) is not { FormControls.Count: > 0 } page) { return null; }
         var values = Enumerable.Range(0, page.FormControls.Count).Select(index => Controller.FormControlValue(id, index)).ToArray();
         var focused = Controller.PageHasFocus(id) ? Controller.FocusedControlIndex(id) : -1;
-        return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1);
+        return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
+            focused >= 0 && Controller.FormControlSelectAll(id));
     }
     private string WindowTitle(string? title)
     {

@@ -278,6 +278,22 @@ public sealed class BrowserController : IDisposable
         return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
+    /// <summary>Whether the focused editable text field has its full value selected.</summary>
+    public bool FormControlSelectAll(TabId tab)
+    {
+        Check();
+        var owner = content[tab];
+        return EditingFormControl(tab) && Field(owner, owner.FocusedControl).SelectAll;
+    }
+    /// <summary>Selects all text in the focused editable text field.</summary>
+    public void SelectAllFormControl(TabId tab)
+    {
+        Check();
+        if (!EditingFormControl(tab)) { throw new PageNavigationException("No editable form field is focused."); }
+        var owner = content[tab];
+        Field(owner, owner.FocusedControl).SelectAll = true;
+        Changed?.Invoke(tab);
+    }
     /// <summary>Inserts committed text at the caret, truncating to maxlength like user input and bounding total length.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fe-maxlength">maxlength</see>
     /// (UTF-16 code units). Inserted CR/LF and other control characters are rejected rather than stripped.</remarks>
@@ -291,13 +307,14 @@ public sealed class BrowserController : IDisposable
         var index = owner.FocusedControl;
         var control = owner.Page!.FormControls[index];
         var editor = Field(owner, index);
+        var existingLength = editor.SelectAll ? 0 : editor.Text.Length;
         if (control.MaxLength >= 0)
         {
-            var room = Math.Max(0, control.MaxLength - editor.Text.Length);
+            var room = Math.Max(0, control.MaxLength - existingLength);
             if (text.Length > room) { text = text[..room]; }
             if (text.Length > 0 && char.IsHighSurrogate(text[^1])) { text = text[..^1]; }
         }
-        if ((long)editor.Text.Length + text.Length > RendererProtocol.MaxTextCharacters)
+        if ((long)existingLength + text.Length > RendererProtocol.MaxTextCharacters)
         { throw new BrowserLimitException("Form field length limit exceeded."); }
         editor.Insert(text, RendererProtocol.MaxTextCharacters);
         owner.Dirty.Add(index);
@@ -412,19 +429,25 @@ public sealed class BrowserController : IDisposable
         }
         var limit = Session.Options.MaxAddressCharacters;
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i)), limit);
-        return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href);
+        var preventHttpsDowngrade = owner.Document?.Url.Protocol == "https:";
+        return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href,
+            preventHttpsDowngrade);
     }
     private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
-    private bool NavigateLink(TabId id, string destination)
+    private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false)
     {
         var url = BrowserUrl.Parse(destination);
         if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
         if (url.Protocol == "file:")
         { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
-        Navigate(id, url.Href);
+        if (content[id].Document?.Url.Protocol == "file:" && url.Protocol is "http:" or "https:")
+        {
+            throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");
+        }
+        Start(Session.Tab(id), url, null, false, preventHttpsDowngrade);
         return true;
     }
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
@@ -493,7 +516,7 @@ public sealed class BrowserController : IDisposable
         var tab = Session.Tab(id);
         Start(tab, tab.History.Current ?? throw new InvalidOperationException("No committed page to reload."), null, true);
     }
-    private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace)
+    private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false)
     {
         Limit();
         Cancel(tab.Id);
@@ -501,7 +524,7 @@ public sealed class BrowserController : IDisposable
         owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
         var cancellation = new CancellationTokenSource();
         Task<LoadedPage> task;
-        try { task = content[tab.Id].Source.LoadAsync(url, cancellation.Token); }
+        try { task = content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade); }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace));
         tab.AddressText = url.Href; tab.Error = null; tab.IsLoading = true; tab.Status = "Loading " + url.Href;

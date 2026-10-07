@@ -9,6 +9,8 @@ namespace VisualWeb.Browser;
 public interface IPageSource : IDisposable
 {
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken);
+    Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
+        LoadAsync(url, cancellationToken);
 }
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>
@@ -31,9 +33,12 @@ public sealed class GetPageSource : IPageSource
     /// Cookies remain disabled. Standalone sources without a supplied store retain their prior behavior.</remarks>
     public GetPageSource(HttpMessageHandler? handler = null, Engine.Net.HstsPolicyStore? hstsPolicyStore = null) =>
         loader = new(new() { MaxResponseBytes = 4 * 1024 * 1024 }, handler, hstsPolicyStore);
-    public async Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
+    public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
+        LoadAsync(url, cancellationToken, preventHttpsDowngrade: false);
+    public async Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade)
     {
-        var response = await loader.LoadAsync(url, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var response = await loader.LoadAsync(url, cancellationToken: cancellationToken,
+            preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
         if (response.ContentType?.Essence != "text/html"
             && !(response.Url.Protocol == "file:" && response.ContentType is null))
         {

@@ -351,6 +351,123 @@ public sealed class FormTests
         Assert.Null(harness.Tab.Error);
     }
 
+    [Theory]
+    [InlineData("<a href='https://outside.example/visit'>external</a>", false)]
+    [InlineData("<form action='https://outside.example/search'><input name=q value=private><input type=submit></form>", true)]
+    public void LocalFileDocumentsCannotInitiateNetworkNavigations(string body, bool form)
+    {
+        using var harness = new Harness(body, url: "file:///tmp/local-page.html");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        var committed = controller.Page(tab)!;
+        controller.FocusPage(tab);
+        if (form)
+        {
+            Assert.True(controller.FocusControl(tab, 1));
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab));
+            Assert.Contains("network navigation is blocked from local file documents", error.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            var rect = Assert.Single(committed.LinkTargets).Rects[0];
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab,
+                rect.X + rect.Width / 2, rect.Y + rect.Height / 2, harness.Viewport));
+            Assert.Contains("network navigation is blocked from local file documents", error.Message, StringComparison.Ordinal);
+        }
+        Assert.Single(harness.Source.Requests);
+        Assert.Same(committed, controller.Page(tab));
+        Assert.Equal("file:///tmp/local-page.html", harness.Tab.History.Current!.Href);
+        Assert.Null(harness.Tab.Error);
+    }
+
+    [Fact]
+    public void SecurePageCannotSubmitFormDataToHttpBeforeRequest()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(Style + "<form action='http://outside.example/search'><input name=q value=private>"
+                    + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+            };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Contains("HTTPS resource policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void SecureFormCannotFollowHttpDowngradeRedirect()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            if (request.RequestUri!.AbsolutePath == "/secure")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(Style + "<form action='https://secure.example/search'><input name=q value=private>"
+                        + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+                };
+            }
+            return new(HttpStatusCode.Found)
+            { Headers = { Location = new Uri("http://secure.example/leak?q=private") } };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Contains("HTTPS resource policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Equal(["https://secure.example/secure", "https://secure.example/search?q=private"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
     [Fact]
     public void UserAddressNavigationStillAllowsExplicitFileUrl()
     {

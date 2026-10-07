@@ -58,7 +58,17 @@ internal sealed class FakeWindowSystem : IWindowSystem
         public event Action<WindowEvent>? EventReceived;
         public void SetTitle(string title) => ObjectDisposedException.ThrowIf(disposed, this);
         public void SetTextInput(bool enabled) => ObjectDisposedException.ThrowIf(disposed, this);
-        public void SetClipboardText(string text) => ObjectDisposedException.ThrowIf(disposed, this);
+        internal string ClipboardText { get; private set; } = "";
+        public void SetClipboardText(string text)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            ClipboardText = text;
+        }
+        public string GetClipboardText()
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            return ClipboardText;
+        }
         public void Dispatch(WindowEvent windowEvent) => EventReceived?.Invoke(windowEvent);
 
         public void Present(ReadOnlySpan<byte> pixels, PixelSize frameSize, int stride)

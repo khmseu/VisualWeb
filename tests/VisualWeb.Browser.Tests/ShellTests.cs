@@ -116,6 +116,47 @@ public sealed class ShellTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ControlASelectionCanBeReplacedByClipboardPaste(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;width:160px;height:24px}</style>" +
+            "<form><input name=q value=original></form>"));
+        Wait();
+        var field = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(field.X + 8), (float)(ShellChrome.Height + field.Y + 8)));
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.A, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+        Assert.True(shell.Controller.FormControlSelectAll(tab.Id));
+        shell.Tick();
+        var pixelX = (int)field.X + (int)field.Width - 2;
+        var pixelY = (int)ShellChrome.Height + (int)field.Y + 2;
+        Assert.Equal(new byte[] { 249, 213, 176, 255 }, native.Pixels!
+            .Skip(pixelY * native.PixelSize.Width * 4 + pixelX * 4).Take(4));
+
+        native.SetClipboardText("replacement");
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.V, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+        Assert.Equal("replacement", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.False(shell.Controller.FormControlSelectAll(tab.Id));
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Theory]
     [InlineData(false, 1)]
     [InlineData(true, 1)]
     [InlineData(false, 1.25)]
@@ -773,6 +814,35 @@ public sealed class ShellTests
         Assert.False(native.TextInput);
     }
     [Fact]
+    public void ControlVPastesClipboardTextIntoSelectedAddressAndNavigates()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait();
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.L, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+        var destination = "data:text/html," + Uri.EscapeDataString("<!doctype html><title>Pasted address</title><p>done</p>");
+        native.SetClipboardText(destination);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.V, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+        Assert.Equal(destination, tab.AddressText);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait();
+        Assert.Equal("Pasted address", tab.Title);
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void OversizeWindowDoesNotTerminateOtherWindowsAndRecoversOnResize()
     {
         using var system = new Windows();
@@ -864,6 +934,7 @@ public sealed class ShellTests
         public void SetTextInput(bool enabled) => TextInput = enabled;
         internal string ClipboardText { get; private set; } = "";
         public void SetClipboardText(string text) => ClipboardText = text;
+        public string GetClipboardText() => ClipboardText;
         public void Present(ReadOnlySpan<byte> pixels, PixelSize frameSize, int stride)
         {
             Assert.Equal(Size, frameSize);

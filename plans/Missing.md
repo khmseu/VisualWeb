@@ -26,7 +26,7 @@ This is the most important gap before accepting arbitrary web content.
 - Top-level navigation renderer swaps are implemented: every multiprocess shell mode (confined or explicitly unsandboxed) rotates to a fresh renderer for cross-origin final origins and every new opaque document, transactionally after render/commit/history success, reusing it for same-origin navigation. Low-level controllers keep the per-tab default. There are no cross-site frames or frame isolation, no site computation, no inherited/sandbox origin selection, and no SOP/CORS/CSP or production request authorization.
 - The CLI secure-by-default renderer milestone is delivered: recommended `--multiprocess` and legacy `--development-multiprocess` require supported confinement before SDL/content/worker startup, without fallback. Unsandboxed execution requires explicit `--allow-unsandboxed-development` trusted-content acknowledgement in a development mode (mandatory for single-process), rejected with normal mode or `--require-sandbox`. `--require-sandbox` remains a redundant compatible assertion; low-level library/test renderer defaults are unchanged. This does not deliver production request authorization or complete web security.
 - Linux ARM64 confinement is explicitly unsupported and fails closed.
-- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:` links/forms and linked file stylesheets are rejected, while explicit address-bar file navigation remains available. Local file and opaque `data:` documents cannot trigger linked HTTP(S) stylesheet requests (`data:` stylesheets remain allowed); this is only a narrow subresource restriction, not local-document confinement or general request authorization. Linked stylesheet discovery rejects `file:` destinations, and HTTPS documents block HTTP linked stylesheets and downgrade redirects.
+- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:` links/forms and linked file stylesheets are rejected, while explicit address-bar file navigation remains available. Local file documents also cannot initiate HTTP(S) link/form navigation; HTTPS form submissions block cleartext requests and downgrade redirects unless HSTS upgrades the destination before transport. Explicit address-bar navigation remains available. Local file and opaque `data:` documents cannot trigger linked HTTP(S) stylesheet requests (`data:` stylesheets remain allowed); these are narrow restrictions, not local-document confinement or general request authorization. Linked stylesheet discovery rejects `file:` destinations, and HTTPS documents block HTTP linked stylesheets and downgrade redirects.
 
 Evidence: `networking trust boundary`, `isolation architecture`, and `Linux architecture guard`.
 
@@ -50,7 +50,11 @@ broader page interaction is still missing:
   via IPC v8 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
-  Visible text/search fields support pointer focus without starting page text selection. General forms remain missing: POST/multipart, other input types, textarea/select,
+  Visible text/search fields support pointer focus without starting page text
+  selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
+  Clipboard support remains bounded to selection copy and paste into focused
+  text/search fields or the selected address bar. General forms remain missing:
+  POST/multipart, other input types, textarea/select,
   constraint validation UI, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
   encodings. See
@@ -144,8 +148,10 @@ Evidence: `scripting scope` and `short-lived page script host`.
 Remaining areas include:
 
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
-- IME composition/preedit, clipboard read/paste (selection copy with Ctrl+C is
-  implemented), and accessibility integration.
+- IME composition/preedit and accessibility integration. Clipboard support is
+  bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
+  focused text/search fields or the selected address bar; character-level page
+  selection and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
 Evidence: `text/layout exclusions`, `platform input limitations`, and `standards-growth roadmap`.
@@ -182,8 +188,12 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against the repository at `b534fdc` (2026-10-07), including
-current source, docs and implementation history. The focused stylesheet suite
-(50 tests), full browser suite (495 tests), solution build (0 warnings/errors),
-and changed-file formatting passed for that snapshot. These checks are not a
-full conformance, security, CI-matrix or real-desktop validation.
+*Status cross-checked against `588e53b` and working-tree changes on
+2026-10-07. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
+Ctrl+V; local file documents cannot initiate HTTP(S) link/form navigation, and
+HTTPS forms cannot submit directly to HTTP actions. The browser suite (507 tests),
+platform suite (24 tests), solution build (0 warnings/errors), and changed-file
+formatting passed. A full solution test run had one
+unrelated failure in `CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
+in Engine.Scripting.Tests. These checks are not full conformance, security,
+CI-matrix or real-desktop validation.
