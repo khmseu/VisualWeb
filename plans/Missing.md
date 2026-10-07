@@ -169,7 +169,7 @@ Still outstanding:
 
 - Real desktop validation for Wayland keyboard/IME and high-DPI behavior.
 - Broader conformance coverage: current tests exercise selected WPT/html5lib fixtures, not the full web platform.
-- Routine Linux confinement/resource-exhaustion coverage: the Linux workflow explicitly filters out several such integration tests.
+- Routine Linux confinement/resource-exhaustion coverage: Linux CI now runs the basic confined-renderer pixel and crash/restart integration test; it still explicitly filters out unconfirmed-handshake and resource/CPU-pressure integration tests.
 - Production packaging, installation/update workflows, and deployment hardening. Current confinement requires trusted framework-dependent deployments; Linux self-contained/single-file deployment is unsupported.
 
 Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windows CI`, and `deployment prerequisites`.
@@ -193,7 +193,7 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `167bf49` and working-tree changes on
+*Status cross-checked against `c4762ff` and working-tree changes on
 2026-10-07. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; bounded editable textareas submit newline-normalized
