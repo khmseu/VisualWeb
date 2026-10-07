@@ -114,12 +114,13 @@ Evidence: `HTML tree-building scope`.
 
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
-- Flexbox, grid, tables, floats, positioning, and margin collapse.
+- Flexbox, grid, tables, floats and positioning; margin collapse is implemented
+  for adjacent block siblings and eligible parent/first-or-last block-child edges.
 - Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
 - Images/replaced elements, controls, list markers, decorations, nested/horizontal scrolling, and general overflow layout.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
-**A particularly restrictive current limitation:** vertical margin collapsing is supported only between adjacent block siblings; parent-edge collapsing remains missing. Some CSS values parse successfully but remain unsupported downstream in layout or paint.
+**A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

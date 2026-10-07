@@ -103,6 +103,71 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void ParentAndFirstBlockChildTopMarginsCollapseAtUnborderedUnpaddedEdge()
+    {
+        var root = Layout("<div id=parent><p id=child>A</p></div>",
+            "body{border-top:1px solid} #parent{margin-top:6px} #child{margin-top:10px}").Root!;
+        var parent = Find(root, "parent");
+        var child = Find(root, "child");
+
+        Assert.Equal(10, parent.Margin.Top);
+        Assert.Equal(parent.BorderBox.Y, child.BorderBox.Y);
+        Assert.Equal(10, parent.Content.Height);
+    }
+
+    [Fact]
+    public void PercentageMarginsInParentEdgeChainsUseEachContainingWidth()
+    {
+        var root = Layout("<div id=parent><p id=child>A</p></div>",
+            "body{border-top:1px solid} #parent{width:50%} #child{margin-top:10%}").Root!;
+        var parent = Find(root, "parent");
+        var child = Find(root, "child");
+
+        Assert.Equal(50, parent.Content.Width);
+        Assert.Equal(5, parent.Margin.Top);
+        Assert.Equal(parent.BorderBox.Y, child.BorderBox.Y);
+    }
+
+    [Fact]
+    public void ParentAndLastBlockChildBottomMarginsCollapseIntoNextSiblingGap()
+    {
+        var root = Layout("<div id=parent><p id=child>A</p></div><div id=next>B</div>",
+            "#parent{margin-bottom:3px} #child{margin-bottom:8px} #next{margin-top:12px}").Root!;
+        var parent = Find(root, "parent");
+        var child = Find(root, "child");
+        var next = Find(root, "next");
+
+        Assert.Equal(8, parent.Margin.Bottom);
+        Assert.Equal(parent.BorderBox.Y + parent.BorderBox.Height, child.BorderBox.Y + child.BorderBox.Height);
+        Assert.Equal(parent.BorderBox.Y + parent.BorderBox.Height + 12, next.BorderBox.Y);
+    }
+
+    [Fact]
+    public void ParentBottomMarginDoesNotCollapseThroughBorderOrDefiniteHeight()
+    {
+        var bordered = Find(Layout("<div id=parent><p id=child>A</p></div>",
+            "#parent{border-bottom:1px solid} #child{margin-bottom:8px}").Root!, "parent");
+        var definite = Find(Layout("<div id=parent><p id=child>A</p></div>",
+            "#parent{height:30px} #child{margin-bottom:8px}").Root!, "parent");
+
+        Assert.Equal(0, bordered.Margin.Bottom);
+        Assert.Equal(0, definite.Margin.Bottom);
+        Assert.Equal(30, definite.Content.Height);
+    }
+
+    [Fact]
+    public void InlineContentPreventsBottomParentEdgeCollapse()
+    {
+        var root = Layout("<div id=parent><p id=child>A</p>tail</div>",
+            "#child{margin-bottom:8px}").Root!;
+        var parent = Find(root, "parent");
+        var child = Find(root, "child");
+
+        Assert.Equal(0, parent.Margin.Bottom);
+        Assert.True(parent.Content.Height > child.BorderBox.Height);
+    }
+
+    [Fact]
     public void AdjacentNegativeBlockMarginsCollapseToMostNegativeMargin()
     {
         var root = Layout("<div><p id=a>A</p><p id=b>B</p></div>",

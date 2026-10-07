@@ -93,7 +93,7 @@ public static class StaticLayout
         {
             if (Display(root) == "none") { return null; }
             if (Display(root) != "block") { throw new UnsupportedLayoutException("The initial root element must use display:block."); }
-            return Block(root, 0, 0, width, height, 1);
+            return Block(root, 0, 0, width, height, 1, isRoot: true);
         }
 
         private CssComputedStyle Style(DomElement element) => styles.Styles.TryGetValue(element, out var style) ? style
@@ -132,7 +132,8 @@ public static class StaticLayout
         }
 
         private LayoutBox Block(DomElement element, double containingX, double top, double containingWidth,
-            double? containingHeight, int depth)
+            double? containingHeight, int depth, bool isRoot = false, bool suppressTopMargin = false,
+            bool suppressBottomMargin = false)
         {
             Check(element, depth, block: true);
             Visit();
@@ -143,17 +144,7 @@ public static class StaticLayout
             var margin = Edges(style, "margin", containingWidth);
             var horizontal = padding.Left + padding.Right + border.Left + border.Right;
             var sizing = ((CssKeyword)style["box-sizing"]).Value;
-            var specifiedWidth = Dimension(style["width"], containingWidth);
-            var width = specifiedWidth is { } w ? Math.Max(0, w - (sizing == "border-box" ? horizontal : 0))
-                : Math.Max(0, containingWidth - horizontal - margin.Left - margin.Right);
-            var minWidth = Dimension(style["min-width"], containingWidth) ?? 0;
-            var maxWidth = Dimension(style["max-width"], containingWidth) ?? double.PositiveInfinity;
-            if (sizing == "border-box")
-            {
-                minWidth = Math.Max(0, minWidth - horizontal);
-                maxWidth = double.IsPositiveInfinity(maxWidth) ? maxWidth : Math.Max(0, maxWidth - horizontal);
-            }
-            width = Math.Max(minWidth, Math.Min(width, maxWidth));
+            var width = ContentWidth(style, containingWidth);
             var leftAuto = style["margin-left"] is CssKeyword { Value: "auto" };
             var rightAuto = style["margin-right"] is CssKeyword { Value: "auto" };
             var extra = containingWidth - width - horizontal - margin.Left - margin.Right;
@@ -165,9 +156,7 @@ public static class StaticLayout
             }
             else { margin = margin with { Right = margin.Right + extra }; }
             var borderX = containingX + margin.Left;
-            var borderY = top + margin.Top;
             var contentX = borderX + border.Left + padding.Left;
-            var contentY = borderY + border.Top + padding.Top;
             var vertical = padding.Top + padding.Bottom + border.Top + border.Bottom;
             var specifiedHeight = Dimension(style["height"], containingHeight);
             var definiteHeight = specifiedHeight is { } h ? Math.Max(0, h - (sizing == "border-box" ? vertical : 0)) : (double?)null;
@@ -179,6 +168,22 @@ public static class StaticLayout
                 maxHeight = double.IsPositiveInfinity(maxHeight) ? maxHeight : Math.Max(0, maxHeight - vertical);
             }
             if (definiteHeight is { } definite) { definiteHeight = Math.Max(minHeight, Math.Min(definite, maxHeight)); }
+            var collapseTopChild = !isRoot && padding.Top == 0 && border.Top == 0
+                ? EdgeBlockChild(element, first: true) : null;
+            var collapseBottomChild = padding.Bottom == 0 && border.Bottom == 0
+                && definiteHeight is null && minHeight == 0 ? EdgeBlockChild(element, first: false) : null;
+            if (suppressTopMargin) { margin = margin with { Top = 0 }; }
+            else if (collapseTopChild is not null)
+            {
+                margin = margin with { Top = CollapseMargins(margin.Top, TopMarginChain(collapseTopChild, width)) };
+            }
+            if (suppressBottomMargin) { margin = margin with { Bottom = 0 }; }
+            else if (collapseBottomChild is not null)
+            {
+                margin = margin with { Bottom = CollapseMargins(margin.Bottom, BottomMarginChain(collapseBottomChild, width)) };
+            }
+            var borderY = top + margin.Top;
+            var contentY = borderY + border.Top + padding.Top;
             var childBoxes = new List<LayoutBox>();
             var blockLines = new List<LayoutLine>();
             var flow = new List<LayoutFlowItem>();
@@ -203,7 +208,8 @@ public static class StaticLayout
                     var childTop = previousBlockBottomMargin is { } previousBottomMargin
                         ? cursor + CollapseMargins(previousBottomMargin, childTopMargin) - previousBottomMargin - childTopMargin
                         : cursor;
-                    var childBox = Block(block, contentX, childTop, width, definiteHeight, depth + 1);
+                    var childBox = Block(block, contentX, childTop, width, definiteHeight, depth + 1,
+                        suppressTopMargin: block == collapseTopChild, suppressBottomMargin: block == collapseBottomChild);
                     childBoxes.Add(childBox);
                     flow.Add(new LayoutBlockItem(childBox));
                     cursor = childBox.BorderBox.Y + childBox.BorderBox.Height + childBox.Margin.Bottom;
@@ -239,8 +245,70 @@ public static class StaticLayout
             }
         }
 
+        private DomElement? EdgeBlockChild(DomElement parent, bool first)
+        {
+            var children = first ? parent.ChildNodes : parent.ChildNodes.Reverse();
+            foreach (var node in children)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (node is DomComment || node is DomText text && IsCollapsibleWhitespace(text.Data)) { continue; }
+                if (node is not DomElement element) { return null; }
+                if (Display(element) == "none") { continue; }
+                return Display(element) == "block" ? element : null;
+            }
+            return null;
+        }
+
+        private double TopMarginChain(DomElement element, double containingWidth)
+        {
+            var margins = new List<double>();
+            var current = element;
+            var currentWidth = containingWidth;
+            for (var depth = 0; ; depth++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (depth >= options.MaxDepth) { throw new LayoutLimitException("Top margin collapse depth limit exceeded."); }
+                var style = Style(current);
+                margins.Add(Edges(style, "margin", currentWidth).Top);
+                var padding = Edges(style, "padding", currentWidth);
+                var border = Edges(style, "border", currentWidth, "-width");
+                if (padding.Top != 0 || border.Top != 0 || EdgeBlockChild(current, first: true) is not { } child) { break; }
+                currentWidth = ContentWidth(style, currentWidth);
+                current = child;
+            }
+            return CollapseMargins(margins);
+        }
+
+        private double BottomMarginChain(DomElement element, double containingWidth)
+        {
+            var margins = new List<double>();
+            var current = element;
+            var currentWidth = containingWidth;
+            for (var depth = 0; ; depth++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (depth >= options.MaxDepth) { throw new LayoutLimitException("Bottom margin collapse depth limit exceeded."); }
+                var style = Style(current);
+                margins.Add(Edges(style, "margin", currentWidth).Bottom);
+                if (style["height"] is not CssKeyword { Value: "auto" }
+                    || style["min-height"] is not CssLength { Value: 0, Unit: "px" }) { break; }
+                var padding = Edges(style, "padding", currentWidth);
+                var border = Edges(style, "border", currentWidth, "-width");
+                if (padding.Bottom != 0 || border.Bottom != 0 || EdgeBlockChild(current, first: false) is not { } child) { break; }
+                currentWidth = ContentWidth(style, currentWidth);
+                current = child;
+            }
+            return CollapseMargins(margins);
+        }
+
+        private static bool IsCollapsibleWhitespace(string value) => value.All(character =>
+            character is ' ' or '\t' or '\n' or '\r' or '\f');
+
         private static double CollapseMargins(double first, double second)
             => Math.Max(0, Math.Max(first, second)) + Math.Min(0, Math.Min(first, second));
+
+        private static double CollapseMargins(IReadOnlyList<double> margins)
+            => Math.Max(0, margins.Max()) + Math.Min(0, margins.Min());
 
         private void Gather(DomNode node, CssComputedStyle inheritedStyle, List<InlineUnit> output, int depth)
         {
@@ -544,6 +612,26 @@ public static class StaticLayout
                 Dimension(style[prefix + "-right" + suffix], width) ?? 0,
                 Dimension(style[prefix + "-bottom" + suffix], width) ?? 0,
                 Dimension(style[prefix + "-left" + suffix], width) ?? 0);
+        private static double ContentWidth(CssComputedStyle style, double containingWidth)
+        {
+            var padding = Edges(style, "padding", containingWidth);
+            var border = Edges(style, "border", containingWidth, "-width");
+            var margin = Edges(style, "margin", containingWidth);
+            var horizontal = padding.Left + padding.Right + border.Left + border.Right;
+            var sizing = ((CssKeyword)style["box-sizing"]).Value;
+            var width = Dimension(style["width"], containingWidth) is { } specified
+                ? Math.Max(0, specified - (sizing == "border-box" ? horizontal : 0))
+                : Math.Max(0, containingWidth - horizontal - margin.Left - margin.Right);
+            var minWidth = Dimension(style["min-width"], containingWidth) ?? 0;
+            var maxWidth = Dimension(style["max-width"], containingWidth) ?? double.PositiveInfinity;
+            if (sizing == "border-box")
+            {
+                minWidth = Math.Max(0, minWidth - horizontal);
+                maxWidth = double.IsPositiveInfinity(maxWidth) ? maxWidth : Math.Max(0, maxWidth - horizontal);
+            }
+            return Math.Max(minWidth, Math.Min(width, maxWidth));
+        }
+
         private static double? Dimension(CssValue value, double? reference) => value switch
         {
             CssLength { Unit: "px" } length => Finite(length.Value),
