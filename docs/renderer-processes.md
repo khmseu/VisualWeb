@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v9
+## Private stream protocol v10
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 9, explicitly present; v1 through v8 rejected |
+| Protocol version | 10, explicitly present; v1 through v9 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -125,7 +125,8 @@ linked stylesheets advanced to v6 for the required request-only `Stylesheets` ar
 keyboard links advanced to v7 for per-anchor grouped `LinkTargets` rectangles,
 and simple forms advance to v8 for required frame-only `Forms` and `FormControls`,
 then bounded text selection advances to v9 for frame-only `TextTargets`, because
-older receivers strictly reject unknown fields.
+older receivers strictly reject unknown fields. Telephone inputs advance the
+protocol to v10 by adding the `tel` form-control kind.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
 linked stylesheet collection (request URL plus decoded CSS text only) and CSS viewport/
@@ -157,14 +158,14 @@ the existing 32 MiB complete-header bound also remains enforced.
 Unsupported destination schemes are rejected visibly by browser activation,
 never executed by a worker.
 
-Every v9 frame also supplies required `Forms`, `FormControls` and `TextTargets`
+Every v10 frame also supplies required `Forms`, `FormControls` and `TextTargets`
 arrays (empty when absent); other messages cannot carry them. A form is `{Action, Error}`:
 either an absolute serialized `http`/`https`/`file`/`data` action with a null
 error, or an empty action plus a nonempty renderer diagnostic for an
 unsupported form (method/enctype/target/novalidate/accept-charset/base/control
 cases). A control is `{Form, Kind, Name, Value, Label, Disabled, ReadOnly,
 Required, MaxLength, BeforeLink, Rect}` with kind `text`/`search`/`hidden`/
-`submit`/`button`, a form index or -1, a label for submit controls/button text, `MaxLength` -1
+`tel`/`submit`/`button`, a form index or -1, a label for submit controls/button text, `MaxLength` -1
 when absent, and `BeforeLink` in `[0, LinkTargets.Count]` giving merged
 tree-order traversal against link groups. Visible controls carry one
 viewport-contained CSS-pixel border box; hidden controls never have one.

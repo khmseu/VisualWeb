@@ -58,6 +58,21 @@ public sealed class FormTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TelephoneInputUsesTextControlMetadataAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=tel name=phone value='555-0100'></form>"),
+            new(200, 400, 1), Cancellation);
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("tel", control.Kind);
+        Assert.Equal("555-0100", control.Value);
+        Assert.NotNull(control.Rect);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
     [InlineData("<form method=dialog><input name=q></form>", "method")]
     [InlineData("<form method=post><input name=q></form>", "method")]
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
@@ -256,6 +271,20 @@ public sealed class FormTests
         Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
         Assert.Equal("https://example.com/search?q=x+y%2B%C3%A9&_CHARSET_=UTF-8&go=Go%21#frag",
             harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void TelephoneInputCanBeEditedAndSubmitted()
+    {
+        using var harness = new Harness("<form action='/call'><input type=tel name=phone value='555-0100' maxlength=16></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.EditingFormControl(tab));
+        Assert.Equal("555-0100-42", controller.InsertFormText(tab, "-42"));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/call?phone=555-0100-42", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

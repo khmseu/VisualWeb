@@ -13,8 +13,9 @@ and retained committed DOM for scroll/resize in both script-free and scripted mo
 is fixed per channel; script errors are explicit page failures. No DOM/V8 objects
 cross IPC and no external script is fetched. IPC v6 render requests carry the
 browser-fetched linked stylesheet texts; the worker never fetches and fails a
-page whose (possibly script-changed) link was not provided. IPC v9 frames add
-data-only simple form/control metadata; the worker never submits forms.
+page whose (possibly script-changed) link was not provided. IPC v8 introduced
+simple form/control metadata; IPC v10 adds the generic editable `tel` kind.
+The worker never submits forms.
 Normal user permissions remain in development-unsandboxed mode. The trusted
 `--linux-sandbox-bootstrap` reexecutes into required Linux confinement before
 receiving any page. Direct `--linux-sandbox-worker` requires verified status/

@@ -108,7 +108,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 9;
+    public const int Version = 10;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -251,7 +251,7 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "hidden" or "submit" or "button")
+                || control.Kind is not ("text" or "search" or "tel" or "hidden" or "submit" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters

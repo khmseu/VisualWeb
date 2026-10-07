@@ -83,12 +83,12 @@ The native window title retains the same warning alongside the active page title
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
-| Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search field | Edit the shell-owned field value (no page scrolling) |
+| Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search/tel field | Edit the shell-owned field value (no page scrolling) |
 | Enter in a focused field / on a submit control, or primary click on a submit control | Submit the [simple GET form](#simple-get-forms) in the current tab |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
-| Ctrl+V while editing the address or a text/search field | Paste clipboard text at the caret or over the current field selection |
+| Ctrl+V while editing the address or a text/search/tel field | Paste clipboard text at the caret or over the current field selection |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Page text hit geometry is a bounded v9 data-only snapshot of shaped fragments
@@ -200,9 +200,10 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v8); the browser owns all values,
-focus, carets and submission. Supported controls are `input` text/search
-(editable), hidden and submit, plus `button` submit (and inert `type=button`),
+reports data-only form/control snapshots (IPC v10); the browser owns all values,
+focus, carets and submission. Supported controls are `input` text/search/tel (editable with generic text behavior; no
+telephone-specific keyboard or validation), hidden and submit, plus `button`
+submit (and inert `type=button`),
 with a user-agent `display:inline-block` default and bounded fallback dimensions
 (160 by 20 CSS pixels) when sizes are unspecified; author `display:none` still
 hides controls. Form-control inline boxes wrap atomically with text; nonzero
@@ -214,8 +215,8 @@ rectangles. These defaults are a bounded layout accommodation, not complete UA
 widget sizing or styling.
 
 Tab/Shift+Tab visit visible, enabled controls merged in tree order with anchor
-groups; primary-clicking a visible text/search field focuses it without starting
-page text selection. Focusing a text/search field enables SDL committed text
+groups; primary-clicking a visible text/search/tel field focuses it without starting
+page text selection. Focusing a text/search/tel field enables SDL committed text
 input, which is disabled again when focus leaves. Values are inserted without
 control characters. Ctrl+A visibly selects the full field value, the next
 insertion replaces it, and Ctrl+V pastes clipboard text at the caret or over the
@@ -224,12 +225,12 @@ selection; its existing length and control-character limits still apply. Values
 are truncated to `maxlength` (whole UTF-16 surrogate pairs) and capped at 8192
 characters. Enter in a field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the
-form has at most one text/search field (implicit submission). Field state is
+form has at most one text/search/tel field (implicit submission). Field state is
 tab-local and survives tab switches and same-document scroll/resize repaints
 whose control metadata is unchanged; new document commits reset it, failed
 navigations keep it.
 
-Submission includes named, non-disabled text/search/hidden controls plus the
+Submission includes named, non-disabled text/search/tel/hidden controls plus the
 named activating submitter, in tree order. `_charset_` hidden fields submit
 `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as
