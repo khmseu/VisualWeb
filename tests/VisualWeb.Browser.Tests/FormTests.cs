@@ -147,6 +147,23 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RangeInputsReportBoundedAndSnappedValuesAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=range name=a min=0 max=10 step=2 value=5><input type=range name=b><input type=range name=c min=-2 max=2 step=any value=99></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal(["range", "range", "range"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["6", "50", "2"], page.FormControls.Select(control => control.Value));
+        Assert.Equal([0, 0, -2], page.FormControls.Select(control => control.Minimum));
+        Assert.Equal([10, 100, 2], page.FormControls.Select(control => control.Maximum));
+        Assert.Equal([2, 1, null], page.FormControls.Select(control => control.Step));
+        Assert.Equal([false, false, true], page.FormControls.Select(control => control.StepAny));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RadioInputsReportOneSelectedValueAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -1125,6 +1142,34 @@ public sealed class FormTests
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Equal("https://example.com/final/index.html?contact=", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReversedRangeInputBoundsAreVisibleAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=range min=10 max=1></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Contains("minimum exceeds maximum", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RangeInputSupportsKeyboardAndPointerAdjustmentAndSubmits()
+    {
+        using var harness = new Harness("<form action='/range'><input type=range name=level min=-4 max=4 step=2 value=0><button>go</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.False(controller.EditingFormControl(tab));
+        Assert.True(controller.AdjustFocusedRange(tab, 1));
+        Assert.Equal("2", controller.FormControlValue(tab, 0));
+        Assert.True(controller.SetRangeFromPointer(tab, 0, 200));
+        Assert.Equal("4", controller.FormControlValue(tab, 0));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.True(controller.ActivateFocusedLink(tab));
+        Assert.Equal("https://example.com/range?level=4", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

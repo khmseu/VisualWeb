@@ -35,6 +35,7 @@ public sealed class DevelopmentShell : IDisposable
         internal bool TextInput { get; set; }
         internal bool SelectingText { get; set; }
         internal bool DraggingScrollbar { get; set; }
+        internal int DraggingRangeControl { get; set; } = -1;
         internal bool Dirty { get; set; } = true;
         internal IReadOnlyList<ChromeTarget> Targets { get; set; } = [];
         internal PixelSize LastSize { get; set; }
@@ -219,6 +220,8 @@ public sealed class DevelopmentShell : IDisposable
                     view.PointerX = moved.X;
                     view.PointerY = moved.Y;
                     if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
+                    if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
+                    { Controller.SetRangeFromPointer(rangeTab.Id, view.DraggingRangeControl, moved.X); }
                     if (view.SelectingText && window.ActiveTab is { } selectingTab
                         && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } selectionViewport
                         && moved.Y >= ShellChrome.Height && moved.Y < ShellChrome.Height + selectionViewport.Height)
@@ -238,6 +241,7 @@ public sealed class DevelopmentShell : IDisposable
                     view.PointerY = pointer.Y;
                     view.SelectingText = false;
                     view.DraggingScrollbar = false;
+                    view.DraggingRangeControl = -1;
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
                     if (target?.Action == ChromeAction.Scrollbar)
                     {
@@ -257,6 +261,10 @@ public sealed class DevelopmentShell : IDisposable
                         {
                             Controller.FocusPage(pageTab.Id);
                             var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport);
+                            var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
+                            if (activated && focusedControl >= 0
+                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
+                            { view.DraggingRangeControl = focusedControl; }
                             if (!activated)
                             {
                                 view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X,
@@ -268,6 +276,7 @@ public sealed class DevelopmentShell : IDisposable
                     break;
                 case PointerButtonChanged { Pressed: false, Button: 1 } when window.ActiveTab is { } releasedTab:
                     view.DraggingScrollbar = false;
+                    view.DraggingRangeControl = -1;
                     view.SelectingText = false;
                     Controller.EndTextSelection(releasedTab.Id);
                     break;
@@ -364,6 +373,12 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.C && Controller.SelectedText(tab.Id) is { Length: > 0 } selected)
             { view.Native.SetClipboardText(selected); return; }
+            if (!control && !alt && code is SDL.Scancode.Left or SDL.Scancode.Down
+                && Controller.AdjustFocusedRange(tab.Id, -1)) { return; }
+            if (!control && !alt && code is SDL.Scancode.Right or SDL.Scancode.Up
+                && Controller.AdjustFocusedRange(tab.Id, 1)) { return; }
+            if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedRangeEndpoint(tab.Id, false)) { return; }
+            if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedRangeEndpoint(tab.Id, true)) { return; }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code switch
             {
                 SDL.Scancode.Backspace => FormEdit.Backspace,

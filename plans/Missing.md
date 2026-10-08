@@ -46,9 +46,9 @@ broader page interaction is still missing:
   hit-testing, DOM focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
-  shell-edited `input` text/search/email/tel/url/number/checkbox/radio/hidden/submit, `textarea`, and `button`
+  shell-edited `input` text/search/email/tel/url/number/range/checkbox/radio/hidden/submit, `textarea`, and `button`
   submit controls
-  via IPC v19 data-only metadata and the ordinary
+  via IPC v20 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Number inputs support finite floating-point syntax, optional finite min/max
@@ -56,7 +56,9 @@ broader page interaction is still missing:
   steps default to 1, and reversed ranges are surfaced as form errors. The step
   base is a valid minimum, otherwise the valid initial value, otherwise zero.
   Grid calculations use bounded binary64 precision and fail closed beyond the
-  reliable value-to-step ratio range.
+  reliable value-to-step ratio range. Range controls have bounded min/max/step
+  metadata (defaults 0–100/step 1), initial range/grid sanitization, keyboard/pointer
+  adjustment, same-tab GET submission and shell-owned slider painting.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
   independent line-window scrolling, plus newline-normalized GET entries.
@@ -64,7 +66,7 @@ broader page interaction is still missing:
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/email/tel/url/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/number/checkbox/radio, select,
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/number/range/checkbox/radio, select,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   full constraint-validation UI and semantics, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -199,7 +201,7 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `9848cc7` and current working-tree changes on
+*Status cross-checked against `e8f6db9` and current working-tree changes on
 2026-10-08. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; single-address email inputs use generic text
@@ -209,10 +211,11 @@ only when checked; radio state is mutually exclusive by form/name, selected by
 pointer, Space, and arrow-key navigation, and required validation applies to the group; bounded editable textareas submit newline-normalized
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
 movement; `minlength` is checked for edited nonempty values and bounded text
-field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state plus numeric syntax/range are enforced on submission; local file documents
+field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; range controls
+are sanitized to finite bounds and the step grid and remain shell-owned; local file documents
 cannot initiate HTTP(S)
 link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
-cleartext HTTP. The browser suite (587 tests), IPC suite (88 tests), layout suite
+cleartext HTTP. The browser suite (592 tests), IPC suite (88 tests), layout suite
 (55 tests), CSS suite (322 tests), solution build (0 warnings/errors), changed-file
 formatting and `git diff --check` pass. These checks are not full
 conformance, security, CI-matrix or real-desktop validation.

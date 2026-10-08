@@ -66,11 +66,11 @@ internal static class PageForms
             }
             if (kind == "email" && element.GetAttribute("multiple") is not null)
             { Reject(index, "email multiple addresses"); }
-            if (kind == "number")
+            if (kind is "number" or "range")
             {
-                if (element.GetAttribute("multiple") is not null) { Reject(index, "number multiple"); }
-                foreach (var attribute in new[] { "pattern", "minlength", "maxlength" })
-                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"number {attribute}"); } }
+                if (element.GetAttribute("multiple") is not null) { Reject(index, $"{kind} multiple"); }
+                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list" })
+                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
             }
             string? pattern = null;
             if ((kind is "text" or "search" or "email" or "tel" or "url") && element.GetAttribute("pattern") is { } sourcePattern)
@@ -103,17 +103,43 @@ internal static class PageForms
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
             var text = kind is "text" or "search" or "email" or "tel" or "url" or "number" or "textarea";
+            var range = kind == "range";
             var minLength = text && kind != "number" ? MinLength(element.GetAttribute("minlength")) : -1;
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
-            var minimum = kind == "number" ? NumberBound(element.GetAttribute("min")) : null;
-            var maximum = kind == "number" ? NumberBound(element.GetAttribute("max")) : null;
-            var stepAny = kind == "number" && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
-            double? step = kind != "number" || stepAny ? null : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0
-                ? parsedStep : 1;
-            if (minimum is { } min && maximum is { } max && min > max) { Reject(index, "number minimum exceeds maximum"); }
+            var minimum = kind == "number" ? NumberBound(element.GetAttribute("min"))
+                : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
+            var maximum = kind == "number" ? NumberBound(element.GetAttribute("max"))
+                : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
+            var stepAny = (kind is "number" or "range") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
+            double? step = kind is not ("number" or "range") || stepAny ? null
+                : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0 ? parsedStep : 1;
+            if (minimum is { } min && maximum is { } max && min > max)
+            {
+                Reject(index, $"{kind} minimum exceeds maximum");
+                if (range) { maximum = minimum; }
+            }
+            if (range)
+            {
+                var lower = minimum!.Value;
+                var upper = maximum!.Value;
+                var initial = FormNumber.TryParse(value ?? "", out var parsed) ? parsed : lower / 2 + upper / 2;
+                initial = Math.Clamp(initial, lower, upper);
+                if (!stepAny && step is { } rangeStep)
+                {
+                    var quotient = (initial - lower) / rangeStep;
+                    if (double.IsFinite(quotient) && Math.Abs(quotient) <= 1_000_000_000_000d)
+                    {
+                        var snapped = lower + Math.Floor(quotient + 0.5) * rangeStep;
+                        if (snapped > upper) { snapped = lower + Math.Floor(quotient) * rangeStep; }
+                        initial = Math.Clamp(snapped, lower, upper);
+                    }
+                    else { Reject(index, "range step precision limit"); initial = lower; }
+                }
+                value = initial.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            }
             value = kind switch
             {
                 "text" or "search" or "email" or "tel" or "url" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
@@ -195,7 +221,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "number" or "checkbox" or "radio" or "hidden" or "submit" ? type : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" ? type : null,
         "button" => DomFormControls.ButtonType(element) == "submit" ? "button" : null,
         "textarea" => "textarea",
         _ => null,

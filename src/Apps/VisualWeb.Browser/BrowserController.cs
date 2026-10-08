@@ -303,6 +303,65 @@ public sealed class BrowserController : IDisposable
         { throw new ArgumentOutOfRangeException(nameof(index)); }
         return Value(owner, index);
     }
+    public bool AdjustFocusedRange(TabId id, int direction)
+    {
+        Check();
+        if (direction is not (-1 or 1)) { throw new ArgumentOutOfRangeException(nameof(direction)); }
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "range", Disabled: false } control) { return false; }
+        var value = FormNumber.TryParse(Value(owner, owner.FocusedControl), out var parsed) ? parsed : control.Minimum!.Value;
+        var step = control.StepAny ? (control.Maximum!.Value - control.Minimum!.Value) / 100 : control.Step!.Value;
+        if (!double.IsFinite(step) || step <= 0) { step = 1; }
+        SetRangeValue(owner, owner.FocusedControl, Math.Clamp(value + direction * step, control.Minimum!.Value, control.Maximum!.Value));
+        Changed?.Invoke(id);
+        return true;
+    }
+    public bool SetFocusedRangeEndpoint(TabId id, bool maximum)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "range", Disabled: false } control) { return false; }
+        SetRangeValue(owner, owner.FocusedControl, maximum ? control.Maximum!.Value : control.Minimum!.Value);
+        Changed?.Invoke(id);
+        return true;
+    }
+    public bool SetRangeFromPointer(TabId id, int index, double x)
+    {
+        Check();
+        if (!double.IsFinite(x)) { throw new PageNavigationException("Range pointer coordinate must be finite."); }
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index] is not { Kind: "range", Disabled: false, Rect: { } rect } control) { return false; }
+        var inset = Math.Min(7, rect.Width / 2);
+        var usable = Math.Max(0, rect.Width - inset * 2);
+        var fraction = usable == 0 ? 0.5 : Math.Clamp((x - rect.X - inset) / usable, 0, 1);
+        var value = control.Minimum!.Value * (1 - fraction) + control.Maximum!.Value * fraction;
+        SetRangeValue(owner, index, value);
+        Changed?.Invoke(id);
+        return true;
+    }
+    private static void SetRangeValue(Content owner, int index, double value)
+    {
+        var control = owner.Page!.FormControls[index];
+        var minimum = control.Minimum!.Value;
+        var maximum = control.Maximum!.Value;
+        value = Math.Clamp(value, minimum, maximum);
+        if (!control.StepAny && control.Step is { } step)
+        {
+            var quotient = (value - minimum) / step;
+            if (double.IsFinite(quotient) && Math.Abs(quotient) <= 1_000_000_000_000d)
+            {
+                var snapped = minimum + Math.Floor(quotient + 0.5) * step;
+                if (snapped > maximum) { snapped = minimum + Math.Floor(quotient) * step; }
+                value = Math.Clamp(snapped, minimum, maximum);
+            }
+        }
+        var editor = Field(owner, index);
+        editor.Reset(value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+        owner.Dirty.Add(index);
+    }
     /// <summary>UTF-16 caret of the focused text field, or -1.</summary>
     public int FormControlCaret(TabId id)
     {
@@ -612,7 +671,7 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number" or "textarea" or "checkbox" or "radio") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number" or "range" or "textarea" or "checkbox" or "radio") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
             if (control.Required && (control.Kind == "checkbox" ? !isChecked
@@ -622,7 +681,7 @@ public sealed class BrowserController : IDisposable
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
             if (control.Kind == "email" && value.Length > 0 && !EmailAddress.IsMatch(value))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid email address; submission blocked."); }
-            if (control.Kind == "number" && value.Length > 0)
+            if ((control.Kind is "number" or "range") && value.Length > 0)
             {
                 if (!FormNumber.TryParse(value, out var number))
                 { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid number; submission blocked."); }
@@ -698,6 +757,7 @@ public sealed class BrowserController : IDisposable
             if (owner.PageFocused) { FocusControl(id, index); }
             if (control.Kind is "submit" or "button") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
+            if (control.Kind == "range") { SetRangeFromPointer(id, index, x); return true; }
             return control.Kind is "text" or "search" or "email" or "tel" or "url" or "number" or "textarea";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)

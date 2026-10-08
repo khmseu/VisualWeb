@@ -183,6 +183,27 @@ public sealed class ShellChrome : IDisposable
                 if (control.Rect is not { } rect || control.Kind == "hidden") { continue; }
                 var box = new LayoutRect(rect.X, rect.Y + offset, rect.Width, rect.Height);
                 var gray = new CssColor(118, 118, 118);
+                if (control.Kind == "range")
+                {
+                    var inset = Math.Min(7, box.Width / 2);
+                    var trackStart = box.X + inset;
+                    var end = box.X + box.Width - inset;
+                    var centerY = box.Y + box.Height / 2;
+                    Fill(new(trackStart, centerY, Math.Max(1, end - trackStart), 2), gray);
+                    var value = double.Parse(forms.Values[index], System.Globalization.CultureInfo.InvariantCulture);
+                    var range = control.Maximum!.Value - control.Minimum!.Value;
+                    var fraction = range == 0 || !double.IsFinite(range) ? 0.5 : (value - control.Minimum.Value) / range;
+                    if (!double.IsFinite(fraction)) { fraction = 0.5; }
+                    var thumbWidth = Math.Min(12, box.Width);
+                    var thumbHeight = Math.Min(16, box.Height);
+                    var trackRange = Math.Max(0, end - trackStart);
+                    var thumbX = Math.Clamp(trackStart + Math.Clamp(fraction, 0, 1) * trackRange,
+                        box.X + thumbWidth / 2, box.X + box.Width - thumbWidth / 2);
+                    var thumbColor = control.Disabled ? gray : index == forms.Focused
+                        ? new CssColor(40, 90, 160) : new CssColor(80, 88, 98);
+                    Fill(new(thumbX - thumbWidth / 2, centerY - thumbHeight / 2, thumbWidth, thumbHeight), thumbColor);
+                    continue;
+                }
                 if (control.Kind is "checkbox" or "radio")
                 {
                     var side = Math.Min(13, Math.Min(box.Width, box.Height));

@@ -204,9 +204,9 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v19); the browser owns all values,
-focus, carets and submission. Supported controls are `input` text/search/email/tel/url/number,
-checkbox, radio, textarea, hidden and submit, plus `button` submit (and inert `type=button`).
+reports data-only form/control snapshots (IPC v20); the browser owns all values,
+focus, carets and submission. Supported controls are `input` text/search/email/tel/url/number/range, checkbox, radio, textarea,
+hidden and submit, plus `button` submit (and inert `type=button`).
 Text fields use generic editing; tel has no telephone-specific keyboard or validation;
 email requires one valid address and does not support `multiple`; url requires a valid
 absolute URL on submission; number accepts finite HTML floating-point values with
@@ -214,7 +214,8 @@ optional min/max and step-grid validation. `step=any` disables step checks, whil
 absent or invalid step values use the default step of 1. The step base is a valid
 `min`, otherwise the initial value when valid, otherwise zero. Step arithmetic uses
 bounded binary64 precision and fails closed when the value-to-step ratio exceeds its
-reliable range. Checkboxes and radios are shell-drawn; checkboxes toggle
+reliable range. Range controls default to 0–100 with step 1, sanitize initial values to their
+range/grid, and use click/drag plus arrow-key adjustment with Home/End for endpoints. Checkboxes and radios are shell-drawn; checkboxes toggle
 on click or Space, while radios select on click or Space. Unchecked checkboxes and radios are omitted from submission, checked controls submit
 their value (default `on`), and required checkboxes must be checked while required
 radio groups need one selected member. Radios sharing a form and nonempty name are
@@ -235,8 +236,9 @@ gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
 widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
-tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/number field
-or textarea focuses it without starting page text selection. Focusing an editable
+tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/number field or textarea
+focuses it without starting page text selection; range controls can be adjusted by
+pointer click/drag. Focusing an editable
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
 sequences normalize to LF; other control characters are rejected. Ctrl+A selects
@@ -256,7 +258,7 @@ textarea inserts LF and never triggers implicit submission. Form state is tab-lo
 and survives tab switches and same-document scroll/resize repaints whose control
 metadata is unchanged; new document commits reset it, failed navigations keep it.
 
-Submission includes named, non-disabled text/search/email/tel/url/number/checkbox/radio/textarea/hidden controls
+Submission includes named, non-disabled text/search/email/tel/url/number/range/checkbox/radio/textarea/hidden controls
 plus the named activating submitter, in tree order. `_charset_` hidden fields
 submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,
@@ -269,7 +271,7 @@ resulting URL at the existing URL limit.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
-`form=` attribute, submitter overrides, unsupported input types/reset buttons, invalid email, URL or number values, unsupported email `multiple` and reversed number ranges,
+`form=` attribute, submitter overrides, unsupported input types/reset buttons, invalid email, URL or number values, unsupported email `multiple` and reversed numeric bounds,
 textarea `dirname` or `wrap=hard`, select/output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,

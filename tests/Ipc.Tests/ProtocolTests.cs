@@ -45,9 +45,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(19, RendererProtocol.Version);
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 18 }, 0));
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 18 }, 0));
+        Assert.Equal(20, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 19 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 19 }, 0));
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -110,6 +110,18 @@ public sealed class ProtocolTests
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = -1, Maximum = 10, Step = 0.1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
         }, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "range", Value = "5", Minimum = 0, Maximum = 100, Step = 1, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
+        }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "range", Minimum = 10, Maximum = 1, Step = 1, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
+        }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "range", Value = "6", Minimum = 0, Maximum = 10, Step = 4, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
+        }, 16));
         RendererProtocol.Validate(FormFrame with
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = 10, Maximum = -1, Step = 1, MinLength = -1, MaxLength = -1, Rect = null }]
@@ -331,7 +343,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(19, RendererProtocol.Version);
+        Assert.Equal(20, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

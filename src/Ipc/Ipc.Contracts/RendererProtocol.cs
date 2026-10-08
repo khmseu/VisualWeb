@@ -57,7 +57,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, number, checkbox, radio, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, number, range, checkbox, radio, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -164,7 +164,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 19;
+    public const int Version = 20;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -310,7 +310,7 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number" or "checkbox" or "radio" or "textarea" or "hidden" or "submit" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number" or "range" or "checkbox" or "radio" or "textarea" or "hidden" or "submit" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
@@ -319,9 +319,12 @@ public static class RendererProtocol
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
-                || control.Kind != "number" && (control.Minimum is not null || control.Maximum is not null
+                || control.Kind is not ("number" or "range") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
-                || control.Kind == "number" && (control.StepAny ? control.Step is not null : control.Step is null)
+                || (control.Kind is "number" or "range") && (control.StepAny ? control.Step is not null : control.Step is null)
+                || control.Kind == "range" && (control.Minimum is null || control.Maximum is null
+                    || control.Minimum > control.Maximum || control.MinLength != -1 || control.MaxLength != -1
+                    || control.Required || control.ReadOnly || control.Pattern is not null)
                 || control.Pattern is { Length: > MaxFormPatternCharacters }
                 || control.Pattern is not null && control.Kind is not ("text" or "search" or "email" or "tel" or "url")
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)
@@ -330,6 +333,10 @@ public static class RendererProtocol
                 || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount
                 || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "textarea") && control.MinLength != -1)
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
+            if (control.Kind == "range" && (!FormNumber.TryParse(control.Value, out var rangeValue)
+                || rangeValue < control.Minimum!.Value || rangeValue > control.Maximum!.Value
+                || !control.StepAny && !FormNumber.IsStepAligned(rangeValue, control.Minimum.Value, control.Step!.Value)))
+            { throw new IpcProtocolException("Invalid renderer range value or step alignment."); }
             if (control.Rect is not { } rect) { continue; }
             if (control.Kind == "hidden" || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
                 || !double.IsFinite(rect.Width) || !double.IsFinite(rect.Height)

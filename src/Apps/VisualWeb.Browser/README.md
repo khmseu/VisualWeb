@@ -13,7 +13,7 @@ and multiline textareas with Tab focus, committed-text entry and Enter/click sub
 of same-tab GET `application/x-www-form-urlencoded` queries through the ordinary
 navigation transaction. Textareas have bounded rows/columns, soft wrapping and
 independent line-window scrolling; number fields validate finite values, optional min/max bounds and supported
-step grids. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
+step grids; range fields render as shell-owned sliders adjusted by keyboard or pointer. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and
