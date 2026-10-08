@@ -116,7 +116,7 @@ public static class StaticLayout
             {
                 if (!block && Display(element) != "inline-block")
                 { throw new UnsupportedLayoutException("Form controls require block or supported inline-block layout."); }
-                if (element.LocalName == "input" && DomFormControls.InputType(element) is not ("text" or "search" or "email" or "tel" or "url" or "checkbox" or "submit"))
+                if (element.LocalName == "input" && DomFormControls.InputType(element) is not ("text" or "search" or "email" or "tel" or "url" or "checkbox" or "radio" or "submit"))
                 {
                     throw new UnsupportedLayoutException($"<input type={DomFormControls.InputType(element)}> requires unsupported widget layout.");
                 }

@@ -74,7 +74,7 @@ public static class FormSubmission
         {
             var control = controls[index];
             if (control.Form != form || control.Disabled || control.Kind is "submit" or "button" && index != submitter
-                || control.Kind == "checkbox" && !isChecked(index) || control.Name.Length == 0) { continue; }
+                || control.Kind is "checkbox" or "radio" && !isChecked(index) || control.Name.Length == 0) { continue; }
             var data = control.Kind == "hidden" && control.Name.Equals("_charset_", StringComparison.OrdinalIgnoreCase)
                 ? "UTF-8" : value(index);
             entries.Add((Newlines(control.Name), Newlines(data)));

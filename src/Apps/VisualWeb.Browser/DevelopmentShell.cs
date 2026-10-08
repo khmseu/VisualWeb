@@ -383,7 +383,12 @@ public sealed class DevelopmentShell : IDisposable
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code is SDL.Scancode.Pageup or SDL.Scancode.Pagedown)
             { return; }
             if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
-                && Controller.ToggleFocusedCheckbox(tab.Id)) { return; }
+                && Controller.ToggleFocusedCheckable(tab.Id)) { return; }
+            if (!control && !alt && code is SDL.Scancode.Left or SDL.Scancode.Up or SDL.Scancode.Right or SDL.Scancode.Down)
+            {
+                var direction = code is SDL.Scancode.Left or SDL.Scancode.Up ? -1 : 1;
+                if (Controller.MoveFocusedRadio(tab.Id, direction)) { return; }
+            }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
                 if (Controller.IsMultilineFormControl(tab.Id))

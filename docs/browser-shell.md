@@ -204,14 +204,17 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v16); the browser owns all values,
+reports data-only form/control snapshots (IPC v17); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url,
-checkbox, textarea, hidden and submit, plus `button` submit (and inert `type=button`).
+checkbox, radio, textarea, hidden and submit, plus `button` submit (and inert `type=button`).
 Text fields use generic editing; tel has no telephone-specific keyboard or validation;
 email requires one valid address and does not support `multiple`; url requires a valid
-absolute URL on submission. Checkboxes are shell-drawn and toggle on click or Space;
-unchecked checkboxes are omitted from submission, checked boxes submit their value
-(default `on`), and required boxes must be checked. Input/button controls default to 160 by 20 CSS pixels. Textareas
+absolute URL on submission. Checkboxes and radios are shell-drawn; checkboxes toggle
+on click or Space, while radios select on click or Space. Unchecked checkboxes and radios are omitted from submission, checked controls submit
+their value (default `on`), and required checkboxes must be checked while required
+radio groups need one selected member. Radios sharing a form and nonempty name are
+mutually exclusive; Space selects the focused member and arrow keys move/select
+within its enabled group. Input/button controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
 to 128 and 64. Author CSS may size the controls within the layout limits; author
 `display:none` still hides them. Textarea values are drawn by the shell overlay
@@ -248,7 +251,7 @@ textarea inserts LF and never triggers implicit submission. Form state is tab-lo
 and survives tab switches and same-document scroll/resize repaints whose control
 metadata is unchanged; new document commits reset it, failed navigations keep it.
 
-Submission includes named, non-disabled text/search/email/tel/url/checkbox/textarea/hidden controls
+Submission includes named, non-disabled text/search/email/tel/url/checkbox/radio/textarea/hidden controls
 plus the named activating submitter, in tree order. `_charset_` hidden fields
 submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,

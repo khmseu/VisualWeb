@@ -101,7 +101,7 @@ internal static class PageForms
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
-                : kind == "checkbox" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
+                : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
             value = kind switch
             {
                 "text" or "search" or "email" or "tel" or "url" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
@@ -125,10 +125,19 @@ internal static class PageForms
             }
             controls.Add(new(index, kind, controlName, value, label, pattern, element.GetAttribute("disabled") is not null,
                 text && element.GetAttribute("readonly") is not null,
-                (text || kind == "checkbox") && element.GetAttribute("required") is not null,
+                (text || kind is "checkbox" or "radio") && element.GetAttribute("required") is not null,
                 minLength,
                 text ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
-                kind == "checkbox" && element.GetAttribute("checked") is not null));
+                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null));
+            if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
+            {
+                for (var previous = controls.Count - 2; previous >= 0; previous--)
+                {
+                    if (controls[previous] is { Kind: "radio", Checked: true, Name: var name, Form: var form }
+                        && form == index && name == controlName)
+                    { controls[previous] = controls[previous] with { Checked = false }; }
+                }
+            }
         }
         var forms = actions.Select((action, i) => errors[i] is { } error ? new PageForm("", error) : new PageForm(action, null)).ToArray();
         var result = controls.ToArray();
@@ -174,7 +183,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "checkbox" or "hidden" or "submit" ? type : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "checkbox" or "radio" or "hidden" or "submit" ? type : null,
         "button" => DomFormControls.ButtonType(element) == "submit" ? "button" : null,
         "textarea" => "textarea",
         _ => null,

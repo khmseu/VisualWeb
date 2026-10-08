@@ -32,6 +32,29 @@ public sealed class ShellTests
         Assert.NotEqual(checkedPixels, native.Pixels!.ToArray());
     }
 
+    [Fact]
+    public void ArrowKeysMoveWithinRadioGroupAndSpaceSelectsFocusedRadio()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style><form><input type=radio name=mode value=a><input type=radio name=mode value=b></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Right, 0, 0, true, false));
+        Assert.Equal(1, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.True(shell.Controller.FormControlChecked(tab.Id, 1));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Space, 0, 0, true, false));
+        Assert.True(shell.Controller.FormControlChecked(tab.Id, 1));
+        Assert.False(shell.Controller.FormControlChecked(tab.Id, 0));
+    }
+
     [Theory]
     [InlineData(false, 1)]
     [InlineData(true, 1)]

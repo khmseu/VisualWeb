@@ -183,21 +183,52 @@ public sealed class ShellChrome : IDisposable
                 if (control.Rect is not { } rect || control.Kind == "hidden") { continue; }
                 var box = new LayoutRect(rect.X, rect.Y + offset, rect.Width, rect.Height);
                 var gray = new CssColor(118, 118, 118);
-                if (control.Kind == "checkbox")
+                if (control.Kind is "checkbox" or "radio")
                 {
                     var side = Math.Min(13, Math.Min(box.Width, box.Height));
                     var check = new LayoutRect(box.X + 3, box.Y + (box.Height - side) / 2, side, side);
-                    Fill(check, new(118, 118, 118));
-                    Fill(new(check.X + 1, check.Y + 1, Math.Max(0, side - 2), Math.Max(0, side - 2)),
-                        control.Disabled ? new(235, 235, 235) : white);
-                    if (forms.Checked?[index] == true)
+                    if (control.Kind == "checkbox")
                     {
-                        var mark = control.Disabled ? gray : ink;
-                        Fill(new(check.X + 2, check.Y + 6, 2, 2), mark);
-                        Fill(new(check.X + 4, check.Y + 8, 2, 2), mark);
-                        Fill(new(check.X + 6, check.Y + 6, 2, 2), mark);
-                        Fill(new(check.X + 8, check.Y + 4, 2, 2), mark);
-                        Fill(new(check.X + 10, check.Y + 2, 2, 2), mark);
+                        Fill(check, gray);
+                        Fill(new(check.X + 1, check.Y + 1, Math.Max(0, side - 2), Math.Max(0, side - 2)),
+                            control.Disabled ? new(235, 235, 235) : white);
+                        if (forms.Checked?[index] == true)
+                        {
+                            var mark = control.Disabled ? gray : ink;
+                            Fill(new(check.X + 2, check.Y + 6, 2, 2), mark);
+                            Fill(new(check.X + 4, check.Y + 8, 2, 2), mark);
+                            Fill(new(check.X + 6, check.Y + 6, 2, 2), mark);
+                            Fill(new(check.X + 8, check.Y + 4, 2, 2), mark);
+                            Fill(new(check.X + 10, check.Y + 2, 2, 2), mark);
+                        }
+                    }
+                    else
+                    {
+                        var center = side / 2;
+                        var radius = Math.Max(1, center);
+                        for (var row = -radius; row <= radius; row++)
+                        {
+                            var half = (int)Math.Floor(Math.Sqrt(Math.Max(0, radius * radius - row * row)));
+                            Fill(new(check.X + center - half, check.Y + center + row, half * 2 + 1, 1), gray);
+                        }
+                        if (forms.Checked?[index] == true)
+                        {
+                            var mark = control.Disabled ? gray : ink;
+                            var dot = Math.Max(1, side / 4);
+                            var dotOffset = center - dot / 2;
+                            for (var row = 0; row < dot; row++)
+                            { Fill(new(check.X + dotOffset, check.Y + dotOffset + row, dot, 1), mark); }
+                        }
+                        else
+                        {
+                            var inner = Math.Max(1, radius - 1);
+                            for (var row = -inner; row <= inner; row++)
+                            {
+                                var half = (int)Math.Floor(Math.Sqrt(Math.Max(0, inner * inner - row * row)));
+                                Fill(new(check.X + center - half, check.Y + center + row, half * 2 + 1, 1),
+                                    control.Disabled ? new(235, 235, 235) : white);
+                            }
+                        }
                     }
                     continue;
                 }

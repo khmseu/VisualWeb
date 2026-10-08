@@ -116,6 +116,19 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RadioInputsReportOneSelectedValueAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=radio name=mode value=a checked><input type=radio name=mode value=b checked><input type=radio name=mode value=c></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal(["radio", "radio", "radio"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal([false, true, false], page.FormControls.Select(control => control.Checked));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task CheckboxReportsCheckedStateAndValueAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -830,6 +843,56 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void UncheckedRadioIsOmittedAndMissingValueDefaultsToOn()
+    {
+        using var harness = new Harness("<form><input type=radio name=mode><button type=submit>go</button></form>");
+        var radio = harness.Controller.Page(harness.Tab.Id)!.FormControls[0].Rect!;
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, radio.X + 1, radio.Y + 1));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.EndsWith("?mode=on", harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RadioActivationSelectsOnlyOneGroupValueForSubmission()
+    {
+        using var harness = new Harness("<form><input type=radio name=mode value=a checked><input type=radio name=mode value=b><input type=radio name=other value=c><button type=submit>go</button></form>");
+        Assert.True(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
+        var second = harness.Controller.Page(harness.Tab.Id)!.FormControls[1].Rect!;
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, second.X + 1, second.Y + 1));
+        Assert.False(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.FormControlChecked(harness.Tab.Id, 1));
+        Assert.False(harness.Controller.FormControlChecked(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 3));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?mode=b", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void CheckedMemberSatisfiesRequiredRadioGroup()
+    {
+        using var harness = new Harness("<form><input type=radio name=mode value=a required><input type=radio name=mode value=b checked><button type=submit>go</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.EndsWith("?mode=b", harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RequiredRadioGroupNeedsASelectedMember()
+    {
+        using var harness = new Harness("<form><input type=radio name=mode value=a required><input type=radio name=mode value=b><button type=submit>go</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        var radio = harness.Controller.Page(harness.Tab.Id)!.FormControls[1].Rect!;
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, radio.X + 1, radio.Y + 1));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.EndsWith("?mode=b", harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CheckboxPointerActivationTogglesSuccessfulFormEntries()
     {
         using var harness = new Harness("<form><input type=checkbox name=choice value=yes checked><input type=checkbox name=choice value=no><button type=submit>go</button></form>");
@@ -875,9 +938,9 @@ public sealed class FormTests
     {
         using var harness = new Harness("<form><input type=checkbox name=agree></form>");
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
-        Assert.True(harness.Controller.ToggleFocusedCheckbox(harness.Tab.Id));
+        Assert.True(harness.Controller.ToggleFocusedCheckable(harness.Tab.Id));
         Assert.True(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
-        Assert.True(harness.Controller.ToggleFocusedCheckbox(harness.Tab.Id));
+        Assert.True(harness.Controller.ToggleFocusedCheckable(harness.Tab.Id));
         Assert.False(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
     }
 

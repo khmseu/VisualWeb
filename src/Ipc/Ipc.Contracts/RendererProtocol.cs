@@ -57,7 +57,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, checkbox, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, checkbox, radio, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -133,7 +133,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 16;
+    public const int Version = 17;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -279,12 +279,12 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "checkbox" or "textarea" or "hidden" or "submit" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "checkbox" or "radio" or "textarea" or "hidden" or "submit" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "button") && control.Label.Length != 0
-                || control.Kind != "checkbox" && control.Checked
+                || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Pattern is { Length: > MaxFormPatternCharacters }
                 || control.Pattern is not null && control.Kind is not ("text" or "search" or "email" or "tel" or "url")
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)

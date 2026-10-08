@@ -43,7 +43,7 @@ public sealed class BrowserController : IDisposable
         internal Dictionary<int, int> TextareaFirstLines { get; } = [];
         internal Dictionary<int, IReadOnlyList<TextareaVisualLine>> TextareaLines { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
-        internal Dictionary<int, bool> CheckboxStates { get; } = [];
+        internal Dictionary<int, bool> CheckedStates { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
         internal bool SelectingText { get; set; }
@@ -283,21 +283,17 @@ public sealed class BrowserController : IDisposable
         Check();
         var owner = content[id];
         if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
-            || page.FormControls[index].Kind != "checkbox")
+            || page.FormControls[index].Kind is not ("checkbox" or "radio"))
         { throw new ArgumentOutOfRangeException(nameof(index)); }
-        return owner.CheckboxStates.GetValueOrDefault(index, page.FormControls[index].Checked);
+        return owner.CheckedStates.GetValueOrDefault(index, page.FormControls[index].Checked);
     }
     /// <summary>Toggles the focused enabled checkbox, returning false for other focus targets.</summary>
-    public bool ToggleFocusedCheckbox(TabId id)
+    public bool ToggleFocusedCheckable(TabId id)
     {
         Check();
         var owner = content[id];
-        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
-            || page.FormControls[owner.FocusedControl] is not { Kind: "checkbox", Disabled: false }) { return false; }
-        owner.CheckboxStates[owner.FocusedControl] = !owner.CheckboxStates.GetValueOrDefault(owner.FocusedControl,
-            page.FormControls[owner.FocusedControl].Checked);
-        Changed?.Invoke(id);
-        return true;
+        return owner.PageFocused && owner.FocusedControl >= 0 && owner.Page is { } page
+            && ToggleCheckable(id, owner, owner.FocusedControl, page.FormControls[owner.FocusedControl]);
     }
     public string FormControlValue(TabId id, int index)
     {
@@ -529,23 +525,67 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         return NavigateLink(id, owner.Page.LinkTargets[owner.FocusedLink].Url);
     }
-    /// <summary>Enter/click activation: submit buttons submit; text fields perform implicit submission.</summary>
+    /// <summary>Enter activation: submit buttons submit; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
     /// submission</see>. The default button is the first submit button of the form in tree order.</remarks>
-    private bool ToggleCheckbox(TabId id, Content owner, int index)
+    private bool ToggleCheckable(TabId id, Content owner, int index, PageFormControl control)
     {
-        var control = owner.Page!.FormControls[index];
-        if (control.Kind != "checkbox" || control.Disabled) { return false; }
-        owner.CheckboxStates[index] = !owner.CheckboxStates.GetValueOrDefault(index, control.Checked);
+        if (control.Kind is not ("checkbox" or "radio") || control.Disabled) { return false; }
+        if (control.Kind == "checkbox")
+        { owner.CheckedStates[index] = !owner.CheckedStates.GetValueOrDefault(index, control.Checked); }
+        else { SelectRadio(owner, index); }
         Changed?.Invoke(id);
         return true;
+    }
+    private static void SelectRadio(Content owner, int selected)
+    {
+        var controls = owner.Page!.FormControls;
+        var control = controls[selected];
+        for (var index = 0; index < controls.Count; index++)
+        {
+            if (index != selected && RadioGroupMember(controls[index], control)) { owner.CheckedStates[index] = false; }
+        }
+        owner.CheckedStates[selected] = true;
+    }
+    private static bool RadioGroupMember(PageFormControl candidate, PageFormControl selected) =>
+        candidate.Kind == "radio" && candidate.Form == selected.Form && selected.Name.Length > 0
+        && candidate.Name == selected.Name;
+    public bool MoveFocusedRadio(TabId id, int direction)
+    {
+        Check();
+        var owner = content[id];
+        if (direction is not (-1 or 1) || !owner.PageFocused || owner.Page is not { } page
+            || owner.FocusedControl < 0 || page.FormControls[owner.FocusedControl].Kind != "radio") { return false; }
+        var current = owner.FocusedControl;
+        var selected = page.FormControls[current];
+        if (selected.Name.Length == 0) { return false; }
+        var group = Enumerable.Range(0, page.FormControls.Count)
+            .Where(index => RadioGroupMember(page.FormControls[index], selected)
+                && !page.FormControls[index].Disabled).ToArray();
+        if (group.Length < 2) { return false; }
+        var position = Array.IndexOf(group, current);
+        var next = group[(position + direction + group.Length) % group.Length];
+        SelectRadio(owner, next);
+        owner.FocusedControl = next;
+        Changed?.Invoke(id);
+        return true;
+    }
+    private static bool RadioGroupChecked(Content owner, int selectedIndex)
+    {
+        var controls = owner.Page!.FormControls;
+        var selected = controls[selectedIndex];
+        for (var index = 0; index < controls.Count; index++)
+        {
+            if ((index == selectedIndex || RadioGroupMember(controls[index], selected))
+                && owner.CheckedStates.GetValueOrDefault(index, controls[index].Checked)) { return true; }
+        }
+        return false;
     }
     private bool ActivateControl(TabId id, Content owner, int index)
     {
         var controls = owner.Page!.FormControls;
         var control = controls[index];
         if (control.Disabled) { return false; }
-        if (control.Kind == "checkbox") { return ToggleCheckbox(id, owner, index); }
         if (control.Form < 0) { return false; }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
         if (control.Kind is not ("text" or "search" or "email" or "tel" or "url")) { return false; }
@@ -572,10 +612,11 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "textarea" or "checkbox") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "textarea" or "checkbox" or "radio") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
-            if (control.Required && (control.Kind == "checkbox"
-                ? !owner.CheckboxStates.GetValueOrDefault(index, control.Checked) : value.Length == 0))
+            var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
+            if (control.Required && (control.Kind == "checkbox" ? !isChecked
+                : control.Kind == "radio" ? !RadioGroupChecked(owner, index) : value.Length == 0))
             { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
             if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
@@ -602,7 +643,7 @@ public sealed class BrowserController : IDisposable
         }
         var limit = Session.Options.MaxAddressCharacters;
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i),
-            i => owner.CheckboxStates.GetValueOrDefault(i, page.FormControls[i].Checked)), limit);
+            i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked)), limit);
         var preventHttpsDowngrade = owner.Document?.Url.Protocol is "https:" or "data:";
         return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href,
             preventHttpsDowngrade);
@@ -640,8 +681,9 @@ public sealed class BrowserController : IDisposable
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
             if (control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
-            return control.Kind is "submit" or "button" or "checkbox" ? ActivateControl(id, owner, index)
-                : control.Kind is "text" or "search" or "email" or "tel" or "url" or "textarea";
+            if (control.Kind is "submit" or "button") { return ActivateControl(id, owner, index); }
+            if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
+            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "textarea";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {
@@ -778,7 +820,7 @@ public sealed class BrowserController : IDisposable
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
-            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckboxStates.Clear(); owner.FocusedControl = -1; }
+            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;
