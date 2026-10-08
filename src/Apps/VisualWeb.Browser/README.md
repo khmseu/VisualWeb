@@ -8,11 +8,12 @@ on primary left click or Tab/Shift+Tab/Enter, using renderer-owned clipped CSS
 rectangle groups. Keyboard traversal visits chrome before visible anchors;
 per-tab page focus is outlined by the shell without changing the renderer raster.
 Unsupported schemes fail visibly; no DOM input events or target/new-tab semantics
-are implied. A narrow forms subset adds shell-edited text/search/email/tel/url fields, checkboxes, radio groups,
+are implied. A narrow forms subset adds shell-edited text/search/email/tel/url/number fields, checkboxes, radio groups,
 and multiline textareas with Tab focus, committed-text entry and Enter/click submission
 of same-tab GET `application/x-www-form-urlencoded` queries through the ordinary
-navigation transaction. Textareas have bounded rows/columns and LF editing, without
-soft wrapping or internal scrolling; POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
+navigation transaction. Textareas have bounded rows/columns, soft wrapping and
+independent line-window scrolling; number fields validate finite values and optional
+min/max bounds. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and

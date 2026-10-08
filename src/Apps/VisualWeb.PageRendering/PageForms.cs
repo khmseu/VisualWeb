@@ -57,7 +57,7 @@ internal static class PageForms
                     : element.LocalName == "button" ? "button type=reset" : $"<{element.LocalName}>");
                 continue;
             }
-            if (kind is "text" or "search" or "email" or "tel" or "url")
+            if (kind is "text" or "search" or "email" or "tel" or "url" or "number")
             {
                 foreach (var name in TextOnlyAttributes)
                 {
@@ -66,6 +66,14 @@ internal static class PageForms
             }
             if (kind == "email" && element.GetAttribute("multiple") is not null)
             { Reject(index, "email multiple addresses"); }
+            if (kind == "number")
+            {
+                if (element.GetAttribute("multiple") is not null) { Reject(index, "number multiple"); }
+                if (element.GetAttribute("step") is { } step && !step.Equals("any", StringComparison.OrdinalIgnoreCase))
+                { Reject(index, "number step constraints"); }
+                foreach (var attribute in new[] { "pattern", "minlength", "maxlength" })
+                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"number {attribute}"); } }
+            }
             string? pattern = null;
             if ((kind is "text" or "search" or "email" or "tel" or "url") && element.GetAttribute("pattern") is { } sourcePattern)
             {
@@ -96,12 +104,15 @@ internal static class PageForms
             }
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
-            var text = kind is "text" or "search" or "email" or "tel" or "url" or "textarea";
-            var minLength = text ? MinLength(element.GetAttribute("minlength")) : -1;
+            var text = kind is "text" or "search" or "email" or "tel" or "url" or "number" or "textarea";
+            var minLength = text && kind != "number" ? MinLength(element.GetAttribute("minlength")) : -1;
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
+            var minimum = kind == "number" ? NumberBound(element.GetAttribute("min")) : null;
+            var maximum = kind == "number" ? NumberBound(element.GetAttribute("max")) : null;
+            if (minimum is { } min && maximum is { } max && min > max) { Reject(index, "number minimum exceeds maximum"); }
             value = kind switch
             {
                 "text" or "search" or "email" or "tel" or "url" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
@@ -127,8 +138,8 @@ internal static class PageForms
                 text && element.GetAttribute("readonly") is not null,
                 (text || kind is "checkbox" or "radio") && element.GetAttribute("required") is not null,
                 minLength,
-                text ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
-                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null));
+                text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
+                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum));
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)
@@ -183,7 +194,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "checkbox" or "radio" or "hidden" or "submit" ? type : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "number" or "checkbox" or "radio" or "hidden" or "submit" ? type : null,
         "button" => DomFormControls.ButtonType(element) == "submit" ? "button" : null,
         "textarea" => "textarea",
         _ => null,
@@ -202,7 +213,10 @@ internal static class PageForms
         }
     }
 
-    // Spec: html; https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers
+    private static double? NumberBound(string? value) =>
+        value is not null && FormNumber.TryParse(value, out var number) ? number : null;
+
+    // Spec: html; https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-floating-point-number
     private static int MinLength(string? value)
     {
         if (value is null) { return -1; }

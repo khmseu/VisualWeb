@@ -15,7 +15,7 @@ cross IPC and no external script is fetched. IPC v6 render requests carry the
 browser-fetched linked stylesheet texts; the worker never fetches and fails a
 page whose (possibly script-changed) link was not provided. IPC v8 introduced
 simple form/control metadata; IPC v10 adds the generic editable `tel` kind; IPC v11 adds bounded
-multiline textarea metadata, IPC v12 adds minlength, IPC v13 adds bounded pattern metadata, IPC v14 adds editable URL controls, v15 adds single-address email controls, v16 adds checkbox state, and v17 adds radio controls; the worker never edits or submits controls.
+multiline textarea metadata, IPC v12 adds minlength, IPC v13 adds bounded pattern metadata, IPC v14 adds editable URL controls, v15 adds single-address email controls, v16 adds checkbox state, v17 adds radio controls, and v18 adds number bounds; the worker never edits or submits controls.
 The worker never submits forms.
 Normal user permissions remain in development-unsandboxed mode. The trusted
 `--linux-sandbox-bootstrap` reexecutes into required Linux confinement before

@@ -57,7 +57,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, checkbox, radio, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, number, checkbox, radio, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -74,7 +74,26 @@ public sealed record PageFormControl(
     [property: JsonRequired] int MaxLength,
     [property: JsonRequired] int BeforeLink,
     [property: JsonRequired] PageLinkRect? Rect,
-    [property: JsonRequired] bool Checked);
+    [property: JsonRequired] bool Checked,
+    [property: JsonRequired] double? Minimum,
+    [property: JsonRequired] double? Maximum);
+
+/// <summary>HTML valid floating-point syntax with finite invariant-culture parsing.</summary>
+public static class FormNumber
+{
+    private static readonly Regex Syntax = new(
+        @"\A-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?\z",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+
+    public static bool TryParse(string value, out double number)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (Syntax.IsMatch(value) && double.TryParse(value, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out number) && double.IsFinite(number)) { return true; }
+        number = 0;
+        return false;
+    }
+}
 
 /// <summary>Bounded full-value pattern matching shared by renderer validation and the browser broker.</summary>
 public static class FormPattern
@@ -133,7 +152,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 17;
+    public const int Version = 18;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -279,12 +298,15 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "checkbox" or "radio" or "textarea" or "hidden" or "submit" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number" or "checkbox" or "radio" or "textarea" or "hidden" or "submit" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
+                || control.Minimum is { } minimum && !double.IsFinite(minimum)
+                || control.Maximum is { } maximum && !double.IsFinite(maximum)
+                || control.Kind != "number" && (control.Minimum is not null || control.Maximum is not null)
                 || control.Pattern is { Length: > MaxFormPatternCharacters }
                 || control.Pattern is not null && control.Kind is not ("text" or "search" or "email" or "tel" or "url")
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)

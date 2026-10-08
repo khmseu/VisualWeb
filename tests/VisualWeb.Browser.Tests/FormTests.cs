@@ -116,6 +116,22 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task NumberInputReportsEditableMetadataAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=number name=count value=5 min=-10 max=10 required></form>"),
+            new(200, 400, 1), Cancellation);
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("number", control.Kind);
+        Assert.Equal("5", control.Value);
+        Assert.Equal(-10, control.Minimum);
+        Assert.Equal(10, control.Maximum);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RadioInputsReportOneSelectedValueAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -984,6 +1000,59 @@ public sealed class FormTests
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Equal("https://example.com/final/index.html?site=", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("5", true)]
+    [InlineData("-2.5", true)]
+    [InlineData("1e1", true)]
+    [InlineData("", true)]
+    [InlineData("1.2.3", false)]
+    [InlineData("5.", false)]
+    [InlineData("+5", false)]
+    [InlineData("Infinity", false)]
+    [InlineData(" 5", false)]
+    [InlineData("5 ", false)]
+    public void NumberInputValidatesNumberAndRangeBeforeSubmission(string value, bool valid)
+    {
+        using var harness = new Harness($"<form><input type=number name=count value=\"{value}\" min=-10 max=10></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        if (valid)
+        {
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            var expected = value.Length == 0 ? "" : Uri.EscapeDataString(value);
+            Assert.EndsWith("?count=" + expected, harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.Contains("number", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
+    }
+
+    [Theory]
+    [InlineData("-11", "minimum")]
+    [InlineData("11", "maximum")]
+    public void NumberInputEnforcesRangeBounds(string value, string expected)
+    {
+        using var harness = new Harness($"<form><input type=number name=n value={value} min=-10 max=10></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains(expected, error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+    }
+
+    [Theory]
+    [InlineData("min=10 max=1", "minimum")]
+    [InlineData("step=0.1", "step")]
+    [InlineData("multiple", "multiple")]
+    public async Task UnsupportedNumberInputConstraintsAreVisible(string attributes, string expected)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document($"<form><input type=number name=n {attributes}></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Contains(expected, Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

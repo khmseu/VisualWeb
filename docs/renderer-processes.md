@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v17
+## Private stream protocol v18
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 17, explicitly present; v1 through v16 rejected |
+| Protocol version | 18, explicitly present; v1 through v17 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -128,7 +128,7 @@ and simple forms advance to v8 for required frame-only `Forms` and `FormControls
 then bounded text selection advances to v9 for frame-only `TextTargets`, because
 older receivers strictly reject unknown fields. Telephone inputs advance the
 protocol to v10 by adding the `tel` kind; bounded multiline textarea values and
-the `textarea` kind advance it to v11; minlength metadata advances it to v12; bounded `pattern` metadata advances it to v13; editable `url` inputs advance it to v14; `email` inputs advance it to v15; checked-state metadata for checkbox inputs advances it to v16; radio inputs advance it to v17.
+the `textarea` kind advance it to v11; minlength metadata advances it to v12; bounded `pattern` metadata advances it to v13; editable `url` inputs advance it to v14; `email` inputs advance it to v15; checked-state metadata for checkbox inputs advances it to v16; radio inputs advance it to v17; number bounds advance it to v18.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
 linked stylesheet collection (request URL plus decoded CSS text only) and CSS viewport/
@@ -160,14 +160,13 @@ the existing 32 MiB complete-header bound also remains enforced.
 Unsupported destination schemes are rejected visibly by browser activation,
 never executed by a worker.
 
-Every v17 frame also supplies required `Forms`, `FormControls` and `TextTargets`
+Every v18 frame also supplies required `Forms`, `FormControls` and `TextTargets`
 arrays (empty when absent); other messages cannot carry them. A form is `{Action, Error}`:
 either an absolute serialized `http`/`https`/`file`/`data` action with a null
 error, or an empty action plus a nonempty renderer diagnostic for an
 unsupported form (method/enctype/target/novalidate/accept-charset/base/control
 cases). A control is `{Form, Kind, Name, Value, Label, Pattern, Disabled, ReadOnly,
-Required, MinLength, MaxLength, BeforeLink, Rect, Checked}` with kind `text`/`search`/`email`/`hidden`/
-`email`/`tel`/`url`/`checkbox`/`radio`/`textarea`/`submit`/`button`, a form index or -1, a label for submit controls/button text, `Pattern` null when absent, `Checked` true only for a checked checkbox or radio, `MinLength` and `MaxLength` -1
+Required, MinLength, MaxLength, BeforeLink, Rect, Checked, Minimum, Maximum}` with kind `text`/`search`/`email`/`tel`/`url`/`number`/`checkbox`/`radio`/`textarea`/`hidden`/`submit`/`button`, a form index or -1, a label for submit controls/button text, `Pattern` null when absent, `Checked` true only for a checked checkbox or radio; finite number-only `Minimum` and `Maximum` (null otherwise); `MinLength` and `MaxLength` -1
 when absent, and `BeforeLink` in `[0, LinkTargets.Count]` giving merged
 tree-order traversal against link groups. Visible controls carry one
 viewport-contained CSS-pixel border box; hidden controls never have one.

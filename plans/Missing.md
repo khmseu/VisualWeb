@@ -46,19 +46,21 @@ broader page interaction is still missing:
   hit-testing, DOM focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
-  shell-edited `input` text/search/email/tel/url/checkbox/radio/hidden/submit, `textarea`, and `button`
+  shell-edited `input` text/search/email/tel/url/number/checkbox/radio/hidden/submit, `textarea`, and `button`
   submit controls
-  via IPC v17 data-only metadata and the ordinary
+  via IPC v18 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
+  Number inputs support finite floating-point syntax and optional finite min/max
+  bounds; step-mismatch validation is not implemented, and explicit `step` values other than `any` plus reversed ranges are surfaced as form errors.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
   independent line-window scrolling, plus newline-normalized GET entries.
-  Visible text/search/email/tel/url/checkbox/radio/textarea fields support pointer focus without starting page text
+  Visible text/search/email/tel/url/number/checkbox/radio/textarea fields support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
-  text/search/email/tel/url/checkbox/radio/textarea fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/checkbox/radio, select,
+  text/search/email/tel/url/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/number/checkbox/radio, select,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   full constraint-validation UI and semantics, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -155,7 +157,7 @@ Remaining areas include:
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
-  focused text/search/email/tel/url/checkbox/radio/textarea fields or the selected address bar; character-level page
+  focused text/search/email/tel/url/number/checkbox/radio/textarea fields or the selected address bar; character-level page
   selection and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
@@ -203,10 +205,10 @@ only when checked; radio state is mutually exclusive by form/name, selected by
 pointer, Space, and arrow-key navigation, and required validation applies to the group; bounded editable textareas submit newline-normalized
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
 movement; `minlength` is checked for edited nonempty values and bounded text
-field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state are enforced on submission; local file documents
+field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state plus numeric syntax/range are enforced on submission; local file documents
 cannot initiate HTTP(S)
 link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
-cleartext HTTP. The browser suite (563 tests), IPC suite (88 tests), layout suite
+cleartext HTTP. The browser suite (580 tests), IPC suite (88 tests), layout suite
 (55 tests), CSS suite (322 tests), solution build (0 warnings/errors), changed-file
 formatting and `git diff --check` pass. These checks are not full
 conformance, security, CI-matrix or real-desktop validation.
