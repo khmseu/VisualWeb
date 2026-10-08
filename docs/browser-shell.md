@@ -204,12 +204,17 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v18); the browser owns all values,
+reports data-only form/control snapshots (IPC v19); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/number,
 checkbox, radio, textarea, hidden and submit, plus `button` submit (and inert `type=button`).
 Text fields use generic editing; tel has no telephone-specific keyboard or validation;
 email requires one valid address and does not support `multiple`; url requires a valid
-absolute URL on submission; number accepts finite HTML floating-point values with optional min/max bounds; step-mismatch validation is not implemented, and explicit `step` values other than `any` reject the form. Checkboxes and radios are shell-drawn; checkboxes toggle
+absolute URL on submission; number accepts finite HTML floating-point values with
+optional min/max and step-grid validation. `step=any` disables step checks, while
+absent or invalid step values use the default step of 1. The step base is a valid
+`min`, otherwise the initial value when valid, otherwise zero. Step arithmetic uses
+bounded binary64 precision and fails closed when the value-to-step ratio exceeds its
+reliable range. Checkboxes and radios are shell-drawn; checkboxes toggle
 on click or Space, while radios select on click or Space. Unchecked checkboxes and radios are omitted from submission, checked controls submit
 their value (default `on`), and required checkboxes must be checked while required
 radio groups need one selected member. Radios sharing a form and nonempty name are
@@ -264,7 +269,7 @@ resulting URL at the existing URL limit.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
-`form=` attribute, submitter overrides, unsupported input types/reset buttons, invalid email, URL or number values, unsupported email `multiple`, number `step` constraints and reversed number ranges,
+`form=` attribute, submitter overrides, unsupported input types/reset buttons, invalid email, URL or number values, unsupported email `multiple` and reversed number ranges,
 textarea `dirname` or `wrap=hard`, select/output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,

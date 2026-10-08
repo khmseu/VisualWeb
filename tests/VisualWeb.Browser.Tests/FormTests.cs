@@ -126,6 +126,21 @@ public sealed class FormTests
         Assert.Equal("5", control.Value);
         Assert.Equal(-10, control.Minimum);
         Assert.Equal(10, control.Maximum);
+        Assert.Equal(1, control.Step);
+        Assert.False(control.StepAny);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NumberInputReportsStepMetadataAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=number step=0.25><input type=number step=any><input type=number step=invalid><input type=number step=-0.25></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal([0.25, null, 1, 1], page.FormControls.Select(control => control.Step));
+        Assert.Equal([false, true, false, false], page.FormControls.Select(control => control.StepAny));
         Assert.Null(Assert.Single(page.Forms).Error);
     }
 
@@ -1015,7 +1030,7 @@ public sealed class FormTests
     [InlineData("5 ", false)]
     public void NumberInputValidatesNumberAndRangeBeforeSubmission(string value, bool valid)
     {
-        using var harness = new Harness($"<form><input type=number name=count value=\"{value}\" min=-10 max=10></form>");
+        using var harness = new Harness($"<form><input type=number name=count value=\"{value}\" min=-10 max=10 step=0.5></form>");
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
         if (valid)
         {
@@ -1044,8 +1059,31 @@ public sealed class FormTests
     }
 
     [Theory]
+    [InlineData("0.3", "min=0 step=0.1", true)]
+    [InlineData("0.31", "min=0 step=0.1", false)]
+    [InlineData("3", "min=1 step=2", true)]
+    [InlineData("4", "min=1 step=2", false)]
+    [InlineData("0.3", "step=any", true)]
+    [InlineData("2.5", "min=0 step=0", false)]
+    public void NumberInputValidatesStepGrid(string value, string attributes, bool valid)
+    {
+        using var harness = new Harness($"<form><input type=number name=n value=\"{value}\" {attributes}></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        if (valid)
+        {
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.EndsWith("?n=" + Uri.EscapeDataString(value), harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.Contains("step", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
+    }
+
+    [Theory]
     [InlineData("min=10 max=1", "minimum")]
-    [InlineData("step=0.1", "step")]
     [InlineData("multiple", "multiple")]
     public async Task UnsupportedNumberInputConstraintsAreVisible(string attributes, string expected)
     {

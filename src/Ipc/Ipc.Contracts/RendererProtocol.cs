@@ -76,7 +76,9 @@ public sealed record PageFormControl(
     [property: JsonRequired] PageLinkRect? Rect,
     [property: JsonRequired] bool Checked,
     [property: JsonRequired] double? Minimum,
-    [property: JsonRequired] double? Maximum);
+    [property: JsonRequired] double? Maximum,
+    [property: JsonRequired] double? Step,
+    [property: JsonRequired] bool StepAny);
 
 /// <summary>HTML valid floating-point syntax with finite invariant-culture parsing.</summary>
 public static class FormNumber
@@ -92,6 +94,16 @@ public static class FormNumber
             System.Globalization.CultureInfo.InvariantCulture, out number) && double.IsFinite(number)) { return true; }
         number = 0;
         return false;
+    }
+
+    public static bool IsStepAligned(double value, double baseValue, double step)
+    {
+        var quotient = (value - baseValue) / step;
+        if (!double.IsFinite(quotient) || Math.Abs(quotient) > 1_000_000_000_000d) { return false; }
+        var nearest = Math.Round(quotient);
+        // Allow the rounding error from binary64 arithmetic on decimal values such as 0.3 / 0.1.
+        var tolerance = Math.Max(1, Math.Abs(quotient)) * 2.2204460492503131e-16 * 4;
+        return Math.Abs(quotient - nearest) <= tolerance;
     }
 }
 
@@ -152,7 +164,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 18;
+    public const int Version = 19;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -306,7 +318,10 @@ public static class RendererProtocol
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
-                || control.Kind != "number" && (control.Minimum is not null || control.Maximum is not null)
+                || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
+                || control.Kind != "number" && (control.Minimum is not null || control.Maximum is not null
+                    || control.Step is not null || control.StepAny)
+                || control.Kind == "number" && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Pattern is { Length: > MaxFormPatternCharacters }
                 || control.Pattern is not null && control.Kind is not ("text" or "search" or "email" or "tel" or "url")
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)

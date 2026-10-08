@@ -12,8 +12,8 @@ are implied. A narrow forms subset adds shell-edited text/search/email/tel/url/n
 and multiline textareas with Tab focus, committed-text entry and Enter/click submission
 of same-tab GET `application/x-www-form-urlencoded` queries through the ordinary
 navigation transaction. Textareas have bounded rows/columns, soft wrapping and
-independent line-window scrolling; number fields validate finite values and optional
-min/max bounds. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
+independent line-window scrolling; number fields validate finite values, optional min/max bounds and supported
+step grids. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and

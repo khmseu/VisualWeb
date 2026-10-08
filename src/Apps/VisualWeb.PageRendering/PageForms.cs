@@ -69,8 +69,6 @@ internal static class PageForms
             if (kind == "number")
             {
                 if (element.GetAttribute("multiple") is not null) { Reject(index, "number multiple"); }
-                if (element.GetAttribute("step") is { } step && !step.Equals("any", StringComparison.OrdinalIgnoreCase))
-                { Reject(index, "number step constraints"); }
                 foreach (var attribute in new[] { "pattern", "minlength", "maxlength" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"number {attribute}"); } }
             }
@@ -112,6 +110,9 @@ internal static class PageForms
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
             var minimum = kind == "number" ? NumberBound(element.GetAttribute("min")) : null;
             var maximum = kind == "number" ? NumberBound(element.GetAttribute("max")) : null;
+            var stepAny = kind == "number" && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
+            double? step = kind != "number" || stepAny ? null : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0
+                ? parsedStep : 1;
             if (minimum is { } min && maximum is { } max && min > max) { Reject(index, "number minimum exceeds maximum"); }
             value = kind switch
             {
@@ -139,7 +140,7 @@ internal static class PageForms
                 (text || kind is "checkbox" or "radio") && element.GetAttribute("required") is not null,
                 minLength,
                 text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
-                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum));
+                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny));
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)
