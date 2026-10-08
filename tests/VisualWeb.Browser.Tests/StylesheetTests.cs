@@ -276,7 +276,7 @@ public sealed class StylesheetTests
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
 
-        Assert.Contains("HTTPS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("same origin", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/"], requests);
     }
 
@@ -298,7 +298,7 @@ public sealed class StylesheetTests
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
 
-        Assert.Contains("HTTPS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("same origin", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/", "https://secure.example/s.css"], requests);
     }
 
@@ -437,8 +437,9 @@ public sealed class StylesheetTests
             return request.RequestUri!.AbsolutePath == "/s.css" ? Text("p{}", "text/css")
                 : Text("<!doctype html><link rel=stylesheet href='http://example.test/s.css'>", "text/html");
         }), store);
-        await other.LoadAsync(BrowserUrl.Parse("https://unrelated.test/"), Cancellation);
-        Assert.Equal("https://example.test/s.css", requests[^1].AbsoluteUri);
+        await other.LoadAsync(BrowserUrl.Parse("http://example.test/"), Cancellation);
+        Assert.Equal(["https://example.test/", "https://example.test/s.css", "https://example.test/",
+            "https://example.test/s.css"], requests.Select(uri => uri.AbsoluteUri));
     }
 
     [Fact]
