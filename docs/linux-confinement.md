@@ -1,8 +1,8 @@
 # Linux renderer confinement
 
-This guide documents the approved Linux x64 renderer confinement profile.
+This guide documents the native Linux x64/ARM64 renderer confinement profile.
 It is not a production-safe browser or completion of all cross-platform
-phase-10 isolation. Linux arm64 sandbox-required launches fail closed. Existing
+phase-10 isolation. Other architectures and missing prerequisites fail closed. Existing
 explicit local/unsandboxed development modes require the trusted-content
 `--allow-unsandboxed-development` acknowledgement. Windows has a
 separate [AppContainer/Job Object profile](windows-confinement.md).
@@ -11,7 +11,7 @@ swap, task and CPU limits; see [hard resource accounting](#hard-resource-account
 
 ## Run and prerequisites
 
-Requires Linux x64, a framework-dependent .NET 10 installation, **bubblewrap
+Requires native Linux x64 or ARM64, a framework-dependent .NET 10 installation, **bubblewrap
 0.9.0 or newer** at `/usr/bin/bwrap`, libseccomp.so.2 with the listed syscall
 names, and permission to create unprivileged user, mount, PID, network, IPC,
 UTS and cgroup namespaces. Older/missing tools or restricted kernel policies
@@ -117,8 +117,8 @@ confined runtime starts.
 
 ## Syscalls and resource limits
 
-The x64 libseccomp policy defaults to **EPERM** for unlisted syscalls and rejects
-other architectures. Allowed calls support file access within mount policy,
+Each libseccomp filter defaults to **EPERM** for unlisted syscalls and kills
+calls from any other syscall ABI. The x64 rules remain unchanged. Allowed calls support file access within mount policy,
 stdio, managed/native memory and JIT, synchronization, thread signals,
 time/identity queries, polling and private temporary-file operations.
 
@@ -128,6 +128,18 @@ clones are not allowed. `clone` requires `CLONE_THREAD`, zero exit signal and
 no namespace/ptrace/untraced flags. `clone3` returns ENOSYS for libc's fallback
 to the filtered `clone`. CPU-affinity changes are limited to the calling
 thread. CoreCLR synchronization uses membarrier and a bounded locked page.
+
+ARM64 uses the same rules except for the explicit x64-only entry points
+`open`, `creat`, `access`, `stat`, `lstat`, `getdents`, `readlink`, `arch_prctl`,
+`time`, `dup2`, `pipe`, `poll`, `select`, `epoll_create`, `epoll_wait`, `eventfd`,
+`mkdir`, `unlink`, `rename`, `chmod`, `utime` and `utimes`, which do not exist
+in the ARM64 syscall ABI. Their already-allowed modern counterparts remain
+required. No syscall is skipped because libseccomp failed to resolve it:
+target-ABI resolution, native-number translation, rule insertion and export
+must all succeed. Production always selects the process's native ABI; policy
+tests can cross-generate filters without executing foreign code.
+ARM64 also lacks `fork`/`vfork`; process creation remains denied through
+the same filtered `clone` and `clone3` rules.
 
 `execve` remains allowed for initial runtime startup; replacing the worker
 does not remove its inherited seccomp, namespaces or resource limits.
@@ -263,8 +275,9 @@ Supervisor references are detached before disposal so a failed cleanup cannot
 leave a disposed connection available to later polling or renderer diagnostics.
 Cleanup errors still surface; this is not a retry or weaker launch fallback.
 
-The Linux workflow includes native arm64 rendering checks, but Linux arm64
-confinement remains unsupported. Origin/CORS/CSP and site isolation, full web
+The Linux workflow includes native ARM64 rendering, confinement and resource
+checks; successful native ARM64 confinement evidence remains unobserved here.
+Origin/CORS/CSP and site isolation, full web
 standards and production-safe hostile browsing remain unfinished. Windows
 confinement is documented separately in [windows-confinement.md](windows-confinement.md).
 
@@ -329,3 +342,32 @@ The editor additionally reports pre-existing code-quality suggestions in
 ProcessPageRenderer outside this stage's changes; the build has no compiler
 errors. These tests cover supervision under bounded Linux resource pressure,
 not Windows/arm64, V8 or production web security.
+
+### ARM64 implementation and evidence boundary
+
+The architecture gate, native seccomp rules, worker verification and existing
+cgroup resource wrapper now admit Linux ARM64 as well as x64. Namespace,
+read-only mount, cleared-environment, capability, thread-only clone, affinity,
+rlimit, cgroup verification and owned-scope cleanup guarantees are identical.
+The profile identifier and IPC contract are unchanged.
+
+Offline policy tests cross-generate both BPF filters and evaluate every allowed
+syscall, network/process/namespace denials, clone flags, clone3 fallback,
+affinity and rejection of foreign ABIs. Smoke syscalls are resolved natively;
+absent required probe names fail rather than skip. These are not substitutes
+for native runtime/kernel execution.
+
+The existing `ubuntu-24.04-arm` hosted VM job is now configured to install the
+same bubblewrap/libseccomp prerequisites, require native `aarch64` and systemd
+PID 1/cgroup v2 controllers, start the CI user's manager, and run both confinement
+and kernel resource-exhaustion smokes plus the full confined browser tests.
+User-manager provisioning is confined to the disposable CI VM, not application
+startup. Prerequisite or enforcement failures fail the job; no fallback,
+emulation, namespace-policy relaxation or successful-skip path is introduced.
+See the [hosted ARM Ubuntu image](https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-24-image.md).
+
+This change was validated locally on native Linux x64 only. No successful
+native ARM64 smoke/test run has been observed here. ARM64 .NET/JIT, V8, native
+font/paint startup, syscall enforcement and kernel memory/task/CPU exhaustion
+remain a target-evidence gap until that native CI job or equivalent hardware
+passes. Do not describe ARM64 support as fully validated.

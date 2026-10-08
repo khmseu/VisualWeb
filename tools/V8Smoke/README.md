@@ -9,7 +9,7 @@ dotnet run --project tools/V8Smoke -- \
   --require-sandbox --font tests/Engine.Text.Tests/Data/NotoSans.ttf
 ```
 
-Required confinement uses the existing Linux x64 or Windows AppContainer/Job
+Required confinement uses the existing Linux x64/ARM64 or Windows AppContainer/Job
 Object launcher, with no weaker fallback. The worker verifies that profile
 before creating V8. Unsupported targets/refused policy/native initialization
 fail visibly. The outer 30-second deadline cleans up only the owned scope/tree
@@ -58,6 +58,7 @@ detached roots and original-tree identity under the same profiles.
 Optional live DOM probes verify native title/text/attribute mutations, branded
 element/text/fragment creation/insertion/removal and private callback
 invisibility; no production browser page-script execution is enabled.
-Linux arm64 confinement remains unsupported; native Windows/arm64 evidence
-requires those hosts. See the
+Linux ARM64 confinement is implemented but successful native confined V8
+evidence has not been observed here; native Windows/ARM64 evidence requires
+those hosts. See the
 [scripting guide](../../docs/scripting.md) for guarantees and limitations.

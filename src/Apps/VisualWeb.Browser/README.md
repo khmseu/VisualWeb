@@ -21,7 +21,7 @@ either local rendering or one worker process per tab and committed origin.
 Multiprocess mode always rotates the worker transactionally for cross-origin or
 new opaque top-level documents (no site/frame isolation). Worker
 crashes are contained in multiprocess mode. The CLI requires
-[Linux x64 confinement](../../../docs/linux-confinement.md) or
+[Linux x64/ARM64 confinement](../../../docs/linux-confinement.md) or
 [Windows confinement](../../../docs/windows-confinement.md) by default;
 unsupported targets/configurations fail closed before display/content startup.
 Neither mode is production-safe browsing.

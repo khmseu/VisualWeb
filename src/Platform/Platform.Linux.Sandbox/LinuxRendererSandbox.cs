@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace VisualWeb.Platform.Linux.Sandbox;
 
-/// <summary>Fail-closed Linux x64 renderer bootstrap with required cgroup, namespace and seccomp limits.</summary>
+/// <summary>Fail-closed Linux x64/ARM64 renderer bootstrap with required cgroup, namespace and seccomp limits.</summary>
 /// <remarks>References: bubblewrap, linux-seccomp, libseccomp, linux-resource-limits.
 /// <see href="https://github.com/containers/bubblewrap">bubblewrap</see> supplies required namespaces.
 /// The syscall filter is installed before the confined .NET runtime starts.</remarks>
@@ -14,10 +14,7 @@ public static class LinuxRendererSandbox
 
     public static void RequireSupport()
     {
-        if (!OperatingSystem.IsLinux() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
-        {
-            throw new PlatformNotSupportedException("Renderer confinement currently requires Linux x64; other platforms fail closed.");
-        }
+        RequireSupportPlatform(OperatingSystem.IsLinux(), RuntimeInformation.ProcessArchitecture);
         if (!File.Exists(Bubblewrap)) { throw new FileNotFoundException("Renderer confinement requires /usr/bin/bwrap.", Bubblewrap); }
     }
 
@@ -83,7 +80,7 @@ public static class LinuxRendererSandbox
         if (descriptor < 0) { throw Native.Failure("create seccomp descriptor"); }
         try
         {
-            ExportFilter(descriptor);
+            ExportFilter(descriptor, RuntimeInformation.ProcessArchitecture);
             if (Native.lseek(descriptor, 0, 0) < 0) { throw Native.Failure("rewind seccomp descriptor"); }
             Limit(4, 0); // RLIMIT_CORE: never write dumps containing decoded page data.
             Limit(7, 256); // RLIMIT_NOFILE.
@@ -110,7 +107,7 @@ public static class LinuxRendererSandbox
 
     public static void VerifyWorker()
     {
-        RequireSupportPlatform();
+        RequireSupportPlatform(OperatingSystem.IsLinux(), RuntimeInformation.ProcessArchitecture);
         LinuxRendererResources.VerifyLimits("/resource-limits");
         var status = File.ReadAllLines("/proc/self/status");
         foreach (var expected in new[] { "NoNewPrivs:\t1", "Seccomp:\t2", "CapEff:\t0000000000000000" })
@@ -125,11 +122,11 @@ public static class LinuxRendererSandbox
         }
     }
 
-    private static void RequireSupportPlatform()
+    internal static void RequireSupportPlatform(bool linux, Architecture architecture)
     {
-        if (!OperatingSystem.IsLinux() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+        if (!linux || architecture is not (Architecture.X64 or Architecture.Arm64))
         {
-            throw new PlatformNotSupportedException("Linux x64 confinement profile is required.");
+            throw new PlatformNotSupportedException("Renderer confinement requires native Linux x64 or ARM64; other platforms fail closed.");
         }
     }
 
@@ -148,42 +145,69 @@ public static class LinuxRendererSandbox
         var limit = new Native.ResourceLimit { Current = value, Maximum = value };
         if (Native.setrlimit(resource, ref limit) != 0) { throw Native.Failure("set renderer resource limit"); }
     }
-    private static void ExportFilter(int descriptor)
+    // These legacy entry points do not exist in the Linux ARM64 syscall ABI.
+    private static readonly string[] X64OnlySyscalls =
+    [
+        "open", "creat", "access", "stat", "lstat", "getdents", "readlink", "arch_prctl",
+        "time", "dup2", "pipe", "poll", "select", "epoll_create", "epoll_wait", "eventfd",
+        "mkdir", "unlink", "rename", "chmod", "utime", "utimes"
+    ];
+
+    internal static IReadOnlyList<string> AllowedSyscalls(Architecture architecture)
     {
+        RequireSupportPlatform(true, architecture);
+        string[] names =
+        [
+            "read", "write", "readv", "writev", "pread64", "pwrite64", "close", "close_range",
+            "open", "openat", "creat", "access", "faccessat", "faccessat2", "stat", "fstat", "lstat", "newfstatat", "statx",
+            "lseek", "getdents", "getdents64", "readlink", "readlinkat", "statfs", "fstatfs",
+            "mmap", "mprotect", "munmap", "mremap", "madvise", "brk", "mincore", "msync", "membarrier", "mlock", "munlock",
+            "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "rt_sigsuspend", "sigaltstack", "rt_sigtimedwait",
+            "getpid", "getppid", "gettid", "getsid", "tgkill", "getuid", "geteuid", "getgid", "getegid", "getresuid", "getresgid",
+            "futex", "futex_waitv", "set_tid_address", "set_robust_list", "rseq", "arch_prctl", "prctl",
+            "sched_yield", "sched_getaffinity", "sched_getparam", "sched_getscheduler", "sched_get_priority_max", "sched_get_priority_min",
+            "clock_gettime", "clock_getres", "clock_nanosleep", "gettimeofday", "time", "nanosleep",
+            "getrandom", "uname", "sysinfo", "getrusage", "getrlimit", "prlimit64", "times",
+            "fcntl", "ioctl", "dup", "dup2", "dup3", "pipe", "pipe2", "poll", "ppoll", "select", "pselect6",
+            "epoll_create", "epoll_create1", "epoll_ctl", "epoll_wait", "epoll_pwait", "epoll_pwait2", "eventfd", "eventfd2",
+            "ftruncate", "truncate", "fsync", "fdatasync", "flock", "umask", "getcwd", "chdir", "fchdir",
+            "mkdir", "mkdirat", "unlink", "unlinkat", "rename", "renameat", "renameat2",
+            "chmod", "fchmod", "fchmodat", "utime", "utimes", "utimensat",
+            "execve", "exit", "exit_group", "wait4", "waitid", "restart_syscall"
+        ];
+        return Array.AsReadOnly(architecture == Architecture.X64
+            ? names : names.Where(name => !X64OnlySyscalls.Contains(name, StringComparer.Ordinal)).ToArray());
+    }
+
+    internal static void ExportFilter(int descriptor, Architecture architecture)
+    {
+        RequireSupportPlatform(OperatingSystem.IsLinux(), architecture);
+        var audit = architecture == Architecture.X64 ? 0xc000003eU : 0xc00000b7U;
         // Default EPERM, unknown architectures killed by libseccomp; clone3 ENOSYS permits libc's thread fallback.
         var filter = Native.seccomp_init(0x00050001);
         if (filter == IntPtr.Zero) { throw new InvalidOperationException("libseccomp could not create a filter."); }
         try
         {
-            foreach (var name in new[]
+            if (Native.seccomp_arch_native() != audit)
             {
-                "read", "write", "readv", "writev", "pread64", "pwrite64", "close", "close_range",
-                "open", "openat", "creat", "access", "faccessat", "faccessat2", "stat", "fstat", "lstat", "newfstatat", "statx",
-                "lseek", "getdents", "getdents64", "readlink", "readlinkat", "statfs", "fstatfs",
-                "mmap", "mprotect", "munmap", "mremap", "madvise", "brk", "mincore", "msync", "membarrier", "mlock", "munlock",
-                "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "rt_sigsuspend", "sigaltstack", "rt_sigtimedwait",
-                "getpid", "getppid", "gettid", "getsid", "tgkill", "getuid", "geteuid", "getgid", "getegid", "getresuid", "getresgid",
-                "futex", "futex_waitv", "set_tid_address", "set_robust_list", "rseq", "arch_prctl", "prctl",
-                "sched_yield", "sched_getaffinity", "sched_getparam", "sched_getscheduler", "sched_get_priority_max", "sched_get_priority_min",
-                "clock_gettime", "clock_getres", "clock_nanosleep", "gettimeofday", "time", "nanosleep",
-                "getrandom", "uname", "sysinfo", "getrusage", "getrlimit", "prlimit64", "times",
-                "fcntl", "ioctl", "dup", "dup2", "dup3", "pipe", "pipe2", "poll", "ppoll", "select", "pselect6",
-                "epoll_create", "epoll_create1", "epoll_ctl", "epoll_wait", "epoll_pwait", "epoll_pwait2", "eventfd", "eventfd2",
-                "ftruncate", "truncate", "fsync", "fdatasync", "flock", "umask", "getcwd", "chdir", "fchdir",
-                "mkdir", "mkdirat", "unlink", "unlinkat", "rename", "renameat", "renameat2",
-                "chmod", "fchmod", "fchmodat", "utime", "utimes", "utimensat",
-                "execve", "exit", "exit_group", "wait4", "waitid", "restart_syscall"
-            })
-            {
-                Rule(filter, 0x7fff0000, name, []);
+                var add = Native.seccomp_arch_add(filter, audit);
+                var remove = Native.seccomp_arch_remove(filter, Native.seccomp_arch_native());
+                if (add != 0 || remove != 0)
+                {
+                    throw new InvalidOperationException($"libseccomp architecture selection failed ({add}, {remove}).");
+                }
             }
-            Rule(filter, 0x00050026, "clone3", []); // ENOSYS.
-            Rule(filter, 0x7fff0000, "sched_setaffinity", [new Native.Comparison
+            foreach (var name in AllowedSyscalls(architecture))
+            {
+                Rule(filter, audit, 0x7fff0000, name, []);
+            }
+            Rule(filter, audit, 0x00050026, "clone3", []); // ENOSYS.
+            Rule(filter, audit, 0x7fff0000, "sched_setaffinity", [new Native.Comparison
             {
                 Argument = 0, Operation = 4, DatumA = 0
             }]);
             // Require CLONE_THREAD and exclude namespace/ptrace flags. No fork/vfork or process clone.
-            Rule(filter, 0x7fff0000, "clone", [new Native.Comparison
+            Rule(filter, audit, 0x7fff0000, "clone", [new Native.Comparison
             {
                 Argument = 0, Operation = 7, DatumA = 0x7e8320ff, DatumB = 0x10000
             }]);
@@ -192,10 +216,18 @@ public static class LinuxRendererSandbox
         }
         finally { Native.seccomp_release(filter); }
     }
-    private static void Rule(IntPtr filter, uint action, string name, Native.Comparison[] comparisons)
+    private static void Rule(IntPtr filter, uint audit, uint action, string name, Native.Comparison[] comparisons)
     {
+        if (Native.seccomp_syscall_resolve_name_arch(audit, name) < 0)
+        {
+            throw new InvalidOperationException("libseccomp does not know required target-architecture syscall: " + name);
+        }
+        // Rule insertion takes native syscall numbers; libseccomp translates them to the selected ABI.
         var syscall = Native.seccomp_syscall_resolve_name(name);
-        if (syscall < 0) { throw new InvalidOperationException("libseccomp does not know required syscall: " + name); }
+        if (syscall == -1 || (syscall < 0 && Native.seccomp_arch_native() == audit))
+        {
+            throw new InvalidOperationException("libseccomp does not know required syscall: " + name);
+        }
         var result = Native.seccomp_rule_add_array(filter, action, syscall, (uint)comparisons.Length, comparisons);
         if (result != 0) { throw new InvalidOperationException($"libseccomp rule {name} failed ({result})."); }
     }
@@ -213,6 +245,10 @@ public static class LinuxRendererSandbox
         [DllImport("libc", SetLastError = true)] internal static extern int execv([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr arguments);
         [DllImport("libseccomp.so.2")] internal static extern IntPtr seccomp_init(uint action);
         [DllImport("libseccomp.so.2")] internal static extern void seccomp_release(IntPtr filter);
+        [DllImport("libseccomp.so.2")] internal static extern uint seccomp_arch_native();
+        [DllImport("libseccomp.so.2")] internal static extern int seccomp_arch_add(IntPtr filter, uint architecture);
+        [DllImport("libseccomp.so.2")] internal static extern int seccomp_arch_remove(IntPtr filter, uint architecture);
+        [DllImport("libseccomp.so.2")] internal static extern int seccomp_syscall_resolve_name_arch(uint architecture, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
         [DllImport("libseccomp.so.2")] internal static extern int seccomp_syscall_resolve_name([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
         [DllImport("libseccomp.so.2")] internal static extern int seccomp_rule_add_array(IntPtr filter, uint action, int syscall, uint count, [In] Comparison[] comparisons);
         [DllImport("libseccomp.so.2")] internal static extern int seccomp_export_bpf(IntPtr filter, int descriptor);

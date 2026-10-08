@@ -1000,7 +1000,8 @@ public sealed class InlineScriptTests
     public async Task RequiredConfinementInlineScriptsMutatePixelsAndRecoverAfterDeadline()
     {
         if (!OperatingSystem.IsWindows() && (!OperatingSystem.IsLinux()
-            || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64))
+            || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+                (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64)))
         { return; }
         using var renderer = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true, executeInlineScripts: true);
         var page = Page();

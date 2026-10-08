@@ -144,14 +144,15 @@ and requires supported confinement in both multiprocess modes before SDL/content
 startup, without fallback. Unsandboxed development requires explicit
 `--allow-unsandboxed-development`; low-level renderer/test defaults are unchanged.
 Phase 10b adds required
-Linux x64 namespace/mount/seccomp confinement through the SDL-independent
+Linux x64/ARM64 namespace/mount/seccomp confinement through the SDL-independent
 Platform.Linux.Sandbox bootstrap; see the [confinement guide](../linux-confinement.md).
 Phase 10c additionally requires verified kernel memory/swap/task/CPU limits
 in a separate owned systemd user scope per renderer, without global configuration.
 Windows adds an AppContainer/Job Object renderer profile with
 per-process/total commit bounds, a CPU cap and denied temp/profile writes.
-Windows job objects provide no thread-count or per-job swap limit; Linux arm64,
-production isolation and broader Windows guarantees remain unfinished.
+Windows job objects provide no thread-count or per-job swap limit; successful
+native Linux ARM64 confinement evidence, production isolation and broader
+Windows guarantees remain unfinished.
 Unsupported required requests fail closed.
 The phase-1 project split is not itself process isolation or a sandbox.
 Linux namespaces/seccomp/cgroups and Windows AppContainer/Job Objects are

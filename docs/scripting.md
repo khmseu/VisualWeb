@@ -1037,7 +1037,10 @@ Linux x64 uses the **unchanged** bubblewrap/seccomp/cgroup profile, read-only
 deployment and existing cleared runtime environment. The supplied font is a
 launcher mount prerequisite, not a scripting dependency. There is no syscall
 allowlist relaxation, writable host mount, debugger socket or unconfined retry.
-Linux arm64 required confinement continues to fail closed.
+Linux ARM64 now uses the same required confinement guarantees with an
+architecture-specific syscall policy. Successful native ARM64 confined V8
+startup/execution has not been observed here; see the
+[Linux confinement evidence boundary](linux-confinement.md#arm64-implementation-and-evidence-boundary).
 
 Windows uses the existing AppContainer/Job Object staging and limits. Native
 Windows x64/arm64 CI now runs host tests and the required-confinement V8 probe;

@@ -23,10 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install bubblewrap
-        if: matrix.architecture == 'x64'
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends bubblewrap
+          sudo apt-get install --yes --no-install-recommends bubblewrap libseccomp2
           version=$(/usr/bin/bwrap --version | awk '{print $2}')
           if ! dpkg --compare-versions "$version" ge 0.9.0; then
             sudo apt-get install --yes --no-install-recommends \
@@ -39,22 +38,53 @@ jobs:
             sudo meson install -C "$RUNNER_TEMP/bubblewrap/build"
           fi
       - name: Verify bubblewrap prerequisite
-        if: matrix.architecture == 'x64'
         run: |
           test -x /usr/bin/bwrap
           version=$(/usr/bin/bwrap --version | awk '{print $2}')
           dpkg --compare-versions "$version" ge 0.9.0
           printf 'Using bubblewrap %s\n' "$version"
+      - name: Require native architecture and systemd cgroup prerequisites
+        run: |
+          case '${{ matrix.architecture }}' in
+            x64) test "$(uname -m)" = x86_64 ;;
+            arm64) test "$(uname -m)" = aarch64 ;;
+            *) exit 1 ;;
+          esac
+          test "$(ps -p 1 -o comm=)" = systemd
+          test -f /sys/fs/cgroup/cgroup.controllers
+          for controller in memory pids cpu; do
+            grep -qw "$controller" /sys/fs/cgroup/cgroup.controllers
+          done
+          # Disposable hosted VM only; the application never configures host services.
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user is-active default.target
+          printf 'XDG_RUNTIME_DIR=%s\n' "$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          printf 'DBUS_SESSION_BUS_ADDRESS=%s\n' "$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.401
           architecture: ${{ matrix.architecture }}
       - run: dotnet build VisualWeb.slnx --configuration Release
+      - name: Run native confinement denial smoke
+        run: >-
+          dotnet run --project tools/LinuxSandboxSmoke --configuration Release --no-build --
+          --font tests/Engine.Text.Tests/Data/NotoSans.ttf
+      - name: Run native cgroup resource-exhaustion smoke
+        run: >-
+          dotnet run --project tools/LinuxSandboxSmoke --configuration Release --no-build --
+          --resources --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - name: Run solution tests
         run: >-
           dotnet test VisualWeb.slnx --configuration Release --no-build
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- dummy
       - run: dotnet run --project tools/V8Smoke --configuration Release --no-build -- --local
+      - name: Run native confined V8 smoke
+        run: >-
+          dotnet run --project tools/V8Smoke --configuration Release --no-build --
+          --require-sandbox --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       # Explicit opt-outs are only for trusted offline development smoke fixtures.
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-single-process --allow-unsandboxed-development --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --allow-unsandboxed-development --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend dummy

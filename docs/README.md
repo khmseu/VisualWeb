@@ -12,7 +12,7 @@
 - [ClearScript/V8 host foundation, limits and native confinement probes](scripting.md)
 - [Development browser shell, navigation, tabs and multiple windows](browser-shell.md)
 - [Per-tab renderer processes, IPC, deadlines and unfinished confinement](renderer-processes.md)
-- [Linux x64 renderer confinement, exact guarantees and denial probes](linux-confinement.md)
+- [Linux x64/ARM64 renderer confinement, exact guarantees and denial probes](linux-confinement.md)
 - [Windows AppContainer and Job Object renderer confinement](windows-confinement.md)
 - [Standards sources, cache and citation convention](standards.md)
 - [Foundation decision record](adr/0001-browser-foundation.md)

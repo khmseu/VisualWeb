@@ -1,7 +1,7 @@
 # Per-tab renderer process separation
 
 Phase 10a added **process separation, not OS confinement**. Phase 10b added
-the [Linux x64 confinement](linux-confinement.md) profile; Windows provides a separate
+the [Linux x64/ARM64 confinement](linux-confinement.md) profile; Windows provides a separate
 [AppContainer/Job Object profile](windows-confinement.md). Both use
 required CLI policy or library `requireSandbox: true`; unsupported platforms/configurations
 fail closed. Low-level `ProcessPageRenderer` and `DevelopmentShell` API defaults
@@ -271,7 +271,8 @@ dotnet run --no-build --project src/Apps/VisualWeb.Browser -- \
 
 Repeat with `--backend x11` or a suitable target backend. Windows/arm64,
 Wayland shell keyboard/IME and real desktop high-DPI still require target
-validation. Linux x64 and Windows confinement have separate documented profiles.
+validation. Linux x64/ARM64 and Windows confinement have separate documented profiles;
+the ARM64 extension still requires observed native confinement evidence.
 Official .NET process/pipes and exact-stream
 references are in the independently refreshed [standards cache](standards.md);
 tests never fetch them.

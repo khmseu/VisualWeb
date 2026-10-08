@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace VisualWeb.Platform.Linux.Sandbox;
 
-/// <summary>Per-renderer cgroup v2 enforcement via an owned transient systemd user scope.</summary>
+/// <summary>Per-renderer Linux x64/ARM64 cgroup v2 enforcement via an owned transient systemd user scope.</summary>
 /// <remarks>References: linux-cgroup-v2, systemd-run, systemd-resource-control.
 /// <see href="https://docs.kernel.org/admin-guide/cgroup-v2.html">cgroup v2</see>.
 /// Limits apply to bootstrap, bubblewrap, native/JIT memory and all worker threads.</remarks>

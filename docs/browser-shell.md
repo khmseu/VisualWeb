@@ -8,7 +8,7 @@ not a secure or standards-complete production browser.**
 Phase 9 supplies local rendering; phase 10a adds explicitly selected per-tab
 worker processes. See the [process guide](renderer-processes.md) for launch,
 wire limits, deadlines, crash/restart behavior and unfinished confinement.
-Phase 10b adds [Linux x64 confinement](linux-confinement.md) and
+Phase 10b adds [Linux confinement, now extended to ARM64](linux-confinement.md) and
 [Windows confinement](windows-confinement.md). Recommended CLI `--multiprocess`
 and legacy `--development-multiprocess` require confinement by default, before
 display/content startup. `--require-sandbox` is a redundant explicit assertion.

@@ -95,7 +95,8 @@ public sealed class ProcessTests
     [Fact]
     public void SandboxRequiredAndInvalidModesFailBeforeLaunching()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64))
         {
             if (OperatingSystem.IsWindows()) { WindowsRendererSandbox.RequireSupport(); }
             else { Assert.Throws<PlatformNotSupportedException>(() => new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true)); }
@@ -116,7 +117,8 @@ public sealed class ProcessTests
     [Fact]
     public async Task RequiredConfinementReturnsExactPixelsAndRestartsAfterCrash()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64))
         {
             return;
         }
@@ -255,7 +257,8 @@ public sealed class ProcessTests
     [Fact]
     public async Task RequiredConfinementRejectsAnUnconfirmedHandshakeWithoutFallback()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64))
         {
             return;
         }
@@ -270,7 +273,8 @@ public sealed class ProcessTests
     [Fact]
     public async Task HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64)
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64))
         {
             Assert.Throws<PlatformNotSupportedException>(LinuxRendererResources.RequireSupport);
             return;
@@ -309,7 +313,8 @@ public sealed class ProcessTests
     [Fact]
     public async Task NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64)) { return; }
         using var first = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
         using var second = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
         await first.RenderAsync(Blue, new(20, 10, 1), Cancellation);
@@ -333,7 +338,8 @@ public sealed class ProcessTests
     [Fact]
     public async Task TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64)) { return; }
         using var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
         await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
         var pid = renderer.ProcessId; var unit = renderer.ResourceUnit;
@@ -348,7 +354,8 @@ public sealed class ProcessTests
     [InlineData(true)]
     public async Task CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(bool cancel)
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64)) { return; }
         using var renderer = new ProcessPageRenderer(PeerPath, FontPath, TimeSpan.FromSeconds(12), requireSandbox: true);
         using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
         await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
@@ -402,7 +409,8 @@ public sealed class ProcessTests
     [Fact]
     public void ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64)) { return; }
         var renderers = new List<ProcessPageRenderer>();
         using var controller = new BrowserController(() => new ResourceSource(), () =>
         {
@@ -464,7 +472,8 @@ public sealed class ProcessTests
     [Fact]
     public async Task ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure()
     {
-        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != System.Runtime.InteropServices.Architecture.X64) { return; }
+        if (!OperatingSystem.IsLinux() || System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture is not
+            (System.Runtime.InteropServices.Architecture.X64 or System.Runtime.InteropServices.Architecture.Arm64)) { return; }
         var renderers = new List<ProcessPageRenderer>();
         using var controller = new BrowserController(() => new ResourceSource(), () =>
         {

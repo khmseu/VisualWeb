@@ -73,7 +73,7 @@ killing the child. Termination is explicit; handle disposal alone leaves it
 running. This generic launcher still refuses requested confinement before launch:
 it does not implement the renderer-specific mounts/IPC/bootstrap contract.
 The [browser client](renderer-processes.md) separately owns workers and uses the
-[Linux x64](linux-confinement.md) or
+[Linux x64/ARM64](linux-confinement.md) or
 [Windows AppContainer/Job Object](windows-confinement.md) confinement backend.
 Multiprocess CLI launches require confinement by default; unsandboxed development
 requires an explicit trusted-content opt-out. Low-level library defaults remain
@@ -96,8 +96,10 @@ is an explicit tool, separate from ordinary tests.
 
 The Linux workflow is configured for native x64 and arm64 runners, including
 the full test suite and native font, shaping, painting, platform and browser
-smoke checks. Linux arm64 required confinement remains unsupported; see the
-[Linux confinement guide](linux-confinement.md).
+smoke checks. Both Linux architectures now require the same systemd/cgroup
+prerequisites and run confinement-denial/resource-exhaustion smokes and confined
+browser integration tests. ARM64 implementation is not yet backed by an observed
+native confinement run here; see the [Linux confinement guide](linux-confinement.md).
 The separately configured Windows x64/arm64 workflow exercises native platform,
 browser and Windows confinement paths. These workflows provide target-specific
 validation; their existence does not certify unobserved runs or high-DPI desktop

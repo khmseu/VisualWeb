@@ -35,10 +35,11 @@ navigation controls, explicit font setup and the finite supported page subset.
 The [renderer process guide](docs/renderer-processes.md) describes launching
 the CLI modes, IPC validation and crash recovery.
 Phase 10a provides process separation; phase 10b adds
-[Linux x64 renderer confinement](docs/linux-confinement.md), with a separate
+[Linux x64/ARM64 renderer confinement](docs/linux-confinement.md), with a separate
 [Windows profile](docs/windows-confinement.md). Linux ARM64 is
-included in the native build, test and smoke CI matrix, but Linux ARM64
-confinement, origin policy and production-safe browsing remain unfinished.
+included in the native build, test and confinement/resource smoke CI matrix,
+but successful native ARM64 confinement evidence has not yet been observed here.
+Origin policy and production-safe browsing remain unfinished.
 Multiprocess modes swap a tab's renderer process on cross-origin or new opaque
 top-level navigation (same-origin navigation reuses it); this is not site or
 frame isolation.

@@ -90,21 +90,34 @@ try
         var processes = Directory.EnumerateDirectories("/proc").Select(Path.GetFileName)
             .Where(name => int.TryParse(name, out _)).ToArray();
         Check(processes.Length <= 3 && Environment.ProcessId <= 3, "Host process namespace leaked.");
-        Denied("Internet socket", 41, 2, 1, 0);
-        Denied("Unix socket", 41, 1, 1, 0);
-        Denied("fork", 57);
-        Denied("process clone", 56, 17);
-        Denied("ptrace", 101);
-        Denied("mount", 165);
-        Denied("unshare", 272, 0x10000000);
-        Denied("setns", 308, -1);
-        Denied("BPF", 321);
-        Denied("io_uring", 425);
+        Denied("Internet socket", "socket", 2, 1, 0);
+        Denied("Unix socket", "socket", 1, 1, 0);
+        Denied("socket pair", "socketpair", 1, 1, 0);
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+        {
+            Denied("fork", "fork");
+            Denied("vfork", "vfork");
+        }
+        Denied("process clone", "clone", 17);
+        Denied("namespace thread clone", "clone", 0x3d0f00 | 0x10000000);
+        Denied("clone3 fallback", "clone3", expectedError: 38);
+        Denied("foreign CPU affinity", "sched_setaffinity", 1);
+        Denied("ptrace", "ptrace");
+        Denied("process memory read", "process_vm_readv");
+        Denied("process memory write", "process_vm_writev");
+        Denied("mount", "mount");
+        Denied("unmount", "umount2");
+        Denied("unshare", "unshare", 0x10000000);
+        Denied("setns", "setns", -1);
+        Denied("BPF", "bpf");
+        Denied("io_uring setup", "io_uring_setup");
+        Denied("io_uring enter", "io_uring_enter");
+        Denied("io_uring register", "io_uring_register");
         var temporary = "/tmp/probe-" + Guid.NewGuid().ToString("N");
         File.WriteAllText(temporary, "private temporary storage");
         Check(File.ReadAllText(temporary) == "private temporary storage", "Private tmpfs unavailable.");
         File.Delete(temporary);
-        Console.WriteLine("PASS: host file/environment/processes hidden; mounts read-only; Internet/Unix sockets, fork/clone, ptrace, mount, unshare/setns, BPF and io_uring denied; private tmpfs usable.");
+        Console.WriteLine($"PASS ({RuntimeInformation.ProcessArchitecture}): host file/environment/processes hidden; mounts read-only; Internet/Unix sockets, process/namespace clones, foreign affinity, process memory, ptrace, mount/unmount, unshare/setns, BPF and io_uring denied; clone3 ENOSYS fallback; private tmpfs usable.");
         return 0;
     }
     if (args is ["--bootstrap", "--font", var bootstrapFont, "--canary", var bootstrapCanary])
@@ -184,14 +197,18 @@ static void DenyWrite(string path)
     catch (UnauthorizedAccessException) { }
     catch (IOException exception) when ((exception.HResult & 0xffff) == 30) { } // EROFS.
 }
-static void Denied(string name, long number, long first = 0, long second = 0, long third = 0)
+static void Denied(string name, string syscall, long first = 0, long second = 0, long third = 0, int expectedError = 1)
 {
+    var number = ProbeNative.seccomp_syscall_resolve_name(syscall);
+    Check(number >= 0, "Required native smoke syscall is unavailable: " + syscall);
     var result = ProbeNative.syscall(number, first, second, third, 0, 0, 0);
     var error = Marshal.GetLastPInvokeError();
-    Check(result == -1 && error == 1, name + " did not fail with EPERM.");
+    Check(result == -1 && error == expectedError, $"{name} did not fail with errno {expectedError} (result {result}, errno {error}).");
 }
 internal static class ProbeNative
 {
+    [DllImport("libseccomp.so.2")]
+    internal static extern int seccomp_syscall_resolve_name([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
     [DllImport("libc", SetLastError = true)]
     internal static extern long syscall(long number, long first, long second, long third, long fourth, long fifth, long sixth);
 }

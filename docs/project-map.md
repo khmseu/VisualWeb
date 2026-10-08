@@ -15,7 +15,7 @@ Low-level renderer/library defaults remain unchanged.
 | [Platform.Abstractions](../src/Platform/Platform.Abstractions/) | OS-neutral windows, input, surfaces, fonts, process capabilities | Official platform APIs; not web interfaces |
 | [Platform.Sdl](../src/Platform/Platform.Sdl/) | Shared SDL windows/input/pixels and managed process/font services | Platform.Abstractions, SDL3-CS + Native |
 | [Platform.Linux](../src/Platform/Platform.Linux/) | X11/Wayland selection, XDG paths, fonts and generic processes | Platform.Sdl; renderer confinement is a separate module |
-| [Platform.Linux.Sandbox](../src/Platform/Platform.Linux.Sandbox/) | Linux x64 required namespaces/mounts/seccomp and per-worker hard cgroup resource scopes | BCL + bubblewrap/libseccomp/systemd user manager; no SDL; [scope](linux-confinement.md) |
+| [Platform.Linux.Sandbox](../src/Platform/Platform.Linux.Sandbox/) | Native Linux x64/ARM64 required namespaces/mounts/seccomp and per-worker hard cgroup resource scopes | BCL + bubblewrap/libseccomp/systemd user manager; no SDL; [scope and evidence limits](linux-confinement.md) |
 | [Platform.Windows](../src/Platform/Platform.Windows/) | Windows selection, app paths, fonts and generic processes | Platform.Sdl |
 | [Platform.Windows.Sandbox](../src/Platform/Platform.Windows.Sandbox/) | AppContainer renderer token, bounded Job Object, and read-only worker storage | Windows APIs; [scope](windows-confinement.md) |
 | [Core.Primitives](../src/Core/Core.Primitives/) | Small shared value types | No higher-level dependency |
