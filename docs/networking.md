@@ -148,11 +148,13 @@ document's fixed origin across every redirect; this deliberate compatibility
 restriction is not CORS, browser-wide SOP, general mixed-content policy or
 request authorization (see the [shell guide](browser-shell.md)).
 
-`LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken)`
-is a separate GET entry point for callers that choose a same-origin policy. It
-shares the same HTTP pipeline, so
-redirect limits, body bounds, deadlines, cancellation and the cookie opt-in are
-identical. It models only the origin check of Fetch
+`LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken,
+preventHttpsDowngrade)` is a separate GET entry point for callers that choose a
+same-origin policy. The optional downgrade guard applies HSTS first, then rejects
+an HTTP initial URL that remains HTTP and HTTPS-to-HTTP redirect hops before
+transport. It shares the same HTTP pipeline, so redirect limits, body bounds,
+deadlines, cancellation and the cookie opt-in are identical. It models only the
+origin check of Fetch
 [main fetch](https://fetch.spec.whatwg.org/#concept-main-fetch) for request mode
 `"same-origin"`, re-applied for every
 [HTTP-redirect fetch](https://fetch.spec.whatwg.org/#http-redirect-fetch) hop:
@@ -174,9 +176,13 @@ identical. It models only the origin check of Fetch
   this loader's session.
 
 The browser uses this primitive for HTTP(S) linked stylesheets, with the final
-document URL's origin held fixed across every stylesheet redirect. This is an
-intentionally stricter policy than ordinary HTML stylesheet loading, which can
-load cross-origin sheets; it is not a CORS implementation or browser-wide
+document URL's origin held fixed across every stylesheet redirect. It also uses
+it for HTTP(S) form submissions, holding the submitting document's origin fixed
+across every redirect so submitted query data cannot be forwarded to a
+cross-origin destination. HTTPS form submissions enable the downgrade guard;
+a same-host HTTP action is accepted only if HSTS upgrades it to that origin.
+These are intentionally stricter policies than ordinary HTML stylesheet and
+form navigation behavior. They are not a CORS implementation or browser-wide
 same-origin policy. No `Origin` header, referrer policy, CSP, response tainting
 or `no-cors` mode is implemented. It does not make the loader safe to expose to
 hostile content.

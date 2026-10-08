@@ -869,6 +869,112 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void SameOriginFormCannotRedirectSubmissionToAnotherOrigin()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            if (request.RequestUri!.AbsolutePath == "/secure")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(Style + "<form action='/submit'><input name=q value=private>"
+                        + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+                };
+            }
+            if (request.RequestUri.AbsolutePath == "/submit")
+            {
+                return new(HttpStatusCode.Found)
+                { Headers = { Location = new Uri("https://outside.example/leak?q=private") } };
+            }
+            return new(HttpStatusCode.OK)
+            { Content = new StringContent("<!doctype html>", System.Text.Encoding.UTF8, "text/html") };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Contains("same origin", tab.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/secure", "https://secure.example/submit?q=private"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void SameOriginFormMayFollowSameOriginRedirect()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            if (request.RequestUri!.AbsolutePath == "/secure")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(Style + "<form action='/submit'><input name=q value=private>"
+                        + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+                };
+            }
+            if (request.RequestUri.AbsolutePath == "/submit")
+            {
+                return new(HttpStatusCode.Found)
+                { Headers = { Location = new Uri("https://secure.example/final?q=private") } };
+            }
+            return new(HttpStatusCode.OK)
+            { Content = new StringContent("<!doctype html>", System.Text.Encoding.UTF8, "text/html") };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Null(tab.Error);
+        Assert.Equal("https://secure.example/final?q=private", tab.History.Current!.Href);
+        Assert.Equal(["https://secure.example/secure", "https://secure.example/submit?q=private",
+            "https://secure.example/final?q=private"], requests.Select(request => request.AbsoluteUri));
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
     public void SecureFormCannotFollowHttpDowngradeRedirect()
     {
         var requests = new List<Uri>();

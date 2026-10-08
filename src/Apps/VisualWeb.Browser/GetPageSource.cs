@@ -11,6 +11,9 @@ public interface IPageSource : IDisposable
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken);
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
         LoadAsync(url, cancellationToken);
+    Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
+        SecurityOrigin? sameOriginRedirectOrigin) =>
+        LoadAsync(url, cancellationToken, preventHttpsDowngrade);
 }
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>
@@ -36,10 +39,16 @@ public sealed class GetPageSource : IPageSource
         loader = new(new() { MaxResponseBytes = 4 * 1024 * 1024 }, handler, hstsPolicyStore);
     public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
         LoadAsync(url, cancellationToken, preventHttpsDowngrade: false);
-    public async Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade)
+    public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
+        LoadAsync(url, cancellationToken, preventHttpsDowngrade, sameOriginRedirectOrigin: null);
+    public async Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
+        SecurityOrigin? sameOriginRedirectOrigin)
     {
-        var response = await loader.LoadAsync(url, cancellationToken: cancellationToken,
-            preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
+        var response = sameOriginRedirectOrigin is null
+            ? await loader.LoadAsync(url, cancellationToken: cancellationToken,
+                preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false)
+            : await loader.LoadSameOriginAsync(url, sameOriginRedirectOrigin, cancellationToken: cancellationToken,
+                preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
         if (response.ContentType?.Essence != "text/html"
             && !(response.Url.Protocol == "file:" && response.ContentType is null))
         {

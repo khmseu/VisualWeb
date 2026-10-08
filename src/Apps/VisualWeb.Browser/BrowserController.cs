@@ -749,7 +749,9 @@ public sealed class BrowserController : IDisposable
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i),
             i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked)), limit);
         var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
-        return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade);
+        var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:" ? document.Origin : null;
+        return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
+            sameOriginRedirectOrigin);
     }
     private static bool CanUpgradeSameHostFormAction(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
         documentOrigin.Scheme == "https" && actionOrigin.Scheme == "http"
@@ -758,7 +760,8 @@ public sealed class BrowserController : IDisposable
     private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
-    private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false)
+    private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
+        SecurityOrigin? sameOriginRedirectOrigin = null)
     {
         preventHttpsDowngrade = preventHttpsDowngrade
             || (content[id].Document?.Url.Protocol is "https:" or "data:");
@@ -773,7 +776,7 @@ public sealed class BrowserController : IDisposable
         {
             throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");
         }
-        Start(Session.Tab(id), url, null, false, preventHttpsDowngrade);
+        Start(Session.Tab(id), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin);
         return true;
     }
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
@@ -844,7 +847,8 @@ public sealed class BrowserController : IDisposable
         var tab = Session.Tab(id);
         Start(tab, tab.History.Current ?? throw new InvalidOperationException("No committed page to reload."), null, true);
     }
-    private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false)
+    private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
+        SecurityOrigin? sameOriginRedirectOrigin = null)
     {
         Limit();
         Cancel(tab.Id);
@@ -852,7 +856,7 @@ public sealed class BrowserController : IDisposable
         owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
         var cancellation = new CancellationTokenSource();
         Task<LoadedPage> task;
-        try { task = content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade); }
+        try { task = content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade, sameOriginRedirectOrigin); }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace));
         tab.AddressText = url.Href; tab.Error = null; tab.IsLoading = true; tab.Status = "Loading " + url.Href;

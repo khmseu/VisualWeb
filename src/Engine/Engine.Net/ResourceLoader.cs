@@ -85,14 +85,16 @@ public sealed class ResourceLoader : IDisposable
     /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsers.html#same-origin">same origin</see>.
     /// Stricter subset: data, file, blob and other non-HTTP(S) URLs, opaque request origins and non-HTTP(S) tuple
     /// request origins are denied before any I/O. Each redirect target is compared with the original
-    /// <paramref name="requestOrigin"/> (never the preceding URL) before its request is sent. No CORS, Origin header,
-    /// referrer, CSP or response tainting is implemented; this is not script-visible Fetch or a complete
+    /// <paramref name="requestOrigin"/> (never the preceding URL) before its request is sent. When
+    /// <paramref name="preventHttpsDowngrade"/> is true, HSTS is applied first, then an HTTP initial URL or
+    /// HTTPS-to-HTTP redirect is rejected before transport. No CORS, Origin header, referrer, CSP or response
+    /// tainting is implemented; this is not script-visible Fetch or a complete
     /// browser-wide policy. Denials throw <see cref="ResourceLoadException"/> with
     /// <see cref="ResourceError.SameOriginDenied"/>. As in main fetch, the
     /// <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad-port check</see> precedes the origin check, so a
     /// bad-port URL or redirect target throws <see cref="ResourceError.BlockedPort"/>.</remarks>
     public async Task<ResourceResponse> LoadSameOriginAsync(BrowserUrl url, SecurityOrigin requestOrigin,
-        bool includeCookies = false, CancellationToken cancellationToken = default)
+        bool includeCookies = false, CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
@@ -103,10 +105,11 @@ public sealed class ResourceLoader : IDisposable
             throw new ResourceLoadException(ResourceError.SameOriginDenied,
                 "Same-origin loads require an HTTP(S) tuple request origin.");
         }
+        if (preventHttpsDowngrade && url.Protocol == "http:") { throw InsecureTransport(); }
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
-        return await LoadCoreAsync(url, requestOrigin, includeCookies, preventHttpsDowngrade: false, cancellationToken);
+        return await LoadCoreAsync(url, requestOrigin, includeCookies, preventHttpsDowngrade, cancellationToken);
     }
 
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin, bool includeCookies,
