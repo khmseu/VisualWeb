@@ -836,6 +836,42 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void TextareaSoftWrapCreatesVisualCaretRows()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><textarea cols=5 rows=2>abcdefghij\nz</textarea>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        shell.Tick();
+        Assert.True(shell.Controller.ScrollTextareaAt(tab.Id, rect.X + 2, rect.Y + 2, 300));
+        Assert.True(shell.Controller.TextareaFirstLine(tab.Id, 0) > 0);
+        Assert.True(shell.Controller.ScrollTextareaAt(tab.Id, rect.X + 2, rect.Y + 2, -300));
+        Assert.Equal(0, shell.Controller.TextareaFirstLine(tab.Id, 0));
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        Key(SDL.Scancode.Home);
+        Key(SDL.Scancode.Up);
+        Assert.InRange(shell.Controller.FormControlCaret(tab.Id), 1, 10);
+        Key(SDL.Scancode.End);
+        Assert.Equal(10, shell.Controller.FormControlCaret(tab.Id));
+        Key(SDL.Scancode.Down);
+        Assert.Equal(12, shell.Controller.FormControlCaret(tab.Id));
+
+        void Key(SDL.Scancode code) => shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void CloseActiveTabRepaintsRemainingTabRatherThanLeavingStalePixels()
     {
         using var system = new Windows();

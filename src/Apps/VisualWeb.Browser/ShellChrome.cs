@@ -51,6 +51,63 @@ public sealed class ShellChrome : IDisposable
         if (Math.Ceiling(css * density) != physical) { throw new ArgumentOutOfRangeException(nameof(density), "Pixel density cannot represent the surface viewport."); }
         return css;
     }
+    internal IReadOnlyList<TextareaVisualLine> WrapTextarea(string value, double availableWidth)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (!double.IsFinite(availableWidth) || availableWidth < 0) { throw new ArgumentOutOfRangeException(nameof(availableWidth)); }
+        var lines = new List<TextareaVisualLine>();
+        var logicalStart = 0;
+        while (true)
+        {
+            var newline = value.IndexOf('\n', logicalStart);
+            var logicalEnd = newline < 0 ? value.Length : newline;
+            AddWrappedLine(logicalStart, value[logicalStart..logicalEnd]);
+            if (newline < 0) { break; }
+            logicalStart = newline + 1;
+        }
+        return lines;
+
+        void AddWrappedLine(int sourceStart, string sourceLine)
+        {
+            if (sourceLine.Length == 0)
+            {
+                lines.Add(new(sourceStart, sourceStart));
+                return;
+            }
+            var safe = new string(sourceLine.Select(character => character is >= ' ' and <= '~' ? character : '?').ToArray());
+            var run = font.Shape(safe, 13);
+            var clusters = run.Glyphs.GroupBy(glyph => glyph.Cluster).OrderBy(group => group.Key).ToArray();
+            var units = new List<(int Start, int End, double Width)>(clusters.Length);
+            for (var index = 0; index < clusters.Length; index++)
+            {
+                var start = clusters[index].Key;
+                var end = index + 1 < clusters.Length ? clusters[index + 1].Key : safe.Length;
+                if (start < 0 || end <= start || end > safe.Length)
+                { throw new PlatformException("Textarea shaping returned invalid text clusters."); }
+                units.Add((start, end, clusters[index].Sum(glyph => glyph.Advance)));
+            }
+            if (units.Count == 0) { lines.Add(new(sourceStart, sourceStart + sourceLine.Length)); return; }
+            var firstUnit = 0;
+            while (firstUnit < units.Count)
+            {
+                var nextUnit = firstUnit;
+                var lastBreak = -1;
+                var width = 0.0;
+                while (nextUnit < units.Count)
+                {
+                    var candidate = width + units[nextUnit].Width;
+                    if (candidate > availableWidth && nextUnit > firstUnit) { break; }
+                    width = candidate;
+                    nextUnit++;
+                    if (char.IsWhiteSpace(sourceLine[units[nextUnit - 1].End - 1])) { lastBreak = nextUnit; }
+                }
+                if (nextUnit < units.Count && lastBreak > firstUnit) { nextUnit = lastBreak; }
+                var lineEnd = units[nextUnit - 1].End;
+                lines.Add(new(sourceStart + units[firstUnit].Start, sourceStart + lineEnd));
+                firstUnit = nextUnit;
+            }
+        }
+    }
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
         IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0)
@@ -137,12 +194,19 @@ public sealed class ShellChrome : IDisposable
                 if (control.Kind == "textarea")
                 {
                     var rows = Math.Max(1, (int)((box.Height - 8) / 15));
-                    var lines = text.Split('\n');
                     var value = forms.Values[index];
+                    var lines = forms.TextareaLines?[index] is { Count: > 0 } measured
+                        ? measured : WrapTextarea(value, Math.Max(0, box.Width - 8));
                     var caret = index == forms.Focused && !forms.SelectAll ? Math.Clamp(forms.Caret, 0, value.Length) : -1;
-                    var firstLine = Math.Clamp(forms.TextareaFirstLines?[index] ?? 0, 0, Math.Max(0, lines.Length - rows));
-                    for (var row = 0; row < rows && firstLine + row < lines.Length; row++)
-                    { Label(lines[firstLine + row], box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink); }
+                    var firstLine = Math.Clamp(forms.TextareaFirstLines?[index] ?? 0, 0, Math.Max(0, lines.Count - rows));
+                    for (var row = 0; row < rows && firstLine + row < lines.Count; row++)
+                    {
+                        var line = lines[firstLine + row];
+                        var lineText = value[line.Start..line.End];
+                        if (caret >= 0 && AddressEditor.FindVisualLine(lines, caret) == firstLine + row)
+                        { lineText = lineText.Insert(Math.Clamp(caret - line.Start, 0, lineText.Length), "|"); }
+                        Label(lineText, box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink);
+                    }
                 }
                 else
                 {
@@ -278,4 +342,5 @@ public sealed class ShellChrome : IDisposable
 }
 
 /// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
-public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false, IReadOnlyList<int>? TextareaFirstLines = null);
+public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false,
+    IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null);

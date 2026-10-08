@@ -278,6 +278,7 @@ public sealed class DevelopmentShell : IDisposable
                     break;
                 case TextEntered text when window.ActiveTab is { } fieldTab && Controller.EditingFormControl(fieldTab.Id):
                     Controller.InsertFormText(fieldTab.Id, text.Text);
+                    RefreshTextareaLayouts(fieldTab.Id);
                     view.Dirty = true;
                     break;
             }
@@ -331,6 +332,7 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (code == SDL.Scancode.F5 && !key.Repeat) { Action(window, view, ChromeAction.Reload); return; }
         if (window.ActiveTab is not { } tab) { return; }
+        if (!view.Editing && Controller.IsMultilineFormControl(tab.Id)) { RefreshTextareaLayouts(tab.Id); }
         if (!control && !alt && code == SDL.Scancode.Tab)
         {
             TraverseFocus(window, view, shift);
@@ -353,7 +355,11 @@ public sealed class DevelopmentShell : IDisposable
             if (control && !alt && !key.Repeat && code == SDL.Scancode.V && Controller.EditingFormControl(tab.Id))
             {
                 var clipboard = view.Native.GetClipboardText();
-                if (clipboard.Length > 0) { Controller.InsertFormText(tab.Id, clipboard); }
+                if (clipboard.Length > 0)
+                {
+                    Controller.InsertFormText(tab.Id, clipboard);
+                    RefreshTextareaLayouts(tab.Id);
+                }
                 return;
             }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.C && Controller.SelectedText(tab.Id) is { Length: > 0 } selected)
@@ -378,7 +384,12 @@ public sealed class DevelopmentShell : IDisposable
             { return; }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
-                if (Controller.IsMultilineFormControl(tab.Id)) { Controller.InsertFormText(tab.Id, "\n"); return; }
+                if (Controller.IsMultilineFormControl(tab.Id))
+                {
+                    Controller.InsertFormText(tab.Id, "\n");
+                    RefreshTextareaLayouts(tab.Id);
+                    return;
+                }
                 if (view.KeyboardTarget is { } target) { Action(window, view, target.Action, target.Tab); }
                 else if (Controller.PageHasFocus(tab.Id))
                 { Controller.ActivateFocusedLink(tab.Id, ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity)); }
@@ -521,11 +532,29 @@ public sealed class DevelopmentShell : IDisposable
     {
         if (window.ActiveTabId is not { } id || Controller.Page(id) is not { FormControls.Count: > 0 } page) { return null; }
         var values = Enumerable.Range(0, page.FormControls.Count).Select(index => Controller.FormControlValue(id, index)).ToArray();
+        var visualLines = RefreshTextareaLayouts(id, page, values);
         var focused = Controller.PageHasFocus(id) ? Controller.FocusedControlIndex(id) : -1;
         var firstLines = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "textarea" ? Controller.TextareaFirstLine(id, index) : 0).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
-            focused >= 0 && Controller.FormControlSelectAll(id), firstLines);
+            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines);
+    }
+    private void RefreshTextareaLayouts(TabId id)
+    {
+        if (Controller.Page(id) is not { } page) { return; }
+        var values = Enumerable.Range(0, page.FormControls.Count).Select(index => Controller.FormControlValue(id, index)).ToArray();
+        RefreshTextareaLayouts(id, page, values);
+    }
+    private IReadOnlyList<TextareaVisualLine>[] RefreshTextareaLayouts(TabId id, BrowserPage page, IReadOnlyList<string> values)
+    {
+        var visualLines = Enumerable.Repeat<IReadOnlyList<TextareaVisualLine>>(Array.Empty<TextareaVisualLine>(), page.FormControls.Count).ToArray();
+        for (var index = 0; index < page.FormControls.Count; index++)
+        {
+            if (page.FormControls[index] is not { Kind: "textarea", Rect: { } rect }) { continue; }
+            visualLines[index] = chrome.WrapTextarea(values[index], Math.Max(0, rect.Width - 8));
+            Controller.UpdateTextareaVisualLines(id, index, visualLines[index]);
+        }
+        return visualLines;
     }
     private string WindowTitle(string? title)
     {

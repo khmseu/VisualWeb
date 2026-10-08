@@ -4,6 +4,8 @@ using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.Browser;
 
+public readonly record struct TextareaVisualLine(int Start, int End);
+
 /// <summary>UI-thread transactional navigation over local or asynchronous process renderers.</summary>
 /// <remarks>Process results are published only by the UI pump; process separation is not OS confinement.
 /// <see cref="BrowserTab.Origin"/> is taken from the browser-side <see cref="LoadedPage"/> and changes only when that
@@ -34,6 +36,7 @@ public sealed class BrowserController : IDisposable
         /// <summary>Browser-owned edited values of the committed document's fields, keyed by control index.</summary>
         internal Dictionary<int, AddressEditor> Fields { get; } = [];
         internal Dictionary<int, int> TextareaFirstLines { get; } = [];
+        internal Dictionary<int, IReadOnlyList<TextareaVisualLine>> TextareaLines { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
@@ -294,6 +297,26 @@ public sealed class BrowserController : IDisposable
         { throw new ArgumentOutOfRangeException(nameof(index)); }
         return owner.TextareaFirstLines.GetValueOrDefault(index);
     }
+    internal void UpdateTextareaVisualLines(TabId id, int index, IReadOnlyList<TextareaVisualLine> lines)
+    {
+        Check();
+        ArgumentNullException.ThrowIfNull(lines);
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index].Kind != "textarea")
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        var value = Value(owner, index);
+        if (lines.Count == 0 || lines[0].Start != 0 || lines[^1].End != value.Length
+            || lines.Any(line => line.Start < 0 || line.End < line.Start || line.End > value.Length)
+            || lines.Zip(lines.Skip(1)).Any(pair => pair.First.End > pair.Second.Start
+                || pair.Second.Start - pair.First.End > 1
+                || pair.Second.Start > pair.First.End && value[pair.First.End] != '\n'))
+        { throw new ArgumentException("Textarea visual lines must cover the value in order.", nameof(lines)); }
+        owner.TextareaLines[index] = lines.ToArray();
+        owner.TextareaFirstLines[index] = Math.Clamp(owner.TextareaFirstLines.GetValueOrDefault(index),
+            0, Math.Max(0, lines.Count - TextareaVisibleRows(page.FormControls[index])));
+        if (owner.Fields.TryGetValue(index, out var editor)) { EnsureTextareaCaretVisible(owner, index, editor); }
+    }
     public bool ScrollTextareaAt(TabId id, double x, double y, int lines)
     {
         Check();
@@ -305,8 +328,8 @@ public sealed class BrowserController : IDisposable
         {
             var control = page.FormControls[index];
             if (control is not { Kind: "textarea", Disabled: false, Rect: { } rect } || !rect.Contains(x, y)) { continue; }
-            var rows = Math.Max(1, (int)((rect.Height - 8) / 15));
-            var lineCount = Value(owner, index).Count(character => character == '\n') + 1;
+            var rows = TextareaVisibleRows(control);
+            var lineCount = CurrentTextareaLines(owner, index, Value(owner, index)).Count;
             var maximum = Math.Max(0, lineCount - rows);
             var current = owner.TextareaFirstLines.GetValueOrDefault(index);
             var next = (int)Math.Clamp((long)current + lines, 0, maximum);
@@ -364,6 +387,7 @@ public sealed class BrowserController : IDisposable
         if ((long)existingLength + text.Length > RendererProtocol.MaxTextCharacters)
         { throw new BrowserLimitException("Form field length limit exceeded."); }
         editor.Insert(text, RendererProtocol.MaxTextCharacters, allowLineFeed: control.Kind == "textarea");
+        if (control.Kind == "textarea") { owner.TextareaLines.Remove(index); }
         owner.Dirty.Add(index);
         if (control.Kind == "textarea") { EnsureTextareaCaretVisible(owner, index, editor); }
         Changed?.Invoke(id);
@@ -377,14 +401,21 @@ public sealed class BrowserController : IDisposable
         var editor = Field(owner, owner.FocusedControl);
         switch (edit)
         {
-            case FormEdit.Backspace: editor.Backspace(); owner.Dirty.Add(owner.FocusedControl); break;
-            case FormEdit.Delete: editor.Delete(); owner.Dirty.Add(owner.FocusedControl); break;
+            case FormEdit.Backspace:
+                editor.Backspace(); owner.TextareaLines.Remove(owner.FocusedControl); owner.Dirty.Add(owner.FocusedControl); break;
+            case FormEdit.Delete:
+                editor.Delete(); owner.TextareaLines.Remove(owner.FocusedControl); owner.Dirty.Add(owner.FocusedControl); break;
             case FormEdit.Left: editor.Left(); break;
             case FormEdit.Right: editor.Right(); break;
-            case FormEdit.Up when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea": editor.Up(); break;
-            case FormEdit.Down when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea": editor.Down(); break;
-            case FormEdit.Home when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea": editor.HomeLine(); break;
-            case FormEdit.End when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea": editor.EndLine(); break;
+            case FormEdit.Up when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
+                editor.Up(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text)); break;
+            case FormEdit.Down when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
+                var visualLines = CurrentTextareaLines(owner, owner.FocusedControl, editor.Text);
+                editor.Down(visualLines); break;
+            case FormEdit.Home when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
+                editor.HomeLine(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text)); break;
+            case FormEdit.End when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
+                editor.EndLine(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text)); break;
             case FormEdit.Home: editor.Home(); break;
             case FormEdit.End: editor.End(); break;
             default: throw new ArgumentOutOfRangeException(nameof(edit));
@@ -398,15 +429,31 @@ public sealed class BrowserController : IDisposable
     {
         var control = owner.Page!.FormControls[index];
         if (control.Rect is not { } rect) { return; }
-        var rows = Math.Max(1, (int)((rect.Height - 8) / 15));
-        var value = editor.Text;
-        var caret = Math.Clamp(editor.Caret, 0, value.Length);
-        var caretLine = value.AsSpan(0, caret).Count('\n');
+        var rows = TextareaVisibleRows(control);
+        var lines = CurrentTextareaLines(owner, index, editor.Text);
+        var caret = Math.Clamp(editor.Caret, 0, editor.Text.Length);
+        var caretLine = AddressEditor.FindVisualLine(lines, caret);
         var first = owner.TextareaFirstLines.GetValueOrDefault(index);
         if (caretLine < first) { first = caretLine; }
         else if (caretLine >= first + rows) { first = caretLine - rows + 1; }
-        var maximum = Math.Max(0, value.Count(character => character == '\n') + 1 - rows);
-        owner.TextareaFirstLines[index] = Math.Clamp(first, 0, maximum);
+        owner.TextareaFirstLines[index] = Math.Clamp(first, 0, Math.Max(0, lines.Count - rows));
+    }
+    private static int TextareaVisibleRows(PageFormControl control) =>
+        Math.Max(1, (int)((control.Rect?.Height ?? 23) - 8) / 15);
+    private static IReadOnlyList<TextareaVisualLine> CurrentTextareaLines(Content owner, int index, string value)
+    {
+        if (owner.TextareaLines.TryGetValue(index, out var lines) && lines.Count > 0 && lines[^1].End == value.Length)
+        { return lines; }
+        var result = new List<TextareaVisualLine>();
+        var start = 0;
+        for (var offset = 0; offset < value.Length; offset++)
+        {
+            if (value[offset] != '\n') { continue; }
+            result.Add(new(start, offset));
+            start = offset + 1;
+        }
+        result.Add(new(start, value.Length));
+        return result;
     }
     private static bool Focusable(PageFormControl control) => control.Kind != "hidden" && !control.Disabled && control.Rect is not null;
     private static List<(bool Control, int Index)> Targets(BrowserPage? page)

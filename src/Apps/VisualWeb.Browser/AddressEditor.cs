@@ -55,6 +55,12 @@ public sealed class AddressEditor
         SelectAll = false;
         preferredColumn = null;
     }
+    public void HomeLine(IReadOnlyList<TextareaVisualLine> lines)
+    {
+        Caret = lines[FindVisualLine(lines, Caret)].Start;
+        SelectAll = false;
+        preferredColumn = null;
+    }
     public void EndLine()
     {
         var end = Text.IndexOf('\n', Caret);
@@ -62,10 +68,39 @@ public sealed class AddressEditor
         SelectAll = false;
         preferredColumn = null;
     }
+    public void EndLine(IReadOnlyList<TextareaVisualLine> lines)
+    {
+        Caret = lines[FindVisualLine(lines, Caret)].End;
+        SelectAll = false;
+        preferredColumn = null;
+    }
     public void Up() => MoveVertical(false);
     public void Down() => MoveVertical(true);
-    private void MoveVertical(bool down)
+    public void Up(IReadOnlyList<TextareaVisualLine> lines) => MoveVertical(false, lines);
+    public void Down(IReadOnlyList<TextareaVisualLine> lines) => MoveVertical(true, lines);
+    internal static int FindVisualLine(IReadOnlyList<TextareaVisualLine> lines, int caret)
     {
+        for (var index = 0; index < lines.Count; index++)
+        {
+            if (caret < lines[index].End || caret == lines[index].End
+                && (index == lines.Count - 1 || lines[index + 1].Start != caret)) { return index; }
+        }
+        return Math.Max(0, lines.Count - 1);
+    }
+    private void MoveVertical(bool down, IReadOnlyList<TextareaVisualLine>? lines = null)
+    {
+        if (lines is { Count: > 0 })
+        {
+            var current = FindVisualLine(lines, Caret);
+            preferredColumn ??= Caret - lines[current].Start;
+            SelectAll = false;
+            var target = current + (down ? 1 : -1);
+            if ((uint)target >= (uint)lines.Count) { return; }
+            Caret = Math.Min(lines[target].Start + preferredColumn.Value, lines[target].End);
+            if (Caret > lines[target].Start && Caret < lines[target].End
+                && char.IsHighSurrogate(Text[Caret - 1]) && char.IsLowSurrogate(Text[Caret])) { Caret--; }
+            return;
+        }
         var previousBreak = Caret == 0 ? -1 : Text.LastIndexOf('\n', Caret - 1);
         var lineStart = previousBreak + 1;
         var lineEnd = Text.IndexOf('\n', Caret);
