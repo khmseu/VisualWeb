@@ -382,6 +382,8 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code is SDL.Scancode.Pageup or SDL.Scancode.Pagedown)
             { return; }
+            if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
+                && Controller.ToggleFocusedCheckbox(tab.Id)) { return; }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
                 if (Controller.IsMultilineFormControl(tab.Id))
@@ -536,8 +538,10 @@ public sealed class DevelopmentShell : IDisposable
         var focused = Controller.PageHasFocus(id) ? Controller.FocusedControlIndex(id) : -1;
         var firstLines = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "textarea" ? Controller.TextareaFirstLine(id, index) : 0).ToArray();
+        var checkedStates = Enumerable.Range(0, page.FormControls.Count).Select(index =>
+            page.FormControls[index].Kind == "checkbox" && Controller.FormControlChecked(id, index)).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
-            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines);
+            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates);
     }
     private void RefreshTextareaLayouts(TabId id)
     {

@@ -88,7 +88,7 @@ The native window title retains the same warning alongside the active page title
 | Home/End in a focused text/search/email/tel/url field | Move the caret to the start/end of the value |
 | Home/End in a focused textarea | Move the caret to the start/end of the current line |
 | Up/Down in a focused textarea | Move the caret between visible wrapped lines, preserving its preferred column |
-| Enter in a focused text/search/email/tel/url field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
+| Space in a focused checkbox toggles it; Enter in a focused text/search/email/tel/url field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
@@ -204,11 +204,14 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v15); the browser owns all values,
-focus, carets and submission. Supported controls are `input` text/search/email/tel/url
-(editable with generic text behavior; tel has no telephone-specific keyboard or
-validation; email requires one valid address and does not support `multiple`; url requires a valid absolute URL on submission), `textarea`, hidden and submit, plus `button` submit (and inert
-`type=button`). Input/button controls default to 160 by 20 CSS pixels. Textareas
+reports data-only form/control snapshots (IPC v16); the browser owns all values,
+focus, carets and submission. Supported controls are `input` text/search/email/tel/url,
+checkbox, textarea, hidden and submit, plus `button` submit (and inert `type=button`).
+Text fields use generic editing; tel has no telephone-specific keyboard or validation;
+email requires one valid address and does not support `multiple`; url requires a valid
+absolute URL on submission. Checkboxes are shell-drawn and toggle on click or Space;
+unchecked checkboxes are omitted from submission, checked boxes submit their value
+(default `on`), and required boxes must be checked. Input/button controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
 to 128 and 64. Author CSS may size the controls within the layout limits; author
 `display:none` still hides them. Textarea values are drawn by the shell overlay
@@ -245,7 +248,7 @@ textarea inserts LF and never triggers implicit submission. Form state is tab-lo
 and survives tab switches and same-document scroll/resize repaints whose control
 metadata is unchanged; new document commits reset it, failed navigations keep it.
 
-Submission includes named, non-disabled text/search/email/tel/url/textarea/hidden controls
+Submission includes named, non-disabled text/search/email/tel/url/checkbox/textarea/hidden controls
 plus the named activating submitter, in tree order. `_charset_` hidden fields
 submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,

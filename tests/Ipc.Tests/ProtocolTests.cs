@@ -45,9 +45,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(15, RendererProtocol.Version);
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 14 }, 0));
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 14 }, 0));
+        Assert.Equal(16, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 15 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 15 }, 0));
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -78,11 +78,11 @@ public sealed class ProtocolTests
         Forms = [new("https://example.com/search?old#frag", null), new("", "Unsupported form method: post.")],
         FormControls =
         [
-            new(0, "text", "q", "café", "", null, false, false, true, 2, 10, 0, new(0, 0, 2, 1)),
-            new(0, "hidden", "h", "v", "", null, false, false, false, -1, -1, 0, null),
-            new(0, "submit", "go", "", "Submit", null, false, false, false, -1, -1, 1, new(0, 1, 2, 1)),
-            new(1, "button", "", "", "", null, true, false, false, -1, -1, 1, null),
-            new(-1, "search", "", "", "", null, false, true, false, -1, -1, 1, null)
+            new(0, "text", "q", "café", "", null, false, false, true, 2, 10, 0, new(0, 0, 2, 1), false),
+            new(0, "hidden", "h", "v", "", null, false, false, false, -1, -1, 0, null, false),
+            new(0, "submit", "go", "", "Submit", null, false, false, false, -1, -1, 1, new(0, 1, 2, 1), false),
+            new(1, "button", "", "", "", null, true, false, false, -1, -1, 1, null, false),
+            new(-1, "search", "", "", "", null, false, true, false, -1, -1, 1, null, false)
         ]
     };
 
@@ -98,6 +98,14 @@ public sealed class ProtocolTests
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "email", Pattern = ".+", Rect = null }]
         }, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "checkbox", Checked = true, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
+        }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "text", Checked = true }]
+        }, 16));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with { TextTargets = null }, 16));
         RendererProtocol.Validate(FormFrame with
         {
@@ -283,7 +291,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(15, RendererProtocol.Version);
+        Assert.Equal(16, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

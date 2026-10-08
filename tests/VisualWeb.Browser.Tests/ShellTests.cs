@@ -7,6 +7,31 @@ namespace VisualWeb.Browser.Tests;
 
 public sealed class ShellTests
 {
+    [Fact]
+    public void SpaceTogglesFocusedCheckboxAndUpdatesItsShellOverlay()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style><form><input type=checkbox name=ok checked></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        var control = shell.Controller.Page(tab.Id)!.FormControls[0];
+        Assert.True(shell.Controller.FormControlChecked(tab.Id, 0));
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        shell.Tick();
+        var checkedPixels = native.Pixels!.ToArray();
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Space, 0, 0, true, false));
+        shell.Tick();
+        Assert.False(shell.Controller.FormControlChecked(tab.Id, 0));
+        Assert.NotEqual(checkedPixels, native.Pixels!.ToArray());
+    }
+
     [Theory]
     [InlineData(false, 1)]
     [InlineData(true, 1)]

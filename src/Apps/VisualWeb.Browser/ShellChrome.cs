@@ -183,6 +183,24 @@ public sealed class ShellChrome : IDisposable
                 if (control.Rect is not { } rect || control.Kind == "hidden") { continue; }
                 var box = new LayoutRect(rect.X, rect.Y + offset, rect.Width, rect.Height);
                 var gray = new CssColor(118, 118, 118);
+                if (control.Kind == "checkbox")
+                {
+                    var side = Math.Min(13, Math.Min(box.Width, box.Height));
+                    var check = new LayoutRect(box.X + 3, box.Y + (box.Height - side) / 2, side, side);
+                    Fill(check, new(118, 118, 118));
+                    Fill(new(check.X + 1, check.Y + 1, Math.Max(0, side - 2), Math.Max(0, side - 2)),
+                        control.Disabled ? new(235, 235, 235) : white);
+                    if (forms.Checked?[index] == true)
+                    {
+                        var mark = control.Disabled ? gray : ink;
+                        Fill(new(check.X + 2, check.Y + 6, 2, 2), mark);
+                        Fill(new(check.X + 4, check.Y + 8, 2, 2), mark);
+                        Fill(new(check.X + 6, check.Y + 6, 2, 2), mark);
+                        Fill(new(check.X + 8, check.Y + 4, 2, 2), mark);
+                        Fill(new(check.X + 10, check.Y + 2, 2, 2), mark);
+                    }
+                    continue;
+                }
                 Fill(box, gray);
                 Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
                     control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" ? new(225, 225, 225)
@@ -343,4 +361,5 @@ public sealed class ShellChrome : IDisposable
 
 /// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
 public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false,
-    IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null);
+    IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null,
+    IReadOnlyList<bool>? Checked = null);

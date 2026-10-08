@@ -43,6 +43,7 @@ public sealed class BrowserController : IDisposable
         internal Dictionary<int, int> TextareaFirstLines { get; } = [];
         internal Dictionary<int, IReadOnlyList<TextareaVisualLine>> TextareaLines { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
+        internal Dictionary<int, bool> CheckboxStates { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
         internal bool SelectingText { get; set; }
@@ -277,6 +278,27 @@ public sealed class BrowserController : IDisposable
         return EditingFormControl(id) && owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea";
     }
     /// <summary>Current value: the browser-owned edit when present, otherwise the renderer-reported initial value.</summary>
+    public bool FormControlChecked(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index].Kind != "checkbox")
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return owner.CheckboxStates.GetValueOrDefault(index, page.FormControls[index].Checked);
+    }
+    /// <summary>Toggles the focused enabled checkbox, returning false for other focus targets.</summary>
+    public bool ToggleFocusedCheckbox(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "checkbox", Disabled: false }) { return false; }
+        owner.CheckboxStates[owner.FocusedControl] = !owner.CheckboxStates.GetValueOrDefault(owner.FocusedControl,
+            page.FormControls[owner.FocusedControl].Checked);
+        Changed?.Invoke(id);
+        return true;
+    }
     public string FormControlValue(TabId id, int index)
     {
         Check();
@@ -510,11 +532,21 @@ public sealed class BrowserController : IDisposable
     /// <summary>Enter/click activation: submit buttons submit; text fields perform implicit submission.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
     /// submission</see>. The default button is the first submit button of the form in tree order.</remarks>
+    private bool ToggleCheckbox(TabId id, Content owner, int index)
+    {
+        var control = owner.Page!.FormControls[index];
+        if (control.Kind != "checkbox" || control.Disabled) { return false; }
+        owner.CheckboxStates[index] = !owner.CheckboxStates.GetValueOrDefault(index, control.Checked);
+        Changed?.Invoke(id);
+        return true;
+    }
     private bool ActivateControl(TabId id, Content owner, int index)
     {
         var controls = owner.Page!.FormControls;
         var control = controls[index];
-        if (control.Disabled || control.Form < 0) { return false; }
+        if (control.Disabled) { return false; }
+        if (control.Kind == "checkbox") { return ToggleCheckbox(id, owner, index); }
+        if (control.Form < 0) { return false; }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
         if (control.Kind is not ("text" or "search" or "email" or "tel" or "url")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
@@ -540,9 +572,10 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "textarea") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "textarea" or "checkbox") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
-            if (control.Required && value.Length == 0)
+            if (control.Required && (control.Kind == "checkbox"
+                ? !owner.CheckboxStates.GetValueOrDefault(index, control.Checked) : value.Length == 0))
             { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
             if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
@@ -568,7 +601,8 @@ public sealed class BrowserController : IDisposable
             { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
         }
         var limit = Session.Options.MaxAddressCharacters;
-        var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i)), limit);
+        var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i),
+            i => owner.CheckboxStates.GetValueOrDefault(i, page.FormControls[i].Checked)), limit);
         var preventHttpsDowngrade = owner.Document?.Url.Protocol is "https:" or "data:";
         return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href,
             preventHttpsDowngrade);
@@ -606,7 +640,7 @@ public sealed class BrowserController : IDisposable
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
             if (control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
-            return control.Kind is "submit" or "button" ? ActivateControl(id, owner, index)
+            return control.Kind is "submit" or "button" or "checkbox" ? ActivateControl(id, owner, index)
                 : control.Kind is "text" or "search" or "email" or "tel" or "url" or "textarea";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
@@ -743,7 +777,8 @@ public sealed class BrowserController : IDisposable
             owner.FocusedLink = -1;
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
-            if (!sameControls) { owner.Fields.Clear(); owner.Dirty.Clear(); owner.FocusedControl = -1; }
+            if (!sameControls)
+            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckboxStates.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;

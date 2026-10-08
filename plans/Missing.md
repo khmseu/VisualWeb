@@ -46,19 +46,19 @@ broader page interaction is still missing:
   hit-testing, DOM focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
-  shell-edited `input` text/search/email/tel/url/hidden/submit, `textarea`, and `button`
+  shell-edited `input` text/search/email/tel/url/checkbox/hidden/submit, `textarea`, and `button`
   submit controls
-  via IPC v15 data-only metadata and the ordinary
+  via IPC v16 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
   independent line-window scrolling, plus newline-normalized GET entries.
-  Visible text/search/email/tel/url/textarea fields support pointer focus without starting page text
+  Visible text/search/email/tel/url/checkbox/textarea fields support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
-  text/search/email/tel/url/textarea fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url, select,
+  text/search/email/tel/url/checkbox/textarea fields or the selected address bar. General forms remain
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/checkbox, select,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   full constraint-validation UI and semantics, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -155,7 +155,7 @@ Remaining areas include:
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
-  focused text/search/email/tel/url/textarea fields or the selected address bar; character-level page
+  focused text/search/email/tel/url/checkbox/textarea fields or the selected address bar; character-level page
   selection and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
@@ -193,18 +193,19 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `88fb33c` and working-tree changes on
+*Status cross-checked against `d260acb` and working-tree changes on
 2026-10-08. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; single-address email inputs use generic text
 editing and bounded submission validation (the `multiple` attribute remains
-unsupported); bounded editable textareas submit newline-normalized
+unsupported); checkbox state is shell-owned, keyboard/pointer toggled and submitted
+only when checked; bounded editable textareas submit newline-normalized
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
 movement; `minlength` is checked for edited nonempty values and bounded text
-field patterns (bounded non-backtracking subset), single-address email validation and URL input validation are enforced on submission; local file documents
+field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox state are enforced on submission; local file documents
 cannot initiate HTTP(S)
 link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
-cleartext HTTP. The browser suite (549 tests), IPC suite (88 tests), layout suite
+cleartext HTTP. The browser suite (556 tests), IPC suite (88 tests), layout suite
 (55 tests), CSS suite (322 tests), solution build (0 warnings/errors), changed-file
 formatting and `git diff --check` pass. These checks are not full
 conformance, security, CI-matrix or real-desktop validation.

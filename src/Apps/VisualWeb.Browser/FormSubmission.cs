@@ -67,14 +67,14 @@ public static class FormSubmission
 
     /// <summary>Builds the tree-ordered entry list for <paramref name="form"/>; <paramref name="submitter"/> is -1 for the form itself.</summary>
     internal static List<(string Name, string Value)> Entries(IReadOnlyList<PageFormControl> controls, int form, int submitter,
-        Func<int, string> value)
+        Func<int, string> value, Func<int, bool> isChecked)
     {
         var entries = new List<(string, string)>();
         for (var index = 0; index < controls.Count; index++)
         {
             var control = controls[index];
             if (control.Form != form || control.Disabled || control.Kind is "submit" or "button" && index != submitter
-                || control.Name.Length == 0) { continue; }
+                || control.Kind == "checkbox" && !isChecked(index) || control.Name.Length == 0) { continue; }
             var data = control.Kind == "hidden" && control.Name.Equals("_charset_", StringComparison.OrdinalIgnoreCase)
                 ? "UTF-8" : value(index);
             entries.Add((Newlines(control.Name), Newlines(data)));

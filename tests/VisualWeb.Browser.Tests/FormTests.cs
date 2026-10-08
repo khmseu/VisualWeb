@@ -116,6 +116,20 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task CheckboxReportsCheckedStateAndValueAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=checkbox name=choice value=yes checked><input type=checkbox name=choice value=no></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal(["checkbox", "checkbox"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["yes", "no"], page.FormControls.Select(control => control.Value));
+        Assert.Equal([true, false], page.FormControls.Select(control => control.Checked));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task EmailInputReportsEditableMetadataAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -204,7 +218,6 @@ public sealed class FormTests
     [InlineData("<form><button formtarget=_blank>x</button></form>", "formtarget")]
     [InlineData("<form><input type=submit formnovalidate></form>", "formnovalidate")]
     [InlineData("<form><input type=submit formenctype=text/plain></form>", "formenctype")]
-    [InlineData("<form><input type=checkbox name=c style=display:none></form>", "checkbox")]
     [InlineData("<form><input type=password name=c style=display:none></form>", "password")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
@@ -814,6 +827,69 @@ public sealed class FormTests
         Assert.True(textarea.Controller.FocusControl(textarea.Tab.Id, 1));
         Assert.Throws<PageNavigationException>(() => textarea.Controller.ActivateFocusedLink(textarea.Tab.Id));
         Assert.Single(textarea.Source.Requests);
+    }
+
+    [Fact]
+    public void CheckboxPointerActivationTogglesSuccessfulFormEntries()
+    {
+        using var harness = new Harness("<form><input type=checkbox name=choice value=yes checked><input type=checkbox name=choice value=no><button type=submit>go</button></form>");
+        Assert.True(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
+        Assert.False(harness.Controller.FormControlChecked(harness.Tab.Id, 1));
+        var first = harness.Controller.Page(harness.Tab.Id)!.FormControls[0].Rect!;
+        var second = harness.Controller.Page(harness.Tab.Id)!.FormControls[1].Rect!;
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, first.X + 1, first.Y + 1));
+        Assert.False(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, second.X + 1, second.Y + 1));
+        Assert.True(harness.Controller.FormControlChecked(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?choice=no", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void RequiredCheckboxBlocksSubmissionUntilChecked()
+    {
+        using var harness = new Harness("<form><input type=checkbox name=agree required><button type=submit>go</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        var checkbox = harness.Controller.Page(harness.Tab.Id)!.FormControls[0].Rect!;
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, checkbox.X + 1, checkbox.Y + 1));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.EndsWith("?agree=on", harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UncheckedCheckboxIsOmittedFromSubmission()
+    {
+        using var harness = new Harness("<form><input type=checkbox name=agree><button type=submit>go</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void SpaceStyleToggleChangesFocusedCheckboxState()
+    {
+        using var harness = new Harness("<form><input type=checkbox name=agree></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ToggleFocusedCheckbox(harness.Tab.Id));
+        Assert.True(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ToggleFocusedCheckbox(harness.Tab.Id));
+        Assert.False(harness.Controller.FormControlChecked(harness.Tab.Id, 0));
+    }
+
+    [Fact]
+    public void UncheckedCheckboxIsOmittedAndMissingValueDefaultsToOn()
+    {
+        using var harness = new Harness("<form><input type=checkbox name=agree><button type=submit>go</button></form>");
+        var checkbox = harness.Controller.Page(harness.Tab.Id)!.FormControls[0].Rect!;
+        Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, checkbox.X + 1, checkbox.Y + 1));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?agree=on", harness.Source.Requests[^1].Url.Href);
     }
 
     [Theory]
