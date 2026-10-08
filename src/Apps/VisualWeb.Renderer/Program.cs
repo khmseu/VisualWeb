@@ -74,6 +74,7 @@ try
                     Status = Bounded(rendered.Status),
                     ScrollHeight = rendered.ScrollHeight,
                     LinkTargets = rendered.LinkTargets.ToArray(),
+                    FragmentTargets = rendered.FragmentTargets.ToArray(),
                     Forms = rendered.Forms.ToArray(),
                     FormControls = rendered.FormControls.ToArray(),
                     TextTargets = rendered.TextTargets.ToArray()

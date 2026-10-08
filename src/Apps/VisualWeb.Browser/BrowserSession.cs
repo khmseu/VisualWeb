@@ -26,7 +26,8 @@ public sealed record BrowserOptions
 
 /// <summary>URL-only development session history; documents are reloaded on traversal.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#session-history">session history</see>.
-/// No joint frame history, bfcache, script History API, same-document navigation or persistence.</remarks>
+/// User link fragment navigation updates the active URL and scrolls the retained page, but traversal reloads. No joint frame
+/// history, bfcache, script History API or persistence is implemented.</remarks>
 public sealed class NavigationHistory
 {
     private readonly List<BrowserUrl> entries = [];

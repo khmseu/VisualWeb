@@ -770,6 +770,7 @@ public sealed class BrowserController : IDisposable
         var url = BrowserUrl.Parse(destination);
         if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
+        if (!openInNewTab && sameOriginRedirectOrigin is null && TryNavigateFragment(id, url)) { return true; }
         if (url.Protocol == "file:")
         { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
         if (url.Protocol == "data:")
@@ -796,6 +797,33 @@ public sealed class BrowserController : IDisposable
         }
         return true;
     }
+    private bool TryNavigateFragment(TabId id, BrowserUrl destination)
+    {
+        var tab = Session.Tab(id);
+        var owner = content[id];
+        if (tab.IsLoading || owner.Document is not { } document || owner.Page is not { } page
+            || FragmentBase(document.Url) != FragmentBase(destination)) { return false; }
+        var fragmentIndex = destination.Href.IndexOf('#');
+        if (document.Url.Href == destination.Href && fragmentIndex < 0) { return true; }
+
+        var fragment = fragmentIndex >= 0 ? Uri.UnescapeDataString(destination.Href[(fragmentIndex + 1)..]) : "";
+        if (fragment.Length == 0) { Scroll(id, -owner.ScrollY); }
+        else if (page.FragmentTargets.FirstOrDefault(target => target.Id == fragment) is { } target)
+        { Scroll(id, target.Y - owner.ScrollY); }
+
+        if (tab.History.Current?.Href != destination.Href) { tab.History.Commit(destination); }
+        tab.AddressText = destination.Href;
+        tab.Error = null;
+        Changed?.Invoke(id);
+        return true;
+    }
+
+    private static string FragmentBase(BrowserUrl url)
+    {
+        var fragment = url.Href.IndexOf('#');
+        return fragment < 0 ? url.Href : url.Href[..fragment];
+    }
+
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
     {
         Check();

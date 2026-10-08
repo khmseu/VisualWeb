@@ -191,6 +191,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             {
                 ScrollHeight = packet.Message.ScrollHeight,
                 LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
+                FragmentTargets = Array.AsReadOnly(packet.Message.FragmentTargets!),
                 Forms = Array.AsReadOnly(packet.Message.Forms!),
                 FormControls = Array.AsReadOnly(packet.Message.FormControls!),
                 TextTargets = Array.AsReadOnly(packet.Message.TextTargets!)

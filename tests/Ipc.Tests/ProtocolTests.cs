@@ -34,6 +34,7 @@ public sealed class ProtocolTests
             Forms = [],
             FormControls = [],
             TextTargets = [],
+            FragmentTargets = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,
@@ -45,7 +46,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(22, RendererProtocol.Version);
+        Assert.Equal(23, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 22 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 22 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 21 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 21 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 20 }, 0));
@@ -75,7 +78,8 @@ public sealed class ProtocolTests
         LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")],
         Forms = [],
         FormControls = [],
-        TextTargets = []
+        TextTargets = [],
+        FragmentTargets = []
     };
     private static RendererMessage FormFrame => LinkFrame with
     {
@@ -345,9 +349,25 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public void FragmentTargetsAreBoundedAndFrameOnly()
+    {
+        var frame = LinkFrame with { FragmentTargets = [new("section", 1)] };
+        RendererProtocol.Validate(frame, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with
+        { FragmentTargets = frame.FragmentTargets }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with { FragmentTargets = null }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        { FragmentTargets = [new("section", double.NaN)] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        { FragmentTargets = [new("section", frame.ScrollHeight + 1)] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        { FragmentTargets = [new(new string('x', RendererProtocol.MaxTextCharacters + 1), 0)] }, 16));
+    }
+
+    [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(22, RendererProtocol.Version);
+        Assert.Equal(23, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -468,6 +488,7 @@ public sealed class ProtocolTests
             Forms = [],
             FormControls = [],
             TextTargets = [],
+            FragmentTargets = [],
             PixelWidth = 2,
             PixelHeight = 1,
             Stride = 8,
@@ -552,6 +573,7 @@ public sealed class ProtocolTests
             Forms = [],
             FormControls = [],
             TextTargets = [],
+            FragmentTargets = [],
             PixelWidth = 1,
             PixelHeight = 1,
             Stride = 4,

@@ -39,19 +39,22 @@ broader page interaction is still missing:
   navigation in shell, local and actual renderer-process paths. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
-  one anchor and no page raster changes without focus. IPC v22 carries grouped
+  one anchor and no page raster changes without focus. IPC v23 carries grouped
   visible rectangles plus bounded `_blank` target metadata (4096 anchors, 64
-  rectangles each, 1 MiB metadata), without element IDs/DOM/native handles.
-  `_blank` opens an active tab in the source window through the existing broker
-  policy; named targets, `<base target>`, and full browsing-context selection
-  remain unsupported. Successful document commits/repaints clear the frame-local
+  rectangles each, 1 MiB metadata), plus bounded fragment-ID offsets for
+  same-document scrolling, without element IDs/DOM/native handles. Fragment
+  links update URL-only history and repaint the retained document without a
+  resource load; only rendered element IDs and empty-fragment top scrolling are
+  supported. `_blank` opens an active tab in the source window through the
+  existing broker policy; named targets, `<base target>`, and full
+  browsing-context selection remain unsupported. Successful document commits/repaints clear the frame-local
   anchor focus; failed navigation preserves it. General hit-testing, DOM
   focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v22 data-only metadata and the ordinary
+  submit same-tab GET urlencoded queries via IPC v23 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -92,7 +95,7 @@ broader page interaction is still missing:
   Horizontal/nested scrolling and general CSS overflow remain missing.
 - No automatic page mouse/keyboard events or general default actions beyond
   ordinary current-tab textual link navigation.
-- No downloads, persistent browser sessions, or complete history behavior. History currently stores URLs and reloads documents; same-document navigation, script History API, and bfcache are absent.
+- No downloads, persistent browser sessions, or complete history behavior. History currently stores URLs and reloads documents on traversal; fragment navigation is handled within the current document, while script History API and bfcache are absent.
 
 This is a substantial gap even for a modest usable browser.
 

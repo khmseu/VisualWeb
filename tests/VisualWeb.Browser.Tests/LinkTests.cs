@@ -133,7 +133,7 @@ public sealed class LinkTests
         var viewport = new PageViewport(100, 50, 1);
         Assert.False(controller.ActivateLink(tab.Id, 1, 1));
         controller.Navigate(tab.Id, "https://example.com/redirect");
-        source.Requests[0].Completion.SetResult(Document());
+        source.Requests[0].Completion.SetResult(Document(Html.Replace("#end", "/next", StringComparison.Ordinal)));
         controller.Pump(_ => viewport);
         controller.Scroll(tab.Id, double.MaxValue);
         var page = controller.Page(tab.Id)!;
@@ -145,7 +145,7 @@ public sealed class LinkTests
         Assert.False(controller.ActivateLink(tab.Id, -1, link.Y));
         Assert.False(controller.ActivateLink(tab.Id, 99, 49));
         Assert.True(controller.ActivateLink(tab.Id, link.X + link.Width / 2, link.Y + link.Height / 2));
-        Assert.Equal("https://example.com/final/index.html#end", source.Requests[1].Url.Href);
+        Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
         source.Requests[1].Completion.SetException(new PageNavigationException("failed link"));
         controller.Pump(_ => viewport);
         Assert.Same(page, controller.Page(tab.Id));
@@ -160,9 +160,98 @@ public sealed class LinkTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FragmentNavigationUpdatesHistoryAndScrollsRetainedDocument(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source,
+            () => process ? new ProcessPageRenderer(RendererPath, FontPath) : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(120, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/page");
+        var html = "<!doctype html><style>*{margin:0}#spacer{height:80px}#target{height:100px}</style>"
+            + "<a href='#target'>jump</a><div id='spacer'></div><div id='target'>target</div>";
+        source.Requests[0].Completion.SetResult(new(BrowserUrl.Parse("https://example.com/page"), html, 200, []));
+        PumpUntilComplete();
+        var committed = controller.Page(tab.Id)!;
+        var target = Assert.Single(committed.FragmentTargets, item => item.Id == "target");
+        Assert.True(target.Y > 0);
+        var link = Assert.Single(committed.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+
+        Assert.Single(source.Requests);
+        Assert.Equal("https://example.com/page#target", tab.History.Current!.Href);
+        Assert.Equal(tab.History.Current.Href, tab.AddressText);
+        PumpUntilComplete(committed);
+        Assert.NotSame(committed, controller.Page(tab.Id));
+        Assert.Equal(committed.FragmentTargets, controller.Page(tab.Id)!.FragmentTargets);
+        Assert.Equal(target.Y, controller.ScrollY(tab.Id));
+
+        void PumpUntilComplete(BrowserPage? previous = null)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while ((tab.IsLoading || previous is not null && ReferenceEquals(previous, controller.Page(tab.Id)))
+                && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void OpaqueDocumentCanNavigateToItsOwnFragment()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(120, 50, 1);
+        var documentUrl = BrowserUrl.Parse("data:text/html,document");
+        controller.Navigate(tab.Id, documentUrl.Href);
+        source.Requests[0].Completion.SetResult(new(documentUrl,
+            "<!doctype html><style>*{margin:0}#target{height:100px}</style>"
+            + "<a href='#target'>jump</a><div id='target'>target</div>", 200, []));
+        controller.Pump(_ => viewport);
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+
+        Assert.Single(source.Requests);
+        Assert.EndsWith("#target", tab.History.Current!.Href, StringComparison.Ordinal);
+        Assert.True(controller.ScrollY(tab.Id) > 0);
+    }
+
+    [Fact]
+    public void EmptyFragmentScrollsToTopWithoutReloading()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(120, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/page");
+        source.Requests[0].Completion.SetResult(new(BrowserUrl.Parse("https://example.com/page"),
+            "<!doctype html><style>*{margin:0}#spacer{height:100px}</style><div id='spacer'></div><a href='#'>top</a>", 200, []));
+        controller.Pump(_ => viewport);
+        controller.Scroll(tab.Id, double.MaxValue);
+        var page = controller.Page(tab.Id)!;
+        Assert.True(controller.ScrollY(tab.Id) > 0);
+
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+
+        Assert.Single(source.Requests);
+        Assert.Equal("https://example.com/page#", tab.History.Current!.Href);
+        Assert.Equal(0, controller.ScrollY(tab.Id));
+        Assert.NotSame(page, controller.Page(tab.Id));
+        Assert.Equal(page.FragmentTargets, controller.Page(tab.Id)!.FragmentTargets);
+    }
+
+    [Theory]
     [InlineData("../next", "https://example.com/next")]
-    [InlineData("#part", "https://example.com/final/index.html#part")]
-    [InlineData("", "https://example.com/final/index.html")]
     [InlineData("//other.example/path", "https://other.example/path")]
     public void SupportedDestinationsUseNormalNavigation(string href, string absolute)
     {

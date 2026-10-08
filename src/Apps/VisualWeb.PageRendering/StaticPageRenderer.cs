@@ -91,7 +91,14 @@ public sealed class StaticPageRenderer : IPageRenderer
             status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
         }
         return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
-        { ScrollHeight = rendered.ScrollHeight, LinkTargets = links, Forms = forms, FormControls = controls, TextTargets = textTargets };
+        {
+            ScrollHeight = rendered.ScrollHeight,
+            LinkTargets = links,
+            FragmentTargets = CollectFragmentTargets(rendered.Layout, rendered.ScrollHeight, cancellationToken),
+            Forms = forms,
+            FormControls = controls,
+            TextTargets = textTargets
+        };
     }
     private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
         IReadOnlyList<PageTextTarget> TextTargets)
@@ -207,6 +214,55 @@ public sealed class StaticPageRenderer : IPageRenderer
         var name = target.Trim(AsciiWhitespace);
         return name.Length == 6 && name.All(character => character <= 0x7f)
             && name.Equals("_blank", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<PageFragmentTarget> CollectFragmentTargets(LayoutResult layout, double scrollHeight,
+        CancellationToken cancellationToken)
+    {
+        var targets = new List<PageFragmentTarget>();
+        var elements = new HashSet<DomElement>();
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        long bytes = 0;
+        if (layout.Root is { } root) { Visit(root); }
+        try { RendererProtocol.ValidateFragmentTargets(targets, scrollHeight); }
+        catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+        return targets.AsReadOnly();
+
+        void Register(DomElement element, double y)
+        {
+            if (!elements.Add(element) || element.GetAttribute("id") is not { } id || !ids.Add(id)) { return; }
+            if (targets.Count >= RendererProtocol.MaxFragmentTargets)
+            { throw new PageNavigationException("Renderer fragment target count limit exceeded."); }
+            if (id.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer fragment target ID limit exceeded."); }
+            bytes += System.Text.Encoding.UTF8.GetByteCount(id);
+            if (bytes > RendererProtocol.MaxFragmentMetadataBytes)
+            { throw new PageNavigationException("Renderer fragment target metadata byte limit exceeded."); }
+            targets.Add(new(id, Math.Clamp(y, 0, scrollHeight)));
+        }
+
+        void Visit(LayoutBox box)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Register(box.Element, box.BorderBox.Y);
+            foreach (var item in box.Flow)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (item is LayoutBlockItem block) { Visit(block.Box); }
+                else if (item is LayoutLineItem line)
+                {
+                    foreach (var fragment in line.Line.Fragments)
+                    {
+                        var ancestors = new Stack<DomElement>();
+                        for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
+                        {
+                            if (node is DomElement element) { ancestors.Push(element); }
+                        }
+                        while (ancestors.TryPop(out var element)) { Register(element, line.Line.Bounds.Y); }
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>Unique resolved request URLs of supported linked stylesheets in document order, before scripts run.</summary>

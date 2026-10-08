@@ -187,15 +187,19 @@ does not match the current window (for example, during asynchronous resize)
 cannot activate links.
 
 Activation uses the current tab's ordinary `Navigate` transaction and shared
-session HSTS loader. Page-initiated destinations are limited to HTTP(S): `file:`
-and `data:` links fail visibly before loading; enter those URLs explicitly in the
-address bar. HTTPS and opaque `data:` documents also block HTTP link destinations
+session HSTS loader. Cross-document page-initiated destinations are limited
+to HTTP(S): `file:` and `data:` links fail visibly before loading; enter those
+URLs explicitly in the address bar. Same-document fragment links are handled
+locally, including fragments in opaque `data:` documents. HTTPS and opaque `data:` documents also block HTTP link destinations
 and HTTP redirect hops unless session HSTS upgrades them before transport. Other
 schemes, including `javascript:`, fail visibly. URL/count/
 metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
-Relative and fragment URL components are preserved, but fragment activation
-currently performs a full navigation, not same-document scrolling.
+Relative and fragment URL components are preserved. Same-document fragment
+links update the URL-only history entry and scroll the retained document to a
+rendered element with the matching decoded `id`; an empty fragment scrolls to the
+top. This does not fetch, reparse or rerun scripts. Unrendered/unknown IDs and
+legacy named anchors do not scroll; same-document history traversal still reloads.
 The hyperlink `target="_blank"` keyword opens a new active tab in the source
 window for pointer or focused-Enter activation; source-document scheme and HTTPS
 downgrade checks still apply to the navigation. Named targets, `_parent`/
@@ -211,7 +215,7 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v22); the browser owns all values,
+reports data-only form/control snapshots (IPC v23); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/number/range, checkbox, radio, textarea,
 hidden, submit and reset, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing; tel has no telephone-specific keyboard or validation;

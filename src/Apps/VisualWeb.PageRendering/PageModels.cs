@@ -71,6 +71,8 @@ public readonly record struct PageViewport(double Width, double Height, double S
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 {
     public IReadOnlyList<PageLinkTarget> LinkTargets { get; init; } = Array.Empty<PageLinkTarget>();
+    /// <summary>Visible rendered element IDs and document-space vertical offsets for browser-owned fragment scrolling.</summary>
+    public IReadOnlyList<PageFragmentTarget> FragmentTargets { get; init; } = Array.Empty<PageFragmentTarget>();
     /// <summary>Bounded form owners in tree order; see <see cref="RendererProtocol.ValidateForms"/>.</summary>
     public IReadOnlyList<PageForm> Forms { get; init; } = Array.Empty<PageForm>();
     /// <summary>Supported controls in tree order with initial values; the browser owns edits and submission.</summary>

@@ -40,6 +40,13 @@ public sealed record PageLinkTarget(
     public bool Contains(double x, double y) => Rects.Any(rect => rect.Contains(x, y));
 }
 
+
+/// <summary>Bounded rendered element identifier and its document-space top offset for fragment navigation.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-fragid">navigate to a fragment</see>.</remarks>
+public sealed record PageFragmentTarget(
+    [property: JsonRequired] string Id,
+    [property: JsonRequired] double Y);
+
 /// <summary>Browser-fetched, decoded linked stylesheet text keyed by its serialized absolute request URL.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
 /// "stylesheet"</see>. Data only: no response headers, final redirect URL, DOM node or fetch capability crosses IPC.</remarks>
@@ -160,6 +167,7 @@ public sealed record RendererMessage
     public bool ExecuteInlineScripts { get; init; }
     public bool ReuseDocument { get; init; }
     public PageLinkTarget[]? LinkTargets { get; init; }
+    public PageFragmentTarget[]? FragmentTargets { get; init; }
     public PageStylesheet[]? Stylesheets { get; init; }
     public PageForm[]? Forms { get; init; }
     public PageFormControl[]? FormControls { get; init; }
@@ -168,7 +176,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 22;
+    public const int Version = 23;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -178,6 +186,8 @@ public static class RendererProtocol
     public const int MaxFormPatternCharacters = FormPattern.MaxCharacters;
     public const int MaxFormPatterns = 64;
     public const int MaxLinkTargets = 4096;
+    public const int MaxFragmentTargets = 4096;
+    public const int MaxFragmentMetadataBytes = 1024 * 1024;
     public const int MaxLinkRects = 64;
     public const int MaxLinkMetadataBytes = 1024 * 1024;
     public const int MaxForms = 256;
@@ -198,6 +208,8 @@ public static class RendererProtocol
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
         if (message.Kind != "frame" && message.LinkTargets is not null)
         { throw new IpcProtocolException("Link targets belong only to frame replies."); }
+        if (message.Kind != "frame" && message.FragmentTargets is not null)
+        { throw new IpcProtocolException("Fragment targets belong only to frame replies."); }
         if (message.Kind != "frame" && (message.Forms is not null || message.FormControls is not null))
         { throw new IpcProtocolException("Form metadata belongs only to frame replies."); }
         if (message.Kind != "frame" && message.TextTargets is not null)
@@ -248,6 +260,7 @@ public static class RendererProtocol
                 if (!double.IsFinite(message.ScrollHeight) || message.ScrollHeight < 0 || message.ScrollHeight > MaxScrollHeight)
                 { throw new IpcProtocolException("Invalid renderer scroll height."); }
                 ValidateLinks(message.LinkTargets, message.Width, message.Height);
+                ValidateFragmentTargets(message.FragmentTargets, message.ScrollHeight);
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
                 ValidateTextTargets(message.TextTargets, message.Width, message.Height);
                 break;
@@ -289,6 +302,25 @@ public static class RendererProtocol
         if (JsonSerializer.SerializeToUtf8Bytes(links).Length > MaxLinkMetadataBytes)
         { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }
     }
+    public static void ValidateFragmentTargets(IReadOnlyList<PageFragmentTarget>? targets, double scrollHeight)
+    {
+        if (targets is null || targets.Count > MaxFragmentTargets || !double.IsFinite(scrollHeight)
+            || scrollHeight < 0 || scrollHeight > MaxScrollHeight)
+        { throw new IpcProtocolException("Invalid renderer fragment target collection or scroll extent."); }
+        long bytes = 0;
+        foreach (var target in targets)
+        {
+            if (target is null || target.Id is null || target.Id.Length > MaxTextCharacters
+                || !double.IsFinite(target.Y) || target.Y < 0 || target.Y > scrollHeight)
+            { throw new IpcProtocolException("Invalid renderer fragment target ID or offset."); }
+            bytes += Encoding.UTF8.GetByteCount(target.Id);
+            if (bytes > MaxFragmentMetadataBytes)
+            { throw new IpcProtocolException("Renderer fragment target metadata byte limit exceeded."); }
+        }
+        if (JsonSerializer.SerializeToUtf8Bytes(targets).Length > MaxFragmentMetadataBytes)
+        { throw new IpcProtocolException("Renderer fragment target metadata byte limit exceeded."); }
+    }
+
     /// <summary>Checks form/control counts, owner indexes, kinds, string limits, action URLs, geometry and the JSON budget.</summary>
     public static void ValidateForms(IReadOnlyList<PageForm>? forms, IReadOnlyList<PageFormControl>? controls,
         int linkCount, double width, double height)
