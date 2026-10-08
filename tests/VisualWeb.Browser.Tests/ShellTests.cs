@@ -799,6 +799,15 @@ public sealed class ShellTests
         shell.Tick();
         var after = Capture();
         Assert.NotEqual(before, after);
+        Assert.Equal(3, shell.Controller.TextareaFirstLine(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerMoved(native.Id, (float)(control.X + 5), (float)(ShellChrome.Height + control.Y + 5)));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, -1));
+        Assert.Equal(0, shell.Controller.TextareaFirstLine(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        Assert.Equal(3, shell.Controller.TextareaFirstLine(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
 
         byte[] Capture()
         {

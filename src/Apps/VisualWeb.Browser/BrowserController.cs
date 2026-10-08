@@ -33,6 +33,7 @@ public sealed class BrowserController : IDisposable
         internal int FocusedControl { get; set; } = -1;
         /// <summary>Browser-owned edited values of the committed document's fields, keyed by control index.</summary>
         internal Dictionary<int, AddressEditor> Fields { get; } = [];
+        internal Dictionary<int, int> TextareaFirstLines { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
@@ -284,6 +285,40 @@ public sealed class BrowserController : IDisposable
         return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "tel" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
+    public int TextareaFirstLine(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index].Kind != "textarea")
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return owner.TextareaFirstLines.GetValueOrDefault(index);
+    }
+    public bool ScrollTextareaAt(TabId id, double x, double y, int lines)
+    {
+        Check();
+        if (!double.IsFinite(x) || !double.IsFinite(y)) { throw new PageNavigationException("Textarea scroll coordinates must be finite."); }
+        var owner = content[id];
+        if (owner.Page is not { } page || owner.Viewport is not { } viewport || x < 0 || y < 0
+            || x >= viewport.Width || y >= viewport.Height) { return false; }
+        for (var index = page.FormControls.Count - 1; index >= 0; index--)
+        {
+            var control = page.FormControls[index];
+            if (control is not { Kind: "textarea", Disabled: false, Rect: { } rect } || !rect.Contains(x, y)) { continue; }
+            var rows = Math.Max(1, (int)((rect.Height - 8) / 15));
+            var lineCount = Value(owner, index).Count(character => character == '\n') + 1;
+            var maximum = Math.Max(0, lineCount - rows);
+            var current = owner.TextareaFirstLines.GetValueOrDefault(index);
+            var next = (int)Math.Clamp((long)current + lines, 0, maximum);
+            if (next != current)
+            {
+                owner.TextareaFirstLines[index] = next;
+                Changed?.Invoke(id);
+            }
+            return true;
+        }
+        return false;
+    }
     /// <summary>Whether the focused editable text field has its full value selected.</summary>
     public bool FormControlSelectAll(TabId tab)
     {
@@ -330,6 +365,7 @@ public sealed class BrowserController : IDisposable
         { throw new BrowserLimitException("Form field length limit exceeded."); }
         editor.Insert(text, RendererProtocol.MaxTextCharacters, allowLineFeed: control.Kind == "textarea");
         owner.Dirty.Add(index);
+        if (control.Kind == "textarea") { EnsureTextareaCaretVisible(owner, index, editor); }
         Changed?.Invoke(id);
         return editor.Text;
     }
@@ -353,8 +389,24 @@ public sealed class BrowserController : IDisposable
             case FormEdit.End: editor.End(); break;
             default: throw new ArgumentOutOfRangeException(nameof(edit));
         }
+        if (owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea")
+        { EnsureTextareaCaretVisible(owner, owner.FocusedControl, editor); }
         Changed?.Invoke(id);
         return editor.Text;
+    }
+    private static void EnsureTextareaCaretVisible(Content owner, int index, AddressEditor editor)
+    {
+        var control = owner.Page!.FormControls[index];
+        if (control.Rect is not { } rect) { return; }
+        var rows = Math.Max(1, (int)((rect.Height - 8) / 15));
+        var value = editor.Text;
+        var caret = Math.Clamp(editor.Caret, 0, value.Length);
+        var caretLine = value.AsSpan(0, caret).Count('\n');
+        var first = owner.TextareaFirstLines.GetValueOrDefault(index);
+        if (caretLine < first) { first = caretLine; }
+        else if (caretLine >= first + rows) { first = caretLine - rows + 1; }
+        var maximum = Math.Max(0, value.Count(character => character == '\n') + 1 - rows);
+        owner.TextareaFirstLines[index] = Math.Clamp(first, 0, maximum);
     }
     private static bool Focusable(PageFormControl control) => control.Kind != "hidden" && !control.Disabled && control.Rect is not null;
     private static List<(bool Control, int Index)> Targets(BrowserPage? page)

@@ -41,6 +41,7 @@ public sealed class DevelopmentShell : IDisposable
         internal float LastDensity { get; set; }
         internal TabId? LastTab { get; set; }
         internal bool SizeLimitReported { get; set; }
+        internal double? PointerX { get; set; }
         internal double? PointerY { get; set; }
         internal ChromeTarget? KeyboardTarget { get; set; }
     }
@@ -215,6 +216,7 @@ public sealed class DevelopmentShell : IDisposable
                     if (window.ActiveTab is { } blurredTab) { Controller.EndTextSelection(blurredTab.Id); }
                     break;
                 case PointerMoved moved:
+                    view.PointerX = moved.X;
                     view.PointerY = moved.Y;
                     if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
                     if (view.SelectingText && window.ActiveTab is { } selectingTab
@@ -226,9 +228,13 @@ public sealed class DevelopmentShell : IDisposable
                     && window.ActiveTab is { } active:
                     if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
                     { Controller.Report(active.Id, "Wheel delta must be finite."); break; }
-                    Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48);
+                    var overTextarea = view.PointerX is { } pointerX && view.PointerY is { } pointerY
+                        && Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height,
+                            (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300));
+                    if (!overTextarea) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
                     break;
                 case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
+                    view.PointerX = pointer.X;
                     view.PointerY = pointer.Y;
                     view.SelectingText = false;
                     view.DraggingScrollbar = false;
@@ -516,8 +522,10 @@ public sealed class DevelopmentShell : IDisposable
         if (window.ActiveTabId is not { } id || Controller.Page(id) is not { FormControls.Count: > 0 } page) { return null; }
         var values = Enumerable.Range(0, page.FormControls.Count).Select(index => Controller.FormControlValue(id, index)).ToArray();
         var focused = Controller.PageHasFocus(id) ? Controller.FocusedControlIndex(id) : -1;
+        var firstLines = Enumerable.Range(0, page.FormControls.Count).Select(index =>
+            page.FormControls[index].Kind == "textarea" ? Controller.TextareaFirstLine(id, index) : 0).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
-            focused >= 0 && Controller.FormControlSelectAll(id));
+            focused >= 0 && Controller.FormControlSelectAll(id), firstLines);
     }
     private string WindowTitle(string? title)
     {

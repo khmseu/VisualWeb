@@ -639,6 +639,25 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void TextareaWheelScrollIsBoundedAndIndependentFromDocumentScroll()
+    {
+        using var harness = new Harness("<form><textarea name=body>one\ntwo\nthree\nfour\nfive</textarea></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        var rect = controller.Page(tab)!.FormControls[0].Rect!;
+
+        Assert.Equal(0, controller.TextareaFirstLine(tab, 0));
+        Assert.True(controller.ScrollTextareaAt(tab, rect.X + 2, rect.Y + 2, 3));
+        Assert.Equal(3, controller.TextareaFirstLine(tab, 0));
+        Assert.Equal(0, controller.ScrollY(tab));
+        Assert.True(controller.ScrollTextareaAt(tab, rect.X + 2, rect.Y + 2, 300));
+        Assert.Equal(3, controller.TextareaFirstLine(tab, 0));
+        Assert.False(controller.ScrollTextareaAt(tab, rect.X + rect.Width + 1, rect.Y + 2, 1));
+        Assert.True(controller.ScrollTextareaAt(tab, rect.X + 2, rect.Y + 2, -300));
+        Assert.Equal(0, controller.TextareaFirstLine(tab, 0));
+    }
+
+    [Fact]
     public void TextareaHomeAndEndMoveWithinCurrentLine()
     {
         using var harness = new Harness("<textarea name=body>12345\nx\n12345</textarea>");

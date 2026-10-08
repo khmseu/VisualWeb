@@ -140,8 +140,7 @@ public sealed class ShellChrome : IDisposable
                     var lines = text.Split('\n');
                     var value = forms.Values[index];
                     var caret = index == forms.Focused && !forms.SelectAll ? Math.Clamp(forms.Caret, 0, value.Length) : -1;
-                    var caretLine = caret < 0 ? lines.Length - 1 : value.AsSpan(0, caret).Count('\n');
-                    var firstLine = Math.Clamp(caretLine - rows + 1, 0, Math.Max(0, lines.Length - rows));
+                    var firstLine = Math.Clamp(forms.TextareaFirstLines?[index] ?? 0, 0, Math.Max(0, lines.Length - rows));
                     for (var row = 0; row < rows && firstLine + row < lines.Length; row++)
                     { Label(lines[firstLine + row], box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink); }
                 }
@@ -279,4 +278,4 @@ public sealed class ShellChrome : IDisposable
 }
 
 /// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
-public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false);
+public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false, IReadOnlyList<int>? TextareaFirstLines = null);
