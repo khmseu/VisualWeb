@@ -33,18 +33,57 @@ public sealed class StylesheetTests
                 "https://initial.example/start" => Redirect("https://final.example/dir/page"),
                 "https://final.example/dir/page" => Text("<!doctype html><link rel=stylesheet href=a.css>"
                     + "<link rel='Preload StyleSheet' href='/b.css#x' type=TEXT/CSS media=' ALL '>", "text/html"),
-                "https://final.example/dir/a.css" => Redirect("https://cdn.example/moved.css"),
-                "https://cdn.example/moved.css" => Text("p{color:red}", "text/css"),
+                "https://final.example/dir/a.css" => Redirect("https://final.example/dir/moved.css"),
+                "https://final.example/dir/moved.css" => Text("p{color:red}", "text/css"),
                 "https://final.example/b.css" => Text("body{margin:0}", "text/css; charset=utf-8"),
                 _ => new(HttpStatusCode.NotFound)
             };
         }));
         var page = await source.LoadAsync(BrowserUrl.Parse("https://initial.example/start"), Cancellation);
         Assert.Equal(["https://initial.example/start", "https://final.example/dir/page", "https://final.example/dir/a.css",
-            "https://cdn.example/moved.css", "https://final.example/b.css"], requests);
+            "https://final.example/dir/moved.css", "https://final.example/b.css"], requests);
         Assert.Equal([new("https://final.example/dir/a.css", "p{color:red}"), new PageStylesheet("https://final.example/b.css#x", "body{margin:0}")],
             page.Stylesheets);
         Assert.Contains(page.Diagnostics, d => d.StartsWith("Linked stylesheets: 2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task CrossOriginStylesheetIsBlockedBeforeItsRequest()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Text("<!doctype html><link rel=stylesheet href='https://cdn.example/style.css'>", "text/html");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
+
+        Assert.Contains("not same origin", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/"], requests);
+    }
+
+    [Fact]
+    public async Task CrossOriginStylesheetRedirectIsBlockedBeforeFollowingTheRedirect()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri!.AbsoluteUri switch
+            {
+                "https://secure.example/" => Text("<!doctype html><link rel=stylesheet href=s.css>", "text/html"),
+                "https://secure.example/s.css" => Redirect("https://cdn.example/style.css"),
+                _ => throw new InvalidOperationException("A cross-origin stylesheet redirect was followed.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
+
+        Assert.Contains("not same origin", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/", "https://secure.example/s.css"], requests);
     }
 
     [Fact]
@@ -237,7 +276,7 @@ public sealed class StylesheetTests
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
 
-        Assert.Contains("HTTPS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("same origin", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/"], requests);
     }
 
@@ -259,7 +298,7 @@ public sealed class StylesheetTests
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
 
-        Assert.Contains("HTTPS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("same origin", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/", "https://secure.example/s.css"], requests);
     }
 
@@ -398,8 +437,9 @@ public sealed class StylesheetTests
             return request.RequestUri!.AbsolutePath == "/s.css" ? Text("p{}", "text/css")
                 : Text("<!doctype html><link rel=stylesheet href='http://example.test/s.css'>", "text/html");
         }), store);
-        await other.LoadAsync(BrowserUrl.Parse("https://unrelated.test/"), Cancellation);
-        Assert.Equal("https://example.test/s.css", requests[^1].AbsoluteUri);
+        await other.LoadAsync(BrowserUrl.Parse("http://example.test/"), Cancellation);
+        Assert.Equal(["https://example.test/", "https://example.test/s.css", "https://example.test/",
+            "https://example.test/s.css"], requests.Select(uri => uri.AbsoluteUri));
     }
 
     [Fact]
