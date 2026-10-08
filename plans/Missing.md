@@ -26,7 +26,7 @@ This is the most important gap before accepting arbitrary web content.
 - Top-level navigation renderer swaps are implemented: every multiprocess shell mode (confined or explicitly unsandboxed) rotates to a fresh renderer for cross-origin final origins and every new opaque document, transactionally after render/commit/history success, reusing it for same-origin navigation. Low-level controllers keep the per-tab default. There are no cross-site frames or frame isolation, no site computation, no inherited/sandbox origin selection, and no SOP/CORS/CSP or production request authorization.
 - The CLI secure-by-default renderer milestone is delivered: recommended `--multiprocess` and legacy `--development-multiprocess` require supported confinement before SDL/content/worker startup, without fallback. Unsandboxed execution requires explicit `--allow-unsandboxed-development` trusted-content acknowledgement in a development mode (mandatory for single-process), rejected with normal mode or `--require-sandbox`. `--require-sandbox` remains a redundant compatible assertion; low-level library/test renderer defaults are unchanged. This does not deliver production request authorization or complete web security.
 - Linux ARM64 confinement is explicitly unsupported and fails closed.
-- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:` links/forms and linked file stylesheets are rejected, while explicit address-bar file navigation remains available. Local file documents also cannot initiate HTTP(S) link/form navigation; HTTPS and opaque `data:` form submissions block cleartext requests and downgrade redirects unless HSTS upgrades the destination before transport. Explicit address-bar navigation remains available. Local file and opaque `data:` documents cannot trigger linked HTTP(S) stylesheet requests (`data:` stylesheets remain allowed); HTTP(S) documents can load only same-origin HTTP(S) stylesheets, with cross-origin redirects rejected, plus `data:` sheets. These are narrow restrictions, not local-document confinement or general request authorization. Linked stylesheet discovery rejects `file:` destinations, and HTTPS documents block HTTP linked stylesheets and downgrade redirects.
+- The browser/network broker remains privileged; production request authorization is unfinished. Page-initiated `file:`/`data:` links and forms and linked file stylesheets are rejected, while explicit address-bar navigation remains available. Local file documents also cannot initiate HTTP(S) link/form navigation; HTTPS and opaque `data:` page-initiated links and form submissions block cleartext requests and downgrade redirects unless HSTS upgrades the destination before transport. Explicit address-bar navigation remains available. Local file and opaque `data:` documents cannot trigger linked HTTP(S) stylesheet requests (`data:` stylesheets remain allowed); HTTP(S) documents can load only same-origin HTTP(S) stylesheets, with cross-origin redirects rejected, plus `data:` sheets. These are narrow restrictions, not local-document confinement or general request authorization. Linked stylesheet discovery rejects `file:` destinations, and HTTPS documents block HTTP linked stylesheets and downgrade redirects.
 
 Evidence: `networking trust boundary`, `isolation architecture`, and `Linux architecture guard`.
 
@@ -222,10 +222,11 @@ movement; `minlength` is checked for edited nonempty values and bounded text
 field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; range controls
 are sanitized to finite bounds and the step grid and remain shell-owned; reset
 controls restore initial values/checks and clear shell-owned edits without
-navigation or validation; local file documents
-cannot initiate HTTP(S)
-link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
-cleartext HTTP. The browser suite (596 tests), IPC suite (88 tests), layout suite
+navigation or validation; page-initiated `file:`/`data:` link and form
+navigations are blocked while explicit address-bar navigation remains available;
+local file documents cannot initiate HTTP(S) link/form navigation, and HTTPS or
+opaque `data:` pages cannot initiate cleartext link/form requests. The browser
+suite (602 tests), IPC suite (88 tests), layout suite
 (55 tests), solution build (0 warnings/errors), changed-file formatting and
 `git diff --check` pass. The full solution test invocation reports one unrelated
 `Engine.Scripting.Tests.CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`

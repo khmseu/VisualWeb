@@ -141,12 +141,16 @@ public sealed class ShellTests
         Key(SDL.Scancode.Return);
         Wait();
         Assert.Equal(-1, shell.Controller.FocusedLinkIndex(tab.Id));
+        var addressBarDocument = shell.Controller.Page(tab.Id)!;
+        var committedUrl = tab.History.Current!.Href;
         Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
         Key(SDL.Scancode.Tab);
         Key(SDL.Scancode.Return);
-        Wait();
-        Assert.Equal("Keyboard destination", tab.Title);
-        Assert.Equal(-1, shell.Controller.FocusedLinkIndex(tab.Id));
+        Assert.Contains("Page-initiated data URL navigation is blocked", tab.Error, StringComparison.Ordinal);
+        Assert.False(tab.IsLoading);
+        Assert.Same(addressBarDocument, shell.Controller.Page(tab.Id));
+        Assert.Equal(committedUrl, tab.History.Current!.Href);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(tab.Id));
 
         void BorderPixel(int x, int y) => Assert.Equal(new byte[] { 128, 96, 64, 255 },
             native.Pixels!.Skip(y * page.Frame.Stride + x * 4).Take(4));
@@ -242,7 +246,7 @@ public sealed class ShellTests
     [InlineData(false, 1)]
     [InlineData(true, 1)]
     [InlineData(false, 1.25)]
-    public void FormFieldsTakeTabFocusTextEntryAndEnterSubmitsSameTabGet(bool multiprocess, float density)
+    public void FormFieldsTakeTabFocusAndBlockPageInitiatedDataSubmission(bool multiprocess, float density)
     {
         using var system = new Windows();
         var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
@@ -252,10 +256,11 @@ public sealed class ShellTests
         native.Density = density;
         var tab = window.ActiveTab!;
         var destination = "data:text/html," + Uri.EscapeDataString("<!doctype html><title>Result</title><style>*{margin:0}</style><p>done</p><!--");
-        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+        var initialUrl = "data:text/html," + Uri.EscapeDataString(
             "<!doctype html><style>*{margin:0} input{display:block;width:150px;height:24px}</style>" +
             $"<a href='{destination}'>link</a><form action='{destination}'><input name=q value=a>" +
-            "<input type=submit value=Send></form><div style='height:2000px'></div>"));
+            "<input type=submit value=Send></form><div style='height:2000px'></div>");
+        shell.Controller.Navigate(tab.Id, initialUrl);
         Wait();
         var page = shell.Controller.Page(tab.Id)!;
         var original = page.Frame.Pixels.ToArray();
@@ -291,11 +296,11 @@ public sealed class ShellTests
         Key(SDL.Scancode.Tab, SDL.Keymod.Shift);
         Assert.True(native.TextInput);
         Key(SDL.Scancode.Return);
-        Wait();
-        Assert.Equal("Result", tab.Title);
-        Assert.EndsWith("?q=ab+", tab.History.Current!.Href, StringComparison.Ordinal);
-        Assert.Equal(-1, shell.Controller.FocusedControlIndex(tab.Id));
-        Assert.False(native.TextInput);
+        Assert.Contains("Page-initiated data URL navigation is blocked", tab.Error, StringComparison.Ordinal);
+        Assert.Equal(initialUrl, tab.History.Current!.Href);
+        Assert.Equal("ab ", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.True(native.TextInput);
 
         void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None) =>
             shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
@@ -371,7 +376,7 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void UnstyledFormButtonIsPaintedAndSubmitsByClickOrEnter(bool click)
+    public void UnstyledFormButtonIsPaintedAndBlocksDataActionByClickOrEnter(bool click)
     {
         using var system = new Windows();
         using var shell = new DevelopmentShell(system, FontPath);
@@ -379,8 +384,9 @@ public sealed class ShellTests
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         var destination = "data:text/html," + Uri.EscapeDataString("<!doctype html><style>body{margin:0}</style><title>Submitted</title>done<!--");
-        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
-            $"<!doctype html><style>body{{margin:0}}</style><form action='{destination}'><input name=q value=x><button name=go value=1>Search</button></form>"));
+        var initialUrl = "data:text/html," + Uri.EscapeDataString(
+            $"<!doctype html><style>body{{margin:0}}</style><form action='{destination}'><input name=q value=x><button name=go value=1>Search</button></form>");
+        shell.Controller.Navigate(tab.Id, initialUrl);
         Wait();
         var page = shell.Controller.Page(tab.Id)!;
         var button = page.FormControls[1];
@@ -407,9 +413,10 @@ public sealed class ShellTests
             shell.Controller.FocusControl(tab.Id, 0);
             shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
         }
-        Wait();
-        Assert.Equal("Submitted", tab.Title);
-        Assert.EndsWith("?q=x&go=1", tab.History.Current!.Href, StringComparison.Ordinal);
+        Assert.Contains("Page-initiated data URL navigation is blocked", tab.Error, StringComparison.Ordinal);
+        Assert.False(tab.IsLoading);
+        Assert.Same(page, shell.Controller.Page(tab.Id));
+        Assert.Equal(initialUrl, tab.History.Current!.Href);
 
         void Wait()
         {
@@ -618,7 +625,7 @@ public sealed class ShellTests
     [InlineData(true, 2)]
     [InlineData(false, 1.25)]
     [InlineData(true, 1.25)]
-    public void PrimaryPageClicksNavigateInLogicalCoordinatesOnly(bool multiprocess, float density)
+    public void PrimaryPageClicksUseLogicalCoordinatesAndBlockDataDestinations(bool multiprocess, float density)
     {
         using var system = new Windows();
         var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
@@ -647,10 +654,12 @@ public sealed class ShellTests
         Assert.False(tab.IsLoading);
         Assert.Single(tab.History.Entries);
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
-        Wait(() => !tab.IsLoading && tab.Title == "Clicked");
-        Assert.Equal(destination, tab.History.Current!.Href);
-        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
-        Assert.Empty(shell.Controller.Page(tab.Id)!.LinkTargets);
+        Assert.Contains("Page-initiated data URL navigation is blocked", tab.Error, StringComparison.Ordinal);
+        Assert.False(tab.IsLoading);
+        Assert.Equal("data:text/html," + Uri.EscapeDataString(html), tab.History.Current!.Href);
+        Assert.Same(old, shell.Controller.Page(tab.Id));
+        Assert.NotEqual(0, shell.Controller.ScrollY(tab.Id));
+        Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
 
         void Wait(Func<bool> ready)
         {

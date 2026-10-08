@@ -746,11 +746,15 @@ public sealed class BrowserController : IDisposable
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false)
     {
+        preventHttpsDowngrade = preventHttpsDowngrade
+            || (content[id].Document?.Url.Protocol is "https:" or "data:");
         var url = BrowserUrl.Parse(destination);
         if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
         if (url.Protocol == "file:")
         { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
+        if (url.Protocol == "data:")
+        { throw new PageNavigationException("Page-initiated data URL navigation is blocked; enter data URLs in the address bar."); }
         if (content[id].Document?.Url.Protocol == "file:" && url.Protocol is "http:" or "https:")
         {
             throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");

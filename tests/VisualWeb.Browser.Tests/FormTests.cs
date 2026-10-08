@@ -645,6 +645,25 @@ public sealed class FormTests
         Assert.Same(page, harness.Controller.Page(harness.Tab.Id));
     }
 
+    [Fact]
+    public void PageInitiatedDataFormNavigationIsBlockedTransactionally()
+    {
+        using var harness = new Harness("<form action='data:text/html,untrusted'><input type=submit value=Go></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        var committed = controller.Page(tab)!;
+        controller.FocusPage(tab);
+        Assert.True(controller.FocusControl(tab, 0));
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab));
+
+        Assert.Contains("Page-initiated data URL navigation is blocked", error.Message, StringComparison.Ordinal);
+        Assert.Single(harness.Source.Requests);
+        Assert.Same(committed, controller.Page(tab));
+        Assert.Equal("https://example.com/final/index.html", harness.Tab.History.Current!.Href);
+        Assert.Null(harness.Tab.Error);
+    }
+
     [Theory]
     [InlineData("<a href='file:///etc/passwd'>local</a>", false)]
     [InlineData("<form action='file:///etc/passwd'><input type=submit value=Go></form>", true)]

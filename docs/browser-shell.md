@@ -187,8 +187,11 @@ does not match the current window (for example, during asynchronous resize)
 cannot activate links.
 
 Activation uses the current tab's ordinary `Navigate` transaction and shared
-session HSTS loader. Only `http:`, `https:`, `file:` and `data:` are supported;
-other schemes, including `javascript:`, fail visibly before loading. URL/count/
+session HSTS loader. Page-initiated destinations are limited to HTTP(S): `file:`
+and `data:` links fail visibly before loading; enter those URLs explicitly in the
+address bar. HTTPS and opaque `data:` documents also block HTTP link destinations
+and HTTP redirect hops unless session HSTS upgrades them before transport. Other
+schemes, including `javascript:`, fail visibly. URL/count/
 metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
 Relative and fragment URL components are preserved, but fragment activation
@@ -272,9 +275,9 @@ submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,
 everything else `%XX`, lone surrogates as U+FFFD), replacing the action's query
 and keeping its fragment. The result uses the ordinary same-tab navigation
-transaction (HSTS, redirects, origin rotation, history); `file:` and `data:`
-actions also receive the query. The query is capped at 8192 characters and the
-resulting URL at the existing URL limit.
+transaction (HSTS, redirects, origin rotation, history). Page-initiated `file:`
+and `data:` actions are rejected by the navigation broker. The query is capped
+at 8192 characters and the resulting URL at the existing URL limit.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
@@ -291,8 +294,10 @@ preedit, or clipboard selection range support.
 
 ## Navigation and page policy
 
-Page-initiated link and form navigation to `file:` URLs is blocked to prevent a
-web document from using the browser's privileged local-file loader. Local `file:`
+Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;
+explicit address-bar navigation remains available. This prevents page content
+from choosing privileged local-file loading or constructing navigable `data:`
+documents through the broker. Local `file:`
 documents also cannot initiate HTTP(S) link or form navigation, preventing an
 untrusted local page from sending form values to a remote endpoint. Forms in
 opaque `data:` documents also block HTTP submissions (subject to a prior HSTS

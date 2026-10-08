@@ -1,3 +1,4 @@
+using System.Net;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Engine.Text;
@@ -161,7 +162,6 @@ public sealed class LinkTests
     [InlineData("", "https://example.com/final/index.html")]
     [InlineData("//other.example/path", "https://other.example/path")]
     [InlineData("http://example.com/path", "http://example.com/path")]
-    [InlineData("data:text/html,hello#part", "data:text/html,hello#part")]
     public void SupportedDestinationsUseNormalNavigation(string href, string absolute)
     {
         var source = new ControllerTests.Source();
@@ -177,6 +177,92 @@ public sealed class LinkTests
         Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
         Assert.Equal(absolute, source.Requests[1].Url.Href);
         Assert.Single(controller.Session.Windows.Single().Tabs);
+    }
+
+    [Fact]
+    public void ExplicitAddressBarDataUrlNavigationRemainsAvailable()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+
+        controller.Navigate(tab.Id, "data:text/html,explicit");
+
+        Assert.Equal("data:text/html,explicit", Assert.Single(source.Requests).Url.Href);
+    }
+
+    [Fact]
+    public void PageInitiatedDataUrlNavigationIsBlockedTransactionally()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://example.com/");
+        var committedDocument = Document("<!doctype html><style>*{margin:0}</style><a href='data:text/html,untrusted'>open</a>");
+        source.Requests[0].Completion.SetResult(committedDocument);
+        controller.Pump(_ => new(100, 50, 1));
+        var page = controller.Page(tab.Id)!;
+        var history = tab.History.Current;
+        var link = Assert.Single(page.LinkTargets);
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id,
+            link.X + link.Width / 2, link.Y + link.Height / 2));
+
+        Assert.Contains("Page-initiated data URL navigation is blocked", error.Message, StringComparison.Ordinal);
+        Assert.Single(source.Requests);
+        Assert.Same(page, controller.Page(tab.Id));
+        Assert.Same(history, tab.History.Current);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SecurePageCannotFollowHttpLinkOrDowngradeRedirect(bool redirect)
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            if (request.RequestUri!.AbsolutePath == "/document")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        $"<!doctype html><style>*{{margin:0}}</style><a href='{(redirect ? "https://secure.example/link" : "http://secure.example/link")}'>open</a>",
+                        System.Text.Encoding.UTF8, "text/html")
+                };
+            }
+            return new(HttpStatusCode.Found)
+            { Headers = { Location = new Uri("http://secure.example/insecure") } };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://secure.example/document");
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        var link = Assert.Single(committed!.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+        PumpUntilComplete();
+
+        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Equal(redirect ? 2 : 1, requests.Count);
+        Assert.All(requests, request => Assert.Equal("https", request.Scheme));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://secure.example/document", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
     }
 
     [Fact]
@@ -302,5 +388,11 @@ public sealed class LinkTests
         var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
         Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
         Assert.Single(source.Requests);
+    }
+
+    private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) => Task.FromResult(respond(request));
     }
 }
