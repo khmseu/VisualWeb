@@ -199,6 +199,8 @@ public sealed class ShellTests
         Key(SDL.Scancode.Home);
         Key(SDL.Scancode.End);
         Key(SDL.Scancode.Pagedown);
+        Key(SDL.Scancode.Down);
+        Key(SDL.Scancode.Up);
         Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
         Assert.Equal("ab ", shell.Controller.FormControlValue(tab.Id, 0));
         Key(SDL.Scancode.Tab);
@@ -608,7 +610,7 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void WheelAndPageKeysScrollActivePageButNotChromeOrAddressEditor(bool multiprocess)
+    public void WheelArrowAndPageKeysScrollActivePageButNotChromeOrEditableFields(bool multiprocess)
     {
         using var system = new Windows();
         var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
@@ -633,6 +635,10 @@ public sealed class ShellTests
         Key(SDL.Scancode.Home);
         Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
         Key(SDL.Scancode.Escape);
+        Key(SDL.Scancode.Down);
+        Assert.Equal(96, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.Up);
+        Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
         Key(SDL.Scancode.Pagedown);
         Assert.True(shell.Controller.ScrollY(tab.Id) > 48);
         Key(SDL.Scancode.End);

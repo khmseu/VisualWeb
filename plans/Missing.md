@@ -69,8 +69,8 @@ broader page interaction is still missing:
   level (not character-level); a primary press beginning on an anchor retains
   immediate navigation, while a drag begun in ordinary text can include anchor
   fragments. Selection resets on successful document/scroll/resize publication.
-  Basic vertical document scrolling is implemented via wheel and Page
-  Up/Down/Home/End, retaining DOM/scripts across
+  Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
+  Page Up/Down and Home/End outside editable fields, retaining DOM/scripts across
   local/process repaints.
   A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
   Horizontal/nested scrolling and general CSS overflow remain missing.
@@ -193,7 +193,7 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `289badb` and working-tree changes on
+*Status cross-checked against `3273daf` and working-tree changes on
 2026-10-07. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; bounded editable textareas submit newline-normalized

@@ -22,7 +22,7 @@ public sealed class DevelopmentShell : IDisposable
         <p>Ctrl T creates a tab. Ctrl W closes it. Ctrl N opens a window.</p>
         <p>Ctrl M moves the active tab to another window.</p>
         <p>Alt Left and Alt Right navigate history. F5 reloads.</p>
-        <p>Wheel, Page Up, Page Down, Home and End scroll outside address editing. The page scrollbar can be clicked or dragged.</p>
+        <p>Wheel, Arrow Up/Down, Page Up/Down, Home and End scroll outside editing fields. The page scrollbar can be clicked or dragged.</p>
         <p>Basic links, GET forms and visible text selection are available; general page events remain deferred.</p>
         </body></html>
         """;
@@ -380,6 +380,8 @@ public sealed class DevelopmentShell : IDisposable
             {
                 switch (code)
                 {
+                    case SDL.Scancode.Down when !Controller.EditingFormControl(tab.Id): Controller.Scroll(tab.Id, 48); break;
+                    case SDL.Scancode.Up when !Controller.EditingFormControl(tab.Id): Controller.Scroll(tab.Id, -48); break;
                     case SDL.Scancode.Pagedown: Controller.Scroll(tab.Id, viewport.Height); break;
                     case SDL.Scancode.Pageup: Controller.Scroll(tab.Id, -viewport.Height); break;
                     case SDL.Scancode.Home: Controller.Scroll(tab.Id, -double.MaxValue); break;
