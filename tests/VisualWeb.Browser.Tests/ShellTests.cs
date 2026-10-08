@@ -251,7 +251,11 @@ public sealed class ShellTests
         shell.Dispatch(new TextEntered(native.Id, "!"));
         Key(SDL.Scancode.Down);
         shell.Dispatch(new TextEntered(native.Id, "?"));
-        Assert.Equal("first!\nsecond?", shell.Controller.FormControlValue(tab.Id, 0));
+        Key(SDL.Scancode.Home);
+        shell.Dispatch(new TextEntered(native.Id, "^"));
+        Key(SDL.Scancode.End);
+        shell.Dispatch(new TextEntered(native.Id, "$"));
+        Assert.Equal("first!\n^second?$", shell.Controller.FormControlValue(tab.Id, 0));
         Assert.Single(tab.History.Entries);
         Assert.Single(requests);
         Key(SDL.Scancode.Tab);
@@ -260,7 +264,7 @@ public sealed class ShellTests
         Key(SDL.Scancode.Return);
         Wait();
         Assert.Equal("Result", tab.Title);
-        Assert.Equal("https://forms.example/message?body=first%21%0D%0Asecond%3F&send=yes", tab.History.Current!.Href);
+        Assert.Equal("https://forms.example/message?body=first%21%0D%0A%5Esecond%3F%24&send=yes", tab.History.Current!.Href);
         Assert.Equal(2, requests.Count);
 
         HttpMessageHandler Transport() => new HstsHandler(request =>

@@ -639,6 +639,24 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void TextareaHomeAndEndMoveWithinCurrentLine()
+    {
+        using var harness = new Harness("<textarea name=body>12345\nx\n12345</textarea>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        controller.FocusControl(tab, 0);
+
+        controller.EditFormControl(tab, FormEdit.Home);
+        Assert.Equal(8, controller.FormControlCaret(tab));
+        controller.EditFormControl(tab, FormEdit.Up);
+        Assert.Equal(6, controller.FormControlCaret(tab));
+        controller.EditFormControl(tab, FormEdit.End);
+        Assert.Equal(7, controller.FormControlCaret(tab));
+        controller.EditFormControl(tab, FormEdit.Down);
+        Assert.Equal(9, controller.FormControlCaret(tab));
+    }
+
+    [Fact]
     public void MaxLengthTruncatesInsertionAndOnlyDirtyOverlongValuesBlock()
     {
         using var harness = new Harness("<form><input name=a maxlength=3><input name=b value=abcdef maxlength=3></form>");

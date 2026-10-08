@@ -49,6 +49,19 @@ public sealed class AddressEditor
     public void Right() { Caret = SelectAll ? Text.Length : Next(Caret); SelectAll = false; preferredColumn = null; }
     public void Home() { Caret = 0; SelectAll = false; preferredColumn = null; }
     public void End() { Caret = Text.Length; SelectAll = false; preferredColumn = null; }
+    public void HomeLine()
+    {
+        Caret = (Caret == 0 ? -1 : Text.LastIndexOf('\n', Caret - 1)) + 1;
+        SelectAll = false;
+        preferredColumn = null;
+    }
+    public void EndLine()
+    {
+        var end = Text.IndexOf('\n', Caret);
+        Caret = end < 0 ? Text.Length : end;
+        SelectAll = false;
+        preferredColumn = null;
+    }
     public void Up() => MoveVertical(false);
     public void Down() => MoveVertical(true);
     private void MoveVertical(bool down)
