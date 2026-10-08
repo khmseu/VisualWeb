@@ -57,15 +57,17 @@ internal static class PageForms
                     : element.LocalName == "button" ? "button type=reset" : $"<{element.LocalName}>");
                 continue;
             }
-            if (kind is "text" or "search" or "tel" or "url")
+            if (kind is "text" or "search" or "email" or "tel" or "url")
             {
                 foreach (var name in TextOnlyAttributes)
                 {
                     if (element.GetAttribute(name) is not null) { Reject(index, $"text field attribute {name}"); }
                 }
             }
+            if (kind == "email" && element.GetAttribute("multiple") is not null)
+            { Reject(index, "email multiple addresses"); }
             string? pattern = null;
-            if ((kind is "text" or "search" or "tel" or "url") && element.GetAttribute("pattern") is { } sourcePattern)
+            if ((kind is "text" or "search" or "email" or "tel" or "url") && element.GetAttribute("pattern") is { } sourcePattern)
             {
                 if (sourcePattern.Length > FormPattern.MaxCharacters || ++patternCount > RendererProtocol.MaxFormPatterns
                     || !FormPattern.IsValid(sourcePattern))
@@ -94,14 +96,14 @@ internal static class PageForms
             }
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
-            var text = kind is "text" or "search" or "tel" or "url" or "textarea";
+            var text = kind is "text" or "search" or "email" or "tel" or "url" or "textarea";
             var minLength = text ? MinLength(element.GetAttribute("minlength")) : -1;
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "") : element.GetAttribute("value");
             value = kind switch
             {
-                "text" or "search" or "tel" or "url" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
+                "text" or "search" or "email" or "tel" or "url" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
                 _ => value ?? "",
             };
             var label = kind switch
@@ -169,7 +171,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "tel" or "url" or "hidden" or "submit" ? type : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "hidden" or "submit" ? type : null,
         "button" => DomFormControls.ButtonType(element) == "submit" ? "button" : null,
         "textarea" => "textarea",
         _ => null,

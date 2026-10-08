@@ -19,6 +19,10 @@ public readonly record struct TextareaVisualLine(int Start, int End);
 /// This is navigation renderer rotation, not site isolation, frame isolation or same-origin policy enforcement.</remarks>
 public sealed class BrowserController : IDisposable
 {
+    private static readonly Regex EmailAddress = new(
+        @"\A[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\z",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+
     private sealed class Content(IPageSource source, IPageRenderer renderer)
     {
         internal IPageSource Source { get; } = source;
@@ -264,7 +268,7 @@ public sealed class BrowserController : IDisposable
         Check();
         var owner = content[id];
         return owner.PageFocused && owner.Page is { } page && owner.FocusedControl >= 0
-            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "tel" or "url" or "textarea", ReadOnly: false, Disabled: false };
+            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "textarea", ReadOnly: false, Disabled: false };
     }
     public bool IsMultilineFormControl(TabId id)
     {
@@ -286,7 +290,7 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
-        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "tel" or "url" or "textarea"
+        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
     public int TextareaFirstLine(TabId id, int index)
@@ -512,13 +516,13 @@ public sealed class BrowserController : IDisposable
         var control = controls[index];
         if (control.Disabled || control.Form < 0) { return false; }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
-        if (control.Kind is not ("text" or "search" or "tel" or "url")) { return false; }
+        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
         {
             if (controls[candidate].Form == control.Form && controls[candidate].Kind is "submit" or "button")
             { return !controls[candidate].Disabled && Submit(id, owner, control.Form, candidate); }
         }
-        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "tel" or "url") > 1) { return false; }
+        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url") > 1) { return false; }
         return Submit(id, owner, control.Form, -1);
     }
     /// <summary>Validates and submits one form as a same-tab GET through <see cref="Navigate"/> (HSTS, redirects, origin commit).</summary>
@@ -536,12 +540,14 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "tel" or "url" or "textarea") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "textarea") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             if (control.Required && value.Length == 0)
             { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
             if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
+            if (control.Kind == "email" && value.Length > 0 && !EmailAddress.IsMatch(value))
+            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid email address; submission blocked."); }
             if (control.Pattern is { } pattern && value.Length > 0)
             {
                 try
@@ -601,7 +607,7 @@ public sealed class BrowserController : IDisposable
             if (control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
             return control.Kind is "submit" or "button" ? ActivateControl(id, owner, index)
-                : control.Kind is "text" or "search" or "tel" or "url" or "textarea";
+                : control.Kind is "text" or "search" or "email" or "tel" or "url" or "textarea";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {

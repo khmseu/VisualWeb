@@ -116,6 +116,32 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task EmailInputReportsEditableMetadataAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=email name=contact value=person@example.com minlength=8 maxlength=80 pattern=.+></form>"),
+            new(200, 400, 1), Cancellation);
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("email", control.Kind);
+        Assert.Equal("person@example.com", control.Value);
+        Assert.Equal(8, control.MinLength);
+        Assert.Equal(80, control.MaxLength);
+        Assert.Equal(".+", control.Pattern);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Fact]
+    public async Task EmailMultipleIsRejectedAsUnsupported()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><input type=email name=contact multiple></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Contains("multiple", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TextareaReportsInitialMultilineValueAndGeometryAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -819,6 +845,40 @@ public sealed class FormTests
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Equal("https://example.com/final/index.html?site=", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("person@example.com", true)]
+    [InlineData("first.last+tag@example.co.uk", true)]
+    [InlineData("person@localhost", true)]
+    [InlineData("person@-example.com", false)]
+    [InlineData("person@example..com", false)]
+    [InlineData("person@example.com,other@example.com", false)]
+    [InlineData("person", false)]
+    public void EmailInputValidatesSingleAddressBeforeSubmitting(string value, bool valid)
+    {
+        using var harness = new Harness($"<form><input type=email name=contact value=\"{value}\"></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        if (valid)
+        {
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.Equal("https://example.com/final/index.html?contact=" + Uri.EscapeDataString(value), harness.Source.Requests[^1].Url.Href);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.Contains("valid email address", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
+    }
+
+    [Fact]
+    public void EmptyOptionalEmailInputCanSubmit()
+    {
+        using var harness = new Harness("<form><input type=email name=contact></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?contact=", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]
