@@ -684,7 +684,18 @@ public sealed class BrowserController : IDisposable
         var page = owner.Page!;
         var form = page.Forms[formIndex];
         if (form.Error is { } error) { throw new PageNavigationException(error); }
-        var encoding = owner.Document?.CharacterEncoding ?? "UTF-8";
+        var document = owner.Document!;
+        var action = BrowserUrl.Parse(form.Action);
+        if (action.Protocol is "http:" or "https:")
+        {
+            if (document.Url.Protocol == "data:")
+            { throw new PageNavigationException("Network form submissions from opaque documents are blocked."); }
+            if (document.Url.Protocol is "http:" or "https:"
+                && !document.Origin.IsSameOrigin(action.Origin)
+                && !CanUpgradeSameHostFormAction(document.Origin, action.Origin))
+            { throw new PageNavigationException("Cross-origin form submissions are blocked; forms must target the document's origin."); }
+        }
+        var encoding = document.CharacterEncoding;
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
         { throw new PageNavigationException($"Form submission encoding {encoding} is unsupported; only UTF-8 is implemented."); }
         for (var index = 0; index < page.FormControls.Count; index++)
@@ -737,10 +748,13 @@ public sealed class BrowserController : IDisposable
         var limit = Session.Options.MaxAddressCharacters;
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i),
             i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked)), limit);
-        var preventHttpsDowngrade = owner.Document?.Url.Protocol is "https:" or "data:";
-        return NavigateLink(id, FormSubmission.ApplyQuery(BrowserUrl.Parse(form.Action), query, limit).Href,
-            preventHttpsDowngrade);
+        var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
+        return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade);
     }
+    private static bool CanUpgradeSameHostFormAction(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
+        documentOrigin.Scheme == "https" && actionOrigin.Scheme == "http"
+        && documentOrigin.Host == actionOrigin.Host
+        && (actionOrigin.Port == 80 ? documentOrigin.Port == 443 : documentOrigin.Port == actionOrigin.Port);
     private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));

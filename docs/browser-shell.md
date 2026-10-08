@@ -279,6 +279,14 @@ transaction (HSTS, redirects, origin rotation, history). Page-initiated `file:`
 and `data:` actions are rejected by the navigation broker. The query is capped
 at 8192 characters and the resulting URL at the existing URL limit.
 
+HTTP(S) forms in HTTP(S) documents may submit only to the document's same origin;
+cross-origin actions fail before form values are serialized or a request is
+started. HTTPS-to-HTTP actions for the same host and effective port are allowed
+to reach the existing HSTS/downgrade policy, so HSTS may upgrade them and an
+unupgraded downgrade remains blocked. Opaque `data:` documents cannot submit to
+HTTP(S) destinations. This is a stricter browser-broker rule for this form
+subset, not general same-origin enforcement, CORS, or request authorization.
+
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
@@ -301,11 +309,13 @@ documents through the broker. Local `file:`
 documents also cannot initiate HTTP(S) link or form navigation, preventing an
 untrusted local page from sending form values to a remote endpoint. Forms in
 opaque `data:` documents also block HTTP submissions (subject to a prior HSTS
-upgrade), preventing cleartext form-data disclosure. Users can still enter an
-explicit URL in the address bar. These are narrow guards, not filesystem
-sandboxing: locally selected file documents
-remain privileged/trusted content, and there is no general origin/CORS/CSP or
-local-file isolation policy yet.
+upgrade), and block HTTPS form submissions as well because their origin is
+opaque. HTTP(S) documents cannot submit forms cross-origin; a same-host HTTPS
+document's HTTP action can proceed only through the existing HSTS/downgrade
+check. Users can still enter an explicit URL in the address bar. These are narrow
+guards, not filesystem sandboxing: locally selected file documents remain
+privileged/trusted content, and there is no general origin/CORS/CSP or local-file
+isolation policy yet.
 
 BrowserController owns independent per-tab IPageSource/IPageRenderer instances.
 GetPageSource uses a separate ResourceLoader per tab, with **4 MiB responses**,

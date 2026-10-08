@@ -742,13 +742,13 @@ public sealed class FormTests
         var committed = controller.Page(tab.Id);
         controller.FocusPage(tab.Id);
         Assert.True(controller.FocusControl(tab.Id, 1));
-        Assert.True(controller.ActivateFocusedLink(tab.Id));
-        PumpUntilComplete();
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
 
-        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Contains("Cross-origin form submissions are blocked", error.Message, StringComparison.Ordinal);
         Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
 
         void PumpUntilComplete()
         {
@@ -786,10 +786,10 @@ public sealed class FormTests
         var committed = controller.Page(tab.Id);
         controller.FocusPage(tab.Id);
         Assert.True(controller.FocusControl(tab.Id, 1));
-        Assert.True(controller.ActivateFocusedLink(tab.Id));
-        PumpUntilComplete();
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
 
-        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        Assert.Contains("Network form submissions from opaque documents are blocked", error.Message, StringComparison.Ordinal);
+        Assert.Null(tab.Error);
         Assert.Empty(requests);
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal(dataUrl, tab.History.Current!.Href);
@@ -805,6 +805,67 @@ public sealed class FormTests
             controller.Pump(_ => viewport);
             Assert.False(tab.IsLoading);
         }
+    }
+
+    [Fact]
+    public void SecurePageCannotSubmitFormValuesToCrossOriginHttps()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent(Style + "<form action='https://outside.example/search'><input name=q value=private>"
+                    + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+            };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        PumpUntilComplete();
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
+
+        Assert.Contains("Cross-origin form submissions are blocked", error.Message, StringComparison.Ordinal);
+        Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void OpaqueDataDocumentCannotSubmitFormValuesToHttps()
+    {
+        using var harness = new Harness("<form action='https://outside.example/search'><input name=q value=private><input type=submit></form>",
+            url: "data:text/html,opaque");
+        var committed = harness.Controller.Page(harness.Tab.Id);
+        harness.Controller.FocusPage(harness.Tab.Id);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Contains("Network form submissions from opaque documents are blocked", error.Message, StringComparison.Ordinal);
+        Assert.Single(harness.Source.Requests);
+        Assert.Same(committed, harness.Controller.Page(harness.Tab.Id));
+        Assert.Equal("data:text/html,opaque", harness.Tab.History.Current!.Href);
+        Assert.Null(harness.Tab.Error);
     }
 
     [Fact]
