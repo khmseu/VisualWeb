@@ -16,7 +16,7 @@ internal static class PageForms
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
     private static readonly string[] SubmitterOverrides = ["formaction", "formenctype", "formmethod", "formnovalidate", "formtarget"];
-    private static readonly string[] TextOnlyAttributes = ["dirname", "pattern", "list"];
+    private static readonly string[] TextOnlyAttributes = ["dirname", "list"];
 
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
         BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry, int linkCount,
@@ -32,6 +32,7 @@ internal static class PageForms
         var formAttribute = elements.Any(e => e.LocalName is "button" or "fieldset" or "input" or "object" or "output"
             or "select" or "textarea" && e.GetAttribute("form") is not null);
         var lastLink = 0;
+        var patternCount = 0;
         foreach (var element in elements)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -63,6 +64,16 @@ internal static class PageForms
                     if (element.GetAttribute(name) is not null) { Reject(index, $"text field attribute {name}"); }
                 }
             }
+            string? pattern = null;
+            if ((kind is "text" or "search" or "tel") && element.GetAttribute("pattern") is { } sourcePattern)
+            {
+                if (sourcePattern.Length > FormPattern.MaxCharacters || ++patternCount > RendererProtocol.MaxFormPatterns
+                    || !FormPattern.IsValid(sourcePattern))
+                { Reject(index, "unsupported or invalid pattern expression"); }
+                else { pattern = sourcePattern; }
+            }
+            else if (kind == "textarea" && element.GetAttribute("pattern") is not null)
+            { Reject(index, "textarea pattern"); }
             if (kind == "textarea")
             {
                 if (element.GetAttribute("dirname") is not null) { Reject(index, "textarea dirname"); }
@@ -109,7 +120,7 @@ internal static class PageForms
                 rect = placed.Rect;
                 lastLink = placed.BeforeLink;
             }
-            controls.Add(new(index, kind, controlName, value, label, element.GetAttribute("disabled") is not null,
+            controls.Add(new(index, kind, controlName, value, label, pattern, element.GetAttribute("disabled") is not null,
                 text && element.GetAttribute("readonly") is not null, text && element.GetAttribute("required") is not null,
                 minLength,
                 text ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect));

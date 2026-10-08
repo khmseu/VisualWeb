@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using VisualWeb.Core.Encoding;
 using VisualWeb.Core.Url;
 using VisualWeb.Ipc.Contracts;
@@ -539,6 +540,20 @@ public sealed class BrowserController : IDisposable
             var value = Value(owner, index);
             if (control.Required && value.Length == 0)
             { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
+            if (control.Pattern is { } pattern && value.Length > 0)
+            {
+                try
+                {
+                    if (!FormPattern.Matches(pattern, value))
+                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its pattern; submission blocked."); }
+                }
+                catch (RegexMatchTimeoutException)
+                { throw new PageNavigationException($"Form field '{control.Name}' pattern matching exceeded the time limit; submission blocked."); }
+                catch (ArgumentException)
+                { throw new PageNavigationException($"Form field '{control.Name}' has an unsupported pattern; submission blocked."); }
+                catch (NotSupportedException)
+                { throw new PageNavigationException($"Form field '{control.Name}' has an unsupported pattern; submission blocked."); }
+            }
             if (control.MinLength > 0 && owner.Dirty.Contains(index) && value.Length > 0 && value.Length < control.MinLength)
             { throw new PageNavigationException($"Form field '{control.Name}' is shorter than minlength {control.MinLength}; submission blocked."); }
             if (control.MaxLength >= 0 && owner.Dirty.Contains(index) && value.Length > control.MaxLength)

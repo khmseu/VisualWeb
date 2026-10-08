@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using VisualWeb.Core.Url;
 
 namespace VisualWeb.Ipc.Contracts;
@@ -65,6 +66,7 @@ public sealed record PageFormControl(
     [property: JsonRequired] string Name,
     [property: JsonRequired] string Value,
     [property: JsonRequired] string Label,
+    [property: JsonRequired] string? Pattern,
     [property: JsonRequired] bool Disabled,
     [property: JsonRequired] bool ReadOnly,
     [property: JsonRequired] bool Required,
@@ -72,6 +74,27 @@ public sealed record PageFormControl(
     [property: JsonRequired] int MaxLength,
     [property: JsonRequired] int BeforeLink,
     [property: JsonRequired] PageLinkRect? Rect);
+
+/// <summary>Bounded full-value pattern matching shared by renderer validation and the browser broker.</summary>
+public static class FormPattern
+{
+    public const int MaxCharacters = 256;
+    private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(500);
+
+    public static bool IsValid(string pattern)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        if (pattern.Length > MaxCharacters) { return false; }
+        try { _ = Create(pattern); return true; }
+        catch (ArgumentException) { return false; }
+        catch (NotSupportedException) { return false; }
+    }
+
+    public static bool Matches(string pattern, string value) => Create(pattern).IsMatch(value);
+
+    private static Regex Create(string pattern) => new($"\\A(?:{pattern})\\z",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, Timeout);
+}
 
 /// <summary>Versioned data-only renderer messages. No DOM, native handles, paths or broker capabilities.</summary>
 /// <remarks>Internal protocol; not a web interface. Each channel serves exactly one tab.</remarks>
@@ -109,13 +132,15 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 12;
+    public const int Version = 13;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
     public const int MaxPayloadBytes = MaxPixels * 4;
     public const int MaxHtmlCharacters = 4 * 1024 * 1024;
     public const int MaxTextCharacters = 8192;
+    public const int MaxFormPatternCharacters = FormPattern.MaxCharacters;
+    public const int MaxFormPatterns = 64;
     public const int MaxLinkTargets = 4096;
     public const int MaxLinkRects = 64;
     public const int MaxLinkMetadataBytes = 1024 * 1024;
@@ -249,6 +274,7 @@ public static class RendererProtocol
             { throw new IpcProtocolException("Renderer form action must be a serialized absolute http, https, file or data URL."); }
         }
         var lastLink = 0;
+        var patternCount = 0;
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
@@ -257,6 +283,10 @@ public static class RendererProtocol
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "button") && control.Label.Length != 0
+                || control.Pattern is { Length: > MaxFormPatternCharacters }
+                || control.Pattern is not null && control.Kind is not ("text" or "search" or "tel")
+                || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)
+                || control.Pattern is not null && ++patternCount > MaxFormPatterns
                 || control.MinLength < -1 || control.MinLength > MaxTextCharacters
                 || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount
                 || control.Kind is not ("text" or "search" or "tel" or "textarea") && control.MinLength != -1)

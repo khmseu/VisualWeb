@@ -204,7 +204,7 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v12); the browser owns all values,
+reports data-only form/control snapshots (IPC v13); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/tel
 (editable with generic text behavior; tel has no telephone-specific keyboard or
 validation), `textarea`, hidden and submit, plus `button` submit (and inert
@@ -262,7 +262,8 @@ target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
 textarea `dirname` or `wrap=hard`, select/output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
-required empty fields, edited too-short/overlong values, or query/URL limit overflow.
+required empty fields, edited too-short/overlong values, pattern mismatches,
+unsupported pattern syntax, or query/URL limit overflow.
 There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
 events, `requestSubmit`, script submission, select controls, autofill, IME
 preedit, or clipboard selection range support.

@@ -26,7 +26,7 @@ public sealed class FormTests
         var page = await renderer.RenderAsync(Document("""
             <a href=/a>a</a>
             <form action='search?x=1#frag'>
-            <input name=q value="a&#10;b&#13;c" minlength=2 maxlength=5 required>
+            <input name=q value="a&#10;b&#13;c" minlength=2 maxlength=5 required pattern="[a-z]+">
             <input type=HIDDEN name=h value=" v&#10; ">
             <input type=search name=s readonly disabled>
             <input type=submit name=go>
@@ -49,6 +49,7 @@ public sealed class FormTests
         Assert.True(controls[0].Required);
         Assert.Equal(2, controls[0].MinLength);
         Assert.Equal(5, controls[0].MaxLength);
+        Assert.Equal("[a-z]+", controls[0].Pattern);
         Assert.True(controls[2].Disabled && controls[2].ReadOnly);
         Assert.All(controls, c => Assert.Equal(1, c.BeforeLink));
         Assert.Null(controls[1].Rect);
@@ -56,6 +57,43 @@ public sealed class FormTests
         Assert.All(controls.Where(c => c.Kind != "hidden"), c => Assert.Equal(20, c.Rect!.Height));
         Assert.Equal(20, controls[2].Rect!.Y - controls[0].Rect!.Y);
         Assert.Equal(20, controls[4].Rect!.Y - controls[3].Rect!.Y);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TextFieldPatternMetadataIsBoundedAndCrossesRendererBoundary(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input name=q pattern=\"[a-z]{2,5}\"></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal("[a-z]{2,5}", Assert.Single(page.FormControls).Pattern);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Fact]
+    public async Task PatternCountIsBoundedAndExcessIsVisible()
+    {
+        using var renderer = Renderer(false);
+        var controls = string.Concat(Enumerable.Range(0, RendererProtocol.MaxFormPatterns + 1)
+            .Select(index => $"<input name=q{index} pattern=a>"));
+        var page = await renderer.RenderAsync(Document($"<form>{controls}</form>"), new(200, 400, 1), Cancellation);
+        Assert.Contains("pattern", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(RendererProtocol.MaxFormPatterns, page.FormControls.Count(control => control.Pattern is not null));
+    }
+
+    [Theory]
+    [InlineData("pattern='['", "invalid pattern")]
+    [InlineData("pattern='(?=a)'", "unsupported")]
+    [InlineData("pattern='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'", "pattern")]
+    [InlineData("<textarea pattern=a></textarea>", "textarea pattern")]
+    public async Task UnsupportedPatternSemanticsAreVisible(string markup, string expected)
+    {
+        using var renderer = Renderer(false);
+        var body = markup.StartsWith("<textarea", StringComparison.Ordinal)
+            ? $"<form>{markup}</form>" : $"<form><input name=q {markup}></form>";
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Contains(expected, Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -117,7 +155,6 @@ public sealed class FormTests
     [InlineData("<form action='http://[bad'><input name=q></form>", "action")]
     [InlineData("<base href=/other/><form><input name=q></form>", "base")]
     [InlineData("<form><input name=q dirname=d></form>", "dirname")]
-    [InlineData("<form><input name=q pattern=a></form>", "pattern")]
     [InlineData("<form><input name=q list=l></form>", "list")]
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
     [InlineData("<form><button formaction=/x>x</button></form>", "formaction")]
@@ -734,6 +771,26 @@ public sealed class FormTests
         Assert.True(textarea.Controller.FocusControl(textarea.Tab.Id, 1));
         Assert.Throws<PageNavigationException>(() => textarea.Controller.ActivateFocusedLink(textarea.Tab.Id));
         Assert.Single(textarea.Source.Requests);
+    }
+
+    [Fact]
+    public void PatternValidationRequiresFullMatchAndAllowsEmptyValues()
+    {
+        using var matching = new Harness("<form><input name=q value=abc pattern=\"[a-z]{3}\"><button type=submit>go</button></form>");
+        Assert.True(matching.Controller.FocusControl(matching.Tab.Id, 0));
+        Assert.True(matching.Controller.ActivateFocusedLink(matching.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?q=abc", matching.Source.Requests[^1].Url.Href);
+
+        using var mismatch = new Harness("<form><input name=q value=abcd pattern=\"[a-z]{3}\"><button type=submit>go</button></form>");
+        Assert.True(mismatch.Controller.FocusControl(mismatch.Tab.Id, 0));
+        var error = Assert.Throws<PageNavigationException>(() => mismatch.Controller.ActivateFocusedLink(mismatch.Tab.Id));
+        Assert.Contains("pattern", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(mismatch.Source.Requests);
+
+        using var empty = new Harness("<form><input name=q pattern=\"[a-z]{3}\"><button type=submit>go</button></form>");
+        Assert.True(empty.Controller.FocusControl(empty.Tab.Id, 0));
+        Assert.True(empty.Controller.ActivateFocusedLink(empty.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?q=", empty.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

@@ -45,9 +45,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(12, RendererProtocol.Version);
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 11 }, 0));
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 11 }, 0));
+        Assert.Equal(13, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 12 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 12 }, 0));
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
@@ -78,11 +78,11 @@ public sealed class ProtocolTests
         Forms = [new("https://example.com/search?old#frag", null), new("", "Unsupported form method: post.")],
         FormControls =
         [
-            new(0, "text", "q", "café", "", false, false, true, 2, 10, 0, new(0, 0, 2, 1)),
-            new(0, "hidden", "h", "v", "", false, false, false, -1, -1, 0, null),
-            new(0, "submit", "go", "", "Submit", false, false, false, -1, -1, 1, new(0, 1, 2, 1)),
-            new(1, "button", "", "", "", true, false, false, -1, -1, 1, null),
-            new(-1, "search", "", "", "", false, true, false, -1, -1, 1, null)
+            new(0, "text", "q", "café", "", null, false, false, true, 2, 10, 0, new(0, 0, 2, 1)),
+            new(0, "hidden", "h", "v", "", null, false, false, false, -1, -1, 0, null),
+            new(0, "submit", "go", "", "Submit", null, false, false, false, -1, -1, 1, new(0, 1, 2, 1)),
+            new(1, "button", "", "", "", null, true, false, false, -1, -1, 1, null),
+            new(-1, "search", "", "", "", null, false, true, false, -1, -1, 1, null)
         ]
     };
 
@@ -110,9 +110,11 @@ public sealed class ProtocolTests
         var controlJson = JsonSerializer.Serialize(FormFrame.FormControls![0]);
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
             controlJson.Replace("\"MinLength\":2,", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
+            controlJson.Replace("\"Pattern\":null,", "", StringComparison.Ordinal)));
     }
 
-    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 24));
+    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 28));
 
     [Theory]
     [MemberData(nameof(InvalidFormCases))]
@@ -145,7 +147,11 @@ public sealed class ProtocolTests
             20 => FormFrame with { FormControls = [null!] },
             21 => FormFrame with { FormControls = [control with { MinLength = -2 }] },
             22 => FormFrame with { FormControls = [control with { MinLength = RendererProtocol.MaxTextCharacters + 1 }] },
-            _ => FormFrame with { FormControls = [FormFrame.FormControls[1] with { MinLength = 1 }] },
+            23 => FormFrame with { FormControls = [FormFrame.FormControls[1] with { MinLength = 1 }] },
+            24 => FormFrame with { FormControls = [control with { Pattern = "[" }] },
+            25 => FormFrame with { FormControls = [control with { Pattern = new string('a', FormPattern.MaxCharacters + 1) }] },
+            26 => FormFrame with { FormControls = [FormFrame.FormControls[1] with { Pattern = "a" }] },
+            _ => FormFrame with { FormControls = Enumerable.Repeat(control with { Pattern = "a", Rect = null }, RendererProtocol.MaxFormPatterns + 1).ToArray() },
         };
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame, 16));
     }
@@ -269,7 +275,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(12, RendererProtocol.Version);
+        Assert.Equal(13, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
