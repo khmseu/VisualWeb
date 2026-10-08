@@ -99,6 +99,23 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task UrlInputReportsEditableMetadataAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=url name=site value=\"https://example.com/path\" minlength=8 maxlength=80 pattern=\"https://.*\"></form>"),
+            new(200, 400, 1), Cancellation);
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("url", control.Kind);
+        Assert.Equal("https://example.com/path", control.Value);
+        Assert.Equal(8, control.MinLength);
+        Assert.Equal(80, control.MaxLength);
+        Assert.Equal("https://.*", control.Pattern);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TextareaReportsInitialMultilineValueAndGeometryAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -771,6 +788,37 @@ public sealed class FormTests
         Assert.True(textarea.Controller.FocusControl(textarea.Tab.Id, 1));
         Assert.Throws<PageNavigationException>(() => textarea.Controller.ActivateFocusedLink(textarea.Tab.Id));
         Assert.Single(textarea.Source.Requests);
+    }
+
+    [Theory]
+    [InlineData("https://example.com/path", true)]
+    [InlineData("mailto:user@example.com", true)]
+    [InlineData("/relative/path", false)]
+    [InlineData("not a url", false)]
+    public void UrlInputValidatesAbsoluteUrlBeforeSubmitting(string value, bool valid)
+    {
+        using var harness = new Harness($"<form><input type=url name=site value=\"{value}\"></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        if (valid)
+        {
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.Equal("https://example.com/final/index.html?site=" + Uri.EscapeDataString(value), harness.Source.Requests[^1].Url.Href);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+            Assert.Contains("valid absolute URL", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
+    }
+
+    [Fact]
+    public void EmptyOptionalUrlInputCanSubmit()
+    {
+        using var harness = new Harness("<form><input type=url name=site></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?site=", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

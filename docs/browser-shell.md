@@ -84,15 +84,15 @@ The native window title retains the same warning alongside the active page title
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
-| Committed text, Left/Right, Backspace/Delete in a focused text/search/tel field or textarea | Edit the shell-owned field value (no page scrolling) |
-| Home/End in a focused text/search/tel field | Move the caret to the start/end of the value |
+| Committed text, Left/Right, Backspace/Delete in a focused text/search/tel/url field or textarea | Edit the shell-owned field value (no page scrolling) |
+| Home/End in a focused text/search/tel/url field | Move the caret to the start/end of the value |
 | Home/End in a focused textarea | Move the caret to the start/end of the current line |
 | Up/Down in a focused textarea | Move the caret between visible wrapped lines, preserving its preferred column |
-| Enter in a focused text/search/tel field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
+| Enter in a focused text/search/tel/url field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
-| Ctrl+V while editing the address or a text/search/tel/textarea field | Paste clipboard text at the caret or over the current field selection |
+| Ctrl+V while editing the address or a text/search/tel/url/textarea field | Paste clipboard text at the caret or over the current field selection |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Page text hit geometry is a bounded v9 data-only snapshot of shaped fragments
@@ -204,10 +204,10 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v13); the browser owns all values,
-focus, carets and submission. Supported controls are `input` text/search/tel
+reports data-only form/control snapshots (IPC v14); the browser owns all values,
+focus, carets and submission. Supported controls are `input` text/search/tel/url
 (editable with generic text behavior; tel has no telephone-specific keyboard or
-validation), `textarea`, hidden and submit, plus `button` submit (and inert
+validation; url requires a valid absolute URL on submission), `textarea`, hidden and submit, plus `button` submit (and inert
 `type=button`). Input/button controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
 to 128 and 64. Author CSS may size the controls within the layout limits; author
@@ -224,7 +224,7 @@ gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
 widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
-tree order with anchor groups; primary-clicking a visible text/search/tel field
+tree order with anchor groups; primary-clicking a visible text/search/tel/url field
 or textarea focuses it without starting page text selection. Focusing an editable
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
@@ -238,14 +238,14 @@ units and truncated to `maxlength` without splitting surrogate pairs. A nonempty
 value edited below `minlength` blocks submission; an untouched initial value does
 not trigger too-short validation.
 
-Enter in a focused text/search/tel field submits through the form's first submit
+Enter in a focused text/search/tel/url field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the
-form has at most one text/search/tel field (implicit submission). Enter in a
+form has at most one text/search/tel/url field (implicit submission). Enter in a
 textarea inserts LF and never triggers implicit submission. Form state is tab-local
 and survives tab switches and same-document scroll/resize repaints whose control
 metadata is unchanged; new document commits reset it, failed navigations keep it.
 
-Submission includes named, non-disabled text/search/tel/textarea/hidden controls
+Submission includes named, non-disabled text/search/tel/url/textarea/hidden controls
 plus the named activating submitter, in tree order. `_charset_` hidden fields
 submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,
@@ -258,7 +258,7 @@ resulting URL at the existing URL limit.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
-`form=` attribute, submitter overrides, unsupported input types/reset buttons,
+`form=` attribute, submitter overrides, unsupported input types/reset buttons, invalid URL input values,
 textarea `dirname` or `wrap=hard`, select/output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,

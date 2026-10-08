@@ -57,7 +57,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, tel, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
+/// <remarks>Kind is text, search, tel, url, textarea, hidden, submit (input) or button (button type=submit). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -132,7 +132,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 13;
+    public const int Version = 14;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -278,18 +278,18 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "tel" or "textarea" or "hidden" or "submit" or "button")
+                || control.Kind is not ("text" or "search" or "tel" or "url" or "textarea" or "hidden" or "submit" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "button") && control.Label.Length != 0
                 || control.Pattern is { Length: > MaxFormPatternCharacters }
-                || control.Pattern is not null && control.Kind is not ("text" or "search" or "tel")
+                || control.Pattern is not null && control.Kind is not ("text" or "search" or "tel" or "url")
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)
                 || control.Pattern is not null && ++patternCount > MaxFormPatterns
                 || control.MinLength < -1 || control.MinLength > MaxTextCharacters
                 || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount
-                || control.Kind is not ("text" or "search" or "tel" or "textarea") && control.MinLength != -1)
+                || control.Kind is not ("text" or "search" or "tel" or "url" or "textarea") && control.MinLength != -1)
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
             if (control.Rect is not { } rect) { continue; }
             if (control.Kind == "hidden" || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
