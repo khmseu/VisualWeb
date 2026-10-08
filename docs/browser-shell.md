@@ -372,7 +372,7 @@ final `LoadedPage.Origin` is compared with the committed document origin via
   `TakeFailure` is polled, so crash recovery restarts that renderer.
 
 This is strict per-origin top-level navigation rotation only: there is no site
-computation, cross-site frame isolation, inherited origin selection,
+computation, cross-site frame isolation, inherited origin selection, browser-wide
 same-origin/CORS/CSP policy or production request authorization.
 
 The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
@@ -387,13 +387,16 @@ then fetches each supported classic `link rel=stylesheet` (tokens ASCII
 case-insensitive; `href` resolved with Core.Url against the final response URL)
 through the same tab-local `ResourceLoader`, sharing the shell session HSTS store,
 before the document is published. Requests keep cookies disabled and the bad-port
-and HSTS checks. HTTPS documents block HTTP stylesheet URLs before fetching and
-block HTTPS-to-HTTP redirects before the downgraded request is sent. This is limited
-to linked stylesheets, not a general mixed-content policy. HTTP(S) documents can
-load HTTP(S) and data URLs; `file:` and opaque `data:` documents can load only
-data URLs. This prevents local/opaque page content from using the privileged
-browser broker to access additional local files or trigger network requests.
-This is a narrow stylesheet policy, not general request authorization. Links
+and HSTS checks. HTTP(S) stylesheets must remain same-origin with the final
+document URL across every redirect; cross-origin requests and redirect targets
+fail before that request is sent. This intentionally rejects cross-origin CSS
+loads that ordinary HTML permits. HTTPS documents also block HTTP stylesheet
+URLs and HTTPS-to-HTTP redirects before the downgraded request is sent. This is
+limited to linked stylesheets, not a general mixed-content policy. HTTP(S)
+documents can load same-origin HTTP(S) and data URLs; `file:` and opaque `data:`
+documents can load only data URLs. This prevents local/opaque page content from
+using the privileged browser broker to access additional local files or trigger
+network requests. This is a narrow stylesheet policy, not general request authorization. Links
 without a nonempty `href` create no sheet, as in HTML.
 Alternate/titled/disabled links, `media` other than absent/`all`, `type` other than
 absent/empty/`text/css`, `crossorigin`, `integrity`, `referrerpolicy`, the obsolete

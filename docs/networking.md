@@ -136,18 +136,21 @@ redirect, supply ambient credentials, manage cookies or buffer unbounded
 responses themselves. Tests inject fakes; real transport tests disable proxies
 for their ephemeral loopback servers.
 
-## Opt-in same-origin restricted loads
+## Same-origin restricted loads
 
 `LoadAsync` stays the trusted, unrestricted developer navigation entry point:
 HTTP(S), local file and data URLs, with redirects to any HTTP(S) origin. The
 browser's `GetPageSource` top-level navigation keeps using it without a
 same-origin restriction; the bad-port policy above still applies. Its brokered
-linked-stylesheet subresources use the same tab loader, session HSTS store and
-bad-port policy with cookies off; this is not CORS, SOP, mixed-content or request
-authorization (see the [shell guide](browser-shell.md)).
+linked-stylesheet subresources use the same tab loader and session HSTS store,
+with cookies off. HTTP(S) stylesheets are additionally restricted to the final
+document's fixed origin across every redirect; this deliberate compatibility
+restriction is not CORS, browser-wide SOP, general mixed-content policy or
+request authorization (see the [shell guide](browser-shell.md)).
 
 `LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken)`
-is a separate, opt-in GET entry point. It shares the same HTTP pipeline, so
+is a separate GET entry point for callers that choose a same-origin policy. It
+shares the same HTTP pipeline, so
 redirect limits, body bounds, deadlines, cancellation and the cookie opt-in are
 identical. It models only the origin check of Fetch
 [main fetch](https://fetch.spec.whatwg.org/#concept-main-fetch) for request mode
@@ -170,10 +173,13 @@ identical. It models only the origin check of Fetch
   by allowed responses, including the redirect response that was denied, stay in
   this loader's session.
 
-This is a loader primitive, not browser-wide enforcement. No CORS, `Origin`
-header, referrer policy, CSP, response tainting or `no-cors` mode is
-implemented, and no script binding, renderer/broker caller or CLI flag uses it
-yet. It does not make the loader safe to expose to hostile content.
+The browser uses this primitive for HTTP(S) linked stylesheets, with the final
+document URL's origin held fixed across every stylesheet redirect. This is an
+intentionally stricter policy than ordinary HTML stylesheet loading, which can
+load cross-origin sheets; it is not a CORS implementation or browser-wide
+same-origin policy. No `Origin` header, referrer policy, CSP, response tainting
+or `no-cors` mode is implemented. It does not make the loader safe to expose to
+hostile content.
 
 ## Basic cookies, not full browser policy
 
@@ -201,10 +207,12 @@ broader conformance data and persistence decisions.
 
 **Do not expose this loader directly to hostile page scripts or use it as an
 authorization boundary.** It is an unfiltered browser-side loader, not the Fetch
-API. It can access local files and arbitrary network endpoints. Apart from the
-opt-in `LoadSameOriginAsync` check and bad-port blocking above, there is no
-CORS, CSP, mixed-content policy, referrer/origin policy,
-cache, storage partitioning, sandbox or private-network policy yet.
+API. It can access local files and arbitrary network endpoints. The browser
+applies `LoadSameOriginAsync` only to HTTP(S) linked stylesheets; top-level
+navigation remains unrestricted, and other request classes do not have
+browser-wide origin authorization. Apart from that narrow stylesheet restriction
+and bad-port blocking above, there is no CORS, CSP, general mixed-content policy,
+referrer/origin policy, cache, storage partitioning, sandbox or private-network policy yet.
 The session HSTS subset above protects learned DNS hosts, not first visits or
 general request authorization.
 Cookie opt-in does not authorize a request. The future shell/broker must mediate

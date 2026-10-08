@@ -24,7 +24,8 @@ public interface IPageSource : IDisposable
 /// before the document is published. Each must be an ok text/css response (or a MIME-less file from a file document) decoded
 /// per css-syntax <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">fallback encoding</see>;
 /// unknown labels fail visibly. Any stylesheet failure fails the whole navigation. CSS @import, url() resources, fonts,
-/// images and CORS are not fetched.</remarks>
+/// images and CORS are not fetched. HTTP(S) stylesheet requests are restricted to the final document's fixed origin,
+/// including redirects; this deliberate restriction is not CORS or general request authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -86,8 +87,11 @@ public sealed class GetPageSource : IPageSource
         ResourceResponse response;
         try
         {
-            response = await loader.LoadAsync(url, includeCookies: false, cancellationToken,
-                preventHttpsDowngrade: secureDocument).ConfigureAwait(false);
+            response = url.Protocol is "http:" or "https:"
+                ? await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
+                    .ConfigureAwait(false)
+                : await loader.LoadAsync(url, includeCookies: false, cancellationToken,
+                    preventHttpsDowngrade: secureDocument).ConfigureAwait(false);
         }
         catch (ResourceLoadException exception)
         { throw new PageNavigationException($"Linked stylesheet {url.Href} failed to load: {exception.Message}"); }
