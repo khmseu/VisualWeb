@@ -285,9 +285,11 @@ started, and redirects are checked against that original document origin before
 the redirected request is sent. HTTPS-to-HTTP actions for the same host and
 effective port are allowed to reach the existing HSTS/downgrade policy, so HSTS
 may upgrade them and an unupgraded downgrade remains blocked. Opaque `data:`
-documents cannot submit to HTTP(S) destinations. This is a stricter
-browser-broker rule for this form subset, not general same-origin enforcement,
-CORS, or request authorization.
+documents cannot submit to HTTP(S) destinations. Custom `IPageSource`
+implementations must explicitly support fixed-origin redirects for constrained
+form navigation; the compatibility default fails visibly instead of silently
+using an unrestricted source. This is a stricter browser-broker rule for this
+form subset, not general same-origin enforcement, CORS, or request authorization.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base

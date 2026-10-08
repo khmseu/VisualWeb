@@ -12,8 +12,14 @@ public interface IPageSource : IDisposable
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
         LoadAsync(url, cancellationToken);
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
-        SecurityOrigin? sameOriginRedirectOrigin) =>
-        LoadAsync(url, cancellationToken, preventHttpsDowngrade);
+        SecurityOrigin? sameOriginRedirectOrigin)
+    {
+        if (sameOriginRedirectOrigin is not null)
+        {
+            throw new PageNavigationException("The configured page source does not enforce fixed-origin redirects.");
+        }
+        return LoadAsync(url, cancellationToken, preventHttpsDowngrade);
+    }
 }
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>

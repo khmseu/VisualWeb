@@ -539,6 +539,15 @@ public sealed class ControllerTests
             Requests.Add(request);
             return request.Completion.Task;
         }
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
+            SecurityOrigin? sameOriginRedirectOrigin)
+        {
+            if (sameOriginRedirectOrigin is not null && !sameOriginRedirectOrigin.IsSameOrigin(url.Origin))
+            {
+                throw new PageNavigationException("Test page source rejected a cross-origin navigation.");
+            }
+            return LoadAsync(url, cancellationToken);
+        }
         public void Dispose() => Disposed = true;
     }
     internal sealed class Renderer : IPageRenderer

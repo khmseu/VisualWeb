@@ -447,6 +447,19 @@ public sealed class FormTests
         public void Dispose() => Controller.Dispose();
     }
 
+    private sealed class LegacyPageSource(string html) : IPageSource
+    {
+        internal int LoadCount { get; private set; }
+
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
+        {
+            LoadCount++;
+            return Task.FromResult(Document(html, url.Href));
+        }
+
+        public void Dispose() { }
+    }
+
     private const string SearchForm = """
         <form action='/search?old=1#frag'>
         <input name=q value='x y'>
@@ -866,6 +879,30 @@ public sealed class FormTests
         Assert.Same(committed, harness.Controller.Page(harness.Tab.Id));
         Assert.Equal("data:text/html,opaque", harness.Tab.History.Current!.Href);
         Assert.Null(harness.Tab.Error);
+    }
+
+    [Fact]
+    public void LegacyPageSourceFailsClosedForFixedOriginFormNavigation()
+    {
+        var source = new LegacyPageSource(
+            "<form action='/submit'><input name=q value=private><input type=submit></form>");
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        controller.Pump(_ => viewport);
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
+
+        Assert.Contains("does not enforce fixed-origin redirects", error.Message, StringComparison.Ordinal);
+        Assert.Equal(1, source.LoadCount);
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+        Assert.False(tab.IsLoading);
     }
 
     [Fact]
