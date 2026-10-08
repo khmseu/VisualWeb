@@ -539,6 +539,14 @@ public sealed class ControllerTests
             Requests.Add(request);
             return request.Completion.Task;
         }
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade)
+        {
+            if (preventHttpsDowngrade && url.Protocol == "http:")
+            {
+                throw new PageNavigationException("Test page source rejected an HTTP downgrade.");
+            }
+            return LoadAsync(url, cancellationToken);
+        }
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
             SecurityOrigin? sameOriginRedirectOrigin)
         {
@@ -546,7 +554,7 @@ public sealed class ControllerTests
             {
                 throw new PageNavigationException("Test page source rejected a cross-origin navigation.");
             }
-            return LoadAsync(url, cancellationToken);
+            return LoadAsync(url, cancellationToken, preventHttpsDowngrade);
         }
         public void Dispose() => Disposed = true;
     }

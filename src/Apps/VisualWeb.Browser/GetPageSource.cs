@@ -9,8 +9,14 @@ namespace VisualWeb.Browser;
 public interface IPageSource : IDisposable
 {
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken);
-    Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
-        LoadAsync(url, cancellationToken);
+    Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade)
+    {
+        if (preventHttpsDowngrade)
+        {
+            throw new PageNavigationException("The configured page source does not enforce HTTPS downgrade protection.");
+        }
+        return LoadAsync(url, cancellationToken);
+    }
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
         SecurityOrigin? sameOriginRedirectOrigin)
     {

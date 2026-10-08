@@ -161,7 +161,6 @@ public sealed class LinkTests
     [InlineData("#part", "https://example.com/final/index.html#part")]
     [InlineData("", "https://example.com/final/index.html")]
     [InlineData("//other.example/path", "https://other.example/path")]
-    [InlineData("http://example.com/path", "http://example.com/path")]
     public void SupportedDestinationsUseNormalNavigation(string href, string absolute)
     {
         var source = new ControllerTests.Source();
@@ -177,6 +176,43 @@ public sealed class LinkTests
         Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
         Assert.Equal(absolute, source.Requests[1].Url.Href);
         Assert.Single(controller.Session.Windows.Single().Tabs);
+    }
+
+    [Fact]
+    public void LegacyPageSourceFailsClosedForSecurePageHttpLink()
+    {
+        var source = new LegacyPageSource();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://secure.example/");
+        controller.Pump(_ => new(100, 50, 1));
+        Assert.Null(tab.Error);
+        var committed = controller.Page(tab.Id);
+        var history = tab.History.Current;
+        var link = Assert.Single(committed!.LinkTargets);
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id,
+            link.X + link.Width / 2, link.Y + link.Height / 2));
+
+        Assert.Contains("does not enforce HTTPS downgrade protection", error.Message, StringComparison.Ordinal);
+        Assert.Equal(1, source.LoadCount);
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Same(history, tab.History.Current);
+        Assert.False(tab.IsLoading);
+    }
+
+    private sealed class LegacyPageSource : IPageSource
+    {
+        internal int LoadCount { get; private set; }
+
+        public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
+        {
+            LoadCount++;
+            return Task.FromResult(new LoadedPage(url,
+                "<!doctype html><style>*{margin:0}</style><a href='http://outside.example/'>insecure</a>", 200, []));
+        }
+
+        public void Dispose() { }
     }
 
     [Fact]
