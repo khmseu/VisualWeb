@@ -53,7 +53,7 @@ jobs:
       - name: Run solution tests
         run: >-
           dotnet test VisualWeb.slnx --configuration Release --no-build
-          --filter 'FullyQualifiedName!~RequiredConfinementInlineScriptsMutatePixelsAndRecoverAfterDeadline&FullyQualifiedName!~HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
+          --filter 'FullyQualifiedName!~RequiredConfinementInlineScriptsMutatePixelsAndRecoverAfterDeadline&FullyQualifiedName!~NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer&FullyQualifiedName!~TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel&FullyQualifiedName!~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs&FullyQualifiedName!~ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers&FullyQualifiedName!~ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure'
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- dummy
       - run: dotnet run --project tools/V8Smoke --configuration Release --no-build -- --local
       # Explicit opt-outs are only for trusted offline development smoke fixtures.
