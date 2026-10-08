@@ -6,10 +6,11 @@ public sealed class AddressEditor
     public string Text { get; private set; } = "";
     public int Caret { get; private set; }
     public bool SelectAll { get; set; }
+    private int? preferredColumn;
     public void Reset(string text, bool selectAll = false)
     {
         ArgumentNullException.ThrowIfNull(text);
-        Text = text; Caret = text.Length; SelectAll = selectAll;
+        Text = text; Caret = text.Length; SelectAll = selectAll; preferredColumn = null;
     }
     public string Insert(string value, int maximum, bool allowLineFeed = false)
     {
@@ -22,6 +23,7 @@ public sealed class AddressEditor
         var suffix = SelectAll ? "" : Text[Caret..];
         Text = prefix + value + suffix;
         Caret = prefix.Length + value.Length;
+        preferredColumn = null;
         SelectAll = false;
         return Text;
     }
@@ -33,19 +35,48 @@ public sealed class AddressEditor
             var previous = Previous(Caret);
             Text = Text.Remove(previous, Caret - previous);
             Caret = previous;
+            preferredColumn = null;
         }
         return Text;
     }
     public string Delete()
     {
         if (SelectAll) { Reset(""); }
-        else if (Caret < Text.Length) { Text = Text.Remove(Caret, Next(Caret) - Caret); }
+        else if (Caret < Text.Length) { Text = Text.Remove(Caret, Next(Caret) - Caret); preferredColumn = null; }
         return Text;
     }
-    public void Left() { Caret = SelectAll ? 0 : Previous(Caret); SelectAll = false; }
-    public void Right() { Caret = SelectAll ? Text.Length : Next(Caret); SelectAll = false; }
-    public void Home() { Caret = 0; SelectAll = false; }
-    public void End() { Caret = Text.Length; SelectAll = false; }
+    public void Left() { Caret = SelectAll ? 0 : Previous(Caret); SelectAll = false; preferredColumn = null; }
+    public void Right() { Caret = SelectAll ? Text.Length : Next(Caret); SelectAll = false; preferredColumn = null; }
+    public void Home() { Caret = 0; SelectAll = false; preferredColumn = null; }
+    public void End() { Caret = Text.Length; SelectAll = false; preferredColumn = null; }
+    public void Up() => MoveVertical(false);
+    public void Down() => MoveVertical(true);
+    private void MoveVertical(bool down)
+    {
+        var previousBreak = Caret == 0 ? -1 : Text.LastIndexOf('\n', Caret - 1);
+        var lineStart = previousBreak + 1;
+        var lineEnd = Text.IndexOf('\n', Caret);
+        if (lineEnd < 0) { lineEnd = Text.Length; }
+        preferredColumn ??= Caret - lineStart;
+        SelectAll = false;
+        if (down)
+        {
+            if (lineEnd == Text.Length) { return; }
+            lineStart = lineEnd + 1;
+            lineEnd = Text.IndexOf('\n', lineStart);
+            if (lineEnd < 0) { lineEnd = Text.Length; }
+        }
+        else
+        {
+            if (lineStart == 0) { return; }
+            lineEnd = lineStart - 1;
+            lineStart = Text.LastIndexOf('\n', Math.Max(0, lineStart - 2)) + 1;
+        }
+        Caret = Math.Min(lineStart + preferredColumn.Value, lineEnd);
+        if (Caret > lineStart && Caret < lineEnd
+            && char.IsHighSurrogate(Text[Caret - 1]) && char.IsLowSurrogate(Text[Caret]))
+        { Caret--; }
+    }
     private int Previous(int position) => position == 0 ? 0
         : position >= 2 && char.IsLowSurrogate(Text[position - 1]) && char.IsHighSurrogate(Text[position - 2]) ? position - 2 : position - 1;
     private int Next(int position) => position >= Text.Length ? Text.Length

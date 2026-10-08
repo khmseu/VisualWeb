@@ -345,6 +345,8 @@ public sealed class BrowserController : IDisposable
             case FormEdit.Delete: editor.Delete(); owner.Dirty.Add(owner.FocusedControl); break;
             case FormEdit.Left: editor.Left(); break;
             case FormEdit.Right: editor.Right(); break;
+            case FormEdit.Up when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea": editor.Up(); break;
+            case FormEdit.Down when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea": editor.Down(); break;
             case FormEdit.Home: editor.Home(); break;
             case FormEdit.End: editor.End(); break;
             default: throw new ArgumentOutOfRangeException(nameof(edit));

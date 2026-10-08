@@ -85,6 +85,7 @@ The native window title retains the same warning alongside the active page title
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
 | Committed text, Left/Right, Home/End, Backspace/Delete in a focused text/search/tel field or textarea | Edit the shell-owned field value (no page scrolling) |
+| Up/Down in a focused textarea | Move the caret between unwrapped lines, preserving its preferred column |
 | Enter in a focused text/search/tel field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
@@ -223,9 +224,10 @@ or textarea focuses it without starting page text selection. Focusing an editabl
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
 sequences normalize to LF; other control characters are rejected. Ctrl+A selects
-the entire value and Ctrl+V pastes at the caret or over that selection. Caret
-movement is linear; textarea soft wrapping, internal scrolling and line-aware
-Home/End behavior are not implemented. Values are capped at 8192 UTF-16 code
+the entire value and Ctrl+V pastes at the caret or over that selection. Left/Right caret
+movement is linear; Up/Down moves between unwrapped LF-delimited textarea lines
+while preserving the preferred column. Soft wrapping, internal scrolling and
+line-aware Home/End behavior are not implemented. Values are capped at 8192 UTF-16 code
 units and truncated to `maxlength` without splitting surrogate pairs.
 
 Enter in a focused text/search/tel field submits through the form's first submit
