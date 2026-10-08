@@ -45,12 +45,17 @@ broader page interaction is still missing:
   clear the frame-local anchor focus; failed navigation preserves it. General
   hit-testing, DOM focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
-- A bounded simple-forms subset submits same-tab GET urlencoded queries from
-  shell-edited `input` text/search/email/tel/url/number/range/checkbox/radio/hidden/submit, `textarea`, and `button`
-  submit controls
-  via IPC v20 data-only metadata and the ordinary
+- A bounded simple-forms subset supports shell-owned `input`
+  text/search/email/tel/url/number/range/checkbox/radio/hidden/submit/reset,
+  `textarea`, and `button` submit/reset controls; supported successful controls
+  submit same-tab GET urlencoded queries via IPC v21 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
+  Reset controls are shell-owned: pointer activation or Enter on the focused
+  reset control restores all controls owned by its form to their initial values
+  and checked states, clears their edited/dirty/check state, preserves focus,
+  and does not navigate or run submission validation. Text-field implicit Enter
+  continues to target only a submitter and never activates reset controls.
   Number inputs support finite floating-point syntax, optional finite min/max
   bounds and step-grid validation; `step=any` disables the grid, absent/invalid
   steps default to 1, and reversed ranges are surfaced as form errors. The step
@@ -66,7 +71,7 @@ broader page interaction is still missing:
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/email/tel/url/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/number/range/checkbox/radio, select,
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/number/range/checkbox/radio/reset, select,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   full constraint-validation UI and semantics, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -212,10 +217,14 @@ pointer, Space, and arrow-key navigation, and required validation applies to the
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
 movement; `minlength` is checked for edited nonempty values and bounded text
 field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; range controls
-are sanitized to finite bounds and the step grid and remain shell-owned; local file documents
+are sanitized to finite bounds and the step grid and remain shell-owned; reset
+controls restore initial values/checks and clear shell-owned edits without
+navigation or validation; local file documents
 cannot initiate HTTP(S)
 link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
-cleartext HTTP. The browser suite (592 tests), IPC suite (88 tests), layout suite
-(55 tests), CSS suite (322 tests), solution build (0 warnings/errors), changed-file
-formatting and `git diff --check` pass. These checks are not full
-conformance, security, CI-matrix or real-desktop validation.
+cleartext HTTP. The browser suite (596 tests), IPC suite (88 tests), layout suite
+(55 tests), solution build (0 warnings/errors), changed-file formatting and
+`git diff --check` pass. The full solution test invocation reports one unrelated
+`Engine.Scripting.Tests.CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
+failure (expected `InvalidOperationException`, none thrown). These checks are
+not full conformance, security, CI-matrix or real-desktop validation.

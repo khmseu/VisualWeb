@@ -62,6 +62,25 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsInputAndButtonResetControls(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form>
+            <input type=reset value=Clear>
+            <button type=reset>Reset all</button>
+            </form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.Equal(["reset", "reset"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["Clear", "Reset all"], page.FormControls.Select(control => control.Label));
+        Assert.All(page.FormControls, control => Assert.Equal(0, control.Form));
+        Assert.All(page.FormControls, control => Assert.NotNull(control.Rect));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TextFieldPatternMetadataIsBoundedAndCrossesRendererBoundary(bool process)
     {
         using var renderer = Renderer(process);
@@ -283,7 +302,6 @@ public sealed class FormTests
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
-    [InlineData("<form><button type=reset>r</button></form>", "reset")]
     [InlineData("<form><fieldset disabled><input name=q></fieldset></form>", "fieldset")]
     [InlineData("<form id=f></form><input form=f name=q>", "form attribute")]
     public async Task UnsupportedFormSemanticsAreVisibleFormErrors(string body, string expected)
@@ -507,6 +525,80 @@ public sealed class FormTests
         Assert.False(controller.ActivateLink(tab, disabled.X + 1, disabled.Y + 1, harness.Viewport));
         Assert.Equal(2, harness.Source.Requests.Count);
     }
+
+    [Fact]
+    public void ResetControlActivationRestoresOwnedValuesAndChecksWithoutNavigation()
+    {
+        using var harness = new Harness("""
+            <form action='/send'>
+            <input name=text value=base minlength=5>
+            <textarea name=message>initial text</textarea>
+            <input type=checkbox name=check checked>
+            <input type=radio name=choice value=a checked>
+            <input type=radio name=choice value=b>
+            <input type=range name=level min=1 max=9 step=2 value=5>
+            <input type=reset value=Clear>
+            <button type=reset>Reset all</button>
+            <button type=submit>Send</button>
+            </form>
+            """);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+
+        Assert.Equal(["text", "textarea", "checkbox", "radio", "radio", "range", "reset", "reset", "button"],
+            controller.Page(tab)!.FormControls.Select(control => control.Kind));
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        Assert.Equal("x", controller.InsertFormText(tab, "x"));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.Equal("initial text changed", controller.InsertFormText(tab, " changed"));
+        Assert.True(controller.FocusControl(tab, 2));
+        Assert.True(controller.ToggleFocusedCheckable(tab));
+        Assert.True(controller.FocusControl(tab, 4));
+        Assert.True(controller.ToggleFocusedCheckable(tab));
+        Assert.True(controller.FocusControl(tab, 5));
+        Assert.True(controller.AdjustFocusedRange(tab, 1));
+        Assert.Equal("7", controller.FormControlValue(tab, 5));
+
+        Assert.True(controller.FocusControl(tab, 6));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+
+        Assert.Equal(6, controller.FocusedControlIndex(tab));
+        Assert.Equal("base", controller.FormControlValue(tab, 0));
+        Assert.Equal("initial text", controller.FormControlValue(tab, 1));
+        Assert.True(controller.FormControlChecked(tab, 2));
+        Assert.True(controller.FormControlChecked(tab, 3));
+        Assert.False(controller.FormControlChecked(tab, 4));
+        Assert.Equal("5", controller.FormControlValue(tab, 5));
+        Assert.Single(harness.Source.Requests);
+
+        var resetButton = controller.Page(tab)!.FormControls[7].Rect!;
+        Assert.True(controller.ActivateLink(tab, resetButton.X + 1, resetButton.Y + 1, harness.Viewport));
+        Assert.Equal(7, controller.FocusedControlIndex(tab));
+        Assert.Equal("base", controller.FormControlValue(tab, 0));
+        Assert.Equal("initial text", controller.FormControlValue(tab, 1));
+        Assert.Equal("5", controller.FormControlValue(tab, 5));
+        Assert.Single(harness.Source.Requests);
+
+        Assert.True(controller.FocusControl(tab, 8));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/send?text=base&message=initial+text&check=on&choice=a&level=5",
+            harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void TextFieldEnterUsesSubmitterAndNeverActivatesResetControl()
+    {
+        using var harness = new Harness("<form action='/send'><input name=q value=before><input type=reset><button type=submit>Send</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.Equal("before-edited", controller.InsertFormText(tab, "-edited"));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/send?q=before-edited",
+            harness.Source.Requests[^1].Url.Href);
+    }
+
 
     [Theory]
     [InlineData("<form><input name=a value=1></form>", true, "https://example.com/final/index.html?a=1")]

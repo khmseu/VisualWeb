@@ -148,6 +148,8 @@ internal static class PageForms
             var label = kind switch
             {
                 "submit" => element.GetAttribute("value") ?? "Submit",
+                "reset" when element.LocalName == "input" => element.GetAttribute("value") ?? "Reset",
+                "reset" => element.TextContent ?? "",
                 "button" => element.TextContent ?? "",
                 _ => "",
             };
@@ -221,8 +223,13 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" ? type : null,
-        "button" => DomFormControls.ButtonType(element) == "submit" ? "button" : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : null,
+        "button" => DomFormControls.ButtonType(element) switch
+        {
+            "submit" => "button",
+            "reset" => "reset",
+            _ => null,
+        },
         "textarea" => "textarea",
         _ => null,
     };

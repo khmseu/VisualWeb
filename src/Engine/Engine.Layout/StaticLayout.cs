@@ -116,7 +116,7 @@ public static class StaticLayout
             {
                 if (!block && Display(element) != "inline-block")
                 { throw new UnsupportedLayoutException("Form controls require block or supported inline-block layout."); }
-                if (element.LocalName == "input" && DomFormControls.InputType(element) is not ("text" or "search" or "email" or "tel" or "url" or "number" or "range" or "checkbox" or "radio" or "submit"))
+                if (element.LocalName == "input" && DomFormControls.InputType(element) is not ("text" or "search" or "email" or "tel" or "url" or "number" or "range" or "checkbox" or "radio" or "submit" or "reset"))
                 {
                     throw new UnsupportedLayoutException($"<input type={DomFormControls.InputType(element)}> requires unsupported widget layout.");
                 }
@@ -372,7 +372,7 @@ public static class StaticLayout
             {
                 if (Display(element) == "none") { return; }
                 Check(element, depth);
-                if (element.LocalName == "button" && DomFormControls.ButtonType(element) != "submit"
+                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button"
                     && Display(element) == "inline-block")
                 {
                     var buttonStyle = Style(element);

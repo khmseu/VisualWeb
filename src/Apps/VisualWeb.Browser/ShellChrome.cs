@@ -255,9 +255,9 @@ public sealed class ShellChrome : IDisposable
                 }
                 Fill(box, gray);
                 Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
-                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" ? new(225, 225, 225)
+                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
-                var text = control.Kind is "submit" or "button" ? control.Label
+                var text = control.Kind is "submit" or "button" or "reset" ? control.Label
                     : index == forms.Focused && !forms.SelectAll && forms.Caret >= 0
                         ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
                     : forms.Values[index];
@@ -281,7 +281,7 @@ public sealed class ShellChrome : IDisposable
                 else
                 {
                     Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
-                        control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind == "button");
+                        control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind is "button" or "reset");
                 }
             }
         }

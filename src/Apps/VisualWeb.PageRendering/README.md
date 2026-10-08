@@ -29,12 +29,12 @@ data-only IPC-contract targets. Each anchor is one target containing all its
 visible rectangles; groups follow first-fragment order, without exposing element
 identity. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
 text fragments with clipped rectangles for browser-owned selection; it exposes no
-DOM identity. The shared v20 contract caps 4096 anchors, 64 rectangles per anchor,
+DOM identity. The shared v21 contract caps 4096 anchors, 64 rectangles per anchor,
 8192 characters per URL and 1 MiB serialized metadata locally and in workers.
 
 `BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
 subset collected after optional script mutations: `form` action/error, and
-`input` text/search/email/tel/url/number/range/checkbox/radio/hidden/submit, `textarea`, plus `button` submit/plain-button
+`input` text/search/email/tel/url/number/range/checkbox/radio/hidden/submit/reset, `textarea`, plus `button` submit/reset/plain-button
 controls. Supported controls use finite inline-block layout: input/button fallback
 dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value. Controls
@@ -42,7 +42,7 @@ expose name, initial value, label, disabled/readonly/required/pattern/minlength/
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
 `novalidate`, non-UTF-8 `accept-charset`, `<base>`, `form=` owners, submitter
-overrides, other input types, reset buttons, textarea pattern/dirname/wrap=hard,
+overrides, other input types, textarea pattern/dirname/wrap=hard,
 select/output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
 when that form is submitted. The renderer never submits or navigates.
 

@@ -584,7 +584,7 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         return NavigateLink(id, owner.Page.LinkTargets[owner.FocusedLink].Url);
     }
-    /// <summary>Enter activation: submit buttons submit; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
+    /// <summary>Enter activates submit/reset controls; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
     /// submission</see>. The default button is the first submit button of the form in tree order.</remarks>
     private bool ToggleCheckable(TabId id, Content owner, int index, PageFormControl control)
@@ -646,6 +646,11 @@ public sealed class BrowserController : IDisposable
         var control = controls[index];
         if (control.Disabled) { return false; }
         if (control.Form < 0) { return false; }
+        if (control.Kind == "reset")
+        {
+            ResetForm(id, owner, control.Form);
+            return true;
+        }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
         if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
@@ -655,6 +660,20 @@ public sealed class BrowserController : IDisposable
         }
         if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "number") > 1) { return false; }
         return Submit(id, owner, control.Form, -1);
+    }
+    private void ResetForm(TabId id, Content owner, int formIndex)
+    {
+        var controls = owner.Page!.FormControls;
+        for (var index = 0; index < controls.Count; index++)
+        {
+            if (controls[index].Form != formIndex) { continue; }
+            owner.Fields.Remove(index);
+            owner.Dirty.Remove(index);
+            owner.CheckedStates.Remove(index);
+            owner.TextareaFirstLines.Remove(index);
+            owner.TextareaLines.Remove(index);
+        }
+        Changed?.Invoke(id);
     }
     /// <summary>Validates and submits one form as a same-tab GET through <see cref="Navigate"/> (HSTS, redirects, origin commit).</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
@@ -755,7 +774,7 @@ public sealed class BrowserController : IDisposable
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
             if (control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
-            if (control.Kind is "submit" or "button") { return ActivateControl(id, owner, index); }
+            if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
             if (control.Kind == "range") { SetRangeFromPointer(id, index, x); return true; }
             return control.Kind is "text" or "search" or "email" or "tel" or "url" or "number" or "textarea";

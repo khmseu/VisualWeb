@@ -271,7 +271,6 @@ public sealed class LayoutTests
     [InlineData("<img>", "")]
     [InlineData("<input>", "")]
     [InlineData("<button>x</button>", "")]
-    [InlineData("<input type=checkbox>", "input{display:block}")]
     [InlineData("<input type=password>", "input{display:block}")]
     [InlineData("<input type=hidden>", "input{display:block}")]
     [InlineData("<ul><li>x</li></ul>", "")]
@@ -285,6 +284,7 @@ public sealed class LayoutTests
     [InlineData("")]
     [InlineData(" type=search")]
     [InlineData(" type=SUBMIT")]
+    [InlineData(" type=reset")]
     [InlineData(" type=bogus")]
     public void BlockTextAndSubmitInputsUseOneLineHeightWithoutChildren(string type)
     {

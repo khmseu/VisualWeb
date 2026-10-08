@@ -89,6 +89,7 @@ The native window title retains the same warning alongside the active page title
 | Home/End in a focused textarea | Move the caret to the start/end of the current line |
 | Up/Down in a focused textarea | Move the caret between visible wrapped lines, preserving its preferred column |
 | Space in a focused checkbox toggles it; Enter in a focused text/search/email/tel/url/number field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
+| Enter or primary click on a focused/visible reset control | Restore the owning form's initial values and checked states without navigation or submission validation |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
@@ -204,9 +205,9 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v20); the browser owns all values,
+reports data-only form/control snapshots (IPC v21); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/number/range, checkbox, radio, textarea,
-hidden and submit, plus `button` submit (and inert `type=button`).
+hidden, submit and reset, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing; tel has no telephone-specific keyboard or validation;
 email requires one valid address and does not support `multiple`; url requires a valid
 absolute URL on submission; number accepts finite HTML floating-point values with
@@ -231,7 +232,7 @@ textarea scrolls its line window independently of the page. Form-control inline
 boxes wrap atomically with text; nonzero control margins and general inline-block/
 replaced-element layout remain unsupported.
 
-Fields and submit buttons are drawn by a shell-owned overlay (white field or
+Fields and submit/reset buttons are drawn by a shell-owned overlay (white field or
 gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
@@ -250,6 +251,13 @@ scrolling is bounded to the available visual lines. Values are capped at 8192 UT
 units and truncated to `maxlength` without splitting surrogate pairs. A nonempty
 value edited below `minlength` blocks submission; an untouched initial value does
 not trigger too-short validation.
+
+Enter in a focused reset control restores each control owned by that form to its
+renderer-reported initial `Value` and `Checked` state, clearing shell edits,
+dirty/check overrides and textarea view state while preserving focus. It does
+not navigate or run submission validation. Reset activation is limited to the
+focused reset control (Enter) or primary pointer click; it is not a default
+submitter for implicit Enter in a text field.
 
 Enter in a focused text/search/email/tel/url/number field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the
@@ -271,7 +279,7 @@ resulting URL at the existing URL limit.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
-`form=` attribute, submitter overrides, unsupported input types/reset buttons, invalid email, URL or number values, unsupported email `multiple` and reversed numeric bounds,
+`form=` attribute, submitter overrides, unsupported input types, invalid email, URL or number values, unsupported email `multiple` and reversed numeric bounds,
 textarea `dirname` or `wrap=hard`, select/output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,

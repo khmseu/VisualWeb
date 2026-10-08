@@ -33,6 +33,40 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void EnterActivatesFocusedResetAndRestoresShellOwnedFormState()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input,button{display:block;height:20px}</style>" +
+            "<form><input name=text value=original><input type=checkbox name=checked checked>" +
+            "<input type=range name=level min=1 max=9 step=2 value=5><button type=reset>Reset</button></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        Assert.Equal("original-edited", shell.Controller.InsertFormText(tab.Id, "-edited"));
+        Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+        Assert.True(shell.Controller.ToggleFocusedCheckable(tab.Id));
+        Assert.True(shell.Controller.FocusControl(tab.Id, 2));
+        Assert.True(shell.Controller.AdjustFocusedRange(tab.Id, 1));
+        Assert.True(shell.Controller.FocusControl(tab.Id, 3));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+
+        Assert.Equal(3, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.Equal("original", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.True(shell.Controller.FormControlChecked(tab.Id, 1));
+        Assert.Equal("5", shell.Controller.FormControlValue(tab.Id, 2));
+        Assert.StartsWith("data:text/html,", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+    }
+
+    [Fact]
     public void ArrowKeysMoveWithinRadioGroupAndSpaceSelectsFocusedRadio()
     {
         using var system = new Windows();
