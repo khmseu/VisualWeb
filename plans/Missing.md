@@ -51,14 +51,14 @@ broader page interaction is still missing:
   via IPC v11 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
-  Textareas support bounded rows/columns, multiline shell editing, and
-  newline-normalized GET entries; soft wrapping and internal scrolling remain missing.
+  Textareas support bounded rows/columns, multiline shell editing, caret-driven
+  line-window scrolling and newline-normalized GET entries; soft wrapping remains missing.
   Visible text/search/tel/textarea fields support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/tel/textarea fields or the selected address bar. General forms remain
   missing: POST/multipart, other input types beyond text/search/tel, select,
-  broader textarea behavior (soft wrapping/internal scrolling; `minlength`,
+  broader textarea behavior (soft wrapping and independent internal scrolling; `minlength`,
   `dirname` and `wrap=hard` are rejected),
   constraint validation UI, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -193,11 +193,11 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `90e3211` and working-tree changes on
+*Status cross-checked against `2d70246` and working-tree changes on
 2026-10-07. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; bounded editable textareas submit newline-normalized
-GET values and unwrapped line-aware Up/Down caret movement, but no soft wrapping or internal scrolling; local file documents cannot initiate HTTP(S)
+GET values and unwrapped line-aware Up/Down caret movement, but no soft wrapping or independent internal scroll position; local file documents cannot initiate HTTP(S)
 link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
 cleartext HTTP. The browser suite (520 tests), IPC suite (81 tests), layout suite
 (55 tests), CSS suite (322 tests), solution build (0 warnings/errors), changed-file

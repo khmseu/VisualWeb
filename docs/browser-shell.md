@@ -212,7 +212,8 @@ validation), `textarea`, hidden and submit, plus `button` submit (and inert
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
 to 128 and 64. Author CSS may size the controls within the layout limits; author
 `display:none` still hides them. Textarea values are drawn by the shell overlay,
-one line per row, without soft wrapping or internal scrolling. Form-control inline
+one line per row, without soft wrapping. The visible line window follows the
+caret as it moves beyond the control rows. Form-control inline
 boxes wrap atomically with text; nonzero control margins and general inline-block/
 replaced-element layout remain unsupported.
 
@@ -228,7 +229,7 @@ Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
 sequences normalize to LF; other control characters are rejected. Ctrl+A selects
 the entire value and Ctrl+V pastes at the caret or over that selection. Left/Right caret
 movement is linear; Up/Down moves between unwrapped LF-delimited textarea lines
-while preserving the preferred column. Soft wrapping and internal scrolling are not implemented. Values are capped at 8192 UTF-16 code
+while preserving the preferred column. Soft wrapping is not implemented; line-window scrolling is caret-driven rather than an independent scroll position. Values are capped at 8192 UTF-16 code
 units and truncated to `maxlength` without splitting surrogate pairs.
 
 Enter in a focused text/search/tel field submits through the form's first submit

@@ -138,8 +138,12 @@ public sealed class ShellChrome : IDisposable
                 {
                     var rows = Math.Max(1, (int)((box.Height - 8) / 15));
                     var lines = text.Split('\n');
-                    for (var row = 0; row < Math.Min(rows, lines.Length); row++)
-                    { Label(lines[row], box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink); }
+                    var value = forms.Values[index];
+                    var caret = index == forms.Focused && !forms.SelectAll ? Math.Clamp(forms.Caret, 0, value.Length) : -1;
+                    var caretLine = caret < 0 ? lines.Length - 1 : value.AsSpan(0, caret).Count('\n');
+                    var firstLine = Math.Clamp(caretLine - rows + 1, 0, Math.Max(0, lines.Length - rows));
+                    for (var row = 0; row < rows && firstLine + row < lines.Length; row++)
+                    { Label(lines[firstLine + row], box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink); }
                 }
                 else
                 {

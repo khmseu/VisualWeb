@@ -778,6 +778,55 @@ public sealed class ShellTests
         }
     }
     [Fact]
+    public void TextareaViewportFollowsCaretBeyondItsVisibleRows()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style>" +
+            "<form><textarea>one\ntwo\nthree\nfour\nfive</textarea></form>"));
+        Wait();
+        var control = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0),
+            $"Controls: {shell.Controller.Page(tab.Id)!.FormControls.Count}, rectangle: {shell.Controller.Page(tab.Id)!.FormControls.FirstOrDefault()?.Rect}");
+        shell.Tick();
+        var before = Capture();
+        Key(SDL.Scancode.Home);
+        Key(SDL.Scancode.Up);
+        shell.Tick();
+        var after = Capture();
+        Assert.NotEqual(before, after);
+
+        byte[] Capture()
+        {
+            var pixels = native.Pixels ?? throw new InvalidOperationException("Shell pixels were not presented.");
+            var left = (int)Math.Floor(control.X * native.Density);
+            var top = (int)Math.Ceiling(ShellChrome.Height * native.Density) + (int)Math.Floor(control.Y * native.Density);
+            var width = (int)Math.Ceiling(control.Width * native.Density);
+            var height = (int)Math.Ceiling(control.Height * native.Density);
+            var result = new byte[height * width * 4];
+            for (var row = 0; row < height; row++)
+            {
+                pixels.AsSpan((top + row) * native.Size.Width * 4 + left * 4, width * 4)
+                    .CopyTo(result.AsSpan(row * width * 4));
+            }
+            return result;
+        }
+        void Key(SDL.Scancode code) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void CloseActiveTabRepaintsRemainingTabRatherThanLeavingStalePixels()
     {
         using var system = new Windows();
