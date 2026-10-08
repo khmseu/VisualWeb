@@ -48,7 +48,7 @@ broader page interaction is still missing:
 - A bounded simple-forms subset submits same-tab GET urlencoded queries from
   shell-edited `input` text/search/tel/hidden/submit, `textarea`, and `button`
   submit controls
-  via IPC v11 data-only metadata and the ordinary
+  via IPC v12 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
@@ -59,8 +59,7 @@ broader page interaction is still missing:
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/tel/textarea fields or the selected address bar. General forms remain
   missing: POST/multipart, other input types beyond text/search/tel, select,
-  broader textarea behavior (soft wrapping; `minlength`,
-  `dirname` and `wrap=hard` are rejected),
+  broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   constraint validation UI, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
   encodings. See
@@ -194,14 +193,15 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `2236b6d` and working-tree changes on
-2026-10-07. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
+*Status cross-checked against `8dd74e5` and working-tree changes on
+2026-10-08. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; bounded editable textareas submit newline-normalized
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
-movement; local file documents cannot initiate HTTP(S)
+movement; `minlength` is checked for edited nonempty values; local file documents
+cannot initiate HTTP(S)
 link/form navigation, and HTTPS or opaque `data:` forms cannot send data over
-cleartext HTTP. The browser suite (525 tests), IPC suite (81 tests), layout suite
+cleartext HTTP. The browser suite (524 tests), IPC suite (84 tests), layout suite
 (55 tests), CSS suite (322 tests), solution build (0 warnings/errors), changed-file
 formatting and `git diff --check` pass. These checks are not full
 conformance, security, CI-matrix or real-desktop validation.

@@ -26,7 +26,7 @@ public sealed class FormTests
         var page = await renderer.RenderAsync(Document("""
             <a href=/a>a</a>
             <form action='search?x=1#frag'>
-            <input name=q value="a&#10;b&#13;c" maxlength=5 required>
+            <input name=q value="a&#10;b&#13;c" minlength=2 maxlength=5 required>
             <input type=HIDDEN name=h value=" v&#10; ">
             <input type=search name=s readonly disabled>
             <input type=submit name=go>
@@ -47,6 +47,7 @@ public sealed class FormTests
         Assert.Equal(["abc", " v\n ", "", "", "bv", "", "f"], controls.Select(c => c.Value));
         Assert.Equal(["", "", "", "Submit", "Go", "", ""], controls.Select(c => c.Label));
         Assert.True(controls[0].Required);
+        Assert.Equal(2, controls[0].MinLength);
         Assert.Equal(5, controls[0].MaxLength);
         Assert.True(controls[2].Disabled && controls[2].ReadOnly);
         Assert.All(controls, c => Assert.Equal(1, c.BeforeLink));
@@ -63,12 +64,13 @@ public sealed class FormTests
     public async Task TextareaReportsInitialMultilineValueAndGeometryAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
-        var page = await renderer.RenderAsync(Document("<form><textarea name=message rows=3 maxlength=80 required>first\nsecond</textarea></form>"),
+        var page = await renderer.RenderAsync(Document("<form><textarea name=message rows=3 minlength=3 maxlength=80 required>first\nsecond</textarea></form>"),
             new(200, 400, 1), Cancellation);
 
         var control = Assert.Single(page.FormControls);
         Assert.Equal("textarea", control.Kind);
         Assert.Equal("first\nsecond", control.Value);
+        Assert.Equal(3, control.MinLength);
         Assert.Equal(80, control.MaxLength);
         Assert.True(control.Required);
         Assert.Equal(160, control.Rect!.Width);
@@ -116,7 +118,6 @@ public sealed class FormTests
     [InlineData("<base href=/other/><form><input name=q></form>", "base")]
     [InlineData("<form><input name=q dirname=d></form>", "dirname")]
     [InlineData("<form><input name=q pattern=a></form>", "pattern")]
-    [InlineData("<form><input name=q minlength=2></form>", "minlength")]
     [InlineData("<form><input name=q list=l></form>", "list")]
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
     [InlineData("<form><button formaction=/x>x</button></form>", "formaction")]
@@ -127,7 +128,6 @@ public sealed class FormTests
     [InlineData("<form><input type=password name=c style=display:none></form>", "password")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
-    [InlineData("<form><textarea name=t minlength=2></textarea></form>", "minlength")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
     [InlineData("<form><button type=reset>r</button></form>", "reset")]
     [InlineData("<form><fieldset disabled><input name=q></fieldset></form>", "fieldset")]
@@ -703,6 +703,37 @@ public sealed class FormTests
             Assert.Contains("maxlength", error.Message, StringComparison.Ordinal);
             Assert.Equal(2, clean.Source.Requests.Count);
         }
+    }
+
+    [Fact]
+    public void MinLengthRejectsEditedShortValuesButAllowsUntouchedInitialValues()
+    {
+        using var clean = new Harness("<form><input name=q value=ab minlength=3></form>");
+        Assert.True(clean.Controller.FocusControl(clean.Tab.Id, 0));
+        Assert.True(clean.Controller.ActivateFocusedLink(clean.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?q=ab", clean.Source.Requests[^1].Url.Href);
+
+        using var edited = new Harness("<form><input name=q minlength=3></form>");
+        Assert.True(edited.Controller.FocusControl(edited.Tab.Id, 0));
+        edited.Controller.InsertFormText(edited.Tab.Id, "ab");
+        var error = Assert.Throws<PageNavigationException>(() => edited.Controller.ActivateFocusedLink(edited.Tab.Id));
+        Assert.Contains("minlength 3", error.Message, StringComparison.Ordinal);
+        Assert.Single(edited.Source.Requests);
+
+        using var valid = new Harness("<form><input name=q minlength=3><button type=submit>go</button></form>");
+        Assert.True(valid.Controller.FocusControl(valid.Tab.Id, 0));
+        valid.Controller.InsertFormText(valid.Tab.Id, "abc");
+        Assert.True(valid.Controller.FocusControl(valid.Tab.Id, 1));
+        Assert.True(valid.Controller.ActivateFocusedLink(valid.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?q=abc", valid.Source.Requests[^1].Url.Href);
+
+        using var textarea = new Harness("<form><textarea name=q minlength=3></textarea><button type=submit>go</button></form>");
+        Assert.True(textarea.Controller.FocusControl(textarea.Tab.Id, 0));
+        Assert.Equal(3, textarea.Controller.Page(textarea.Tab.Id)!.FormControls[0].MinLength);
+        textarea.Controller.InsertFormText(textarea.Tab.Id, "ab");
+        Assert.True(textarea.Controller.FocusControl(textarea.Tab.Id, 1));
+        Assert.Throws<PageNavigationException>(() => textarea.Controller.ActivateFocusedLink(textarea.Tab.Id));
+        Assert.Single(textarea.Source.Requests);
     }
 
     [Fact]

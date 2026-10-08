@@ -539,6 +539,8 @@ public sealed class BrowserController : IDisposable
             var value = Value(owner, index);
             if (control.Required && value.Length == 0)
             { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
+            if (control.MinLength > 0 && owner.Dirty.Contains(index) && value.Length > 0 && value.Length < control.MinLength)
+            { throw new PageNavigationException($"Form field '{control.Name}' is shorter than minlength {control.MinLength}; submission blocked."); }
             if (control.MaxLength >= 0 && owner.Dirty.Contains(index) && value.Length > control.MaxLength)
             { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
         }

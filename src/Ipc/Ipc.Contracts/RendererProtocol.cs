@@ -68,6 +68,7 @@ public sealed record PageFormControl(
     [property: JsonRequired] bool Disabled,
     [property: JsonRequired] bool ReadOnly,
     [property: JsonRequired] bool Required,
+    [property: JsonRequired] int MinLength,
     [property: JsonRequired] int MaxLength,
     [property: JsonRequired] int BeforeLink,
     [property: JsonRequired] PageLinkRect? Rect);
@@ -108,7 +109,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 11;
+    public const int Version = 12;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -256,7 +257,9 @@ public static class RendererProtocol
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "button") && control.Label.Length != 0
-                || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount)
+                || control.MinLength < -1 || control.MinLength > MaxTextCharacters
+                || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount
+                || control.Kind is not ("text" or "search" or "tel" or "textarea") && control.MinLength != -1)
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
             if (control.Rect is not { } rect) { continue; }
             if (control.Kind == "hidden" || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)

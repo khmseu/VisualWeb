@@ -204,7 +204,7 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v11); the browser owns all values,
+reports data-only form/control snapshots (IPC v12); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/tel
 (editable with generic text behavior; tel has no telephone-specific keyboard or
 validation), `textarea`, hidden and submit, plus `button` submit (and inert
@@ -234,7 +234,9 @@ movement is linear; Up/Down moves between measured visual textarea lines
 while preserving the preferred column. Wrapping uses the shell's configured font,
 not page font styles, and unsupported non-ASCII text is displayed as `?`. Wheel
 scrolling is bounded to the available visual lines. Values are capped at 8192 UTF-16 code
-units and truncated to `maxlength` without splitting surrogate pairs.
+units and truncated to `maxlength` without splitting surrogate pairs. A nonempty
+value edited below `minlength` blocks submission; an untouched initial value does
+not trigger too-short validation.
 
 Enter in a focused text/search/tel field submits through the form's first submit
 button (a disabled default button does nothing) or, without one, only when the
@@ -257,10 +259,10 @@ Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
 `form=` attribute, submitter overrides, unsupported input types/reset buttons,
-textarea `dirname`, `minlength` or `wrap=hard`, select/output/object controls,
+textarea `dirname` or `wrap=hard`, select/output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
-required empty fields, edited overlong values, or query/URL limit overflow.
+required empty fields, edited too-short/overlong values, or query/URL limit overflow.
 There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
 events, `requestSubmit`, script submission, select controls, autofill, IME
 preedit, or clipboard selection range support.

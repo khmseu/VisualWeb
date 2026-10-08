@@ -16,7 +16,7 @@ internal static class PageForms
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
     private static readonly string[] SubmitterOverrides = ["formaction", "formenctype", "formmethod", "formnovalidate", "formtarget"];
-    private static readonly string[] TextOnlyAttributes = ["dirname", "pattern", "minlength", "list"];
+    private static readonly string[] TextOnlyAttributes = ["dirname", "pattern", "list"];
 
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
         BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry, int linkCount,
@@ -65,8 +65,7 @@ internal static class PageForms
             }
             if (kind == "textarea")
             {
-                if (element.GetAttribute("dirname") is not null || element.GetAttribute("minlength") is not null)
-                { Reject(index, "textarea dirname/minlength"); }
+                if (element.GetAttribute("dirname") is not null) { Reject(index, "textarea dirname"); }
                 if (element.GetAttribute("wrap")?.Equals("hard", StringComparison.OrdinalIgnoreCase) == true)
                 { Reject(index, "textarea wrap=hard"); }
             }
@@ -85,6 +84,9 @@ internal static class PageForms
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
             var text = kind is "text" or "search" or "tel" or "textarea";
+            var minLength = text ? MinLength(element.GetAttribute("minlength")) : -1;
+            if (minLength > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "") : element.GetAttribute("value");
             value = kind switch
             {
@@ -109,6 +111,7 @@ internal static class PageForms
             }
             controls.Add(new(index, kind, controlName, value, label, element.GetAttribute("disabled") is not null,
                 text && element.GetAttribute("readonly") is not null, text && element.GetAttribute("required") is not null,
+                minLength,
                 text ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect));
         }
         var forms = actions.Select((action, i) => errors[i] is { } error ? new PageForm("", error) : new PageForm(action, null)).ToArray();
@@ -172,6 +175,18 @@ internal static class PageForms
         {
             if (node is DomElement parent) { yield return parent; }
         }
+    }
+
+    // Spec: html; https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers
+    private static int MinLength(string? value)
+    {
+        if (value is null) { return -1; }
+        var text = value.TrimStart(' ', '\t', '\n', '\f', '\r');
+        if (text.StartsWith('+')) { text = text[1..]; }
+        var digits = text.TakeWhile(char.IsAsciiDigit).Count();
+        if (digits == 0) { return -1; }
+        if (!int.TryParse(text.AsSpan(0, digits), out var parsed)) { return RendererProtocol.MaxTextCharacters + 1; }
+        return parsed;
     }
 
     // Spec: html; https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers
