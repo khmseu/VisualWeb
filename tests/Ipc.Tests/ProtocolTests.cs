@@ -45,7 +45,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(21, RendererProtocol.Version);
+        Assert.Equal(22, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 21 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 21 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 20 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 20 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 19 }, 0));
@@ -345,7 +347,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(21, RendererProtocol.Version);
+        Assert.Equal(22, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -358,8 +360,11 @@ public sealed class ProtocolTests
         }
         var json = JsonSerializer.Serialize(link);
         Assert.Contains("\"Rects\"", json);
+        Assert.Contains("\"OpenInNewTab\":false", json);
         Assert.DoesNotContain("\"X\":0,\"Y\":0,\"Width\":2,\"Height\":2,\"Url\"", json);
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>("{\"Url\":\"https://example.com/\"}"));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>(
+            "{\"Rects\":[{\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1}],\"Url\":\"https://example.com/\"}"));
     }
 
     [Theory]

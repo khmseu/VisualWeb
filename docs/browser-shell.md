@@ -196,9 +196,12 @@ metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
 Relative and fragment URL components are preserved, but fragment activation
 currently performs a full navigation, not same-document scrolling.
-`target`, `tabindex`, DOM focus APIs, offscreen-anchor traversal, downloads,
-`<base>` semantics, image/area links, CSS link decoration,
-page mouse/keyboard events and JavaScript default-action cancellation
+The hyperlink `target="_blank"` keyword opens a new active tab in the source
+window for pointer or focused-Enter activation; source-document scheme and HTTPS
+downgrade checks still apply to the navigation. Named targets, `_parent`/
+`_top` semantics, `<base target>`, `tabindex`, DOM focus APIs, offscreen-anchor
+traversal, downloads, `<base href>` semantics, image/area links, CSS link
+decoration, page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
 (cached standard ID `html`), not a full DOM event/default-action implementation.
@@ -208,7 +211,7 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v21); the browser owns all values,
+reports data-only form/control snapshots (IPC v22); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/number/range, checkbox, radio, textarea,
 hidden, submit and reset, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing; tel has no telephone-specific keyboard or validation;

@@ -39,16 +39,19 @@ broader page interaction is still missing:
   navigation in shell, local and actual renderer-process paths. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
-  one anchor and no page raster changes without focus. IPC v7 groups visible
-  rectangles per anchor (4096 anchors, 64 rectangles each, 1 MiB metadata),
-  without element IDs/DOM/native handles. Successful document commits/repaints
-  clear the frame-local anchor focus; failed navigation preserves it. General
-  hit-testing, DOM focus/events and offscreen-link traversal remain missing.
+  one anchor and no page raster changes without focus. IPC v22 carries grouped
+  visible rectangles plus bounded `_blank` target metadata (4096 anchors, 64
+  rectangles each, 1 MiB metadata), without element IDs/DOM/native handles.
+  `_blank` opens an active tab in the source window through the existing broker
+  policy; named targets, `<base target>`, and full browsing-context selection
+  remain unsupported. Successful document commits/repaints clear the frame-local
+  anchor focus; failed navigation preserves it. General hit-testing, DOM
+  focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v21 data-only metadata and the ordinary
+  submit same-tab GET urlencoded queries via IPC v22 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused

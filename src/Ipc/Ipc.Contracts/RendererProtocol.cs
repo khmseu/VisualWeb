@@ -19,14 +19,18 @@ public sealed record PageLinkRect(
         x >= X && y >= Y && x < X + Width && y < Y + Height;
 }
 
-/// <summary>One textual anchor, with ordered visible rectangles and an absolute destination; no element identity.</summary>
+/// <summary>One textual anchor with ordered visible rectangles, an absolute destination and bounded new-tab metadata; no element identity.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-target">hyperlink target</see>.
+/// The browser implements the <c>_blank</c> keyword by opening a tab in the source window; named targets are deferred.</remarks>
 [method: JsonConstructor]
 public sealed record PageLinkTarget(
     [property: JsonRequired] IReadOnlyList<PageLinkRect> Rects,
-    [property: JsonRequired] string Url)
+    [property: JsonRequired] string Url,
+    [property: JsonRequired] bool OpenInNewTab)
 {
+    public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url) : this(rects, url, false) { }
     public PageLinkTarget(double x, double y, double width, double height, string url)
-        : this(new[] { new PageLinkRect(x, y, width, height) }, url) { }
+        : this(new[] { new PageLinkRect(x, y, width, height) }, url, false) { }
 
     // Compatibility accessors expose the first rectangle only; Rects is the wire and focus geometry.
     [JsonIgnore] public double X => Rects[0].X;
@@ -164,7 +168,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 21;
+    public const int Version = 22;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;

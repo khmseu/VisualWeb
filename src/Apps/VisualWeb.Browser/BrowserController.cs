@@ -582,7 +582,8 @@ public sealed class BrowserController : IDisposable
         if (!owner.PageFocused || owner.Page is null || !MatchesViewport(owner, displayedViewport)) { return false; }
         if (owner.FocusedControl >= 0) { return ActivateControl(id, owner, owner.FocusedControl); }
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
-        return NavigateLink(id, owner.Page.LinkTargets[owner.FocusedLink].Url);
+        var link = owner.Page.LinkTargets[owner.FocusedLink];
+        return NavigateLink(id, link.Url, openInNewTab: link.OpenInNewTab);
     }
     /// <summary>Enter activates submit/reset controls; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
@@ -761,10 +762,11 @@ public sealed class BrowserController : IDisposable
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
-        SecurityOrigin? sameOriginRedirectOrigin = null)
+        SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false)
     {
+        var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
-            || (content[id].Document?.Url.Protocol is "https:" or "data:");
+            || (sourceDocument?.Url.Protocol is "https:" or "data:");
         var url = BrowserUrl.Parse(destination);
         if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
@@ -772,11 +774,26 @@ public sealed class BrowserController : IDisposable
         { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
         if (url.Protocol == "data:")
         { throw new PageNavigationException("Page-initiated data URL navigation is blocked; enter data URLs in the address bar."); }
-        if (content[id].Document?.Url.Protocol == "file:" && url.Protocol is "http:" or "https:")
+        if (sourceDocument?.Url.Protocol == "file:" && url.Protocol is "http:" or "https:")
         {
             throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");
         }
-        Start(Session.Tab(id), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin);
+        var target = id;
+        if (openInNewTab)
+        {
+            var window = Session.Windows.Single(candidate => candidate.Tabs.Any(tab => tab.Id == id));
+            target = CreateTab(window.Id).Id;
+        }
+        try { Start(Session.Tab(target), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin); }
+        catch
+        {
+            if (target != id)
+            {
+                CloseTab(target);
+                Changed?.Invoke(id);
+            }
+            throw;
+        }
         return true;
     }
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
@@ -805,7 +822,7 @@ public sealed class BrowserController : IDisposable
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
-            return NavigateLink(id, link.Url);
+            return NavigateLink(id, link.Url, openInNewTab: link.OpenInNewTab);
         }
         return false;
     }

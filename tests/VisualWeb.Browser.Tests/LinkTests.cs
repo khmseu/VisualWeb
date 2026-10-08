@@ -30,12 +30,15 @@ public sealed class LinkTests
         var page = await renderer.RenderAsync(Document("""
             <!doctype html><style>*{margin:0}</style>
             <a href='/same'><span>one two three four five six</span></a>
-            <a href='/same'>another</a> <a>ignored</a> <a href='/last'>last</a>
+            <a href='/same' target=' _BLANK '>another</a> <a>ignored</a> <a href='/last'>last</a>
             """), new(80, 300, 1), Cancellation);
         Assert.Equal(3, page.LinkTargets.Count);
         Assert.True(page.LinkTargets[0].Rects.Count > 1);
         Assert.Equal(["https://example.com/same", "https://example.com/same", "https://example.com/last"],
             page.LinkTargets.Select(link => link.Url));
+        Assert.False(page.LinkTargets[0].OpenInNewTab);
+        Assert.True(page.LinkTargets[1].OpenInNewTab);
+        Assert.False(page.LinkTargets[2].OpenInNewTab);
         foreach (var rect in page.LinkTargets[0].Rects)
         { Assert.True(page.LinkTargets[0].Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)); }
     }
@@ -168,14 +171,78 @@ public sealed class LinkTests
         var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
         controller.Navigate(tab.Id, "https://example.com/redirect");
         source.Requests[0].Completion.SetResult(Document(
-            $"<!doctype html><style>*{{margin:0}}</style><a href='{href}' target='_blank'>link</a>"));
+            $"<!doctype html><style>*{{margin:0}}</style><a href='{href}' target='_self'>link</a>"));
         controller.Pump(_ => new(100, 50, 1));
         Assert.Null(tab.Error);
         var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
         Assert.Equal(absolute, link.Url);
+        Assert.False(link.OpenInNewTab);
         Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
         Assert.Equal(absolute, source.Requests[1].Url.Href);
         Assert.Single(controller.Session.Windows.Single().Tabs);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BlankTargetOpensDestinationInNewTab(bool keyboard)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var window = controller.Session.CreateWindow();
+        var original = controller.CreateTab(window.Id);
+        controller.Navigate(original.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document(
+            "<!doctype html><style>*{margin:0}</style><a href='/next' target='_blank'>open</a>"));
+        controller.Pump(_ => new(100, 50, 1));
+        var originalPage = controller.Page(original.Id);
+
+        if (keyboard)
+        {
+            controller.FocusPage(original.Id);
+            controller.FocusLink(original.Id, 0);
+            Assert.True(controller.ActivateFocusedLink(original.Id));
+        }
+        else
+        {
+            var link = Assert.Single(originalPage!.LinkTargets);
+            Assert.True(controller.ActivateLink(original.Id, link.X + 1, link.Y + 1));
+        }
+
+        var opened = window.ActiveTab!;
+        Assert.NotNull(opened);
+        Assert.NotEqual(original.Id, opened.Id);
+        Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+        Assert.True(opened.IsLoading);
+        source.Requests[1].Completion.SetResult(new(source.Requests[1].Url,
+            "<!doctype html><style>*{margin:0}</style><p>new tab</p>", 200, []));
+        controller.Pump(_ => new(100, 50, 1));
+        Assert.False(opened.IsLoading);
+        Assert.Null(opened.Error);
+        Assert.Equal("https://example.com/next", opened.History.Current!.Href);
+        Assert.NotSame(originalPage, controller.Page(opened.Id));
+        Assert.Same(originalPage, controller.Page(original.Id));
+        Assert.Single(original.History.Entries);
+        Assert.Equal(2, window.Tabs.Count);
+    }
+
+    [Fact]
+    public void BlankTargetCannotBypassSecurePageDowngradePolicy()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        controller.Navigate(tab.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document(
+            "<!doctype html><style>*{margin:0}</style><a href='http://example.com/clear' target='_blank'>open</a>"));
+        controller.Pump(_ => new(100, 50, 1));
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+
+        Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
+
+        Assert.Single(window.Tabs);
+        Assert.Single(source.Requests);
     }
 
     [Fact]

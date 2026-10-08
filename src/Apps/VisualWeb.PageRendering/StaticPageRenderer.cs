@@ -22,6 +22,7 @@ public sealed class StaticPageRenderer : IPageRenderer
     private readonly PageRenderOptions options;
     private sealed record DocumentState(LoadedPage Source, HtmlParseResult Parsed, int Scripts);
     private static readonly HtmlParserOptions DocumentHtmlOptions = new();
+    private static readonly char[] AsciiWhitespace = ['\t', '\n', '\f', '\r', ' '];
     private readonly bool executeInlineScripts;
     private DocumentState? committed;
     private DocumentState? candidate;
@@ -174,7 +175,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                             target = [];
                             anchors.Add(anchor, target);
                             lineNewAnchors.Add(anchor);
-                            links.Add(new(target.AsReadOnly(), destination));
+                            links.Add(new(target.AsReadOnly(), destination, IsBlankTarget(anchor.GetAttribute("target"))));
                         }
                         if (target.Count >= RendererProtocol.MaxLinkRects)
                         { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
@@ -200,6 +201,14 @@ public sealed class StaticPageRenderer : IPageRenderer
             }
         }
     }
+    private static bool IsBlankTarget(string? target)
+    {
+        if (target is null) { return false; }
+        var name = target.Trim(AsciiWhitespace);
+        return name.Length == 6 && name.All(character => character <= 0x7f)
+            && name.Equals("_blank", StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>Unique resolved request URLs of supported linked stylesheets in document order, before scripts run.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
     /// "stylesheet"</see>. Used by the browser to broker fetches with the renderer's exact parser options;

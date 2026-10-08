@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v21
+## Private stream protocol v22
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
