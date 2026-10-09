@@ -315,6 +315,34 @@ public sealed class LinkTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task HyperlinkUrlsResolveAgainstFirstBaseHref(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var page = await renderer.RenderAsync(Document("""
+            <!doctype html><base><base href="https://cdn.example/assets/"><base href="https://ignored.example/">
+            <style>*{margin:0}</style><div><a href="images/item">item</a></div>
+            """), new(160, 100, 1), Cancellation);
+
+        Assert.Equal("https://cdn.example/assets/images/item", Assert.Single(page.LinkTargets).Url);
+    }
+
+    [Theory]
+    [InlineData("data:text/html,blocked")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("http://[invalid")]
+    public async Task InvalidBaseHrefFallsBackToDocumentUrl(string baseHref)
+    {
+        using var renderer = new StaticPageRenderer(FontPath, 100000);
+        var page = await renderer.RenderAsync(Document($"<!doctype html><base href='{baseHref}'><base href='https://ignored.example/'>"
+            + "<style>*{margin:0}</style><div><a href='next'>next</a></div>"), new(160, 100, 1), Cancellation);
+
+        Assert.Equal("https://example.com/final/next", Assert.Single(page.LinkTargets).Url);
+    }
+
+    [Theory]
     [InlineData("../next", "https://example.com/next")]
     [InlineData("//other.example/path", "https://other.example/path")]
     public void SupportedDestinationsUseNormalNavigation(string href, string absolute)

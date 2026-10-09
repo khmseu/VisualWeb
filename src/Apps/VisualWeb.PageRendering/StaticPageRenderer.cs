@@ -105,6 +105,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY, CancellationToken cancellationToken)
     {
         var baseTarget = FindBaseTarget(document, cancellationToken);
+        var baseUrl = FindBaseUrl(document, url, cancellationToken);
         var links = new List<PageLinkTarget>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var anchors = new Dictionary<DomElement, List<PageLinkRect>>();
@@ -173,7 +174,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                             { throw new PageNavigationException("Renderer link count limit exceeded."); }
                             if (href.Length > RendererProtocol.MaxTextCharacters)
                             { throw new PageNavigationException("Renderer link URL limit exceeded."); }
-                            var parsed = BrowserUrl.ParseResult(href, url);
+                            var parsed = BrowserUrl.ParseResult(href, baseUrl);
                             var destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
                             if (destination.Length > RendererProtocol.MaxTextCharacters)
                             { throw new PageNavigationException("Renderer link URL limit exceeded."); }
@@ -218,6 +219,23 @@ public sealed class StaticPageRenderer : IPageRenderer
             if (element.LocalName == "base" && element.GetAttribute("target") is { } target) { return target; }
         }
         return null;
+    }
+
+    private static BrowserUrl FindBaseUrl(DomDocument document, BrowserUrl fallback, CancellationToken cancellationToken)
+    {
+        foreach (var element in document.Descendants().OfType<DomElement>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.LocalName != "base" || element.GetAttribute("href") is not { } href) { continue; }
+            if (href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer base URL limit exceeded."); }
+            var parsed = BrowserUrl.ParseResult(href, fallback).Url;
+            if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return fallback; }
+            if (parsed.Href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer base URL limit exceeded."); }
+            return parsed;
+        }
+        return fallback;
     }
 
     private static bool IsBlankTarget(string? target, string? baseTarget)

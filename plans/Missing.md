@@ -48,7 +48,9 @@ broader page interaction is still missing:
   supported. `_blank` opens an active tab in the source window through the
   existing broker policy; `_self`, `_parent`, and `_top` use the current tab,
   and the first `<base target>` supplies fallback for links. Named browsing
-  contexts remain unsupported and fail visibly. Successful document commits/repaints clear the frame-local
+  contexts remain unsupported and fail visibly. Hyperlink URLs resolve against
+  the first `<base href>` (invalid/data/javascript bases fall back to the final
+  response URL); form actions and linked stylesheets still reject it. Successful document commits/repaints clear the frame-local
   anchor focus; failed navigation preserves it. General hit-testing, DOM
   focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
@@ -125,7 +127,7 @@ stricter than ordinary HTML stylesheet loading and not CORS. Any stylesheet fail
 fails the navigation. Missing pieces include:
 
 - CSS `@import`, `url()` resources, external scripts, images, fonts, media, and frame resources;
-  media-conditional/alternate/titled sheets, `<base href>` resolution, full CORS/SOP and
+  media-conditional/alternate/titled sheets, `<base href>` for stylesheets/forms, full CORS/SOP and
   general mixed-content policy for subresources.
 - General resource discovery, scheduling, and lifecycle integration (stylesheets are
   discovered from the pre-script parse only; script-added or changed links fail visibly,

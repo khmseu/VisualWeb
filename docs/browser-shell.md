@@ -208,8 +208,11 @@ downgrade checks still apply to the navigation. `_self`, `_parent`, and `_top`
 resolve to the current tab because nested browsing contexts are absent. The first
 `<base target>` supplies the fallback for links without their own target, for
 these same keywords. Named browsing contexts are rejected visibly rather than
-silently navigated in the current tab. `tabindex`, DOM focus APIs, offscreen-anchor
-traversal, downloads, `<base href>` semantics, image/area links, CSS link
+silently navigated in the current tab. The first `<base href>` resolves hyperlink
+URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
+response URL. Form actions and linked stylesheets still reject `<base href>`
+rather than applying this hyperlink-only resolution. `tabindex`, DOM focus APIs,
+offscreen-anchor traversal, downloads, image/area links, CSS link
 decoration, page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
