@@ -8,9 +8,9 @@ namespace VisualWeb.PageRendering;
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
 /// "stylesheet"</see> and <see href="https://html.spec.whatwg.org/multipage/semantics.html#the-link-element">the link
 /// element</see>. Only persistent, unconditional text/css sheets are supported: alternate/titled/disabled sheets,
-/// non-<c>all</c> media, other types, CORS (<c>crossorigin</c>), integrity, referrer policy, the obsolete
-/// <c>charset</c> attribute and <c>&lt;base href&gt;</c> overrides throw instead of being ignored. Links without a
-/// nonempty href create no resource, as in the spec. URLs resolve against the final document response URL.</remarks>
+/// non-<c>all</c> media, other types, CORS (<c>crossorigin</c>), integrity, referrer policy and the obsolete
+/// <c>charset</c> attribute throw instead of being ignored. Links without a nonempty href create no resource, as in
+/// the spec. URLs resolve against the document base URL, falling back to the final response URL.</remarks>
 internal static class LinkedStylesheets
 {
     private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
@@ -22,11 +22,11 @@ internal static class LinkedStylesheets
         ArgumentNullException.ThrowIfNull(documentUrl);
         var urls = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var baseHref = BaseHref(document);
+        var baseUrl = BaseUrl(document, documentUrl, cancellationToken);
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (Resolve(element, documentUrl, baseHref) is not { } url || !seen.Add(url)) { continue; }
+            if (Resolve(element, documentUrl, baseUrl) is not { } url || !seen.Add(url)) { continue; }
             if (urls.Count >= RendererProtocol.MaxStylesheets)
             { throw new PageNavigationException($"Linked stylesheet count limit ({RendererProtocol.MaxStylesheets}) exceeded."); }
             urls.Add(url);
@@ -34,12 +34,23 @@ internal static class LinkedStylesheets
         return urls.AsReadOnly();
     }
 
-    /// <summary>Returns the serialized request URL, null when the element creates no stylesheet, or throws.</summary>
-    public static Func<bool> BaseHref(DomDocument document)
+    /// <summary>Returns the document base URL from the first base element with an href, or the response URL fallback.</summary>
+    public static BrowserUrl BaseUrl(DomDocument document, BrowserUrl documentUrl, CancellationToken cancellationToken)
     {
-        bool? found = null;
-        return () => found ??= document.Descendants().OfType<DomElement>()
-            .Any(e => e is { LocalName: "base", NamespaceUri: DomElement.HtmlNamespace } && e.GetAttribute("href") is not null);
+        foreach (var element in document.Descendants().OfType<DomElement>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element is not { LocalName: "base", NamespaceUri: DomElement.HtmlNamespace }
+                || element.GetAttribute("href") is not { } href) { continue; }
+            if (href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("HTML base URL limit exceeded."); }
+            var parsed = BrowserUrl.ParseResult(href, documentUrl).Url;
+            if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return documentUrl; }
+            if (parsed.Href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("HTML base URL limit exceeded."); }
+            return parsed;
+        }
+        return documentUrl;
     }
 
     public static string StripCharsetRule(string css)
@@ -51,7 +62,7 @@ internal static class LinkedStylesheets
         return css[(labelEnd + 2)..];
     }
 
-    public static string? Resolve(DomElement element, BrowserUrl? documentUrl, Func<bool> baseHref)
+    public static string? Resolve(DomElement element, BrowserUrl? documentUrl, BrowserUrl? baseUrl)
     {
         if (element is not { LocalName: "link", NamespaceUri: DomElement.HtmlNamespace }) { return null; }
         var rel = (element.GetAttribute("rel") ?? "").Split(AsciiWhitespace, StringSplitOptions.RemoveEmptyEntries);
@@ -67,11 +78,9 @@ internal static class LinkedStylesheets
         if (element.GetAttribute("type") is { Length: > 0 } type && !type.Equals("text/css", StringComparison.OrdinalIgnoreCase))
         { throw new PageNavigationException("Linked stylesheet types other than text/css are unsupported."); }
         if (element.GetAttribute("href") is not { Length: > 0 } href) { return null; }
-        if (baseHref())
-        { throw new PageNavigationException("<base href> is unsupported for linked stylesheet URL resolution."); }
         if (documentUrl is null) { throw new PageNavigationException("Linked stylesheets require the document URL."); }
         if (href.Length > RendererProtocol.MaxTextCharacters) { throw new PageNavigationException("Linked stylesheet URL limit exceeded."); }
-        var parsed = BrowserUrl.ParseResult(href, documentUrl);
+        var parsed = BrowserUrl.ParseResult(href, baseUrl ?? documentUrl);
         var url = parsed.Url ?? throw new PageNavigationException("Invalid linked stylesheet URL: " + parsed.Error);
         if (url.Href.Length > RendererProtocol.MaxTextCharacters) { throw new PageNavigationException("Linked stylesheet URL limit exceeded."); }
         if (documentUrl.Protocol is ("file:" or "data:") && url.Protocol is ("http:" or "https:"))

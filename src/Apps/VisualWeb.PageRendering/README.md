@@ -5,8 +5,9 @@ local development mode and renderer executable. Owns explicit native font
 configuration, embedded and linked stylesheet discovery and offline Engine.Content calls.
 `LoadedPage.Stylesheets` is a bounded immutable data collection (request URL and
 decoded CSS) validated by the shared IPC contract. `DiscoverStylesheets` gives the
-browser the supported classic `link rel=stylesheet` URLs (resolved against the final
-document URL) from the same parser options; `CollectStyles` interleaves embedded and
+browser the supported classic `link rel=stylesheet` URLs (resolved against the first
+`<base href>`, with the final document URL as fallback) from the same parser options;
+`CollectStyles` interleaves embedded and
 provided linked sources in document order and throws for unsupported link semantics
 or links (for example, script-changed ones) whose text was not provided.
 Phase 11d adds explicit `executeInlineScripts: true` post-parse inline classics
@@ -56,7 +57,9 @@ forms without an action attribute or with an empty value default to the final
 document URL. Invalid/data/javascript base
 URLs fall back to the document URL. Form targets `_self`, `_parent`, and `_top`
 (including `<base target>` fallback) use the current tab; new-tab/named targets
-are rejected. Browser-discovered linked stylesheets still reject `<base href>`.
+are rejected. Browser-discovered linked stylesheets also resolve against the
+first `<base href>`; invalid, `data:`, or `javascript:` values fall back to the
+document URL, and cross-origin requests remain blocked by the browser broker.
 The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.

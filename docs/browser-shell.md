@@ -210,8 +210,8 @@ resolve to the current tab because nested browsing contexts are absent. The firs
 these same keywords. Named browsing contexts are rejected visibly rather than
 silently navigated in the current tab. The first `<base href>` resolves hyperlink
 URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
-response URL. Form actions use the same first-base resolution and fallback,
-while browser-discovered linked stylesheets still reject `<base href>`. `tabindex`, DOM focus APIs,
+response URL. Form actions and browser-discovered linked stylesheets use the same
+first-base resolution and fallback. `tabindex`, DOM focus APIs,
 offscreen-anchor traversal, downloads, image/area links, CSS link
 decoration, page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML
@@ -459,7 +459,8 @@ Bounded linked stylesheets are brokered by the browser, never by renderers.
 `GetPageSource` parses the decoded document with the renderer's exact parser
 options (bounded managed parsing in the browser process, for discovery only),
 then fetches each supported classic `link rel=stylesheet` (tokens ASCII
-case-insensitive; `href` resolved with Core.Url against the final response URL)
+case-insensitive; `href` resolved with Core.Url against the document base URL,
+using the final response URL as fallback)
 through the same tab-local `ResourceLoader`, sharing the shell session HSTS store,
 before the document is published. Requests keep cookies disabled and the bad-port
 and HSTS checks. HTTP(S) stylesheets must remain same-origin with the final
@@ -475,7 +476,10 @@ network requests. This is a narrow stylesheet policy, not general request author
 without a nonempty `href` create no sheet, as in HTML.
 Alternate/titled/disabled links, `media` other than absent/`all`, `type` other than
 absent/empty/`text/css`, `crossorigin`, `integrity`, `referrerpolicy`, the obsolete
-`charset` attribute, `<base href>` and other schemes fail navigation. Each response
+`charset` attribute and unsupported schemes fail navigation. The first `<base href>`
+resolves relative stylesheet URLs; invalid, `data:`, and `javascript:` base values
+fall back to the final response URL. Cross-origin destinations remain blocked before
+request, even when introduced by a base URL. Each response
 must be 2xx `text/css` (no sniffing or quirks-mode fallback), at most 1 MiB of body bytes and 256 Ki decoded characters.
 Decoding follows the CSS fallback encoding order (BOM, Content-Type charset,
 exact `@charset "…";` prefix with UTF-16 mapped to UTF-8, document encoding).

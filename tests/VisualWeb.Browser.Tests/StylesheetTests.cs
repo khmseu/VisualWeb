@@ -48,6 +48,68 @@ public sealed class StylesheetTests
     }
 
     [Fact]
+    public async Task BrowserResolvesLinkedStylesheetAgainstFirstBaseHref()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsoluteUri switch
+            {
+                "https://example.test/docs/page" => Text("<!doctype html><base href='../assets/'><base href='/ignored/'>"
+                    + "<link rel=stylesheet href=site.css>", "text/html"),
+                "https://example.test/assets/site.css" => Text("body{margin:0}", "text/css"),
+                _ => throw new InvalidOperationException("Unexpected stylesheet request."),
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/docs/page"), Cancellation);
+
+        Assert.Equal(["https://example.test/docs/page", "https://example.test/assets/site.css"], requests);
+        Assert.Equal(new PageStylesheet("https://example.test/assets/site.css", "body{margin:0}"),
+            Assert.Single(page.Stylesheets));
+    }
+
+    [Theory]
+    [InlineData("data:text/html,blocked")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("http://[invalid")]
+    public async Task InvalidBaseHrefFallsBackForLinkedStylesheets(string href)
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return requests.Count == 1
+                ? Text($"<!doctype html><base href='{href}'><base href='/ignored/'><link rel=stylesheet href=s.css>", "text/html")
+                : Text("body{margin:0}", "text/css");
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/docs/page"), Cancellation);
+
+        Assert.Equal(["https://example.test/docs/page", "https://example.test/docs/s.css"], requests);
+        Assert.Equal("https://example.test/docs/s.css", Assert.Single(page.Stylesheets).Url);
+    }
+
+    [Fact]
+    public async Task CrossOriginBaseCannotCauseStylesheetRequestBeforeSameOriginCheck()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Text("<!doctype html><base href='https://cdn.example/assets/'>"
+                + "<link rel=stylesheet href=site.css>", "text/html");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://secure.example/page"), Cancellation));
+
+        Assert.Contains("not same origin", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/page"], requests);
+    }
+
+    [Fact]
     public async Task CrossOriginStylesheetIsBlockedBeforeItsRequest()
     {
         var requests = new List<string>();
@@ -117,6 +179,21 @@ public sealed class StylesheetTests
     }
 
     [Fact]
+    public void RendererCollectsStylesheetUsingFirstBaseHref()
+    {
+        var document = HtmlParser.Parse("""
+            <!doctype html><base href="/assets/"><base href="/ignored/">
+            <link rel=stylesheet href=site.css>
+            """, cancellationToken: Cancellation).Document;
+        var url = BrowserUrl.Parse("https://example.test/docs/page");
+
+        Assert.Equal(["https://example.test/assets/site.css"],
+            StaticPageRenderer.DiscoverStylesheets(document, url, Cancellation));
+        Assert.Equal(["body{margin:0}"], StaticPageRenderer.CollectStyles(document, null, Cancellation, url,
+            [new("https://example.test/assets/site.css", "body{margin:0}")]).Select(source => source.Text));
+    }
+
+    [Fact]
     public void InlineAndLinkedSourcesKeepDocumentOrder()
     {
         var document = HtmlParser.Parse("""
@@ -174,8 +251,6 @@ public sealed class StylesheetTests
     [InlineData("<link rel=stylesheet integrity=sha256-x href=s.css>")]
     [InlineData("<link rel=stylesheet referrerpolicy=no-referrer href=s.css>")]
     [InlineData("<link rel=stylesheet charset=windows-1252 href=s.css>")]
-    [InlineData("<base href=/other/><link rel=stylesheet href=s.css>")]
-    [InlineData("<link rel=stylesheet href=s.css><base href=/other/>")]
     [InlineData("<link rel=stylesheet href='https://[bad/'>")]
     [InlineData("<link rel=stylesheet href='file:///etc/passwd'>")]
     [InlineData("<link rel=stylesheet href='javascript:alert(1)'>")]

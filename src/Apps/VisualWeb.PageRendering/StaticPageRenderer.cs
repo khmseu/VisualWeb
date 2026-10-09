@@ -325,11 +325,11 @@ public sealed class StaticPageRenderer : IPageRenderer
         var provided = (stylesheets ?? []).ToDictionary(sheet => sheet.Url, sheet => sheet.Css, StringComparer.Ordinal);
         var sources = new List<CssStyleSource>();
         long characters = 0;
-        var baseHref = LinkedStylesheets.BaseHref(document);
+        var baseUrl = documentUrl is null ? null : LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken);
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (LinkedStylesheets.Resolve(element, documentUrl, baseHref) is { } url)
+            if (LinkedStylesheets.Resolve(element, documentUrl, baseUrl) is { } url)
             {
                 if (!provided.TryGetValue(url, out var linked))
                 {
