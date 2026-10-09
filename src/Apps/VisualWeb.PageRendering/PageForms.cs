@@ -76,8 +76,6 @@ internal static class PageForms
                 foreach (var attribute in new[] { "min", "max", "step", "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
             }
-            if (kind == "email" && element.GetAttribute("multiple") is not null)
-            { Reject(index, "email multiple addresses"); }
             if (kind is "number" or "range")
             {
                 if (element.GetAttribute("multiple") is not null) { Reject(index, $"{kind} multiple"); }
@@ -161,7 +159,8 @@ internal static class PageForms
             }
             value = kind switch
             {
-                "text" or "search" or "email" or "tel" or "url" or "password" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
+                "text" or "search" or "tel" or "url" or "password" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
+                "email" => FormEmail.Sanitize(value ?? "", element.GetAttribute("multiple") is not null),
                 "date" => FormDate.IsValid(value ?? "") ? value ?? "" : "",
                 "time" => FormTime.IsValid(value ?? "") ? value ?? "" : "",
                 "month" => FormMonth.IsValid(value ?? "") ? value ?? "" : "",
@@ -192,7 +191,7 @@ internal static class PageForms
                 minLength,
                 text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
                 kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
-            { Options = options });
+            { Options = options, Multiple = kind == "email" && element.GetAttribute("multiple") is not null });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)

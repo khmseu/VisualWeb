@@ -565,13 +565,19 @@ public sealed class FormTests
         Assert.Null(Assert.Single(page.Forms).Error);
     }
 
-    [Fact]
-    public async Task EmailMultipleIsRejectedAsUnsupported()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmailMultipleReportsCanonicalValuesAcrossRenderers(bool process)
     {
-        using var renderer = Renderer(false);
-        var page = await renderer.RenderAsync(Document("<form><input type=email name=contact multiple></form>"),
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=email name=contact value=\" first@example.com , second@example.org \" multiple></form>"),
             new(200, 400, 1), Cancellation);
-        Assert.Contains("multiple", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("email", control.Kind);
+        Assert.True(control.Multiple);
+        Assert.Equal("first@example.com,second@example.org", control.Value);
+        Assert.Null(Assert.Single(page.Forms).Error);
     }
 
     [Theory]
@@ -1868,6 +1874,48 @@ public sealed class FormTests
             Assert.Contains("valid email address", error.Message, StringComparison.OrdinalIgnoreCase);
             Assert.Single(harness.Source.Requests);
         }
+    }
+
+    [Fact]
+    public void EmailMultipleAcceptsAddressListsAndSubmitsSanitizedValue()
+    {
+        using var harness = new Harness("<form><input type=email name=contact value=\" first@example.com , second@example.org \" multiple></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        var value = Uri.EscapeDataString("first@example.com,second@example.org");
+        Assert.Equal("https://example.com/final/index.html?contact=" + value, harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void EmptyOptionalEmailMultipleCanSubmit()
+    {
+        using var harness = new Harness("<form><input type=email name=contact multiple></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?contact=", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("first@example.com,")]
+    [InlineData("first@example.com,,second@example.org")]
+    [InlineData("first@example.com,not-an-address")]
+    public void EmailMultipleRejectsListsWithInvalidItems(string value)
+    {
+        using var harness = new Harness($"<form><input type=email name=contact value=\"{value}\" multiple></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("valid email address list", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+    }
+
+    [Fact]
+    public void RequiredEmailMultipleRejectsAnEmptyList()
+    {
+        using var harness = new Harness("<form><input type=email name=contact multiple required></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
     }
 
     [Fact]

@@ -217,12 +217,14 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v28); the browser owns all values,
+reports data-only form/control snapshots (IPC v29); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range, checkbox, radio, textarea,
 hidden, submit and reset, single-select `select`, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing; password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
-email requires one valid address and does not support `multiple`; url requires a valid
-absolute URL on submission; date values use strict `YYYY-MM-DD` Gregorian syntax
+email supports one valid address or, with `multiple`, a comma-separated list of
+valid addresses; list tokens are ASCII-whitespace-trimmed before validation and
+GET submission. URL requires a valid absolute URL on submission; date values use
+strict `YYYY-MM-DD` Gregorian syntax
 for years 0001–9999 and are edited as text (there is no calendar picker); invalid
 initial date values become empty, required dates must be nonempty, and nonempty
 values are checked before submission. Date `min`, `max`, `step`, `pattern`, length,
@@ -328,7 +330,7 @@ handling, not general same-origin enforcement, CORS, or request authorization.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
-`form=` attribute, submitter overrides, unsupported input types, invalid email, URL or number values, unsupported email `multiple` and reversed numeric bounds,
+`form=` attribute, submitter overrides, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname` or `wrap=hard`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,

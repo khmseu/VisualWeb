@@ -19,10 +19,6 @@ public readonly record struct TextareaVisualLine(int Start, int End);
 /// This is navigation renderer rotation, not site isolation, frame isolation or same-origin policy enforcement.</remarks>
 public sealed class BrowserController : IDisposable
 {
-    private static readonly Regex EmailAddress = new(
-        @"\A[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\z",
-        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
-
     private sealed class Content(IPageSource source, IPageRenderer renderer)
     {
         internal IPageSource Source { get; } = source;
@@ -765,11 +761,17 @@ public sealed class BrowserController : IDisposable
         var encoding = document.CharacterEncoding;
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
         { throw new PageNavigationException($"Form submission encoding {encoding} is unsupported; only UTF-8 is implemented."); }
+        var normalizedEmailValues = new Dictionary<int, string>();
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
             if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "textarea" or "checkbox" or "radio" or "select") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
+            if (control.Kind == "email")
+            {
+                value = FormEmail.Sanitize(value, control.Multiple);
+                normalizedEmailValues[index] = value;
+            }
             var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
             if (control.Required && (control.Kind == "checkbox" ? !isChecked
                 : control.Kind == "radio" ? !RadioGroupChecked(owner, index) : value.Length == 0))
@@ -784,8 +786,11 @@ public sealed class BrowserController : IDisposable
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid week; submission blocked."); }
             if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
-            if (control.Kind == "email" && value.Length > 0 && !EmailAddress.IsMatch(value))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid email address; submission blocked."); }
+            if (control.Kind == "email" && value.Length > 0 && !FormEmail.IsValid(value, control.Multiple))
+            {
+                var requiredFormat = control.Multiple ? "valid email address list" : "valid email address";
+                throw new PageNavigationException($"Form field '{control.Name}' must contain a {requiredFormat}; submission blocked.");
+            }
             if ((control.Kind is "number" or "range") && value.Length > 0)
             {
                 if (!FormNumber.TryParse(value, out var number))
@@ -821,7 +826,8 @@ public sealed class BrowserController : IDisposable
             { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
         }
         var limit = Session.Options.MaxAddressCharacters;
-        var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i),
+        var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter,
+            i => normalizedEmailValues.TryGetValue(i, out var email) ? email : Value(owner, i),
             i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked), i =>
             {
                 var control = page.FormControls[i];

@@ -70,7 +70,7 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Label carries submit/reset-input text or button text.</remarks>
+/// value; the browser shell owns user edits. Multiple is supported only for email controls. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -93,6 +93,8 @@ public sealed record PageFormControl(
 {
     [JsonRequired]
     public PageFormOption[] Options { get; init; } = [];
+    [JsonRequired]
+    public bool Multiple { get; init; }
 }
 
 /// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
@@ -217,6 +219,35 @@ public static class FormWeek
     }
 }
 
+/// <summary>Validates and sanitizes bounded HTML email values and comma-separated address lists.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/input.html#email-state-(type=email)">Email state</see>.</remarks>
+public static class FormEmail
+{
+    private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
+    private static readonly Regex Address = new(
+        @"\A[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\z",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+
+    public static string Sanitize(string value, bool multiple)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (!multiple)
+        {
+            return value.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal)
+                .Trim(AsciiWhitespace);
+        }
+        return string.Join(',', value.Split(',').Select(token => token.Trim(AsciiWhitespace)));
+    }
+
+    public static bool IsValid(string value, bool multiple)
+    {
+        var sanitized = Sanitize(value, multiple);
+        if (sanitized.Length == 0) { return true; }
+        if (!multiple) { return Address.IsMatch(sanitized); }
+        return sanitized.Split(',').All(token => token.Length > 0 && Address.IsMatch(token));
+    }
+}
+
 /// <summary>HTML valid floating-point syntax with finite invariant-culture parsing.</summary>
 public static class FormNumber
 {
@@ -302,7 +333,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 28;
+    public const int Version = 29;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -480,6 +511,8 @@ public static class RendererProtocol
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
+                || control.Multiple && control.Kind != "email"
+                || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea")
                 || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)

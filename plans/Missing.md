@@ -39,7 +39,7 @@ broader page interaction is still missing:
   navigation in shell, local and actual renderer-process paths. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
-  one anchor and no page raster changes without focus. IPC v28 carries grouped
+  one anchor and no page raster changes without focus. IPC v28 introduced grouped
   visible rectangles plus bounded `_blank` target metadata (4096 anchors, 64
   rectangles each, 1 MiB metadata), plus bounded fragment-ID offsets for
   same-document scrolling, without element IDs/DOM/native handles. Fragment
@@ -54,7 +54,7 @@ broader page interaction is still missing:
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v28 data-only metadata and the ordinary
+  submit same-tab GET urlencoded queries via IPC v29 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -62,7 +62,10 @@ broader page interaction is still missing:
   and checked states, clears their edited/dirty/check state, preserves focus,
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
-  Selects expose bounded direct options, default selection, disabled-option skipping and Up/Down/Home/End keyboard selection; listboxes, multiple selection, optgroups and mouse popup selection remain unsupported.
+  Selects expose bounded direct options, default selection, disabled-option
+  skipping and Up/Down/Home/End keyboard selection; email `multiple` supports
+  sanitized comma-separated address lists, while select multiple selection,
+  listboxes, optgroups and mouse popup selection remain unsupported.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values and
   `required` before submission; no calendar picker or date constraints are
@@ -224,14 +227,14 @@ milestones and should be read as historical status, not current capability.
 
 *Status cross-checked against the current implementation on 2026-10-09. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
-keyboard or validation semantics; single-address email inputs use generic text
-editing and bounded submission validation (the `multiple` attribute remains
-unsupported); checkbox state is shell-owned, keyboard/pointer toggled and submitted
+keyboard or validation semantics; email inputs use generic text editing and
+bounded validation for one address or sanitized `multiple` comma-separated address
+lists; checkbox state is shell-owned, keyboard/pointer toggled and submitted
 only when checked; radio state is mutually exclusive by form/name, selected by
 pointer, Space, and arrow-key navigation, and required validation applies to the group; bounded editable textareas submit newline-normalized
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
 movement; `minlength` is checked for edited nonempty values and bounded text
-field patterns (bounded non-backtracking subset), single-address email validation, URL/date/time/month/week input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; password controls are shell-masked and use bounded text constraints; range controls
+field patterns (bounded non-backtracking subset), email address/list validation, URL/date/time/month/week input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; password controls are shell-masked and use bounded text constraints; range controls
 are sanitized to finite bounds and the step grid and remain shell-owned; reset
 controls restore initial values/checks and clear shell-owned edits without
 navigation or validation; page-initiated `file:`/`data:` link and form
@@ -241,10 +244,10 @@ and forms block cleartext paths unless HSTS upgrades them, opaque `data:` forms
 cannot target HTTP(S), and HTTP(S) forms are restricted to same-origin actions
 and redirect hops (with the same-host HTTPS downgrade path delegated to HSTS
 policy). Cross-origin redirects are rejected before the target request. These
-are narrow broker restrictions, not production authorization. For this bounded
-month-input increment, the full browser suite passes (648 tests), IPC passes
-(126), layout passes (55), the solution builds with zero warnings/errors, and
-format verification passes. A prior full-solution test invocation also reported
+are narrow broker restrictions, not production authorization. For bounded
+email `multiple` support, the browser suite passes (655 tests), IPC passes
+(146), the solution builds with zero warnings/errors, and format verification
+passes. A prior full-solution test invocation also reported
 `Engine.Scripting.Tests.CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
 (expected `InvalidOperationException`, none thrown). These checks are not full
 conformance, security, CI-matrix or real-desktop validation.

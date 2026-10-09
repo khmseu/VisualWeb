@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using Xunit;
@@ -46,7 +47,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(28, RendererProtocol.Version);
+        Assert.Equal(29, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 28 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 28 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 23 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 23 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 24 }, 0));
@@ -104,6 +107,27 @@ public sealed class ProtocolTests
         ]
     };
 
+    [Theory]
+    [InlineData("first@example.com, second@example.org", true, true)]
+    [InlineData("first@example.com,,second@example.org", true, false)]
+    [InlineData("first@example.com,", true, false)]
+    [InlineData("first@\nexample.com", true, false)]
+    [InlineData("first@example.com,second@example.org", false, false)]
+    [InlineData("", true, true)]
+    public void EmailAddressListValidationMatchesMultipleMode(string value, bool multiple, bool valid)
+    {
+        Assert.Equal(valid, FormEmail.IsValid(value, multiple));
+    }
+
+    [Fact]
+    public void MultipleEmailMetadataIsRequiredOnTheWire()
+    {
+        var json = JsonNode.Parse(JsonSerializer.Serialize(FormFrame.FormControls![0]))!.AsObject();
+        Assert.True(json.ContainsKey(nameof(PageFormControl.Multiple)));
+        json.Remove(nameof(PageFormControl.Multiple));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(json.ToJsonString()));
+    }
+
     [Fact]
     public void FormMetadataIsRequiredOnFramesOnlyAndRoundTrips()
     {
@@ -116,6 +140,22 @@ public sealed class ProtocolTests
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "email", Pattern = ".+", Rect = null }]
         }, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with
+            {
+                Kind = "email", Value = "first@example.com,second@example.org", Multiple = true,
+                MinLength = -1, MaxLength = -1, Pattern = null, Rect = null
+            }]
+        }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "text", Multiple = true, Rect = null }]
+        }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "email", Multiple = true, Value = " first@example.com", Rect = null }]
+        }, 16));
         RendererProtocol.Validate(FormFrame with
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "checkbox", Checked = true, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
@@ -516,7 +556,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(28, RendererProtocol.Version);
+        Assert.Equal(29, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
