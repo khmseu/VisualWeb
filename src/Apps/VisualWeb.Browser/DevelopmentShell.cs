@@ -1,3 +1,4 @@
+using System.Text;
 using SDL3;
 using VisualWeb.Platform.Abstractions;
 
@@ -38,6 +39,10 @@ public sealed class DevelopmentShell : IDisposable
         internal int DraggingRangeControl { get; set; } = -1;
         internal int OpenSelectControl { get; set; } = -1;
         internal int SelectPopupFirstOption { get; set; }
+        internal string SelectTypeaheadText { get; set; } = "";
+        internal long SelectTypeaheadTimestamp { get; set; }
+        internal int SelectTypeaheadControl { get; set; } = -1;
+        internal BrowserPage? SelectTypeaheadPage { get; set; }
         internal BrowserPage? SelectPopupPage { get; set; }
         internal bool Dirty { get; set; } = true;
         internal IReadOnlyList<ChromeTarget> Targets { get; set; } = [];
@@ -325,6 +330,9 @@ public sealed class DevelopmentShell : IDisposable
                     Controller.InsertFormText(fieldTab.Id, text.Text);
                     RefreshTextareaLayouts(fieldTab.Id);
                     view.Dirty = true;
+                    break;
+                case TextEntered text when window.ActiveTab is { } selectTab:
+                    if (HandleSelectTypeahead(view, selectTab.Id, text.Text)) { view.Dirty = true; }
                     break;
             }
         }
@@ -629,8 +637,38 @@ public sealed class DevelopmentShell : IDisposable
         else if (window.ActiveTab is { } tab) { OpenSelectPopup(view, tab, index); }
         return true;
     }
+    private bool HandleSelectTypeahead(View view, TabId id, string text)
+    {
+        var index = Controller.FocusedControlIndex(id);
+        if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
+        if (view.SelectTypeaheadControl != index || !ReferenceEquals(view.SelectTypeaheadPage, page))
+        { view.SelectTypeaheadText = ""; }
+        view.SelectTypeaheadControl = index;
+        view.SelectTypeaheadPage = page;
+        var now = Environment.TickCount64;
+        if (now - view.SelectTypeaheadTimestamp > 1000) { view.SelectTypeaheadText = ""; }
+        foreach (var rune in text.EnumerateRunes().Take(32))
+        {
+            if (Rune.IsControl(rune)) { continue; }
+            var character = rune.ToString();
+            var cycle = view.SelectTypeaheadText.Length > 0
+                && string.Equals(view.SelectTypeaheadText, character, StringComparison.OrdinalIgnoreCase);
+            var prefix = cycle ? character : view.SelectTypeaheadText + character;
+            if (prefix.EnumerateRunes().Count() > 32) { prefix = character; cycle = true; }
+            view.SelectTypeaheadText = prefix;
+            view.SelectTypeaheadTimestamp = now;
+            _ = Controller.SelectFocusedOptionByPrefix(id, prefix, cycle);
+            KeepPopupSelectionVisible(view, id);
+        }
+        return true;
+    }
     private static void CloseSelectPopup(View view)
     {
+        view.SelectTypeaheadText = "";
+        view.SelectTypeaheadTimestamp = 0;
+        view.SelectTypeaheadControl = -1;
+        view.SelectTypeaheadPage = null;
         if (view.OpenSelectControl < 0) { return; }
         view.OpenSelectControl = -1;
         view.SelectPopupFirstOption = 0;

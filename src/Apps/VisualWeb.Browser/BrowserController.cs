@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using VisualWeb.Core.Encoding;
 using VisualWeb.Core.Url;
@@ -336,6 +337,35 @@ public sealed class BrowserController : IDisposable
         {
             owner.SelectedOptions[controlIndex] = optionIndex;
             Changed?.Invoke(id);
+        }
+        return true;
+    }
+
+    /// <summary>Selects an enabled option matching a bounded browser-owned text prefix.</summary>
+    public bool SelectFocusedOptionByPrefix(TabId id, string prefix, bool cycleFromCurrent = false)
+    {
+        Check();
+        ArgumentNullException.ThrowIfNull(prefix);
+        if (prefix.Length is 0 or > 64 || prefix.EnumerateRunes().Count() > 32)
+        { throw new ArgumentOutOfRangeException(nameof(prefix)); }
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
+        { return false; }
+        if (control.Options.Length == 0) { return true; }
+        var selected = SelectedOption(owner, owner.FocusedControl);
+        if (!cycleFromCurrent && selected >= 0 && !control.Options[selected].Disabled
+            && control.Options[selected].Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        { return true; }
+        var start = selected < 0 ? 0 : (selected + 1) % control.Options.Length;
+        for (var offset = 0; offset < control.Options.Length; offset++)
+        {
+            var candidate = (start + offset) % control.Options.Length;
+            if (control.Options[candidate].Disabled
+                || !control.Options[candidate].Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) { continue; }
+            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            if (candidate != selected) { Changed?.Invoke(id); }
+            return true;
         }
         return true;
     }
