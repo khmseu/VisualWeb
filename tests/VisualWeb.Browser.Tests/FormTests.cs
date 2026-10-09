@@ -661,7 +661,7 @@ public sealed class FormTests
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
     [InlineData("<form><fieldset disabled><input name=q></fieldset></form>", "fieldset")]
-    [InlineData("<form id=f></form><input form=f name=q>", "form attribute")]
+    [InlineData("<form id=owner></form><fieldset form=owner></fieldset>", "fieldset")]
     [InlineData("<form><select multiple name=q><option>x</option></select></form>", "select multiple")]
     [InlineData("<form><select size=2 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=999999999999999999999 name=q><option>x</option></select></form>", "display size")]
@@ -674,6 +674,52 @@ public sealed class FormTests
         var form = Assert.Single(page.Forms);
         Assert.Equal("", form.Action);
         Assert.Contains(expected, form.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FormAttributeAssociatesControlsByIdAcrossTreeOrder(bool process)
+    {
+        const string body = "<input form=search name=before value=one><form id=search action=/lookup>" +
+            "<input name=inside value=two><button name=go value=yes>Go</button></form>" +
+            "<div><input form=search name=after value=three></div><form id=other><input name=other value=x></form>";
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Equal([0, 0, 0, 0, 1], page.FormControls.Select(control => control.Form));
+        Assert.Null(page.Forms[0].Error);
+        Assert.Null(page.Forms[1].Error);
+    }
+
+    [Fact]
+    public void FormAttributeControlsSubmitInDocumentOrder()
+    {
+        using var harness = new Harness("<input form=search name=before value=one><form id=search action=/lookup>" +
+            "<input name=inside value=two><button name=go value=yes>Go</button></form>" +
+            "<input form=search name=after value=three>");
+        Assert.Equal([0, 0, 0, 0], harness.Controller.Page(harness.Tab.Id)!.FormControls.Select(control => control.Form));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/lookup?before=one&inside=two&go=yes&after=three", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public async Task UnresolvedFormAttributeDoesNotFallBackToAncestorOwner()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form id=inner><input form=missing name=orphan><input name=owned></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal([-1, 0], page.FormControls.Select(control => control.Form));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData("<div id=target></div><form id=target><input form=target name=orphan><input name=owned></form>")]
+    public async Task FormAttributeUsesFirstExactMatchingId(string body)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Equal([-1, 0], page.FormControls.Select(control => control.Form));
     }
 
     [Theory]

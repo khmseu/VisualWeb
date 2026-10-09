@@ -42,10 +42,14 @@ controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallba
 expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, and finite number/range bounds and step metadata, merged
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
-`novalidate`, non-UTF-8 `accept-charset`, `<base>`, `form=` owners, submitter
+`novalidate`, non-UTF-8 `accept-charset`, `<base>`, unsupported `form=` owners
+on fieldset/output/object, submitter
 overrides, other input types, textarea pattern/dirname/wrap=hard,
 listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
-when that form is submitted. The renderer never submits or navigates.
+when that form is submitted. Supported controls resolve `form=` to the first
+exact matching ID when it belongs to a form; unresolved/non-form IDs have no
+owner and never fall back to an ancestor. Controls without `form=` use the
+nearest ancestor form. The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL

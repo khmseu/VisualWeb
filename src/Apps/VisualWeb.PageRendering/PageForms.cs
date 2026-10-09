@@ -8,8 +8,9 @@ namespace VisualWeb.PageRendering;
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/forms.html#the-form-element">form</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-attributes">form
 /// submission attributes</see> and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-owner">form
-/// owner</see>. The parser keeps form ownership equal to the nearest ancestor form, so form-attribute owners are
-/// rejected. Anything outside same-tab GET with urlencoded data becomes a visible per-form error instead of a
+/// owner</see>. Controls use the first matching ID for an explicit <c>form</c> attribute, otherwise the nearest
+/// ancestor form; unsupported form-associated elements remain visible errors. Anything outside same-tab GET with
+/// urlencoded data becomes a visible per-form error instead of a
 /// partial submission. Limits throw <see cref="PageNavigationException"/>.</remarks>
 internal static class PageForms
 {
@@ -30,27 +31,35 @@ internal static class PageForms
         var elements = document.Descendants().OfType<DomElement>().ToList();
         var baseTarget = elements.Any(e => e.LocalName == "base" && e.GetAttribute("target") is not null);
         var baseHref = elements.Any(e => e.LocalName == "base" && e.GetAttribute("href") is not null);
-        var formAttribute = elements.Any(e => e.LocalName is "button" or "fieldset" or "input" or "object" or "output"
-            or "select" or "textarea" && e.GetAttribute("form") is not null);
+        var firstElementById = new Dictionary<string, DomElement>(StringComparer.Ordinal);
+        foreach (var element in elements)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.GetAttribute("id") is { Length: > 0 } id) { firstElementById.TryAdd(id, element); }
+        }
+        foreach (var element in elements)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.LocalName != "form") { continue; }
+            if (formIndex.Count >= RendererProtocol.MaxForms)
+            { throw new PageNavigationException($"Renderer form count limit ({RendererProtocol.MaxForms}) exceeded."); }
+            var (action, error) = Form(element, url, baseTarget, baseHref);
+            formIndex.Add(element, formIndex.Count);
+            actions.Add(action);
+            errors.Add(error);
+        }
         var lastLink = 0;
         var patternCount = 0;
         var optionCount = 0;
         foreach (var element in elements)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (element.LocalName == "form")
-            {
-                if (formIndex.Count >= RendererProtocol.MaxForms)
-                { throw new PageNavigationException($"Renderer form count limit ({RendererProtocol.MaxForms}) exceeded."); }
-                var (action, error) = Form(element, url, baseTarget, baseHref, formAttribute);
-                formIndex.Add(element, formIndex.Count);
-                actions.Add(action);
-                errors.Add(error);
-                continue;
-            }
-            if (element.LocalName is not ("input" or "button" or "textarea" or "select" or "output" or "object")) { continue; }
-            var owner = Owner(element);
+            if (element.LocalName == "form") { continue; }
+            var owner = Owner(element, firstElementById);
             var index = owner is null ? -1 : formIndex[owner];
+            if (element.LocalName == "fieldset" && element.GetAttribute("form") is not null)
+            { Reject(index, "fieldset form owner"); }
+            if (element.LocalName is not ("input" or "button" or "textarea" or "select" or "output" or "object")) { continue; }
             var kind = Kind(element);
             if (kind is null)
             {
@@ -220,8 +229,7 @@ internal static class PageForms
         }
     }
 
-    private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, bool baseTarget, bool baseHref,
-        bool formAttribute)
+    private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, bool baseTarget, bool baseHref)
     {
         var method = form.GetAttribute("method")?.ToLowerInvariant();
         if (method is "post" or "dialog")
@@ -238,7 +246,6 @@ internal static class PageForms
             && !charset.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries)
                 .All(label => Utf8Labels.Contains(label.ToLowerInvariant())))
         { return ("", "Unsupported form accept-charset: only UTF-8 labels are implemented."); }
-        if (formAttribute) { return ("", "Unsupported form attribute owners: controls must be descendants of their form."); }
         if (baseHref) { return ("", "Unsupported form action resolution with <base href>."); }
         var raw = form.GetAttribute("action") ?? "";
         if (raw.Length > RendererProtocol.MaxTextCharacters) { return ("", "Form action URL limit exceeded."); }
@@ -310,7 +317,15 @@ internal static class PageForms
     private static string NormalizeTextArea(string value) =>
         value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 
-    private static DomElement? Owner(DomElement element) => Ancestors(element).FirstOrDefault(a => a.LocalName == "form");
+    private static DomElement? Owner(DomElement element, IReadOnlyDictionary<string, DomElement> firstElementById)
+    {
+        if (element.GetAttribute("form") is { } formId)
+        {
+            return formId.Length > 0 && firstElementById.TryGetValue(formId, out var target) && target.LocalName == "form"
+                ? target : null;
+        }
+        return Ancestors(element).FirstOrDefault(ancestor => ancestor.LocalName == "form");
+    }
 
     private static IEnumerable<DomElement> Ancestors(DomElement element)
     {

@@ -327,10 +327,16 @@ compatibility defaults fail visibly instead of silently using an unrestricted
 source. These are stricter browser-broker rules for this form subset and link
 handling, not general same-origin enforcement, CORS, or request authorization.
 
+Supported controls with a `form` attribute use the first element in tree order
+with the exact matching `id` when that element is a `<form>`; otherwise they
+have no owner and do not fall back to an ancestor. Controls without `form` use
+their nearest ancestor form. Associated controls are submitted in document
+tree order, including controls before or outside the form element.
+
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
-target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
-`form=` attribute, submitter overrides, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
+target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, unsupported
+`form=` ownership on fieldsets/output/object, submitter overrides, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname` or `wrap=hard`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
