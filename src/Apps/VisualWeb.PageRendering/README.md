@@ -46,12 +46,12 @@ expose name, initial value, label, disabled/readonly/required/pattern/minlength/
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain,
 non-UTF-8 `accept-charset`, unsupported `form=`
-owners on output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern/dirname,
-listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), output/object and datalist) become a per-form `Error`, rejected visibly only
+owners on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern/dirname,
+listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), object and datalist) become a per-form `Error`, rejected visibly only
 when that form is submitted. Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
 owner and never fall back to an ancestor. Controls without `form=` use the
-nearest ancestor form. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
+nearest ancestor form. `<output>` is form-associated but not a submittable control; it remains ordinary rendered content and contributes no browser form snapshot or GET entry. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
 except descendants of its first `legend` element child; nested fieldsets apply
 independently. Hyperlinks and form actions resolve against the first valid `<base href>`;
 forms without an action attribute or with an empty value default to the final

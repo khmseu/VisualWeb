@@ -1240,6 +1240,25 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task OutputFormAssociationDoesNotInvalidateOrSubmitOutput(bool process)
+    {
+        const string body = "<style>output{display:block}</style><form id=owner action='/save'>"
+            + "<input name=inside value=i><button>Save</button></form>"
+            + "<output form=owner name=calculated>visible</output>";
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        Assert.Equal(["inside", ""], page.FormControls.Select(control => control.Name));
+
+        using var harness = new Harness(body);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/save?inside=i", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task FieldsetFormOwnerDoesNotTransferItsDescendantControls(bool process)
     {
         const string body = "<style>fieldset{display:block}</style><form id=owner action='/save'>"

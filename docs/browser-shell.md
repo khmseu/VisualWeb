@@ -362,12 +362,14 @@ tree order, including controls before or outside the form element. A fieldset's 
 of disabled fieldsets are disabled except controls inside each fieldset's first
 `legend` child; the inherited state prevents focus, validation and successful
 submission, and nested fieldsets apply independently.
+Form-associated `<output>` elements are not submittable controls; their rendered
+content is omitted from browser form-control metadata and GET entries.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target
-(including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
+(including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname`, listbox/multiple select semantics, optgroups and unsupported select content,
-output/object controls,
+`object` controls,
 `datalist` controls, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
 required empty fields, edited too-short/overlong values, pattern mismatches,

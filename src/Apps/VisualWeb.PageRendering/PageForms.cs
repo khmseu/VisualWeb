@@ -61,7 +61,7 @@ internal static class PageForms
             if (element.LocalName == "form") { continue; }
             var owner = Owner(element, firstElementById);
             var index = owner is null ? -1 : formIndex[owner];
-            if (element.LocalName is not ("input" or "button" or "textarea" or "select" or "output" or "object")) { continue; }
+            if (element.LocalName is not ("input" or "button" or "textarea" or "select" or "object")) { continue; }
             var kind = Kind(element);
             if (kind is null)
             {
