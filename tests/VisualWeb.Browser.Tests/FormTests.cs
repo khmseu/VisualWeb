@@ -44,6 +44,8 @@ public sealed class FormTests
         Assert.Equal(["text", "hidden", "search", "submit", "button", "text", "text"], controls.Select(c => c.Kind));
         Assert.Equal([0, 0, 0, 0, 0, 1, -1], controls.Select(c => c.Form));
         Assert.Equal([false, false, false, false, true, false, false], controls.Select(c => c.FormNoValidate));
+        Assert.All(controls, control => Assert.Null(control.FormAction));
+        Assert.All(controls, control => Assert.Null(control.FormActionError));
         Assert.Equal(["q", "h", "s", "go", "b", "p", "formless"], controls.Select(c => c.Name));
         Assert.Equal(["abc", " v\n ", "", "", "bv", "", "f"], controls.Select(c => c.Value));
         Assert.Equal(["", "", "", "Submit", "Go", "", ""], controls.Select(c => c.Label));
@@ -653,7 +655,6 @@ public sealed class FormTests
     [InlineData("<form><input name=q dirname=d></form>", "dirname")]
     [InlineData("<form><input name=q list=l></form>", "list")]
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
-    [InlineData("<form><button formaction=/x>x</button></form>", "formaction")]
     [InlineData("<form><button formtarget=_blank>x</button></form>", "formtarget")]
     [InlineData("<form><input type=submit formenctype=text/plain></form>", "formenctype")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
@@ -1206,6 +1207,55 @@ public sealed class FormTests
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
 
         Assert.Equal("https://example.com/save?contact=invalid", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SubmitterFormActionOverridesTheFormAction(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<base href='/base/'><form action='/default'><input name=q value=x><button formaction='chosen'>Choose</button></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal("https://example.com/base/chosen", Assert.Single(page.FormControls, control => control.Kind == "button").FormAction);
+
+        using var harness = new Harness("<base href='/base/'><form action='/default'><input name=q value=x><button formaction='chosen'>Choose</button><button>Default</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/base/chosen?q=x", harness.Source.Requests[^1].Url.Href);
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/default?q=x", harness.Source.Requests[^1].Url.Href);
+
+        using var emptyOverride = new Harness("<form action='/ignored'><input name=q value=x><button formaction=''>Use document</button></form>");
+        Assert.True(emptyOverride.Controller.FocusControl(emptyOverride.Tab.Id, 1));
+        Assert.True(emptyOverride.Controller.ActivateFocusedLink(emptyOverride.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?q=x", emptyOverride.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void NonselectedOrInvalidSubmitterActionDoesNotPoisonOtherSubmitters()
+    {
+        using var harness = new Harness("<form action='/safe'><input name=q value=x><button formaction='javascript:alert(1)'>Unsafe</button><button>Safe</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/safe?q=x", harness.Source.Requests[^1].Url.Href);
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("formaction", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, harness.Source.Requests.Count);
+    }
+
+    [Fact]
+    public void CrossOriginSubmitterActionIsBlockedBeforeSendingValues()
+    {
+        using var harness = new Harness("<form><input name=secret value=private><button formaction='https://other.example/save'>Send</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("Cross-origin", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
     }
 
     [Fact]

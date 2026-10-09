@@ -748,7 +748,9 @@ public sealed class BrowserController : IDisposable
         var form = page.Forms[formIndex];
         if (form.Error is { } error) { throw new PageNavigationException(error); }
         var document = owner.Document!;
-        var action = BrowserUrl.Parse(form.Action);
+        var submitterControl = submitter >= 0 ? page.FormControls[submitter] : null;
+        if (submitterControl?.FormActionError is { } actionError) { throw new PageNavigationException(actionError); }
+        var action = BrowserUrl.Parse(submitterControl?.FormAction ?? form.Action);
         if (action.Protocol is "http:" or "https:")
         {
             if (document.Url.Protocol == "data:")

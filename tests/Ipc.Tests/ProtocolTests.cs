@@ -47,7 +47,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(31, RendererProtocol.Version);
+        Assert.Equal(32, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 31 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 31 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 30 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 30 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 29 }, 0));
@@ -308,9 +310,11 @@ public sealed class ProtocolTests
             controlJson.Replace("\"StepAny\":false", "", StringComparison.Ordinal)));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
             controlJson.Replace(",\"FormNoValidate\":false", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
+            controlJson.Replace(",\"FormAction\":null,\"FormActionError\":null", "", StringComparison.Ordinal)));
     }
 
-    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 31));
+    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 33));
 
     [Theory]
     [InlineData("0001-01-01", true)]
@@ -583,7 +587,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(31, RendererProtocol.Version);
+        Assert.Equal(32, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

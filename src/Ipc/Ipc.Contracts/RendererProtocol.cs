@@ -62,7 +62,8 @@ public sealed record PageTextTarget(
 
 /// <summary>One parsed form owner: an absolute GET action, or a visible unsupported-semantics diagnostic.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
-/// submission algorithm</see> and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formnovalidate">formnovalidate</see>.
+/// submission algorithm</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formnovalidate">formnovalidate</see> and
+/// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formaction">formaction</see>.
 /// Only the bounded same-tab GET/urlencoded subset is representable; Error is set
 /// (and Action empty) for anything else. No element identity or script capability crosses IPC.</remarks>
 public sealed record PageForm(
@@ -72,7 +73,7 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate applies to submit buttons only. Label carries submit/reset-input text or button text.</remarks>
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate and FormAction apply only to submit buttons. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -101,6 +102,10 @@ public sealed record PageFormControl(
     public string Placeholder { get; init; } = "";
     [JsonRequired]
     public bool FormNoValidate { get; init; }
+    [JsonRequired]
+    public string? FormAction { get; init; }
+    [JsonRequired]
+    public string? FormActionError { get; init; }
 }
 
 /// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
@@ -339,7 +344,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 31;
+    public const int Version = 32;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -520,6 +525,12 @@ public static class RendererProtocol
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Multiple && control.Kind != "email"
                 || control.FormNoValidate && control.Kind is not ("submit" or "button")
+                || control.FormAction is { Length: > MaxTextCharacters }
+                || control.FormActionError is { Length: 0 or > MaxTextCharacters }
+                || (control.FormAction is not null || control.FormActionError is not null) && control.Kind is not ("submit" or "button")
+                || control.FormActionError is not null && control.FormAction is not null
+                || control.FormAction is { } formAction && (BrowserUrl.ParseResult(formAction).Url is not { } actionUrl
+                    || actionUrl.Href != formAction || actionUrl.Protocol is not ("http:" or "https:" or "file:" or "data:"))
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
                 || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))

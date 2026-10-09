@@ -17,7 +17,7 @@ internal static class PageForms
     private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
-    private static readonly string[] SubmitterOverrides = ["formaction", "formenctype", "formmethod", "formtarget"];
+    private static readonly string[] SubmitterOverrides = ["formenctype", "formmethod", "formtarget"];
     private static readonly string[] TextOnlyAttributes = ["dirname", "list"];
 
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
@@ -107,8 +107,11 @@ internal static class PageForms
                 if (element.GetAttribute("wrap")?.Equals("hard", StringComparison.OrdinalIgnoreCase) == true)
                 { Reject(index, "textarea wrap=hard"); }
             }
+            string? submitterAction = null;
+            string? submitterActionError = null;
             if (kind is "submit" or "button")
             {
+                (submitterAction, submitterActionError) = SubmitterAction(element, url, baseUrl);
                 foreach (var name in SubmitterOverrides)
                 {
                     if (element.GetAttribute(name) is not null) { Reject(index, $"submit button override {name}"); }
@@ -210,7 +213,9 @@ internal static class PageForms
                 Options = options,
                 Multiple = kind == "email" && element.GetAttribute("multiple") is not null,
                 Placeholder = placeholder,
-                FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null
+                FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null,
+                FormAction = submitterAction,
+                FormActionError = submitterActionError
             });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
@@ -260,6 +265,20 @@ internal static class PageForms
         { return ("", $"Unsupported form action URL scheme: {parsed.Protocol}"); }
         if (parsed.Href.Length > RendererProtocol.MaxTextCharacters) { return ("", "Form action URL limit exceeded."); }
         return (parsed.Href, null);
+    }
+
+    private static (string? Action, string? Error) SubmitterAction(DomElement element, BrowserUrl documentUrl, BrowserUrl baseUrl)
+    {
+        if (element.GetAttribute("formaction") is not { } raw) { return (null, null); }
+        if (raw.Length > RendererProtocol.MaxTextCharacters)
+        { throw new PageNavigationException("Submitter formaction URL limit exceeded."); }
+        var action = string.IsNullOrEmpty(raw) ? documentUrl : BrowserUrl.ParseResult(raw, baseUrl).Url;
+        if (action is null) { return (null, "Invalid submitter formaction URL."); }
+        if (action.Protocol is not ("http:" or "https:" or "file:" or "data:"))
+        { return (null, $"Unsupported submitter formaction URL scheme: {action.Protocol}"); }
+        if (action.Href.Length > RendererProtocol.MaxTextCharacters)
+        { throw new PageNavigationException("Submitter formaction URL limit exceeded."); }
+        return (action.Href, null);
     }
 
     private static string? BaseTarget(IReadOnlyList<DomElement> elements, CancellationToken cancellationToken)

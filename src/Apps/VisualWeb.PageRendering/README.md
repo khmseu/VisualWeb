@@ -46,7 +46,7 @@ expose name, initial value, label, disabled/readonly/required/pattern/minlength/
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, unsupported named or
 new-tab targets, `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=`
-owners on fieldset/output/object, submitter overrides other than `formnovalidate`, other input types, textarea pattern/dirname/wrap=hard,
+owners on fieldset/output/object, submitter overrides other than `formaction` and `formnovalidate`, other input types, textarea pattern/dirname/wrap=hard,
 listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
 when that form is submitted. Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
@@ -59,7 +59,7 @@ URLs fall back to the document URL. Form targets `_self`, `_parent`, and `_top`
 are rejected. Browser-discovered linked stylesheets also resolve against the
 first `<base href>`; invalid, `data:`, or `javascript:` values fall back to the
 document URL, and cross-origin requests remain blocked by the browser broker.
-A selected submit button's `formnovalidate` metadata lets the browser skip constraint validation for that submission; it does not bypass navigation or origin policy. The renderer never submits or navigates.
+Selected submit buttons may carry a resolved `formaction` override or `formnovalidate` flag. Invalid override URLs become submitter-specific errors. These metadata let the browser select the action or skip constraint validation for that submission; they do not bypass navigation or origin policy. The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL
