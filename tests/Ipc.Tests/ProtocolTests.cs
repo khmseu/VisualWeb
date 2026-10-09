@@ -46,7 +46,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(23, RendererProtocol.Version);
+        Assert.Equal(24, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 23 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 23 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 22 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 22 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 21 }, 0));
@@ -180,7 +182,10 @@ public sealed class ProtocolTests
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", TextTargets = [] }, 0));
         var json = JsonSerializer.Serialize(FormFrame);
         var parsed = JsonSerializer.Deserialize<RendererMessage>(json)!;
-        Assert.Equal(FormFrame.FormControls!, parsed.FormControls!);
+        Assert.Equal(FormFrame.FormControls!.Select(control => control with { Options = Array.Empty<PageFormOption>() }),
+            parsed.FormControls!.Select(control => control with { Options = Array.Empty<PageFormOption>() }));
+        Assert.Equal(FormFrame.FormControls!.SelectMany(control => control.Options),
+            parsed.FormControls!.SelectMany(control => control.Options));
         Assert.Equal(FormFrame.Forms!, parsed.Forms!);
         Assert.Equal(FormFrame.TextTargets!, parsed.TextTargets!);
         var controlJson = JsonSerializer.Serialize(FormFrame.FormControls![0]);
@@ -194,7 +199,7 @@ public sealed class ProtocolTests
             controlJson.Replace("\"StepAny\":false", "", StringComparison.Ordinal)));
     }
 
-    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 28));
+    public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 30));
 
     [Theory]
     [MemberData(nameof(InvalidFormCases))]
@@ -231,9 +236,42 @@ public sealed class ProtocolTests
             24 => FormFrame with { FormControls = [control with { Pattern = "[" }] },
             25 => FormFrame with { FormControls = [control with { Pattern = new string('a', FormPattern.MaxCharacters + 1) }] },
             26 => FormFrame with { FormControls = [FormFrame.FormControls[1] with { Pattern = "a" }] },
-            _ => FormFrame with { FormControls = Enumerable.Repeat(control with { Pattern = "a", Rect = null }, RendererProtocol.MaxFormPatterns + 1).ToArray() },
+            27 => FormFrame with { FormControls = Enumerable.Repeat(control with { Pattern = "a", Rect = null }, RendererProtocol.MaxFormPatterns + 1).ToArray() },
+            28 => FormFrame with { FormControls = [control with { Kind = "select", Value = "", ReadOnly = true, MinLength = -1, MaxLength = -1 }] },
+            _ => FormFrame with { FormControls = [FormFrame.FormControls[1] with { Required = true }] },
         };
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame, 16));
+    }
+
+    [Fact]
+    public void SelectOptionsAreRequiredBoundedAndConsistentWithSelectedValue()
+    {
+        var select = FormFrame.FormControls![0] with
+        {
+            Kind = "select",
+            Value = "slow",
+            MinLength = -1,
+            MaxLength = -1,
+            Required = true,
+            Options = [new("fast", "Fast", false, false), new("slow", "Slow", false, true)],
+            Rect = null
+        };
+        RendererProtocol.Validate(FormFrame with { FormControls = [select] }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        { FormControls = [select with { Value = "fast" }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        { FormControls = [select with { Options = [select.Options[0] with { Selected = true }, select.Options[1]] }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        { FormControls = [FormFrame.FormControls[0] with { Options = [new("x", "x", false, false)] }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [select with { Options = Enumerable.Repeat(new PageFormOption("x", "x", false, false),
+            RendererProtocol.MaxSelectOptions + 1).ToArray(), Value = "" }]
+        }, 16));
+
+        var json = JsonSerializer.Serialize(select);
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
+            json.Replace(",\"Options\":" + JsonSerializer.Serialize(select.Options), "", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -371,7 +409,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(23, RendererProtocol.Version);
+        Assert.Equal(24, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

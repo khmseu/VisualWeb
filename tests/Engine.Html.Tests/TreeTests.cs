@@ -78,6 +78,23 @@ public sealed class TreeTests
         Assert.NotNull(Parse("").Document.Body);
     }
 
+    [Fact]
+    public void SimpleSelectOptionsBuildAsDirectChildren()
+    {
+        var document = Parse("<!doctype html><form><select name=mode><option value=a>Alpha</option><option selected>Beta</option></select></form>").Document;
+        var select = Assert.IsType<DomElement>(Assert.Single(document.Descendants().OfType<DomElement>(), element => element.LocalName == "select"));
+        Assert.Equal(["option", "option"], select.ChildNodes.OfType<DomElement>().Select(option => option.LocalName));
+        Assert.Equal("Alpha", select.FirstChild!.FirstChild!.TextContent);
+        Assert.Equal("Beta", select.LastChild!.TextContent);
+    }
+
+    [Fact]
+    public void UnclosedSelectReportsASelectSpecificParseError()
+    {
+        var result = Parse("<!doctype html><select><option>x");
+        Assert.Contains(result.Errors, error => error.Code == "unclosed-select");
+    }
+
     [Theory]
     [InlineData("<table><tr><td>x")]
     [InlineData("<template>x")]
@@ -87,8 +104,9 @@ public sealed class TreeTests
     [InlineData("<div><form></div><input>")]
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
-    [InlineData("<select><option>x")]
     [InlineData("<ruby>x")]
+    [InlineData("<select><optgroup><option>x</optgroup></select>")]
+    [InlineData("<select><option>x<div>y</div></select>")]
     [InlineData("<p><b>x</p>y")]
     [InlineData("<b><i>x</b>y</i>")]
     [InlineData("<a><a>x")]

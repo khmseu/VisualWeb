@@ -126,7 +126,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                 cancellationToken.ThrowIfCancellationRequested();
                 if (item is LayoutBlockItem block)
                 {
-                    if (block.Box.Element.LocalName is "input" or "button")
+                    if (block.Box.Element.LocalName is "input" or "button" or "select")
                     {
                         var border = block.Box.BorderBox;
                         var left = Math.Clamp(border.X, 0, layout.ViewportWidth);

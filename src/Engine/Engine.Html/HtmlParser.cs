@@ -298,11 +298,19 @@ public static class HtmlParser
             if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
             if (token is HtmlEndOfFile)
             {
+                var selectIndexAtEof = open.FindLastIndex(element => element.LocalName == "select");
+                if (selectIndexAtEof >= 0) { SelectToken(token, selectIndexAtEof); return; }
                 if (open.Any(e => !ImplicitlyClosable.Contains(e.LocalName))) { Error("unclosed-elements-at-eof"); }
                 return;
             }
 
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token."); }
+            var selectIndex = open.FindLastIndex(element => element.LocalName == "select");
+            if (selectIndex >= 0)
+            {
+                SelectToken(token, selectIndex);
+                return;
+            }
             if (!tag.IsEndTag)
             {
                 switch (tag.Name)
@@ -358,6 +366,12 @@ public static class HtmlParser
                         if (InScope("button")) { Error("nested-button"); Close("button"); }
                         Insert(tag);
                         return;
+                    case "select":
+                        if (InScope("select")) { throw Unsupported("Nested select elements are not implemented."); }
+                        Insert(tag);
+                        return;
+                    case "option":
+                        throw Unsupported("Option elements outside the supported select subset are not implemented.");
                     case "hr":
                         CloseParagraph();
                         Insert(tag, push: false);
@@ -458,6 +472,42 @@ public static class HtmlParser
             }
 
             Error("unexpected-end-tag");
+        }
+
+        private void SelectToken(HtmlToken token, int selectIndex)
+        {
+            if (token is HtmlCharacters characters)
+            {
+                if (characters.Data.Contains('\0')) { Error("null-in-body"); }
+                Text(characters.Data.Replace("\0", "", StringComparison.Ordinal));
+                return;
+            }
+            if (Miscellaneous(token, Current)) { return; }
+            if (token is HtmlEndOfFile)
+            {
+                Error("unclosed-select");
+                open.RemoveRange(selectIndex, open.Count - selectIndex);
+                return;
+            }
+            if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in select."); }
+            if (!tag.IsEndTag && tag.Name == "option")
+            {
+                if (open[^1].LocalName == "option") { Close("option"); }
+                Insert(tag);
+                return;
+            }
+            if (tag.IsEndTag && tag.Name == "option")
+            {
+                if (open[^1].LocalName == "option") { Close("option"); }
+                else { Error("unexpected-option-end-tag"); }
+                return;
+            }
+            if (tag.IsEndTag && tag.Name == "select")
+            {
+                CloseAt(selectIndex);
+                return;
+            }
+            throw Unsupported("Only direct option children and text are supported inside select elements.");
         }
 
         private DomElement Insert(HtmlTag token, bool push = true)
@@ -613,7 +663,7 @@ public static class HtmlParser
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
         "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th", "template",
-        "svg", "math", "select", "option", "optgroup", "frameset", "frame", "noscript",
+        "svg", "math", "optgroup", "frameset", "frame", "noscript",
         "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
     };
     private static readonly HashSet<string> VoidTags = new(StringComparer.Ordinal)
@@ -638,7 +688,7 @@ public static class HtmlParser
     };
     private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags)
         .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script",
-            "style", "xmp", "plaintext", "iframe", "noembed", "noframes"]), StringComparer.Ordinal);
+            "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "option"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)
     {
         "html", "body", "p", "li", "dd", "dt"

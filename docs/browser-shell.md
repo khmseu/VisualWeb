@@ -217,9 +217,9 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v23); the browser owns all values,
+reports data-only form/control snapshots (IPC v24); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/number/range, checkbox, radio, textarea,
-hidden, submit and reset, plus `button` submit/reset (and inert `type=button`).
+hidden, submit and reset, single-select `select`, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing; password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
 email requires one valid address and does not support `multiple`; url requires a valid
 absolute URL on submission; number accepts finite HTML floating-point values with
@@ -231,9 +231,12 @@ reliable range. Range controls default to 0–100 with step 1, sanitize initial 
 range/grid, and use click/drag plus arrow-key adjustment with Home/End for endpoints. Checkboxes and radios are shell-drawn; checkboxes toggle
 on click or Space, while radios select on click or Space. Unchecked checkboxes and radios are omitted from submission, checked controls submit
 their value (default `on`), and required checkboxes must be checked while required
-radio groups need one selected member. Radios sharing a form and nonempty name are
+radio groups need one selected member. Required single-selects need a nonempty enabled selection.
+Single-select controls carry bounded direct options, choose the selected or first enabled option by default,
+skip disabled options during Up/Down and Home/End selection, and submit only an enabled selected option;
+listboxes, multiple selection, optgroups and popup/mouse option picking remain unsupported. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
-within its enabled group. Input/button controls default to 160 by 20 CSS pixels. Textareas
+within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
 to 128 and 64. Author CSS may size the controls within the layout limits; author
 `display:none` still hides them. Textarea values are drawn by the shell overlay
@@ -244,13 +247,13 @@ textarea scrolls its line window independently of the page. Form-control inline
 boxes wrap atomically with text; nonzero control margins and general inline-block/
 replaced-element layout remain unsupported.
 
-Fields and submit/reset buttons are drawn by a shell-owned overlay (white field or
+Fields, single-select controls and submit/reset buttons are drawn by a shell-owned overlay (white field or
 gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
 widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
-tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/number field or textarea
-focuses it without starting page text selection; range controls can be adjusted by
+tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/number field, textarea or single-select
+control focuses it without starting page text selection; select clicks do not open a popup; range controls can be adjusted by
 pointer click/drag. Focusing an editable
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
@@ -278,7 +281,7 @@ textarea inserts LF and never triggers implicit submission. Form state is tab-lo
 and survives tab switches and same-document scroll/resize repaints whose control
 metadata is unchanged; new document commits reset it, failed navigations keep it.
 
-Submission includes named, non-disabled text/search/email/tel/url/password/number/range/checkbox/radio/textarea/hidden controls
+Submission includes named, non-disabled text/search/email/tel/url/password/number/range/checkbox/radio/select/textarea/hidden controls
 plus the named activating submitter, in tree order. `_charset_` hidden fields
 submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,
@@ -305,13 +308,14 @@ Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
 target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, any
 `form=` attribute, submitter overrides, unsupported input types, invalid email, URL or number values, unsupported email `multiple` and reversed numeric bounds,
-textarea `dirname` or `wrap=hard`, select/output/object controls,
+textarea `dirname` or `wrap=hard`, listbox/multiple select semantics, optgroups and unsupported select content,
+output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
 required empty fields, edited too-short/overlong values, pattern mismatches,
 unsupported pattern syntax, or query/URL limit overflow.
 There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
-events, `requestSubmit`, script submission, select controls, autofill, IME
+events, `requestSubmit`, script submission, select popup/mouse option picking, autofill, IME
 preedit, or clipboard selection range support.
 
 ## Navigation and page policy

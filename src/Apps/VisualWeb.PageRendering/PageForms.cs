@@ -13,6 +13,7 @@ namespace VisualWeb.PageRendering;
 /// partial submission. Limits throw <see cref="PageNavigationException"/>.</remarks>
 internal static class PageForms
 {
+    private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
     private static readonly string[] SubmitterOverrides = ["formaction", "formenctype", "formmethod", "formnovalidate", "formtarget"];
@@ -33,6 +34,7 @@ internal static class PageForms
             or "select" or "textarea" && e.GetAttribute("form") is not null);
         var lastLink = 0;
         var patternCount = 0;
+        var optionCount = 0;
         foreach (var element in elements)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -63,6 +65,11 @@ internal static class PageForms
                 {
                     if (element.GetAttribute(name) is not null) { Reject(index, $"text field attribute {name}"); }
                 }
+            }
+            if (kind == "select")
+            {
+                if (element.GetAttribute("multiple") is not null) { Reject(index, "select multiple"); }
+                if (SelectSize(element.GetAttribute("size")) != 1) { Reject(index, "select display size other than 1"); }
             }
             if (kind == "email" && element.GetAttribute("multiple") is not null)
             { Reject(index, "email multiple addresses"); }
@@ -107,7 +114,14 @@ internal static class PageForms
             var minLength = text && kind != "number" ? MinLength(element.GetAttribute("minlength")) : -1;
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
+            var options = kind == "select" ? Options(element, ref optionCount) : Array.Empty<PageFormOption>();
+            var selectedOption = Array.FindLastIndex(options, option => option.Selected);
+            if (kind == "select" && selectedOption < 0)
+            { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
+            if (kind == "select" && selectedOption >= 0)
+            { options = options.Select((option, optionIndex) => option with { Selected = optionIndex == selectedOption }).ToArray(); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
+                : kind == "select" ? selectedOption >= 0 ? options[selectedOption].Value : ""
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
             var minimum = kind == "number" ? NumberBound(element.GetAttribute("min"))
                 : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
@@ -165,10 +179,11 @@ internal static class PageForms
             }
             controls.Add(new(index, kind, controlName, value, label, pattern, element.GetAttribute("disabled") is not null,
                 text && element.GetAttribute("readonly") is not null,
-                (text || kind is "checkbox" or "radio") && element.GetAttribute("required") is not null,
+                (text || kind is "checkbox" or "radio" or "select") && element.GetAttribute("required") is not null,
                 minLength,
                 text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
-                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny));
+                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
+            { Options = options });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)
@@ -231,8 +246,52 @@ internal static class PageForms
             _ => null,
         },
         "textarea" => "textarea",
+        "select" => "select",
         _ => null,
     };
+
+    private static int SelectSize(string? value)
+    {
+        if (value is null) { return 1; }
+        var text = value.TrimStart(' ', '\t', '\n', '\f', '\r');
+        var negative = text.StartsWith('-');
+        var position = text.StartsWith('+') || negative ? 1 : 0;
+        var end = position;
+        while (end < text.Length && char.IsAsciiDigit(text[end])) { end++; }
+        if (end == position) { return 1; }
+        var digits = text.AsSpan(position, end - position);
+        var firstNonZero = 0;
+        while (firstNonZero < digits.Length && digits[firstNonZero] == '0') { firstNonZero++; }
+        if (negative && firstNonZero < digits.Length) { return 1; }
+        if (firstNonZero == digits.Length) { return 0; }
+        return digits.Length - firstNonZero == 1 && digits[firstNonZero] == '1' ? 1 : 2;
+    }
+
+    private static PageFormOption[] Options(DomElement select, ref int total)
+    {
+        var elements = select.ChildNodes.OfType<DomElement>().ToArray();
+        if ((long)total + elements.Length > RendererProtocol.MaxSelectOptions)
+        { throw new PageNavigationException("Select option count limit exceeded."); }
+        total += elements.Length;
+        var result = new PageFormOption[elements.Length];
+        for (var index = 0; index < elements.Length; index++)
+        {
+            var option = elements[index];
+            if (option.LocalName != "option")
+            { throw new PageNavigationException("Only direct option children are supported in select controls."); }
+            var text = OptionText(option.TextContent ?? "");
+            var value = option.GetAttribute("value") ?? text;
+            var label = option.GetAttribute("label") ?? text;
+            if (value.Length > RendererProtocol.MaxTextCharacters || label.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Select option text limit exceeded."); }
+            result[index] = new(value, label, option.GetAttribute("disabled") is not null,
+                option.GetAttribute("selected") is not null);
+        }
+        return result;
+    }
+
+    private static string OptionText(string value) =>
+        string.Join(' ', value.Split(AsciiWhitespace, StringSplitOptions.RemoveEmptyEntries));
 
     private static string NormalizeTextArea(string value) =>
         value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');

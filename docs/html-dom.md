@@ -75,6 +75,7 @@ after-after-body modes. Supported behavior includes:
   handling, void elements and ignored self-closing flags on non-void HTML.
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
+- A bounded `select` subset containing direct `option` children and text only.
 
 Simple `form` elements use the form element pointer: `<form>` closes an open
 `p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
@@ -87,7 +88,7 @@ as raw markup. The parser therefore guarantees that a form owner is the
 nearest ancestor `form`.
 
 The following throw explicitly: tables and table parts, templates, SVG/MathML,
-select/options, textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
+optgroup and unsupported select contents, textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
 applet/marquee/object-specific algorithms. Legacy public/system doctype mode
 selection (except `about:legacy-compat`) also throws. Fragment parsing is not
 offered. Nested anchors/nobr, misnested formatting and closures requiring

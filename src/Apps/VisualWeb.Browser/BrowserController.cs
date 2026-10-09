@@ -44,6 +44,7 @@ public sealed class BrowserController : IDisposable
         internal Dictionary<int, IReadOnlyList<TextareaVisualLine>> TextareaLines { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
         internal Dictionary<int, bool> CheckedStates { get; } = [];
+        internal Dictionary<int, int> SelectedOptions { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
         internal bool SelectingText { get; set; }
@@ -303,6 +304,54 @@ public sealed class BrowserController : IDisposable
         { throw new ArgumentOutOfRangeException(nameof(index)); }
         return Value(owner, index);
     }
+    public int SelectedOptionIndex(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index].Kind != "select")
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return SelectedOption(owner, index);
+    }
+
+    public bool MoveFocusedSelect(TabId id, int direction)
+    {
+        Check();
+        if (direction is not (-1 or 1)) { throw new ArgumentOutOfRangeException(nameof(direction)); }
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
+        { return false; }
+        var selected = SelectedOption(owner, owner.FocusedControl);
+        var candidate = selected < 0 ? (direction > 0 ? 0 : control.Options.Length - 1) : selected + direction;
+        while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
+        { candidate += direction; }
+        if (candidate >= 0 && candidate < control.Options.Length && candidate != selected)
+        {
+            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
+
+    public bool SetFocusedSelectEndpoint(TabId id, bool last)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control) { return false; }
+        var candidate = last ? control.Options.Length - 1 : 0;
+        var direction = last ? -1 : 1;
+        while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
+        { candidate += direction; }
+        if (candidate >= 0 && candidate < control.Options.Length && candidate != SelectedOption(owner, owner.FocusedControl))
+        {
+            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
+
     public bool AdjustFocusedRange(TabId id, int direction)
     {
         Check();
@@ -573,8 +622,23 @@ public sealed class BrowserController : IDisposable
         }
         return editor;
     }
-    private static string Value(Content owner, int index) =>
-        owner.Fields.TryGetValue(index, out var editor) ? editor.Text : owner.Page!.FormControls[index].Value;
+    private static string Value(Content owner, int index)
+    {
+        var control = owner.Page!.FormControls[index];
+        if (control.Kind == "select")
+        {
+            var selected = SelectedOption(owner, index);
+            return selected >= 0 && !control.Options[selected].Disabled ? control.Options[selected].Value : "";
+        }
+        return owner.Fields.TryGetValue(index, out var editor) ? editor.Text : control.Value;
+    }
+
+    private static int SelectedOption(Content owner, int index)
+    {
+        var control = owner.Page!.FormControls[index];
+        if (owner.SelectedOptions.TryGetValue(index, out var selected)) { return selected; }
+        return Array.FindIndex(control.Options, option => option.Selected);
+    }
     public bool ActivateFocusedLink(TabId id, PageViewport? displayedViewport = null)
     {
         Check();
@@ -653,6 +717,7 @@ public sealed class BrowserController : IDisposable
             return true;
         }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
+        if (control.Kind == "select") { return true; }
         if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
         {
@@ -671,6 +736,7 @@ public sealed class BrowserController : IDisposable
             owner.Fields.Remove(index);
             owner.Dirty.Remove(index);
             owner.CheckedStates.Remove(index);
+            owner.SelectedOptions.Remove(index);
             owner.TextareaFirstLines.Remove(index);
             owner.TextareaLines.Remove(index);
         }
@@ -702,7 +768,7 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "range" or "textarea" or "checkbox" or "radio") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "range" or "textarea" or "checkbox" or "radio" or "select") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
             if (control.Required && (control.Kind == "checkbox" ? !isChecked
@@ -748,7 +814,13 @@ public sealed class BrowserController : IDisposable
         }
         var limit = Session.Options.MaxAddressCharacters;
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter, i => Value(owner, i),
-            i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked)), limit);
+            i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked), i =>
+            {
+                var control = page.FormControls[i];
+                if (control.Kind != "select") { return true; }
+                var selected = SelectedOption(owner, i);
+                return selected >= 0 && !control.Options[selected].Disabled;
+            }), limit);
         var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
         var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:" ? document.Origin : null;
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
@@ -860,7 +932,7 @@ public sealed class BrowserController : IDisposable
             if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
             if (control.Kind == "range") { SetRangeFromPointer(id, index, x); return true; }
-            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea";
+            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea" or "select";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {
@@ -1000,7 +1072,7 @@ public sealed class BrowserController : IDisposable
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
-            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.FocusedControl = -1; }
+            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;
@@ -1052,7 +1124,9 @@ public sealed class BrowserController : IDisposable
     private static bool SameControls(BrowserPage old, BrowserPage rendered) =>
         old.Forms.SequenceEqual(rendered.Forms) && old.FormControls.Count == rendered.FormControls.Count
         && old.FormControls.Zip(rendered.FormControls).All(pair =>
-            pair.First with { Rect = null, BeforeLink = 0 } == pair.Second with { Rect = null, BeforeLink = 0 });
+            pair.First with { Rect = null, BeforeLink = 0, Options = Array.Empty<PageFormOption>() }
+                == pair.Second with { Rect = null, BeforeLink = 0, Options = Array.Empty<PageFormOption>() }
+                && pair.First.Options.SequenceEqual(pair.Second.Options));
     /// <summary>Choose the renderer for a loaded document: the committed one or a fresh origin-isolation candidate.</summary>
     private IPageRenderer Select(Content owner, Operation operation, LoadedPage document)
     {

@@ -379,6 +379,10 @@ public sealed class DevelopmentShell : IDisposable
                 && Controller.AdjustFocusedRange(tab.Id, 1)) { return; }
             if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedRangeEndpoint(tab.Id, false)) { return; }
             if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedRangeEndpoint(tab.Id, true)) { return; }
+            if (!control && !alt && code is SDL.Scancode.Up or SDL.Scancode.Down
+                && Controller.MoveFocusedSelect(tab.Id, code == SDL.Scancode.Up ? -1 : 1)) { return; }
+            if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedSelectEndpoint(tab.Id, false)) { return; }
+            if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedSelectEndpoint(tab.Id, true)) { return; }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code switch
             {
                 SDL.Scancode.Backspace => FormEdit.Backspace,
@@ -560,8 +564,10 @@ public sealed class DevelopmentShell : IDisposable
             page.FormControls[index].Kind == "textarea" ? Controller.TextareaFirstLine(id, index) : 0).ToArray();
         var checkedStates = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "checkbox" && Controller.FormControlChecked(id, index)).ToArray();
+        var selectIndices = Enumerable.Range(0, page.FormControls.Count).Select(index =>
+            page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
-            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates);
+            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices);
     }
     private void RefreshTextareaLayouts(TabId id)
     {

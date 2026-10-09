@@ -274,7 +274,9 @@ public sealed class ShellChrome : IDisposable
                 Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
                     control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
+                var selectedOption = forms.SelectIndices?[index] ?? Array.FindIndex(control.Options, option => option.Selected);
                 var text = control.Kind is "submit" or "button" or "reset" ? control.Label
+                    : control.Kind == "select" ? (selectedOption >= 0 ? control.Options[selectedOption].Label : "") + "  v"
                     : control.Kind == "password" ? PasswordText(forms.Values[index],
                         index == forms.Focused && !forms.SelectAll ? forms.Caret : -1)
                     : index == forms.Focused && !forms.SelectAll && forms.Caret >= 0
@@ -433,4 +435,4 @@ public sealed class ShellChrome : IDisposable
 /// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
 public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false,
     IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null,
-    IReadOnlyList<bool>? Checked = null);
+    IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null);

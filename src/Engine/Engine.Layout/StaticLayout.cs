@@ -112,7 +112,7 @@ public static class StaticLayout
             {
                 throw new UnsupportedLayoutException("Language-dependent shaping/segment-break handling beyond English is deferred.");
             }
-            if (element.LocalName is "input" or "button" or "textarea")
+            if (element.LocalName is "input" or "button" or "textarea" or "select")
             {
                 if (!block && Display(element) != "inline-block")
                 { throw new UnsupportedLayoutException("Form controls require block or supported inline-block layout."); }
@@ -197,7 +197,7 @@ public static class StaticLayout
                 var (ascent, descent) = Extents(Shape("", style), style);
                 cursor += ascent + descent;
             }
-            foreach (var child in element.LocalName is "input" or "textarea" ? [] : element.ChildNodes)
+            foreach (var child in element.LocalName is "input" or "textarea" or "select" ? [] : element.ChildNodes)
             {
                 cancellation.ThrowIfCancellationRequested();
                 if (child is DomElement e && Display(e) == "none") { continue; }
@@ -379,7 +379,7 @@ public static class StaticLayout
                     foreach (var child in element.ChildNodes) { Gather(child, buttonStyle, output, depth + 1); }
                     return;
                 }
-                if (element.LocalName is "input" or "button" or "textarea" && Display(element) == "inline-block")
+                if (element.LocalName is "input" or "button" or "textarea" or "select" && Display(element) == "inline-block")
                 {
                     output.Add(new(null, Style(element), "", UnitKind.Widget, true) { Widget = element });
                     return;

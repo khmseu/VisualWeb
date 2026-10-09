@@ -39,7 +39,7 @@ broader page interaction is still missing:
   navigation in shell, local and actual renderer-process paths. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
-  one anchor and no page raster changes without focus. IPC v23 carries grouped
+  one anchor and no page raster changes without focus. IPC v24 carries grouped
   visible rectangles plus bounded `_blank` target metadata (4096 anchors, 64
   rectangles each, 1 MiB metadata), plus bounded fragment-ID offsets for
   same-document scrolling, without element IDs/DOM/native handles. Fragment
@@ -53,8 +53,8 @@ broader page interaction is still missing:
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/number/range/checkbox/radio/hidden/submit/reset,
-  `textarea`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v23 data-only metadata and the ordinary
+  `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
+  submit same-tab GET urlencoded queries via IPC v24 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -62,6 +62,7 @@ broader page interaction is still missing:
   and checked states, clears their edited/dirty/check state, preserves focus,
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
+  Selects expose bounded direct options, default selection, disabled-option skipping and Up/Down/Home/End keyboard selection; listboxes, multiple selection, optgroups and mouse popup selection remain unsupported.
   Number inputs support finite floating-point syntax, optional finite min/max
   bounds and step-grid validation; `step=any` disables the grid, absent/invalid
   steps default to 1, and reversed ranges are surfaced as form errors. The step
@@ -73,11 +74,11 @@ broader page interaction is still missing:
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
   independent line-window scrolling, plus newline-normalized GET entries.
-  Visible text/search/email/tel/url/password/number/checkbox/radio/textarea fields support pointer focus without starting page text
+  Visible text/search/email/tel/url/password/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/email/tel/url/password/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/number/range/checkbox/radio/reset, select,
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/number/range/checkbox/radio/reset,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   full constraint-validation UI and semantics, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -130,7 +131,7 @@ Evidence: `stylesheet collection`, `script classification`, `HTML loading policy
 
 The tokenizer is considerably more complete than the tree builder. Remaining parser work includes:
 
-- Tables, templates, general forms (only the simple form-pointer subset exists), select/options, SVG/MathML, and other specialized parsing algorithms.
+- Tables, templates, general forms (only the simple form-pointer subset exists), optgroup and unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 - Broader legacy doctype handling.

@@ -62,6 +62,36 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsSingleSelectOptionsAndInlineGeometry(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form><select name=mode required>
+              <option value=fast> Fast   mode </option>
+              <option selected value=slow label="Slow choice">Slow mode</option>
+            </select>
+            <select name=default><option disabled>Unavailable</option><option value=ready>Ready</option></select></form>
+            """), new(200, 400, 1), Cancellation);
+
+        Assert.Equal(2, page.FormControls.Count);
+        var control = page.FormControls[0];
+        Assert.Equal("select", control.Kind);
+        Assert.True(control.Required);
+        Assert.Equal("slow", control.Value);
+        Assert.NotNull(control.Rect);
+        Assert.Equal(160, control.Rect!.Width);
+        Assert.Equal(20, control.Rect.Height);
+        Assert.Equal([new PageFormOption("fast", "Fast mode", false, false),
+            new PageFormOption("slow", "Slow choice", false, true)], control.Options);
+        Assert.Equal("ready", page.FormControls[1].Value);
+        Assert.Equal([new PageFormOption("Unavailable", "Unavailable", true, false),
+            new PageFormOption("ready", "Ready", false, true)], page.FormControls[1].Options);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererReportsPasswordControlsAndConstraints(bool process)
     {
         using var renderer = Renderer(process);
@@ -362,6 +392,11 @@ public sealed class FormTests
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
     [InlineData("<form><fieldset disabled><input name=q></fieldset></form>", "fieldset")]
     [InlineData("<form id=f></form><input form=f name=q>", "form attribute")]
+    [InlineData("<form><select multiple name=q><option>x</option></select></form>", "select multiple")]
+    [InlineData("<form><select size=2 name=q><option>x</option></select></form>", "display size")]
+    [InlineData("<form><select size=999999999999999999999 name=q><option>x</option></select></form>", "display size")]
+    [InlineData("<form><select size=0 name=q><option>x</option></select></form>", "display size")]
+    [InlineData("<form><select size=+2 name=q><option>x</option></select></form>", "display size")]
     public async Task UnsupportedFormSemanticsAreVisibleFormErrors(string body, string expected)
     {
         using var renderer = Renderer(false);
@@ -369,6 +404,20 @@ public sealed class FormTests
         var form = Assert.Single(page.Forms);
         Assert.Equal("", form.Action);
         Assert.Contains(expected, form.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("0001")]
+    [InlineData("-2")]
+    [InlineData("invalid")]
+    [InlineData("1junk")]
+    public async Task InvalidOrSingleSelectSizeUsesDropdownSubset(string size)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document($"<form><select name=mode size='{size}'><option>x</option></select></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        Assert.Equal("select", Assert.Single(page.FormControls).Kind);
     }
 
     [Theory]
@@ -595,6 +644,67 @@ public sealed class FormTests
         var disabled = page.FormControls[3].Rect!;
         Assert.False(controller.ActivateLink(tab, disabled.X + 1, disabled.Y + 1, harness.Viewport));
         Assert.Equal(2, harness.Source.Requests.Count);
+    }
+
+    [Fact]
+    public void SingleSelectKeyboardSelectionSkipsDisabledOptionsAndSubmitsOrResets()
+    {
+        using var harness = new Harness("""
+            <form action='/choose'>
+              <select name=mode required>
+                <option value=fast>Fast</option>
+                <option value=disabled disabled>Unavailable</option>
+                <option value=slow selected>Slow</option>
+              </select>
+              <button type=reset>Reset</button><button>Choose</button>
+            </form>
+            """);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+
+        Assert.Equal("slow", controller.FormControlValue(tab, 0));
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.MoveFocusedSelect(tab, -1));
+        Assert.Equal(0, controller.SelectedOptionIndex(tab, 0));
+        Assert.Equal("fast", controller.FormControlValue(tab, 0));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("slow", controller.FormControlValue(tab, 0));
+        Assert.Single(harness.Source.Requests);
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, false));
+        Assert.Equal("fast", controller.FormControlValue(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        Assert.Equal(2, controller.SelectedOptionIndex(tab, 0));
+        Assert.Equal("slow", controller.FormControlValue(tab, 0));
+        Assert.True(controller.FocusControl(tab, 2));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/choose?mode=slow", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("<select name=mode><option disabled selected>Unavailable</option></select>")]
+    [InlineData("<select name=mode></select>")]
+    public void DisabledOrMissingSelectOptionIsOmittedFromSubmission(string select)
+    {
+        using var harness = new Harness($"<form>{select}<button>Go</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+        Assert.Equal("https://example.com/final/index.html?", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void RequiredSelectWithOnlyDisabledSelectionBlocksSubmission()
+    {
+        using var harness = new Harness("""
+            <form><select name=mode required><option disabled selected>Choose</option></select><button>Go</button></form>
+            """);
+        Assert.Equal("", harness.Controller.FormControlValue(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        var error = Assert.Throws<PageNavigationException>(() =>
+            harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+        Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
     }
 
     [Fact]
@@ -1619,6 +1729,22 @@ public sealed class FormTests
         Assert.Equal(1, controller.FocusedControlIndex(tab));
         controller.FocusLink(tab, 0);
         Assert.Equal(-1, controller.FocusedControlIndex(tab));
+    }
+
+    [Fact]
+    public void SelectStateSurvivesRetainedDocumentResize()
+    {
+        using var harness = new Harness("<form><select name=mode><option value=fast>Fast</option><option value=slow>Slow</option></select></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        Assert.Equal("slow", controller.FormControlValue(tab, 0));
+
+        controller.Resize(tab, new(201, harness.Viewport.Height, harness.Viewport.Scale));
+
+        Assert.Equal("slow", controller.FormControlValue(tab, 0));
+        Assert.Equal(0, controller.FocusedControlIndex(tab));
     }
 
     [Fact]

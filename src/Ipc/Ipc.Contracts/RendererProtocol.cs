@@ -68,7 +68,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, password, number, range, checkbox, radio, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, password, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -89,7 +89,20 @@ public sealed record PageFormControl(
     [property: JsonRequired] double? Minimum,
     [property: JsonRequired] double? Maximum,
     [property: JsonRequired] double? Step,
-    [property: JsonRequired] bool StepAny);
+    [property: JsonRequired] bool StepAny)
+{
+    [JsonRequired]
+    public PageFormOption[] Options { get; init; } = [];
+}
+
+/// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element">option element</see>.
+/// The browser owns subsequent selection state; no DOM identity crosses IPC.</remarks>
+public sealed record PageFormOption(
+    [property: JsonRequired] string Value,
+    [property: JsonRequired] string Label,
+    [property: JsonRequired] bool Disabled,
+    [property: JsonRequired] bool Selected);
 
 /// <summary>HTML valid floating-point syntax with finite invariant-culture parsing.</summary>
 public static class FormNumber
@@ -176,7 +189,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 23;
+    public const int Version = 24;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -192,6 +205,7 @@ public static class RendererProtocol
     public const int MaxLinkMetadataBytes = 1024 * 1024;
     public const int MaxForms = 256;
     public const int MaxFormControls = 1024;
+    public const int MaxSelectOptions = 1024;
     /// <summary>Budget for the UTF-8 JSON serialization of forms plus controls.</summary>
     public const int MaxFormMetadataBytes = 1024 * 1024;
     public const int MaxTextTargets = 32_768;
@@ -343,15 +357,18 @@ public static class RendererProtocol
         }
         var lastLink = 0;
         var patternCount = 0;
+        var optionCount = 0;
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "range" or "checkbox" or "radio" or "textarea" or "hidden" or "submit" or "reset" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
+                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
+                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
@@ -367,8 +384,17 @@ public static class RendererProtocol
                 || control.Pattern is not null && ++patternCount > MaxFormPatterns
                 || control.MinLength < -1 || control.MinLength > MaxTextCharacters
                 || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea") && control.MinLength != -1)
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea") && control.MinLength != -1
+                || control.Options is null || (long)optionCount + control.Options.Length > MaxSelectOptions
+                || control.Kind != "select" && control.Options.Length != 0
+                || control.Options.Any(option => option is null || option.Value is null || option.Label is null
+                    || option.Value.Length > MaxTextCharacters || option.Label.Length > MaxTextCharacters)
+                || control.Options.Count(option => option.Selected) > 1)
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
+            optionCount += control.Options.Length;
+            if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected)?.Value
+                && !(control.Options.All(option => !option.Selected) && control.Value.Length == 0))
+            { throw new IpcProtocolException("Invalid renderer select value or selected option."); }
             if (control.Kind == "range" && (!FormNumber.TryParse(control.Value, out var rangeValue)
                 || rangeValue < control.Minimum!.Value || rangeValue > control.Maximum!.Value
                 || !control.StepAny && !FormNumber.IsStepAligned(rangeValue, control.Minimum.Value, control.Step!.Value)))
