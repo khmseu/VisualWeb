@@ -68,7 +68,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, password, date, time, month, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -189,6 +189,34 @@ public static class FormMonth
     }
 }
 
+/// <summary>Checks strict HTML week strings and the 52/53-week ISO week-year boundary.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-week-string">valid week string</see>.</remarks>
+public static class FormWeek
+{
+    public static bool IsValid(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var separator = value.IndexOf("-W", StringComparison.Ordinal);
+        if (separator < 4 || value.Length != separator + 4) { return false; }
+        var nonzeroYear = false;
+        var yearModulo400 = 0;
+        foreach (var digit in value.AsSpan(0, separator))
+        {
+            if (!char.IsAsciiDigit(digit)) { return false; }
+            nonzeroYear |= digit != '0';
+            yearModulo400 = (yearModulo400 * 10 + digit - '0') % 400;
+        }
+        var weekText = value.AsSpan(separator + 2, 2);
+        if (!nonzeroYear || !char.IsAsciiDigit(weekText[0]) || !char.IsAsciiDigit(weekText[1])) { return false; }
+        var week = (weekText[0] - '0') * 10 + weekText[1] - '0';
+        var priorYear = (yearModulo400 + 399) % 400;
+        var januaryFirst = (int)((365L * priorYear + priorYear / 4 - priorYear / 100 + priorYear / 400) % 7);
+        var leapYear = yearModulo400 == 0 || yearModulo400 % 4 == 0 && yearModulo400 % 100 != 0;
+        var weeksInYear = januaryFirst == 3 || leapYear && januaryFirst == 2 ? 53 : 52;
+        return week is >= 1 && week <= weeksInYear;
+    }
+}
+
 /// <summary>HTML valid floating-point syntax with finite invariant-culture parsing.</summary>
 public static class FormNumber
 {
@@ -274,7 +302,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 27;
+    public const int Version = 28;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -446,14 +474,14 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
-                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "number" or "textarea")
-                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "number" or "checkbox" or "radio" or "select" or "textarea")
+                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea")
+                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
@@ -468,7 +496,7 @@ public static class RendererProtocol
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)
                 || control.Pattern is not null && ++patternCount > MaxFormPatterns
                 || control.MinLength < -1 || control.MinLength > MaxTextCharacters
-                || control.MaxLength < -1 || (control.Kind is "date" or "time" or "month") && control.MaxLength != -1
+                || control.MaxLength < -1 || (control.Kind is "date" or "time" or "month" or "week") && control.MaxLength != -1
                 || control.BeforeLink < 0 || control.BeforeLink > linkCount
                 || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea") && control.MinLength != -1
                 || control.Options is null || (long)optionCount + control.Options.Length > MaxSelectOptions
@@ -487,6 +515,8 @@ public static class RendererProtocol
             { throw new IpcProtocolException("Invalid renderer time value."); }
             if (control.Kind == "month" && control.Value.Length > 0 && !FormMonth.IsValid(control.Value))
             { throw new IpcProtocolException("Invalid renderer month value."); }
+            if (control.Kind == "week" && control.Value.Length > 0 && !FormWeek.IsValid(control.Value))
+            { throw new IpcProtocolException("Invalid renderer week value."); }
             if (control.Kind == "range" && (!FormNumber.TryParse(control.Value, out var rangeValue)
                 || rangeValue < control.Minimum!.Value || rangeValue > control.Maximum!.Value
                 || !control.StepAny && !FormNumber.IsStepAligned(rangeValue, control.Minimum.Value, control.Step!.Value)))

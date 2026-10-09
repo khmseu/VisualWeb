@@ -396,6 +396,69 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task WeekInputReportsBoundedValuesAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=week name=week value=2020-W53 required><input type=week name=invalid value=2021-W53></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Equal(["week", "week"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["2020-W53", ""], page.FormControls.Select(control => control.Value));
+        Assert.True(page.FormControls[0].Required);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Fact]
+    public void WeekInputSupportsEditingAndValidatesBeforeSubmission()
+    {
+        using (var valid = new Harness("<form action='/save'><input type=week name=week value=2020-W53><button>Save</button></form>"))
+        {
+            var controller = valid.Controller;
+            var tab = valid.Tab.Id;
+            Assert.True(controller.FocusControl(tab, 0));
+            Assert.True(controller.EditingFormControl(tab));
+            controller.SelectAllFormControl(tab);
+            Assert.Equal("2021-W52", controller.InsertFormText(tab, "2021-W52"));
+            Assert.True(controller.ActivateFocusedLink(tab, valid.Viewport));
+            Assert.Equal("https://example.com/save?week=2021-W52", valid.Source.Requests[^1].Url.Href);
+        }
+
+        using (var invalid = new Harness("<form><input type=week name=week><button>Save</button></form>"))
+        {
+            var controller = invalid.Controller;
+            var tab = invalid.Tab.Id;
+            Assert.True(controller.FocusControl(tab, 0));
+            controller.SelectAllFormControl(tab);
+            controller.InsertFormText(tab, "2021-W53");
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, invalid.Viewport));
+            Assert.Contains("week", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(invalid.Source.Requests);
+        }
+
+        using (var required = new Harness("<form><input type=week name=week required><button>Save</button></form>"))
+        {
+            var controller = required.Controller;
+            var tab = required.Tab.Id;
+            Assert.True(controller.FocusControl(tab, 0));
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, required.Viewport));
+            Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(required.Source.Requests);
+        }
+    }
+
+    [Fact]
+    public async Task WeekInputRejectsUnsupportedConstraintAttributes()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><input type=week name=week max=2024-W01></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Contains("week max", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task UrlInputReportsEditableMetadataAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
