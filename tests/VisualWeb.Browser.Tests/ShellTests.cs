@@ -393,6 +393,40 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void SingleSelectPopupPageKeysMoveByVisibleOptionsAndSkipDisabledEntries()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 20).Select(index =>
+            $"<option value={index}{(index == 12 ? " disabled" : "")}>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select name=mode>" + options + "</select></form>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 4)));
+        shell.Tick();
+
+        Key(SDL.Scancode.Pagedown);
+        Assert.Equal(13, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        Key(SDL.Scancode.Pageup);
+        Assert.Equal(0, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        void Key(SDL.Scancode code) => shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void SingleSelectTypeaheadMatchesPrefixesSkipsDisabledOptionsAndCyclesRepeatedLetters()
     {
         using var system = new Windows();

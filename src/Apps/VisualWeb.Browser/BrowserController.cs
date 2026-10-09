@@ -390,6 +390,33 @@ public sealed class BrowserController : IDisposable
         return true;
     }
 
+    public bool MoveFocusedSelectPage(TabId id, int direction, int optionCount)
+    {
+        Check();
+        if (direction is not (-1 or 1)) { throw new ArgumentOutOfRangeException(nameof(direction)); }
+        if (optionCount is < 1 or > 12) { throw new ArgumentOutOfRangeException(nameof(optionCount)); }
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
+        { return false; }
+        var selected = SelectedOption(owner, owner.FocusedControl);
+        var candidate = selected < 0 ? (direction > 0 ? 0 : control.Options.Length - 1) : selected + direction;
+        var moved = 0;
+        while (candidate >= 0 && candidate < control.Options.Length && moved < optionCount)
+        {
+            if (!control.Options[candidate].Disabled) { moved++; }
+            if (moved < optionCount) { candidate += direction; }
+        }
+        while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
+        { candidate += direction; }
+        if (candidate >= 0 && candidate < control.Options.Length && candidate != selected)
+        {
+            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
+
     public bool SetFocusedSelectEndpoint(TabId id, bool last)
     {
         Check();

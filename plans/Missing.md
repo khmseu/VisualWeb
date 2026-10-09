@@ -67,7 +67,8 @@ broader page interaction is still missing:
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
   Selects expose bounded direct options, default selection, disabled-option
-  skipping and Up/Down/Home/End keyboard selection. Bounded committed-text prefix
+  skipping and Up/Down/Home/End/PageUp/PageDown keyboard selection. Page keys move
+  by the visible popup row count and skip disabled options. Bounded committed-text prefix
   search selects matching enabled options and cycles repeated single-character
   input. Enter/Space or a primary click opens a browser-owned popup; it supports
   pointer option selection and wheel scrolling through longer lists, with Escape/

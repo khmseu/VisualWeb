@@ -430,6 +430,8 @@ public sealed class DevelopmentShell : IDisposable
             if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedRangeEndpoint(tab.Id, true)) { return; }
             if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
                 && ToggleFocusedSelectPopup(window, view, tab.Id)) { return; }
+            if (!control && !alt && code is SDL.Scancode.Pageup or SDL.Scancode.Pagedown
+                && MoveFocusedSelectPage(view, tab.Id, code == SDL.Scancode.Pageup ? -1 : 1)) { return; }
             if (!control && !alt && code is SDL.Scancode.Up or SDL.Scancode.Down
                 && Controller.MoveFocusedSelect(tab.Id, code == SDL.Scancode.Up ? -1 : 1))
             { KeepPopupSelectionVisible(view, tab.Id); return; }
@@ -686,6 +688,20 @@ public sealed class DevelopmentShell : IDisposable
             Math.Max(0, page.FormControls[controlIndex].Options.Length - popup.VisibleOptions));
         view.SelectPopupPage = page;
         view.Dirty = true;
+    }
+    private bool MoveFocusedSelectPage(View view, TabId id, int direction)
+    {
+        var index = Controller.FocusedControlIndex(id);
+        if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index].Kind != "select") { return false; }
+        var pageSize = 10;
+        if (view.OpenSelectControl == index
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport
+            && ShellChrome.PopupLayout(page, index, viewport, view.SelectPopupFirstOption) is { } popup)
+        { pageSize = popup.VisibleOptions; }
+        _ = Controller.MoveFocusedSelectPage(id, direction, Math.Clamp(pageSize, 1, 12));
+        KeepPopupSelectionVisible(view, id);
+        return true;
     }
     private void KeepPopupSelectionVisible(View view, TabId id)
     {
