@@ -358,14 +358,17 @@ Supported controls with a `form` attribute use the first element in tree order
 with the exact matching `id` when that element is a `<form>`; otherwise they
 have no owner and do not fall back to an ancestor. Controls without `form` use
 their nearest ancestor form. Associated controls are submitted in document
-tree order, including controls before or outside the form element.
+tree order, including controls before or outside the form element. Descendants
+of disabled fieldsets are disabled except controls inside each fieldset's first
+`legend` child; the inherited state prevents focus, validation and successful
+submission, and nested fieldsets apply independently.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target
 (including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
-`datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
+`datalist` controls, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
 required empty fields, edited too-short/overlong values, pattern mismatches,
 unsupported pattern syntax, or query/URL limit overflow. Form-level `novalidate` and a selected submit button's `formnovalidate` skip supported constraint checks; address/scheme and origin protections still apply. `formaction` is supported, while the other submitter overrides remain unsupported.

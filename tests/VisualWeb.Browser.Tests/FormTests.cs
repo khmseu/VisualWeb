@@ -672,7 +672,6 @@ public sealed class FormTests
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
-    [InlineData("<form><fieldset disabled><input name=q></fieldset></form>", "fieldset")]
     [InlineData("<form id=owner></form><fieldset form=owner></fieldset>", "fieldset")]
     [InlineData("<form><select multiple name=q><option>x</option></select></form>", "select multiple")]
     [InlineData("<form><select size=2 name=q><option>x</option></select></form>", "display size")]
@@ -1237,6 +1236,31 @@ public sealed class FormTests
         var page = await renderer.RenderAsync(Document("<form>" + body + "</form>"), new(200, 400, 1), Cancellation);
 
         Assert.Contains(expected, Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisabledFieldsetControlsAreDisabledExceptInsideItsFirstLegend(bool process)
+    {
+        const string body = "<style>fieldset,legend{display:block}</style><form action='/save'><fieldset disabled><input name=blocked value=x>"
+            + "<legend><input name=kept value=y></legend><legend><input name=second value=z></legend>"
+            + "<fieldset><input name=nested value=n></fieldset></fieldset><button>Save</button></form>";
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Collection(page.FormControls,
+            control => Assert.True(control.Disabled),
+            control => Assert.False(control.Disabled),
+            control => Assert.True(control.Disabled),
+            control => Assert.True(control.Disabled),
+            control => Assert.False(control.Disabled));
+
+        using var harness = new Harness(body);
+        Assert.False(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.False(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/save?kept=y", harness.Source.Requests[^1].Url.Href);
     }
 
     [Theory]

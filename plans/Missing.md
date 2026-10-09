@@ -87,7 +87,7 @@ broader page interaction is still missing:
   adjustment, bounded GET submission and shell-owned slider painting.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
-  independent line-window scrolling, plus newline-normalized GET entries. Form-level `novalidate` and a selected submit button's `formnovalidate` bypass supported constraint checks;
+  independent line-window scrolling, plus newline-normalized GET entries. Form-level `novalidate` and a selected submit button's `formnovalidate` bypass supported constraint checks. Disabled fieldsets disable descendant controls except those within their first `legend` child; nested disabled states apply independently.
   `formaction` selects a submitter-specific base-resolved action; textarea
   `wrap=hard` applies bounded explicit-column line breaks only during submission.
   Form `target` and first `<base target>` fallback support `_blank` as a new active

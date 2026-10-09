@@ -136,11 +136,8 @@ internal static class PageForms
                     if (element.GetAttribute(name) is not null) { Reject(index, $"submit button override {name}"); }
                 }
             }
-            if (Ancestors(element).Any(a => a.LocalName == "datalist"
-                || a.LocalName == "fieldset" && a.GetAttribute("disabled") is not null))
-            {
-                Reject(index, "controls inside disabled fieldsets or datalists");
-            }
+            if (Ancestors(element).Any(a => a.LocalName == "datalist"))
+            { Reject(index, "controls inside datalists"); }
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
             var text = kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea";
@@ -222,7 +219,8 @@ internal static class PageForms
                 rect = placed.Rect;
                 lastLink = placed.BeforeLink;
             }
-            controls.Add(new(index, kind, controlName, value, label, pattern, element.GetAttribute("disabled") is not null,
+            controls.Add(new(index, kind, controlName, value, label, pattern,
+                element.GetAttribute("disabled") is not null || IsDisabledByFieldset(element),
                 (text || kind is "date" or "time" or "month" or "week") && element.GetAttribute("readonly") is not null,
                 (text || kind is "checkbox" or "radio" or "select" or "date" or "time" or "month" or "week") && element.GetAttribute("required") is not null,
                 minLength,
@@ -415,6 +413,26 @@ internal static class PageForms
 
     private static string NormalizeTextArea(string value) =>
         value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+
+    private static bool IsDisabledByFieldset(DomElement element)
+    {
+        foreach (var fieldset in Ancestors(element))
+        {
+            if (fieldset.LocalName != "fieldset" || fieldset.GetAttribute("disabled") is null) { continue; }
+            var firstLegend = fieldset.ChildNodes.OfType<DomElement>().FirstOrDefault(child => child.LocalName == "legend");
+            if (firstLegend is null || !IsDescendantOf(element, firstLegend)) { return true; }
+        }
+        return false;
+    }
+
+    private static bool IsDescendantOf(DomElement element, DomElement ancestor)
+    {
+        for (DomNode? node = element; node is not null; node = node.ParentNode)
+        {
+            if (ReferenceEquals(node, ancestor)) { return true; }
+        }
+        return false;
+    }
 
     private static DomElement? Owner(DomElement element, IReadOnlyDictionary<string, DomElement> firstElementById)
     {
