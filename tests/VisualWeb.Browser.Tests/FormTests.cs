@@ -41,15 +41,15 @@ public sealed class FormTests
         Assert.Equal([new PageForm("https://example.com/final/search?x=1#frag", null),
             new PageForm("", "Unsupported form method: post (only GET submission is implemented).")], page.Forms);
         var controls = page.FormControls;
-        Assert.Equal(["text", "hidden", "search", "submit", "button", "text", "text"], controls.Select(c => c.Kind));
-        Assert.Equal([0, 0, 0, 0, 0, 1, -1], controls.Select(c => c.Form));
-        Assert.Equal([false, false, false, false, true, false, false], controls.Select(c => c.FormNoValidate));
+        Assert.Equal(["text", "hidden", "search", "submit", "button", "inert", "text", "text"], controls.Select(c => c.Kind));
+        Assert.Equal([0, 0, 0, 0, 0, 0, 1, -1], controls.Select(c => c.Form));
+        Assert.Equal([false, false, false, false, true, false, false, false], controls.Select(c => c.FormNoValidate));
         Assert.All(controls, control => Assert.Null(control.FormAction));
         Assert.All(controls, control => Assert.Null(control.FormActionError));
         Assert.All(controls, control => { Assert.Equal(0, control.TextareaWrapColumns); Assert.False(control.TextareaWrapHard); });
-        Assert.Equal(["q", "h", "s", "go", "b", "p", "formless"], controls.Select(c => c.Name));
-        Assert.Equal(["abc", " v\n ", "", "", "bv", "", "f"], controls.Select(c => c.Value));
-        Assert.Equal(["", "", "", "Submit", "Go", "", ""], controls.Select(c => c.Label));
+        Assert.Equal(["q", "h", "s", "go", "b", "", "p", "formless"], controls.Select(c => c.Name));
+        Assert.Equal(["abc", " v\n ", "", "", "bv", "", "", "f"], controls.Select(c => c.Value));
+        Assert.Equal(["", "", "", "Submit", "Go", "inert", "", ""], controls.Select(c => c.Label));
         Assert.True(controls[0].Required);
         Assert.Equal(2, controls[0].MinLength);
         Assert.Equal(5, controls[0].MaxLength);
@@ -61,6 +61,7 @@ public sealed class FormTests
         Assert.All(controls.Where(c => c.Kind != "hidden"), c => Assert.Equal(20, c.Rect!.Height));
         Assert.Equal(20, controls[2].Rect!.Y - controls[0].Rect!.Y);
         Assert.Equal(20, controls[4].Rect!.Y - controls[3].Rect!.Y);
+        Assert.Equal(20, controls[5].Rect!.Y - controls[4].Rect!.Y);
     }
 
     [Theory]
@@ -1269,6 +1270,42 @@ public sealed class FormTests
         Assert.Equal([0, 0, -1], page.FormControls.Select(control => control.Form));
         Assert.All(page.FormControls, control => Assert.Equal(200, control.Rect!.Width));
         Assert.All(page.FormControls, control => Assert.Equal(20, control.Rect!.Height));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ButtonTypeButtonRendersAsInertLabelledControl(bool process)
+    {
+        const string body = "<form><button type=button name=plain>Plain action</button>"
+            + "<button type=button></button></form>";
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Equal(["inert", "inert"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["Plain action", ""], page.FormControls.Select(control => control.Label));
+        Assert.All(page.FormControls, control => Assert.InRange(control.Rect!.Width, double.Epsilon, 200));
+        Assert.All(page.FormControls, control => Assert.Equal(20, control.Rect!.Height));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Fact]
+    public void ButtonTypeButtonCanBeFocusedButNeverActivatesOrSubmits()
+    {
+        const string body = "<form action='/save'><input name=q value=a>"
+            + "<button type=button name=ignored>Plain action</button><button name=go value=yes>Save</button></form>";
+        using var harness = new Harness(body);
+        var id = harness.Tab.Id;
+        var requests = harness.Source.Requests.Count;
+        var button = harness.Controller.Page(id)!.FormControls[1];
+        Assert.Equal("inert", button.Kind);
+        Assert.True(harness.Controller.FocusControl(id, 1));
+        Assert.False(harness.Controller.ActivateFocusedLink(id));
+        Assert.False(harness.Controller.ActivateLink(id, button.Rect!.X + 1, button.Rect.Y + 1));
+        Assert.Equal(requests, harness.Source.Requests.Count);
+
+        Assert.True(harness.Controller.FocusControl(id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(id));
+        Assert.Equal("https://example.com/save?q=a&go=yes", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

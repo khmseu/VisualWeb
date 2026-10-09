@@ -65,7 +65,6 @@ internal static class PageForms
             var kind = Kind(element);
             if (kind is null)
             {
-                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button") { continue; }
                 Reject(index, element.LocalName == "input" ? $"input type={DomFormControls.InputType(element)}"
                     : element.LocalName == "button" ? "button type=reset" : $"<{element.LocalName}>");
                 continue;
@@ -205,7 +204,7 @@ internal static class PageForms
                 "reset" when element.LocalName == "input" => element.GetAttribute("value") ?? "Reset",
                 "reset" => element.TextContent ?? "",
                 "button" => element.TextContent ?? "",
-                "inert" => element.GetAttribute("value") ?? "",
+                "inert" => element.LocalName == "button" ? element.TextContent ?? "" : element.GetAttribute("value") ?? "",
                 _ => "",
             };
             var controlName = element.GetAttribute("name") ?? "";
@@ -349,6 +348,7 @@ internal static class PageForms
         {
             "submit" => "button",
             "reset" => "reset",
+            "button" => "inert",
             _ => null,
         },
         "textarea" => "textarea",

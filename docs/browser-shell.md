@@ -225,7 +225,7 @@ This is a deliberately narrow subset of HTML
 (cached standard ID `html`); general forms remain unsupported. The renderer
 reports data-only form/control snapshots (IPC v36); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range, checkbox, radio, textarea,
-hidden, submit and reset, single-select `select`, plus `button` submit/reset (and inert `type=button`), plus visible `input type=button` as shell-owned inert buttons.
+hidden, submit and reset, single-select `select`, plus `button` submit/reset and inert `button type=button`, plus visible `input type=button` as shell-owned inert buttons.
 Text fields use generic editing and draw applicable placeholders in muted chrome only while the shell-owned value is empty; input placeholders strip line breaks and never become submitted values. Password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
 email supports one valid address or, with `multiple`, a comma-separated list of
 valid addresses; list tokens are ASCII-whitespace-trimmed before validation and
@@ -364,11 +364,12 @@ of disabled fieldsets are disabled except controls inside each fieldset's first
 submission, and nested fieldsets apply independently.
 Form-associated `<output>` elements are not submittable controls; their rendered
 content is omitted from browser form-control metadata and GET entries. `<input
-type="button">` is likewise never submittable: it is laid out like the other 160 by 20
-input controls, reported with kind `inert` and its `value` as the label, is focusable by
-pointer and Tab, is painted by the shell overlay as a gray button, and neither pointer
-nor Enter/Space activation navigates, resets or serializes it (implicit submission also
-ignores it). It has no scripting, `onclick` or default label; `type=image`/`file`/`color`
+type="button">` and `<button type="button">` are likewise non-submittable inert
+controls: they are reported with kind `inert`, use their `value` or text content as
+their label respectively, are focusable by pointer and Tab, and are painted by the
+shell overlay. Activation never submits or navigates, and these controls do not
+contribute GET entries or implicit-submission button counts. They have no scripting
+or `onclick`; the input variant has no default label. `type=image`/`file`/`color`
 remain unsupported.
 
 Visible failures, without navigation and keeping the committed page: a form with

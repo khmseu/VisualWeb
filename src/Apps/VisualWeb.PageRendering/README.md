@@ -37,7 +37,7 @@ DOM identity. The shared IPC contract caps 4096 anchors, 64 rectangles per ancho
 
 `BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
 subset collected after optional script mutations: `form` action/error, and
-`input` text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset/button, `textarea`, single-select `select`, plus `button` submit/reset/plain-button
+`input` text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset/button, `textarea`, single-select `select`, plus `button` submit/reset and inert `button type=button`
 controls. Supported controls use finite inline-block layout: input/button fallback
 dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value; select
@@ -51,7 +51,7 @@ listbox/multiple/optgroup select semantics, date/time/month/week constraints (`m
 when that form is submitted. Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
 owner and never fall back to an ancestor. Controls without `form=` use the
-nearest ancestor form. `<output>` is form-associated but non-submittable and contributes no browser form snapshot. `<input type="button">` is non-submittable and contributes no GET entry. A visible `<input type="button">` uses the finite input layout and is reported as an inert `inert` control labelled by its `value` (empty when absent); activation never submits. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
+nearest ancestor form. `<output>` is form-associated but non-submittable and contributes no browser form snapshot. `<input type="button">` and `<button type="button">` are non-submittable and contribute no GET entry. Visible instances use bounded widget layout and are reported as inert `inert` controls, labelled by the input's `value` or the button's text content (empty when absent); activation never submits. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
 except descendants of its first `legend` element child; nested fieldsets apply
 independently. Hyperlinks and form actions resolve against the first valid `<base href>`;
 forms without an action attribute or with an empty value default to the final

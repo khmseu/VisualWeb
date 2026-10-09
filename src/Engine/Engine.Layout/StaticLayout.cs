@@ -372,13 +372,6 @@ public static class StaticLayout
             {
                 if (Display(element) == "none") { return; }
                 Check(element, depth);
-                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button"
-                    && Display(element) == "inline-block")
-                {
-                    var buttonStyle = Style(element);
-                    foreach (var child in element.ChildNodes) { Gather(child, buttonStyle, output, depth + 1); }
-                    return;
-                }
                 if (element.LocalName is "input" or "button" or "textarea" or "select" && Display(element) == "inline-block")
                 {
                     output.Add(new(null, Style(element), "", UnitKind.Widget, true) { Widget = element });
