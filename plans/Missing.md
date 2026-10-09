@@ -71,8 +71,8 @@ broader page interaction is still missing:
   by the visible popup row count and skip disabled options. Bounded committed-text prefix
   search selects matching enabled options and cycles repeated single-character
   input. Enter/Space or a primary click opens a browser-owned popup; it supports
-  pointer option selection and wheel scrolling through longer lists, with Escape/
-  outside-click dismissal. Text fields
+  pointer option selection, hover highlighting and wheel scrolling through longer
+  lists, with Escape/outside-click dismissal. Text fields
   and textareas display bounded placeholders
   without changing submitted values. Email `multiple` supports sanitized
   comma-separated address lists, while select multiple selection, listboxes and

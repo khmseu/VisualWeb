@@ -83,7 +83,7 @@ The native window title retains the same warning alongside the active page title
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
-| Single-select control | Click, Enter, or Space to open; arrows/Home/End, Page Up/Down, and committed-text prefix search select enabled options; click an enabled popup option to select; wheel scrolls long lists; Escape or an outside click dismisses |
+| Single-select control | Click, Enter, or Space to open; arrows/Home/End, Page Up/Down, and committed-text prefix search select enabled options; hovered popup rows are highlighted; click an enabled option to select; wheel scrolls long lists; Escape/outside click dismisses |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
 | Committed text, Left/Right, Backspace/Delete in a focused text/search/email/tel/url/password/date/time/month/week/number field or textarea | Edit the shell-owned field value (no page scrolling) |
 | Home/End in a focused text/search/email/tel/url/password/date/time/month/week/number field | Move the caret to the start/end of the value |

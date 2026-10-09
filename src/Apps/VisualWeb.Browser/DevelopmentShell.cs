@@ -39,6 +39,7 @@ public sealed class DevelopmentShell : IDisposable
         internal int DraggingRangeControl { get; set; } = -1;
         internal int OpenSelectControl { get; set; } = -1;
         internal int SelectPopupFirstOption { get; set; }
+        internal int SelectPopupHoverOption { get; set; } = -1;
         internal string SelectTypeaheadText { get; set; } = "";
         internal long SelectTypeaheadTimestamp { get; set; }
         internal int SelectTypeaheadControl { get; set; } = -1;
@@ -232,6 +233,7 @@ public sealed class DevelopmentShell : IDisposable
                 case PointerMoved moved:
                     view.PointerX = moved.X;
                     view.PointerY = moved.Y;
+                    UpdateSelectPopupHover(view, window, moved.X, moved.Y);
                     if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
                     if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
                     { Controller.SetRangeFromPointer(rangeTab.Id, view.DraggingRangeControl, moved.X); }
@@ -253,6 +255,7 @@ public sealed class DevelopmentShell : IDisposable
                         var delta = (int)Math.Clamp(Math.Round(-wheel.Y * 3), -300, 300);
                         var maxFirst = menuPage.FormControls[view.OpenSelectControl].Options.Length - menu.VisibleOptions;
                         view.SelectPopupFirstOption = (int)Math.Clamp((long)view.SelectPopupFirstOption + delta, 0, maxFirst);
+                        UpdateSelectPopupHover(view, window, menuX, menuY);
                         view.Dirty = true;
                         break;
                     }
@@ -628,7 +631,7 @@ public sealed class DevelopmentShell : IDisposable
             page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
-            view.OpenSelectControl, view.SelectPopupFirstOption);
+            view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption);
     }
     private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id)
     {
@@ -667,6 +670,7 @@ public sealed class DevelopmentShell : IDisposable
     }
     private static void CloseSelectPopup(View view)
     {
+        view.SelectPopupHoverOption = -1;
         view.SelectTypeaheadText = "";
         view.SelectTypeaheadTimestamp = 0;
         view.SelectTypeaheadControl = -1;
@@ -702,6 +706,24 @@ public sealed class DevelopmentShell : IDisposable
         _ = Controller.MoveFocusedSelectPage(id, direction, Math.Clamp(pageSize, 1, 12));
         KeepPopupSelectionVisible(view, id);
         return true;
+    }
+    private void UpdateSelectPopupHover(View view, BrowserWindow window, double x, double y)
+    {
+        var hovered = -1;
+        if (window.ActiveTabId is { } id && view.OpenSelectControl >= 0
+            && ReferenceEquals(view.SelectPopupPage, Controller.Page(id))
+            && Controller.Page(id) is { } page
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport
+            && ShellChrome.PopupLayout(page, view.OpenSelectControl, viewport, view.SelectPopupFirstOption) is { } popup
+            && x >= popup.Bounds.X && x < popup.Bounds.X + popup.Bounds.Width
+            && y >= popup.Bounds.Y && y < popup.Bounds.Y + popup.Bounds.Height)
+        {
+            var row = (int)((y - popup.Bounds.Y) / popup.RowHeight);
+            if (row >= 0 && row < popup.VisibleOptions) { hovered = popup.FirstOption + row; }
+        }
+        if (hovered == view.SelectPopupHoverOption) { return; }
+        view.SelectPopupHoverOption = hovered;
+        view.Dirty = true;
     }
     private void KeepPopupSelectionVisible(View view, TabId id)
     {

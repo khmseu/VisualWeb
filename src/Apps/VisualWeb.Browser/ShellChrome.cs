@@ -349,7 +349,9 @@ public sealed class ShellChrome : IDisposable
                     var option = page.FormControls[forms.OpenSelect].Options[optionIndex];
                     var rowBounds = new LayoutRect(popup.Bounds.X + 1, popup.Bounds.Y + 1 + row * popup.RowHeight,
                         Math.Max(0, popup.Bounds.Width - 2), popup.RowHeight);
-                    if (optionIndex == forms.SelectIndices?[forms.OpenSelect])
+                    if (optionIndex == forms.SelectPopupHoverOption)
+                    { Fill(rowBounds, option.Disabled ? new(230, 230, 230) : new(205, 224, 245)); }
+                    else if (optionIndex == forms.SelectIndices?[forms.OpenSelect])
                     { Fill(rowBounds, new(176, 213, 249)); }
                     Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8,
                         option.Disabled ? new(118, 118, 118) : ink);
@@ -506,4 +508,4 @@ public sealed class ShellChrome : IDisposable
 public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false,
     IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null,
     IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null,
-    int OpenSelect = -1, int SelectPopupFirstOption = 0);
+    int OpenSelect = -1, int SelectPopupFirstOption = 0, int SelectPopupHoverOption = -1);

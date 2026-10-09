@@ -393,6 +393,47 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void SingleSelectPopupHighlightsHoveredOptionsAndClearsHighlightOutsideMenu()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select name=mode>" +
+            "<option value=one>One</option><option value=blocked disabled>Blocked</option>" +
+            "<option value=three>Three</option></select></form>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var popupX = rect.X + 8;
+        var popupY = ShellChrome.Height + rect.Y + rect.Height;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 4)));
+        shell.Tick();
+
+        shell.Dispatch(new PointerMoved(native.Id, (float)popupX, (float)(popupY + 30)));
+        shell.Tick();
+        Assert.Equal(new byte[] { 230, 230, 230, 255 }, Pixel((int)(rect.X + rect.Width / 2), (int)popupY + 30));
+        shell.Dispatch(new PointerMoved(native.Id, (float)popupX, (float)(popupY + 50)));
+        shell.Tick();
+        Assert.Equal(new byte[] { 245, 224, 205, 255 }, Pixel((int)(rect.X + rect.Width / 2), (int)popupY + 50));
+        shell.Dispatch(new PointerMoved(native.Id, 5, 5));
+        shell.Tick();
+        Assert.NotEqual(new byte[] { 230, 230, 230, 255 }, Pixel((int)(rect.X + rect.Width / 2), (int)popupY + 30));
+        Assert.Equal(0, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        byte[] Pixel(int x, int y) => native.Pixels!.AsSpan(y * native.Size.Width * 4 + x * 4, 4).ToArray();
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void SingleSelectPopupPageKeysMoveByVisibleOptionsAndSkipDisabledEntries()
     {
         using var system = new Windows();
