@@ -58,7 +58,7 @@ broader page interaction is still missing:
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v30 data-only metadata and the ordinary
+  submit same-tab GET urlencoded queries via IPC v31 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -87,15 +87,17 @@ broader page interaction is still missing:
   adjustment, same-tab GET submission and shell-owned slider painting.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
-  independent line-window scrolling, plus newline-normalized GET entries.
+  independent line-window scrolling, plus newline-normalized GET entries. A submit button's
+  `formnovalidate` bypasses supported constraint checks for that submission only;
+  it does not bypass destination or origin restrictions.
   Visible text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
   missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/reset,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
-  full constraint-validation UI and semantics, form events/scripted submission, unsupported
-  `form=` ownership on fieldsets/output/object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
+  full constraint-validation UI and semantics, submitter overrides other than
+  `formnovalidate`, form events/scripted submission, unsupported `form=` ownership on fieldsets/output/object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
   encodings. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
 - A bounded browser-owned selection supports mouse drag across visible non-link
@@ -122,7 +124,7 @@ Besides the main HTML resource, only bounded classic linked stylesheets are load
 the browser (never the renderer) fetches supported `link rel=stylesheet` sheets
 (media absent/`all`, type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
 with the tab loader and shared session HSTS store, cookies off, resolved against the
-final response URL, as at most 32 sheets of 256 Ki characters within a 1 MiB IPC
+first `<base href>` (falling back to the final response URL), as at most 32 sheets of 256 Ki characters within a 1 MiB IPC
 budget. HTTP(S) sheets are restricted to the final document origin across redirects,
 stricter than ordinary HTML stylesheet loading and not CORS. Any stylesheet failure
 fails the navigation. Missing pieces include:

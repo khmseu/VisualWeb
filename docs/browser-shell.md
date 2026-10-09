@@ -223,7 +223,7 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v30); the browser owns all values,
+reports data-only form/control snapshots (IPC v31); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range, checkbox, radio, textarea,
 hidden, submit and reset, single-select `select`, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing and draw applicable placeholders in muted chrome only while the shell-owned value is empty; input placeholders strip line breaks and never become submitted values. Password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
@@ -349,13 +349,13 @@ tree order, including controls before or outside the form element.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or new-tab target
-(including inherited `<base target>`), `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
+(including inherited `<base target>`), `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides other than `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname` or `wrap=hard`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
 required empty fields, edited too-short/overlong values, pattern mismatches,
-unsupported pattern syntax, or query/URL limit overflow.
+unsupported pattern syntax, or query/URL limit overflow. A submit button's `formnovalidate` skips constraint checks for that submission only; address/scheme and origin protections still apply.
 There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
 events, `requestSubmit`, script submission, select popup/mouse option picking, autofill, IME
 preedit, or clipboard selection range support.

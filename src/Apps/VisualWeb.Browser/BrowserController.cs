@@ -762,6 +762,7 @@ public sealed class BrowserController : IDisposable
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
         { throw new PageNavigationException($"Form submission encoding {encoding} is unsupported; only UTF-8 is implemented."); }
         var normalizedEmailValues = new Dictionary<int, string>();
+        var skipValidation = submitter >= 0 && page.FormControls[submitter].FormNoValidate;
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
@@ -772,6 +773,7 @@ public sealed class BrowserController : IDisposable
                 value = FormEmail.Sanitize(value, control.Multiple);
                 normalizedEmailValues[index] = value;
             }
+            if (skipValidation) { continue; }
             var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
             if (control.Required && (control.Kind == "checkbox" ? !isChecked
                 : control.Kind == "radio" ? !RadioGroupChecked(owner, index) : value.Length == 0))

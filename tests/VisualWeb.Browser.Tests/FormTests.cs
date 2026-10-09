@@ -30,7 +30,7 @@ public sealed class FormTests
             <input type=HIDDEN name=h value=" v&#10; ">
             <input type=search name=s readonly disabled>
             <input type=submit name=go>
-            <button name=b value=bv>Go</button>
+            <button name=b value=bv formnovalidate>Go</button>
             <button type=button>inert</button>
             </form>
             <form method=post><input name=p></form>
@@ -43,6 +43,7 @@ public sealed class FormTests
         var controls = page.FormControls;
         Assert.Equal(["text", "hidden", "search", "submit", "button", "text", "text"], controls.Select(c => c.Kind));
         Assert.Equal([0, 0, 0, 0, 0, 1, -1], controls.Select(c => c.Form));
+        Assert.Equal([false, false, false, false, true, false, false], controls.Select(c => c.FormNoValidate));
         Assert.Equal(["q", "h", "s", "go", "b", "p", "formless"], controls.Select(c => c.Name));
         Assert.Equal(["abc", " v\n ", "", "", "bv", "", "f"], controls.Select(c => c.Value));
         Assert.Equal(["", "", "", "Submit", "Go", "", ""], controls.Select(c => c.Label));
@@ -654,7 +655,6 @@ public sealed class FormTests
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
     [InlineData("<form><button formaction=/x>x</button></form>", "formaction")]
     [InlineData("<form><button formtarget=_blank>x</button></form>", "formtarget")]
-    [InlineData("<form><input type=submit formnovalidate></form>", "formnovalidate")]
     [InlineData("<form><input type=submit formenctype=text/plain></form>", "formenctype")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
@@ -1195,6 +1195,46 @@ public sealed class FormTests
         harness.Controller.FocusControl(harness.Tab.Id, 0);
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Equal("https://example.com/final/index.html?", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void SubmitterFormNoValidateBypassesConstraintValidationOnlyForThatSubmission()
+    {
+        using var harness = new Harness("<form action='/save'><input type=email name=contact required value=invalid><button formnovalidate>Save anyway</button></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Equal("https://example.com/save?contact=invalid", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void FormNoValidateDoesNotApplyToOtherSubmittersOrBypassOriginPolicy()
+    {
+        using (var otherSubmitter = new Harness("<form><input type=email name=contact required value=invalid><button formnovalidate>Skip</button><button>Check</button></form>"))
+        {
+            Assert.True(otherSubmitter.Controller.FocusControl(otherSubmitter.Tab.Id, 2));
+            var validationError = Assert.Throws<PageNavigationException>(() =>
+                otherSubmitter.Controller.ActivateFocusedLink(otherSubmitter.Tab.Id));
+            Assert.Contains("valid email address", validationError.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(otherSubmitter.Source.Requests);
+        }
+
+        using (var implicitSubmit = new Harness("<form action='/save'><input type=email name=contact required value=invalid><button formnovalidate>Save</button></form>"))
+        {
+            Assert.True(implicitSubmit.Controller.FocusControl(implicitSubmit.Tab.Id, 0));
+            Assert.True(implicitSubmit.Controller.ActivateFocusedLink(implicitSubmit.Tab.Id));
+            Assert.Equal("https://example.com/save?contact=invalid", implicitSubmit.Source.Requests[^1].Url.Href);
+        }
+
+        using (var crossOrigin = new Harness("<form action='https://other.example/save'><input name=secret required><button formnovalidate>Save</button></form>"))
+        {
+            Assert.True(crossOrigin.Controller.FocusControl(crossOrigin.Tab.Id, 1));
+            var policyError = Assert.Throws<PageNavigationException>(() =>
+                crossOrigin.Controller.ActivateFocusedLink(crossOrigin.Tab.Id));
+            Assert.Contains("Cross-origin", policyError.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(crossOrigin.Source.Requests);
+        }
     }
 
     [Theory]

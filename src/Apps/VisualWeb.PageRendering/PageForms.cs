@@ -17,7 +17,7 @@ internal static class PageForms
     private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
-    private static readonly string[] SubmitterOverrides = ["formaction", "formenctype", "formmethod", "formnovalidate", "formtarget"];
+    private static readonly string[] SubmitterOverrides = ["formaction", "formenctype", "formmethod", "formtarget"];
     private static readonly string[] TextOnlyAttributes = ["dirname", "list"];
 
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
@@ -206,7 +206,12 @@ internal static class PageForms
                 minLength,
                 text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
                 kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
-            { Options = options, Multiple = kind == "email" && element.GetAttribute("multiple") is not null, Placeholder = placeholder });
+            {
+                Options = options,
+                Multiple = kind == "email" && element.GetAttribute("multiple") is not null,
+                Placeholder = placeholder,
+                FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null
+            });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)

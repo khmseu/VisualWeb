@@ -62,7 +62,8 @@ public sealed record PageTextTarget(
 
 /// <summary>One parsed form owner: an absolute GET action, or a visible unsupported-semantics diagnostic.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
-/// submission algorithm</see>. Only the bounded same-tab GET/urlencoded subset is representable; Error is set
+/// submission algorithm</see> and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formnovalidate">formnovalidate</see>.
+/// Only the bounded same-tab GET/urlencoded subset is representable; Error is set
 /// (and Action empty) for anything else. No element identity or script capability crosses IPC.</remarks>
 public sealed record PageForm(
     [property: JsonRequired] string Action,
@@ -71,7 +72,7 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. Label carries submit/reset-input text or button text.</remarks>
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate applies to submit buttons only. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -98,6 +99,8 @@ public sealed record PageFormControl(
     public bool Multiple { get; init; }
     [JsonRequired]
     public string Placeholder { get; init; } = "";
+    [JsonRequired]
+    public bool FormNoValidate { get; init; }
 }
 
 /// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
@@ -336,7 +339,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 30;
+    public const int Version = 31;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -516,6 +519,7 @@ public static class RendererProtocol
                 || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Multiple && control.Kind != "email"
+                || control.FormNoValidate && control.Kind is not ("submit" or "button")
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
                 || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))
