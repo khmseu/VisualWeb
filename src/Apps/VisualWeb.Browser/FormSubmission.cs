@@ -99,7 +99,7 @@ public static class FormSubmission
         for (var index = 0; index < controls.Count; index++)
         {
             var control = controls[index];
-            if (control.Form != form || control.Disabled || control.Kind is "submit" or "button" && index != submitter
+            if (control.Form != form || control.Disabled || control.Kind == "inert" || control.Kind is "submit" or "button" && index != submitter
                 || control.Kind is "checkbox" or "radio" && !isChecked(index) || !isSuccessful(index) || control.Name.Length == 0) { continue; }
             var data = control.Kind == "hidden" && control.Name.Equals("_charset_", StringComparison.OrdinalIgnoreCase)
                 ? "UTF-8" : value(index);

@@ -272,12 +272,12 @@ public sealed class ShellChrome : IDisposable
                 }
                 Fill(box, gray);
                 Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
-                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" ? new(225, 225, 225)
+                    control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" or "inert" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
                 var selectedOption = forms.SelectIndices?[index] ?? Array.FindIndex(control.Options, option => option.Selected);
                 var value = forms.Values[index];
                 var showingPlaceholder = value.Length == 0 && control.Placeholder.Length > 0;
-                var text = control.Kind is "submit" or "button" or "reset" ? control.Label
+                var text = control.Kind is "submit" or "button" or "reset" or "inert" ? control.Label
                     : control.Kind == "select" ? (selectedOption >= 0 ? control.Options[selectedOption].Label : "") + "  v"
                     : control.Kind == "password" ? PasswordText(value,
                         index == forms.Focused && !forms.SelectAll ? forms.Caret : -1)
@@ -311,7 +311,7 @@ public sealed class ShellChrome : IDisposable
                 {
                     Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
                         control.Disabled ? gray : showingPlaceholder ? new(128, 128, 128) : ink,
-                        tail: index == forms.Focused || control.Kind is "button" or "reset");
+                        tail: index == forms.Focused || control.Kind is "button" or "reset" or "inert");
                 }
             }
         }

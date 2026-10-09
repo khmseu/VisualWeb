@@ -445,6 +445,55 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void InputButtonIsPaintedFocusedAndInertByClickOrEnter(bool click)
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var initialUrl = "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>body{margin:0}</style><form action='https://example.com/save'><input name=q value=x>"
+            + "<input type=button name=b value=Press></form>");
+        shell.Controller.Navigate(tab.Id, initialUrl);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.True(tab.Error is null, tab.Error);
+        var page = shell.Controller.Page(tab.Id)!;
+        var button = page.FormControls[1];
+        Assert.Equal("inert", button.Kind);
+        Assert.Equal("Press", button.Label);
+        shell.Tick();
+        var header = (int)Math.Ceiling(ShellChrome.Height * native.Density);
+        var bounds = button.Rect!;
+        var left = (int)Math.Floor(bounds.X * native.Density);
+        var right = (int)Math.Ceiling((bounds.X + bounds.Width) * native.Density);
+        var top = header + (int)Math.Floor(bounds.Y * native.Density);
+        var bottom = header + (int)Math.Ceiling((bounds.Y + bounds.Height) * native.Density);
+        Assert.Contains(Enumerable.Range(top, bottom - top).SelectMany(y => Enumerable.Range(left, right - left)
+            .Select(x => native.Pixels!.Skip(y * page.Frame.Stride + x * 4).Take(3).ToArray())),
+            pixel => pixel.All(channel => channel < 60));
+
+        if (click)
+        {
+            shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+                (float)(bounds.X + 1), (float)(ShellChrome.Height + bounds.Y + 1)));
+        }
+        else
+        {
+            Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        }
+        shell.Tick();
+        Assert.Null(tab.Error);
+        Assert.False(tab.IsLoading);
+        Assert.Same(page, shell.Controller.Page(tab.Id));
+        Assert.Equal(initialUrl, tab.History.Current!.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void UnstyledFormButtonIsPaintedAndBlocksDataActionByClickOrEnter(bool click)
     {
         using var system = new Windows();

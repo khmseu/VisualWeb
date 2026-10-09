@@ -1259,6 +1259,56 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task InputButtonRendersAsInertLabelledControl(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form action='/save'><input type=BUTTON name=b value='Click me'>"
+            + "<input type=button name=plain></form><input type=button value=loose>"), new(200, 400, 1), Cancellation);
+        Assert.Equal(["inert", "inert", "inert"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["Click me", "", "loose"], page.FormControls.Select(control => control.Label));
+        Assert.Equal([0, 0, -1], page.FormControls.Select(control => control.Form));
+        Assert.All(page.FormControls, control => Assert.Equal(200, control.Rect!.Width));
+        Assert.All(page.FormControls, control => Assert.Equal(20, control.Rect!.Height));
+    }
+
+    [Fact]
+    public void InputButtonIsFocusableButNeverSubmitsOrSerializes()
+    {
+        const string body = "<form action='/save'><input name=q value=a><input type=button name=b value=B>"
+            + "<input type=submit name=go value=Go></form>";
+        using var harness = new Harness(body);
+        var id = harness.Tab.Id;
+        var requests = harness.Source.Requests.Count;
+        var button = harness.Controller.Page(id)!.FormControls[1];
+        Assert.Equal("B", button.Label);
+        Assert.True(harness.Controller.FocusControl(id, 1));
+        Assert.False(harness.Controller.ActivateFocusedLink(id));
+        Assert.Equal(requests, harness.Source.Requests.Count);
+
+        Assert.True(harness.Controller.FocusControl(id, 0));
+        Assert.False(harness.Controller.ActivateLink(id, button.Rect!.X + 1, button.Rect.Y + 1));
+        Assert.Equal(1, harness.Controller.Page(id)!.FormControls.Count(c => c.Kind == "inert"));
+        Assert.Equal(requests, harness.Source.Requests.Count);
+
+        Assert.True(harness.Controller.FocusControl(id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(id));
+        Assert.Equal("https://example.com/save?q=a&go=Go", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void InputButtonDoesNotSatisfyImplicitSubmissionOrSerialize()
+    {
+        using var harness = new Harness("<form action='/save'><input name=q value=a>"
+            + "<input type=button name=b value=B></form>");
+        var id = harness.Tab.Id;
+        Assert.True(harness.Controller.FocusControl(id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(id));
+        Assert.Equal("https://example.com/save?q=a", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task InputButtonDoesNotInvalidateOrSubmitForm(bool process)
     {
         const string body = "<form action='/save'><input name=before value=a>"
@@ -1267,10 +1317,12 @@ public sealed class FormTests
         using var renderer = Renderer(process);
         var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
         Assert.Null(Assert.Single(page.Forms).Error);
-        Assert.Equal(["before", "after", "go"], page.FormControls.Select(control => control.Name));
+        Assert.Equal(["before", "ignored", "after", "go"], page.FormControls.Select(control => control.Name));
+        Assert.Equal("inert", page.FormControls[1].Kind);
+        Assert.Null(page.FormControls[1].Rect);
 
         using var harness = new Harness(body);
-        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 3));
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Equal("https://example.com/save?before=a&after=b&go=yes", harness.Source.Requests[^1].Url.Href);
     }

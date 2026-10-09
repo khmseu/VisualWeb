@@ -367,7 +367,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 35;
+    public const int Version = 36;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -541,12 +541,12 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button" or "inert")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Placeholder is null || control.Placeholder.Length > MaxTextCharacters
-                || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
+                || control.Kind is not ("submit" or "reset" or "button" or "inert") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Multiple && control.Kind != "email"
                 || control.FormNoValidate && control.Kind is not ("submit" or "button")

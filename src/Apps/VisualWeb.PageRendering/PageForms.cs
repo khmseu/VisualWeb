@@ -65,8 +65,7 @@ internal static class PageForms
             var kind = Kind(element);
             if (kind is null)
             {
-                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button"
-                    || element.LocalName == "input" && DomFormControls.InputType(element) == "button") { continue; }
+                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button") { continue; }
                 Reject(index, element.LocalName == "input" ? $"input type={DomFormControls.InputType(element)}"
                     : element.LocalName == "button" ? "button type=reset" : $"<{element.LocalName}>");
                 continue;
@@ -206,6 +205,7 @@ internal static class PageForms
                 "reset" when element.LocalName == "input" => element.GetAttribute("value") ?? "Reset",
                 "reset" => element.TextContent ?? "",
                 "button" => element.TextContent ?? "",
+                "inert" => element.GetAttribute("value") ?? "",
                 _ => "",
             };
             var controlName = element.GetAttribute("name") ?? "";
@@ -344,7 +344,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : type == "button" ? "inert" : null,
         "button" => DomFormControls.ButtonType(element) switch
         {
             "submit" => "button",

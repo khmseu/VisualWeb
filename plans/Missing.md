@@ -57,8 +57,8 @@ broader page interaction is still missing:
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
-  `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
-  submit current/new-tab GET urlencoded queries via IPC v35 data-only metadata and the ordinary
+  `textarea`, single-select `select`, and `button` submit/reset controls, and inert `input type=button` controls; supported successful controls
+  submit current/new-tab GET urlencoded queries via IPC v36 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
