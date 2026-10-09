@@ -51,7 +51,7 @@ listbox/multiple/optgroup select semantics, date/time/month/week constraints (`m
 when that form is submitted. Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
 owner and never fall back to an ancestor. Controls without `form=` use the
-nearest ancestor form. `<output>` is form-associated but not a submittable control; it remains ordinary rendered content and contributes no browser form snapshot or GET entry. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
+nearest ancestor form. `<output>` and `<input type="button">` are form-associated but non-submittable; they contribute no browser form snapshot or GET entry. Visible input-button widget layout remains unsupported. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
 except descendants of its first `legend` element child; nested fieldsets apply
 independently. Hyperlinks and form actions resolve against the first valid `<base href>`;
 forms without an action attribute or with an empty value default to the final

@@ -363,7 +363,9 @@ of disabled fieldsets are disabled except controls inside each fieldset's first
 `legend` child; the inherited state prevents focus, validation and successful
 submission, and nested fieldsets apply independently.
 Form-associated `<output>` elements are not submittable controls; their rendered
-content is omitted from browser form-control metadata and GET entries.
+content is omitted from browser form-control metadata and GET entries. `<input
+type="button">` is likewise excluded from form snapshots, though visible input-
+button widget layout remains unsupported.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target

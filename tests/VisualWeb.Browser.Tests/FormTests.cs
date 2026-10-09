@@ -1259,6 +1259,25 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task InputButtonDoesNotInvalidateOrSubmitForm(bool process)
+    {
+        const string body = "<form action='/save'><input name=before value=a>"
+            + "<input type=button name=ignored value=click style='display:none'><input name=after value=b>"
+            + "<button name=go value=yes>Save</button></form>";
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        Assert.Equal(["before", "after", "go"], page.FormControls.Select(control => control.Name));
+
+        using var harness = new Harness(body);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 2));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/save?before=a&after=b&go=yes", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task FieldsetFormOwnerDoesNotTransferItsDescendantControls(bool process)
     {
         const string body = "<style>fieldset{display:block}</style><form id=owner action='/save'>"

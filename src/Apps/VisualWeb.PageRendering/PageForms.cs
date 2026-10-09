@@ -65,7 +65,8 @@ internal static class PageForms
             var kind = Kind(element);
             if (kind is null)
             {
-                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button") { continue; }
+                if (element.LocalName == "button" && DomFormControls.ButtonType(element) == "button"
+                    || element.LocalName == "input" && DomFormControls.InputType(element) == "button") { continue; }
                 Reject(index, element.LocalName == "input" ? $"input type={DomFormControls.InputType(element)}"
                     : element.LocalName == "button" ? "button type=reset" : $"<{element.LocalName}>");
                 continue;
