@@ -270,6 +270,69 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TimeInputReportsBoundedValuesAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=time name=meeting value=09:30 required><input type=time name=bad value=24:00></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Equal(["time", "time"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["09:30", ""], page.FormControls.Select(control => control.Value));
+        Assert.True(page.FormControls[0].Required);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Fact]
+    public void TimeInputSupportsEditingAndValidatesBeforeSubmission()
+    {
+        using (var valid = new Harness("<form action='/save'><input type=time name=meeting value=09:30><button>Save</button></form>"))
+        {
+            var controller = valid.Controller;
+            var tab = valid.Tab.Id;
+            Assert.True(controller.FocusControl(tab, 0));
+            Assert.True(controller.EditingFormControl(tab));
+            controller.SelectAllFormControl(tab);
+            Assert.Equal("23:59:59.5", controller.InsertFormText(tab, "23:59:59.5"));
+            Assert.True(controller.ActivateFocusedLink(tab, valid.Viewport));
+            Assert.Equal("https://example.com/save?meeting=23%3A59%3A59.5", valid.Source.Requests[^1].Url.Href);
+        }
+
+        using (var invalid = new Harness("<form><input type=time name=meeting><button>Save</button></form>"))
+        {
+            var controller = invalid.Controller;
+            var tab = invalid.Tab.Id;
+            Assert.True(controller.FocusControl(tab, 0));
+            controller.SelectAllFormControl(tab);
+            controller.InsertFormText(tab, "24:00");
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, invalid.Viewport));
+            Assert.Contains("time", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(invalid.Source.Requests);
+        }
+
+        using (var required = new Harness("<form><input type=time name=meeting required><button>Save</button></form>"))
+        {
+            var controller = required.Controller;
+            var tab = required.Tab.Id;
+            Assert.True(controller.FocusControl(tab, 0));
+            var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, required.Viewport));
+            Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(required.Source.Requests);
+        }
+    }
+
+    [Fact]
+    public async Task TimeInputRejectsUnsupportedConstraintAttributes()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><input type=time name=meeting step=900></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Contains("time step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task UrlInputReportsEditableMetadataAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);

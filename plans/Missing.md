@@ -39,7 +39,7 @@ broader page interaction is still missing:
   navigation in shell, local and actual renderer-process paths. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
-  one anchor and no page raster changes without focus. IPC v25 carries grouped
+  one anchor and no page raster changes without focus. IPC v26 carries grouped
   visible rectangles plus bounded `_blank` target metadata (4096 anchors, 64
   rectangles each, 1 MiB metadata), plus bounded fragment-ID offsets for
   same-document scrolling, without element IDs/DOM/native handles. Fragment
@@ -52,9 +52,9 @@ broader page interaction is still missing:
   focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
-  text/search/email/tel/url/password/date/number/range/checkbox/radio/hidden/submit/reset,
+  text/search/email/tel/url/password/date/time/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v25 data-only metadata and the ordinary
+  submit same-tab GET urlencoded queries via IPC v26 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -67,7 +67,9 @@ broader page interaction is still missing:
   sanitize invalid initial values to empty, and validate nonempty values and
   `required` before submission; no calendar picker or date constraints are
   implemented (`min`, `max`, `step`, `pattern`, length, `list`, `multiple` and
-  `dirname` are rejected visibly). Number inputs support finite floating-point syntax, optional finite min/max
+  `dirname` are rejected visibly). Time values use strict bounded HTML time
+  syntax with generic text editing and validation; no clock picker or time
+  constraints are implemented (the same constraint attributes are rejected). Number inputs support finite floating-point syntax, optional finite min/max
   bounds and step-grid validation; `step=any` disables the grid, absent/invalid
   steps default to 1, and reversed ranges are surfaced as form errors. The step
   base is a valid minimum, otherwise the valid initial value, otherwise zero.
@@ -78,11 +80,11 @@ broader page interaction is still missing:
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
   independent line-window scrolling, plus newline-normalized GET entries.
-  Visible text/search/email/tel/url/password/date/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
+  Visible text/search/email/tel/url/password/date/time/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
-  text/search/email/tel/url/password/date/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/number/range/checkbox/radio/reset,
+  text/search/email/tel/url/password/date/time/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/number/range/checkbox/radio/reset,
   broader textarea behavior (`dirname` and `wrap=hard` remain unsupported),
   full constraint-validation UI and semantics, form events/scripted submission, `form=` owners,
   intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -182,7 +184,7 @@ Remaining areas include:
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
-  focused text/search/email/tel/url/password/date/number/checkbox/radio/textarea fields or the selected address bar; character-level page
+  focused text/search/email/tel/url/password/date/time/number/checkbox/radio/textarea fields or the selected address bar; character-level page
   selection and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
@@ -220,7 +222,7 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against `d7c97bb` and current working-tree changes on
+*Status cross-checked against `f026e1f` and current working-tree changes on
 2026-10-09. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; single-address email inputs use generic text
@@ -230,7 +232,7 @@ only when checked; radio state is mutually exclusive by form/name, selected by
 pointer, Space, and arrow-key navigation, and required validation applies to the group; bounded editable textareas submit newline-normalized
 GET values and use shell-font-measured soft wrapping with visual-line-aware caret
 movement; `minlength` is checked for edited nonempty values and bounded text
-field patterns (bounded non-backtracking subset), single-address email validation, URL input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; password controls are shell-masked and use bounded text constraints; range controls
+field patterns (bounded non-backtracking subset), single-address email validation, URL/date/time input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; password controls are shell-masked and use bounded text constraints; range controls
 are sanitized to finite bounds and the step grid and remain shell-owned; reset
 controls restore initial values/checks and clear shell-owned edits without
 navigation or validation; page-initiated `file:`/`data:` link and form

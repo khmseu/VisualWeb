@@ -71,10 +71,10 @@ internal static class PageForms
                 if (element.GetAttribute("multiple") is not null) { Reject(index, "select multiple"); }
                 if (SelectSize(element.GetAttribute("size")) != 1) { Reject(index, "select display size other than 1"); }
             }
-            if (kind == "date")
+            if (kind is "date" or "time")
             {
                 foreach (var attribute in new[] { "min", "max", "step", "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
-                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"date {attribute}"); } }
+                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
             }
             if (kind == "email" && element.GetAttribute("multiple") is not null)
             { Reject(index, "email multiple addresses"); }
@@ -163,6 +163,7 @@ internal static class PageForms
             {
                 "text" or "search" or "email" or "tel" or "url" or "password" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
                 "date" => FormDate.IsValid(value ?? "") ? value ?? "" : "",
+                "time" => FormTime.IsValid(value ?? "") ? value ?? "" : "",
                 _ => value ?? "",
             };
             var label = kind switch
@@ -184,8 +185,8 @@ internal static class PageForms
                 lastLink = placed.BeforeLink;
             }
             controls.Add(new(index, kind, controlName, value, label, pattern, element.GetAttribute("disabled") is not null,
-                (text || kind == "date") && element.GetAttribute("readonly") is not null,
-                (text || kind is "checkbox" or "radio" or "select" or "date") && element.GetAttribute("required") is not null,
+                (text || kind is "date" or "time") && element.GetAttribute("readonly") is not null,
+                (text || kind is "checkbox" or "radio" or "select" or "date" or "time") && element.GetAttribute("required") is not null,
                 minLength,
                 text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
                 kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
@@ -244,7 +245,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : null,
         "button" => DomFormControls.ButtonType(element) switch
         {
             "submit" => "button",
