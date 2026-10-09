@@ -131,11 +131,11 @@ explicitly or those styles overridden.
 - Margin collapse, floats, positioning, inline-block, decorated inline boxes
   (including backgrounds), tables, ruby, lists/markers, replaced elements,
   general controls, images/media/iframes and specialized element layout.
-  The bounded forms subset lays out `input` text/search/email/tel/url/password/number/range/checkbox/radio/submit,
-  `textarea`, and `button` controls through finite inline-block fallbacks; this is
-  a layout accommodation, not complete replaced-element sizing. Inputs ignore
-  children, and author styles may size supported controls within limits. Other
-  input types and `select` still fail visibly.
+  The bounded forms subset lays out `input` text/search/email/tel/url/password/date/number/range/checkbox/radio/submit,
+  `textarea`, `select`, and `button` controls through finite inline-block fallbacks;
+  this is a layout accommodation, not complete replaced-element sizing. Inputs
+  ignore children, and author styles may size supported controls within limits.
+  Other input types still fail visibly.
 - Vertical writing, fragmentation, scrolling/overflow clipping, device-pixel
   border snapping, text decoration and content generation.
   Initial normal-flow painting is now documented in the [painting guide](painting.md).

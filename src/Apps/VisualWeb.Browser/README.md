@@ -10,13 +10,14 @@ per-tab page focus is outlined by the shell without changing the renderer raster
 The `_blank` target keyword opens an active tab in the source window. Same-document
 fragment links and their Back/Forward traversal update URL-only history and scroll
 to bounded rendered element IDs without a new load; named targets, `<base target>`,
-and DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/password/number fields (password values are masked in browser chrome), checkboxes, radio groups,
+and DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/password/date/number fields (password values are masked in browser chrome), checkboxes, radio groups,
 single-select controls with bounded options and Up/Down/Home/End selection, and
 multiline textareas with Tab focus, committed-text entry and Enter/click submission
 of same-tab GET `application/x-www-form-urlencoded` queries through the ordinary
 navigation transaction. Textareas have bounded rows/columns, soft wrapping and
 independent line-window scrolling; number fields validate finite values, optional min/max bounds and supported
-step grids; range fields render as shell-owned sliders adjusted by keyboard or pointer. Reset controls restore their form's initial values and checked states without navigation. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
+step grids; date fields accept strict ISO Gregorian dates for years 0001–9999 as
+text without a calendar picker; range fields render as shell-owned sliders adjusted by keyboard or pointer. Reset controls restore their form's initial values and checked states without navigation. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and

@@ -68,7 +68,7 @@ public sealed record PageForm(
     [property: JsonRequired] string? Error);
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, password, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, password, date, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
@@ -103,6 +103,34 @@ public sealed record PageFormOption(
     [property: JsonRequired] string Label,
     [property: JsonRequired] bool Disabled,
     [property: JsonRequired] bool Selected);
+
+/// <summary>Checks the browser's bounded year-0001-through-9999 subset of HTML date values.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-date-string">valid date string</see>.</remarks>
+public static class FormDate
+{
+    public static bool IsValid(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (value.Length != 10 || value[4] != '-' || value[7] != '-') { return false; }
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (index is 4 or 7) { continue; }
+            if (!char.IsAsciiDigit(value[index])) { return false; }
+        }
+        var year = int.Parse(value.AsSpan(0, 4), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        var month = int.Parse(value.AsSpan(5, 2), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        var day = int.Parse(value.AsSpan(8, 2), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        if (year == 0 || month is < 1 or > 12) { return false; }
+        var leap = year % 400 == 0 || year % 4 == 0 && year % 100 != 0;
+        var days = month switch
+        {
+            2 => leap ? 29 : 28,
+            4 or 6 or 9 or 11 => 30,
+            _ => 31,
+        };
+        return day is >= 1 && day <= days;
+    }
+}
 
 /// <summary>HTML valid floating-point syntax with finite invariant-culture parsing.</summary>
 public static class FormNumber
@@ -189,7 +217,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 24;
+    public const int Version = 25;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -361,14 +389,14 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
-                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
-                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "checkbox" or "radio" or "select" or "textarea")
+                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "number" or "textarea")
+                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "number" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
@@ -383,7 +411,8 @@ public static class RendererProtocol
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)
                 || control.Pattern is not null && ++patternCount > MaxFormPatterns
                 || control.MinLength < -1 || control.MinLength > MaxTextCharacters
-                || control.MaxLength < -1 || control.BeforeLink < 0 || control.BeforeLink > linkCount
+                || control.MaxLength < -1 || control.Kind == "date" && control.MaxLength != -1
+                || control.BeforeLink < 0 || control.BeforeLink > linkCount
                 || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea") && control.MinLength != -1
                 || control.Options is null || (long)optionCount + control.Options.Length > MaxSelectOptions
                 || control.Kind != "select" && control.Options.Length != 0
@@ -395,6 +424,8 @@ public static class RendererProtocol
             if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected)?.Value
                 && !(control.Options.All(option => !option.Selected) && control.Value.Length == 0))
             { throw new IpcProtocolException("Invalid renderer select value or selected option."); }
+            if (control.Kind == "date" && control.Value.Length > 0 && !FormDate.IsValid(control.Value))
+            { throw new IpcProtocolException("Invalid renderer date value."); }
             if (control.Kind == "range" && (!FormNumber.TryParse(control.Value, out var rangeValue)
                 || rangeValue < control.Minimum!.Value || rangeValue > control.Maximum!.Value
                 || !control.StepAny && !FormNumber.IsStepAligned(rangeValue, control.Minimum.Value, control.Step!.Value)))
