@@ -1027,7 +1027,8 @@ public sealed class BrowserController : IDisposable
         return fragment < 0 ? url.Href : url.Href[..fragment];
     }
 
-    public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null)
+    public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null,
+        bool forceNewTab = false)
     {
         Check();
         var owner = content[id];
@@ -1041,7 +1042,7 @@ public sealed class BrowserController : IDisposable
         {
             var control = owner.Page.FormControls[index];
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
-            if (control.Disabled) { return false; }
+            if (forceNewTab || control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
             if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
@@ -1053,7 +1054,7 @@ public sealed class BrowserController : IDisposable
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
-            return NavigateLink(id, link.Url, openInNewTab: link.OpenInNewTab);
+            return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab);
         }
         return false;
     }

@@ -265,6 +265,31 @@ public sealed class DevelopmentShell : IDisposable
                             (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300));
                     if (!overTextarea) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
                     break;
+                case PointerButtonChanged { Pressed: true, Button: 2 } middle:
+                    view.PointerX = middle.X;
+                    view.PointerY = middle.Y;
+                    if (window.ActiveTab is { } middleTab
+                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } middleViewport
+                        && view.OpenSelectControl >= 0
+                        && Controller.Page(middleTab.Id) is { } middlePage
+                        && ShellChrome.PopupLayout(middlePage, view.OpenSelectControl,
+                            middleViewport, view.SelectPopupFirstOption) is { } openPopup
+                        && middle.X >= openPopup.Bounds.X && middle.X < openPopup.Bounds.X + openPopup.Bounds.Width
+                        && middle.Y >= openPopup.Bounds.Y && middle.Y < openPopup.Bounds.Y + openPopup.Bounds.Height)
+                    { break; }
+                    if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
+                    Edit(view, window, false);
+                    view.KeyboardTarget = null;
+                    if (window.ActiveTab is { } linkTab && middle.Y >= ShellChrome.Height
+                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } linkViewport
+                        && middle.X >= 0 && middle.X < linkViewport.Width
+                        && middle.Y < ShellChrome.Height + linkViewport.Height)
+                    {
+                        Controller.FocusPage(linkTab.Id);
+                        Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height,
+                            linkViewport, forceNewTab: true);
+                    }
+                    break;
                 case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
                     view.PointerX = pointer.X;
                     view.PointerY = pointer.Y;
