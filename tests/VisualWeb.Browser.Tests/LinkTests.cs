@@ -423,6 +423,8 @@ public sealed class LinkTests
         Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
         Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1,
             forceNewTab: true));
+        Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1,
+            forceNewTab: true, activateNewTab: false));
 
         Assert.Single(window.Tabs);
         Assert.Single(source.Requests);

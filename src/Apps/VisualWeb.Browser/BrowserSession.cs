@@ -136,13 +136,13 @@ public sealed class BrowserSession
         windows.Add(window);
         return window;
     }
-    public BrowserTab CreateTab(BrowserWindowId windowId)
+    public BrowserTab CreateTab(BrowserWindowId windowId, bool activate = true)
     {
         var window = Window(windowId);
         if (windows.Sum(w => w.Tabs.Count) >= Options.MaxTabs) { throw new BrowserLimitException("Tab limit exceeded."); }
         var tab = new BrowserTab(new(checked(++nextTab)), Options.MaxHistoryEntries);
         window.MutableTabs.Add(tab);
-        window.ActiveTabId = tab.Id;
+        if (activate || window.ActiveTabId is null) { window.ActiveTabId = tab.Id; }
         return tab;
     }
     public BrowserWindow Window(BrowserWindowId id) => windows.FirstOrDefault(window => window.Id == id)

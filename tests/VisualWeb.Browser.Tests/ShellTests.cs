@@ -183,6 +183,65 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void ControlClickOpensVisibleLinkInBackgroundTab(bool process)
+    {
+        using var system = new Windows();
+        var requests = new List<Uri>();
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: process ? RendererPath : null,
+            pageTransportFactory: Transport);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var sourceTab = window.ActiveTab!;
+        var sourceUrl = "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style>"
+            + "<input type=checkbox><a href='https://example.com/target' target=_blank>open target</a>");
+        shell.Controller.Navigate(sourceTab.Id, sourceUrl);
+        Wait(sourceTab);
+        var page = shell.Controller.Page(sourceTab.Id)!;
+        var checkbox = Assert.Single(page.FormControls);
+        var link = Assert.Single(page.LinkTargets);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.LCtrl, 0,
+            (ushort)SDL.Keymod.Ctrl, true, false));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(checkbox.Rect!.X + checkbox.Rect.Width / 2),
+            (float)(ShellChrome.Height + checkbox.Rect.Y + checkbox.Rect.Height / 2)));
+        Assert.False(shell.Controller.FormControlChecked(sourceTab.Id, 0));
+        Assert.Single(window.Tabs);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(link.X + link.Width / 2), (float)(ShellChrome.Height + link.Y + link.Height / 2)));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.LCtrl, 0, 0, false, false));
+        shell.Tick();
+
+        Assert.Equal(2, window.Tabs.Count);
+        Assert.Equal(sourceTab.Id, window.ActiveTabId);
+        var backgroundTab = Assert.Single(window.Tabs, tab => tab.Id != sourceTab.Id);
+        Wait(backgroundTab);
+        Assert.Equal("https://example.com/target", backgroundTab.History.Current!.Href);
+        Assert.Equal(sourceUrl, sourceTab.History.Current!.Href);
+        Assert.Equal(["https://example.com/target"], requests.Select(uri => uri.AbsoluteUri));
+
+        HttpMessageHandler Transport() => new HstsHandler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent("<!doctype html><style>*{margin:0}</style><p>target</p>",
+                    System.Text.Encoding.UTF8, "text/html"),
+            };
+        });
+        void Wait(BrowserTab tab)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void MiddleClickOpensVisibleLinkInNewActiveTab(bool process)
     {
         using var system = new Windows();

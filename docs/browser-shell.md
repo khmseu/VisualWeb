@@ -80,6 +80,7 @@ The native window title retains the same warning alongside the active page title
 | Native window close | Close that window and only its tabs |
 | Primary left click on visible anchor text | Navigate the current tab to its resolved href |
 | Middle click on visible anchor text | Open its resolved href in a new active tab, regardless of the link target |
+| Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
@@ -185,9 +186,10 @@ before returning data-only rectangles and absolute URLs; it never navigates or
 fetches. Primary left-button presses in the page region subtract the 120-logical-
 pixel chrome height. Middle-button presses open only visible anchor targets in a
 new active tab; they do not activate form controls. Both actions use the same
-browser-owned destination checks and navigation transaction. SDL window-local
-logical coordinates already match CSS pixels: pixel density scales the raster,
-not pointer coordinates. Chrome,
+browser-owned destination checks and navigation transaction. Ctrl+primary click
+opens the link in a background tab without activating page controls or chrome.
+SDL window-local logical coordinates already match CSS pixels: pixel density
+scales the raster, not pointer coordinates. Chrome,
 other buttons, releases and misses do not navigate. A frame whose viewport/scale
 does not match the current window (for example, during asynchronous resize)
 cannot activate links.

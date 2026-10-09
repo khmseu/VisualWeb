@@ -92,10 +92,10 @@ public sealed class BrowserController : IDisposable
         this.sourceFactory = sourceFactory; this.rendererFactory = rendererFactory;
         Session = new(options);
     }
-    public BrowserTab CreateTab(BrowserWindowId window)
+    public BrowserTab CreateTab(BrowserWindowId window, bool activate = true)
     {
         Check();
-        var tab = Session.CreateTab(window);
+        var tab = Session.CreateTab(window, activate);
         IPageSource? source = null;
         try
         {
@@ -948,7 +948,7 @@ public sealed class BrowserController : IDisposable
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
-        SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false)
+        SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true)
     {
         var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
@@ -969,7 +969,7 @@ public sealed class BrowserController : IDisposable
         if (openInNewTab)
         {
             var window = Session.Windows.Single(candidate => candidate.Tabs.Any(tab => tab.Id == id));
-            target = CreateTab(window.Id).Id;
+            target = CreateTab(window.Id, activateNewTab).Id;
         }
         try { Start(Session.Tab(target), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin); }
         catch
@@ -1028,7 +1028,7 @@ public sealed class BrowserController : IDisposable
     }
 
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null,
-        bool forceNewTab = false)
+        bool forceNewTab = false, bool activateNewTab = true)
     {
         Check();
         var owner = content[id];
@@ -1054,7 +1054,8 @@ public sealed class BrowserController : IDisposable
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
-            return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab);
+            return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
+                activateNewTab: activateNewTab);
         }
         return false;
     }

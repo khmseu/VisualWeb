@@ -34,6 +34,7 @@ public sealed class DevelopmentShell : IDisposable
         internal AddressEditor Editor { get; } = new();
         internal bool Editing { get; set; }
         internal bool TextInput { get; set; }
+        internal bool ControlModifier { get; set; }
         internal bool SelectingText { get; set; }
         internal bool DraggingScrollbar { get; set; }
         internal int DraggingRangeControl { get; set; } = -1;
@@ -224,6 +225,7 @@ public sealed class DevelopmentShell : IDisposable
                 case CloseRequested: Controller.CloseWindow(window.Id); break;
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
                 case FocusChanged { Focused: false }:
+                    view.ControlModifier = false;
                     Edit(view, window, false);
                     CloseSelectPopup(view);
                     view.SelectingText = false;
@@ -296,6 +298,22 @@ public sealed class DevelopmentShell : IDisposable
                     view.SelectingText = false;
                     view.DraggingScrollbar = false;
                     view.DraggingRangeControl = -1;
+                    if (view.ControlModifier)
+                    {
+                        if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
+                        Edit(view, window, false);
+                        view.KeyboardTarget = null;
+                        if (window.ActiveTab is { } modifiedLinkTab && pointer.Y >= ShellChrome.Height
+                            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } modifiedLinkViewport
+                            && pointer.X >= 0 && pointer.X < modifiedLinkViewport.Width
+                            && pointer.Y < ShellChrome.Height + modifiedLinkViewport.Height)
+                        {
+                            Controller.FocusPage(modifiedLinkTab.Id);
+                            Controller.ActivateLink(modifiedLinkTab.Id, pointer.X, pointer.Y - ShellChrome.Height,
+                                modifiedLinkViewport, forceNewTab: true, activateNewTab: false);
+                        }
+                        break;
+                    }
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
                     if (target?.Action == ChromeAction.SelectOption)
                     {
@@ -349,7 +367,10 @@ public sealed class DevelopmentShell : IDisposable
                     view.SelectingText = false;
                     Controller.EndTextSelection(releasedTab.Id);
                     break;
-                case KeyChanged { Pressed: true } key: Key(window, view, key); break;
+                case KeyChanged key:
+                    view.ControlModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Ctrl) != 0;
+                    if (key.Pressed) { Key(window, view, key); }
+                    break;
                 case TextEntered text when view.Editing && window.ActiveTab is { } tab:
                     Controller.SetAddress(tab.Id, view.Editor.Insert(text.Text, Controller.Session.Options.MaxAddressCharacters));
                     view.Dirty = true;

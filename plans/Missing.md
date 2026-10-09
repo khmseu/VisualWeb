@@ -37,7 +37,8 @@ broader page interaction is still missing:
 
 - Textual `<a href>` links support primary left-click and Tab/Shift+Tab/Enter
   navigation in shell, local and actual renderer-process paths; middle-click opens
-  the visible link in a new active tab regardless of its target. Enabled drawn
+  the visible link in a new active tab and Ctrl+primary-click opens it in a
+  background tab, regardless of its target. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
   one anchor and no page raster changes without focus. IPC v28 introduced grouped
