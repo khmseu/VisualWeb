@@ -292,6 +292,17 @@ public sealed class BrowserController : IDisposable
         return owner.PageFocused && owner.FocusedControl >= 0 && owner.Page is { } page
             && ToggleCheckable(id, owner, owner.FocusedControl, page.FormControls[owner.FocusedControl]);
     }
+    /// <summary>Activates the focused submit/reset button, or consumes activation of an inert button.</summary>
+    public bool ActivateFocusedButton(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.FocusedControl < 0 || owner.Page is not { } page) { return false; }
+        var control = page.FormControls[owner.FocusedControl];
+        if (control.Kind is not ("submit" or "button" or "reset" or "inert")) { return false; }
+        if (control.Kind != "inert") { _ = ActivateControl(id, owner, owner.FocusedControl); }
+        return true;
+    }
     public string FormControlValue(TabId id, int index)
     {
         Check();

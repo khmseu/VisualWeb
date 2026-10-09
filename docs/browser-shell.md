@@ -88,8 +88,9 @@ The native window title retains the same warning alongside the active page title
 | Home/End in a focused text/search/email/tel/url/password/date/time/month/week/number field | Move the caret to the start/end of the value |
 | Home/End in a focused textarea | Move the caret to the start/end of the current line |
 | Up/Down in a focused textarea | Move the caret between visible wrapped lines, preserving its preferred column |
-| Space in a focused checkbox toggles it; Enter in a focused text/search/email/tel/url/password/date/time/month/week/number field or on a submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
-| Enter or primary click on a focused/visible reset control | Restore the owning form's initial values and checked states without navigation or submission validation |
+| Space in a focused checkbox toggles it; Enter or Space on a focused submit control; primary click on a submit control | Submit the [simple GET form](#simple-get-forms); Enter in a textarea inserts a line |
+| Enter or Space, or primary click on a focused/visible reset control | Restore the owning form's initial values and checked states without navigation or submission validation |
+| Space on a focused inert button | No action; inert buttons never submit or navigate |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |

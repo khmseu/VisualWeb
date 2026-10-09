@@ -403,6 +403,8 @@ public sealed class DevelopmentShell : IDisposable
             { return; }
             if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
                 && Controller.ToggleFocusedCheckable(tab.Id)) { return; }
+            if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
+                && Controller.ActivateFocusedButton(tab.Id)) { return; }
             if (!control && !alt && code is SDL.Scancode.Left or SDL.Scancode.Up or SDL.Scancode.Right or SDL.Scancode.Down)
             {
                 var direction = code is SDL.Scancode.Left or SDL.Scancode.Up ? -1 : 1;

@@ -90,6 +90,8 @@ broader page interaction is still missing:
   independent line-window scrolling, plus newline-normalized GET entries. Form-level `novalidate` and a selected submit button's `formnovalidate` bypass supported constraint checks. Disabled fieldsets disable descendant controls except those within their first `legend` child; nested disabled states apply independently.
   `formaction` selects a submitter-specific base-resolved action; textarea
   `wrap=hard` applies bounded explicit-column line breaks only during submission.
+  Focused submit and reset controls activate on Enter or Space; Space on a focused
+  inert button has no submission/navigation effect.
   Form `target` and first `<base target>` fallback support `_blank` as a new active
   tab; `_self`, `_parent`, and `_top` retain current-tab behavior. A selected
   button/input submitter's `formtarget` overrides that fallback. Invalid/named

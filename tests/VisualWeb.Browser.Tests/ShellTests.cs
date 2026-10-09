@@ -136,6 +136,51 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void SpaceActivatesFocusedSubmitAndResetControls()
+    {
+        using var system = new Windows();
+        var requests = new List<Uri>();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: Transport);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "https://forms.example/form");
+        Wait();
+
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        Assert.Equal("original-edited", shell.Controller.InsertFormText(tab.Id, "-edited"));
+        Assert.True(shell.Controller.FocusControl(tab.Id, 2));
+        Key(SDL.Scancode.Space);
+        Assert.Equal("original", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.StartsWith("https://forms.example/form", tab.History.Current!.Href);
+        Assert.Single(requests);
+
+        Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+        Key(SDL.Scancode.Space);
+        Wait();
+        Assert.Equal("https://forms.example/form?q=original", tab.History.Current!.Href);
+        Assert.Equal("https://forms.example/form?q=original", requests[^1].AbsoluteUri);
+
+        HttpMessageHandler Transport() => new HstsHandler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            var html = request.RequestUri!.Query.Length == 0
+                ? "<!doctype html><style>*{margin:0}input,button{display:block;height:20px}</style>"
+                    + "<form><input name=q value=original><button type=submit>Save</button><button type=reset>Reset</button></form>"
+                : "<!doctype html><style>*{margin:0}</style><title>Saved</title>done";
+            return new(HttpStatusCode.OK) { Content = new StringContent(html, System.Text.Encoding.UTF8, "text/html") };
+        });
+        void Key(SDL.Scancode scan) => shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void ArrowKeysMoveWithinRadioGroupAndSpaceSelectsFocusedRadio()
     {
         using var system = new Windows();
@@ -485,6 +530,13 @@ public sealed class ShellTests
             shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
         }
         shell.Tick();
+        Assert.Null(tab.Error);
+        Assert.False(tab.IsLoading);
+        Assert.Same(page, shell.Controller.Page(tab.Id));
+        Assert.Equal(initialUrl, tab.History.Current!.Href);
+
+        Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Space, 0, 0, true, false));
         Assert.Null(tab.Error);
         Assert.False(tab.IsLoading);
         Assert.Same(page, shell.Controller.Page(tab.Id));
