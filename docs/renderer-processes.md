@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v26
+## Private stream protocol v27
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound | Value |
 | --- | ---: |
-| Protocol version | 26, explicitly present; v1 through v25 rejected |
+| Protocol version | 27, explicitly present; v1 through v26 rejected |
 | Metadata bytes | 32 MiB |
 | JSON nesting | 16 |
 | Decoded HTML UTF-16 characters | 4 Mi |
@@ -132,7 +132,7 @@ the `textarea` kind advance it to v11; minlength metadata advances it to v12;
 bounded `pattern` metadata advances it to v13; editable `url` inputs advance it
 to v14; `email` inputs advance it to v15; checked-state metadata for checkbox
 inputs advances it to v16; radio inputs advance it to v17; number bounds advance
-it to v18; number step-grid metadata advances it to v19; range controls advance it to v20; reset-control metadata advances it to v21; bounded single-select option metadata is included in v24; the bounded `date` control kind and strict ISO date values are added in v25; bounded `time` controls and strict time values are added in v26.
+it to v18; number step-grid metadata advances it to v19; range controls advance it to v20; reset-control metadata advances it to v21; bounded single-select option metadata is included in v24; the bounded `date` control kind and strict ISO date values are added in v25; bounded `time` controls and strict time values are added in v26; bounded `month` controls and strict month values are added in v27.
 Requests have increasing positive IDs;
 `render` carries decoded HTML, URL, HTTP status/diagnostics, the browser-fetched
 linked stylesheet collection (request URL plus decoded CSS text only) and CSS viewport/
@@ -171,7 +171,7 @@ error, or an empty action plus a nonempty renderer diagnostic for an
 unsupported form (method/enctype/target/novalidate/accept-charset/base/control
 cases). A control is `{Form, Kind, Name, Value, Label, Pattern, Disabled, ReadOnly,
 Required, MinLength, MaxLength, BeforeLink, Rect, Checked, Minimum, Maximum, Step,
-StepAny}` with kind `text`/`search`/`email`/`tel`/`url`/`date`/`time`/`number`/`range`/`checkbox`/`radio`/`textarea`/`hidden`/`submit`/`reset`/`button`, a form index or -1, a label for submit/reset controls and button text, `Pattern` null when absent, `Checked` true only for a checked checkbox or radio; finite number/range-only `Minimum` and `Maximum` (null for number unless specified; required for range), positive `Step` (default 1, or null when `StepAny`); `StepAny` disables grid validation; range values are serialized finite, clamped and step-aligned. A `date` value, when nonempty, must use bounded `YYYY-MM-DD` Gregorian syntax for years 0001–9999; a `time` value, when nonempty, must use strict `HH:mm`, `HH:mm:ss` or `HH:mm:ss.fraction` syntax (one to three fractional digits, no leap second). A `select` control also carries a required `Options` array of `{Value, Label, Disabled, Selected}` records; only one option can be selected, its value must match the control value, and aggregate option count is bounded. `MinLength` and `MaxLength` -1
+StepAny}` with kind `text`/`search`/`email`/`tel`/`url`/`date`/`time`/`month`/`number`/`range`/`checkbox`/`radio`/`textarea`/`hidden`/`submit`/`reset`/`button`, a form index or -1, a label for submit/reset controls and button text, `Pattern` null when absent, `Checked` true only for a checked checkbox or radio; finite number/range-only `Minimum` and `Maximum` (null for number unless specified; required for range), positive `Step` (default 1, or null when `StepAny`); `StepAny` disables grid validation; range values are serialized finite, clamped and step-aligned. A `date` value, when nonempty, must use bounded `YYYY-MM-DD` Gregorian syntax for years 0001–9999; a `time` value, when nonempty, must use strict `HH:mm`, `HH:mm:ss` or `HH:mm:ss.fraction` syntax (one to three fractional digits, no leap second); a `month` value, when nonempty, must use a positive year with at least four ASCII digits and a month from `01` through `12`. A `select` control also carries a required `Options` array of `{Value, Label, Disabled, Selected}` records; only one option can be selected, its value must match the control value, and aggregate option count is bounded. `MinLength` and `MaxLength` -1
 when absent, and `BeforeLink` in `[0, LinkTargets.Count]` giving merged
 tree-order traversal against link groups. Visible controls carry one
 viewport-contained CSS-pixel border box; hidden controls never have one.

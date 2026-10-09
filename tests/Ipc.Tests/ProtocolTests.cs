@@ -46,13 +46,15 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(26, RendererProtocol.Version);
+        Assert.Equal(27, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 23 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 23 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 24 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 24 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 25 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 25 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 26 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 26 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 22 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 22 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 21 }, 0));
@@ -132,6 +134,14 @@ public sealed class ProtocolTests
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "time", Value = "23:59:59.999", MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
         }, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "month", Value = "2024-02", MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+        }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "month", Value = "2024-13", MinLength = -1, MaxLength = -1, Rect = null }]
+        }, 16));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "time", Value = "24:00", MinLength = -1, MaxLength = -1, Rect = null }]
@@ -254,6 +264,20 @@ public sealed class ProtocolTests
     [InlineData("", false)]
     public void TimeValueValidationUsesStrictBoundedHtmlSyntax(string value, bool expected) =>
         Assert.Equal(expected, FormTime.IsValid(value));
+
+    [Theory]
+    [InlineData("0001-01", true)]
+    [InlineData("2024-02", true)]
+    [InlineData("10000-12", true)]
+    [InlineData("00001-01", true)]
+    [InlineData("0000-01", false)]
+    [InlineData("2024-00", false)]
+    [InlineData("2024-13", false)]
+    [InlineData("2024-2", false)]
+    [InlineData("2024-02-01", false)]
+    [InlineData("24-02", false)]
+    public void MonthValueValidationUsesStrictHtmlSyntax(string value, bool expected) =>
+        Assert.Equal(expected, FormMonth.IsValid(value));
 
     [Theory]
     [MemberData(nameof(InvalidFormCases))]
@@ -463,7 +487,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(26, RendererProtocol.Version);
+        Assert.Equal(27, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
