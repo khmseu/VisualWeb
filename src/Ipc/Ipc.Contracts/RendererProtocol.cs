@@ -21,7 +21,8 @@ public sealed record PageLinkRect(
 
 /// <summary>One textual anchor with ordered visible rectangles, an absolute destination and bounded new-tab metadata; no element identity.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-target">hyperlink target</see>.
-/// The browser implements the <c>_blank</c> keyword by opening a tab in the source window; named targets are deferred.</remarks>
+/// The browser maps <c>_blank</c> to a new tab and <c>_self</c>, <c>_parent</c>, and <c>_top</c> to the current
+/// tab because nested browsing contexts are not implemented; named targets are rejected by the renderer.</remarks>
 [method: JsonConstructor]
 public sealed record PageLinkTarget(
     [property: JsonRequired] IReadOnlyList<PageLinkRect> Rects,

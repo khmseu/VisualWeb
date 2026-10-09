@@ -267,6 +267,54 @@ public sealed class LinkTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReservedHyperlinkTargetsAreRecognizedAcrossRenderers(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var page = await renderer.RenderAsync(Document("""
+            <!doctype html><base target="_blank"><style>*{margin:0}</style>
+            <div><a href="/inherited">inherited</a></div><div><a href="/self" target=" _SELF ">self</a></div>
+            <div><a href="/parent" target="_parent">parent</a></div><div><a href="/top" target="_TOP">top</a></div>
+            """), new(160, 300, 1), Cancellation);
+
+        Assert.Equal([true, false, false, false], page.LinkTargets.Select(link => link.OpenInNewTab));
+    }
+
+    [Fact]
+    public async Task UnsupportedNamedHyperlinkTargetFailsInsteadOfSilentlyUsingCurrentTab()
+    {
+        using var renderer = new StaticPageRenderer(FontPath, 100000);
+        var exception = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(Document(
+            "<!doctype html><style>*{margin:0}</style><a href='/next' target='other-window'>open</a>"),
+            new(100, 50, 1), Cancellation));
+        Assert.Contains("named hyperlink target", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("_self")]
+    [InlineData("_parent")]
+    [InlineData("_top")]
+    public void ReservedCurrentContextTargetsNavigateInTheSameTab(string target)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        controller.Navigate(tab.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document(
+            $"<!doctype html><style>*{{margin:0}}</style><a href='/next' target='{target}'>open</a>"));
+        controller.Pump(_ => new(100, 50, 1));
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+
+        Assert.False(link.OpenInNewTab);
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1));
+        Assert.Single(window.Tabs);
+        Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+    }
+
+    [Theory]
     [InlineData("../next", "https://example.com/next")]
     [InlineData("//other.example/path", "https://other.example/path")]
     public void SupportedDestinationsUseNormalNavigation(string href, string absolute)

@@ -46,8 +46,9 @@ broader page interaction is still missing:
   links update URL-only history and repaint the retained document without a
   resource load; only rendered element IDs and empty-fragment top scrolling are
   supported. `_blank` opens an active tab in the source window through the
-  existing broker policy; named targets, `<base target>`, and full
-  browsing-context selection remain unsupported. Successful document commits/repaints clear the frame-local
+  existing broker policy; `_self`, `_parent`, and `_top` use the current tab,
+  and the first `<base target>` supplies fallback for links. Named browsing
+  contexts remain unsupported and fail visibly. Successful document commits/repaints clear the frame-local
   anchor focus; failed navigation preserves it. General hit-testing, DOM
   focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).

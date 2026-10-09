@@ -204,8 +204,11 @@ retained document updates the URL and restores fragment scrolling without a load
 cross-document traversal still reloads.
 The hyperlink `target="_blank"` keyword opens a new active tab in the source
 window for pointer or focused-Enter activation; source-document scheme and HTTPS
-downgrade checks still apply to the navigation. Named targets, `_parent`/
-`_top` semantics, `<base target>`, `tabindex`, DOM focus APIs, offscreen-anchor
+downgrade checks still apply to the navigation. `_self`, `_parent`, and `_top`
+resolve to the current tab because nested browsing contexts are absent. The first
+`<base target>` supplies the fallback for links without their own target, for
+these same keywords. Named browsing contexts are rejected visibly rather than
+silently navigated in the current tab. `tabindex`, DOM focus APIs, offscreen-anchor
 traversal, downloads, `<base href>` semantics, image/area links, CSS link
 decoration, page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML

@@ -77,7 +77,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url, state.Source.Stylesheets);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
-        var (links, controlGeometry, textTargets) = CollectLinks(rendered.Layout, page.Url,
+        var (links, controlGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
             Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, links.Count,
             rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken);
@@ -102,8 +102,9 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
         IReadOnlyList<PageTextTarget> TextTargets)
-        CollectLinks(LayoutResult layout, BrowserUrl url, double scrollY, CancellationToken cancellationToken)
+        CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY, CancellationToken cancellationToken)
     {
+        var baseTarget = FindBaseTarget(document, cancellationToken);
         var links = new List<PageLinkTarget>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var anchors = new Dictionary<DomElement, List<PageLinkRect>>();
@@ -182,7 +183,8 @@ public sealed class StaticPageRenderer : IPageRenderer
                             target = [];
                             anchors.Add(anchor, target);
                             lineNewAnchors.Add(anchor);
-                            links.Add(new(target.AsReadOnly(), destination, IsBlankTarget(anchor.GetAttribute("target"))));
+                            links.Add(new(target.AsReadOnly(), destination,
+                                IsBlankTarget(anchor.GetAttribute("target"), baseTarget)));
                         }
                         if (target.Count >= RendererProtocol.MaxLinkRects)
                         { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
@@ -208,12 +210,28 @@ public sealed class StaticPageRenderer : IPageRenderer
             }
         }
     }
-    private static bool IsBlankTarget(string? target)
+    private static string? FindBaseTarget(DomDocument document, CancellationToken cancellationToken)
     {
-        if (target is null) { return false; }
-        var name = target.Trim(AsciiWhitespace);
-        return name.Length == 6 && name.All(character => character <= 0x7f)
-            && name.Equals("_blank", StringComparison.OrdinalIgnoreCase);
+        foreach (var element in document.Descendants().OfType<DomElement>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.LocalName == "base" && element.GetAttribute("target") is { } target) { return target; }
+        }
+        return null;
+    }
+
+    private static bool IsBlankTarget(string? target, string? baseTarget)
+    {
+        var name = (target ?? baseTarget)?.Trim(AsciiWhitespace);
+        if (string.IsNullOrEmpty(name)) { return false; }
+        if (name.All(character => character <= 0x7f))
+        {
+            if (name.Equals("_blank", StringComparison.OrdinalIgnoreCase)) { return true; }
+            if (name.Equals("_self", StringComparison.OrdinalIgnoreCase)
+                || name.Equals("_parent", StringComparison.OrdinalIgnoreCase)
+                || name.Equals("_top", StringComparison.OrdinalIgnoreCase)) { return false; }
+        }
+        throw new PageNavigationException("Unsupported named hyperlink target.");
     }
 
     private static IReadOnlyList<PageFragmentTarget> CollectFragmentTargets(LayoutResult layout, double scrollHeight,

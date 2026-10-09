@@ -27,7 +27,9 @@ order, using run widths and line heights, then translates/clips to visible CSS
 viewport space. URLs resolve against the final source URL before returning
 data-only IPC-contract targets. Each anchor is one target containing all its
 visible rectangles; groups follow first-fragment order, without exposing element
-identity. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
+identity. `_blank` opens a new tab; `_self`, `_parent`, and `_top` use the current
+tab, including the first `<base target>` fallback. Unsupported named contexts
+fail visibly. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
 text fragments with clipped rectangles for browser-owned selection; it exposes no
 DOM identity. The shared IPC contract caps 4096 anchors, 64 rectangles per anchor,
 8192 characters per URL and 1 MiB serialized metadata locally and in workers.
