@@ -45,7 +45,7 @@ controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallba
 expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, and finite number/range bounds and step metadata, merged
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain,
-`novalidate`, non-UTF-8 `accept-charset`, unsupported `form=`
+non-UTF-8 `accept-charset`, unsupported `form=`
 owners on fieldset/output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern/dirname,
 listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
 when that form is submitted. Supported controls resolve `form=` to the first
@@ -60,11 +60,11 @@ new active tab. Selected button/input `formtarget` overrides the form target;
 an empty override selects the current tab. Named/non-keyword targets become
 separate bounded target errors; an invalid submitter affects only its own
 activation, and a valid override can replace an invalid form/base target.
-IPC v34 carries only current/new-tab flags and diagnostics, never raw context names.
+IPC v35 carries form-level `novalidate` state alongside current/new-tab flags and diagnostics, never raw context names.
 Browser-discovered linked stylesheets also resolve against the
 first `<base href>`; invalid, `data:`, or `javascript:` values fall back to the
 document URL, and cross-origin requests remain blocked by the browser broker.
-Selected submit buttons may carry a resolved `formaction` override or `formnovalidate` flag. Invalid override URLs become submitter-specific errors. These metadata let the browser select the action or skip constraint validation for that submission; they do not bypass navigation or origin policy. The renderer never submits or navigates.
+Forms may carry a `novalidate` flag, and selected submit buttons may carry a resolved `formaction` override or `formnovalidate` flag. Invalid override URLs become submitter-specific errors. These metadata let the browser select the action or skip supported constraint validation for that submission; they do not bypass navigation or origin policy. The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.
 Each new construction gets a fresh opaque origin (including reused data/file URL

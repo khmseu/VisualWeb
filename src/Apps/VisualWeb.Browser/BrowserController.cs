@@ -738,7 +738,7 @@ public sealed class BrowserController : IDisposable
         }
         Changed?.Invoke(id);
     }
-    /// <summary>Validates and submits one form as a same-tab GET through <see cref="Navigate"/> (HSTS, redirects, origin commit).</summary>
+    /// <summary>Validates and submits one form as a bounded GET through <see cref="Navigate"/> (HSTS, redirects, origin commit).</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
     /// submission algorithm</see> and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#interactively-validate-the-constraints">interactive
     /// validation</see> (required, URL, pattern, minlength, and maxlength checks). Failures throw before any request.</remarks>
@@ -769,7 +769,7 @@ public sealed class BrowserController : IDisposable
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
         { throw new PageNavigationException($"Form submission encoding {encoding} is unsupported; only UTF-8 is implemented."); }
         var normalizedEmailValues = new Dictionary<int, string>();
-        var skipValidation = submitter >= 0 && page.FormControls[submitter].FormNoValidate;
+        var skipValidation = form.NoValidate || submitter >= 0 && page.FormControls[submitter].FormNoValidate;
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];

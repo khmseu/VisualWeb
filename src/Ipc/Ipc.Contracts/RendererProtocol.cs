@@ -62,11 +62,13 @@ public sealed record PageTextTarget(
 
 /// <summary>One parsed form owner: an absolute GET action, or a visible unsupported-semantics diagnostic.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
-/// submission algorithm</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formnovalidate">formnovalidate</see> and
+/// submission algorithm</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-novalidate">novalidate</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formnovalidate">formnovalidate</see> and
 /// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formaction">formaction</see>;
 /// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-attributes">submission targets</see>.
 /// Only the bounded GET/urlencoded subset is representable; Error is set
-/// (and Action empty) for anything else. TargetError is separate so a selected formtarget can override it.
+/// (and Action empty) for anything else. TargetError is separate so a selected formtarget can override it;
+/// NoValidate carries the form's validation-bypass flag, without navigation-policy privileges.
 /// No element identity or script capability crosses IPC.</remarks>
 public sealed record PageForm(
     [property: JsonRequired] string Action,
@@ -76,6 +78,8 @@ public sealed record PageForm(
     public bool OpenInNewTab { get; init; }
     [JsonRequired]
     public string? TargetError { get; init; }
+    [JsonRequired]
+    public bool NoValidate { get; init; }
 }
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
@@ -363,7 +367,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 34;
+    public const int Version = 35;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;

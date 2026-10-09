@@ -47,7 +47,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(34, RendererProtocol.Version);
+        Assert.Equal(35, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 34 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 34 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 33 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 33 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 32 }, 0));
@@ -328,10 +330,13 @@ public sealed class ProtocolTests
         var formJson = JsonSerializer.Serialize(FormFrame.Forms![0]);
         Assert.Contains("\"OpenInNewTab\":false", formJson, StringComparison.Ordinal);
         Assert.Contains("\"TargetError\":null", formJson, StringComparison.Ordinal);
+        Assert.Contains("\"NoValidate\":false", formJson, StringComparison.Ordinal);
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
             formJson.Replace("\"OpenInNewTab\":false,", "", StringComparison.Ordinal)));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
             formJson.Replace(",\"TargetError\":null", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
+            formJson.Replace(",\"NoValidate\":false", "", StringComparison.Ordinal)));
         var controlJson = JsonSerializer.Serialize(FormFrame.FormControls![0]);
         Assert.Contains("\"FormTargetOpenInNewTab\":null", controlJson, StringComparison.Ordinal);
         Assert.Contains("\"FormTargetError\":null", controlJson, StringComparison.Ordinal);
@@ -346,7 +351,7 @@ public sealed class ProtocolTests
     {
         var frame = FormFrame with
         {
-            Forms = [new("https://example.com/search", null) { OpenInNewTab = true },
+            Forms = [new("https://example.com/search", null) { OpenInNewTab = true, NoValidate = true },
                 new("https://example.com/search", null) { TargetError = "Unsupported form target." }],
             FormControls =
             [
@@ -659,7 +664,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(34, RendererProtocol.Version);
+        Assert.Equal(35, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

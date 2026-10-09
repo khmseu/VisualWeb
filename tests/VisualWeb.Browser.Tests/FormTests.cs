@@ -661,7 +661,6 @@ public sealed class FormTests
     [InlineData("<form method=post><input name=q></form>", "method")]
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
     [InlineData("<form enctype=text/plain><input name=q></form>", "enctype")]
-    [InlineData("<form novalidate><input name=q></form>", "novalidate")]
     [InlineData("<form accept-charset=iso-8859-1><input name=q></form>", "accept-charset")]
     [InlineData("<form action='javascript:alert(1)'><input name=q></form>", "scheme")]
     [InlineData("<form action='ftp://example.com/'><input name=q></form>", "scheme")]
@@ -1240,6 +1239,35 @@ public sealed class FormTests
         Assert.Contains(expected, Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FormNoValidateBypassesSupportedConstraintValidation(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form novalidate><input type=email name=contact required value=invalid><button>Save</button></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        Assert.True(Assert.Single(page.Forms).NoValidate);
+
+        using var harness = new Harness("<form action='/save' novalidate><input type=email name=contact required value=invalid><button>Save</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/save?contact=invalid", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void FormNoValidateDoesNotBypassCrossOriginPolicy()
+    {
+        using var harness = new Harness("<form action='https://other.example/save' novalidate><input name=secret value=private><button>Send</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Contains("Cross-origin", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+    }
+
     [Fact]
     public void SubmitterFormNoValidateBypassesConstraintValidationOnlyForThatSubmission()
     {
@@ -1333,7 +1361,6 @@ public sealed class FormTests
     [InlineData("<form method=post><input name=q></form>", "method")]
     [InlineData("<form target=named><input name=q></form>", "target")]
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
-    [InlineData("<form novalidate><input name=q></form>", "novalidate")]
     [InlineData("<form><input name=q required></form>", "required")]
     [InlineData("<form action='http://[bad'><input name=q></form>", "action")]
     public void UnsupportedOrInvalidFormsFailVisiblyWithoutNavigation(string body, string expected)

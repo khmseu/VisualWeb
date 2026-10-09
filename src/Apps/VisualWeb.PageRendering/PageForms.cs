@@ -28,6 +28,7 @@ internal static class PageForms
         var errors = new List<string?>();
         var actions = new List<string>();
         var targets = new List<(bool OpenInNewTab, string? Error)>();
+        var noValidate = new List<bool>();
         var controls = new List<PageFormControl>();
         var elements = document.Descendants().OfType<DomElement>().ToList();
         var baseTarget = BaseTarget(elements, cancellationToken);
@@ -48,6 +49,7 @@ internal static class PageForms
             formIndex.Add(element, formIndex.Count);
             actions.Add(action);
             targets.Add(Target(element.GetAttribute("target") ?? baseTarget, "target"));
+            noValidate.Add(element.GetAttribute("novalidate") is not null);
             errors.Add(error);
         }
         var lastLink = 0;
@@ -252,6 +254,7 @@ internal static class PageForms
         {
             OpenInNewTab = targets[i].OpenInNewTab,
             TargetError = targets[i].Error,
+            NoValidate = noValidate[i],
         }).ToArray();
         var result = controls.ToArray();
         try { RendererProtocol.ValidateForms(forms, result, linkCount, width, height); }
@@ -272,8 +275,6 @@ internal static class PageForms
         if (form.GetAttribute("enctype") is { } enctype && !enctype.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
             && (enctype.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase) || enctype.Equals("text/plain", StringComparison.OrdinalIgnoreCase)))
         { return ("", $"Unsupported form enctype: {enctype}."); }
-        if (form.GetAttribute("novalidate") is not null)
-        { return ("", "Unsupported form novalidate: constraint validation cannot be bypassed in this subset."); }
         if (form.GetAttribute("accept-charset") is { } charset
             && !charset.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries)
                 .All(label => Utf8Labels.Contains(label.ToLowerInvariant())))
