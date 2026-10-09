@@ -104,7 +104,7 @@ broader page interaction is still missing:
   missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/reset,
   broader textarea behavior (`dirname` remains unsupported),
   full constraint-validation UI and semantics, submitter overrides other than
-  `formaction`/`formtarget`/`formnovalidate`, form events/scripted submission, unsupported `form=` ownership on fieldsets/output/object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
+  `formaction`/`formtarget`/`formnovalidate`, form events/scripted submission, unsupported `form=` ownership on output/object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
   encodings. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
 - A bounded browser-owned selection supports mouse drag across visible non-link

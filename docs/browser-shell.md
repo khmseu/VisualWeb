@@ -358,14 +358,14 @@ Supported controls with a `form` attribute use the first element in tree order
 with the exact matching `id` when that element is a `<form>`; otherwise they
 have no owner and do not fall back to an ancestor. Controls without `form` use
 their nearest ancestor form. Associated controls are submitted in document
-tree order, including controls before or outside the form element. Descendants
+tree order, including controls before or outside the form element. A fieldset's `form=` owner does not transfer its descendant controls; each control keeps its own owner. Descendants
 of disabled fieldsets are disabled except controls inside each fieldset's first
 `legend` child; the inherited state prevents focus, validation and successful
 submission, and nested fieldsets apply independently.
 
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target
-(including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
+(including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
 `datalist` controls, invalid/unsupported action schemes,

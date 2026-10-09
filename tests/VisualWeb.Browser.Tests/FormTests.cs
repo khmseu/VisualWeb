@@ -672,7 +672,6 @@ public sealed class FormTests
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
-    [InlineData("<form id=owner></form><fieldset form=owner></fieldset>", "fieldset")]
     [InlineData("<form><select multiple name=q><option>x</option></select></form>", "select multiple")]
     [InlineData("<form><select size=2 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=999999999999999999999 name=q><option>x</option></select></form>", "display size")]
@@ -1236,6 +1235,25 @@ public sealed class FormTests
         var page = await renderer.RenderAsync(Document("<form>" + body + "</form>"), new(200, 400, 1), Cancellation);
 
         Assert.Contains(expected, Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FieldsetFormOwnerDoesNotTransferItsDescendantControls(bool process)
+    {
+        const string body = "<style>fieldset{display:block}</style><form id=owner action='/save'>"
+            + "<input name=inside value=i><button>Save</button></form>"
+            + "<fieldset form=owner><input name=outside value=o></fieldset>";
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document(body), new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        Assert.Equal([0, 0, -1], page.FormControls.Select(control => control.Form));
+
+        using var harness = new Harness(body);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/save?inside=i", harness.Source.Requests[^1].Url.Href);
     }
 
     [Theory]
