@@ -62,6 +62,65 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsPasswordControlsAndConstraints(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""<form><input type=password name=secret value=seed minlength=4 maxlength=12 pattern="[a-z]+" required></form>"""),
+            new(200, 400, 1), Cancellation);
+
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("password", control.Kind);
+        Assert.Equal("seed", control.Value);
+        Assert.Equal(4, control.MinLength);
+        Assert.Equal(12, control.MaxLength);
+        Assert.Equal("[a-z]+", control.Pattern);
+        Assert.True(control.Required);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Fact]
+    public void PasswordFieldSupportsMaskedEditingAndSameTabGetSubmission()
+    {
+        using var harness = new Harness("<form action='/login'><input type=password name=secret value=initial maxlength=16><button>Sign in</button></form>");
+        var tab = harness.Tab.Id;
+
+        Assert.False(harness.Controller.EditingFormControl(tab));
+        Assert.True(harness.Controller.FocusControl(tab, 0));
+        Assert.True(harness.Controller.EditingFormControl(tab));
+        harness.Controller.SelectAllFormControl(tab);
+        Assert.Equal("s3cret", harness.Controller.InsertFormText(tab, "s3cret"));
+        Assert.True(harness.Controller.ActivateFocusedLink(tab, harness.Viewport));
+
+        Assert.Equal("https://example.com/login?secret=s3cret", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void PasswordFieldEnforcesEditedLengthAndPatternConstraints()
+    {
+        using (var length = new Harness("<form><input type=password name=secret value=seed minlength=5></form>"))
+        {
+            Assert.True(length.Controller.FocusControl(length.Tab.Id, 0));
+            length.Controller.SelectAllFormControl(length.Tab.Id);
+            length.Controller.InsertFormText(length.Tab.Id, "pass");
+            var error = Assert.Throws<PageNavigationException>(() => length.Controller.ActivateFocusedLink(length.Tab.Id));
+            Assert.Contains("minlength", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(length.Source.Requests);
+        }
+
+        using (var pattern = new Harness("<form><input type=password name=secret value=seed pattern=\"[a-z]+\"></form>"))
+        {
+            Assert.True(pattern.Controller.FocusControl(pattern.Tab.Id, 0));
+            pattern.Controller.SelectAllFormControl(pattern.Tab.Id);
+            pattern.Controller.InsertFormText(pattern.Tab.Id, "abc1");
+            var error = Assert.Throws<PageNavigationException>(() => pattern.Controller.ActivateFocusedLink(pattern.Tab.Id));
+            Assert.Contains("pattern", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(pattern.Source.Requests);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererReportsInputAndButtonResetControls(bool process)
     {
         using var renderer = Renderer(process);
@@ -298,7 +357,6 @@ public sealed class FormTests
     [InlineData("<form><button formtarget=_blank>x</button></form>", "formtarget")]
     [InlineData("<form><input type=submit formnovalidate></form>", "formnovalidate")]
     [InlineData("<form><input type=submit formenctype=text/plain></form>", "formenctype")]
-    [InlineData("<form><input type=password name=c style=display:none></form>", "password")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]

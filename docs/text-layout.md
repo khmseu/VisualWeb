@@ -131,7 +131,7 @@ explicitly or those styles overridden.
 - Margin collapse, floats, positioning, inline-block, decorated inline boxes
   (including backgrounds), tables, ruby, lists/markers, replaced elements,
   general controls, images/media/iframes and specialized element layout.
-  The bounded forms subset lays out `input` text/search/email/tel/url/number/range/checkbox/radio/submit,
+  The bounded forms subset lays out `input` text/search/email/tel/url/password/number/range/checkbox/radio/submit,
   `textarea`, and `button` controls through finite inline-block fallbacks; this is
   a layout accommodation, not complete replaced-element sizing. Inputs ignore
   children, and author styles may size supported controls within limits. Other

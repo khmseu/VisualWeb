@@ -134,6 +134,10 @@ public sealed class ProtocolTests
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = 10, Maximum = -1, Step = 1, MinLength = -1, MaxLength = -1, Rect = null }]
         }, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "password", Pattern = "[a-z]+", Rect = null }]
+        }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "text", Minimum = 0, MinLength = -1, MaxLength = -1, Rect = null }]
@@ -210,7 +214,7 @@ public sealed class ProtocolTests
             7 => FormFrame with { FormControls = Enumerable.Repeat(control with { Rect = null }, 1025).ToArray() },
             8 => FormFrame with { FormControls = [control with { Form = 2 }] },
             9 => FormFrame with { FormControls = [control with { Form = -2 }] },
-            10 => FormFrame with { FormControls = [control with { Kind = "password" }] },
+            10 => FormFrame with { FormControls = [control with { Kind = "select" }] },
             11 => FormFrame with { FormControls = [control with { Name = new string('n', 8193) }] },
             12 => FormFrame with { FormControls = [control with { Value = new string('v', 8193) }] },
             13 => FormFrame with { FormControls = [control with { Label = "x" }] },

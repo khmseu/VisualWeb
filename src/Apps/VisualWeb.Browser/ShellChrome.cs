@@ -1,3 +1,4 @@
+using System.Text;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Paint;
@@ -51,6 +52,22 @@ public sealed class ShellChrome : IDisposable
         if (Math.Ceiling(css * density) != physical) { throw new ArgumentOutOfRangeException(nameof(density), "Pixel density cannot represent the surface viewport."); }
         return css;
     }
+    private static string PasswordText(string value, int caret)
+    {
+        var length = ScalarCount(value);
+        var masked = new string('*', length);
+        if (caret < 0) { return masked; }
+        caret = Math.Clamp(caret, 0, value.Length);
+        return masked.Insert(ScalarCount(value.AsSpan(0, caret)), "|");
+    }
+
+    private static int ScalarCount(ReadOnlySpan<char> text)
+    {
+        var count = 0;
+        foreach (var _ in text.EnumerateRunes()) { count++; }
+        return count;
+    }
+
     internal IReadOnlyList<TextareaVisualLine> WrapTextarea(string value, double availableWidth)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -258,6 +275,8 @@ public sealed class ShellChrome : IDisposable
                     control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
                 var text = control.Kind is "submit" or "button" or "reset" ? control.Label
+                    : control.Kind == "password" ? PasswordText(forms.Values[index],
+                        index == forms.Focused && !forms.SelectAll ? forms.Caret : -1)
                     : index == forms.Focused && !forms.SelectAll && forms.Caret >= 0
                         ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
                     : forms.Values[index];

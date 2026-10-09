@@ -271,7 +271,6 @@ public sealed class LayoutTests
     [InlineData("<img>", "")]
     [InlineData("<input>", "")]
     [InlineData("<button>x</button>", "")]
-    [InlineData("<input type=password>", "input{display:block}")]
     [InlineData("<input type=hidden>", "input{display:block}")]
     [InlineData("<ul><li>x</li></ul>", "")]
     public void DeferredAlgorithmsNeverReturnApproximateGeometry(string html, string css)
@@ -283,6 +282,7 @@ public sealed class LayoutTests
     [Theory]
     [InlineData("")]
     [InlineData(" type=search")]
+    [InlineData(" type=password")]
     [InlineData(" type=SUBMIT")]
     [InlineData(" type=reset")]
     [InlineData(" type=bogus")]

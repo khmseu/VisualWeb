@@ -263,13 +263,13 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
-    /// <summary>Whether committed text should be routed to the focused page text field.</summary>
+    /// <summary>Whether committed text should be routed to the focused editable text or password field.</summary>
     public bool EditingFormControl(TabId id)
     {
         Check();
         var owner = content[id];
         return owner.PageFocused && owner.Page is { } page && owner.FocusedControl >= 0
-            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "number" or "textarea", ReadOnly: false, Disabled: false };
+            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea", ReadOnly: false, Disabled: false };
     }
     public bool IsMultilineFormControl(TabId id)
     {
@@ -362,12 +362,12 @@ public sealed class BrowserController : IDisposable
         editor.Reset(value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
         owner.Dirty.Add(index);
     }
-    /// <summary>UTF-16 caret of the focused text field, or -1.</summary>
+    /// <summary>UTF-16 caret of the focused editable field, or -1.</summary>
     public int FormControlCaret(TabId id)
     {
         Check();
         var owner = content[id];
-        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "number" or "textarea"
+        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
     public int TextareaFirstLine(TabId id, int index)
@@ -653,13 +653,13 @@ public sealed class BrowserController : IDisposable
             return true;
         }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
-        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number")) { return false; }
+        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
         {
             if (controls[candidate].Form == control.Form && controls[candidate].Kind is "submit" or "button")
             { return !controls[candidate].Disabled && Submit(id, owner, control.Form, candidate); }
         }
-        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "number") > 1) { return false; }
+        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number") > 1) { return false; }
         return Submit(id, owner, control.Form, -1);
     }
     private void ResetForm(TabId id, Content owner, int formIndex)
@@ -702,7 +702,7 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "number" or "range" or "textarea" or "checkbox" or "radio") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "range" or "textarea" or "checkbox" or "radio") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
             if (control.Required && (control.Kind == "checkbox" ? !isChecked
@@ -860,7 +860,7 @@ public sealed class BrowserController : IDisposable
             if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
             if (control.Kind == "range") { SetRangeFromPointer(id, index, x); return true; }
-            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "number" or "textarea";
+            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {

@@ -33,6 +33,42 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void PasswordOverlayDoesNotRevealFieldValue()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style><form><input type=password value=secret></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        var control = Assert.Single(page.FormControls);
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var first = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["secret"], 0, 6)).Pixels;
+        var second = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["hidden"], 0, 6)).Pixels;
+        var unfocusedSecret = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["secret"], -1, -1)).Pixels;
+        var unfocusedHidden = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["hidden"], -1, -1)).Pixels;
+        var oneScalar = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["a"], -1, -1)).Pixels;
+        var supplementaryScalar = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["💩"], -1, -1)).Pixels;
+
+        Assert.Equal("password", control.Kind);
+        Assert.Equal(first, second);
+        Assert.Equal(unfocusedSecret, unfocusedHidden);
+        Assert.Equal(oneScalar, supplementaryScalar);
+    }
+
+    [Fact]
     public void EnterActivatesFocusedResetAndRestoresShellOwnedFormState()
     {
         using var system = new Windows();
