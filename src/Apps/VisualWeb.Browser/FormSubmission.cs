@@ -45,6 +45,32 @@ public static class FormSubmission
         }
     }
 
+    /// <summary>Applies the bounded textarea hard-wrap transformation using Unicode scalar columns.</summary>
+    internal static string HardWrapTextarea(string value, int columns)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (columns is < 1 or > 128) { throw new ArgumentOutOfRangeException(nameof(columns)); }
+        var output = new StringBuilder(value.Length);
+        var lineLength = 0;
+        foreach (var rune in value.EnumerateRunes())
+        {
+            if (rune.Value == '\n')
+            {
+                output.Append('\n');
+                lineLength = 0;
+                continue;
+            }
+            if (lineLength == columns)
+            {
+                output.Append('\n');
+                lineLength = 0;
+            }
+            output.Append(rune);
+            lineLength++;
+        }
+        return output.ToString();
+    }
+
     /// <summary>Replaces the action URL's query with <paramref name="query"/>, keeping any fragment.</summary>
     public static BrowserUrl ApplyQuery(BrowserUrl action, string query, int maxCharacters)
     {

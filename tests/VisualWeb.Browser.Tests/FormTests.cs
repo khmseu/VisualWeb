@@ -46,6 +46,7 @@ public sealed class FormTests
         Assert.Equal([false, false, false, false, true, false, false], controls.Select(c => c.FormNoValidate));
         Assert.All(controls, control => Assert.Null(control.FormAction));
         Assert.All(controls, control => Assert.Null(control.FormActionError));
+        Assert.All(controls, control => { Assert.Equal(0, control.TextareaWrapColumns); Assert.False(control.TextareaWrapHard); });
         Assert.Equal(["q", "h", "s", "go", "b", "p", "formless"], controls.Select(c => c.Name));
         Assert.Equal(["abc", " v\n ", "", "", "bv", "", "f"], controls.Select(c => c.Value));
         Assert.Equal(["", "", "", "Submit", "Go", "", ""], controls.Select(c => c.Label));
@@ -612,6 +613,21 @@ public sealed class FormTests
         Assert.True(control.Required);
         Assert.Equal(160, control.Rect!.Width);
         Assert.Equal(60, control.Rect.Height);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TextareaHardWrapMetadataIsBoundedAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><textarea name=message wrap=hard cols=40></textarea></form>"),
+            new(200, 400, 1), Cancellation);
+        var control = Assert.Single(page.FormControls);
+
+        Assert.True(control.TextareaWrapHard);
+        Assert.Equal(40, control.TextareaWrapColumns);
         Assert.Null(Assert.Single(page.Forms).Error);
     }
 
@@ -1196,6 +1212,30 @@ public sealed class FormTests
         harness.Controller.FocusControl(harness.Tab.Id, 0);
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Equal("https://example.com/final/index.html?", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("<textarea name=message wrap=hard cols=5>abcdefghij</textarea>", "message=abcde%0D%0Afghij")]
+    [InlineData("<textarea name=message wrap=hard cols=4>ab\ncdefgh</textarea>", "message=ab%0D%0Acdef%0D%0Agh")]
+    [InlineData("<textarea name=message wrap=soft cols=4>abcdefgh</textarea>", "message=abcdefgh")]
+    public void TextareaHardWrapIsAppliedOnlyToSubmittedValue(string control, string expected)
+    {
+        using var harness = new Harness($"<form action='/send'>{control}<button>Send</button></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Equal("https://example.com/send?" + expected, harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("<textarea name=message wrap=hard></textarea>", "cols")]
+    public async Task TextareaHardWrapRequiresSupportedExplicitColumns(string body, string expected)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form>" + body + "</form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Contains(expected, Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

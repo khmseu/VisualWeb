@@ -73,7 +73,7 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate and FormAction apply only to submit buttons. Label carries submit/reset-input text or button text.</remarks>
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate and FormAction apply only to submit buttons. TextareaWrapColumns is present only for textarea hard wrapping. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -106,6 +106,10 @@ public sealed record PageFormControl(
     public string? FormAction { get; init; }
     [JsonRequired]
     public string? FormActionError { get; init; }
+    [JsonRequired]
+    public int TextareaWrapColumns { get; init; }
+    [JsonRequired]
+    public bool TextareaWrapHard { get; init; }
 }
 
 /// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
@@ -344,7 +348,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 32;
+    public const int Version = 33;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -531,6 +535,9 @@ public static class RendererProtocol
                 || control.FormActionError is not null && control.FormAction is not null
                 || control.FormAction is { } formAction && (BrowserUrl.ParseResult(formAction).Url is not { } actionUrl
                     || actionUrl.Href != formAction || actionUrl.Protocol is not ("http:" or "https:" or "file:" or "data:"))
+                || control.Kind == "textarea" && (control.TextareaWrapColumns is < 0 or > 128
+                    || (control.TextareaWrapColumns > 0) != control.TextareaWrapHard)
+                || control.Kind != "textarea" && (control.TextareaWrapHard || control.TextareaWrapColumns != 0)
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
                 || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))

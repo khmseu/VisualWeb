@@ -831,7 +831,10 @@ public sealed class BrowserController : IDisposable
         }
         var limit = Session.Options.MaxAddressCharacters;
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter,
-            i => normalizedEmailValues.TryGetValue(i, out var email) ? email : Value(owner, i),
+            i => normalizedEmailValues.TryGetValue(i, out var email) ? email
+                : page.FormControls[i] is { Kind: "textarea", TextareaWrapHard: true } textarea
+                    ? FormSubmission.HardWrapTextarea(Value(owner, i), textarea.TextareaWrapColumns)
+                    : Value(owner, i),
             i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked), i =>
             {
                 var control = page.FormControls[i];

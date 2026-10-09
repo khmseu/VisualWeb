@@ -46,7 +46,7 @@ expose name, initial value, label, disabled/readonly/required/pattern/minlength/
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, unsupported named or
 new-tab targets, `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=`
-owners on fieldset/output/object, submitter overrides other than `formaction` and `formnovalidate`, other input types, textarea pattern/dirname/wrap=hard,
+owners on fieldset/output/object, submitter overrides other than `formaction` and `formnovalidate`, other input types, textarea pattern/dirname,
 listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
 when that form is submitted. Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no

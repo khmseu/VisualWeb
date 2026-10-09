@@ -15,7 +15,8 @@ single-select controls with bounded options and Up/Down/Home/End selection, and
 multiline textareas with Tab focus, committed-text entry and Enter/click submission
 of same-tab GET `application/x-www-form-urlencoded` queries through the ordinary
 navigation transaction. Textareas have bounded rows/columns, soft wrapping and
-independent line-window scrolling; number fields validate finite values, optional min/max bounds and supported
+independent line-window scrolling; `wrap=hard` inserts bounded line breaks only
+when submitting and requires explicit supported `cols`; number fields validate finite values, optional min/max bounds and supported
 step grids; email fields support sanitized comma-separated lists when `multiple`
 is present, and supported text fields draw bounded placeholders without submitting them; date fields accept strict ISO Gregorian dates for years 0001–9999 as
 text without a calendar picker; time fields validate bounded HTML time strings as text without a clock picker; month fields validate positive-year `YYYY-MM` values without a month picker; week fields validate ISO week-years without a picker; range fields render as shell-owned sliders adjusted by keyboard or pointer. Reset controls restore their form's initial values and checked states without navigation; submit buttons support bounded `formaction` and `formnovalidate` overrides. POST and other general controls remain unsupported. See [controls](../../../docs/browser-shell.md#controls).

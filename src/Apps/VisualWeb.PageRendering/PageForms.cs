@@ -101,11 +101,18 @@ internal static class PageForms
             }
             else if (kind == "textarea" && element.GetAttribute("pattern") is not null)
             { Reject(index, "textarea pattern"); }
+            var textareaWrapHard = kind == "textarea"
+                && element.GetAttribute("wrap")?.Equals("hard", StringComparison.OrdinalIgnoreCase) == true;
+            var textareaWrapColumns = 0;
             if (kind == "textarea")
             {
                 if (element.GetAttribute("dirname") is not null) { Reject(index, "textarea dirname"); }
-                if (element.GetAttribute("wrap")?.Equals("hard", StringComparison.OrdinalIgnoreCase) == true)
-                { Reject(index, "textarea wrap=hard"); }
+                if (textareaWrapHard)
+                {
+                    textareaWrapColumns = TextareaColumns(element.GetAttribute("cols")) ?? 0;
+                    if (element.GetAttribute("cols") is null || textareaWrapColumns == 0)
+                    { Reject(index, "textarea wrap=hard cols (a supported explicit cols value is required)"); }
+                }
             }
             string? submitterAction = null;
             string? submitterActionError = null;
@@ -215,7 +222,9 @@ internal static class PageForms
                 Placeholder = placeholder,
                 FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null,
                 FormAction = submitterAction,
-                FormActionError = submitterActionError
+                FormActionError = submitterActionError,
+                TextareaWrapColumns = textareaWrapColumns,
+                TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0
             });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
@@ -327,6 +336,17 @@ internal static class PageForms
         "select" => "select",
         _ => null,
     };
+
+    private static int? TextareaColumns(string? value)
+    {
+        if (value is null) { return null; }
+        var text = value.Trim(' ', '\t', '\n', '\f', '\r');
+        if (text.Length == 0 || text.Any(character => !char.IsAsciiDigit(character))
+            || !int.TryParse(text, System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out var columns) || columns is < 1 or > 128)
+        { return null; }
+        return columns;
+    }
 
     private static int SelectSize(string? value)
     {
