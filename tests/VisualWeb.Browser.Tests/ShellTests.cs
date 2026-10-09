@@ -33,6 +33,39 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void EmptyFieldPlaceholderIsDrawnByTheShellAndNotSubmitted()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style><form><input name=q placeholder=Search></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        var control = Assert.Single(page.FormControls);
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var placeholderPixels = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState([""], -1, -1)).Pixels;
+        var emptyPixels = chrome.Render(window, page with
+        {
+            FormControls = [control with { Placeholder = "" }]
+        }, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState([""], -1, -1)).Pixels;
+        var valuePixels = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["query"], -1, -1)).Pixels;
+
+        Assert.Equal("Search", control.Placeholder);
+        Assert.NotEqual(placeholderPixels, emptyPixels);
+        Assert.NotEqual(placeholderPixels, valuePixels);
+        Assert.Equal("", shell.Controller.FormControlValue(tab.Id, 0));
+    }
+
+    [Fact]
     public void PasswordOverlayDoesNotRevealFieldValue()
     {
         using var system = new Windows();

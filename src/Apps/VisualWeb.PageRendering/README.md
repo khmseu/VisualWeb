@@ -39,7 +39,7 @@ controls. Supported controls use finite inline-block layout: input/button fallba
 dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value; select
 controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallback geometry. Controls
-expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, and finite number/range bounds and step metadata, merged
+expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, and finite number/range bounds and step metadata, merged
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
 `novalidate`, non-UTF-8 `accept-charset`, `<base>`, `form=` owners, submitter

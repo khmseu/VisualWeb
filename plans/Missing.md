@@ -54,7 +54,7 @@ broader page interaction is still missing:
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v29 data-only metadata and the ordinary
+  submit same-tab GET urlencoded queries via IPC v30 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -63,7 +63,8 @@ broader page interaction is still missing:
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
   Selects expose bounded direct options, default selection, disabled-option
-  skipping and Up/Down/Home/End keyboard selection; email `multiple` supports
+  skipping and Up/Down/Home/End keyboard selection; text fields and textareas
+  display bounded placeholders without changing submitted values; email `multiple` supports
   sanitized comma-separated address lists, while select multiple selection,
   listboxes, optgroups and mouse popup selection remain unsupported.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
@@ -225,7 +226,7 @@ milestones and should be read as historical status, not current capability.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against the current implementation on 2026-10-09. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
+*Status cross-checked against the current implementation on 2026-10-09. Placeholder text is drawn by the shell only for empty fields, input line breaks are stripped, textarea line breaks are preserved, and placeholder text never becomes a submitted value. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
 Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
 keyboard or validation semantics; email inputs use generic text editing and
 bounded validation for one address or sanitized `multiple` comma-separated address
@@ -245,9 +246,8 @@ cannot target HTTP(S), and HTTP(S) forms are restricted to same-origin actions
 and redirect hops (with the same-host HTTPS downgrade path delegated to HSTS
 policy). Cross-origin redirects are rejected before the target request. These
 are narrow broker restrictions, not production authorization. For bounded
-email `multiple` support, the browser suite passes (655 tests), IPC passes
-(146), the solution builds with zero warnings/errors, and format verification
-passes. A prior full-solution test invocation also reported
+form placeholders, the browser suite passes (659 tests), IPC passes (147), the
+solution builds with zero warnings/errors, and format verification passes. A prior full-solution test invocation also reported
 `Engine.Scripting.Tests.CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
 (expected `InvalidOperationException`, none thrown). These checks are not full
 conformance, security, CI-matrix or real-desktop validation.

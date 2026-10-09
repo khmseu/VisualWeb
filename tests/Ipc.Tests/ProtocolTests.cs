@@ -47,7 +47,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(29, RendererProtocol.Version);
+        Assert.Equal(30, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 29 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 29 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 28 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 28 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 23 }, 0));
@@ -120,6 +122,15 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public void PlaceholderMetadataIsRequiredOnTheWire()
+    {
+        var json = JsonNode.Parse(JsonSerializer.Serialize(FormFrame.FormControls![0]))!.AsObject();
+        Assert.True(json.ContainsKey(nameof(PageFormControl.Placeholder)));
+        json.Remove(nameof(PageFormControl.Placeholder));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(json.ToJsonString()));
+    }
+
+    [Fact]
     public void MultipleEmailMetadataIsRequiredOnTheWire()
     {
         var json = JsonNode.Parse(JsonSerializer.Serialize(FormFrame.FormControls![0]))!.AsObject();
@@ -140,6 +151,18 @@ public sealed class ProtocolTests
         {
             FormControls = [FormFrame.FormControls![0] with { Kind = "email", Pattern = ".+", Rect = null }]
         }, 16);
+        RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Placeholder = "Search here", Rect = null }]
+        }, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = "checkbox", Placeholder = "ignored", Rect = null }]
+        }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Placeholder = "multi\nline", Rect = null }]
+        }, 16));
         RendererProtocol.Validate(FormFrame with
         {
             FormControls = [FormFrame.FormControls![0] with
@@ -556,7 +579,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(29, RendererProtocol.Version);
+        Assert.Equal(30, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

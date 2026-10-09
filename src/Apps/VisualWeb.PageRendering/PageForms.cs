@@ -123,6 +123,12 @@ internal static class PageForms
             { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
             if (kind == "select" && selectedOption >= 0)
             { options = options.Select((option, optionIndex) => option with { Selected = optionIndex == selectedOption }).ToArray(); }
+            var placeholder = kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea"
+                ? element.GetAttribute("placeholder") ?? "" : "";
+            placeholder = kind == "textarea" ? NormalizeTextArea(placeholder)
+                : placeholder.Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal);
+            if (placeholder.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Form placeholder text limit exceeded."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
                 : kind == "select" ? selectedOption >= 0 ? options[selectedOption].Value : ""
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
@@ -191,7 +197,7 @@ internal static class PageForms
                 minLength,
                 text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
                 kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
-            { Options = options, Multiple = kind == "email" && element.GetAttribute("multiple") is not null });
+            { Options = options, Multiple = kind == "email" && element.GetAttribute("multiple") is not null, Placeholder = placeholder });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)

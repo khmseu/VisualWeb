@@ -62,6 +62,18 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsSanitizedPlaceholdersAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input name=q placeholder=\"Search\n here\"><textarea name=message placeholder=\"First line&#10;Second line\"></textarea><input type=checkbox placeholder=ignored></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal(["Search here", "First line\nSecond line", ""], page.FormControls.Select(control => control.Placeholder));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererReportsSingleSelectOptionsAndInlineGeometry(bool process)
     {
         using var renderer = Renderer(process);
@@ -1916,6 +1928,16 @@ public sealed class FormTests
         var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
         Assert.Contains("required", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Single(harness.Source.Requests);
+    }
+
+    [Fact]
+    public void InputPlaceholderDoesNotBecomeSubmittedValue()
+    {
+        using var harness = new Harness("<form><input name=q placeholder=Search></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.Equal("", harness.Controller.FormControlValue(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?q=", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]

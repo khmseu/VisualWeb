@@ -207,9 +207,9 @@ public sealed class ShellChrome : IDisposable
                     var end = box.X + box.Width - inset;
                     var centerY = box.Y + box.Height / 2;
                     Fill(new(trackStart, centerY, Math.Max(1, end - trackStart), 2), gray);
-                    var value = double.Parse(forms.Values[index], System.Globalization.CultureInfo.InvariantCulture);
+                    var rangeValue = double.Parse(forms.Values[index], System.Globalization.CultureInfo.InvariantCulture);
                     var range = control.Maximum!.Value - control.Minimum!.Value;
-                    var fraction = range == 0 || !double.IsFinite(range) ? 0.5 : (value - control.Minimum.Value) / range;
+                    var fraction = range == 0 || !double.IsFinite(range) ? 0.5 : (rangeValue - control.Minimum.Value) / range;
                     if (!double.IsFinite(fraction)) { fraction = 0.5; }
                     var thumbWidth = Math.Min(12, box.Width);
                     var thumbHeight = Math.Min(16, box.Height);
@@ -275,34 +275,43 @@ public sealed class ShellChrome : IDisposable
                     control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
                 var selectedOption = forms.SelectIndices?[index] ?? Array.FindIndex(control.Options, option => option.Selected);
+                var value = forms.Values[index];
+                var showingPlaceholder = value.Length == 0 && control.Placeholder.Length > 0;
                 var text = control.Kind is "submit" or "button" or "reset" ? control.Label
                     : control.Kind == "select" ? (selectedOption >= 0 ? control.Options[selectedOption].Label : "") + "  v"
-                    : control.Kind == "password" ? PasswordText(forms.Values[index],
+                    : control.Kind == "password" ? PasswordText(value,
                         index == forms.Focused && !forms.SelectAll ? forms.Caret : -1)
+                    : showingPlaceholder ? index == forms.Focused && !forms.SelectAll && forms.Caret == 0
+                        ? "|" + control.Placeholder : control.Placeholder
                     : index == forms.Focused && !forms.SelectAll && forms.Caret >= 0
-                        ? forms.Values[index].Insert(Math.Min(forms.Caret, forms.Values[index].Length), "|")
-                    : forms.Values[index];
+                        ? value.Insert(Math.Min(forms.Caret, value.Length), "|")
+                    : value;
                 if (control.Kind == "textarea")
                 {
                     var rows = Math.Max(1, (int)((box.Height - 8) / 15));
-                    var value = forms.Values[index];
-                    var lines = forms.TextareaLines?[index] is { Count: > 0 } measured
-                        ? measured : WrapTextarea(value, Math.Max(0, box.Width - 8));
-                    var caret = index == forms.Focused && !forms.SelectAll ? Math.Clamp(forms.Caret, 0, value.Length) : -1;
+                    var textareaValue = forms.Values[index];
+                    var displayValue = textareaValue.Length == 0 ? control.Placeholder : textareaValue;
+                    var lines = textareaValue.Length == 0 ? WrapTextarea(displayValue, Math.Max(0, box.Width - 8))
+                        : forms.TextareaLines?[index] is { Count: > 0 } measured
+                            ? measured : WrapTextarea(value, Math.Max(0, box.Width - 8));
+                    var caret = textareaValue.Length > 0 && index == forms.Focused && !forms.SelectAll
+                        ? Math.Clamp(forms.Caret, 0, textareaValue.Length) : -1;
                     var firstLine = Math.Clamp(forms.TextareaFirstLines?[index] ?? 0, 0, Math.Max(0, lines.Count - rows));
                     for (var row = 0; row < rows && firstLine + row < lines.Count; row++)
                     {
                         var line = lines[firstLine + row];
-                        var lineText = value[line.Start..line.End];
+                        var lineText = displayValue[line.Start..line.End];
                         if (caret >= 0 && AddressEditor.FindVisualLine(lines, caret) == firstLine + row)
                         { lineText = lineText.Insert(Math.Clamp(caret - line.Start, 0, lineText.Length), "|"); }
-                        Label(lineText, box.X + 4, box.Y + 15 + row * 15, box.Width - 8, control.Disabled ? gray : ink);
+                        Label(lineText, box.X + 4, box.Y + 15 + row * 15, box.Width - 8,
+                            control.Disabled ? gray : textareaValue.Length == 0 && control.Placeholder.Length > 0 ? new(128, 128, 128) : ink);
                     }
                 }
                 else
                 {
                     Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
-                        control.Disabled ? gray : ink, tail: index == forms.Focused || control.Kind is "button" or "reset");
+                        control.Disabled ? gray : showingPlaceholder ? new(128, 128, 128) : ink,
+                        tail: index == forms.Focused || control.Kind is "button" or "reset");
                 }
             }
         }

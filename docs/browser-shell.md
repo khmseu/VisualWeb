@@ -217,10 +217,10 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v29); the browser owns all values,
+reports data-only form/control snapshots (IPC v30); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range, checkbox, radio, textarea,
 hidden, submit and reset, single-select `select`, plus `button` submit/reset (and inert `type=button`).
-Text fields use generic editing; password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
+Text fields use generic editing and draw applicable placeholders in muted chrome only while the shell-owned value is empty; input placeholders strip line breaks and never become submitted values. Password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
 email supports one valid address or, with `multiple`, a comma-separated list of
 valid addresses; list tokens are ASCII-whitespace-trimmed before validation and
 GET submission. URL requires a valid absolute URL on submission; date values use

@@ -70,7 +70,7 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Multiple is supported only for email controls. Label carries submit/reset-input text or button text.</remarks>
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -95,6 +95,8 @@ public sealed record PageFormControl(
     public PageFormOption[] Options { get; init; } = [];
     [JsonRequired]
     public bool Multiple { get; init; }
+    [JsonRequired]
+    public string Placeholder { get; init; } = "";
 }
 
 /// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
@@ -333,7 +335,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 29;
+    public const int Version = 30;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -509,10 +511,13 @@ public static class RendererProtocol
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
+                || control.Placeholder is null || control.Placeholder.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "reset" or "button") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Multiple && control.Kind != "email"
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
+                || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
+                || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))
                 || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea")
                 || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
