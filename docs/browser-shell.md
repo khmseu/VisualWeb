@@ -210,8 +210,8 @@ resolve to the current tab because nested browsing contexts are absent. The firs
 these same keywords. Named browsing contexts are rejected visibly rather than
 silently navigated in the current tab. The first `<base href>` resolves hyperlink
 URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
-response URL. Form actions and linked stylesheets still reject `<base href>`
-rather than applying this hyperlink-only resolution. `tabindex`, DOM focus APIs,
+response URL. Form actions use the same first-base resolution and fallback,
+while browser-discovered linked stylesheets still reject `<base href>`. `tabindex`, DOM focus APIs,
 offscreen-anchor traversal, downloads, image/area links, CSS link
 decoration, page mouse/keyboard events and JavaScript default-action cancellation
 remain deferred. This is a bounded subset of HTML
@@ -333,6 +333,14 @@ compatibility defaults fail visibly instead of silently using an unrestricted
 source. These are stricter browser-broker rules for this form subset and link
 handling, not general same-origin enforcement, CORS, or request authorization.
 
+A nonempty form `action` resolves against the first `<base href>`; a missing or
+empty action defaults to the final document URL. An invalid, `data:`, or
+`javascript:` base URL falls back to that document URL. The resulting destination still
+passes the browser's same-origin, local-file, opaque-origin, HSTS and downgrade
+checks before any form values are serialized. `_self`, `_parent`, and `_top`
+(including the first `<base target>` fallback) use the current tab; `_blank` and
+named form targets fail visibly.
+
 Supported controls with a `form` attribute use the first element in tree order
 with the exact matching `id` when that element is a `<form>`; otherwise they
 have no owner and do not fall back to an ancestor. Controls without `form` use
@@ -340,9 +348,8 @@ their nearest ancestor form. Associated controls are submitted in document
 tree order, including controls before or outside the form element.
 
 Visible failures, without navigation and keeping the committed page: a form with
-`method` post/dialog, unsupported `enctype`, non-self target (or inherited `<base
-target>`), `novalidate`, non-UTF-8 `accept-charset`, any `<base href>`, unsupported
-`form=` ownership on fieldsets/output/object, submitter overrides, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
+`method` post/dialog, unsupported `enctype`, unsupported named or new-tab target
+(including inherited `<base target>`), `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname` or `wrap=hard`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,

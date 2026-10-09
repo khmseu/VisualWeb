@@ -43,16 +43,20 @@ with bounded cols/rows and exposes its text content as its initial value; select
 controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallback geometry. Controls
 expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, and finite number/range bounds and step metadata, merged
 traversal position before a link group and clipped visible border box.
-Unsupported semantics (POST/dialog, multipart/text-plain, non-self targets,
-`novalidate`, non-UTF-8 `accept-charset`, `<base href>` for form actions,
-unsupported `form=` owners on fieldset/output/object, submitter
+Unsupported semantics (POST/dialog, multipart/text-plain, unsupported named or
+new-tab targets, `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=`
+owners on fieldset/output/object, submitter
 overrides, other input types, textarea pattern/dirname/wrap=hard,
 listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), output/object, datalist and disabled fieldsets) become a per-form `Error`, rejected visibly only
 when that form is submitted. Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
 owner and never fall back to an ancestor. Controls without `form=` use the
-nearest ancestor form. The renderer resolves hyperlink URLs against the first valid `<base href>`;
-forms and browser-discovered linked stylesheets still reject `<base href>`.
+nearest ancestor form. Hyperlinks and form actions resolve against the first valid `<base href>`;
+forms without an action attribute or with an empty value default to the final
+document URL. Invalid/data/javascript base
+URLs fall back to the document URL. Form targets `_self`, `_parent`, and `_top`
+(including `<base target>` fallback) use the current tab; new-tab/named targets
+are rejected. Browser-discovered linked stylesheets still reject `<base href>`.
 The renderer never submits or navigates.
 
 `LoadedPage` owns an immutable final response URL and document `SecurityOrigin`.

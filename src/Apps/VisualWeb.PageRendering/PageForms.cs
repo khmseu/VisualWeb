@@ -29,8 +29,8 @@ internal static class PageForms
         var actions = new List<string>();
         var controls = new List<PageFormControl>();
         var elements = document.Descendants().OfType<DomElement>().ToList();
-        var baseTarget = elements.Any(e => e.LocalName == "base" && e.GetAttribute("target") is not null);
-        var baseHref = elements.Any(e => e.LocalName == "base" && e.GetAttribute("href") is not null);
+        var baseTarget = BaseTarget(elements, cancellationToken);
+        var baseUrl = BaseUrl(elements, url, cancellationToken);
         var firstElementById = new Dictionary<string, DomElement>(StringComparer.Ordinal);
         foreach (var element in elements)
         {
@@ -43,7 +43,7 @@ internal static class PageForms
             if (element.LocalName != "form") { continue; }
             if (formIndex.Count >= RendererProtocol.MaxForms)
             { throw new PageNavigationException($"Renderer form count limit ({RendererProtocol.MaxForms}) exceeded."); }
-            var (action, error) = Form(element, url, baseTarget, baseHref);
+            var (action, error) = Form(element, url, baseUrl, baseTarget);
             formIndex.Add(element, formIndex.Count);
             actions.Add(action);
             errors.Add(error);
@@ -229,7 +229,8 @@ internal static class PageForms
         }
     }
 
-    private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, bool baseTarget, bool baseHref)
+    private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, BrowserUrl baseUrl,
+        string? baseTarget)
     {
         var method = form.GetAttribute("method")?.ToLowerInvariant();
         if (method is "post" or "dialog")
@@ -237,25 +238,57 @@ internal static class PageForms
         if (form.GetAttribute("enctype") is { } enctype && !enctype.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
             && (enctype.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase) || enctype.Equals("text/plain", StringComparison.OrdinalIgnoreCase)))
         { return ("", $"Unsupported form enctype: {enctype}."); }
-        if (form.GetAttribute("target") is { } target && target.Length != 0 && !target.Equals("_self", StringComparison.OrdinalIgnoreCase)
-            || baseTarget && form.GetAttribute("target") is null)
-        { return ("", "Unsupported form target: only same-tab (_self) submission is implemented."); }
+        var target = (form.GetAttribute("target") ?? baseTarget)?.Trim(AsciiWhitespace);
+        if (!string.IsNullOrEmpty(target) && !IsCurrentTarget(target))
+        { return ("", "Unsupported form target: only current-tab targets are implemented."); }
         if (form.GetAttribute("novalidate") is not null)
         { return ("", "Unsupported form novalidate: constraint validation cannot be bypassed in this subset."); }
         if (form.GetAttribute("accept-charset") is { } charset
             && !charset.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries)
                 .All(label => Utf8Labels.Contains(label.ToLowerInvariant())))
         { return ("", "Unsupported form accept-charset: only UTF-8 labels are implemented."); }
-        if (baseHref) { return ("", "Unsupported form action resolution with <base href>."); }
-        var raw = form.GetAttribute("action") ?? "";
-        if (raw.Length > RendererProtocol.MaxTextCharacters) { return ("", "Form action URL limit exceeded."); }
-        var parsed = raw.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 ? url : BrowserUrl.ParseResult(raw, url).Url;
+        var raw = form.GetAttribute("action");
+        if (raw is { Length: > RendererProtocol.MaxTextCharacters }) { return ("", "Form action URL limit exceeded."); }
+        var parsed = string.IsNullOrEmpty(raw) ? url : BrowserUrl.ParseResult(raw, baseUrl).Url;
         if (parsed is null) { return ("", "Invalid form action URL."); }
         if (parsed.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { return ("", $"Unsupported form action URL scheme: {parsed.Protocol}"); }
         if (parsed.Href.Length > RendererProtocol.MaxTextCharacters) { return ("", "Form action URL limit exceeded."); }
         return (parsed.Href, null);
     }
+
+    private static string? BaseTarget(IReadOnlyList<DomElement> elements, CancellationToken cancellationToken)
+    {
+        foreach (var element in elements)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.LocalName == "base" && element.GetAttribute("target") is { } target) { return target; }
+        }
+        return null;
+    }
+
+    private static BrowserUrl BaseUrl(IReadOnlyList<DomElement> elements, BrowserUrl fallback,
+        CancellationToken cancellationToken)
+    {
+        foreach (var element in elements)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.LocalName != "base" || element.GetAttribute("href") is not { } href) { continue; }
+            if (href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer base URL limit exceeded."); }
+            var parsed = BrowserUrl.ParseResult(href, fallback).Url;
+            if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return fallback; }
+            if (parsed.Href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer base URL limit exceeded."); }
+            return parsed;
+        }
+        return fallback;
+    }
+
+    private static bool IsCurrentTarget(string target) => target.All(character => character <= 0x7f)
+        && (target.Equals("_self", StringComparison.OrdinalIgnoreCase)
+            || target.Equals("_parent", StringComparison.OrdinalIgnoreCase)
+            || target.Equals("_top", StringComparison.OrdinalIgnoreCase));
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {

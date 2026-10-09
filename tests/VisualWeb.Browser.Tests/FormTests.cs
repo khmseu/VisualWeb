@@ -643,13 +643,12 @@ public sealed class FormTests
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
     [InlineData("<form enctype=text/plain><input name=q></form>", "enctype")]
     [InlineData("<form target=_blank><input name=q></form>", "target")]
-    [InlineData("<base target=_top><form><input name=q></form>", "target")]
+    [InlineData("<base target=_blank><form><input name=q></form>", "target")]
     [InlineData("<form novalidate><input name=q></form>", "novalidate")]
     [InlineData("<form accept-charset=iso-8859-1><input name=q></form>", "accept-charset")]
     [InlineData("<form action='javascript:alert(1)'><input name=q></form>", "scheme")]
     [InlineData("<form action='ftp://example.com/'><input name=q></form>", "scheme")]
     [InlineData("<form action='http://[bad'><input name=q></form>", "action")]
-    [InlineData("<base href=/other/><form><input name=q></form>", "base")]
     [InlineData("<form><input name=q dirname=d></form>", "dirname")]
     [InlineData("<form><input name=q list=l></form>", "list")]
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
@@ -734,6 +733,80 @@ public sealed class FormTests
             new(200, 400, 1), Cancellation);
         Assert.Null(Assert.Single(page.Forms).Error);
         Assert.Equal("select", Assert.Single(page.FormControls).Kind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FormActionsResolveAgainstFirstBaseHrefAndKeepMissingActionDefault(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <base href="https://example.com/forms/"><base href="https://ignored.example/">
+            <form action="submit"><input name=a></form>
+            <form action=""><input name=b></form>
+            <form><input name=c></form>
+            """), new(200, 400, 1), Cancellation);
+
+        Assert.Equal([
+            new PageForm("https://example.com/forms/submit", null),
+            new PageForm("https://example.com/final/index.html", null),
+            new PageForm("https://example.com/final/index.html", null),
+        ], page.Forms);
+    }
+
+    [Theory]
+    [InlineData("_self")]
+    [InlineData("_parent")]
+    [InlineData("_top")]
+    public async Task FormTargetReservedCurrentContextKeywordsAreSupported(string target)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document($"<base target='{target}'><form><input name=q></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData("data:text/html,blocked")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("http://[invalid")]
+    public async Task InvalidFormBaseHrefFallsBackToDocumentUrl(string href)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document($"<base href='{href}'><base href='https://ignored.example/'>"
+            + "<form action='submit'><input name=q></form>"), new(200, 400, 1), Cancellation);
+        Assert.Equal("https://example.com/final/submit", Assert.Single(page.Forms).Action);
+        Assert.Null(page.Forms[0].Error);
+    }
+
+    [Fact]
+    public void FormActionBaseHrefSubmitsThroughNormalSameOriginNavigation()
+    {
+        using var harness = new Harness("<base href='/forms/'><form action='search?old=1#result'>"
+            + "<input name=q value=term><input type=submit></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Equal("https://example.com/forms/search?q=term#result",
+            harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void CrossOriginBaseHrefCannotBypassFormOriginPolicy()
+    {
+        using var harness = new Harness("<base href='https://outside.example/path/'>"
+            + "<form action='submit'><input name=private value=secret><input type=submit></form>");
+        var committed = harness.Controller.Page(harness.Tab.Id);
+        harness.Controller.FocusPage(harness.Tab.Id);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Contains("Cross-origin form submissions are blocked", error.Message, StringComparison.Ordinal);
+        Assert.Single(harness.Source.Requests);
+        Assert.Same(committed, harness.Controller.Page(harness.Tab.Id));
     }
 
     [Theory]
