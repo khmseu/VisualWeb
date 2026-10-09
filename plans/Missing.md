@@ -67,10 +67,12 @@ broader page interaction is still missing:
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
   Selects expose bounded direct options, default selection, disabled-option
-  skipping and Up/Down/Home/End keyboard selection; text fields and textareas
-  display bounded placeholders without changing submitted values; email `multiple` supports
-  sanitized comma-separated address lists, while select multiple selection,
-  listboxes, optgroups and mouse popup selection remain unsupported.
+  skipping and Up/Down/Home/End keyboard selection. A browser-owned popup supports
+  pointer option selection and wheel scrolling through longer lists, with Escape/
+  outside-click dismissal; text fields and textareas display bounded placeholders
+  without changing submitted values. Email `multiple` supports sanitized
+  comma-separated address lists, while select multiple selection, listboxes and
+  optgroups remain unsupported.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values and
   `required` before submission; no calendar picker or date constraints are
@@ -100,7 +102,8 @@ broader page interaction is still missing:
   rejected. None bypass destination or origin restrictions; new-tab destination
   checks run before tab creation, with shared HSTS applied before downgrade checks.
   Visible text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
-  selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
+  selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste. Single-select
+  popup option selection is browser-owned, bounded to 12 displayed rows, and wheel-scrollable.
   Clipboard support remains bounded to selection copy and paste into focused
   text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
   missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/reset,

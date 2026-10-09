@@ -8,9 +8,10 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar }
-public sealed record ChromeTarget(LayoutRect Bounds, ChromeAction Action, TabId? Tab = null);
+public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, SelectOption }
+public sealed record ChromeTarget(LayoutRect Bounds, ChromeAction Action, TabId? Tab = null, int ControlIndex = -1, int OptionIndex = -1);
 public sealed record ShellFrame(byte[] Pixels, PixelSize Size, int Stride, IReadOnlyList<ChromeTarget> Targets);
+internal sealed record SelectPopupLayout(LayoutRect Bounds, int FirstOption, int VisibleOptions, double RowHeight);
 
 /// <summary>Development chrome drawn independently of untrusted page styles.</summary>
 /// <remarks>References: skia-canvas and sdl-window-surface. Chrome is not HTML content.</remarks>
@@ -43,6 +44,27 @@ public sealed class ShellChrome : IDisposable
         var header = Math.Ceiling(Height * density);
         if (size.Width <= 0 || size.Height <= header) { return null; }
         return new(CssPixels(size.Width, density), CssPixels(size.Height - (int)header, density), density);
+    }
+    internal static SelectPopupLayout? PopupLayout(BrowserPage page, int controlIndex, PageViewport viewport,
+        int firstOption)
+    {
+        if (controlIndex < 0 || controlIndex >= page.FormControls.Count
+            || page.FormControls[controlIndex] is not { Kind: "select", Disabled: false, Rect: { } rect } control
+            || control.Options.Length == 0) { return null; }
+        const double rowHeight = 20;
+        var availableBelow = Math.Max(0, viewport.Height - rect.Y - rect.Height);
+        var availableAbove = Math.Max(0, rect.Y);
+        var available = Math.Max(availableAbove, availableBelow);
+        var visible = Math.Min(control.Options.Length, Math.Min(12, (int)(available / rowHeight)));
+        if (visible <= 0) { return null; }
+        var height = visible * rowHeight;
+        var openAbove = availableBelow < height && availableAbove > availableBelow;
+        var top = openAbove ? rect.Y - height : rect.Y + rect.Height;
+        top = Math.Clamp(top, 0, Math.Max(0, viewport.Height - height));
+        var width = Math.Min(rect.Width, viewport.Width);
+        var left = Math.Clamp(rect.X, 0, Math.Max(0, viewport.Width - width));
+        var first = Math.Clamp(firstOption, 0, control.Options.Length - visible);
+        return new(new(left, Height + top, width, height), first, visible, rowHeight);
     }
     private static double CssPixels(int physical, double density)
     {
@@ -189,6 +211,7 @@ public sealed class ShellChrome : IDisposable
         var pageFits = page is not null && page.Frame.Size == new PixelSize(size.Width, size.Height - headerPixels);
         var pageViewport = pageFits ? Viewport(size, density) : null;
         var scrollRange = pageViewport is { } scrollViewport ? Math.Max(0, page!.ScrollHeight - scrollViewport.Height) : 0;
+        SelectPopupLayout? selectPopup = null;
         if (pageFits && forms is not null && forms.Values.Count == page!.FormControls.Count)
         {
             // Shell-owned widget overlay: renderer pixels never contain browser-edited values. Offsetting by the
@@ -314,6 +337,24 @@ public sealed class ShellChrome : IDisposable
                         tail: index == forms.Focused || control.Kind is "button" or "reset" or "inert");
                 }
             }
+            if (forms.OpenSelect >= 0 && pageViewport is { } popupViewport
+                && (selectPopup = PopupLayout(page, forms.OpenSelect, popupViewport, forms.SelectPopupFirstOption)) is { } popup)
+            {
+                Fill(popup.Bounds, new(118, 118, 118));
+                Fill(new(popup.Bounds.X + 1, popup.Bounds.Y + 1,
+                    Math.Max(0, popup.Bounds.Width - 2), Math.Max(0, popup.Bounds.Height - 2)), white);
+                for (var row = 0; row < popup.VisibleOptions; row++)
+                {
+                    var optionIndex = popup.FirstOption + row;
+                    var option = page.FormControls[forms.OpenSelect].Options[optionIndex];
+                    var rowBounds = new LayoutRect(popup.Bounds.X + 1, popup.Bounds.Y + 1 + row * popup.RowHeight,
+                        Math.Max(0, popup.Bounds.Width - 2), popup.RowHeight);
+                    if (optionIndex == forms.SelectIndices?[forms.OpenSelect])
+                    { Fill(rowBounds, new(176, 213, 249)); }
+                    Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8,
+                        option.Disabled ? new(118, 118, 118) : ink);
+                }
+            }
         }
         var chrome = CpuRasterizer.Render(new(width, height, commands), fonts, density, options: options);
         var pixels = chrome.Pixels.ToArray();
@@ -366,6 +407,26 @@ public sealed class ShellChrome : IDisposable
                 targets.Add(new(track, ChromeAction.Scrollbar, tab?.Id));
                 FillSurface(track, 222, 226, 232);
                 FillSurface(new(track.X + 2, thumbY, Math.Max(0, track.Width - 4), thumbHeight), 105, 117, 132);
+            }
+            if (selectPopup is { } popup && forms is not null)
+            {
+                var left = Math.Clamp((int)Math.Floor(popup.Bounds.X * density), 0, size.Width - 1);
+                var right = Math.Clamp((int)Math.Ceiling((popup.Bounds.X + popup.Bounds.Width) * density) - 1,
+                    left, size.Width - 1);
+                var top = Math.Clamp((int)Math.Floor(popup.Bounds.Y * density), 0, size.Height - 1);
+                var bottom = Math.Clamp((int)Math.Ceiling((popup.Bounds.Y + popup.Bounds.Height) * density) - 1,
+                    top, size.Height - 1);
+                for (var y = top; y <= bottom; y++)
+                {
+                    chrome.Pixels.Span.Slice(y * chrome.Stride + left * 4, (right - left + 1) * 4)
+                        .CopyTo(pixels.AsSpan(y * chrome.Stride + left * 4));
+                }
+                for (var row = 0; row < popup.VisibleOptions; row++)
+                {
+                    targets.Add(new(new(popup.Bounds.X, popup.Bounds.Y + row * popup.RowHeight,
+                        popup.Bounds.Width, popup.RowHeight), ChromeAction.SelectOption, tab?.Id,
+                        forms.OpenSelect, popup.FirstOption + row));
+                }
             }
         }
         return new(pixels, chrome.Size, chrome.Stride, targets.AsReadOnly());
@@ -444,4 +505,5 @@ public sealed class ShellChrome : IDisposable
 /// <summary>Browser-owned current form values and focused field caret for the shell widget overlay.</summary>
 public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, int Caret, bool SelectAll = false,
     IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null,
-    IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null);
+    IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null,
+    int OpenSelect = -1, int SelectPopupFirstOption = 0);

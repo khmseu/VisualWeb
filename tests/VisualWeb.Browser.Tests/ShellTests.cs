@@ -315,6 +315,79 @@ public sealed class ShellTests
         }
     }
 
+    [Fact]
+    public void SingleSelectPopupSkipsDisabledOptionsAndDismissesWithEscape()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select name=mode>" +
+            "<option value=one>One</option><option value=blocked disabled>Blocked</option>" +
+            "<option value=three>Three</option></select></form>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var popupY = ShellChrome.Height + rect.Y + rect.Height;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 4)));
+        shell.Tick();
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 30)));
+        Assert.Equal(0, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 50)));
+        Assert.Equal(2, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 4)));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 10)));
+        Assert.Equal(2, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
+    public void SingleSelectPopupWheelScrollsToOptionsOutsideTheInitialWindow()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 20).Select(index =>
+            $"<option value={index}>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select name=mode>" + options + "</select></form>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var popupX = rect.X + 4;
+        var popupY = ShellChrome.Height + rect.Y + rect.Height;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)popupX, (float)(ShellChrome.Height + rect.Y + 4)));
+        shell.Tick();
+        shell.Dispatch(new PointerMoved(native.Id, (float)popupX, (float)(popupY + 10)));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, -4));
+        shell.Tick();
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)popupX, (float)(popupY + 230)));
+        Assert.Equal(19, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

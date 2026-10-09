@@ -83,6 +83,7 @@ The native window title retains the same warning alongside the active page title
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
+| Single-select control | Click to open; click an enabled option to select; wheel within the popup to scroll options; Escape or an outside click dismisses it |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
 | Committed text, Left/Right, Backspace/Delete in a focused text/search/email/tel/url/password/date/time/month/week/number field or textarea | Edit the shell-owned field value (no page scrolling) |
 | Home/End in a focused text/search/email/tel/url/password/date/time/month/week/number field | Move the caret to the start/end of the value |
@@ -263,8 +264,10 @@ on click or Space, while radios select on click or Space. Unchecked checkboxes a
 their value (default `on`), and required checkboxes must be checked while required
 radio groups need one selected member. Required single-selects need a nonempty enabled selection.
 Single-select controls carry bounded direct options, choose the selected or first enabled option by default,
-skip disabled options during Up/Down and Home/End selection, and submit only an enabled selected option;
-listboxes, multiple selection, optgroups and popup/mouse option picking remain unsupported. Radios sharing a form and nonempty name are
+skip disabled options during Up/Down and Home/End selection, and submit only an enabled selected option.
+A primary click opens a browser-owned popup with up to 12 visible rows; wheel input scrolls longer option lists,
+clicking a disabled row leaves selection unchanged, and Escape or an outside click dismisses the popup.
+Listboxes, multiple selection and optgroups remain unsupported. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
 within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
@@ -282,8 +285,9 @@ gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
 widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
-tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/date/time/month/week/number field, textarea or single-select
-control focuses it without starting page text selection; select clicks do not open a popup; range controls can be adjusted by
+tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/date/time/month/week/number field or textarea
+focuses it without starting page text selection; clicking a single-select opens its bounded shell popup, with wheel scrolling and
+pointer selection of enabled options. Escape or an outside click closes the popup. Range controls can be adjusted by
 pointer click/drag. Focusing an editable
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
@@ -383,8 +387,7 @@ unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,
 required empty fields, edited too-short/overlong values, pattern mismatches,
 unsupported pattern syntax, or query/URL limit overflow. Form-level `novalidate` and a selected submit button's `formnovalidate` skip supported constraint checks; address/scheme and origin protections still apply. `formaction` is supported, while the other submitter overrides remain unsupported.
 There is no POST, constraint-validation UI, `submit`/`input`/`change`/`keydown`
-events, `requestSubmit`, script submission, select popup/mouse option picking, autofill, IME
-preedit, or clipboard selection range support.
+events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard selection range support.
 
 ## Navigation and page policy
 

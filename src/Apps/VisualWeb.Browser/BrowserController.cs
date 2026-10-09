@@ -321,6 +321,25 @@ public sealed class BrowserController : IDisposable
         return SelectedOption(owner, index);
     }
 
+    /// <summary>Sets a single-select option from browser-owned popup interaction.</summary>
+    public bool SelectOptionFromPointer(TabId id, int controlIndex, int optionIndex)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.FocusedControl != controlIndex || owner.Page is not { } page
+            || controlIndex < 0 || controlIndex >= page.FormControls.Count
+            || page.FormControls[controlIndex] is not { Kind: "select", Disabled: false } control
+            || optionIndex < 0 || optionIndex >= control.Options.Length)
+        { return false; }
+        if (control.Options[optionIndex].Disabled) { return false; }
+        if (SelectedOption(owner, controlIndex) != optionIndex)
+        {
+            owner.SelectedOptions[controlIndex] = optionIndex;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
+
     public bool MoveFocusedSelect(TabId id, int direction)
     {
         Check();

@@ -36,6 +36,9 @@ public sealed class DevelopmentShell : IDisposable
         internal bool SelectingText { get; set; }
         internal bool DraggingScrollbar { get; set; }
         internal int DraggingRangeControl { get; set; } = -1;
+        internal int OpenSelectControl { get; set; } = -1;
+        internal int SelectPopupFirstOption { get; set; }
+        internal BrowserPage? SelectPopupPage { get; set; }
         internal bool Dirty { get; set; } = true;
         internal IReadOnlyList<ChromeTarget> Targets { get; set; } = [];
         internal PixelSize LastSize { get; set; }
@@ -168,6 +171,7 @@ public sealed class DevelopmentShell : IDisposable
             var window = Controller.Session.Window(id);
             if (view.LastTab != window.ActiveTabId)
             {
+                CloseSelectPopup(view);
                 view.DraggingScrollbar = false;
                 view.KeyboardTarget = null;
                 Edit(view, window, false);
@@ -178,6 +182,9 @@ public sealed class DevelopmentShell : IDisposable
             {
                 view.LastSize = size; view.LastDensity = density; view.Dirty = true;
             }
+            if (view.OpenSelectControl >= 0
+                && (window.ActiveTab is not { } popupTab || !ReferenceEquals(view.SelectPopupPage, Controller.Page(popupTab.Id))))
+            { CloseSelectPopup(view); }
             if (window.ActiveTab is { } tab && ShellChrome.Viewport(size, density) is { } viewport)
             {
                 try { Controller.Resize(tab.Id, viewport); }
@@ -190,7 +197,7 @@ public sealed class DevelopmentShell : IDisposable
                 window.ActiveTabId is { } focused && Controller.PageHasFocus(focused)
                     ? Controller.FocusedLinkIndex(focused) : -1,
                 window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
-                Forms(window), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
+                Forms(window, view), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
                 window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
@@ -212,6 +219,7 @@ public sealed class DevelopmentShell : IDisposable
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
                 case FocusChanged { Focused: false }:
                     Edit(view, window, false);
+                    CloseSelectPopup(view);
                     view.SelectingText = false;
                     view.DraggingScrollbar = false;
                     if (window.ActiveTab is { } blurredTab) { Controller.EndTextSelection(blurredTab.Id); }
@@ -227,10 +235,23 @@ public sealed class DevelopmentShell : IDisposable
                         && moved.Y >= ShellChrome.Height && moved.Y < ShellChrome.Height + selectionViewport.Height)
                     { Controller.ExtendTextSelection(selectingTab.Id, moved.X, moved.Y - ShellChrome.Height, selectionViewport); }
                     break;
-                case PointerScrolled wheel when !view.Editing && view.PointerY is not < ShellChrome.Height
-                    && window.ActiveTab is { } active:
+                case PointerScrolled wheel when !view.Editing && window.ActiveTab is { } active:
                     if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
                     { Controller.Report(active.Id, "Wheel delta must be finite."); break; }
+                    if (view.OpenSelectControl >= 0 && view.PointerX is { } menuX && view.PointerY is { } menuY
+                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } menuViewport
+                        && Controller.Page(active.Id) is { } menuPage
+                        && ShellChrome.PopupLayout(menuPage, view.OpenSelectControl, menuViewport, view.SelectPopupFirstOption) is { } menu
+                        && menuX >= menu.Bounds.X && menuX < menu.Bounds.X + menu.Bounds.Width
+                        && menuY >= menu.Bounds.Y && menuY < menu.Bounds.Y + menu.Bounds.Height)
+                    {
+                        var delta = (int)Math.Clamp(Math.Round(-wheel.Y * 3), -300, 300);
+                        var maxFirst = menuPage.FormControls[view.OpenSelectControl].Options.Length - menu.VisibleOptions;
+                        view.SelectPopupFirstOption = (int)Math.Clamp((long)view.SelectPopupFirstOption + delta, 0, maxFirst);
+                        view.Dirty = true;
+                        break;
+                    }
+                    if (view.PointerY is < ShellChrome.Height) { break; }
                     var overTextarea = view.PointerX is { } pointerX && view.PointerY is { } pointerY
                         && Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height,
                             (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300));
@@ -243,6 +264,17 @@ public sealed class DevelopmentShell : IDisposable
                     view.DraggingScrollbar = false;
                     view.DraggingRangeControl = -1;
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
+                    if (target?.Action == ChromeAction.SelectOption)
+                    {
+                        if (window.ActiveTabId is { } optionTab && view.OpenSelectControl == target.ControlIndex
+                            && target.Tab == optionTab && ReferenceEquals(view.SelectPopupPage, Controller.Page(optionTab))
+                            && Controller.SelectOptionFromPointer(optionTab, target.ControlIndex, target.OptionIndex))
+                        { CloseSelectPopup(view); }
+                        break;
+                    }
+                    var dismissingSelect = view.OpenSelectControl >= 0;
+                    var dismissedControl = view.OpenSelectControl;
+                    if (dismissingSelect) { CloseSelectPopup(view); }
                     if (target?.Action == ChromeAction.Scrollbar)
                     {
                         Action(window, view, target.Action, target.Tab);
@@ -265,6 +297,10 @@ public sealed class DevelopmentShell : IDisposable
                             if (activated && focusedControl >= 0
                                 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
                             { view.DraggingRangeControl = focusedControl; }
+                            if (activated && focusedControl >= 0
+                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "select"
+                                && !(dismissingSelect && dismissedControl == focusedControl))
+                            { OpenSelectPopup(view, pageTab, focusedControl); }
                             if (!activated)
                             {
                                 view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X,
@@ -344,6 +380,7 @@ public sealed class DevelopmentShell : IDisposable
         if (!view.Editing && Controller.IsMultilineFormControl(tab.Id)) { RefreshTextareaLayouts(tab.Id); }
         if (!control && !alt && code == SDL.Scancode.Tab)
         {
+            CloseSelectPopup(view);
             TraverseFocus(window, view, shift);
             return;
         }
@@ -359,6 +396,10 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (!view.Editing)
         {
+            if (!control && !alt && !key.Repeat && code == SDL.Scancode.Escape && view.OpenSelectControl >= 0)
+            { CloseSelectPopup(view); return; }
+            if (!control && !alt && code == SDL.Scancode.Tab && view.OpenSelectControl >= 0)
+            { CloseSelectPopup(view); }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.A && Controller.EditingFormControl(tab.Id))
             { Controller.SelectAllFormControl(tab.Id); return; }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.V && Controller.EditingFormControl(tab.Id))
@@ -380,9 +421,12 @@ public sealed class DevelopmentShell : IDisposable
             if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedRangeEndpoint(tab.Id, false)) { return; }
             if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedRangeEndpoint(tab.Id, true)) { return; }
             if (!control && !alt && code is SDL.Scancode.Up or SDL.Scancode.Down
-                && Controller.MoveFocusedSelect(tab.Id, code == SDL.Scancode.Up ? -1 : 1)) { return; }
-            if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedSelectEndpoint(tab.Id, false)) { return; }
-            if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedSelectEndpoint(tab.Id, true)) { return; }
+                && Controller.MoveFocusedSelect(tab.Id, code == SDL.Scancode.Up ? -1 : 1))
+            { KeepPopupSelectionVisible(view, tab.Id); return; }
+            if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedSelectEndpoint(tab.Id, false))
+            { KeepPopupSelectionVisible(view, tab.Id); return; }
+            if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedSelectEndpoint(tab.Id, true))
+            { KeepPopupSelectionVisible(view, tab.Id); return; }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code switch
             {
                 SDL.Scancode.Backspace => FormEdit.Backspace,
@@ -412,6 +456,8 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
+                if (view.OpenSelectControl >= 0 && view.OpenSelectControl == Controller.FocusedControlIndex(tab.Id))
+                { CloseSelectPopup(view); return; }
                 if (Controller.IsMultilineFormControl(tab.Id))
                 {
                     Controller.InsertFormText(tab.Id, "\n");
@@ -539,6 +585,7 @@ public sealed class DevelopmentShell : IDisposable
     {
         if (enabled && window.ActiveTab is null) { return; }
         view.Editing = enabled;
+        if (enabled) { CloseSelectPopup(view); }
         SyncTextInput(view, window);
         if (enabled)
         {
@@ -556,7 +603,7 @@ public sealed class DevelopmentShell : IDisposable
         view.TextInput = enabled;
         if (textInput) { view.Native.SetTextInput(enabled); }
     }
-    private ShellFormState? Forms(BrowserWindow window)
+    private ShellFormState? Forms(BrowserWindow window, View view)
     {
         if (window.ActiveTabId is not { } id || Controller.Page(id) is not { FormControls.Count: > 0 } page) { return null; }
         var values = Enumerable.Range(0, page.FormControls.Count).Select(index => Controller.FormControlValue(id, index)).ToArray();
@@ -569,7 +616,41 @@ public sealed class DevelopmentShell : IDisposable
         var selectIndices = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
-            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices);
+            focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
+            view.OpenSelectControl, view.SelectPopupFirstOption);
+    }
+    private static void CloseSelectPopup(View view)
+    {
+        if (view.OpenSelectControl < 0) { return; }
+        view.OpenSelectControl = -1;
+        view.SelectPopupFirstOption = 0;
+        view.SelectPopupPage = null;
+        view.Dirty = true;
+    }
+    private void OpenSelectPopup(View view, BrowserTab tab, int controlIndex)
+    {
+        if (Controller.Page(tab.Id) is not { } page
+            || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } viewport
+            || ShellChrome.PopupLayout(page, controlIndex, viewport, 0) is not { } popup)
+        { CloseSelectPopup(view); return; }
+        view.OpenSelectControl = controlIndex;
+        view.SelectPopupFirstOption = Math.Clamp(Controller.SelectedOptionIndex(tab.Id, controlIndex), 0,
+            Math.Max(0, page.FormControls[controlIndex].Options.Length - popup.VisibleOptions));
+        view.SelectPopupPage = page;
+        view.Dirty = true;
+    }
+    private void KeepPopupSelectionVisible(View view, TabId id)
+    {
+        if (view.OpenSelectControl < 0 || Controller.FocusedControlIndex(id) != view.OpenSelectControl
+            || Controller.Page(id) is not { } page
+            || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } viewport
+            || ShellChrome.PopupLayout(page, view.OpenSelectControl, viewport, view.SelectPopupFirstOption) is not { } popup)
+        { return; }
+        var selected = Controller.SelectedOptionIndex(id, view.OpenSelectControl);
+        if (selected < popup.FirstOption) { view.SelectPopupFirstOption = selected; }
+        else if (selected >= popup.FirstOption + popup.VisibleOptions)
+        { view.SelectPopupFirstOption = selected - popup.VisibleOptions + 1; }
+        view.Dirty = true;
     }
     private void RefreshTextareaLayouts(TabId id)
     {
