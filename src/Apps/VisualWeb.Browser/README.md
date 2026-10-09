@@ -8,8 +8,9 @@ on primary left click or Tab/Shift+Tab/Enter, using renderer-owned clipped CSS
 rectangle groups. Keyboard traversal visits chrome before visible anchors;
 per-tab page focus is outlined by the shell without changing the renderer raster.
 The `_blank` target keyword opens an active tab in the source window. Same-document
-fragment links scroll to bounded rendered element IDs without a new load; named
-targets, `<base target>`, and DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/number fields, checkboxes, radio groups,
+fragment links and their Back/Forward traversal update URL-only history and scroll
+to bounded rendered element IDs without a new load; named targets, `<base target>`,
+and DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/number fields, checkboxes, radio groups,
 and multiline textareas with Tab focus, committed-text entry and Enter/click submission
 of same-tab GET `application/x-www-form-urlencoded` queries through the ordinary
 navigation transaction. Textareas have bounded rows/columns, soft wrapping and

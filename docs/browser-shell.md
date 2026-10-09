@@ -199,7 +199,9 @@ Relative and fragment URL components are preserved. Same-document fragment
 links update the URL-only history entry and scroll the retained document to a
 rendered element with the matching decoded `id`; an empty fragment scrolls to the
 top. This does not fetch, reparse or rerun scripts. Unrendered/unknown IDs and
-legacy named anchors do not scroll; same-document history traversal still reloads.
+legacy named anchors do not scroll. Back/Forward between fragment entries for the
+retained document updates the URL and restores fragment scrolling without a load;
+cross-document traversal still reloads.
 The hyperlink `target="_blank"` keyword opens a new active tab in the source
 window for pointer or focused-Enter activation; source-document scheme and HTTPS
 downgrade checks still apply to the navigation. Named targets, `_parent`/
@@ -522,10 +524,12 @@ paint features remain errors. See [HTML](html-dom.md), [CSS](css.md),
 Successful load **and rendering** commit history, final redirected URL, title
 and current frame atomically. Failure preserves the old document/frame and
 history index; the address retains the attempted URL, with a red error status
-and stderr diagnostic. Traversal refetches/rerenders URL-only history; reload
-replaces the current entry rather than appending. A new successful navigation
-discards the forward branch. There is no bfcache, same-document fragment
-navigation, iframe history, History API or session persistence.
+and stderr diagnostic. Reload replaces the current entry rather than appending. A
+new successful navigation discards the forward branch. Back/Forward between
+entries created by local fragment navigation retains the current document and
+restores the target fragment scroll without loading; traversal to another document
+refetches/rerenders it. There is no bfcache, iframe history, History API or session
+persistence.
 
 New loads cancel previous loads/renders for that tab. Generation checks prevent late
 stale results from replacing newer content; closing a tab cancels its loads

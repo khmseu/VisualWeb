@@ -189,6 +189,22 @@ public sealed class LinkTests
         Assert.Equal(committed.FragmentTargets, controller.Page(tab.Id)!.FragmentTargets);
         Assert.Equal(target.Y, controller.ScrollY(tab.Id));
 
+        var atTarget = controller.Page(tab.Id);
+        controller.Back(tab.Id);
+        Assert.Equal(0, tab.History.Index);
+        Assert.Equal("https://example.com/page", tab.AddressText);
+        Assert.Single(source.Requests);
+        PumpUntilComplete(atTarget);
+        Assert.Equal(0, controller.ScrollY(tab.Id));
+
+        var atTop = controller.Page(tab.Id);
+        controller.Forward(tab.Id);
+        Assert.Equal(1, tab.History.Index);
+        Assert.Equal("https://example.com/page#target", tab.AddressText);
+        Assert.Single(source.Requests);
+        PumpUntilComplete(atTop);
+        Assert.Equal(target.Y, controller.ScrollY(tab.Id));
+
         void PumpUntilComplete(BrowserPage? previous = null)
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);

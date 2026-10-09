@@ -803,19 +803,36 @@ public sealed class BrowserController : IDisposable
         var owner = content[id];
         if (tab.IsLoading || owner.Document is not { } document || owner.Page is not { } page
             || FragmentBase(document.Url) != FragmentBase(destination)) { return false; }
-        var fragmentIndex = destination.Href.IndexOf('#');
-        if (document.Url.Href == destination.Href && fragmentIndex < 0) { return true; }
-
-        var fragment = fragmentIndex >= 0 ? Uri.UnescapeDataString(destination.Href[(fragmentIndex + 1)..]) : "";
-        if (fragment.Length == 0) { Scroll(id, -owner.ScrollY); }
-        else if (page.FragmentTargets.FirstOrDefault(target => target.Id == fragment) is { } target)
-        { Scroll(id, target.Y - owner.ScrollY); }
-
-        if (tab.History.Current?.Href != destination.Href) { tab.History.Commit(destination); }
+        ScrollToFragment(id, destination, page);
+        if (tab.History.Current?.Href != destination.Href) { tab.History.CommitSameDocument(destination); }
         tab.AddressText = destination.Href;
         tab.Error = null;
         Changed?.Invoke(id);
         return true;
+    }
+
+    private bool TryTraverseSameDocument(TabId id, int index)
+    {
+        var tab = Session.Tab(id);
+        var owner = content[id];
+        if (tab.IsLoading || owner.Page is not { } page || !tab.History.IsSameDocumentAsCurrent(index)) { return false; }
+
+        var destination = tab.History.Entries[index];
+        tab.History.Commit(destination, traversalIndex: index);
+        tab.AddressText = destination.Href;
+        tab.Error = null;
+        ScrollToFragment(id, destination, page);
+        Changed?.Invoke(id);
+        return true;
+    }
+
+    private void ScrollToFragment(TabId id, BrowserUrl destination, BrowserPage page)
+    {
+        var fragmentIndex = destination.Href.IndexOf('#');
+        var fragment = fragmentIndex >= 0 ? Uri.UnescapeDataString(destination.Href[(fragmentIndex + 1)..]) : "";
+        if (fragment.Length == 0) { Scroll(id, -content[id].ScrollY); }
+        else if (page.FragmentTargets.FirstOrDefault(target => target.Id == fragment) is { } target)
+        { Scroll(id, target.Y - content[id].ScrollY); }
     }
 
     private static string FragmentBase(BrowserUrl url)
@@ -876,6 +893,7 @@ public sealed class BrowserController : IDisposable
         var tab = Session.Tab(id);
         if (!tab.History.CanGoBack) { throw new InvalidOperationException("No back history entry."); }
         var index = tab.History.Index - 1;
+        if (TryTraverseSameDocument(id, index)) { return; }
         Start(tab, tab.History.Entries[index], index, false);
     }
     public void Forward(TabId id)
@@ -884,6 +902,7 @@ public sealed class BrowserController : IDisposable
         var tab = Session.Tab(id);
         if (!tab.History.CanGoForward) { throw new InvalidOperationException("No forward history entry."); }
         var index = tab.History.Index + 1;
+        if (TryTraverseSameDocument(id, index)) { return; }
         Start(tab, tab.History.Entries[index], index, false);
     }
     public void Reload(TabId id)

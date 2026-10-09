@@ -24,14 +24,16 @@ public sealed record BrowserOptions
     }
 }
 
-/// <summary>URL-only development session history; documents are reloaded on traversal.</summary>
+/// <summary>URL development session history with bounded same-document fragment traversal.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#session-history">session history</see>.
-/// User link fragment navigation updates the active URL and scrolls the retained page, but traversal reloads. No joint frame
-/// history, bfcache, script History API or persistence is implemented.</remarks>
+/// User link fragment navigation and traversal between entries for the retained document update the active URL and scroll locally.
+/// Cross-document traversal reloads. No joint frame history, bfcache, script History API or persistence is implemented.</remarks>
 public sealed class NavigationHistory
 {
     private readonly List<BrowserUrl> entries = [];
+    private readonly List<long> documentIds = [];
     private readonly int maximum;
+    private long nextDocumentId;
     public IReadOnlyList<BrowserUrl> Entries { get; }
     public int Index { get; private set; } = -1;
     public BrowserUrl? Current => Index < 0 ? null : entries[Index];
@@ -53,13 +55,35 @@ public sealed class NavigationHistory
             Index = target;
         }
         else if (replace && Index >= 0) { entries[Index] = url; }
-        else
+        else { Append(url, checked(++nextDocumentId)); }
+    }
+    internal void CommitSameDocument(BrowserUrl url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        if (Index < 0) { throw new InvalidOperationException("Cannot add a same-document entry before the first document."); }
+        Append(url, documentIds[Index]);
+    }
+    internal bool IsSameDocumentAsCurrent(int index)
+    {
+        if (index < 0 || index >= documentIds.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return Index >= 0 && documentIds[Index] == documentIds[index];
+    }
+    private void Append(BrowserUrl url, long documentId)
+    {
+        var forwardCount = entries.Count - Index - 1;
+        if (forwardCount > 0)
         {
-            entries.RemoveRange(Index + 1, entries.Count - Index - 1);
-            entries.Add(url);
-            if (entries.Count > maximum) { entries.RemoveAt(0); }
-            Index = entries.Count - 1;
+            entries.RemoveRange(Index + 1, forwardCount);
+            documentIds.RemoveRange(Index + 1, forwardCount);
         }
+        entries.Add(url);
+        documentIds.Add(documentId);
+        if (entries.Count > maximum)
+        {
+            entries.RemoveAt(0);
+            documentIds.RemoveAt(0);
+        }
+        Index = entries.Count - 1;
     }
 }
 
