@@ -67,9 +67,10 @@ broader page interaction is still missing:
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
   Selects expose bounded direct options, default selection, disabled-option
-  skipping and Up/Down/Home/End keyboard selection. A browser-owned popup supports
-  pointer option selection and wheel scrolling through longer lists, with Escape/
-  outside-click dismissal; text fields and textareas display bounded placeholders
+  skipping and Up/Down/Home/End keyboard selection. Enter/Space or a primary click
+  opens a browser-owned popup; it supports pointer option selection and wheel
+  scrolling through longer lists, with Escape/outside-click dismissal. Text fields
+  and textareas display bounded placeholders
   without changing submitted values. Email `multiple` supports sanitized
   comma-separated address lists, while select multiple selection, listboxes and
   optgroups remain unsupported.

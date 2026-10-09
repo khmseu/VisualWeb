@@ -83,7 +83,7 @@ The native window title retains the same warning alongside the active page title
 | Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
-| Single-select control | Click to open; click an enabled option to select; wheel within the popup to scroll options; Escape or an outside click dismisses it |
+| Single-select control | Click, Enter, or Space to open; arrows/Home/End select enabled options; click an enabled popup option to select; wheel scrolls long lists; Escape or an outside click dismisses |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
 | Committed text, Left/Right, Backspace/Delete in a focused text/search/email/tel/url/password/date/time/month/week/number field or textarea | Edit the shell-owned field value (no page scrolling) |
 | Home/End in a focused text/search/email/tel/url/password/date/time/month/week/number field | Move the caret to the start/end of the value |
@@ -265,8 +265,9 @@ their value (default `on`), and required checkboxes must be checked while requir
 radio groups need one selected member. Required single-selects need a nonempty enabled selection.
 Single-select controls carry bounded direct options, choose the selected or first enabled option by default,
 skip disabled options during Up/Down and Home/End selection, and submit only an enabled selected option.
-A primary click opens a browser-owned popup with up to 12 visible rows; wheel input scrolls longer option lists,
-clicking a disabled row leaves selection unchanged, and Escape or an outside click dismisses the popup.
+A primary click, Enter or Space opens a browser-owned popup with up to 12 visible rows; arrow/Home/End keys
+continue to select enabled options, wheel input scrolls longer option lists, clicking a disabled row leaves
+selection unchanged, and Escape or an outside click dismisses the popup.
 Listboxes, multiple selection and optgroups remain unsupported. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
 within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas

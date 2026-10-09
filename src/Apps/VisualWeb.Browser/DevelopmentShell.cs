@@ -420,6 +420,8 @@ public sealed class DevelopmentShell : IDisposable
                 && Controller.AdjustFocusedRange(tab.Id, 1)) { return; }
             if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedRangeEndpoint(tab.Id, false)) { return; }
             if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedRangeEndpoint(tab.Id, true)) { return; }
+            if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
+                && ToggleFocusedSelectPopup(window, view, tab.Id)) { return; }
             if (!control && !alt && code is SDL.Scancode.Up or SDL.Scancode.Down
                 && Controller.MoveFocusedSelect(tab.Id, code == SDL.Scancode.Up ? -1 : 1))
             { KeepPopupSelectionVisible(view, tab.Id); return; }
@@ -456,8 +458,7 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (!control && !alt && code == SDL.Scancode.Return && !key.Repeat)
             {
-                if (view.OpenSelectControl >= 0 && view.OpenSelectControl == Controller.FocusedControlIndex(tab.Id))
-                { CloseSelectPopup(view); return; }
+                if (ToggleFocusedSelectPopup(window, view, tab.Id)) { return; }
                 if (Controller.IsMultilineFormControl(tab.Id))
                 {
                     Controller.InsertFormText(tab.Id, "\n");
@@ -618,6 +619,15 @@ public sealed class DevelopmentShell : IDisposable
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
             view.OpenSelectControl, view.SelectPopupFirstOption);
+    }
+    private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id)
+    {
+        var index = Controller.FocusedControlIndex(id);
+        if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
+        if (view.OpenSelectControl == index) { CloseSelectPopup(view); }
+        else if (window.ActiveTab is { } tab) { OpenSelectPopup(view, tab, index); }
+        return true;
     }
     private static void CloseSelectPopup(View view)
     {

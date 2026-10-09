@@ -355,6 +355,44 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void EnterAndSpaceToggleFocusedSelectPopupForKeyboardOptionPicking()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select name=mode>" +
+            "<option value=one>One</option><option value=blocked disabled>Blocked</option>" +
+            "<option value=three>Three</option></select></form>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var popupY = ShellChrome.Height + rect.Y + rect.Height;
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+
+        Key(SDL.Scancode.Return);
+        shell.Tick();
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 50)));
+        Assert.Equal(2, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        Key(SDL.Scancode.Space);
+        shell.Tick();
+        Key(SDL.Scancode.Escape);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 10)));
+        Assert.Equal(2, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        void Key(SDL.Scancode code) => shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void SingleSelectPopupWheelScrollsToOptionsOutsideTheInitialWindow()
     {
         using var system = new Windows();
