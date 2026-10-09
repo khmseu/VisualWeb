@@ -1,6 +1,6 @@
 # Ipc.Contracts
 
-Version-21 data-only hello/render/frame/error messages, confirmed sandbox
+Version-34 data-only hello/render/frame/error messages, confirmed sandbox
 profile handshake and exact
 viewport/text/frame budgets. No DOM, V8, native handles or broker capabilities.
 Each private channel serves one tab with monotonically increasing request IDs.
@@ -20,9 +20,14 @@ arrays with a 1 MiB combined UTF-8 JSON budget, 8192-character strings, valid
 form indices, supported kinds, nondecreasing `BeforeLink` positions and
 viewport-contained rectangles (never for hidden inputs). A form either has an
 absolute http/https/file/data action or an empty action with a nonempty error.
+Required form `OpenInNewTab`/nullable `TargetError` and submitter nullable
+`FormTargetOpenInNewTab`/`FormTargetError` carry only current/new-tab choice or
+bounded diagnostics. Null overrides inherit, false selects current tab, and true
+selects new tab; submitter choice and error are mutually exclusive and restricted
+to submit buttons. Target errors remain separate from other form errors.
 
 These are internal contracts, not a web standard. See the
-[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v21).
+[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v34).
 Render requests require a `Stylesheets` array (rejected on other kinds): at most
 32 unique absolute serialized URLs (8192 characters each) with decoded CSS text of
 at most 256 Ki characters each and a 1 MiB UTF-8 JSON budget for the whole array.

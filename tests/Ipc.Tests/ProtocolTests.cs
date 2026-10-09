@@ -47,7 +47,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(33, RendererProtocol.Version);
+        Assert.Equal(34, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 33 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 33 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 32 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 32 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 31 }, 0));
@@ -320,6 +322,72 @@ public sealed class ProtocolTests
 
     public static TheoryData<int> InvalidFormCases() => new(Enumerable.Range(0, 36));
 
+    [Fact]
+    public void FormTargetFieldsAreRequiredOnTheWire()
+    {
+        var formJson = JsonSerializer.Serialize(FormFrame.Forms![0]);
+        Assert.Contains("\"OpenInNewTab\":false", formJson, StringComparison.Ordinal);
+        Assert.Contains("\"TargetError\":null", formJson, StringComparison.Ordinal);
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
+            formJson.Replace("\"OpenInNewTab\":false,", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
+            formJson.Replace(",\"TargetError\":null", "", StringComparison.Ordinal)));
+        var controlJson = JsonSerializer.Serialize(FormFrame.FormControls![0]);
+        Assert.Contains("\"FormTargetOpenInNewTab\":null", controlJson, StringComparison.Ordinal);
+        Assert.Contains("\"FormTargetError\":null", controlJson, StringComparison.Ordinal);
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
+            controlJson.Replace(",\"FormTargetOpenInNewTab\":null", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
+            controlJson.Replace(",\"FormTargetError\":null", "", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void FormTargetMetadataRoundTripsAndRejectsInvalidCombinations()
+    {
+        var frame = FormFrame with
+        {
+            Forms = [new("https://example.com/search", null) { OpenInNewTab = true },
+                new("https://example.com/search", null) { TargetError = "Unsupported form target." }],
+            FormControls =
+            [
+                FormFrame.FormControls![3] with { Form = 0, FormTargetOpenInNewTab = true },
+                FormFrame.FormControls![3] with { Form = 0, FormTargetOpenInNewTab = false },
+                FormFrame.FormControls![3] with { Form = 0, FormTargetError = "Unsupported formtarget." },
+            ]
+        };
+        RendererProtocol.Validate(frame, 16);
+        var parsed = JsonSerializer.Deserialize<RendererMessage>(JsonSerializer.Serialize(frame))!;
+        Assert.Equal(frame.Forms, parsed.Forms);
+        Assert.Equal(frame.FormControls.Select(control => (control.FormTargetOpenInNewTab, control.FormTargetError)),
+            parsed.FormControls!.Select(control => (control.FormTargetOpenInNewTab, control.FormTargetError)));
+
+        foreach (var form in new[]
+        {
+            frame.Forms[0] with { TargetError = "" },
+            frame.Forms[0] with { TargetError = "error" },
+            frame.Forms[1] with { TargetError = new string('x', RendererProtocol.MaxTextCharacters + 1) },
+        })
+        {
+            Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with { Forms = [form] }, 16));
+        }
+        foreach (var control in new[]
+        {
+            frame.FormControls[0] with { FormTargetError = "error" },
+            frame.FormControls[2] with { FormTargetError = "" },
+            frame.FormControls[2] with { FormTargetError = new string('x', RendererProtocol.MaxTextCharacters + 1) },
+            FormFrame.FormControls![0] with { FormTargetOpenInNewTab = false },
+            FormFrame.FormControls![0] with { FormTargetError = "error" },
+        })
+        {
+            Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with { FormControls = [control] }, 16));
+        }
+        RendererProtocol.Validate(frame with
+        {
+            Forms = [frame.Forms[1] with { TargetError = new string('x', RendererProtocol.MaxTextCharacters) }],
+            FormControls = [frame.FormControls[2] with { FormTargetError = new string('x', RendererProtocol.MaxTextCharacters) }]
+        }, 16);
+    }
+
     [Theory]
     [InlineData("0001-01-01", true)]
     [InlineData("2000-02-29", true)]
@@ -591,7 +659,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(33, RendererProtocol.Version);
+        Assert.Equal(34, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

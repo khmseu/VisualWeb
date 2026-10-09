@@ -8,6 +8,10 @@ namespace VisualWeb.Browser;
 
 public interface IPageSource : IDisposable
 {
+    /// <summary>Checks initial new-tab form policy without starting a load; loading still checks every redirect.</summary>
+    void ValidateNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin) =>
+        PageNavigationPolicy.Validate(url, preventHttpsDowngrade, sameOriginRedirectOrigin);
+
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken);
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade)
     {
@@ -44,11 +48,17 @@ public interface IPageSource : IDisposable
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
+    private readonly HstsPolicyStore? hstsPolicyStore;
     /// <summary>Creates a tab-local loader, optionally using a caller-owned session HSTS store.</summary>
     /// <remarks>Spec: rfc6797; <see href="https://www.rfc-editor.org/rfc/rfc6797.html#section-8">UA processing</see>.
     /// Cookies remain disabled. Standalone sources without a supplied store retain their prior behavior.</remarks>
-    public GetPageSource(HttpMessageHandler? handler = null, Engine.Net.HstsPolicyStore? hstsPolicyStore = null) =>
+    public GetPageSource(HttpMessageHandler? handler = null, Engine.Net.HstsPolicyStore? hstsPolicyStore = null)
+    {
+        this.hstsPolicyStore = hstsPolicyStore;
         loader = new(new() { MaxResponseBytes = 4 * 1024 * 1024 }, handler, hstsPolicyStore);
+    }
+    public void ValidateNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin) =>
+        PageNavigationPolicy.Validate(hstsPolicyStore?.Upgrade(url) ?? url, preventHttpsDowngrade, sameOriginRedirectOrigin);
     public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
         LoadAsync(url, cancellationToken, preventHttpsDowngrade: false);
     public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
@@ -66,6 +76,7 @@ public sealed class GetPageSource : IPageSource
         {
             throw new PageNavigationException("Only text/html (or explicitly selected local HTML files) can be rendered; MIME sniffing is deferred.");
         }
+
         string? label = null;
         response.ContentType?.Parameters.TryGetValue("charset", out label);
         var sniffed = HtmlEncodingSniffer.Sniff(response.Body.Span, label, WebEncoding.ForLabel("UTF-8"));
@@ -200,4 +211,16 @@ public sealed class GetPageSource : IPageSource
     };
 
     public void Dispose() => loader.Dispose();
+}
+
+internal static class PageNavigationPolicy
+{
+    internal static void Validate(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin)
+    {
+        if (preventHttpsDowngrade && url.Protocol == "http:")
+        { throw new PageNavigationException("HTTPS downgrade form navigation is blocked."); }
+        if (sameOriginRedirectOrigin is not null && url.Protocol is "http:" or "https:"
+            && !sameOriginRedirectOrigin.IsSameOrigin(url.Origin))
+        { throw new PageNavigationException("Cross-origin form navigation is blocked."); }
+    }
 }

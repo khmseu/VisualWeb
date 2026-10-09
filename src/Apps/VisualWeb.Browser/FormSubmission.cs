@@ -7,7 +7,7 @@ namespace VisualWeb.Browser;
 /// <summary>Caret edits for the focused browser-owned text field.</summary>
 public enum FormEdit { Backspace, Delete, Left, Right, Up, Down, Home, End }
 
-/// <summary>Bounded same-tab GET form submission helpers: entry list, urlencoded serializer and action URL mutation.</summary>
+/// <summary>Bounded GET form submission helpers: entry list, urlencoded serializer and action URL mutation.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#constructing-the-form-data-set">constructing
 /// the entry list</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submit-mutate-action">mutate
 /// action URL</see>; url; <see href="https://url.spec.whatwg.org/#concept-urlencoded-serializer">application/x-www-form-urlencoded

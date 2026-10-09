@@ -9,7 +9,7 @@ namespace VisualWeb.PageRendering;
 /// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-attributes">form
 /// submission attributes</see> and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-owner">form
 /// owner</see>. Controls use the first matching ID for an explicit <c>form</c> attribute, otherwise the nearest
-/// ancestor form; unsupported form-associated elements remain visible errors. Anything outside same-tab GET with
+/// ancestor form; unsupported form-associated elements remain visible errors. Anything outside bounded GET with
 /// urlencoded data becomes a visible per-form error instead of a
 /// partial submission. Limits throw <see cref="PageNavigationException"/>.</remarks>
 internal static class PageForms
@@ -17,7 +17,7 @@ internal static class PageForms
     private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
-    private static readonly string[] SubmitterOverrides = ["formenctype", "formmethod", "formtarget"];
+    private static readonly string[] SubmitterOverrides = ["formenctype", "formmethod"];
     private static readonly string[] TextOnlyAttributes = ["dirname", "list"];
 
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
@@ -27,6 +27,7 @@ internal static class PageForms
         var formIndex = new Dictionary<DomElement, int>();
         var errors = new List<string?>();
         var actions = new List<string>();
+        var targets = new List<(bool OpenInNewTab, string? Error)>();
         var controls = new List<PageFormControl>();
         var elements = document.Descendants().OfType<DomElement>().ToList();
         var baseTarget = BaseTarget(elements, cancellationToken);
@@ -43,9 +44,10 @@ internal static class PageForms
             if (element.LocalName != "form") { continue; }
             if (formIndex.Count >= RendererProtocol.MaxForms)
             { throw new PageNavigationException($"Renderer form count limit ({RendererProtocol.MaxForms}) exceeded."); }
-            var (action, error) = Form(element, url, baseUrl, baseTarget);
+            var (action, error) = Form(element, url, baseUrl);
             formIndex.Add(element, formIndex.Count);
             actions.Add(action);
+            targets.Add(Target(element.GetAttribute("target") ?? baseTarget, "target"));
             errors.Add(error);
         }
         var lastLink = 0;
@@ -116,9 +118,17 @@ internal static class PageForms
             }
             string? submitterAction = null;
             string? submitterActionError = null;
+            bool? submitterTarget = null;
+            string? submitterTargetError = null;
             if (kind is "submit" or "button")
             {
                 (submitterAction, submitterActionError) = SubmitterAction(element, url, baseUrl);
+                if (element.GetAttribute("formtarget") is { } target)
+                {
+                    var targetResult = Target(target, "formtarget");
+                    submitterTargetError = targetResult.Error;
+                    if (targetResult.Error is null) { submitterTarget = targetResult.OpenInNewTab; }
+                }
                 foreach (var name in SubmitterOverrides)
                 {
                     if (element.GetAttribute(name) is not null) { Reject(index, $"submit button override {name}"); }
@@ -223,6 +233,8 @@ internal static class PageForms
                 FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null,
                 FormAction = submitterAction,
                 FormActionError = submitterActionError,
+                FormTargetOpenInNewTab = submitterTarget,
+                FormTargetError = submitterTargetError,
                 TextareaWrapColumns = textareaWrapColumns,
                 TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0
             });
@@ -236,7 +248,11 @@ internal static class PageForms
                 }
             }
         }
-        var forms = actions.Select((action, i) => errors[i] is { } error ? new PageForm("", error) : new PageForm(action, null)).ToArray();
+        var forms = actions.Select((action, i) => new PageForm(errors[i] is null ? action : "", errors[i])
+        {
+            OpenInNewTab = targets[i].OpenInNewTab,
+            TargetError = targets[i].Error,
+        }).ToArray();
         var result = controls.ToArray();
         try { RendererProtocol.ValidateForms(forms, result, linkCount, width, height); }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
@@ -248,8 +264,7 @@ internal static class PageForms
         }
     }
 
-    private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, BrowserUrl baseUrl,
-        string? baseTarget)
+    private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, BrowserUrl baseUrl)
     {
         var method = form.GetAttribute("method")?.ToLowerInvariant();
         if (method is "post" or "dialog")
@@ -257,9 +272,6 @@ internal static class PageForms
         if (form.GetAttribute("enctype") is { } enctype && !enctype.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
             && (enctype.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase) || enctype.Equals("text/plain", StringComparison.OrdinalIgnoreCase)))
         { return ("", $"Unsupported form enctype: {enctype}."); }
-        var target = (form.GetAttribute("target") ?? baseTarget)?.Trim(AsciiWhitespace);
-        if (!string.IsNullOrEmpty(target) && !IsCurrentTarget(target))
-        { return ("", "Unsupported form target: only current-tab targets are implemented."); }
         if (form.GetAttribute("novalidate") is not null)
         { return ("", "Unsupported form novalidate: constraint validation cannot be bypassed in this subset."); }
         if (form.GetAttribute("accept-charset") is { } charset
@@ -322,6 +334,15 @@ internal static class PageForms
         && (target.Equals("_self", StringComparison.OrdinalIgnoreCase)
             || target.Equals("_parent", StringComparison.OrdinalIgnoreCase)
             || target.Equals("_top", StringComparison.OrdinalIgnoreCase));
+
+    private static (bool OpenInNewTab, string? Error) Target(string? target, string attribute)
+    {
+        target = target?.Trim(AsciiWhitespace);
+        if (string.IsNullOrEmpty(target) || IsCurrentTarget(target)) { return (false, null); }
+        if (target.All(character => character <= 0x7f) && target.Equals("_blank", StringComparison.OrdinalIgnoreCase))
+        { return (true, null); }
+        return (false, $"Unsupported form {attribute}: only _blank and current-tab keywords are implemented; named contexts are unsupported.");
+    }
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {

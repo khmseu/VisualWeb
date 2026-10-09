@@ -58,7 +58,7 @@ broader page interaction is still missing:
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select `select`, and `button` submit/reset controls; supported successful controls
-  submit same-tab GET urlencoded queries via IPC v33 data-only metadata and the ordinary
+  submit current/new-tab GET urlencoded queries via IPC v34 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -84,14 +84,20 @@ broader page interaction is still missing:
   Grid calculations use bounded binary64 precision and fail closed beyond the
   reliable value-to-step ratio range. Range controls have bounded min/max/step
   metadata (defaults 0–100/step 1), initial range/grid sanitization, keyboard/pointer
-  adjustment, same-tab GET submission and shell-owned slider painting.
+  adjustment, bounded GET submission and shell-owned slider painting.
   Textareas support bounded rows/columns, multiline shell editing, measured soft
   wrapping with visual-line-aware caret movement and caret-driven/wheel-controlled
   independent line-window scrolling, plus newline-normalized GET entries. A submit button's
   `formnovalidate` bypasses supported constraint checks for that submission only;
   `formaction` selects a submitter-specific base-resolved action; textarea
   `wrap=hard` applies bounded explicit-column line breaks only during submission.
-  Neither bypasses destination or origin restrictions.
+  Form `target` and first `<base target>` fallback support `_blank` as a new active
+  tab; `_self`, `_parent`, and `_top` retain current-tab behavior. A selected
+  button/input submitter's `formtarget` overrides that fallback. Invalid/named
+  overrides affect only that submitter and fail before value serialization or
+  request/tab startup. Named/other non-keyword contexts remain missing and visibly
+  rejected. None bypass destination or origin restrictions; new-tab destination
+  checks run before tab creation, with shared HSTS applied before downgrade checks.
   Visible text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste.
   Clipboard support remains bounded to selection copy and paste into focused
@@ -229,7 +235,7 @@ milestones and should be read as historical status, not current capability.
 1. **Security model and mandatory supported isolation** before untrusted browsing.
 2. **Links, page input, and subresource loading** for basic usability. Basic
    bounded textual links, vertical document scrolling, bounded classic linked
-   stylesheets and simple same-tab GET forms are implemented; broader page input, other subresources and overflow remain.
+   stylesheets and simple current/new-tab GET forms are implemented; broader page input, other subresources and overflow remain.
 3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.

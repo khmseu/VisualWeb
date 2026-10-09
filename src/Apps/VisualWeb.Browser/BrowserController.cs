@@ -749,6 +749,11 @@ public sealed class BrowserController : IDisposable
         if (form.Error is { } error) { throw new PageNavigationException(error); }
         var document = owner.Document!;
         var submitterControl = submitter >= 0 ? page.FormControls[submitter] : null;
+        if (submitterControl?.FormTargetError is { } submitterTargetError)
+        { throw new PageNavigationException(submitterTargetError); }
+        if (submitterControl?.FormTargetOpenInNewTab is null && form.TargetError is { } targetError)
+        { throw new PageNavigationException(targetError); }
+        var openInNewTab = submitterControl?.FormTargetOpenInNewTab ?? form.OpenInNewTab;
         if (submitterControl?.FormActionError is { } actionError) { throw new PageNavigationException(actionError); }
         var action = BrowserUrl.Parse(submitterControl?.FormAction ?? form.Action);
         if (action.Protocol is "http:" or "https:")
@@ -830,6 +835,9 @@ public sealed class BrowserController : IDisposable
             { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
         }
         var limit = Session.Options.MaxAddressCharacters;
+        var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
+        var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:" ? document.Origin : null;
+        if (openInNewTab) { owner.Source.ValidateNavigationTarget(action, preventHttpsDowngrade, sameOriginRedirectOrigin); }
         var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter,
             i => normalizedEmailValues.TryGetValue(i, out var email) ? email
                 : page.FormControls[i] is { Kind: "textarea", TextareaWrapHard: true } textarea
@@ -842,10 +850,8 @@ public sealed class BrowserController : IDisposable
                 var selected = SelectedOption(owner, i);
                 return selected >= 0 && !control.Options[selected].Disabled;
             }), limit);
-        var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
-        var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:" ? document.Origin : null;
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
-            sameOriginRedirectOrigin);
+            sameOriginRedirectOrigin, openInNewTab);
     }
     private static bool CanUpgradeSameHostFormAction(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
         documentOrigin.Scheme == "https" && actionOrigin.Scheme == "http"

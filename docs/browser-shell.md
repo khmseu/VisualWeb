@@ -223,7 +223,7 @@ remain deferred. This is a bounded subset of HTML
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v33); the browser owns all values,
+reports data-only form/control snapshots (IPC v34); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range, checkbox, radio, textarea,
 hidden, submit and reset, single-select `select`, plus `button` submit/reset (and inert `type=button`).
 Text fields use generic editing and draw applicable placeholders in muted chrome only while the shell-owned value is empty; input placeholders strip line breaks and never become submitted values. Password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
@@ -315,7 +315,7 @@ plus the named activating submitter, in tree order. `_charset_` hidden fields
 submit `UTF-8`; names/values normalize newlines to CRLF. Encoding is UTF-8
 `application/x-www-form-urlencoded` (alphanumerics and `*-._` kept, space as `+`,
 everything else `%XX`, lone surrogates as U+FFFD), replacing the action's query
-and keeping its fragment. The result uses the ordinary same-tab navigation
+and keeping its fragment. The result uses the ordinary current/new-tab navigation
 transaction (HSTS, redirects, origin rotation, history). Page-initiated `file:`
 and `data:` actions are rejected by the navigation broker. The query is capped
 at 8192 characters and the resulting URL at the existing URL limit.
@@ -341,8 +341,18 @@ fail visibly only when that submitter is activated. An invalid, `data:`, or
 `javascript:` base URL falls back to that document URL. The resulting destination still
 passes the browser's same-origin, local-file, opaque-origin, HSTS and downgrade
 checks before any form values are serialized. `_self`, `_parent`, and `_top`
-(including the first `<base target>` fallback) use the current tab; `_blank` and
-named form targets fail visibly.
+(including the first `<base target>` fallback) use the current tab; `_blank`
+opens a new active tab in the source window. The selected button or input submitter's
+`formtarget` overrides the form target, including an empty override selecting the current tab.
+Named and other non-keyword contexts remain visibly rejected. Target errors are separate
+from other form errors: an invalid submitter affects only its own activation, and a
+supported submitter override can replace an unsupported form/base target. Target checks
+precede validation and value serialization; destination policy checks precede new-tab
+creation. New-tab form preflight uses the source's shared HSTS store before checking
+downgrade/fixed-origin policy, and the destination loader rechecks initial/redirect
+policy without rebinding the document origin. Custom `IPageSource` implementations
+inherit conservative initial checks through `ValidateNavigationTarget`; sources that
+upgrade HTTP must explicitly provide equivalent HSTS-aware preflight.
 
 Supported controls with a `form` attribute use the first element in tree order
 with the exact matching `id` when that element is a `<form>`; otherwise they
@@ -351,8 +361,8 @@ their nearest ancestor form. Associated controls are submitted in document
 tree order, including controls before or outside the form element.
 
 Visible failures, without navigation and keeping the committed page: a form with
-`method` post/dialog, unsupported `enctype`, unsupported named or new-tab target
-(including inherited `<base target>`), `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides other than `formaction` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
+`method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target
+(including inherited `<base target>` or the selected `formtarget`), `novalidate`, non-UTF-8 `accept-charset`, unsupported `form=` ownership on fieldsets/output/object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
 textarea `dirname`, listbox/multiple select semantics, optgroups and unsupported select content,
 output/object controls,
 `datalist` or disabled `fieldset` ancestors, invalid/unsupported action schemes,

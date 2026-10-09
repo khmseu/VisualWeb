@@ -661,8 +661,6 @@ public sealed class FormTests
     [InlineData("<form method=post><input name=q></form>", "method")]
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
     [InlineData("<form enctype=text/plain><input name=q></form>", "enctype")]
-    [InlineData("<form target=_blank><input name=q></form>", "target")]
-    [InlineData("<base target=_blank><form><input name=q></form>", "target")]
     [InlineData("<form novalidate><input name=q></form>", "novalidate")]
     [InlineData("<form accept-charset=iso-8859-1><input name=q></form>", "accept-charset")]
     [InlineData("<form action='javascript:alert(1)'><input name=q></form>", "scheme")]
@@ -671,7 +669,6 @@ public sealed class FormTests
     [InlineData("<form><input name=q dirname=d></form>", "dirname")]
     [InlineData("<form><input name=q list=l></form>", "list")]
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
-    [InlineData("<form><button formtarget=_blank>x</button></form>", "formtarget")]
     [InlineData("<form><input type=submit formenctype=text/plain></form>", "formenctype")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
@@ -941,10 +938,15 @@ public sealed class FormTests
         internal BrowserController Controller { get; }
         internal BrowserTab Tab { get; }
         internal BrowserWindowId Window { get; }
+        internal int RendererCreations { get; private set; }
         internal PageViewport Viewport { get; } = new(200, 400, 1);
         internal Harness(string body, string encoding = "UTF-8", string url = "https://example.com/final/index.html")
         {
-            Controller = new(() => Source, () => new StaticPageRenderer(FontPath, 100000));
+            Controller = new(() => Source, () =>
+            {
+                RendererCreations++;
+                return new StaticPageRenderer(FontPath, 100000);
+            });
             Window = Controller.Session.CreateWindow().Id;
             Tab = Controller.CreateTab(Window);
             Load(Tab, body, encoding, url);
@@ -1329,7 +1331,7 @@ public sealed class FormTests
 
     [Theory]
     [InlineData("<form method=post><input name=q></form>", "method")]
-    [InlineData("<form target=_blank><input name=q></form>", "target")]
+    [InlineData("<form target=named><input name=q></form>", "target")]
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
     [InlineData("<form novalidate><input name=q></form>", "novalidate")]
     [InlineData("<form><input name=q required></form>", "required")]
@@ -2356,8 +2358,10 @@ public sealed class FormTests
         Assert.Equal(-1, controller.FocusedControlIndex(first.Id));
     }
 
-    [Fact]
-    public void NetworkSubmissionIsBrokeredGetWithEncodedQueryThroughHsts()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NetworkSubmissionIsBrokeredGetWithEncodedQueryThroughHsts(bool newTab)
     {
         var store = new HstsPolicyStore();
         var requests = new List<HttpRequestMessage>();
@@ -2366,7 +2370,7 @@ public sealed class FormTests
             requests.Add(request);
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(Style + "<form action='http://example.test/find#top'><input name='q q' value='a b+\u00e9'></form>",
+                Content = new StringContent(Style + $"<form target='{(newTab ? "_blank" : "_self")}' action='http://example.test/find#top'><input name='q q' value='a b+\u00e9'></form>",
                     System.Text.Encoding.UTF8, "text/html")
             };
             response.Headers.TryAddWithoutValidation("Strict-Transport-Security", "max-age=60");
@@ -2385,13 +2389,210 @@ public sealed class FormTests
         Assert.All(requests, request => Assert.Equal(HttpMethod.Get, request.Method));
         Assert.Null(requests[1].Content);
         Assert.Equal("https://example.test/find?q+q=a+b%2B%C3%A9", requests[1].RequestUri!.AbsoluteUri);
-        Assert.Equal("https://example.test/find?q+q=a+b%2B%C3%A9#top", tab.History.Current!.Href);
-        Assert.Equal("https://example.test", tab.Origin!.Serialize());
+        var active = Assert.Single(controller.Session.Windows).ActiveTab!;
+        Assert.Equal("https://example.test/find?q+q=a+b%2B%C3%A9#top", active.History.Current!.Href);
+        Assert.Equal("https://example.test", active.Origin!.Serialize());
     }
 
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(respond(request));
+    }
+
+    [Theory]
+    [InlineData("<form target=_blank>", "<button name=s value=go>Go</button>", true)]
+    [InlineData("<base target=_BLANK><form>", "<input type=submit name=s value=go>", true)]
+    [InlineData("<base target=named><form target=_self>", "<button name=s value=go>Go</button>", false)]
+    [InlineData("<form target=_blank>", "<button formtarget=_parent name=s value=go>Go</button>", false)]
+    [InlineData("<form target=_blank>", "<input type=submit formtarget=_top name=s value=go>", false)]
+    [InlineData("<base target=_blank><form>", "<button formtarget='' name=s value=go>Go</button>", false)]
+    [InlineData("<form target=named>", "<button formtarget=_blank name=s value=go>Go</button>", true)]
+    [InlineData("<form target=_self>", "<input type=submit formtarget=_blank name=s value=go>", true)]
+    public void SafeFormTargetsSelectCurrentOrNewActiveTab(string start, string submitter, bool newTab)
+    {
+        using var harness = new Harness(start + "<input name=q value='a b'>" + submitter + "</form>");
+        var controller = harness.Controller;
+        var original = controller.Page(harness.Tab.Id);
+        var window = Assert.Single(controller.Session.Windows);
+        Assert.True(controller.FocusControl(harness.Tab.Id, 1));
+
+        Assert.True(controller.ActivateFocusedLink(harness.Tab.Id));
+
+        var destination = "https://example.com/final/index.html?q=a+b&s=go";
+        Assert.Equal(destination, harness.Source.Requests[^1].Url.Href);
+        Assert.Equal(newTab ? 2 : 1, window.Tabs.Count);
+        var active = window.ActiveTab!;
+        Assert.Equal(newTab, active.Id != harness.Tab.Id);
+        harness.Source.Requests[^1].Completion.SetResult(Document("<p>result</p>", destination));
+        harness.Pump();
+        Assert.Null(active.Error);
+        Assert.Equal(destination, active.History.Current!.Href);
+        if (newTab)
+        {
+            Assert.Same(original, controller.Page(harness.Tab.Id));
+            Assert.Single(harness.Tab.History.Entries);
+            Assert.Equal("a b", controller.FormControlValue(harness.Tab.Id, 0));
+        }
+    }
+
+    [Theory]
+    [InlineData("button", "named")]
+    [InlineData("input", "_unfencedTop")]
+    [InlineData("button", "_blank extra")]
+    public void InvalidSelectedFormTargetFailsBeforeSerializationWithoutPoisoningOtherSubmitters(string tag, string target)
+    {
+        var bad = tag == "input" ? $"<input type=submit formtarget='{target}' value=Bad>"
+            : $"<button formtarget='{target}'>Bad</button>";
+        using var harness = new Harness("<form target=_blank><input name=q required>" + bad + "<button>Good</button></form>");
+        var controller = harness.Controller;
+        controller.FocusControl(harness.Tab.Id, 1);
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("formtarget", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        Assert.Single(Assert.Single(controller.Session.Windows).Tabs);
+        Assert.Equal(1, harness.RendererCreations);
+
+        controller.FocusControl(harness.Tab.Id, 2);
+        var validation = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("required", validation.Message, StringComparison.OrdinalIgnoreCase);
+        controller.FocusControl(harness.Tab.Id, 0);
+        controller.InsertFormText(harness.Tab.Id, new string('x', RendererProtocol.MaxTextCharacters));
+        controller.FocusControl(harness.Tab.Id, 1);
+        error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("formtarget", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        controller.FocusControl(harness.Tab.Id, 2);
+        Assert.Throws<BrowserLimitException>(() => controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Single(harness.Source.Requests);
+        Assert.Equal(1, harness.RendererCreations);
+        controller.FocusControl(harness.Tab.Id, 0);
+        controller.SelectAllFormControl(harness.Tab.Id);
+        controller.InsertFormText(harness.Tab.Id, "safe");
+        controller.FocusControl(harness.Tab.Id, 2);
+        Assert.True(controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal(2, Assert.Single(controller.Session.Windows).Tabs.Count);
+        Assert.Equal("https://example.com/final/index.html?q=safe", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("https://other.example/save", "https://example.com/", "Cross-origin")]
+    [InlineData("http://example.com/save", "https://example.com/", "downgrade")]
+    [InlineData("file:///etc/passwd", "https://example.com/", "file navigation")]
+    [InlineData("data:text/html,result", "https://example.com/", "data URL")]
+    [InlineData("https://example.com/save", "file:///tmp/page.html", "local file")]
+    [InlineData("https://example.com/save", "data:text/html,page", "opaque")]
+    public void BlankFormTargetPreservesPolicyBeforeTabCreation(string action, string document, string expected)
+    {
+        using var harness = new Harness($"<form action='{action}'><button formtarget=_blank>Go</button></form>", url: document);
+        harness.Controller.FocusControl(harness.Tab.Id, 0);
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains(expected, error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        Assert.Single(Assert.Single(harness.Controller.Session.Windows).Tabs);
+        Assert.Equal(1, harness.RendererCreations);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FormTargetMetadataCrossesBothRendererBoundaries(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <base target=_blank><base target=named>
+            <form><button formtarget=_self>Self</button><input type=submit formtarget=_BLANK>
+            <button formtarget=named>Bad</button><input type=submit formtarget=_unfencedTop>
+            <button>Default</button></form>
+            <form target=named><button formtarget=_top>Override</button></form>
+            <form target=''><button>Current</button></form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.All(page.Forms, form => Assert.Null(form.Error));
+        Assert.True(page.Forms[0].OpenInNewTab);
+        Assert.NotNull(page.Forms[1].TargetError);
+        Assert.False(page.Forms[2].OpenInNewTab);
+        Assert.Equal(false, page.FormControls[0].FormTargetOpenInNewTab);
+        Assert.Equal(true, page.FormControls[1].FormTargetOpenInNewTab);
+        Assert.All(page.FormControls.Skip(2).Take(2), control =>
+        {
+            Assert.Null(control.FormTargetOpenInNewTab);
+            Assert.Contains("formtarget", control.FormTargetError!, StringComparison.Ordinal);
+        });
+        Assert.Null(page.FormControls[4].FormTargetOpenInNewTab);
+        Assert.Equal(false, page.FormControls[5].FormTargetOpenInNewTab);
+    }
+
+    [Theory]
+    [InlineData("named")]
+    [InlineData("_unfencedTop")]
+    [InlineData("_bl\u212Ank")]
+    public void NamedBaseFormTargetsRemainVisiblyRejected(string target)
+    {
+        using var harness = new Harness($"<base target='{target}'><form><button>Go</button></form>");
+        harness.Controller.FocusControl(harness.Tab.Id, 0);
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Contains("target", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        Assert.Equal(1, harness.RendererCreations);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BlankFormTargetsWorkForPointerAndImplicitSubmission(bool pointer)
+    {
+        using var harness = new Harness("<form><input name=q value=word><button formtarget=_blank>Go</button></form>");
+        if (pointer)
+        {
+            var rect = harness.Controller.Page(harness.Tab.Id)!.FormControls[1].Rect!;
+            Assert.True(harness.Controller.ActivateLink(harness.Tab.Id, rect.X + 1, rect.Y + 1, harness.Viewport));
+        }
+        else
+        {
+            harness.Controller.FocusControl(harness.Tab.Id, 0);
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        }
+        Assert.Equal(2, Assert.Single(harness.Controller.Session.Windows).Tabs.Count);
+        Assert.Equal("https://example.com/final/index.html?q=word", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("https://outside.example/leak?q=private", "same origin")]
+    [InlineData("http://secure.example/leak?q=private", "Secure transport policy")]
+    public void BlankFormTargetRetainsFixedOriginAndDowngradePolicyAcrossRedirects(string redirect, string expected)
+    {
+        var requests = new List<string>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath == "/secure"
+                ? new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(Style + "<form action='/submit' target=_blank>"
+                        + "<input name=q value=private><button>Go</button></form>", System.Text.Encoding.UTF8, "text/html")
+                }
+                : new(HttpStatusCode.Found) { Headers = { Location = new Uri(redirect) } };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var window = controller.Session.CreateWindow();
+        var original = controller.CreateTab(window.Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(original.Id, "https://secure.example/secure");
+        controller.Pump(_ => viewport);
+        Assert.Null(original.Error);
+        var committed = controller.Page(original.Id);
+        controller.FocusControl(original.Id, 1);
+
+        Assert.True(controller.ActivateFocusedLink(original.Id));
+        controller.Pump(_ => viewport);
+
+        var opened = window.ActiveTab!;
+        Assert.NotEqual(original.Id, opened.Id);
+        Assert.Contains(expected, opened.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.False(opened.IsLoading);
+        Assert.Null(opened.History.Current);
+        Assert.Equal(["https://secure.example/secure", "https://secure.example/submit?q=private"], requests);
+        Assert.Null(original.Error);
+        Assert.Same(committed, controller.Page(original.Id));
+        Assert.Equal("https://secure.example/secure", original.History.Current!.Href);
     }
 }

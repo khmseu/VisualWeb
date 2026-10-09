@@ -63,17 +63,28 @@ public sealed record PageTextTarget(
 /// <summary>One parsed form owner: an absolute GET action, or a visible unsupported-semantics diagnostic.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
 /// submission algorithm</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formnovalidate">formnovalidate</see> and
-/// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formaction">formaction</see>.
-/// Only the bounded same-tab GET/urlencoded subset is representable; Error is set
-/// (and Action empty) for anything else. No element identity or script capability crosses IPC.</remarks>
+/// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formaction">formaction</see>;
+/// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-attributes">submission targets</see>.
+/// Only the bounded GET/urlencoded subset is representable; Error is set
+/// (and Action empty) for anything else. TargetError is separate so a selected formtarget can override it.
+/// No element identity or script capability crosses IPC.</remarks>
 public sealed record PageForm(
     [property: JsonRequired] string Action,
-    [property: JsonRequired] string? Error);
+    [property: JsonRequired] string? Error)
+{
+    [JsonRequired]
+    public bool OpenInNewTab { get; init; }
+    [JsonRequired]
+    public string? TargetError { get; init; }
+}
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate and FormAction apply only to submit buttons. TextareaWrapColumns is present only for textarea hard wrapping. Label carries submit/reset-input text or button text.</remarks>
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
+/// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
+/// Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formtarget">formtarget</see>.
+/// TextareaWrapColumns is present only for textarea hard wrapping. Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -106,6 +117,10 @@ public sealed record PageFormControl(
     public string? FormAction { get; init; }
     [JsonRequired]
     public string? FormActionError { get; init; }
+    [JsonRequired]
+    public bool? FormTargetOpenInNewTab { get; init; }
+    [JsonRequired]
+    public string? FormTargetError { get; init; }
     [JsonRequired]
     public int TextareaWrapColumns { get; init; }
     [JsonRequired]
@@ -348,7 +363,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 33;
+    public const int Version = 34;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -503,7 +518,9 @@ public static class RendererProtocol
         foreach (var form in forms)
         {
             if (form is null || form.Action is null || form.Action.Length > MaxTextCharacters
-                || form.Error is { Length: 0 or > MaxTextCharacters })
+                || form.Error is { Length: 0 or > MaxTextCharacters }
+                || form.TargetError is { Length: 0 or > MaxTextCharacters }
+                || form.TargetError is not null && form.OpenInNewTab)
             { throw new IpcProtocolException("Invalid renderer form fields or limits."); }
             if (form.Error is not null)
             {
@@ -533,6 +550,10 @@ public static class RendererProtocol
                 || control.FormActionError is { Length: 0 or > MaxTextCharacters }
                 || (control.FormAction is not null || control.FormActionError is not null) && control.Kind is not ("submit" or "button")
                 || control.FormActionError is not null && control.FormAction is not null
+                || control.FormTargetError is { Length: 0 or > MaxTextCharacters }
+                || (control.FormTargetOpenInNewTab is not null || control.FormTargetError is not null)
+                    && control.Kind is not ("submit" or "button")
+                || control.FormTargetError is not null && control.FormTargetOpenInNewTab is not null
                 || control.FormAction is { } formAction && (BrowserUrl.ParseResult(formAction).Url is not { } actionUrl
                     || actionUrl.Href != formAction || actionUrl.Protocol is not ("http:" or "https:" or "file:" or "data:"))
                 || control.Kind == "textarea" && (control.TextareaWrapColumns is < 0 or > 128
