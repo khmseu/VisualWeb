@@ -245,218 +245,10 @@ public sealed class DevelopmentShell : IDisposable
                 case PointerScrolled wheel when !view.Editing && window.ActiveTab is { } active:
                     HandlePointerWheel(window, view, active, wheel);
                     break;
-                case PointerButtonChanged { Pressed: true, Button: 2 } middle:
-                    view.PointerX = middle.X;
-                    view.PointerY = middle.Y;
-                    if (window.ActiveTab is { } middleTab
-                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } middleViewport
-                        && view.OpenSelectControl >= 0
-                        && Controller.Page(middleTab.Id) is { } middlePage
-                        && ShellChrome.PopupLayout(middlePage, view.OpenSelectControl,
-                            middleViewport, view.SelectPopupFirstOption) is { } openPopup
-                        && middle.X >= openPopup.Bounds.X && middle.X < openPopup.Bounds.X + openPopup.Bounds.Width
-                        && middle.Y >= openPopup.Bounds.Y && middle.Y < openPopup.Bounds.Y + openPopup.Bounds.Height)
-                    { break; }
-                    if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
-                    Edit(view, window, false);
-                    view.KeyboardTarget = null;
-                    if (middle.Y < ShellChrome.Height
-                        && ShellChrome.Hit(view.Targets, middle.X, middle.Y) is
-                        { Action: ChromeAction.ActivateTab or ChromeAction.CloseTab, Tab: { } closingTab }
-                        && window.Tabs.Any(tab => tab.Id == closingTab))
-                    {
-                        Controller.CloseTab(closingTab);
-                        view.Dirty = true;
-                        break;
-                    }
-                    if (window.ActiveTab is { } linkTab && middle.Y >= ShellChrome.Height
-                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } linkViewport
-                        && middle.X >= 0 && middle.X < linkViewport.Width
-                        && middle.Y < ShellChrome.Height + linkViewport.Height)
-                    {
-                        Controller.FocusPage(linkTab.Id);
-                        Controller.ClearSelectedText(linkTab.Id);
-                        Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height,
-                            linkViewport, forceNewTab: true);
-                    }
-                    break;
-                case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
-                    view.PointerX = pointer.X;
-                    view.PointerY = pointer.Y;
-                    view.PendingLinkActivation = false;
-                    view.PendingLinkDragged = false;
-                    view.PendingLinkTab = null;
-                    view.PendingLinkIndex = -1;
-                    view.PendingLinkViewport = null;
-                    view.SelectingText = false;
-                    view.DraggingScrollbar = false;
-                    view.DraggingRangeControl = -1;
-                    if (view.ControlModifier)
-                    {
-                        if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
-                        Edit(view, window, false);
-                        view.KeyboardTarget = null;
-                        if (window.ActiveTab is { } modifiedLinkTab && pointer.Y >= ShellChrome.Height
-                            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } modifiedLinkViewport
-                            && pointer.X >= 0 && pointer.X < modifiedLinkViewport.Width
-                            && pointer.Y < ShellChrome.Height + modifiedLinkViewport.Height)
-                        {
-                            Controller.FocusPage(modifiedLinkTab.Id);
-                            Controller.ClearSelectedText(modifiedLinkTab.Id);
-                            Controller.ActivateLink(modifiedLinkTab.Id, pointer.X, pointer.Y - ShellChrome.Height,
-                                modifiedLinkViewport, forceNewTab: true, activateNewTab: false);
-                        }
-                        break;
-                    }
-                    var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
-                    if (target?.Action is ChromeAction.SelectOption or ChromeAction.SelectListboxOption)
-                    {
-                        var listbox = target.Action == ChromeAction.SelectListboxOption;
-                        if (window.ActiveTabId is { } optionTab
-                            && (listbox || view.OpenSelectControl == target.ControlIndex && ReferenceEquals(view.SelectPopupPage, Controller.Page(optionTab)))
-                            && target.Tab == optionTab
-                            && (!listbox || Controller.FocusControl(optionTab, target.ControlIndex))
-                            && Controller.SelectOptionFromPointer(optionTab, target.ControlIndex, target.OptionIndex))
-                        {
-                            if (listbox || Controller.Page(optionTab)!.FormControls[target.ControlIndex].Multiple) { view.Dirty = true; }
-                            else { CloseSelectPopup(view); }
-                        }
-                        break;
-                    }
-                    var dismissingSelect = view.OpenSelectControl >= 0;
-                    var dismissedControl = view.OpenSelectControl;
-                    if (dismissingSelect) { CloseSelectPopup(view); }
-                    if (target?.Action == ChromeAction.Scrollbar)
-                    {
-                        Action(window, view, target.Action, target.Tab);
-                        view.DraggingScrollbar = true;
-                        ScrollScrollbar(window, view, pointer.Y);
-                    }
-                    else if (target is not null) { Action(window, view, target.Action, target.Tab); }
-                    else
-                    {
-                        Edit(view, window, false);
-                        view.KeyboardTarget = null;
-                        if (pointer.Y >= ShellChrome.Height && window.ActiveTab is { } pageTab
-                            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } pageViewport
-                            && pointer.X >= 0 && pointer.X < pageViewport.Width
-                            && pointer.Y < ShellChrome.Height + pageViewport.Height)
-                        {
-                            Controller.FocusPage(pageTab.Id);
-                            var pageY = pointer.Y - ShellChrome.Height;
-                            var page = Controller.Page(pageTab.Id);
-                            var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true) == true;
-                            if (view.ShiftModifier && !overControl
-                                && Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport))
-                            { break; }
-                            Controller.ClearSelectedText(pageTab.Id);
-                            var linkIndex = -1;
-                            if (page is not null)
-                            {
-                                for (var index = 0; index < page.LinkTargets.Count; index++)
-                                {
-                                    if (page.LinkTargets[index].Contains(pointer.X, pageY))
-                                    { linkIndex = index; }
-                                }
-                            }
-                            if (linkIndex >= 0)
-                            {
-                                view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);
-                                view.PendingLinkActivation = true;
-                                view.PendingLinkIndex = linkIndex;
-                                view.PendingLinkTab = pageTab.Id;
-                                view.PendingLinkX = pointer.X;
-                                view.PendingLinkY = pointer.Y;
-                                view.PendingLinkViewport = pageViewport;
-                                break;
-                            }
-                            var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pageY, pageViewport);
-                            var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
-                            if (activated && focusedControl >= 0
-                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "month" or "week" or "number" or "color" or "password", Rect: { } textRect } textControl)
-                            {
-                                var value = Controller.FormControlValue(pageTab.Id, focusedControl);
-                                var selectAll = Controller.FormControlSelectAll(pageTab.Id);
-                                var caret = selectAll ? -1 : Controller.FormControlCaret(pageTab.Id);
-                                var display = textControl.Kind == "password"
-                                    ? new string('*', ScalarCount(value)) : value;
-                                if (textControl.Kind == "password" && caret >= 0)
-                                { caret = ScalarCount(value[..caret]); }
-                                var targetCaret = chrome.CaretAtTextX(display, caret,
-                                    pointer.X - textRect.X - 4, Math.Max(0, textRect.Width - 8));
-                                if (textControl.Kind == "password")
-                                { targetCaret = Utf16OffsetAtScalar(value, targetCaret); }
-                                Controller.SetFormControlCaret(pageTab.Id, focusedControl, targetCaret);
-                            }
-                            if (activated && focusedControl >= 0
-                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "textarea", Rect: { } textareaRect })
-                            {
-                                var textareaPage = Controller.Page(pageTab.Id)!;
-                                var textareaValues = Enumerable.Range(0, textareaPage.FormControls.Count)
-                                    .Select(index => Controller.FormControlValue(pageTab.Id, index)).ToArray();
-                                var lines = RefreshTextareaLayouts(pageTab.Id, textareaPage, textareaValues);
-                                var controlLines = lines[focusedControl];
-                                var value = Controller.FormControlValue(pageTab.Id, focusedControl);
-                                var visibleRows = Math.Max(1, (int)((textareaRect.Height - 8) / 15));
-                                var clickedRow = Math.Clamp((int)Math.Floor((pageY - textareaRect.Y - 4) / 15), 0, visibleRows - 1);
-                                var lineIndex = Math.Clamp(Controller.TextareaFirstLine(pageTab.Id, focusedControl) + clickedRow,
-                                    0, controlLines.Count - 1);
-                                var line = controlLines[lineIndex];
-                                var lineValue = value[line.Start..line.End];
-                                var lineCaret = chrome.CaretAtTextX(lineValue, -1,
-                                    pointer.X - textareaRect.X - 4, Math.Max(0, textareaRect.Width - 8));
-                                Controller.SetFormControlCaret(pageTab.Id, focusedControl, line.Start + lineCaret);
-                            }
-                            if (activated && focusedControl >= 0
-                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
-                            { view.DraggingRangeControl = focusedControl; }
-                            if (activated && focusedControl >= 0
-                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "select"
-                                && !(dismissingSelect && dismissedControl == focusedControl))
-                            { OpenSelectPopup(view, pageTab, focusedControl); }
-                            if (!activated)
-                            {
-                                view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X,
-                                    pointer.Y - ShellChrome.Height, pageViewport);
-                            }
-                        }
-                        else if (window.ActiveTabId is { } unfocused) { Controller.FocusPage(unfocused, false); }
-                    }
-                    break;
+                case PointerButtonChanged { Pressed: true, Button: 2 } middle: HandleMiddlePointerPress(window, view, middle); break;
+                case PointerButtonChanged { Pressed: true, Button: 1 } pointer: HandlePrimaryPointerPress(window, view, pointer); break;
                 case PointerButtonChanged { Pressed: false, Button: 1 } released when window.ActiveTab is { } releasedTab:
-                    view.DraggingScrollbar = false;
-                    view.DraggingRangeControl = -1;
-                    if (view.PendingLinkActivation)
-                    {
-                        var pendingLinkIndex = view.PendingLinkIndex;
-                        var pendingViewport = view.PendingLinkViewport;
-                        var pageY = released.Y - ShellChrome.Height;
-                        var releaseIsOnLink = pendingViewport is { } viewport
-                            && released.X >= 0 && released.X < viewport.Width
-                            && pageY >= 0 && pageY < viewport.Height
-                            && Controller.Page(releasedTab.Id) is { } page
-                            && pendingLinkIndex >= 0 && pendingLinkIndex < page.LinkTargets.Count
-                            && page.LinkTargets[pendingLinkIndex].Contains(released.X, pageY);
-                        var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id
-                            && releaseIsOnLink;
-                        var linkX = released.X;
-                        var linkY = pageY;
-                        var pendingTab = view.PendingLinkTab;
-                        view.PendingLinkActivation = false;
-                        view.PendingLinkDragged = false;
-                        view.PendingLinkTab = null;
-                        view.PendingLinkIndex = -1;
-                        view.PendingLinkViewport = null;
-                        if (view.SelectingText && pendingTab is { } selectedTab && Controller.Session.Contains(selectedTab))
-                        { Controller.EndTextSelection(selectedTab); }
-                        if (activate)
-                        {
-                            Controller.ClearSelectedText(releasedTab.Id);
-                            Controller.ActivateLink(releasedTab.Id, linkX, linkY, pendingViewport);
-                        }
-                    }
-                    view.SelectingText = false;
-                    Controller.EndTextSelection(releasedTab.Id);
+                    HandlePrimaryPointerRelease(view, releasedTab, released);
                     break;
                 case KeyChanged key:
                     view.ControlModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Ctrl) != 0;
@@ -473,6 +265,200 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (views.ContainsKey(pair.Key)) { SyncTextInput(view, window); }
         SynchronizeWindows();
+    }
+    private void HandleMiddlePointerPress(BrowserWindow window, View view, PointerButtonChanged middle)
+    {
+        view.PointerX = middle.X;
+        view.PointerY = middle.Y;
+        if (window.ActiveTab is { } middleTab
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } middleViewport
+            && view.OpenSelectControl >= 0
+            && Controller.Page(middleTab.Id) is { } middlePage
+            && ShellChrome.PopupLayout(middlePage, view.OpenSelectControl, middleViewport,
+                view.SelectPopupFirstOption) is { } openPopup
+            && middle.X >= openPopup.Bounds.X && middle.X < openPopup.Bounds.X + openPopup.Bounds.Width
+            && middle.Y >= openPopup.Bounds.Y && middle.Y < openPopup.Bounds.Y + openPopup.Bounds.Height) { return; }
+        if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
+        Edit(view, window, false);
+        view.KeyboardTarget = null;
+        if (middle.Y < ShellChrome.Height
+            && ShellChrome.Hit(view.Targets, middle.X, middle.Y) is
+            { Action: ChromeAction.ActivateTab or ChromeAction.CloseTab, Tab: { } closingTab }
+            && window.Tabs.Any(tab => tab.Id == closingTab))
+        {
+            Controller.CloseTab(closingTab);
+            view.Dirty = true;
+            return;
+        }
+        if (window.ActiveTab is { } linkTab && middle.Y >= ShellChrome.Height
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } linkViewport
+            && middle.X >= 0 && middle.X < linkViewport.Width
+            && middle.Y < ShellChrome.Height + linkViewport.Height)
+        {
+            Controller.FocusPage(linkTab.Id);
+            Controller.ClearSelectedText(linkTab.Id);
+            Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height, linkViewport, forceNewTab: true);
+        }
+    }
+    private void HandlePrimaryPointerPress(BrowserWindow window, View view, PointerButtonChanged pointer)
+    {
+        view.PointerX = pointer.X;
+        view.PointerY = pointer.Y;
+        view.PendingLinkActivation = false;
+        view.PendingLinkDragged = false;
+        view.PendingLinkTab = null;
+        view.PendingLinkIndex = -1;
+        view.PendingLinkViewport = null;
+        view.SelectingText = false;
+        view.DraggingScrollbar = false;
+        view.DraggingRangeControl = -1;
+        if (view.ControlModifier)
+        {
+            if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
+            Edit(view, window, false);
+            view.KeyboardTarget = null;
+            if (window.ActiveTab is { } modifiedLinkTab && pointer.Y >= ShellChrome.Height
+                && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } modifiedLinkViewport
+                && pointer.X >= 0 && pointer.X < modifiedLinkViewport.Width
+                && pointer.Y < ShellChrome.Height + modifiedLinkViewport.Height)
+            {
+                Controller.FocusPage(modifiedLinkTab.Id);
+                Controller.ClearSelectedText(modifiedLinkTab.Id);
+                Controller.ActivateLink(modifiedLinkTab.Id, pointer.X, pointer.Y - ShellChrome.Height,
+                    modifiedLinkViewport, forceNewTab: true, activateNewTab: false);
+            }
+            return;
+        }
+        var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
+        if (target?.Action is ChromeAction.SelectOption or ChromeAction.SelectListboxOption)
+        {
+            var listbox = target.Action == ChromeAction.SelectListboxOption;
+            if (window.ActiveTabId is { } optionTab
+                && (listbox || view.OpenSelectControl == target.ControlIndex && ReferenceEquals(view.SelectPopupPage, Controller.Page(optionTab)))
+                && target.Tab == optionTab
+                && (!listbox || Controller.FocusControl(optionTab, target.ControlIndex))
+                && Controller.SelectOptionFromPointer(optionTab, target.ControlIndex, target.OptionIndex))
+            {
+                if (listbox || Controller.Page(optionTab)!.FormControls[target.ControlIndex].Multiple) { view.Dirty = true; }
+                else { CloseSelectPopup(view); }
+            }
+            return;
+        }
+        var dismissingSelect = view.OpenSelectControl >= 0;
+        var dismissedControl = view.OpenSelectControl;
+        if (dismissingSelect) { CloseSelectPopup(view); }
+        if (target?.Action == ChromeAction.Scrollbar)
+        {
+            Action(window, view, target.Action, target.Tab);
+            view.DraggingScrollbar = true;
+            ScrollScrollbar(window, view, pointer.Y);
+        }
+        else if (target is not null) { Action(window, view, target.Action, target.Tab); }
+        else { HandlePagePrimaryPointerPress(window, view, pointer, dismissingSelect, dismissedControl); }
+    }
+    private void HandlePagePrimaryPointerPress(BrowserWindow window, View view, PointerButtonChanged pointer,
+        bool dismissingSelect, int dismissedControl)
+    {
+        Edit(view, window, false);
+        view.KeyboardTarget = null;
+        if (pointer.Y < ShellChrome.Height || window.ActiveTab is not { } pageTab
+            || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } pageViewport
+            || pointer.X < 0 || pointer.X >= pageViewport.Width || pointer.Y >= ShellChrome.Height + pageViewport.Height)
+        {
+            if (window.ActiveTabId is { } unfocused) { Controller.FocusPage(unfocused, false); }
+            return;
+        }
+        Controller.FocusPage(pageTab.Id);
+        var pageY = pointer.Y - ShellChrome.Height;
+        var page = Controller.Page(pageTab.Id);
+        var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true) == true;
+        if (view.ShiftModifier && !overControl && Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
+        Controller.ClearSelectedText(pageTab.Id);
+        var linkIndex = -1;
+        if (page is not null)
+        {
+            for (var index = 0; index < page.LinkTargets.Count; index++)
+            {
+                if (page.LinkTargets[index].Contains(pointer.X, pageY)) { linkIndex = index; }
+            }
+        }
+        if (linkIndex >= 0)
+        {
+            view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);
+            view.PendingLinkActivation = true;
+            view.PendingLinkIndex = linkIndex;
+            view.PendingLinkTab = pageTab.Id;
+            view.PendingLinkX = pointer.X;
+            view.PendingLinkY = pointer.Y;
+            view.PendingLinkViewport = pageViewport;
+            return;
+        }
+        var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pageY, pageViewport);
+        SetPointerControlCaret(pageTab.Id, pointer.X, pageY, activated);
+        var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
+        if (activated && focusedControl >= 0 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
+        { view.DraggingRangeControl = focusedControl; }
+        if (activated && focusedControl >= 0 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "select"
+            && !(dismissingSelect && dismissedControl == focusedControl)) { OpenSelectPopup(view, pageTab, focusedControl); }
+        if (!activated) { view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport); }
+    }
+    private void SetPointerControlCaret(TabId tabId, double pointerX, double pageY, bool activated)
+    {
+        var focusedControl = Controller.FocusedControlIndex(tabId);
+        if (!activated || focusedControl < 0) { return; }
+        if (Controller.Page(tabId)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "month" or "week" or "number" or "color" or "password", Rect: { } textRect } textControl)
+        {
+            var value = Controller.FormControlValue(tabId, focusedControl);
+            var selectAll = Controller.FormControlSelectAll(tabId);
+            var caret = selectAll ? -1 : Controller.FormControlCaret(tabId);
+            var display = textControl.Kind == "password" ? new string('*', ScalarCount(value)) : value;
+            if (textControl.Kind == "password" && caret >= 0) { caret = ScalarCount(value[..caret]); }
+            var targetCaret = chrome.CaretAtTextX(display, caret, pointerX - textRect.X - 4, Math.Max(0, textRect.Width - 8));
+            if (textControl.Kind == "password") { targetCaret = Utf16OffsetAtScalar(value, targetCaret); }
+            Controller.SetFormControlCaret(tabId, focusedControl, targetCaret);
+        }
+        if (Controller.Page(tabId)?.FormControls[focusedControl] is not { Kind: "textarea", Rect: { } textareaRect }) { return; }
+        var textareaPage = Controller.Page(tabId)!;
+        var textareaValues = Enumerable.Range(0, textareaPage.FormControls.Count).Select(index => Controller.FormControlValue(tabId, index)).ToArray();
+        var lines = RefreshTextareaLayouts(tabId, textareaPage, textareaValues);
+        var controlLines = lines[focusedControl];
+        var textareaValue = Controller.FormControlValue(tabId, focusedControl);
+        var visibleRows = Math.Max(1, (int)((textareaRect.Height - 8) / 15));
+        var clickedRow = Math.Clamp((int)Math.Floor((pageY - textareaRect.Y - 4) / 15), 0, visibleRows - 1);
+        var lineIndex = Math.Clamp(Controller.TextareaFirstLine(tabId, focusedControl) + clickedRow, 0, controlLines.Count - 1);
+        var line = controlLines[lineIndex];
+        var lineCaret = chrome.CaretAtTextX(textareaValue[line.Start..line.End], -1, pointerX - textareaRect.X - 4, Math.Max(0, textareaRect.Width - 8));
+        Controller.SetFormControlCaret(tabId, focusedControl, line.Start + lineCaret);
+    }
+    private void HandlePrimaryPointerRelease(View view, BrowserTab releasedTab, PointerButtonChanged released)
+    {
+        view.DraggingScrollbar = false;
+        view.DraggingRangeControl = -1;
+        if (view.PendingLinkActivation)
+        {
+            var pendingLinkIndex = view.PendingLinkIndex;
+            var pendingViewport = view.PendingLinkViewport;
+            var pageY = released.Y - ShellChrome.Height;
+            var releaseIsOnLink = pendingViewport is { } viewport && released.X >= 0 && released.X < viewport.Width
+                && pageY >= 0 && pageY < viewport.Height && Controller.Page(releasedTab.Id) is { } page
+                && pendingLinkIndex >= 0 && pendingLinkIndex < page.LinkTargets.Count
+                && page.LinkTargets[pendingLinkIndex].Contains(released.X, pageY);
+            var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id && releaseIsOnLink;
+            var pendingTab = view.PendingLinkTab;
+            view.PendingLinkActivation = false;
+            view.PendingLinkDragged = false;
+            view.PendingLinkTab = null;
+            view.PendingLinkIndex = -1;
+            view.PendingLinkViewport = null;
+            if (view.SelectingText && pendingTab is { } selectedTab && Controller.Session.Contains(selectedTab)) { Controller.EndTextSelection(selectedTab); }
+            if (activate)
+            {
+                Controller.ClearSelectedText(releasedTab.Id);
+                Controller.ActivateLink(releasedTab.Id, released.X, pageY, pendingViewport);
+            }
+        }
+        view.SelectingText = false;
+        Controller.EndTextSelection(releasedTab.Id);
     }
     private void HandleFocusLost(BrowserWindow window, View view)
     {
