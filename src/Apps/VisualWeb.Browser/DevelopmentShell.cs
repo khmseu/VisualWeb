@@ -934,7 +934,7 @@ public sealed class DevelopmentShell : IDisposable
         var index = Controller.FocusedControlIndex(id);
         if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
             || page.FormControls[index].Kind != "select") { return false; }
-        var pageSize = 10;
+        var pageSize = page.FormControls[index].SelectRows;
         if (view.OpenSelectControl == index
             && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport
             && ShellChrome.PopupLayout(page, index, viewport, view.SelectPopupFirstOption) is { } popup)
