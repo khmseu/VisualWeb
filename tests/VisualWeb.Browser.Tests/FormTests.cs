@@ -91,6 +91,15 @@ public sealed class FormTests
         Assert.Null(Assert.Single(page.Forms).Error);
     }
 
+    [Fact]
+    public async Task TextareaListIsVisibleUnsupportedFormSemantics()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><textarea name=notes list=suggestions></textarea></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Contains("textarea list", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
