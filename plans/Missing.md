@@ -65,7 +65,7 @@ broader page interaction is still missing:
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
-  `textarea`, single-select `select`, `button` submit/reset controls, and inert `input type=button`/`button type=button` controls; supported successful controls
+  `textarea`, single-select and multiple `select`, `button` submit/reset controls, and inert `input type=button`/`button type=button` controls; supported successful controls
   submit current/new-tab GET urlencoded queries via IPC v36 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
@@ -83,9 +83,11 @@ broader page interaction is still missing:
   lists, with Escape/outside-click dismissal. Text fields
   and textareas display bounded placeholders
   without changing submitted values. Email `multiple` supports sanitized
-  comma-separated address lists, while select multiple selection and listboxes
-  remain unsupported. Optgroups flatten into the option list, prefix group labels,
-  and propagate disabled group state.
+  comma-separated address lists. Multiple selects preserve bounded initially selected options and use the
+  browser-owned popup for pointer toggles; selected rows are highlighted, enabled toggles retain the popup,
+  and the closed control shows the selected count. Enabled selections submit in option order and reset restores
+  their initial state. Listboxes and multiple-select keyboard behavior remain unsupported. Optgroups flatten
+  into the option list, prefix group labels, and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values, `required`,
   and valid `min`/`max` bounds before submission; no calendar picker is implemented.

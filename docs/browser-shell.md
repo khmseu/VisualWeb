@@ -303,9 +303,10 @@ opens a browser-owned popup with up to 12 visible rows; arrow/Home/End and Page 
 enabled options (page keys move by the visible row count and skip disabled options), wheel input scrolls longer
 option lists, clicking a disabled row leaves the popup open without changing selection, and Escape or an outside click dismisses the popup.
 Optgroup labels are prefixed to their flattened options, and disabled groups disable their options.
-Multiple selects preserve bounded initially selected options and browser-owned pointer toggles;
-enabled selections submit in option order and reset restores their initial state. Listboxes and
-multiple-select keyboard/UI behavior remain unsupported. Radios sharing a form and nonempty name are
+Multiple selects preserve bounded initially selected options and use the same browser-owned popup for
+pointer toggles: selected rows are highlighted, an enabled toggle keeps the popup open, and the closed
+control shows the selected count. Enabled selections submit in option order and reset restores their
+initial state. Listboxes and multiple-select keyboard behavior remain unsupported. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
 within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
@@ -319,7 +320,7 @@ its line window independently of the page. Form-control inline
 boxes wrap atomically with text; nonzero control margins and general inline-block/
 replaced-element layout remain unsupported.
 
-Fields, single-select controls and submit/reset/input buttons are drawn by a shell-owned overlay (white field or
+Fields, select controls and submit/reset/input buttons are drawn by a shell-owned overlay (white field or
 gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
@@ -327,9 +328,10 @@ widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged i
 tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/date/time/month/week/number field or textarea
 focuses it without starting page text selection; clicking within a supported
 single-line text field places its caret at the nearest shell-font glyph boundary
-(the shell font is used for the overlay, not the page font). Clicking a single-select
+(the shell font is used for the overlay, not the page font). Clicking a select
 opens its bounded shell popup, with wheel scrolling and pointer selection of enabled
-options. Escape or an outside click closes the popup. Range controls can be adjusted by
+options. Single-select selection closes the popup; multiple-select toggles keep it open.
+Escape or an outside click closes the popup. Range controls can be adjusted by
 pointer click/drag. Focusing an editable
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF
