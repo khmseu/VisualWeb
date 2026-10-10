@@ -72,7 +72,7 @@ The native window title retains the same warning alongside the active page title
 | F / Alt+Right | Forward |
 | R / F5 / Ctrl+R | Reload committed URL |
 | +T / Ctrl+T | New tab with offline welcome page |
-| Tab label | Activate that tab |
+| Tab label | Activate that tab; middle-click closes it without activating it first |
 | Tab x / Ctrl+W | Close tab; last tab closes its window |
 | Tab arrows / Ctrl+Tab / Ctrl+Shift+Tab | Cycle next/previous tab |
 | +W / Ctrl+N | New window with welcome tab |

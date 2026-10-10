@@ -282,6 +282,15 @@ public sealed class DevelopmentShell : IDisposable
                     if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
                     Edit(view, window, false);
                     view.KeyboardTarget = null;
+                    if (middle.Y < ShellChrome.Height
+                        && ShellChrome.Hit(view.Targets, middle.X, middle.Y) is
+                        { Action: ChromeAction.ActivateTab or ChromeAction.CloseTab, Tab: { } closingTab }
+                        && window.Tabs.Any(tab => tab.Id == closingTab))
+                    {
+                        Controller.CloseTab(closingTab);
+                        view.Dirty = true;
+                        break;
+                    }
                     if (window.ActiveTab is { } linkTab && middle.Y >= ShellChrome.Height
                         && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } linkViewport
                         && middle.X >= 0 && middle.X < linkViewport.Width

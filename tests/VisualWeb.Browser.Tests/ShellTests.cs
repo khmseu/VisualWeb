@@ -1488,6 +1488,36 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void MiddleClickClosesBackgroundTabWithoutActivatingIt()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        shell.Tick();
+        var active = window.ActiveTab!;
+        var background = shell.Controller.CreateTab(window.Id, activate: false);
+        shell.Controller.Navigate(background.Id, "data:text/html," + Uri.EscapeDataString("<!doctype html><title>Background</title>"));
+        Wait(background);
+        var presentedFrames = shell.PresentedFrames;
+
+        system.Events.Enqueue(new PointerButtonChanged(system.Items[0].Id, 2, true, 230, 40));
+        shell.Tick();
+
+        Assert.Single(window.Tabs);
+        Assert.Equal(active.Id, window.ActiveTabId);
+        Assert.False(shell.Controller.Session.Contains(background.Id));
+        Assert.True(shell.PresentedFrames > presentedFrames);
+
+        void Wait(BrowserTab tab)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void CloseActiveTabRepaintsRemainingTabRatherThanLeavingStalePixels()
     {
         using var system = new Windows();
