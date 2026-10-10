@@ -27,9 +27,7 @@ jobs:
           dotnet-version: 10.0.401
           architecture: ${{ matrix.architecture }}
       - run: dotnet build VisualWeb.slnx --configuration Release
-      - run: dotnet test tests/Platform.Tests/Platform.Tests.csproj --configuration Release --no-build
-      - run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
-      - run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build
+      - run: dotnet test VisualWeb.slnx --configuration Release --no-build
       - run: dotnet run --project tools/V8Smoke --configuration Release --no-build -- --require-sandbox --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- windows
       # The single-process opt-out is only for trusted offline development smoke.
