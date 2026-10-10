@@ -69,36 +69,7 @@ internal static class PageForms
                     : element.LocalName == "button" ? "button type=reset" : $"<{element.LocalName}>");
                 continue;
             }
-            if (kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number")
-            {
-                foreach (var name in TextOnlyAttributes)
-                {
-                    if (element.GetAttribute(name) is not null) { Reject(index, $"text field attribute {name}"); }
-                }
-                if (kind != "email" && element.GetAttribute("multiple") is not null)
-                { Reject(index, "text field attribute multiple"); }
-            }
-            if (kind == "select")
-            {
-                if (element.GetAttribute("multiple") is null && SelectSize(element.GetAttribute("size")) is not (>= 1 and <= 12))
-                { Reject(index, "select display size other than 1"); }
-            }
-            if (kind is "date" or "time" or "month" or "week")
-            {
-                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
-                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
-            }
-            if (kind is "number" or "range")
-            {
-                if (element.GetAttribute("multiple") is not null) { Reject(index, $"{kind} multiple"); }
-                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list" })
-                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
-            }
-            if (kind == "color")
-            {
-                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname", "min", "max", "step", "placeholder", "readonly", "required" })
-                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"color {attribute}"); } }
-            }
+            RejectUnsupportedAttributes(element, kind, index, Reject);
             string? pattern = null;
             if ((kind is "text" or "search" or "email" or "tel" or "url" or "password") && element.GetAttribute("pattern") is { } sourcePattern)
             {
@@ -154,7 +125,6 @@ internal static class PageForms
             if (controls.Count >= RendererProtocol.MaxFormControls)
             { throw new PageNavigationException($"Renderer form control count limit ({RendererProtocol.MaxFormControls}) exceeded."); }
             var text = kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea";
-            var range = kind == "range";
             var minLength = text && kind != "number" ? MinLength(element.GetAttribute("minlength")) : -1;
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
@@ -169,47 +139,8 @@ internal static class PageForms
                 : kind == "select" ? multiple ? options.FirstOrDefault(option => option.Selected && !option.Disabled)?.Value ?? ""
                     : selectedOption >= 0 ? options[selectedOption].Value : ""
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
-            var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
-                : kind == "time" ? TimeBound(element.GetAttribute("min"))
-                : kind == "month" ? MonthBound(element.GetAttribute("min"))
-                : kind == "week" ? WeekBound(element.GetAttribute("min"))
-                : kind == "number" ? NumberBound(element.GetAttribute("min"))
-                : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
-            var maximum = kind == "date" ? DateBound(element.GetAttribute("max"))
-                : kind == "time" ? TimeBound(element.GetAttribute("max"))
-                : kind == "month" ? MonthBound(element.GetAttribute("max"))
-                : kind == "week" ? WeekBound(element.GetAttribute("max"))
-                : kind == "number" ? NumberBound(element.GetAttribute("max"))
-                : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
-            var stepAny = (kind is "number" or "range" or "date" or "time" or "month" or "week") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
-            double? step = kind is not ("number" or "range" or "date" or "time" or "month" or "week") || stepAny ? null
-                : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0
-                    ? kind == "time" ? parsedStep * 1000 : parsedStep
-                    : kind == "time" ? 60_000 : 1;
-            if (minimum is { } min && maximum is { } max && min > max)
-            {
-                Reject(index, $"{kind} minimum exceeds maximum");
-                if (range) { maximum = minimum; }
-            }
-            if (range)
-            {
-                var lower = minimum!.Value;
-                var upper = maximum!.Value;
-                var initial = FormNumber.TryParse(value ?? "", out var parsed) ? parsed : lower / 2 + upper / 2;
-                initial = Math.Clamp(initial, lower, upper);
-                if (!stepAny && step is { } rangeStep)
-                {
-                    var quotient = (initial - lower) / rangeStep;
-                    if (double.IsFinite(quotient) && Math.Abs(quotient) <= 1_000_000_000_000d)
-                    {
-                        var snapped = lower + Math.Floor(quotient + 0.5) * rangeStep;
-                        if (snapped > upper) { snapped = lower + Math.Floor(quotient) * rangeStep; }
-                        initial = Math.Clamp(snapped, lower, upper);
-                    }
-                    else { Reject(index, "range step precision limit"); initial = lower; }
-                }
-                value = initial.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-            }
+            var (minimum, maximum, step, stepAny, constrainedValue) = NumericConstraints(element, kind, value, index, Reject);
+            value = constrainedValue;
             value = kind switch
             {
                 "text" or "search" or "tel" or "url" or "password" => (value ?? "").Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal),
@@ -240,26 +171,10 @@ internal static class PageForms
                 rect = placed.Rect;
                 lastLink = placed.BeforeLink;
             }
-            controls.Add(new(index, kind, controlName, value, label, pattern,
-                element.GetAttribute("disabled") is not null || IsDisabledByFieldset(element),
-                (text || kind is "date" or "time" or "month" or "week") && element.GetAttribute("readonly") is not null,
-                (text || kind is "checkbox" or "radio" or "select" or "date" or "time" or "month" or "week") && element.GetAttribute("required") is not null,
-                minLength,
-                text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, lastLink, rect,
-                kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
-            {
-                Options = options,
-                Multiple = (kind is "email" or "select") && element.GetAttribute("multiple") is not null,
-                Placeholder = placeholder,
-                FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null,
-                FormAction = submitterAction,
-                FormActionError = submitterActionError,
-                FormTargetOpenInNewTab = submitterTarget,
-                FormTargetError = submitterTargetError,
-                TextareaWrapColumns = textareaWrapColumns,
-                TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0,
-                SelectRows = selectRows
-            });
+            controls.Add(CreateControl(element, index, kind, controlName, value, label, pattern, text, minLength,
+                lastLink, rect, minimum, maximum, step, stepAny, options, placeholder, submitterAction,
+                submitterActionError, submitterTarget, submitterTargetError, textareaWrapColumns, textareaWrapHard,
+                selectRows));
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)
@@ -300,6 +215,109 @@ internal static class PageForms
         if (kind == "select" && !multiple && selectedOption >= 0)
         { options = options.Select((option, optionIndex) => option with { Selected = optionIndex == selectedOption }).ToArray(); }
         return (options, selectedOption, multiple, selectRows);
+    }
+
+    private static PageFormControl CreateControl(DomElement element, int formIndex, string kind, string name,
+        string value, string label, string? pattern, bool text, int minLength, int beforeLink, PageLinkRect? rect,
+        double? minimum, double? maximum, double? step, bool stepAny, PageFormOption[] options, string placeholder,
+        string? submitterAction, string? submitterActionError, bool? submitterTarget, string? submitterTargetError,
+        int textareaWrapColumns, bool textareaWrapHard, int selectRows) =>
+        new(formIndex, kind, name, value, label, pattern,
+            element.GetAttribute("disabled") is not null || IsDisabledByFieldset(element),
+            (text || kind is "date" or "time" or "month" or "week") && element.GetAttribute("readonly") is not null,
+            (text || kind is "checkbox" or "radio" or "select" or "date" or "time" or "month" or "week") && element.GetAttribute("required") is not null,
+            minLength, text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, beforeLink,
+            rect, kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum,
+            step, stepAny)
+        {
+            Options = options,
+            Multiple = (kind is "email" or "select") && element.GetAttribute("multiple") is not null,
+            Placeholder = placeholder,
+            FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null,
+            FormAction = submitterAction,
+            FormActionError = submitterActionError,
+            FormTargetOpenInNewTab = submitterTarget,
+            FormTargetError = submitterTargetError,
+            TextareaWrapColumns = textareaWrapColumns,
+            TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0,
+            SelectRows = selectRows
+        };
+
+    private static void RejectUnsupportedAttributes(DomElement element, string kind, int formIndex,
+        Action<int, string> reject)
+    {
+        if (kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number")
+        {
+            foreach (var name in TextOnlyAttributes)
+            {
+                if (element.GetAttribute(name) is not null) { reject(formIndex, $"text field attribute {name}"); }
+            }
+            if (kind != "email" && element.GetAttribute("multiple") is not null)
+            { reject(formIndex, "text field attribute multiple"); }
+        }
+        if (kind == "select" && element.GetAttribute("multiple") is null
+            && SelectSize(element.GetAttribute("size")) is not (>= 1 and <= 12))
+        { reject(formIndex, "select display size other than 1"); }
+        if (kind is "date" or "time" or "month" or "week")
+        {
+            foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
+            { if (element.GetAttribute(attribute) is not null) { reject(formIndex, $"{kind} {attribute}"); } }
+        }
+        if (kind is "number" or "range")
+        {
+            if (element.GetAttribute("multiple") is not null) { reject(formIndex, $"{kind} multiple"); }
+            foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list" })
+            { if (element.GetAttribute(attribute) is not null) { reject(formIndex, $"{kind} {attribute}"); } }
+        }
+        if (kind != "color") { return; }
+        foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname", "min", "max", "step", "placeholder", "readonly", "required" })
+        { if (element.GetAttribute(attribute) is not null) { reject(formIndex, $"color {attribute}"); } }
+    }
+
+    private static (double? Minimum, double? Maximum, double? Step, bool StepAny, string? Value) NumericConstraints(
+        DomElement element, string kind, string? value, int formIndex, Action<int, string> reject)
+    {
+        var range = kind == "range";
+        var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
+            : kind == "time" ? TimeBound(element.GetAttribute("min"))
+            : kind == "month" ? MonthBound(element.GetAttribute("min"))
+            : kind == "week" ? WeekBound(element.GetAttribute("min"))
+            : kind == "number" ? NumberBound(element.GetAttribute("min"))
+            : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
+        var maximum = kind == "date" ? DateBound(element.GetAttribute("max"))
+            : kind == "time" ? TimeBound(element.GetAttribute("max"))
+            : kind == "month" ? MonthBound(element.GetAttribute("max"))
+            : kind == "week" ? WeekBound(element.GetAttribute("max"))
+            : kind == "number" ? NumberBound(element.GetAttribute("max"))
+            : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
+        var stepAny = (kind is "number" or "range" or "date" or "time" or "month" or "week")
+            && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
+        double? step = kind is not ("number" or "range" or "date" or "time" or "month" or "week") || stepAny ? null
+            : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0
+                ? kind == "time" ? parsedStep * 1000 : parsedStep
+                : kind == "time" ? 60_000 : 1;
+        if (minimum is { } min && maximum is { } max && min > max)
+        {
+            reject(formIndex, $"{kind} minimum exceeds maximum");
+            if (range) { maximum = minimum; }
+        }
+        if (!range) { return (minimum, maximum, step, stepAny, value); }
+        var lower = minimum!.Value;
+        var upper = maximum!.Value;
+        var initial = FormNumber.TryParse(value ?? "", out var parsed) ? parsed : lower / 2 + upper / 2;
+        initial = Math.Clamp(initial, lower, upper);
+        if (!stepAny && step is { } rangeStep)
+        {
+            var quotient = (initial - lower) / rangeStep;
+            if (double.IsFinite(quotient) && Math.Abs(quotient) <= 1_000_000_000_000d)
+            {
+                var snapped = lower + Math.Floor(quotient + 0.5) * rangeStep;
+                if (snapped > upper) { snapped = lower + Math.Floor(quotient) * rangeStep; }
+                initial = Math.Clamp(snapped, lower, upper);
+            }
+            else { reject(formIndex, "range step precision limit"); initial = lower; }
+        }
+        return (minimum, maximum, step, stepAny, initial.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
     }
 
     private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, BrowserUrl baseUrl)
