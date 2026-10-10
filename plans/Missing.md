@@ -124,8 +124,9 @@ broader page interaction is still missing:
   shaped text fragments, Ctrl+A to select all visible fragments, Ctrl+C to copy,
   and Escape to clear the selection.
   Selection is fragment-
-  level (not character-level); a primary press beginning on an anchor retains
-  immediate navigation, while a drag begun in ordinary text can include anchor
+  level (not character-level); primary clicks on anchors navigate on release,
+  while a drag beginning over a visible link selects coarse text fragments
+  instead of activating it. Drags beginning in ordinary text can include anchor
   fragments. Selection resets on successful document/scroll/resize publication and on page clicks before new control/link interaction.
   Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
   Page Up/Down and Home/End outside editable fields, retaining DOM/scripts across

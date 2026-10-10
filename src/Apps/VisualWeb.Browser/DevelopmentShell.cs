@@ -36,6 +36,12 @@ public sealed class DevelopmentShell : IDisposable
         internal bool TextInput { get; set; }
         internal bool ControlModifier { get; set; }
         internal bool SelectingText { get; set; }
+        internal bool PendingLinkActivation { get; set; }
+        internal bool PendingLinkDragged { get; set; }
+        internal TabId? PendingLinkTab { get; set; }
+        internal double PendingLinkX { get; set; }
+        internal double PendingLinkY { get; set; }
+        internal PageViewport? PendingLinkViewport { get; set; }
         internal bool DraggingScrollbar { get; set; }
         internal int DraggingRangeControl { get; set; } = -1;
         internal int OpenSelectControl { get; set; } = -1;
@@ -178,6 +184,10 @@ public sealed class DevelopmentShell : IDisposable
             var window = Controller.Session.Window(id);
             if (view.LastTab != window.ActiveTabId)
             {
+                view.PendingLinkActivation = false;
+                view.PendingLinkDragged = false;
+                view.PendingLinkTab = null;
+                view.PendingLinkViewport = null;
                 CloseSelectPopup(view);
                 view.DraggingScrollbar = false;
                 view.KeyboardTarget = null;
@@ -226,6 +236,10 @@ public sealed class DevelopmentShell : IDisposable
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
                 case FocusChanged { Focused: false }:
                     view.ControlModifier = false;
+                    view.PendingLinkActivation = false;
+                    view.PendingLinkDragged = false;
+                    view.PendingLinkTab = null;
+                    view.PendingLinkViewport = null;
                     Edit(view, window, false);
                     CloseSelectPopup(view);
                     view.SelectingText = false;
@@ -235,6 +249,9 @@ public sealed class DevelopmentShell : IDisposable
                 case PointerMoved moved:
                     view.PointerX = moved.X;
                     view.PointerY = moved.Y;
+                    if (view.PendingLinkActivation
+                        && Math.Pow(moved.X - view.PendingLinkX, 2) + Math.Pow(moved.Y - view.PendingLinkY, 2) >= 16)
+                    { view.PendingLinkDragged = true; }
                     UpdateSelectPopupHover(view, window, moved.X, moved.Y);
                     if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
                     if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
@@ -305,6 +322,10 @@ public sealed class DevelopmentShell : IDisposable
                 case PointerButtonChanged { Pressed: true, Button: 1 } pointer:
                     view.PointerX = pointer.X;
                     view.PointerY = pointer.Y;
+                    view.PendingLinkActivation = false;
+                    view.PendingLinkDragged = false;
+                    view.PendingLinkTab = null;
+                    view.PendingLinkViewport = null;
                     view.SelectingText = false;
                     view.DraggingScrollbar = false;
                     view.DraggingRangeControl = -1;
@@ -355,7 +376,19 @@ public sealed class DevelopmentShell : IDisposable
                         {
                             Controller.FocusPage(pageTab.Id);
                             Controller.ClearSelectedText(pageTab.Id);
-                            var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport);
+                            var pageY = pointer.Y - ShellChrome.Height;
+                            if (Controller.Page(pageTab.Id) is { } page
+                                && page.LinkTargets.Any(link => link.Contains(pointer.X, pageY)))
+                            {
+                                view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);
+                                view.PendingLinkActivation = true;
+                                view.PendingLinkTab = pageTab.Id;
+                                view.PendingLinkX = pointer.X;
+                                view.PendingLinkY = pointer.Y;
+                                view.PendingLinkViewport = pageViewport;
+                                break;
+                            }
+                            var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pageY, pageViewport);
                             var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
                             if (activated && focusedControl >= 0
                                 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
@@ -376,6 +409,25 @@ public sealed class DevelopmentShell : IDisposable
                 case PointerButtonChanged { Pressed: false, Button: 1 } when window.ActiveTab is { } releasedTab:
                     view.DraggingScrollbar = false;
                     view.DraggingRangeControl = -1;
+                    if (view.PendingLinkActivation)
+                    {
+                        var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id;
+                        var linkX = view.PendingLinkX;
+                        var linkY = view.PendingLinkY - ShellChrome.Height;
+                        var pendingViewport = view.PendingLinkViewport;
+                        var pendingTab = view.PendingLinkTab;
+                        view.PendingLinkActivation = false;
+                        view.PendingLinkDragged = false;
+                        view.PendingLinkTab = null;
+                        view.PendingLinkViewport = null;
+                        if (view.SelectingText && pendingTab is { } selectedTab && Controller.Session.Contains(selectedTab))
+                        { Controller.EndTextSelection(selectedTab); }
+                        if (activate)
+                        {
+                            Controller.ClearSelectedText(releasedTab.Id);
+                            Controller.ActivateLink(releasedTab.Id, linkX, linkY, pendingViewport);
+                        }
+                    }
                     view.SelectingText = false;
                     Controller.EndTextSelection(releasedTab.Id);
                     break;

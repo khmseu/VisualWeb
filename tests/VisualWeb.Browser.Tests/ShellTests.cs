@@ -940,6 +940,78 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void DragStartingOnLinkSelectsTextInsteadOfActivatingIt(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>body{margin:0}p{margin:0}</style>" +
+            "<a href='#destination'>Hello world!</a><p id=destination>Destination</p>"));
+        Wait();
+        var page = shell.Controller.Page(tab.Id)!;
+        var initialUrl = tab.History.Current!.Href;
+        var first = page.TextTargets[0].Rect;
+        var last = page.TextTargets[^1].Rect;
+        var startX = first.X + first.Width / 2;
+        var endX = last.X + last.Width / 2;
+        var y = ShellChrome.Height + first.Y + first.Height / 2;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)startX, (float)y));
+        shell.Dispatch(new PointerMoved(native.Id, (float)endX, (float)y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, (float)endX, (float)y));
+
+        Assert.Equal("Hello world!", shell.Controller.SelectedText(tab.Id));
+        Assert.Equal(initialUrl, tab.History.Current!.Href);
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrimaryLinkClickActivatesOnlyAfterPointerRelease(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><a href='#destination'>go</a><p id=destination>target</p>"));
+        Wait();
+        var link = Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
+        var x = (float)(link.X + link.Width / 2);
+        var y = (float)(ShellChrome.Height + link.Y + link.Height / 2);
+        var initialUrl = tab.History.Current!.Href;
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        Assert.Equal(initialUrl, tab.History.Current!.Href);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+
+        Assert.EndsWith("#destination", tab.History.Current!.Href, StringComparison.Ordinal);
+
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DragSelectsVisibleTextAndCtrlCCopiesSelection(bool multiprocess)
     {
         using var system = new Windows();
@@ -1134,8 +1206,12 @@ public sealed class ShellTests
         Assert.Null(tab.Error);
         var old = shell.Controller.Page(tab.Id)!;
         var link = Assert.Single(old.LinkTargets);
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true,
-            (float)(link.X + 1), (float)(ShellChrome.Height + link.Y + 1)));
+        var clickX = (float)(link.X + 1);
+        var clickY = (float)(ShellChrome.Height + link.Y + 1);
+        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, clickX, clickY));
+        Assert.Null(tab.Error);
+        Assert.Same(old, shell.Controller.Page(tab.Id));
+        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, clickX, clickY));
         Assert.Contains("Unsupported link URL scheme: javascript:", tab.Error);
         Assert.Same(old, shell.Controller.Page(tab.Id));
         Assert.Single(tab.History.Entries);
@@ -1178,6 +1254,7 @@ public sealed class ShellTests
         Assert.False(tab.IsLoading);
         Assert.Single(tab.History.Entries);
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
         Assert.Contains("Page-initiated data URL navigation is blocked", tab.Error, StringComparison.Ordinal);
         Assert.False(tab.IsLoading);
         Assert.Equal("data:text/html," + Uri.EscapeDataString(html), tab.History.Current!.Href);

@@ -78,7 +78,7 @@ The native window title retains the same warning alongside the active page title
 | +W / Ctrl+N | New window with welcome tab |
 | M / Ctrl+M | Move active tab to the first other window, or create an empty destination |
 | Native window close | Close that window and only its tabs |
-| Primary left click on visible anchor text | Navigate the current tab to its resolved href |
+| Primary click on visible anchor text | Navigate the current tab to its resolved href on release; dragging at least four logical pixels instead selects coarse text fragments without navigating |
 | Middle click on visible anchor text | Open its resolved href in a new active tab, regardless of the link target |
 | Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
@@ -108,9 +108,10 @@ Selection uses whole-fragment rectangles, with line breaks inserted on visible l
 changes when copied. This is not character-level selection or browser text shaping.
 Browser windows and tab IDs are distinct; tab identity/history/content survives
 moving. Text input activation uses SDL committed text. Page selection is limited
-to whole visible shaped fragments (not character offsets). A primary press beginning
-on an anchor still activates it immediately; a drag that begins in ordinary text
-can include anchor fragments. Selection is cleared on successful document, scroll or resize publications,
+to whole visible shaped fragments (not character offsets). A primary click on a link
+navigates on release; dragging at least four logical pixels from link text selects
+fragments instead. Drags beginning in ordinary text can also include anchor fragments.
+Selection is cleared on successful document, scroll or resize publications,
 and on page clicks before a new interaction begins.
 Ctrl+C copies selected fragment text. Text/search fields support Ctrl+A
 select-all and Ctrl+V paste; address editing supports Ctrl+V over its existing
