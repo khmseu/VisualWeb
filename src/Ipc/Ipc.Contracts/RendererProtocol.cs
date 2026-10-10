@@ -236,6 +236,18 @@ public static class FormTime
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-month-string">valid month string</see>.</remarks>
 public static class FormMonth
 {
+    /// <summary>Returns a bounded comparable ordinal for a valid month string.</summary>
+    public static bool TryGetMonthNumber(string value, out long monthNumber)
+    {
+        monthNumber = 0;
+        if (!IsValid(value)) { return false; }
+        var separator = value.IndexOf('-');
+        if (!long.TryParse(value.AsSpan(0, separator), System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out var year)) { return false; }
+        monthNumber = checked(year * 12 + (value[^2] - '0') * 10 + value[^1] - '0');
+        return true;
+    }
+
     public static bool IsValid(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -601,7 +613,7 @@ public static class RendererProtocol
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
-                || control.Kind is not ("number" or "range" or "date" or "time") && (control.Minimum is not null || control.Maximum is not null
+                || control.Kind is not ("number" or "range" or "date" or "time" or "month") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
                 || (control.Kind is "number" or "range") && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Kind == "date" && (control.Step is not null || control.StepAny
@@ -610,6 +622,9 @@ public static class RendererProtocol
                 || control.Kind == "time" && (control.Step is not null || control.StepAny
                     || control.Minimum is { } timeMinimum && timeMinimum != Math.Truncate(timeMinimum)
                     || control.Maximum is { } timeMaximum && timeMaximum != Math.Truncate(timeMaximum))
+                || control.Kind == "month" && (control.Step is not null || control.StepAny
+                    || control.Minimum is { } monthMinimum && monthMinimum != Math.Truncate(monthMinimum)
+                    || control.Maximum is { } monthMaximum && monthMaximum != Math.Truncate(monthMaximum))
                 || control.Kind == "range" && (control.Minimum is null || control.Maximum is null
                     || control.Minimum > control.Maximum || control.MinLength != -1 || control.MaxLength != -1
                     || control.Required || control.ReadOnly || control.Pattern is not null)
