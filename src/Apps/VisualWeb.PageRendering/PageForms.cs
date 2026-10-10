@@ -94,6 +94,11 @@ internal static class PageForms
                 foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
             }
+            if (kind == "color")
+            {
+                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname", "min", "max", "step", "placeholder" })
+                { if (element.GetAttribute(attribute) is not null) { Reject(index, $"color {attribute}"); } }
+            }
             string? pattern = null;
             if ((kind is "text" or "search" or "email" or "tel" or "url" or "password") && element.GetAttribute("pattern") is { } sourcePattern)
             {

@@ -786,6 +786,21 @@ public sealed class FormTests
     }
 
     [Theory]
+    [InlineData("pattern='#.*'")]
+    [InlineData("minlength=7")]
+    [InlineData("list=palette")]
+    [InlineData("min=#000000")]
+    [InlineData("step=1")]
+    public async Task UnsupportedColorInputSemanticsAreVisible(string attribute)
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document($"<form><input type=color name=accent {attribute}></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Contains("color", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task NumberInputReportsStepMetadataAcrossRenderers(bool process)
