@@ -561,7 +561,7 @@ public sealed class DevelopmentShell : IDisposable
         if (!view.Editing)
         {
             if (control && !alt && !shift && code is SDL.Scancode.Home or SDL.Scancode.End
-                && !Controller.EditingFormControl(tab.Id))
+                && Controller.FocusedControlIndex(tab.Id) < 0)
             {
                 Controller.Scroll(tab.Id, code == SDL.Scancode.Home ? -double.MaxValue : double.MaxValue);
                 return;

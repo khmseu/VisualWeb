@@ -1485,6 +1485,39 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void CtrlBoundaryKeysDoNotScrollWhileAFormControlHasFocus(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}div{height:2000px}</style><input type=checkbox><div></div>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+
+        Key(SDL.Scancode.End, SDL.Keymod.Ctrl);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.Home, SDL.Keymod.Ctrl);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+
+        void Key(SDL.Scancode scan, SDL.Keymod mod)
+        {
+            shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)scan, 0, (ushort)mod, true, false));
+            shell.Tick();
+        }
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void VerticalScrollbarCanJumpAndDrag(bool multiprocess)
     {
         using var system = new Windows();
