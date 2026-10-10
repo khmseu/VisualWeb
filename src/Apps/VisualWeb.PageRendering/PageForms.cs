@@ -158,9 +158,11 @@ internal static class PageForms
                 : kind == "select" ? selectedOption >= 0 ? options[selectedOption].Value : ""
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
             var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
+                : kind == "time" ? TimeBound(element.GetAttribute("min"))
                 : kind == "number" ? NumberBound(element.GetAttribute("min"))
                 : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
             var maximum = kind == "date" ? DateBound(element.GetAttribute("max"))
+                : kind == "time" ? TimeBound(element.GetAttribute("max"))
                 : kind == "number" ? NumberBound(element.GetAttribute("max"))
                 : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
             var stepAny = (kind is "number" or "range") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
@@ -371,6 +373,9 @@ internal static class PageForms
 
     private static double? DateBound(string? value) => value is not null && FormDate.TryGetDayNumber(value, out var dayNumber)
         ? dayNumber : null;
+
+    private static double? TimeBound(string? value) => value is not null && FormTime.TryGetMilliseconds(value, out var milliseconds)
+        ? milliseconds : null;
 
     private static int SelectSize(string? value)
     {

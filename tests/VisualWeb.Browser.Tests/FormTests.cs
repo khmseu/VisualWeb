@@ -393,6 +393,22 @@ public sealed class FormTests
         Assert.Contains("time step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void TimeInputEnforcesValidMinimumAndMaximumOnSubmission()
+    {
+        using var harness = new Harness("<form><input type=time name=meeting min=09:00 max=17:00 value=12:00><button>Save</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.Null(Assert.Single(controller.Page(tab)!.Forms).Error);
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "08:59");
+        Assert.Contains("minimum", Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "17:01");
+        Assert.Contains("maximum", Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

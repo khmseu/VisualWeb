@@ -188,6 +188,19 @@ public static class FormDate
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-time-string">valid time string</see>.</remarks>
 public static class FormTime
 {
+    /// <summary>Returns milliseconds since midnight for a valid bounded time.</summary>
+    public static bool TryGetMilliseconds(string value, out int milliseconds)
+    {
+        milliseconds = 0;
+        if (!IsValid(value)) { return false; }
+        var hour = TwoDigits(value, 0);
+        var minute = TwoDigits(value, 3);
+        var second = value.Length >= 8 ? TwoDigits(value, 6) : 0;
+        var fraction = value.Length > 8 ? int.Parse(value.AsSpan(9).ToString().PadRight(3, '0'), System.Globalization.CultureInfo.InvariantCulture) : 0;
+        milliseconds = ((hour * 60 + minute) * 60 + second) * 1000 + fraction;
+        return true;
+    }
+
     public static bool IsValid(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -588,12 +601,15 @@ public static class RendererProtocol
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
-                || control.Kind is not ("number" or "range" or "date") && (control.Minimum is not null || control.Maximum is not null
+                || control.Kind is not ("number" or "range" or "date" or "time") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
                 || (control.Kind is "number" or "range") && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Kind == "date" && (control.Step is not null || control.StepAny
                     || control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
                     || control.Maximum is { } dateMaximum && dateMaximum != Math.Truncate(dateMaximum))
+                || control.Kind == "time" && (control.Step is not null || control.StepAny
+                    || control.Minimum is { } timeMinimum && timeMinimum != Math.Truncate(timeMinimum)
+                    || control.Maximum is { } timeMaximum && timeMaximum != Math.Truncate(timeMaximum))
                 || control.Kind == "range" && (control.Minimum is null || control.Maximum is null
                     || control.Minimum > control.Maximum || control.MinLength != -1 || control.MaxLength != -1
                     || control.Required || control.ReadOnly || control.Pattern is not null)

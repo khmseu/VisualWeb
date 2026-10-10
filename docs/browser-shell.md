@@ -265,7 +265,8 @@ before submission; invalid bounds are ignored. Date `step`, `pattern`, length, `
 error. Time values use strict HTML `HH:mm`, `HH:mm:ss`, or
 `HH:mm:ss.fraction` syntax (one to three fractional digits, no leap seconds or
 zone); invalid initial values become empty and nonempty values are validated
-before submission. Time `min`, `max`, `step`, `pattern`, length, `list`,
+before submission. Valid time `min` and `max` bounds are enforced before submission;
+invalid bounds are ignored. Time `step`, `pattern`, length, `list`,
 `multiple` and `dirname` are unsupported and mark the form with a visible error.
 Time fields are edited as text, without a clock picker. Month values use a
 positive year with at least four ASCII digits and a two-digit month from `01`
