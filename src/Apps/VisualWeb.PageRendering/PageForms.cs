@@ -204,6 +204,7 @@ internal static class PageForms
                 "time" => FormTime.IsValid(value ?? "") ? value ?? "" : "",
                 "month" => FormMonth.IsValid(value ?? "") ? value ?? "" : "",
                 "week" => FormWeek.IsValid(value ?? "") ? value ?? "" : "",
+                "number" => FormNumber.TryParse(value ?? "", out _) ? value ?? "" : "",
                 _ => value ?? "",
             };
             var label = kind switch

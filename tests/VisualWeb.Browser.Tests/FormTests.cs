@@ -593,12 +593,22 @@ public sealed class FormTests
             new(200, 400, 1), Cancellation);
         var control = Assert.Single(page.FormControls);
         Assert.Equal("number", control.Kind);
-        Assert.Equal("5", control.Value);
         Assert.Equal(-10, control.Minimum);
         Assert.Equal(10, control.Maximum);
         Assert.Equal(1, control.Step);
         Assert.False(control.StepAny);
         Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NumberInputSanitizesInvalidInitialValuesAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=number name=count value=not-a-number></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal("", Assert.Single(page.FormControls).Value);
     }
 
     [Theory]
