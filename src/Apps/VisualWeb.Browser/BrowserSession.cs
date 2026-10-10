@@ -27,11 +27,13 @@ public sealed record BrowserOptions
 /// <summary>URL development session history with bounded same-document fragment traversal.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#session-history">session history</see>.
 /// User link fragment navigation and traversal between entries for the retained document update the active URL and scroll locally.
-/// Cross-document traversal reloads. No joint frame history, bfcache, script History API or persistence is implemented.</remarks>
+/// Cross-document traversal reloads and restores the entry's bounded scroll position. No joint frame history, bfcache,
+/// script History API or persistence is implemented.</remarks>
 public sealed class NavigationHistory
 {
     private readonly List<BrowserUrl> entries = [];
     private readonly List<long> documentIds = [];
+    private readonly List<double> scrollPositions = [];
     private readonly int maximum;
     private long nextDocumentId;
     public IReadOnlyList<BrowserUrl> Entries { get; }
@@ -68,6 +70,16 @@ public sealed class NavigationHistory
         if (index < 0 || index >= documentIds.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
         return Index >= 0 && documentIds[Index] == documentIds[index];
     }
+    internal double ScrollPositionAt(int index)
+    {
+        if (index < 0 || index >= scrollPositions.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return scrollPositions[index];
+    }
+    internal void SetCurrentScrollPosition(double position)
+    {
+        if (!double.IsFinite(position) || position < 0) { throw new ArgumentOutOfRangeException(nameof(position)); }
+        if (Index >= 0) { scrollPositions[Index] = position; }
+    }
     private void Append(BrowserUrl url, long documentId)
     {
         var forwardCount = entries.Count - Index - 1;
@@ -75,13 +87,16 @@ public sealed class NavigationHistory
         {
             entries.RemoveRange(Index + 1, forwardCount);
             documentIds.RemoveRange(Index + 1, forwardCount);
+            scrollPositions.RemoveRange(Index + 1, forwardCount);
         }
         entries.Add(url);
         documentIds.Add(documentId);
+        scrollPositions.Add(0);
         if (entries.Count > maximum)
         {
             entries.RemoveAt(0);
             documentIds.RemoveAt(0);
+            scrollPositions.RemoveAt(0);
         }
         Index = entries.Count - 1;
     }

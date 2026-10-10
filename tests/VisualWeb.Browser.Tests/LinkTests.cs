@@ -248,6 +248,16 @@ public sealed class LinkTests
         PumpUntilComplete(atTop);
         Assert.Equal(target.Y, controller.ScrollY(tab.Id));
 
+        var otherUrl = BrowserUrl.Parse("https://example.com/other");
+        controller.Navigate(tab.Id, otherUrl.Href);
+        source.Requests[1].Completion.SetResult(new(otherUrl, html, 200, []));
+        PumpUntilComplete(controller.Page(tab.Id));
+        controller.Back(tab.Id);
+        Assert.Equal(3, source.Requests.Count);
+        source.Requests[2].Completion.SetResult(new(BrowserUrl.Parse("https://example.com/page#target"), html, 200, []));
+        PumpUntilComplete(controller.Page(tab.Id));
+        Assert.Equal(target.Y, controller.ScrollY(tab.Id));
+
         void PumpUntilComplete(BrowserPage? previous = null)
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);

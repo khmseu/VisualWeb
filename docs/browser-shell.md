@@ -631,8 +631,8 @@ and stderr diagnostic. Reload replaces the current entry rather than appending. 
 new successful navigation discards the forward branch. Back/Forward between
 entries created by local fragment navigation retains the current document and
 restores the target fragment scroll without loading; traversal to another document
-refetches/rerenders it. There is no bfcache, iframe history, History API or session
-persistence.
+refetches/rerenders it at that entry's saved, extent-clamped scroll position. There
+is no bfcache, iframe history, History API or session persistence.
 
 New loads cancel previous loads/renders for that tab. Generation checks prevent late
 stale results from replacing newer content; closing a tab cancels its loads

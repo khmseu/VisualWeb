@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
 using Xunit;
@@ -80,6 +81,89 @@ public sealed class ScrollTests
         Assert.Equal(0, controller.ScrollY(tab.Id));
         Assert.Throws<ArgumentOutOfRangeException>(() => controller.Scroll(tab.Id, double.NaN));
         Assert.Throws<ArgumentOutOfRangeException>(() => controller.Scroll(tab.Id, double.PositiveInfinity));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CrossDocumentHistoryTraversalRestoresEachEntryScrollPosition(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(20, 20, 1);
+        var firstUrl = BrowserUrl.Parse("https://example.com/first");
+        var secondUrl = BrowserUrl.Parse("https://example.com/second");
+
+        controller.Navigate(tab.Id, firstUrl.Href);
+        source.Requests[0].Completion.SetResult(new(firstUrl, Html, 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        ScrollTo(40);
+
+        controller.Navigate(tab.Id, secondUrl.Href);
+        source.Requests[1].Completion.SetResult(new(secondUrl, Html, 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        ScrollTo(20);
+
+        controller.Back(tab.Id);
+        Assert.Equal(firstUrl.Href, source.Requests[2].Url.Href);
+        source.Requests[2].Completion.SetResult(new(firstUrl, Html, 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        Assert.Equal(40, controller.ScrollY(tab.Id));
+
+        controller.Forward(tab.Id);
+        Assert.Equal(secondUrl.Href, source.Requests[3].Url.Href);
+        source.Requests[3].Completion.SetResult(new(secondUrl, Html, 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        Assert.Equal(20, controller.ScrollY(tab.Id));
+
+        void ScrollTo(double offset)
+        {
+            var previous = controller.Page(tab.Id);
+            controller.Scroll(tab.Id, offset);
+            PumpUntil(() => !ReferenceEquals(previous, controller.Page(tab.Id)));
+            Assert.Equal(offset, controller.ScrollY(tab.Id));
+        }
+
+        void PumpUntil(Func<bool> complete)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => viewport);
+                if (complete()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("History traversal rendering timed out.");
+        }
+    }
+
+    [Fact]
+    public void CrossDocumentHistoryTraversalClampsScrollWhenTheRestoredPageShrinks()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 10000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(20, 20, 1);
+        var firstUrl = BrowserUrl.Parse("https://example.com/first");
+        var secondUrl = BrowserUrl.Parse("https://example.com/second");
+
+        controller.Navigate(tab.Id, firstUrl.Href);
+        source.Requests[0].Completion.SetResult(new(firstUrl, Html, 200, []));
+        controller.Pump(_ => viewport);
+        controller.Scroll(tab.Id, 40);
+        controller.Navigate(tab.Id, secondUrl.Href);
+        source.Requests[1].Completion.SetResult(new(secondUrl, Html, 200, []));
+        controller.Pump(_ => viewport);
+
+        controller.Back(tab.Id);
+        source.Requests[2].Completion.SetResult(new(firstUrl, "<!doctype html><style>*{margin:0}</style>short", 200, []));
+        controller.Pump(_ => viewport);
+        controller.Pump(_ => viewport);
+        Assert.Equal(0, controller.ScrollY(tab.Id));
     }
 
     [Fact]

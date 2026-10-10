@@ -142,7 +142,11 @@ broader page interaction is still missing:
   Horizontal/nested scrolling and general CSS overflow remain missing.
 - No automatic page mouse/keyboard events or general default actions beyond
   ordinary current-tab textual link navigation.
-- No downloads, persistent browser sessions, or complete history behavior. History stores URLs plus internal same-document grouping: Back/Forward between user-created fragment entries retains the active document and restores fragment scrolling without a load; cross-document traversal reloads. Script History API and bfcache are absent.
+- No downloads, persistent browser sessions, or complete history behavior. History
+  stores URLs, per-entry scroll positions and internal same-document grouping:
+  Back/Forward between user-created fragment entries retains the active document
+  and restores fragment scrolling without a load; cross-document traversal reloads
+  at the saved bounded scroll position. Script History API and bfcache are absent.
 
 This is a substantial gap even for a modest usable browser.
 
