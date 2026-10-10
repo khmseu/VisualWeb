@@ -22,7 +22,6 @@ public sealed class ShellTests
         do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
         Assert.False(tab.IsLoading);
         Assert.Null(tab.Error);
-        var control = shell.Controller.Page(tab.Id)!.FormControls[0];
         Assert.True(shell.Controller.FormControlChecked(tab.Id, 0));
         Assert.True(shell.Controller.FocusControl(tab.Id, 0));
         shell.Tick();
@@ -1129,10 +1128,10 @@ public sealed class ShellTests
         var page = shell.Controller.Page(tab.Id)!;
         var button = page.FormControls[1];
         Assert.Equal("Search", button.Label);
-        Assert.NotNull(button.Rect);
+        var bounds = button.Rect;
+        Assert.NotNull(bounds);
         shell.Tick();
         var header = (int)Math.Ceiling(ShellChrome.Height * native.Density);
-        var bounds = button.Rect!;
         var left = (int)Math.Floor(bounds.X * native.Density);
         var right = (int)Math.Ceiling((bounds.X + bounds.Width) * native.Density);
         var top = header + (int)Math.Floor(bounds.Y * native.Density);
@@ -2025,7 +2024,7 @@ public sealed class ShellTests
         Assert.False(native.TextInput);
         Assert.Equal(2, tab.History.Entries.Count);
         var at = 120 * native.Size.Width * 4;
-        Assert.Equal(new byte[] { 255, 0, 0, 255 }, native.Pixels!.AsSpan(at, 4).ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, native.Pixels.AsSpan(at, 4).ToArray());
         Key(SDL.Scancode.N, SDL.Keymod.Ctrl);
         Assert.Equal(2, shell.Windows.Count);
         Key(SDL.Scancode.M, SDL.Keymod.Ctrl);
@@ -2377,7 +2376,7 @@ public sealed class ShellTests
         shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString("<!doctype html><style>body{margin:0;background-color:blue}</style>"));
         Wait();
         Assert.Null(tab.Error);
-        Assert.False(home!.IsSameOrigin(tab.Origin));
+        Assert.False(home.IsSameOrigin(tab.Origin));
         Assert.Equal(new byte[] { 255, 0, 0, 255 }, unsandboxedSystem.Items[0].Pixels!.AsSpan(120 * unsandboxedSystem.Items[0].Size.Width * 4, 4).ToArray());
 
         void Wait()
@@ -2397,8 +2396,11 @@ public sealed class ShellTests
         internal List<Window> Items { get; } = [];
         internal Queue<WindowEvent> Events { get; } = [];
         public string Backend => "fake";
-        public event Action? QuitRequested;
-        internal void Quit() => QuitRequested?.Invoke();
+        event Action? IWindowSystem.QuitRequested
+        {
+            add { }
+            remove { }
+        }
         public IPlatformWindow CreateWindow(WindowOptions options)
         {
             var window = new Window(new((uint)Items.Count + 1), new(options.Width, options.Height));
@@ -2408,7 +2410,7 @@ public sealed class ShellTests
         {
             while (Events.TryDequeue(out var input)) { Items.Single(w => w.Id == input.Window).Dispatch(input); }
         }
-        public void Dispose() { foreach (var window in Items) { window.Dispose(); } QuitRequested = null; }
+        public void Dispose() { foreach (var window in Items) { window.Dispose(); } }
     }
     private sealed class Window(WindowId id, PixelSize size) : IPlatformWindow, IPixelSurface
     {
