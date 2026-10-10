@@ -469,6 +469,9 @@ public sealed class DevelopmentShell : IDisposable
             { CloseSelectPopup(view); }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.A && Controller.EditingFormControl(tab.Id))
             { Controller.SelectAllFormControl(tab.Id); return; }
+            if (control && !alt && !key.Repeat && code == SDL.Scancode.A
+                && Controller.PageHasFocus(tab.Id) && Controller.FocusedControlIndex(tab.Id) < 0
+                && Controller.SelectAllVisibleText(tab.Id)) { return; }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.V && Controller.EditingFormControl(tab.Id))
             {
                 var clipboard = view.Native.GetClipboardText();

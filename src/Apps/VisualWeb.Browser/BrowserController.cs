@@ -214,6 +214,21 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
+    public bool SelectAllVisibleText(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        var count = owner.Page?.TextTargets.Count ?? 0;
+        if (count == 0) { return false; }
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.TextSelectionStart = 0;
+        owner.TextSelectionEnd = count - 1;
+        owner.SelectingText = false;
+        Changed?.Invoke(id);
+        return true;
+    }
     /// <summary>Selected fragment text in paint order, with line breaks between visibly distinct lines.</summary>
     public string SelectedText(TabId id)
     {
