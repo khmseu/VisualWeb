@@ -856,9 +856,11 @@ public sealed class DevelopmentShell : IDisposable
             page.FormControls[index].Kind == "checkbox" && Controller.FormControlChecked(id, index)).ToArray();
         var selectIndices = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
+        var selectSets = Enumerable.Range(0, page.FormControls.Count).Select(index =>
+            page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndices(id, index).ToHashSet() : []).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
-            view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption);
+            selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption);
     }
     private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id)
     {

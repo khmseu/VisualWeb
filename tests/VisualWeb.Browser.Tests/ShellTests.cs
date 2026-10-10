@@ -103,6 +103,37 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void MultipleSelectPopupHighlightsEverySelectedOption()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}select{display:block;height:20px}</style>"
+            + "<form><select multiple><option selected>Fast</option><option selected>Slow</option></select></form>"));
+        Wait(shell, tab);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var selectedOne = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["Fast"], -1, -1, SelectIndices: [0], OpenSelect: 0)).Pixels;
+        var selectedBoth = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["Fast"], -1, -1, SelectIndices: [0],
+                SelectSets: [new HashSet<int> { 0, 1 }], OpenSelect: 0)).Pixels;
+
+        Assert.NotEqual(selectedOne, selectedBoth);
+
+        static void Wait(DevelopmentShell shell, BrowserTab tab)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void EnterActivatesFocusedResetAndRestoresShellOwnedFormState()
     {
         using var system = new Windows();
