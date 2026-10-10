@@ -1060,6 +1060,13 @@ public sealed class BrowserController : IDisposable
             }
             if (control.Kind == "week" && value.Length > 0 && !FormWeek.IsValid(value))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid week; submission blocked."); }
+            if (control.Kind == "week" && value.Length > 0 && FormWeek.TryGetWeekNumber(value, out var weekNumber))
+            {
+                if (control.Minimum is { } minimum && weekNumber < minimum)
+                { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
+                if (control.Maximum is { } maximum && weekNumber > maximum)
+                { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
+            }
             if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
             if (control.Kind == "email" && value.Length > 0 && !FormEmail.IsValid(value, control.Multiple))

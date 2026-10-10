@@ -542,13 +542,28 @@ public sealed class FormTests
     }
 
     [Fact]
-    public async Task WeekInputRejectsUnsupportedConstraintAttributes()
+    public async Task WeekInputRejectsUnsupportedStepConstraint()
     {
         using var renderer = Renderer(false);
-        var page = await renderer.RenderAsync(Document("<form><input type=week name=week max=2024-W01></form>"),
+        var page = await renderer.RenderAsync(Document("<form><input type=week name=week step=2></form>"),
             new(200, 400, 1), Cancellation);
 
-        Assert.Contains("week max", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("week step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void WeekInputEnforcesValidMinimumAndMaximumOnSubmission()
+    {
+        using var harness = new Harness("<form><input type=week name=week min=2024-W02 max=2024-W50><button>Save</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "2024-W01");
+        Assert.Contains("minimum", Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "2024-W51");
+        Assert.Contains("maximum", Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

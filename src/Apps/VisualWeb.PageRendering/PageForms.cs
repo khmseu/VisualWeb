@@ -160,11 +160,13 @@ internal static class PageForms
             var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
                 : kind == "time" ? TimeBound(element.GetAttribute("min"))
                 : kind == "month" ? MonthBound(element.GetAttribute("min"))
+                : kind == "week" ? WeekBound(element.GetAttribute("min"))
                 : kind == "number" ? NumberBound(element.GetAttribute("min"))
                 : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
             var maximum = kind == "date" ? DateBound(element.GetAttribute("max"))
                 : kind == "time" ? TimeBound(element.GetAttribute("max"))
                 : kind == "month" ? MonthBound(element.GetAttribute("max"))
+                : kind == "week" ? WeekBound(element.GetAttribute("max"))
                 : kind == "number" ? NumberBound(element.GetAttribute("max"))
                 : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
             var stepAny = (kind is "number" or "range") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
@@ -381,6 +383,9 @@ internal static class PageForms
 
     private static double? MonthBound(string? value) => value is not null && FormMonth.TryGetMonthNumber(value, out var monthNumber)
         ? monthNumber : null;
+
+    private static double? WeekBound(string? value) => value is not null && FormWeek.TryGetWeekNumber(value, out var weekNumber)
+        ? weekNumber : null;
 
     private static int SelectSize(string? value)
     {

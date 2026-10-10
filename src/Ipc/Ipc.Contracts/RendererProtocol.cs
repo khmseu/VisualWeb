@@ -270,6 +270,16 @@ public static class FormMonth
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-week-string">valid week string</see>.</remarks>
 public static class FormWeek
 {
+    /// <summary>Returns a bounded comparable ordinal for a valid ISO week string.</summary>
+    public static bool TryGetWeekNumber(string value, out long weekNumber)
+    {
+        weekNumber = 0;
+        if (!IsValid(value) || !long.TryParse(value.AsSpan(0, value.IndexOf("-W", StringComparison.Ordinal)),
+                System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var year)) { return false; }
+        weekNumber = checked(year * 53 + (value[^2] - '0') * 10 + value[^1] - '0');
+        return true;
+    }
+
     public static bool IsValid(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -613,7 +623,7 @@ public static class RendererProtocol
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
-                || control.Kind is not ("number" or "range" or "date" or "time" or "month") && (control.Minimum is not null || control.Maximum is not null
+                || control.Kind is not ("number" or "range" or "date" or "time" or "month" or "week") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
                 || (control.Kind is "number" or "range") && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Kind == "date" && (control.Step is not null || control.StepAny
@@ -625,6 +635,9 @@ public static class RendererProtocol
                 || control.Kind == "month" && (control.Step is not null || control.StepAny
                     || control.Minimum is { } monthMinimum && monthMinimum != Math.Truncate(monthMinimum)
                     || control.Maximum is { } monthMaximum && monthMaximum != Math.Truncate(monthMaximum))
+                || control.Kind == "week" && (control.Step is not null || control.StepAny
+                    || control.Minimum is { } weekMinimum && weekMinimum != Math.Truncate(weekMinimum)
+                    || control.Maximum is { } weekMaximum && weekMaximum != Math.Truncate(weekMaximum))
                 || control.Kind == "range" && (control.Minimum is null || control.Maximum is null
                     || control.Minimum > control.Maximum || control.MinLength != -1 || control.MaxLength != -1
                     || control.Required || control.ReadOnly || control.Pattern is not null)
