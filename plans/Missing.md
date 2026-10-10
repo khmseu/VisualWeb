@@ -8,13 +8,13 @@ The biggest remaining gaps are page interaction, real-world standards compatibil
 
 ### What already satisfies the original plan
 
-| Original requirement | Current state |
-| --- | --- |
-| C# monorepo with separate browser subsystems | Implemented: platform, core standards utilities, networking, HTML/DOM, CSS, text/layout, painting, scripting, IPC, and applications. See the `project map`. |
-| Encapsulated OS dependencies | Implemented through platform abstractions and Linux/Windows backends using SDL. See the `platform guide`. |
-| Tabs and multiple windows | Implemented, including tab creation, closing, switching, and moving between windows. See the `browser shell guide`. |
-| Isolation between tabs | Partially delivered: multiprocess mode has one renderer per tab and committed origin (rotated on cross-origin/opaque navigation), bounded IPC, deadlines, and tab-local crash/restart handling. Browser CLI multiprocess modes require supported OS confinement by default. **Process separation is not complete web security.** See the `process architecture`. |
-| Architecture prepared for standards growth | Present: subsystem boundaries, official-spec references/cache, and targeted conformance fixtures. This is preparation, not comprehensive standards implementation. |
+| Original requirement                         | Current state                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C# monorepo with separate browser subsystems | Implemented: platform, core standards utilities, networking, HTML/DOM, CSS, text/layout, painting, scripting, IPC, and applications. See the `project map`.                                                                                                                                                                                                      |
+| Encapsulated OS dependencies                 | Implemented through platform abstractions and Linux/Windows backends using SDL. See the `platform guide`.                                                                                                                                                                                                                                                        |
+| Tabs and multiple windows                    | Implemented, including tab creation, closing, switching, and moving between windows. See the `browser shell guide`.                                                                                                                                                                                                                                              |
+| Isolation between tabs                       | Partially delivered: multiprocess mode has one renderer per tab and committed origin (rotated on cross-origin/opaque navigation), bounded IPC, deadlines, and tab-local crash/restart handling. Browser CLI multiprocess modes require supported OS confinement by default. **Process separation is not complete web security.** See the `process architecture`. |
+| Architecture prepared for standards growth   | Present: subsystem boundaries, official-spec references/cache, and targeted conformance fixtures. This is preparation, not comprehensive standards implementation.                                                                                                                                                                                               |
 
 ## What is still missing
 
@@ -230,10 +230,10 @@ However:
 - Modules, external scripts, timers, workers, script-visible networking/storage, and full Window/Web IDL behavior remain deferred.
 - Synthetic events and finite lifecycle/microtask processing exist, but not normal ongoing page interaction.
 - WebAssembly is explicitly disabled in the current host.
-- The deep-clone cancellation regression now distinguishes pre-canceled calls
-  (which do not invalidate an unused host) from cancellation after execution starts
-  (which invalidates it), preventing timer scheduling from turning a pre-cancel
-  into a false in-flight cancellation test.
+- Clone cancellation coverage distinguishes pre-canceled calls (which do not
+  invalidate an unused host) from cancellation during a still-running script after
+  a successful clone. The script continues running after cloning so timer delays
+  cannot let the cancellation regression finish without observing cancellation.
 
 Evidence: `scripting scope`, `short-lived page script host`, and clone-cancellation
 regressions.
