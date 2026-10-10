@@ -250,8 +250,8 @@ This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
 reports data-only form/control snapshots (IPC v36); the browser owns all values,
-focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range, checkbox, radio, textarea,
-hidden, submit and reset, single-select `select`, plus `button` submit/reset and inert `button type=button`, plus visible `input type=button` as shell-owned inert buttons.
+focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/month/week/number/range/color, checkbox, radio, textarea,
+hidden, submit and reset, single-select `select`, plus `button` submit/reset and inert `button type=button`, plus visible `input type=button` as shell-owned inert buttons. Color controls accept and submit only strict ASCII `#RRGGBB` values, normalize complete entries to lowercase, and draw a shell-owned swatch; there is no picker or datalist integration.
 Text fields use generic editing and draw applicable placeholders in muted chrome only while the shell-owned value is empty; input placeholders strip line breaks and never become submitted values. Password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
 email supports one valid address or, with `multiple`, a comma-separated list of
 valid addresses; list tokens are ASCII-whitespace-trimmed before validation and

@@ -40,7 +40,7 @@ DOM identity. The shared IPC contract caps 4096 anchors, 64 rectangles per ancho
 
 `BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
 subset collected after optional script mutations: `form` action/error, and
-`input` text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset/button, `textarea`, single-select `select`, plus `button` submit/reset and inert `button type=button`
+`input` text/search/email/tel/url/password/date/time/month/week/number/range/color/checkbox/radio/hidden/submit/reset/button, `textarea`, single-select `select`, plus `button` submit/reset and inert `button type=button`
 controls. Supported controls use finite inline-block layout: input/button fallback
 dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value; select

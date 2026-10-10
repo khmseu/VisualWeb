@@ -124,7 +124,7 @@ broader page interaction is still missing:
   request/tab startup. Named/other non-keyword contexts remain missing and visibly
   rejected. None bypass destination or origin restrictions; new-tab destination
   checks run before tab creation, with shared HSTS applied before downgrade checks.
-  Visible text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
+  Visible text/search/email/tel/url/password/date/time/month/week/number/color/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection. Pointer clicks in single-line text fields and textareas place the
   caret at a shell-font glyph boundary; page-font hit-testing remains absent.
   Editable text-like fields and textareas support Ctrl+A select-all, edit
@@ -133,7 +133,7 @@ broader page interaction is still missing:
   Clipboard support remains bounded to selection copy and paste into focused
   editable text/search/email/tel/url/password/date/time/month/week/number/textarea
   fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/reset,
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/color/checkbox/radio/reset,
   broader textarea behavior (`dirname` remains unsupported),
   full constraint-validation UI and semantics, submitter overrides other than
   `formaction`/`formtarget`/`formnovalidate`, form events/scripted submission, unsupported `form=` ownership on object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission

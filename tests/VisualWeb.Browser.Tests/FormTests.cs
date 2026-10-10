@@ -847,6 +847,20 @@ public sealed class FormTests
         harness.Controller.SelectAllFormControl(harness.Tab.Id);
         Assert.Equal("#aabbcc", harness.Controller.InsertFormText(harness.Tab.Id, "#AaBbCc"));
     }
+    
+    [Fact]
+    public void ResetRestoresTheInitialColorValue()
+    {
+        using var harness = new Harness("<form><input type=color name=accent value=#112233><input type=reset></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        harness.Controller.SelectAllFormControl(harness.Tab.Id);
+        harness.Controller.InsertFormText(harness.Tab.Id, "#aabbcc");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Equal("#112233", harness.Controller.FormControlValue(harness.Tab.Id, 0));
+    }
 
     [Theory]
     [InlineData(false)]
