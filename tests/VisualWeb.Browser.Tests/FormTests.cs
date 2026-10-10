@@ -2446,6 +2446,16 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void DisabledListboxOptionCannotBeSelected()
+    {
+        using var harness = new Harness("<form><select size=3 name=mode><option value=fast>Fast</option><option disabled value=slow>Slow</option></select></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+
+        Assert.False(harness.Controller.SelectOptionFromPointer(harness.Tab.Id, 0, 1));
+        Assert.Equal(0, harness.Controller.SelectedOptionIndex(harness.Tab.Id, 0));
+    }
+
+    [Fact]
     public void CheckedMemberSatisfiesRequiredRadioGroup()
     {
         using var harness = new Harness("<form><input type=radio name=mode value=a required><input type=radio name=mode value=b checked><button type=submit>go</button></form>");
