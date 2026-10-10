@@ -32,7 +32,7 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux conf
 
 ### 2. Basic interaction with pages
 
-The shell supports bounded textual link activation and vertical document scrolling;
+The shell supports bounded textual link activation and vertical document scrolling, including Ctrl+Home/End outside editable controls;
 broader page interaction is still missing:
 
 - Textual `<a href>` links support primary left-click (release must remain over the

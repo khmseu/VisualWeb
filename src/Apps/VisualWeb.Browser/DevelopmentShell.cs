@@ -560,6 +560,12 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (!view.Editing)
         {
+            if (control && !alt && !shift && code is SDL.Scancode.Home or SDL.Scancode.End
+                && !Controller.EditingFormControl(tab.Id))
+            {
+                Controller.Scroll(tab.Id, code == SDL.Scancode.Home ? -double.MaxValue : double.MaxValue);
+                return;
+            }
             if (!control && !alt && !key.Repeat && code == SDL.Scancode.Escape)
             {
                 if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); return; }

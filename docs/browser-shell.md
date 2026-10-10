@@ -84,7 +84,7 @@ The native window title retains the same warning alongside the active page title
 | Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then rendered textual anchors, forwards/backwards; focused offscreen anchors scroll into view |
 | Enter outside address editing | Activate the focused chrome control or textual anchor; Shift+Enter opens a focused anchor in a new active tab; Ctrl+Enter opens it in a background tab |
-| Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
+| Arrow Up/Down, Page Up/Down, Home/End, Ctrl+Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Single-select control | Click, Enter, or Space to open; arrows/Home/End, Page Up/Down, and committed-text prefix search select enabled options; optgroup labels prefix flattened options and disabled groups disable their options; hovered popup rows are highlighted; wheel scrolls long lists; Escape/outside click dismisses |
 | Tab / Shift+Tab with simple forms | Visible enabled form controls join page traversal in tree order between anchor groups |
@@ -158,7 +158,8 @@ at 100 lines per event). Wheel input targets only the active tab, is suppressed
 while editing the address, and is ignored over chrome when the last logical
 pointer position is known. Wheel events themselves carry no pointer coordinates.
 Page Up/Down move one viewport; Home/End select the document top/bottom outside
-address editing. Horizontal scrolling, painted scrollbars and general DOM input/default
+address editing, and Ctrl+Home/End do the same outside address editing and editable
+form controls. Horizontal scrolling, painted scrollbars and general DOM input/default
 actions are not implemented.
 
 Each tab's controller content owns its scroll position, including across tab

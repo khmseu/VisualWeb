@@ -1471,6 +1471,7 @@ public sealed class ShellTests
         shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
         Key(SDL.Scancode.Pagedown);
         Key(SDL.Scancode.Home);
+        Key(SDL.Scancode.Home, SDL.Keymod.Ctrl);
         Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
         Key(SDL.Scancode.Escape);
         Key(SDL.Scancode.Down);
@@ -1479,8 +1480,14 @@ public sealed class ShellTests
         Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
         Key(SDL.Scancode.Pagedown);
         Assert.True(shell.Controller.ScrollY(tab.Id) > 48);
-        Key(SDL.Scancode.End);
+        Key(SDL.Scancode.End, SDL.Keymod.Ctrl);
         var maximum = 2000 - ShellChrome.Viewport(native.Size, 1)!.Value.Height;
+        Assert.Equal(maximum, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.Home, SDL.Keymod.Ctrl);
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        Key(SDL.Scancode.Pagedown);
+        Assert.True(shell.Controller.ScrollY(tab.Id) > 0);
+        Key(SDL.Scancode.End);
         Assert.Equal(maximum, shell.Controller.ScrollY(tab.Id));
         shell.Dispatch(new PointerScrolled(native.Id, 0, float.MaxValue));
         Assert.Equal(maximum, shell.Controller.ScrollY(tab.Id));
