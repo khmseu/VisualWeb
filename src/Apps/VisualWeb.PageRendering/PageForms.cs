@@ -408,10 +408,14 @@ internal static class PageForms
     private static int SelectSize(string? value)
     {
         if (value is null) { return 1; }
-        var text = value.Trim(' ', '\t', '\n', '\f', '\r');
-        if (text.Length == 0 || text.Any(character => !char.IsAsciiDigit(character))) { return 13; }
+        var text = value.TrimStart(' ', '\t', '\n', '\f', '\r');
+        var negative = text.StartsWith('-');
+        var position = text.StartsWith('+') || negative ? 1 : 0;
+        var end = position;
+        while (end < text.Length && char.IsAsciiDigit(text[end])) { end++; }
+        if (end == position || negative) { return 1; }
         var rows = 0;
-        foreach (var character in text)
+        foreach (var character in text[position..end])
         {
             rows = rows * 10 + character - '0';
             if (rows > 12) { return 13; }
