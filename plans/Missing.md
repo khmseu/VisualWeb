@@ -39,7 +39,7 @@ broader page interaction is still missing:
   navigation in shell, local and actual renderer-process paths; middle-click opens
   the visible link in a new active tab and Ctrl+primary-click opens it in a
   background tab, regardless of its target. Shift+Enter opens the focused link
-  in a new active tab. Enabled drawn
+  in a new active tab; Ctrl+Enter opens it in a background tab. Enabled drawn
   chrome controls precede visible links in traversal; Ctrl+L retains address
   editing. Focus is per-tab, with shell-only outlines across all rectangles of
   one anchor and no page raster changes without focus. IPC v28 introduced grouped

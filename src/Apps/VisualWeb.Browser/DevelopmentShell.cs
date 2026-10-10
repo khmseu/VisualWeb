@@ -434,6 +434,13 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (code == SDL.Scancode.F5 && !key.Repeat) { Action(window, view, ChromeAction.Reload); return; }
         if (window.ActiveTab is not { } tab) { return; }
+        if (!view.Editing && control && !alt && !shift && !key.Repeat && code == SDL.Scancode.Return
+            && Controller.PageHasFocus(tab.Id) && Controller.FocusedLinkIndex(tab.Id) >= 0)
+        {
+            Controller.ActivateFocusedLink(tab.Id, ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity),
+                forceNewTab: true, activateNewTab: false);
+            return;
+        }
         if (!view.Editing && Controller.IsMultilineFormControl(tab.Id)) { RefreshTextareaLayouts(tab.Id); }
         if (!control && !alt && code == SDL.Scancode.Tab)
         {
