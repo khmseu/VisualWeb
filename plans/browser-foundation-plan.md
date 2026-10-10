@@ -2,6 +2,8 @@
 
 Establish a .NET 10 monorepo with one project per browser subsystem behind standards-referencing interfaces, then build a minimal static HTML/CSS browser with tabs and multiple windows on Linux (X11 + Wayland) and Windows. The architecture is multi-process from day one (one renderer process per tab), with V8 as the planned JavaScript engine, and a locally cached, monthly-refreshed library of the official specifications that both humans and AI agents can discover.
 
+> **Historical status:** The phase descriptions below record the approved scope and evidence at each milestone; they are not a current capability matrix. Consult the [project map](../docs/project-map.md), subsystem guides, and [remaining-work tracker](Missing.md) for current implementation status and limitations.
+
 **Phase 1 delivered**
 - .NET 10.0.401 SDK pin, shared build/package configuration, a 22-project solution and VS Code tasks.
 - Browser subsystems are empty libraries; app entry points and runtime isolation remain later-phase work. No premature scripting API or native dependency is added.
