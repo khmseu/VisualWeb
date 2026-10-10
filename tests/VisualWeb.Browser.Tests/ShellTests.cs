@@ -67,6 +67,26 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void ListboxRowsExposeShellOwnedOptionTargets()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select size=3><option>Fast</option><option>Slow</option></select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var frame = chrome.Render(window, shell.Controller.Page(tab.Id)!, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["Fast"], -1, -1, SelectIndices: [0]));
+        Assert.Equal([0, 1], frame.Targets.Where(target => target.Action == ChromeAction.SelectListboxOption)
+            .Select(target => target.OptionIndex));
+    }
+
+    [Fact]
     public void PasswordOverlayDoesNotRevealFieldValue()
     {
         using var system = new Windows();

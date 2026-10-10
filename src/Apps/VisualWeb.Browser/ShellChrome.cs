@@ -8,7 +8,7 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, SelectOption }
+public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, SelectOption, SelectListboxOption }
 public sealed record ChromeTarget(LayoutRect Bounds, ChromeAction Action, TabId? Tab = null, int ControlIndex = -1, int OptionIndex = -1);
 public sealed record ShellFrame(byte[] Pixels, PixelSize Size, int Stride, IReadOnlyList<ChromeTarget> Targets);
 internal sealed record SelectPopupLayout(LayoutRect Bounds, int FirstOption, int VisibleOptions, double RowHeight);
@@ -349,6 +349,21 @@ public sealed class ShellChrome : IDisposable
                 var selectedOption = forms.SelectIndices?[index] ?? Array.FindIndex(control.Options, option => option.Selected);
                 var selectedCount = forms.SelectSets is { } sets && index < sets.Count ? sets[index].Count
                     : selectedOption >= 0 ? 1 : 0;
+                if (control.Kind == "select" && control.SelectRows > 1)
+                {
+                    var rows = Math.Min(control.SelectRows, control.Options.Length);
+                    for (var row = 0; row < rows; row++)
+                    {
+                        var option = control.Options[row];
+                        var rowBounds = new LayoutRect(box.X + 1, box.Y + 1 + row * 20,
+                            Math.Max(0, box.Width - 2), Math.Min(20, Math.Max(0, box.Height - 2 - row * 20)));
+                        if (row == selectedOption) { Fill(rowBounds, new(176, 213, 249)); }
+                        Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8,
+                            option.Disabled ? gray : ink);
+                        targets.Add(new(rowBounds, ChromeAction.SelectListboxOption, tab?.Id, index, row));
+                    }
+                    continue;
+                }
                 var value = forms.Values[index];
                 var showingPlaceholder = value.Length == 0 && control.Placeholder.Length > 0;
                 var text = control.Kind is "submit" or "button" or "reset" or "inert" ? control.Label
