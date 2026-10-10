@@ -55,7 +55,8 @@ broader page interaction is still missing:
   the first `<base href>` (invalid/data/javascript bases fall back to the final
   response URL); form actions and linked stylesheets use the same resolution.
   Successful document commits/repaints clear the frame-local anchor focus;
-  failed navigation preserves it. General hit-testing, DOM
+  failed navigation preserves it. Hovering visible link rectangles draws a
+  shell-owned outline without changing renderer pixels. General hit-testing, DOM
   focus/events and offscreen-link traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`

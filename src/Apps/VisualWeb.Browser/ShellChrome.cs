@@ -149,7 +149,7 @@ public sealed class ShellChrome : IDisposable
     }
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
-        IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0)
+        IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0, int hoveredLink = -1)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -396,6 +396,10 @@ public sealed class ShellChrome : IDisposable
                 if (forms.Focused >= 0 && forms.Focused < page.FormControls.Count && page.FormControls[forms.Focused].Rect is { } focus)
                 { Outline(focus); }
             }
+            if (hoveredLink >= 0 && hoveredLink < page.LinkTargets.Count && hoveredLink != focusedLink)
+            {
+                foreach (var rect in page.LinkTargets[hoveredLink].Rects) { Outline(rect, 80, 130, 190); }
+            }
             if (focusedLink >= 0 && focusedLink < page.LinkTargets.Count)
             {
                 foreach (var rect in page.LinkTargets[focusedLink].Rects) { Outline(rect); }
@@ -457,16 +461,16 @@ public sealed class ShellChrome : IDisposable
             var bottom = Math.Clamp(headerPixels + (int)Math.Ceiling((rect.Y + rect.Height) * density) - 1, top, size.Height - 1);
             return (left, top, right, bottom);
         }
-        void Outline(PageLinkRect rect)
+        void Outline(PageLinkRect rect, byte red = 128, byte green = 96, byte blue = 64)
         {
             var (left, top, right, bottom) = Device(rect);
-            for (var x = left; x <= right; x++) { FocusPixel(x, top); FocusPixel(x, bottom); }
-            for (var y = top; y <= bottom; y++) { FocusPixel(left, y); FocusPixel(right, y); }
+            for (var x = left; x <= right; x++) { FocusPixel(x, top, red, green, blue); FocusPixel(x, bottom, red, green, blue); }
+            for (var y = top; y <= bottom; y++) { FocusPixel(left, y, red, green, blue); FocusPixel(right, y, red, green, blue); }
         }
-        void FocusPixel(int x, int y)
+        void FocusPixel(int x, int y, byte red, byte green, byte blue)
         {
             var offset = y * chrome.Stride + x * 4;
-            pixels[offset] = 128; pixels[offset + 1] = 96; pixels[offset + 2] = 64; pixels[offset + 3] = 255;
+            pixels[offset] = red; pixels[offset + 1] = green; pixels[offset + 2] = blue; pixels[offset + 3] = 255;
         }
         void Button(string label, LayoutRect rect, ChromeAction action, bool enabled = true)
         {

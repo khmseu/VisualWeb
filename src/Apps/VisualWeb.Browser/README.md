@@ -8,7 +8,7 @@ on primary left click or Tab/Shift+Tab/Enter, open in a new active tab on
 middle click, and open in a background tab on Ctrl+primary click, using
 renderer-owned clipped CSS rectangle groups. Keyboard
 traversal visits chrome before visible anchors;
-per-tab page focus is outlined by the shell without changing the renderer raster.
+visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
 The `_blank` target keyword opens an active tab in the source window. Same-document
 fragment links and their Back/Forward traversal update URL-only history and scroll
 to bounded rendered element IDs without a new load; named targets

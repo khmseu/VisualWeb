@@ -78,6 +78,7 @@ The native window title retains the same warning alongside the active page title
 | +W / Ctrl+N | New window with welcome tab |
 | M / Ctrl+M | Move active tab to the first other window, or create an empty destination |
 | Native window close | Close that window and only its tabs |
+| Pointer hover on visible anchor text | Draw a shell-owned outline around its visible text rectangles without modifying the page raster |
 | Primary click on visible anchor text | Navigate the current tab to its resolved href on release; dragging at least four logical pixels instead selects coarse text fragments without navigating |
 | Middle click on visible anchor text | Open its resolved href in a new active tab, regardless of the link target |
 | Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |

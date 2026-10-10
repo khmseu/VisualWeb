@@ -940,6 +940,49 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void VisibleLinkHoverDrawsBrowserOwnedOutlineWithoutChangingPagePixels(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><a href='#destination'>visible link</a><p id=destination>Done</p>"));
+        Wait();
+        var page = shell.Controller.Page(tab.Id)!;
+        var rect = Assert.Single(page.LinkTargets).Rects[0];
+        var before = native.Pixels!.ToArray();
+        var x = (float)(rect.X + rect.Width / 2);
+        var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+
+        shell.Dispatch(new PointerMoved(native.Id, x, y));
+        shell.Tick();
+
+        var headerPixels = (int)Math.Ceiling(ShellChrome.Height * native.Density);
+        var pixelX = (int)Math.Floor(rect.X * native.Density);
+        var pixelY = headerPixels + (int)Math.Floor(rect.Y * native.Density);
+        Assert.Equal(new byte[] { 80, 130, 190, 255 }, Pixel(pixelX, pixelY));
+        Assert.Equal(page.Frame.Pixels.ToArray(), native.Pixels!.Skip(headerPixels * page.Frame.Stride));
+
+        shell.Dispatch(new PointerMoved(native.Id, 5, 5));
+        shell.Tick();
+        Assert.Equal(before.AsSpan(pixelY * native.Size.Width * 4 + pixelX * 4, 4).ToArray(), Pixel(pixelX, pixelY));
+
+        byte[] Pixel(int px, int py) => native.Pixels!.AsSpan(py * native.Size.Width * 4 + px * 4, 4).ToArray();
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DragStartingOnLinkSelectsTextInsteadOfActivatingIt(bool multiprocess)
     {
         using var system = new Windows();

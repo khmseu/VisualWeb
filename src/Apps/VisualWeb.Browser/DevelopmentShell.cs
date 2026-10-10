@@ -44,6 +44,7 @@ public sealed class DevelopmentShell : IDisposable
         internal PageViewport? PendingLinkViewport { get; set; }
         internal bool DraggingScrollbar { get; set; }
         internal int DraggingRangeControl { get; set; } = -1;
+        internal int HoveredLink { get; set; } = -1;
         internal int OpenSelectControl { get; set; } = -1;
         internal int SelectPopupFirstOption { get; set; }
         internal int SelectPopupHoverOption { get; set; } = -1;
@@ -188,6 +189,7 @@ public sealed class DevelopmentShell : IDisposable
                 view.PendingLinkDragged = false;
                 view.PendingLinkTab = null;
                 view.PendingLinkViewport = null;
+                view.HoveredLink = -1;
                 CloseSelectPopup(view);
                 view.DraggingScrollbar = false;
                 view.KeyboardTarget = null;
@@ -207,6 +209,7 @@ public sealed class DevelopmentShell : IDisposable
                 try { Controller.Resize(tab.Id, viewport); }
                 catch (BrowserLimitException exception) { Controller.Report(tab.Id, exception.Message); }
             }
+            UpdateHoveredLink(view, window);
             SyncTextInput(view, window);
             if (!view.Dirty) { continue; }
             var frame = chrome.Render(window, window.ActiveTabId is { } active ? Controller.Page(active) : null,
@@ -215,7 +218,7 @@ public sealed class DevelopmentShell : IDisposable
                     ? Controller.FocusedLinkIndex(focused) : -1,
                 window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
                 Forms(window, view), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
-                window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0);
+                window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0, view.HoveredLink);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -240,6 +243,7 @@ public sealed class DevelopmentShell : IDisposable
                     view.PendingLinkDragged = false;
                     view.PendingLinkTab = null;
                     view.PendingLinkViewport = null;
+                    view.HoveredLink = -1;
                     Edit(view, window, false);
                     CloseSelectPopup(view);
                     view.SelectingText = false;
@@ -253,6 +257,7 @@ public sealed class DevelopmentShell : IDisposable
                         && Math.Pow(moved.X - view.PendingLinkX, 2) + Math.Pow(moved.Y - view.PendingLinkY, 2) >= 16)
                     { view.PendingLinkDragged = true; }
                     UpdateSelectPopupHover(view, window, moved.X, moved.Y);
+                    UpdateHoveredLink(view, window);
                     if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
                     if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
                     { Controller.SetRangeFromPointer(rangeTab.Id, view.DraggingRangeControl, moved.X); }
@@ -829,6 +834,25 @@ public sealed class DevelopmentShell : IDisposable
         _ = Controller.MoveFocusedSelectPage(id, direction, Math.Clamp(pageSize, 1, 12));
         KeepPopupSelectionVisible(view, id);
         return true;
+    }
+    private void UpdateHoveredLink(View view, BrowserWindow window)
+    {
+        var hovered = -1;
+        if (view.OpenSelectControl < 0 && view.PointerX is { } x && view.PointerY is { } y
+            && y >= ShellChrome.Height && window.ActiveTab is { } tab
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport
+            && x >= 0 && x < viewport.Width && y < ShellChrome.Height + viewport.Height
+            && Controller.Page(tab.Id) is { } page)
+        {
+            var pageY = y - ShellChrome.Height;
+            for (var index = page.LinkTargets.Count - 1; index >= 0; index--)
+            {
+                if (page.LinkTargets[index].Contains(x, pageY)) { hovered = index; break; }
+            }
+        }
+        if (view.HoveredLink == hovered) { return; }
+        view.HoveredLink = hovered;
+        view.Dirty = true;
     }
     private void UpdateSelectPopupHover(View view, BrowserWindow window, double x, double y)
     {
