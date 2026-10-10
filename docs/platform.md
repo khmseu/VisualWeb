@@ -100,10 +100,10 @@ smoke checks. Both Linux architectures now require the same systemd/cgroup
 prerequisites and run confinement-denial/resource-exhaustion smokes and confined
 browser integration tests. ARM64 implementation is not yet backed by an observed
 native confinement run here; see the [Linux confinement guide](linux-confinement.md).
-The separately configured Windows x64/arm64 workflow exercises native platform,
-browser and Windows confinement paths. These workflows provide target-specific
-validation; their existence does not certify unobserved runs or high-DPI desktop
-behavior.
+The separately configured Windows x64/arm64 workflow runs the full solution test
+suite and exercises native platform, browser and Windows confinement paths.
+These workflows provide target-specific validation; their existence does not
+certify unobserved runs or high-DPI desktop behavior.
 
 Linux x64 has also been validated here with dummy and X11 (including text-input
 activation), headless Weston 13 Wayland (surfaces/events/lifecycle, **text-input
