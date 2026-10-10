@@ -505,8 +505,9 @@ same-origin/CORS/CSP policy or production request authorization.
 
 The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
 and supported linked stylesheets in document (cascade) order, taking style child text. Inline attributes also participate.
-Named stylesheet sets, non-CSS type values, media other than absent/`all`
-and CSS imports fail explicitly rather than silently producing a partially styled page.
+Named stylesheet sets, non-CSS type values, media other than absent/`all`/a single
+`screen` media type, media-query conditions, and CSS imports fail explicitly rather
+than silently producing a partially styled page.
 
 Bounded linked stylesheets are brokered by the browser, never by renderers.
 `GetPageSource` parses the decoded document with the renderer's exact parser

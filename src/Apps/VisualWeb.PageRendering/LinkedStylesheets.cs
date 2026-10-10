@@ -7,8 +7,9 @@ namespace VisualWeb.PageRendering;
 /// <summary>Shared browser/renderer policy for the supported classic <c>link rel=stylesheet</c> subset.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
 /// "stylesheet"</see> and <see href="https://html.spec.whatwg.org/multipage/semantics.html#the-link-element">the link
-/// element</see>. Only persistent, unconditional text/css sheets are supported: alternate/titled/disabled sheets,
-/// non-<c>all</c> media, other types, CORS (<c>crossorigin</c>), integrity, referrer policy and the obsolete
+/// element</see>. Only persistent text/css sheets matching <c>all</c> or the single <c>screen</c> media type are
+/// supported: alternate/titled/disabled sheets, other media queries, other types, CORS (<c>crossorigin</c>), integrity,
+/// referrer policy and the obsolete
 /// <c>charset</c> attribute throw instead of being ignored. Links without a nonempty href create no resource, as in
 /// the spec. URLs resolve against the document base URL, falling back to the final response URL.</remarks>
 internal static class LinkedStylesheets
@@ -53,6 +54,10 @@ internal static class LinkedStylesheets
         return documentUrl;
     }
 
+    public static bool SupportsMedia(string? media) => media is null
+        || media.Trim(AsciiWhitespace).Equals("all", StringComparison.OrdinalIgnoreCase)
+        || media.Trim(AsciiWhitespace).Equals("screen", StringComparison.OrdinalIgnoreCase);
+
     public static string StripCharsetRule(string css)
     {
         const string prefix = "@charset \"";
@@ -73,8 +78,8 @@ internal static class LinkedStylesheets
         { throw new PageNavigationException("Named/alternate linked stylesheet sets are unsupported."); }
         if (UnsupportedAttributes.FirstOrDefault(name => element.GetAttribute(name) is not null) is { } unsupported)
         { throw new PageNavigationException($"Linked stylesheet attribute '{unsupported}' is unsupported."); }
-        if (element.GetAttribute("media") is { } media && !media.Trim(AsciiWhitespace).Equals("all", StringComparison.OrdinalIgnoreCase))
-        { throw new PageNavigationException("Conditional linked stylesheets (media other than 'all') are unsupported."); }
+        if (!SupportsMedia(element.GetAttribute("media")))
+        { throw new PageNavigationException("Linked stylesheet media must be absent, 'all', or the single 'screen' media type."); }
         if (element.GetAttribute("type") is { Length: > 0 } type && !type.Equals("text/css", StringComparison.OrdinalIgnoreCase))
         { throw new PageNavigationException("Linked stylesheet types other than text/css are unsupported."); }
         if (element.GetAttribute("href") is not { Length: > 0 } href) { return null; }

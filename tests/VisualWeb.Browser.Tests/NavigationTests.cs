@@ -176,7 +176,7 @@ public sealed class NavigationTests
     }
     [Theory]
     [InlineData("<link rel='alternate stylesheet' href='https://example.com/x'>")]
-    [InlineData("<style media='screen'>p{color:red}</style>")]
+    [InlineData("<style media='screen and (min-width: 1px)'>p{color:red}</style>")]
     [InlineData("<style title='alternate'>p{color:red}</style>")]
     [InlineData("<style type='text/other'>p{color:red}</style>")]
     [InlineData("<style type=' '>p{color:red}</style>")]

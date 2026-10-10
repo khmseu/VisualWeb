@@ -369,10 +369,9 @@ public sealed class StaticPageRenderer : IPageRenderer
             {
                 throw new PageNavigationException("Non-CSS style elements are unsupported.");
             }
-            if (element.GetAttribute("media") is { Length: > 0 } media
-                && !media.Trim().Equals("all", StringComparison.OrdinalIgnoreCase))
+            if (!LinkedStylesheets.SupportsMedia(element.GetAttribute("media")))
             {
-                throw new PageNavigationException("Conditional embedded stylesheets are deferred.");
+                throw new PageNavigationException("Embedded stylesheet media must be absent, 'all', or the single 'screen' media type.");
             }
             if (element.GetAttribute("title") is { Length: > 0 })
             {

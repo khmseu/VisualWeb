@@ -156,7 +156,7 @@ Evidence: `page limitations`, `input dispatch`, and `history implementation`.
 
 Besides the main HTML resource, only bounded classic linked stylesheets are loaded:
 the browser (never the renderer) fetches supported `link rel=stylesheet` sheets
-(media absent/`all`, type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
+(media absent/`all`/single `screen` type, type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
 with the tab loader and shared session HSTS store, cookies off, resolved against the
 first `<base href>` (falling back to the final response URL), as at most 32 sheets of 256 Ki characters within a 1 MiB IPC
 budget. HTTP(S) sheets are restricted to the final document origin across redirects,

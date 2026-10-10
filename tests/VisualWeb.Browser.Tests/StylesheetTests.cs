@@ -31,7 +31,7 @@ public sealed class StylesheetTests
             return request.RequestUri.AbsoluteUri switch
             {
                 "https://initial.example/start" => Redirect("https://final.example/dir/page"),
-                "https://final.example/dir/page" => Text("<!doctype html><link rel=stylesheet href=a.css>"
+                "https://final.example/dir/page" => Text("<!doctype html><link rel=stylesheet media=' SCREEN ' href=a.css>"
                     + "<link rel='Preload StyleSheet' href='/b.css#x' type=TEXT/CSS media=' ALL '>", "text/html"),
                 "https://final.example/dir/a.css" => Redirect("https://final.example/dir/moved.css"),
                 "https://final.example/dir/moved.css" => Text("p{color:red}", "text/css"),
@@ -194,6 +194,20 @@ public sealed class StylesheetTests
     }
 
     [Fact]
+    public void ScreenMediaTypeIncludesEmbeddedAndLinkedStylesheets()
+    {
+        var document = HtmlParser.Parse("""
+            <!doctype html><style media=" SCREEN ">body{color:red}</style>
+            <link rel=stylesheet media=screen href=screen.css>
+            """, cancellationToken: Cancellation).Document;
+        var url = BrowserUrl.Parse("https://example.test/page");
+
+        Assert.Equal(["https://example.test/screen.css"], StaticPageRenderer.DiscoverStylesheets(document, url, Cancellation));
+        Assert.Equal(["body{color:red}", "body{color:blue}"], StaticPageRenderer.CollectStyles(document, null,
+            Cancellation, url, [new("https://example.test/screen.css", "body{color:blue}")]).Select(source => source.Text));
+    }
+
+    [Fact]
     public void InlineAndLinkedSourcesKeepDocumentOrder()
     {
         var document = HtmlParser.Parse("""
@@ -220,6 +234,9 @@ public sealed class StylesheetTests
             "body{background-color:blue}"));
         Assert.Equal(Lime, await Pixel(renderer, "<style>body{margin:0}</style><link rel=stylesheet href=s.css>"
             + "<link rel=stylesheet href=t.css>", "body{background-color:blue}", "body{background-color:lime}"));
+        Assert.Equal(Blue, await Pixel(renderer,
+            "<style media=' SCREEN '>body{margin:0;background-color:red}</style>"
+            + "<link rel=stylesheet media=screen href=s.css>", "body{background-color:blue}"));
         var ex = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(
             Page("<style>body{margin:0}</style><link rel=stylesheet href=missing.css>", "body{}"), Viewport, Cancellation));
         Assert.Contains("not provided", ex.Message);
@@ -243,7 +260,8 @@ public sealed class StylesheetTests
     [InlineData("<link rel='alternate stylesheet' title=x href=s.css>")]
     [InlineData("<link rel=stylesheet title=named href=s.css>")]
     [InlineData("<link rel=stylesheet disabled href=s.css>")]
-    [InlineData("<link rel=stylesheet media=screen href=s.css>")]
+    [InlineData("<link rel=stylesheet media=print href=s.css>")]
+    [InlineData("<link rel=stylesheet media='screen and (min-width: 1px)' href=s.css>")]
     [InlineData("<link rel=stylesheet media='' href=s.css>")]
     [InlineData("<link rel=stylesheet type=text/plain href=s.css>")]
     [InlineData("<link rel=stylesheet type='text/css; charset=utf-8' href=s.css>")]
