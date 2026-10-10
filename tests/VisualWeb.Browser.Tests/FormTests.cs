@@ -2434,6 +2434,18 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void ListboxSelectionSerializesItsSelectedOption()
+    {
+        using var harness = new Harness("<form><select size=3 name=mode><option value=fast>Fast</option><option value=slow>Slow</option></select><button>go</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.SelectOptionFromPointer(harness.Tab.Id, 0, 1));
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://example.com/final/index.html?mode=slow", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
     public void CheckedMemberSatisfiesRequiredRadioGroup()
     {
         using var harness = new Harness("<form><input type=radio name=mode value=a required><input type=radio name=mode value=b checked><button type=submit>go</button></form>");
