@@ -663,7 +663,7 @@ public static class RendererProtocol
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
             optionCount += control.Options.Length;
             if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected && !option.Disabled)?.Value
-                && !(control.Options.All(option => !option.Selected) && control.Value.Length == 0))
+                && !(control.Options.All(option => !option.Selected || option.Disabled) && control.Value.Length == 0))
             { throw new IpcProtocolException("Invalid renderer select value or selected option."); }
             if (control.Kind == "date" && control.Value.Length > 0 && !FormDate.IsValid(control.Value))
             { throw new IpcProtocolException("Invalid renderer date value."); }

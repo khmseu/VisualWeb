@@ -154,7 +154,7 @@ internal static class PageForms
             if (minLength > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var options = kind == "select" ? Options(element, ref optionCount) : Array.Empty<PageFormOption>();
-            var selectedOption = Array.FindLastIndex(options, option => option.Selected);
+            var selectedOption = Array.FindLastIndex(options, option => option.Selected && !option.Disabled);
             var multiple = kind == "select" && element.GetAttribute("multiple") is not null;
             if (kind == "select" && !multiple && selectedOption < 0)
             { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
