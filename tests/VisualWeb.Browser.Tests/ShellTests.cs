@@ -1235,6 +1235,53 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void PrimaryLinkClickRequiresReleaseOverTheSameAnchor(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><a href='#one' id=one>first</a> " +
+            "<a href='#two' id=two>second</a>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var links = shell.Controller.Page(tab.Id)!.LinkTargets;
+        var first = links[0].Rects[0];
+        var second = links[1].Rects[0];
+        var native = system.Items[0];
+        var firstX = (float)(first.X + first.Width / 2);
+        var firstY = (float)(ShellChrome.Height + first.Y + first.Height / 2);
+        var secondX = (float)(second.X + second.Width / 2);
+        var secondY = (float)(ShellChrome.Height + second.Y + second.Height / 2);
+
+        Click(firstX, firstY, 500, 300);
+        Assert.Single(tab.History.Entries);
+        Click(firstX, firstY, secondX, secondY);
+        Assert.Single(tab.History.Entries);
+        Click(firstX, firstY, firstX, firstY);
+        Assert.Equal("#one", new Uri(tab.History.Current!.Href).Fragment);
+        Assert.Equal(2, tab.History.Entries.Count);
+        Assert.Null(tab.Error);
+
+        void Click(float downX, float downY, float upX, float upY)
+        {
+            shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, downX, downY));
+            shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, upX, upY));
+        }
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void UnsupportedLinkClickReportsVisibleErrorWithoutReplacingPage(bool multiprocess)
     {
         using var system = new Windows();

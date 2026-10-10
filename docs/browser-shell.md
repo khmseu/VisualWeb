@@ -79,7 +79,7 @@ The native window title retains the same warning alongside the active page title
 | M / Ctrl+M | Move active tab to the first other window, or create an empty destination |
 | Native window close | Close that window and only its tabs |
 | Pointer hover on visible anchor text | Draw a shell-owned outline around its visible text rectangles without modifying the page raster |
-| Primary click on visible anchor text | Navigate the current tab to its resolved href on release; dragging at least four logical pixels instead selects coarse text fragments without navigating |
+| Primary click on visible anchor text | Navigate on release only if it remains on the same anchor; dragging at least four logical pixels instead selects coarse text fragments without navigating |
 | Middle click on visible anchor text | Open its resolved href in a new active tab, regardless of the link target |
 | Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
@@ -110,8 +110,8 @@ changes when copied. This is not character-level selection or browser text shapi
 Browser windows and tab IDs are distinct; tab identity/history/content survives
 moving. Text input activation uses SDL committed text. Page selection is limited
 to whole visible shaped fragments (not character offsets). A primary click on a link
-navigates on release; dragging at least four logical pixels from link text selects
-fragments instead. Drags beginning in ordinary text can also include anchor fragments.
+navigates on release only if the pointer remains over the same anchor; dragging
+at least four logical pixels from link text selects fragments instead. Drags beginning in ordinary text can also include anchor fragments.
 Selection is cleared on successful document, scroll or resize publications,
 and on page clicks before a new interaction begins.
 Ctrl+C copies selected fragment text. Text/search fields support Ctrl+A
@@ -189,7 +189,9 @@ and non-link text have no targets.
 The renderer resolves destinations with Core.Url against the final `LoadedPage.Url`
 before returning data-only rectangles and absolute URLs; it never navigates or
 fetches. Primary left-button presses in the page region subtract the 120-logical-
-pixel chrome height. Middle-button presses open only visible anchor targets in a
+pixel chrome height and activate on release only when the pointer remains over
+the same visible anchor. Releasing outside it or over another anchor cancels.
+Middle-button presses open only visible anchor targets in a
 new active tab; they do not activate form controls. Both actions use the same
 browser-owned destination checks and navigation transaction. Ctrl+primary click
 opens the link in a background tab without activating page controls or chrome.

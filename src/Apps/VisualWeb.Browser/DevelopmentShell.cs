@@ -38,6 +38,7 @@ public sealed class DevelopmentShell : IDisposable
         internal bool SelectingText { get; set; }
         internal bool PendingLinkActivation { get; set; }
         internal bool PendingLinkDragged { get; set; }
+        internal int PendingLinkIndex { get; set; } = -1;
         internal TabId? PendingLinkTab { get; set; }
         internal double PendingLinkX { get; set; }
         internal double PendingLinkY { get; set; }
@@ -187,6 +188,7 @@ public sealed class DevelopmentShell : IDisposable
             {
                 view.PendingLinkActivation = false;
                 view.PendingLinkDragged = false;
+                view.PendingLinkIndex = -1;
                 view.PendingLinkTab = null;
                 view.PendingLinkViewport = null;
                 view.HoveredLink = -1;
@@ -241,6 +243,7 @@ public sealed class DevelopmentShell : IDisposable
                     view.ControlModifier = false;
                     view.PendingLinkActivation = false;
                     view.PendingLinkDragged = false;
+                    view.PendingLinkIndex = -1;
                     view.PendingLinkTab = null;
                     view.PendingLinkViewport = null;
                     view.HoveredLink = -1;
@@ -330,6 +333,7 @@ public sealed class DevelopmentShell : IDisposable
                     view.PendingLinkActivation = false;
                     view.PendingLinkDragged = false;
                     view.PendingLinkTab = null;
+                    view.PendingLinkIndex = -1;
                     view.PendingLinkViewport = null;
                     view.SelectingText = false;
                     view.DraggingScrollbar = false;
@@ -382,11 +386,21 @@ public sealed class DevelopmentShell : IDisposable
                             Controller.FocusPage(pageTab.Id);
                             Controller.ClearSelectedText(pageTab.Id);
                             var pageY = pointer.Y - ShellChrome.Height;
-                            if (Controller.Page(pageTab.Id) is { } page
-                                && page.LinkTargets.Any(link => link.Contains(pointer.X, pageY)))
+                            var page = Controller.Page(pageTab.Id);
+                            var linkIndex = -1;
+                            if (page is not null)
+                            {
+                                for (var index = 0; index < page.LinkTargets.Count; index++)
+                                {
+                                    if (page.LinkTargets[index].Contains(pointer.X, pageY))
+                                    { linkIndex = index; }
+                                }
+                            }
+                            if (linkIndex >= 0)
                             {
                                 view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);
                                 view.PendingLinkActivation = true;
+                                view.PendingLinkIndex = linkIndex;
                                 view.PendingLinkTab = pageTab.Id;
                                 view.PendingLinkX = pointer.X;
                                 view.PendingLinkY = pointer.Y;
@@ -411,19 +425,29 @@ public sealed class DevelopmentShell : IDisposable
                         else if (window.ActiveTabId is { } unfocused) { Controller.FocusPage(unfocused, false); }
                     }
                     break;
-                case PointerButtonChanged { Pressed: false, Button: 1 } when window.ActiveTab is { } releasedTab:
+                case PointerButtonChanged { Pressed: false, Button: 1 } released when window.ActiveTab is { } releasedTab:
                     view.DraggingScrollbar = false;
                     view.DraggingRangeControl = -1;
                     if (view.PendingLinkActivation)
                     {
-                        var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id;
-                        var linkX = view.PendingLinkX;
-                        var linkY = view.PendingLinkY - ShellChrome.Height;
+                        var pendingLinkIndex = view.PendingLinkIndex;
                         var pendingViewport = view.PendingLinkViewport;
+                        var pageY = released.Y - ShellChrome.Height;
+                        var releaseIsOnLink = pendingViewport is { } viewport
+                            && released.X >= 0 && released.X < viewport.Width
+                            && pageY >= 0 && pageY < viewport.Height
+                            && Controller.Page(releasedTab.Id) is { } page
+                            && pendingLinkIndex >= 0 && pendingLinkIndex < page.LinkTargets.Count
+                            && page.LinkTargets[pendingLinkIndex].Contains(released.X, pageY);
+                        var activate = !view.PendingLinkDragged && view.PendingLinkTab == releasedTab.Id
+                            && releaseIsOnLink;
+                        var linkX = released.X;
+                        var linkY = pageY;
                         var pendingTab = view.PendingLinkTab;
                         view.PendingLinkActivation = false;
                         view.PendingLinkDragged = false;
                         view.PendingLinkTab = null;
+                        view.PendingLinkIndex = -1;
                         view.PendingLinkViewport = null;
                         if (view.SelectingText && pendingTab is { } selectedTab && Controller.Session.Contains(selectedTab))
                         { Controller.EndTextSelection(selectedTab); }

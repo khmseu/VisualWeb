@@ -35,8 +35,9 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux conf
 The shell supports bounded textual link activation and vertical document scrolling;
 broader page interaction is still missing:
 
-- Textual `<a href>` links support primary left-click and Tab/Shift+Tab/Enter
-  navigation in shell, local and actual renderer-process paths; middle-click opens
+- Textual `<a href>` links support primary left-click (release must remain over the
+  same anchor) and Tab/Shift+Tab/Enter navigation in shell, local and actual
+  renderer-process paths; middle-click opens
   the visible link in a new active tab and Ctrl+primary-click opens it in a
   background tab, regardless of its target. Shift+Enter opens the focused link
   in a new active tab; Ctrl+Enter opens it in a background tab. Enabled drawn
