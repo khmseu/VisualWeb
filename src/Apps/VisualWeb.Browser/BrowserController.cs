@@ -412,7 +412,7 @@ public sealed class BrowserController : IDisposable
         Check();
         var owner = content[id];
         return owner.PageFocused && owner.Page is { } page && owner.FocusedControl >= 0
-            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea", ReadOnly: false, Disabled: false };
+            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "textarea", ReadOnly: false, Disabled: false };
     }
     public bool IsMultilineFormControl(TabId id)
     {
@@ -664,7 +664,7 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
-        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea"
+        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
     public void SetFormControlCaret(TabId id, int controlIndex, int caret)

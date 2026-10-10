@@ -811,6 +811,17 @@ public sealed class FormTests
         Assert.Equal("https://example.com/theme?accent=%2312abcd", harness.Source.Requests[^1].Url.Href);
     }
 
+    [Fact]
+    public void ColorInputUsesBrowserOwnedEditingState()
+    {
+        using var harness = new Harness("<form><input type=color name=accent value=#112233></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.EditingFormControl(harness.Tab.Id));
+        harness.Controller.SelectAllFormControl(harness.Tab.Id);
+        Assert.Equal("#aabbcc", harness.Controller.InsertFormText(harness.Tab.Id, "#aabbcc"));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
