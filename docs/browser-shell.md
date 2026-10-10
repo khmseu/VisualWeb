@@ -282,7 +282,7 @@ without a week picker; invalid initial values become empty and nonempty values
 are validated before submission. Valid week `min` and `max` bounds are enforced
 before submission; invalid bounds are ignored. Week `step`, `pattern`, length,
 `list`, `multiple` and `dirname` are unsupported and mark the form with a visible
-error. Number accepts finite HTML floating-point values; invalid initial values become empty, with optional
+error. Number accepts finite HTML floating-point values with optional
 min/max and step-grid validation. `step=any` disables step checks, while
 absent or invalid step values use the default step of 1. The step base is a valid
 `min`, otherwise the initial value when valid, otherwise zero. Step arithmetic uses

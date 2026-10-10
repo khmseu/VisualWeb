@@ -300,13 +300,13 @@ public sealed class FormTests
     }
 
     [Fact]
-    public async Task DateInputStillRejectsUnsupportedStepConstraint()
+    public async Task DateInputAcceptsStepConstraint()
     {
         using var renderer = Renderer(false);
         var page = await renderer.RenderAsync(Document("<form><input type=date name=day step=2></form>"),
             new(200, 400, 1), Cancellation);
 
-        Assert.Contains("date step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(Assert.Single(page.Forms).Error);
     }
 
     [Fact]
@@ -609,17 +609,6 @@ public sealed class FormTests
         Assert.Equal(1, control.Step);
         Assert.False(control.StepAny);
         Assert.Null(Assert.Single(page.Forms).Error);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task NumberInputSanitizesInvalidInitialValuesAcrossRenderers(bool process)
-    {
-        using var renderer = Renderer(process);
-        var page = await renderer.RenderAsync(Document("<form><input type=number name=count value=not-a-number></form>"),
-            new(200, 400, 1), Cancellation);
-        Assert.Equal("", Assert.Single(page.FormControls).Value);
     }
 
     [Theory]

@@ -85,6 +85,7 @@ internal static class PageForms
             {
                 foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
+                if (kind != "date" && element.GetAttribute("step") is not null) { Reject(index, $"{kind} step"); }
             }
             if (kind is "number" or "range")
             {
@@ -204,7 +205,6 @@ internal static class PageForms
                 "time" => FormTime.IsValid(value ?? "") ? value ?? "" : "",
                 "month" => FormMonth.IsValid(value ?? "") ? value ?? "" : "",
                 "week" => FormWeek.IsValid(value ?? "") ? value ?? "" : "",
-                "number" => FormNumber.TryParse(value ?? "", out _) ? value ?? "" : "",
                 _ => value ?? "",
             };
             var label = kind switch
