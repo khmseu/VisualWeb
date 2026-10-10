@@ -221,6 +221,7 @@ internal static class PageForms
                 "time" => FormTime.IsValid(value ?? "") ? value ?? "" : "",
                 "month" => FormMonth.IsValid(value ?? "") ? value ?? "" : "",
                 "week" => FormWeek.IsValid(value ?? "") ? value ?? "" : "",
+                "color" => FormColor.Normalize(value),
                 _ => value ?? "",
             };
             var label = kind switch
@@ -369,7 +370,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : type == "button" ? "inert" : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "color" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : type == "button" ? "inert" : null,
         "button" => DomFormControls.ButtonType(element) switch
         {
             "submit" => "button",

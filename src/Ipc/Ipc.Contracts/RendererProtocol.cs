@@ -87,7 +87,7 @@ public sealed record PageForm(
 }
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, color, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
 /// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
@@ -150,6 +150,18 @@ public sealed record PageFormOption(
 
 /// <summary>Checks the browser's bounded year-0001-through-9999 subset of HTML date values.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-date-string">valid date string</see>.</remarks>
+/// <summary>Validates the bounded simple-color subset used by browser-owned color controls.</summary>
+public static class FormColor
+{
+    public const string DefaultValue = "#000000";
+
+    public static bool IsValid(string value) => value.Length == 7 && value[0] == '#'
+        && value[1..].All(static character => character is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
+
+    public static string Normalize(string? value) => value is { } candidate && IsValid(candidate)
+        ? candidate.ToLowerInvariant() : DefaultValue;
+}
+
 public static class FormDate
 {
     /// <summary>Returns the Gregorian day ordinal for a valid bounded date.</summary>
@@ -606,7 +618,7 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button" or "inert")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "color" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button" or "inert")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
@@ -633,8 +645,8 @@ public static class RendererProtocol
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
                 || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))
-                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea")
-                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "checkbox" or "radio" or "select" or "textarea")
+                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "textarea")
+                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
@@ -679,6 +691,8 @@ public static class RendererProtocol
             { throw new IpcProtocolException("Invalid renderer month value."); }
             if (control.Kind == "week" && control.Value.Length > 0 && !FormWeek.IsValid(control.Value))
             { throw new IpcProtocolException("Invalid renderer week value."); }
+            if (control.Kind == "color" && !FormColor.IsValid(control.Value))
+            { throw new IpcProtocolException("Invalid renderer color value."); }
             if (control.Kind == "range" && (!FormNumber.TryParse(control.Value, out var rangeValue)
                 || rangeValue < control.Minimum!.Value || rangeValue > control.Maximum!.Value
                 || !control.StepAny && !FormNumber.IsStepAligned(rangeValue, control.Minimum.Value, control.Step!.Value)))

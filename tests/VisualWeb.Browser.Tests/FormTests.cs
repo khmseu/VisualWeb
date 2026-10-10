@@ -774,6 +774,20 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ColorInputsReportDefaultAndExplicitValuesAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><input type=color name=default><input type=color name=accent value=#1a2B3c></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Equal(["color", "color"], page.FormControls.Select(control => control.Kind));
+        Assert.Equal(["#000000", "#1a2b3c"], page.FormControls.Select(control => control.Value));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NumberInputReportsStepMetadataAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
