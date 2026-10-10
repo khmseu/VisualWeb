@@ -111,6 +111,7 @@ internal static class PageForms
                 if (element.GetAttribute("list") is not null) { Reject(index, "textarea list"); }
                 if (element.GetAttribute("multiple") is not null) { Reject(index, "textarea multiple"); }
                 if (element.GetAttribute("min") is not null) { Reject(index, "textarea min"); }
+                if (element.GetAttribute("max") is not null) { Reject(index, "textarea max"); }
                 if (textareaWrapHard)
                 {
                     textareaWrapColumns = TextareaColumns(element.GetAttribute("cols")) ?? 0;

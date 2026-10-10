@@ -118,6 +118,15 @@ public sealed class FormTests
         Assert.Contains("textarea min", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task TextareaMaximumIsVisibleUnsupportedFormSemantics()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><textarea name=notes max=8></textarea></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Contains("textarea max", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
