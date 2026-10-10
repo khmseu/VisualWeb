@@ -131,7 +131,9 @@ internal static class PageForms
                 foreach (var name in SubmitterOverrides)
                 {
                     var overrideValue = element.GetAttribute(name);
-                    if (overrideValue is not null && !(name == "formmethod" && overrideValue.Equals("get", StringComparison.OrdinalIgnoreCase)))
+                    if (overrideValue is not null
+                        && !(name == "formmethod" && overrideValue.Equals("get", StringComparison.OrdinalIgnoreCase))
+                        && !(name == "formenctype" && overrideValue.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)))
                     { Reject(index, $"submit button override {name}"); }
                 }
             }

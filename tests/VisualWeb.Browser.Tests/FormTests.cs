@@ -82,6 +82,15 @@ public sealed class FormTests
         Assert.Null(Assert.Single(page.Forms).Error);
     }
 
+    [Fact]
+    public async Task SubmitterUrlEncodedOverrideIsAccepted()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><input name=q><button formenctype=application/x-www-form-urlencoded>Search</button></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
