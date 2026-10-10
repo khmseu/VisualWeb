@@ -1039,6 +1039,9 @@ public sealed class BrowserController : IDisposable
                 { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
                 if (control.Maximum is { } maximum && dateDayNumber > maximum)
                 { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
+                if (!control.StepAny && control.Step is { } dateStep
+                    && !FormNumber.IsStepAligned(dateDayNumber, control.Minimum ?? dateDayNumber, dateStep))
+                { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
             }
             if (control.Kind == "time" && value.Length > 0 && !FormTime.IsValid(value))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid time; submission blocked."); }

@@ -330,6 +330,17 @@ public sealed class FormTests
         Assert.Single(harness.Source.Requests);
     }
 
+    [Fact]
+    public void DateInputEnforcesStepGridOnSubmission()
+    {
+        using var harness = new Harness("<form><input type=date name=day min=2024-01-01 step=2><button>Save</button></form>");
+        var controller = harness.Controller;
+        Assert.Null(Assert.Single(controller.Page(harness.Tab.Id)!.Forms).Error);
+        Assert.True(controller.FocusControl(harness.Tab.Id, 0));
+        controller.InsertFormText(harness.Tab.Id, "2024-01-02");
+        Assert.Contains("step", Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

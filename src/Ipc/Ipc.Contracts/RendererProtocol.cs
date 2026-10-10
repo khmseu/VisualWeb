@@ -625,9 +625,8 @@ public static class RendererProtocol
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
                 || control.Kind is not ("number" or "range" or "date" or "time" or "month" or "week") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
-                || (control.Kind is "number" or "range") && (control.StepAny ? control.Step is not null : control.Step is null)
-                || control.Kind == "date" && (control.Step is not null || control.StepAny
-                    || control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
+                || (control.Kind is "number" or "range" or "date") && (control.StepAny ? control.Step is not null : control.Step is null)
+                || control.Kind == "date" && (control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
                     || control.Maximum is { } dateMaximum && dateMaximum != Math.Truncate(dateMaximum))
                 || control.Kind == "time" && (control.Step is not null || control.StepAny
                     || control.Minimum is { } timeMinimum && timeMinimum != Math.Truncate(timeMinimum)

@@ -260,7 +260,8 @@ strict `YYYY-MM-DD` Gregorian syntax
 for years 0001–9999 and are edited as text (there is no calendar picker); invalid
 initial date values become empty, required dates must be nonempty, and nonempty
 values are checked before submission. Valid date `min` and `max` bounds are enforced
-before submission; invalid bounds are ignored. Date `step`, `pattern`, length, `list`,
+before submission; valid numeric date `step` values enforce a bounded day grid, while `step=any`
+disables it. Date `pattern`, length, `list`,
 `multiple` and `dirname` attributes are unsupported and mark the form with a visible
 error. Time values use strict HTML `HH:mm`, `HH:mm:ss`, or
 `HH:mm:ss.fraction` syntax (one to three fractional digits, no leap seconds or
