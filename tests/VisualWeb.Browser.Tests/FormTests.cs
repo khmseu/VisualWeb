@@ -822,6 +822,20 @@ public sealed class FormTests
         Assert.Equal("#aabbcc", harness.Controller.InsertFormText(harness.Tab.Id, "#aabbcc"));
     }
 
+    [Fact]
+    public void ColorInputRejectsMalformedEditedValuesBeforeSubmitting()
+    {
+        using var harness = new Harness("<form><input type=color name=accent value=#112233></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        harness.Controller.SelectAllFormControl(harness.Tab.Id);
+        harness.Controller.InsertFormText(harness.Tab.Id, "red");
+        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Contains("valid color", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

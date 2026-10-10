@@ -1135,6 +1135,8 @@ public sealed class BrowserController : IDisposable
                 var requiredFormat = control.Multiple ? "valid email address list" : "valid email address";
                 throw new PageNavigationException($"Form field '{control.Name}' must contain a {requiredFormat}; submission blocked.");
             }
+            if (control.Kind == "color" && !FormColor.IsValid(value))
+            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid color; submission blocked."); }
             if ((control.Kind is "number" or "range") && value.Length > 0)
             {
                 if (!FormNumber.TryParse(value, out var number))
