@@ -264,6 +264,30 @@ public sealed class BrowserController : IDisposable
         }
         return true;
     }
+    /// <summary>Moves the active endpoint to the first or last fragment on its visual line.</summary>
+    public bool ExtendSelectedTextToLineBoundary(TabId id, bool endOfLine)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return false; }
+        var lineY = page.TextTargets[owner.TextSelectionEnd].Rect.Y;
+        var end = owner.TextSelectionEnd;
+        for (var index = 0; index < page.TextTargets.Count; index++)
+        {
+            if (Math.Abs(page.TextTargets[index].Rect.Y - lineY) <= 0.5
+                && (endOfLine ? index > end : index < end)) { end = index; }
+        }
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.SelectingText = false;
+        if (end != owner.TextSelectionEnd)
+        {
+            owner.TextSelectionEnd = end;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
     public bool SelectAllVisibleText(TabId id)
     {
         Check();

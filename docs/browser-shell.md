@@ -97,7 +97,7 @@ The native window title retains the same warning alongside the active page title
 | Space on a focused inert button | No action; inert buttons never submit or navigate |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
-| Shift+primary click with an existing selection; Shift+Left/Right with page focus | Extend the coarse fragment selection, including link text without activating it |
+| Shift+primary click with an existing selection; Shift+Left/Right and Shift+Home/End with page focus | Extend the coarse fragment selection, including link text without activating it |
 | Ctrl+A with page focus outside editable controls | Select all currently visible shaped text fragments |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
 | Escape with page text selected | Clear the browser-owned selection without changing the clipboard |
@@ -115,7 +115,8 @@ navigates on release only if the pointer remains over the same anchor; dragging
 at least four logical pixels from link text selects fragments instead. Drags beginning in ordinary text can also include anchor fragments.
 Shift+primary click extends an existing selection to a visible text fragment,
 including text inside a link without navigating. Shift+Left/Right moves the active
-selection endpoint by one paint-order fragment when no form control owns focus. Selection is cleared on successful
+selection endpoint by one paint-order fragment, or to the current visual-line
+boundary with Shift+Home/End, when no form control owns focus. Selection is cleared on successful
 document, scroll or resize publications and on other page clicks before a new
 interaction begins.
 Ctrl+C copies selected fragment text. Text/search fields support Ctrl+A
