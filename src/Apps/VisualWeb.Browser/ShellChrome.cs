@@ -346,6 +346,13 @@ public sealed class ShellChrome : IDisposable
                 Fill(new(box.X + 1, box.Y + 1, Math.Max(0, box.Width - 2), Math.Max(0, box.Height - 2)),
                     control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" or "inert" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
+                if (control.Kind == "color" && FormColor.IsValid(forms.Values[index]))
+                {
+                    var colorValue = forms.Values[index];
+                    var color = new CssColor(Convert.ToByte(colorValue[1..3], 16), Convert.ToByte(colorValue[3..5], 16), Convert.ToByte(colorValue[5..7], 16));
+                    Fill(new(box.X + 4, box.Y + 4, Math.Max(0, box.Width - 8), Math.Max(0, box.Height - 8)), color);
+                    continue;
+                }
                 var selectedOption = forms.SelectIndices?[index] ?? Array.FindIndex(control.Options, option => option.Selected);
                 var selectedCount = forms.SelectSets is { } sets && index < sets.Count ? sets[index].Count
                     : selectedOption >= 0 ? 1 : 0;

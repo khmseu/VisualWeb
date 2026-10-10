@@ -67,6 +67,31 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void ColorInputDrawsItsBrowserOwnedSwatch()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style><form><input type=color value=#123456></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        var rect = Assert.Single(page.FormControls).Rect!;
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var pixels = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState(["#123456"], -1, -1)).Pixels;
+        var stride = system.Items[0].Size.Width * 4;
+        var offset = ((int)(ShellChrome.Height + rect.Y + rect.Height / 2) * stride) + ((int)rect.X + 8) * 4;
+
+        Assert.Equal((byte)0x56, pixels[offset]);
+        Assert.Equal((byte)0x34, pixels[offset + 1]);
+        Assert.Equal((byte)0x12, pixels[offset + 2]);
+    }
+
+    [Fact]
     public void ListboxRowsExposeShellOwnedOptionTargets()
     {
         using var system = new Windows();
