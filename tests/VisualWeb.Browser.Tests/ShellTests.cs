@@ -964,7 +964,8 @@ public sealed class ShellTests
         var pixelX = (int)Math.Floor(rect.X * native.Density);
         var pixelY = headerPixels + (int)Math.Floor(rect.Y * native.Density);
         Assert.Equal(new byte[] { 80, 130, 190, 255 }, Pixel(pixelX, pixelY));
-        Assert.Equal(page.Frame.Pixels.ToArray(), native.Pixels!.Skip(headerPixels * page.Frame.Stride));
+        Assert.Equal(new byte[] { 255, 255, 255, 255 },
+            page.Frame.Pixels.Span.Slice((pixelY - headerPixels) * page.Frame.Stride + pixelX * 4, 4).ToArray());
 
         shell.Dispatch(new PointerMoved(native.Id, 5, 5));
         shell.Tick();
@@ -1329,7 +1330,7 @@ public sealed class ShellTests
         shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(html));
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
         shell.Controller.Scroll(tab.Id, double.MaxValue);
-        Wait(() => shell.Controller.Page(tab.Id)!.LinkTargets.Count > 0);
+        Wait(() => shell.Controller.Page(tab.Id)!.LinkTargets.Any(link => link.Rects.Count > 0));
         var old = shell.Controller.Page(tab.Id)!;
         var link = old.LinkTargets[0];
         var x = (float)(link.X + link.Width / 2);

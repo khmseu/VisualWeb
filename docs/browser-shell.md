@@ -82,7 +82,7 @@ The native window title retains the same warning alongside the active page title
 | Primary click on visible anchor text | Navigate on release only if it remains on the same anchor; dragging at least four logical pixels instead selects coarse text fragments without navigating |
 | Middle click on visible anchor text | Open its resolved href in a new active tab, regardless of the link target |
 | Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |
-| Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
+| Tab / Shift+Tab | Traverse drawn chrome controls, then rendered textual anchors, forwards/backwards; focused offscreen anchors scroll into view |
 | Enter outside address editing | Activate the focused chrome control or textual anchor; Shift+Enter opens a focused anchor in a new active tab; Ctrl+Enter opens it in a background tab |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
@@ -119,13 +119,14 @@ select-all and Ctrl+V paste; address editing supports Ctrl+V over its existing
 Ctrl+L selection. IME preedit and richer accessibility remain deferred.
 Keyboard traversal starts with enabled, drawn chrome targets in drawing order:
 tab arrows, visible tab labels/close buttons, navigation/window controls, then
-the address editor, followed by visible textual anchors in first-fragment paint
-order. Ctrl+L still selects the address; Tab leaves editing for the first visible
+the address editor, followed by rendered textual anchors in first-fragment paint
+order. Ctrl+L still selects the address; Tab leaves editing for the first rendered
 anchor, while Shift+Tab returns to the preceding chrome control. At the first
 page anchor Shift+Tab returns to the address (or last drawn chrome control);
 at the last anchor Tab wraps to the first chrome control. Disabled/undrawn controls
-and anchors without visible text rectangles are skipped. With no visible links,
-traversal wraps among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab retain tab switching,
+are skipped. Focusing an offscreen text anchor scrolls it into view; empty and
+non-text anchors remain unsupported. With no rendered text links, traversal wraps
+among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab retain tab switching,
 and editing, navigation and scrolling shortcuts retain their existing meanings.
 
 Page keyboard ownership and selected anchor are per-tab and survive switching
@@ -135,9 +136,10 @@ outline. A subtle shell-owned blue-gray border outlines **all**
 visible rectangles of the selected anchor, including wrapped/nested text; one
 anchor is one stop even if it has many fragments, while identical URLs on different
 anchors remain separate stops. Without page focus or an active text selection,
-page pixels are copied unchanged; the renderer raster is never modified by either overlay. Successful document commits,
-scroll and resize repaints clear the selected anchor because groups are frame-local,
-without guessing element identity across frames. Failed navigation keeps the old
+page pixels are copied unchanged; the renderer raster is never modified by either
+overlay. Successful document commits and resize repaints clear the selected anchor
+because groups are frame-local; retained scroll repaints preserve target ordering
+and focus. Failed navigation keeps the old
 page and focus; closing a tab discards its focus. Enter performs only ordinary
 current-tab link navigation, with existing unsupported-scheme errors; it does not
 dispatch DOM keyboard/mouse events, run JavaScript URLs or synthesize native focus.
@@ -228,10 +230,10 @@ these same keywords. Named browsing contexts are rejected visibly rather than
 silently navigated in the current tab. The first `<base href>` resolves hyperlink
 URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
 response URL. Form actions and browser-discovered linked stylesheets use the same
-first-base resolution and fallback. `tabindex`, DOM focus APIs,
-offscreen-anchor traversal, downloads, image/area links, CSS link
-decoration, page mouse/keyboard events and JavaScript default-action cancellation
-remain deferred. This is a bounded subset of HTML
+first-base resolution and fallback. `tabindex`, DOM focus APIs, downloads, image/area
+links, CSS link decoration, page mouse/keyboard events and JavaScript default-action
+cancellation remain deferred. Keyboard traversal can reveal text-bearing rendered
+anchors; it does not add hit-testing for empty or non-text anchors. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
 (cached standard ID `html`), not a full DOM event/default-action implementation.
 

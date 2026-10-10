@@ -137,11 +137,12 @@ public sealed class BrowserController : IDisposable
         SetPosition(owner, targets, count == 0 ? -1
             : position < 0 ? backwards ? count - 1 : 0
             : (position + (backwards ? count - 1 : 1)) % count);
+        ScrollFocusedLinkIntoView(id, owner);
         Changed?.Invoke(id);
         return owner.FocusedLink;
     }
     public int FocusedControlIndex(TabId tab) { Check(); return content[tab].FocusedControl; }
-    /// <summary>Number of keyboard focus targets on the page: visible enabled non-hidden controls plus links.</summary>
+    /// <summary>Number of keyboard focus targets on the page: visible enabled controls plus rendered text links.</summary>
     public int PageFocusCount(TabId tab) { Check(); return Targets(content[tab].Page).Count; }
     public int PageFocusPosition(TabId tab) { Check(); var owner = content[tab]; return Position(owner, Targets(owner.Page)); }
     public void FocusPagePosition(TabId id, int position)
@@ -150,7 +151,16 @@ public sealed class BrowserController : IDisposable
         var owner = content[id];
         var targets = Targets(owner.Page);
         SetPosition(owner, targets, targets.Count == 0 ? -1 : Math.Clamp(position, -1, targets.Count - 1));
+        ScrollFocusedLinkIntoView(id, owner);
         Changed?.Invoke(id);
+    }
+    private void ScrollFocusedLinkIntoView(TabId id, Content owner)
+    {
+        if (owner.FocusedLink < 0 || owner.Page is not { } page
+            || owner.FocusedLink >= page.LinkTargets.Count) { return; }
+        var target = page.LinkTargets[owner.FocusedLink];
+        if (target.Rects.Count != 0) { return; }
+        Scroll(id, target.DocumentY - owner.ScrollY);
     }
     /// <summary>Begins a browser-owned selection on the visible shaped text fragment under the pointer.</summary>
     public bool StartTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
@@ -1209,8 +1219,8 @@ public sealed class BrowserController : IDisposable
             var sameControls = operation.Resize && owner.Document?.DocumentId == document.DocumentId
                 && owner.Page is { } old && SameControls(old, rendered);
             owner.Document = document; owner.Page = rendered;
-            // Frame-local groups have no DOM identity: never retarget a focused anchor after repaint.
-            owner.FocusedLink = -1;
+            // Retained scrolls preserve target ordering; other repaints may not preserve frame-local groups.
+            if (!operation.Scroll) { owner.FocusedLink = -1; }
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)

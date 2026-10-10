@@ -19,7 +19,7 @@ public sealed record PageLinkRect(
         x >= X && y >= Y && x < X + Width && y < Y + Height;
 }
 
-/// <summary>One textual anchor with ordered visible rectangles, an absolute destination and bounded new-tab metadata; no element identity.</summary>
+/// <summary>One rendered textual anchor with visible rectangles, document-space top offset, absolute destination and bounded new-tab metadata; no element identity.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-target">hyperlink target</see>.
 /// The browser maps <c>_blank</c> to a new tab and <c>_self</c>, <c>_parent</c>, and <c>_top</c> to the current
 /// tab because nested browsing contexts are not implemented; named targets are rejected by the renderer.</remarks>
@@ -27,17 +27,20 @@ public sealed record PageLinkRect(
 public sealed record PageLinkTarget(
     [property: JsonRequired] IReadOnlyList<PageLinkRect> Rects,
     [property: JsonRequired] string Url,
-    [property: JsonRequired] bool OpenInNewTab)
+    [property: JsonRequired] bool OpenInNewTab,
+    [property: JsonRequired] double DocumentY)
 {
     public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url) : this(rects, url, false) { }
+    public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url, bool openInNewTab)
+        : this(rects, url, openInNewTab, rects.Count == 0 ? 0 : rects[0].Y) { }
     public PageLinkTarget(double x, double y, double width, double height, string url)
-        : this(new[] { new PageLinkRect(x, y, width, height) }, url, false) { }
+        : this(new[] { new PageLinkRect(x, y, width, height) }, url, false, y) { }
 
-    // Compatibility accessors expose the first rectangle only; Rects is the wire and focus geometry.
-    [JsonIgnore] public double X => Rects[0].X;
-    [JsonIgnore] public double Y => Rects[0].Y;
-    [JsonIgnore] public double Width => Rects[0].Width;
-    [JsonIgnore] public double Height => Rects[0].Height;
+    // Compatibility accessors expose the first visible rectangle, or zero when the anchor is offscreen.
+    [JsonIgnore] public double X => Rects.Count == 0 ? 0 : Rects[0].X;
+    [JsonIgnore] public double Y => Rects.Count == 0 ? 0 : Rects[0].Y;
+    [JsonIgnore] public double Width => Rects.Count == 0 ? 0 : Rects[0].Width;
+    [JsonIgnore] public double Height => Rects.Count == 0 ? 0 : Rects[0].Height;
     public bool Contains(double x, double y) => Rects.Any(rect => rect.Contains(x, y));
 }
 
@@ -368,7 +371,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 36;
+    public const int Version = 37;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -474,9 +477,10 @@ public static class RendererProtocol
         long urlBytes = 0;
         foreach (var link in links)
         {
-            if (link is null || link.Rects is null || link.Rects.Count is < 1 or > MaxLinkRects
-                || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters)
-            { throw new IpcProtocolException("Invalid renderer link rectangle count or URL limit."); }
+            if (link is null || link.Rects is null || link.Rects.Count > MaxLinkRects
+                || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters
+                || !double.IsFinite(link.DocumentY) || link.DocumentY < 0 || link.DocumentY > MaxScrollHeight)
+            { throw new IpcProtocolException("Invalid renderer link rectangle count, URL or document offset limit."); }
             foreach (var rect in link.Rects)
             {
                 if (rect is null || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)

@@ -21,6 +21,13 @@ public sealed class StaticPageRenderer : IPageRenderer
     private readonly PaintFontRegistry paint;
     private readonly PageRenderOptions options;
     private sealed record DocumentState(LoadedPage Source, HtmlParseResult Parsed, int Scripts);
+    private sealed class LinkTargetData(string url, bool openInNewTab, double documentY)
+    {
+        public string Url { get; } = url;
+        public bool OpenInNewTab { get; } = openInNewTab;
+        public double DocumentY { get; } = documentY;
+        public List<PageLinkRect> Rects { get; } = [];
+    }
     private static readonly HtmlParserOptions DocumentHtmlOptions = new();
     private static readonly char[] AsciiWhitespace = ['\t', '\n', '\f', '\r', ' '];
     private readonly bool executeInlineScripts;
@@ -106,13 +113,16 @@ public sealed class StaticPageRenderer : IPageRenderer
     {
         var baseTarget = FindBaseTarget(document, cancellationToken);
         var baseUrl = FindBaseUrl(document, url, cancellationToken);
-        var links = new List<PageLinkTarget>();
+        var linkData = new List<LinkTargetData>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
-        var anchors = new Dictionary<DomElement, List<PageLinkRect>>();
+        var anchors = new Dictionary<DomElement, LinkTargetData>();
         var textTargets = new List<PageTextTarget>();
         long urlBytes = 0;
         long textBytes = 0;
+        List<PageLinkTarget> links = [];
         if (layout.Root is { } root) { Visit(root); }
+        links = linkData.Select(target => new PageLinkTarget(target.Rects.AsReadOnly(), target.Url,
+            target.OpenInNewTab, target.DocumentY)).ToList();
         try
         {
             RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight);
@@ -136,18 +146,46 @@ public sealed class StaticPageRenderer : IPageRenderer
                         var top = Math.Clamp(border.Y - scrollY, 0, layout.ViewportHeight);
                         var bottom = Math.Clamp(border.Y + border.Height - scrollY, 0, layout.ViewportHeight);
                         if (right > left && bottom > top)
-                        { controls[block.Box.Element] = (new(left, top, right - left, bottom - top), links.Count); }
+                        { controls[block.Box.Element] = (new(left, top, right - left, bottom - top), linkData.Count); }
                     }
                     Visit(block.Box);
                 }
                 else if (item is LayoutLineItem line)
                 {
-                    var linksBeforeLine = links.Count;
+                    var linksBeforeLine = linkData.Count;
                     var lineAnchors = new Dictionary<DomElement, double>();
                     var lineNewAnchors = new HashSet<DomElement>();
                     foreach (var fragment in line.Line.Fragments)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+                        DomElement? anchor = null;
+                        for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
+                        {
+                            if (node is DomElement { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } element)
+                            { anchor = element; break; }
+                        }
+                        LinkTargetData? target = null;
+                        if (anchor?.GetAttribute("href") is { } href)
+                        {
+                            if (!anchors.TryGetValue(anchor, out target))
+                            {
+                                if (linkData.Count >= RendererProtocol.MaxLinkTargets)
+                                { throw new PageNavigationException("Renderer link count limit exceeded."); }
+                                if (href.Length > RendererProtocol.MaxTextCharacters)
+                                { throw new PageNavigationException("Renderer link URL limit exceeded."); }
+                                var parsed = BrowserUrl.ParseResult(href, baseUrl);
+                                var destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
+                                if (destination.Length > RendererProtocol.MaxTextCharacters)
+                                { throw new PageNavigationException("Renderer link URL limit exceeded."); }
+                                urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
+                                if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
+                                { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
+                                target = new(destination, IsBlankTarget(anchor.GetAttribute("target"), baseTarget), line.Line.Bounds.Y);
+                                anchors.Add(anchor, target);
+                                lineNewAnchors.Add(anchor);
+                                linkData.Add(target);
+                            }
+                        }
                         var left = Math.Clamp(fragment.X, 0, layout.ViewportWidth);
                         var right = Math.Clamp(fragment.X + fragment.Run.Width, 0, layout.ViewportWidth);
                         var top = Math.Clamp(line.Line.Bounds.Y - scrollY, 0, layout.ViewportHeight);
@@ -161,36 +199,11 @@ public sealed class StaticPageRenderer : IPageRenderer
                         if (textBytes > RendererProtocol.MaxTextMetadataBytes)
                         { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
                         textTargets.Add(new(text, rect));
-                        DomElement? anchor = null;
-                        for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
-                        {
-                            if (node is DomElement { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } element)
-                            { anchor = element; break; }
-                        }
-                        if (anchor?.GetAttribute("href") is not { } href) { continue; }
-                        if (!anchors.TryGetValue(anchor, out var target))
-                        {
-                            if (links.Count >= RendererProtocol.MaxLinkTargets)
-                            { throw new PageNavigationException("Renderer link count limit exceeded."); }
-                            if (href.Length > RendererProtocol.MaxTextCharacters)
-                            { throw new PageNavigationException("Renderer link URL limit exceeded."); }
-                            var parsed = BrowserUrl.ParseResult(href, baseUrl);
-                            var destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
-                            if (destination.Length > RendererProtocol.MaxTextCharacters)
-                            { throw new PageNavigationException("Renderer link URL limit exceeded."); }
-                            urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
-                            if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
-                            { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
-                            target = [];
-                            anchors.Add(anchor, target);
-                            lineNewAnchors.Add(anchor);
-                            links.Add(new(target.AsReadOnly(), destination,
-                                IsBlankTarget(anchor.GetAttribute("target"), baseTarget)));
-                        }
-                        if (target.Count >= RendererProtocol.MaxLinkRects)
+                        if (target is null) { continue; }
+                        if (target.Rects.Count >= RendererProtocol.MaxLinkRects)
                         { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
-                        target.Add(rect);
-                        lineAnchors[anchor] = lineAnchors.TryGetValue(anchor, out var firstX) ? Math.Min(firstX, fragment.X) : fragment.X;
+                        target.Rects.Add(rect);
+                        lineAnchors[anchor!] = lineAnchors.TryGetValue(anchor!, out var firstX) ? Math.Min(firstX, fragment.X) : fragment.X;
                     }
                     foreach (var widget in line.Line.Widgets)
                     {

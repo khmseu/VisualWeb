@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v36
+## Private stream protocol v37
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -132,7 +132,10 @@ the `textarea` kind advance it to v11; minlength metadata advances it to v12;
 bounded `pattern` metadata advances it to v13; editable `url` inputs advance it
 to v14; `email` inputs advance it to v15; checked-state metadata for checkbox
 inputs advances it to v16; radio inputs advance it to v17; number bounds advance
-it to v18; number step-grid metadata advances it to v19; range controls advance it to v20; reset-control metadata advances it to v21; bounded single-select option metadata is included in v24; the bounded `date` control kind and strict ISO date values are added in v25; bounded `time` controls and strict time values are added in v26; bounded `month` controls and strict month values are added in v27; bounded `week` controls and strict ISO week values are added in v28; bounded `multiple` email address-list metadata and validation advance the protocol to v29; bounded form-control placeholder metadata advances it to v30; submitter `formnovalidate` metadata advances it to v31; resolved submitter `formaction` metadata advances it to v32; bounded textarea hard-wrap metadata advances it to v33; safe form and submitter browsing-context target metadata advances it to v34; form-level `novalidate` metadata advances it to v35; the `inert` kind for visible `<input type="button">` advances it to v36. `inert` controls carry a label (the input `value` or button text content) and no submitter metadata.
+it to v18; number step-grid metadata advances it to v19; range controls advance it to v20; reset-control metadata advances it to v21; bounded single-select option metadata is included in v24; the bounded `date` control kind and strict ISO date values are added in v25; bounded `time` controls and strict time values are added in v26; bounded `month` controls and strict month values are added in v27; bounded `week` controls and strict ISO week values are added in v28; bounded `multiple` email address-list metadata and validation advance the protocol to v29; bounded form-control placeholder metadata advances it to v30; submitter `formnovalidate` metadata advances it to v31; resolved submitter `formaction` metadata advances it to v32; bounded textarea hard-wrap metadata advances it to v33; safe form and submitter browsing-context target metadata advances it to v34; form-level `novalidate` metadata advances it to v35; the `inert` kind for visible `<input type="button">` advances it to v36. `inert` controls carry a label (the input `value` or button text content) and no
+submitter metadata. Bounded document-space anchor offsets advance the protocol to
+v37 so keyboard traversal can scroll rendered text links into view while visible
+rectangles remain viewport-clipped. Document-space anchor offsets advance it to v37, allowing bounded keyboard traversal to scroll rendered text anchors into view while visible rectangles remain viewport-clipped.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require

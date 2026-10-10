@@ -47,7 +47,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(36, RendererProtocol.Version);
+        Assert.Equal(37, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 35 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 35 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 34 }, 0));
@@ -666,17 +666,21 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(36, RendererProtocol.Version);
+        Assert.Equal(37, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
         RendererProtocol.Validate(LinkFrame with
         { LinkTargets = [link with { Rects = Enumerable.Repeat(rect, 64).ToArray() }] }, 16);
-        foreach (var rects in new IReadOnlyList<PageLinkRect>[] { [], Enumerable.Repeat(rect, 65).ToArray(), [rect with { X = -1 }] })
+        RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [link with { Rects = [], DocumentY = 100 }] }, 16);
+        foreach (var rects in new IReadOnlyList<PageLinkRect>[] { Enumerable.Repeat(rect, 65).ToArray(), [rect with { X = -1 }] })
         {
             Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
             { LinkTargets = [link with { Rects = rects }] }, 16));
         }
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [link with { DocumentY = double.NaN }] }, 16));
         var json = JsonSerializer.Serialize(link);
         Assert.Contains("\"Rects\"", json);
         Assert.Contains("\"OpenInNewTab\":false", json);

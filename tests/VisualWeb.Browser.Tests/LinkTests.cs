@@ -43,6 +43,49 @@ public sealed class LinkTests
         { Assert.True(page.LinkTargets[0].Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)); }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void KeyboardTraversalScrollsOffscreenTextLinksIntoView(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/final/index.html");
+        source.Requests[0].Completion.SetResult(Document("""
+            <!doctype html><style>*{margin:0}div{height:200px}</style>
+            <a href='/first'>first</a><div></div><a href='/second'>second</a>
+            """));
+        PumpUntil(() => controller.Page(tab.Id) is not null);
+
+        Assert.Equal(2, controller.Page(tab.Id)!.LinkTargets.Count);
+        Assert.Empty(controller.Page(tab.Id)!.LinkTargets[1].Rects);
+        controller.FocusPage(tab.Id);
+        Assert.Equal(0, controller.MoveLinkFocus(tab.Id));
+        Assert.Equal(1, controller.MoveLinkFocus(tab.Id));
+        PumpUntil(() => controller.Page(tab.Id)!.LinkTargets[1].Rects.Count > 0);
+
+        Assert.True(controller.ScrollY(tab.Id) > 0);
+        Assert.Equal(1, controller.FocusedLinkIndex(tab.Id));
+        Assert.True(controller.ActivateFocusedLink(tab.Id, viewport));
+        Assert.Equal("https://example.com/second", source.Requests[1].Url.Href);
+
+        void PumpUntil(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do
+            {
+                controller.Pump(_ => viewport);
+                if (condition()) { return; }
+                Thread.Sleep(5);
+            } while (DateTime.UtcNow < deadline);
+            Assert.True(condition());
+        }
+    }
+
     [Fact]
     public void KeyboardFocusWrapsIsTabLocalAndResetsOnlyOnSuccessfulCommit()
     {
@@ -107,7 +150,7 @@ public sealed class LinkTests
         renderer.CommitDocument(document.DocumentId);
         Assert.NotEmpty(first.LinkTargets);
         var expected = scripts ? "https://example.com/final/changed#script" : "https://example.com/next?q=1#part";
-        Assert.All(first.LinkTargets, link => Assert.Equal(expected, link.Url));
+        Assert.All(first.LinkTargets.Where(link => link.Rects.Count > 0), link => Assert.Equal(expected, link.Url));
         Assert.True(first.LinkTargets.SelectMany(link => link.Rects).Select(rect => rect.Y).Distinct().Count() > 1);
         var wide = await renderer.RenderRetainedAsync(document, new(300, 50, 1), Cancellation);
         Assert.Single(wide.LinkTargets.SelectMany(link => link.Rects).Select(rect => rect.Y).Distinct());
