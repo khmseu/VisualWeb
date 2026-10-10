@@ -135,12 +135,13 @@ broader page interaction is still missing:
   while a drag beginning over a visible link selects coarse text fragments
   instead of activating it. Drags beginning in ordinary text can include anchor
   fragments. Shift+primary click extends an existing coarse selection to a visible
-  text fragment, including link text without navigating. Selection resets on
-  successful document/scroll/resize publication and on page clicks before new
-  control/link interaction.
+  text fragment, including link text without navigating. Shift+Left/Right moves
+  the active endpoint by one paint-order fragment. Selection resets on successful
+  document/scroll/resize publication and on page clicks before new control/link
+  interaction.
   Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
-  Page Up/Down and Home/End outside editable fields, retaining DOM/scripts across
-  local/process repaints.
+  Page Up/Down, Home/End and Ctrl+Home/End outside editable fields, retaining
+  DOM/scripts across local/process repaints.
   A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
   Horizontal/nested scrolling and general CSS overflow remain missing.
 - The shell does not dispatch pointer/keyboard input to pages or synthesize page

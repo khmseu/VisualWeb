@@ -246,6 +246,24 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
+    /// <summary>Moves the active endpoint of an existing coarse selection by one paint-order fragment.</summary>
+    public bool ExtendSelectedTextByKey(TabId id, bool forward)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return false; }
+        var end = Math.Clamp(owner.TextSelectionEnd + (forward ? 1 : -1), 0, page.TextTargets.Count - 1);
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.SelectingText = false;
+        if (end != owner.TextSelectionEnd)
+        {
+            owner.TextSelectionEnd = end;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
     public bool SelectAllVisibleText(TabId id)
     {
         Check();

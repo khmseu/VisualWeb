@@ -590,6 +590,9 @@ public sealed class DevelopmentShell : IDisposable
             }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.C && Controller.SelectedText(tab.Id) is { Length: > 0 } selected)
             { view.Native.SetClipboardText(selected); return; }
+            if (shift && !control && !alt && code is (SDL.Scancode.Left or SDL.Scancode.Right)
+                && !Controller.EditingFormControl(tab.Id)
+                && Controller.ExtendSelectedTextByKey(tab.Id, code == SDL.Scancode.Right)) { return; }
             if (!control && !alt && code is SDL.Scancode.Left or SDL.Scancode.Down
                 && Controller.AdjustFocusedRange(tab.Id, -1)) { return; }
             if (!control && !alt && code is SDL.Scancode.Right or SDL.Scancode.Up
