@@ -251,10 +251,10 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 The opt-in page-script pipeline exists, so documentation should distinguish
 "disabled by default / unavailable in ordinary modes" from "not implemented."
-The current Windows confinement note still says page scripting is deferred;
-update it to describe the existing development opt-in and its limitations. The
-phase-by-phase statements in the browser foundation plan describe earlier
-milestones and should be read as historical status, not current capability.
+The Windows confinement note now describes the bounded inline-classic opt-in
+and its limitations. The phase-by-phase statements in the browser foundation
+plan describe earlier milestones and should be read as historical status, not
+current capability.
 
 ## Recommended priority
 
