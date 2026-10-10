@@ -779,6 +779,7 @@ public sealed class BrowserController : IDisposable
         if ((long)existingLength + text.Length > RendererProtocol.MaxTextCharacters)
         { throw new BrowserLimitException("Form field length limit exceeded."); }
         editor.Insert(text, RendererProtocol.MaxTextCharacters, allowLineFeed: control.Kind == "textarea");
+        if (control.Kind == "color" && FormColor.IsValid(editor.Text)) { editor.Reset(FormColor.Normalize(editor.Text)); }
         if (control.Kind == "textarea") { owner.TextareaLines.Remove(index); }
         owner.Dirty.Add(index);
         if (control.Kind == "textarea") { EnsureTextareaCaretVisible(owner, index, editor); }

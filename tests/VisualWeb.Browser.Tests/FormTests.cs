@@ -836,6 +836,16 @@ public sealed class FormTests
         Assert.Single(harness.Source.Requests);
     }
 
+    [Fact]
+    public void CompleteEditedColorValuesNormalizeToLowercase()
+    {
+        using var harness = new Harness("<form><input type=color name=accent></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        harness.Controller.SelectAllFormControl(harness.Tab.Id);
+        Assert.Equal("#aabbcc", harness.Controller.InsertFormText(harness.Tab.Id, "#AaBbCc"));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
