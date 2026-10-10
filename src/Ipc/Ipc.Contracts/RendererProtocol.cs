@@ -625,13 +625,12 @@ public static class RendererProtocol
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
                 || control.Kind is not ("number" or "range" or "date" or "time" or "month" or "week") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
-                || (control.Kind is "number" or "range" or "date" or "time") && (control.StepAny ? control.Step is not null : control.Step is null)
+                || (control.Kind is "number" or "range" or "date" or "time" or "month") && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Kind == "date" && (control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
                     || control.Maximum is { } dateMaximum && dateMaximum != Math.Truncate(dateMaximum))
                 || control.Kind == "time" && (control.Minimum is { } timeMinimum && timeMinimum != Math.Truncate(timeMinimum)
                     || control.Maximum is { } timeMaximum && timeMaximum != Math.Truncate(timeMaximum))
-                || control.Kind == "month" && (control.Step is not null || control.StepAny
-                    || control.Minimum is { } monthMinimum && monthMinimum != Math.Truncate(monthMinimum)
+                || control.Kind == "month" && (control.Minimum is { } monthMinimum && monthMinimum != Math.Truncate(monthMinimum)
                     || control.Maximum is { } monthMaximum && monthMaximum != Math.Truncate(monthMaximum))
                 || control.Kind == "week" && (control.Step is not null || control.StepAny
                     || control.Minimum is { } weekMinimum && weekMinimum != Math.Truncate(weekMinimum)

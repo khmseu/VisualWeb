@@ -274,8 +274,9 @@ Time fields are edited as text, without a clock picker. Month values use a
 positive year with at least four ASCII digits and a two-digit month from `01`
 through `12`; invalid initial values become empty and nonempty values are
 validated before submission. Valid month `min` and `max` bounds are enforced
-before submission; invalid bounds are ignored. Month values are edited as text without a month
-picker. Month `step`, `pattern`, length, `list`, `multiple` and
+before submission; invalid bounds are ignored. Valid numeric month `step` values
+enforce a bounded month grid; `step=any` disables it. Month values are edited as text without a month
+picker. Month `pattern`, length, `list`, `multiple` and
 `dirname` are unsupported and mark the form with a visible error. Week values use
 strict `YYYY-Www` ISO week syntax; positive years need at least four ASCII digits,
 and week 53 is accepted only in 53-week week-years. Values are edited as text
