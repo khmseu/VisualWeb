@@ -49,6 +49,14 @@ public sealed class AddressEditor
     public void Right() { Caret = SelectAll ? Text.Length : Next(Caret); SelectAll = false; preferredColumn = null; }
     public void Home() { Caret = 0; SelectAll = false; preferredColumn = null; }
     public void End() { Caret = Text.Length; SelectAll = false; preferredColumn = null; }
+    internal void SetCaret(int position)
+    {
+        Caret = Math.Clamp(position, 0, Text.Length);
+        if (Caret > 0 && Caret < Text.Length && char.IsHighSurrogate(Text[Caret - 1]) && char.IsLowSurrogate(Text[Caret]))
+        { Caret--; }
+        SelectAll = false;
+        preferredColumn = null;
+    }
     public void HomeLine()
     {
         Caret = (Caret == 0 ? -1 : Text.LastIndexOf('\n', Caret - 1)) + 1;

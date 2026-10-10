@@ -90,6 +90,55 @@ public sealed class ShellChrome : IDisposable
         return count;
     }
 
+    internal int CaretAtTextX(string value, int caret, double x, double availableWidth)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (!double.IsFinite(x) || !double.IsFinite(availableWidth) || availableWidth < 0)
+        { throw new ArgumentOutOfRangeException(nameof(x)); }
+        if (caret >= 0)
+        {
+            caret = Math.Clamp(caret, 0, value.Length);
+            if (caret > 0 && caret < value.Length && char.IsHighSurrogate(value[caret - 1]) && char.IsLowSurrogate(value[caret]))
+            { caret--; }
+        }
+        var displayed = caret < 0 ? value : value.Insert(caret, "|");
+        var displayStart = Math.Max(0, displayed.Length - 512);
+        var safe = new string(displayed.Skip(displayStart).Select(character => character is >= ' ' and <= '~' ? character : '?').ToArray());
+        var maximum = Math.Min(safe.Length, Math.Max(0, (int)(availableWidth / 7)));
+        displayStart += safe.Length - maximum;
+        safe = safe[^maximum..];
+        var run = font.Shape(safe, 13);
+        while (safe.Length > 0 && run.Width > availableWidth)
+        {
+            safe = safe[1..];
+            displayStart++;
+            run = font.Shape(safe, 13);
+        }
+        if (safe.Length == 0) { return caret < 0 ? 0 : caret; }
+        var bestBoundary = 0;
+        var bestDistance = Math.Abs(x);
+        var penX = 0.0;
+        var clusters = run.Glyphs.GroupBy(glyph => glyph.Cluster).OrderBy(group => group.Key).ToArray();
+        for (var index = 0; index < clusters.Length; index++)
+        {
+            var start = clusters[index].Key;
+            var end = index + 1 < clusters.Length ? clusters[index + 1].Key : safe.Length;
+            if (start < 0 || end <= start || end > safe.Length)
+            { throw new PlatformException("Shell font shaping returned invalid caret clusters."); }
+            var startDistance = Math.Abs(x - penX);
+            if (startDistance < bestDistance) { bestDistance = startDistance; bestBoundary = start; }
+            var width = clusters[index].Sum(glyph => glyph.Advance);
+            var endDistance = Math.Abs(x - penX - width);
+            if (endDistance < bestDistance) { bestDistance = endDistance; bestBoundary = end; }
+            penX += width;
+        }
+        var displayedOffset = displayStart + bestBoundary;
+        var result = caret < 0 ? displayedOffset : displayedOffset > caret ? displayedOffset - 1 : displayedOffset;
+        result = Math.Clamp(result, 0, value.Length);
+        if (result > 0 && result < value.Length && char.IsHighSurrogate(value[result - 1]) && char.IsLowSurrogate(value[result]))
+        { result--; }
+        return result;
+    }
     internal IReadOnlyList<TextareaVisualLine> WrapTextarea(string value, double availableWidth)
     {
         ArgumentNullException.ThrowIfNull(value);

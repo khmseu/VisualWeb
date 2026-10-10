@@ -646,6 +646,17 @@ public sealed class BrowserController : IDisposable
         return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
+    public void SetFormControlCaret(TabId id, int controlIndex, int caret)
+    {
+        Check();
+        var owner = content[id];
+        if (!EditingFormControl(id) || owner.FocusedControl != controlIndex || owner.Page!.FormControls[controlIndex].Kind == "textarea")
+        { throw new PageNavigationException("A focused single-line editable form control is required."); }
+        var value = Value(owner, controlIndex);
+        if ((uint)caret > (uint)value.Length) { throw new ArgumentOutOfRangeException(nameof(caret)); }
+        Field(owner, controlIndex).SetCaret(caret);
+        Changed?.Invoke(id);
+    }
     public int TextareaFirstLine(TabId id, int index)
     {
         Check();

@@ -405,14 +405,20 @@ public sealed class ShellTests
 
         var field = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
-            (float)(field.X + 8), (float)(ShellChrome.Height + field.Y + 8)));
+            (float)(field.X + 4), (float)(ShellChrome.Height + field.Y + 8)));
 
         Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
         Assert.True(shell.Controller.EditingFormControl(tab.Id));
+        Assert.Equal(0, shell.Controller.FormControlCaret(tab.Id));
         Assert.Empty(shell.Controller.SelectedTextRects(tab.Id));
         Assert.True(native.TextInput);
         shell.Dispatch(new TextEntered(native.Id, "typed"));
-        Assert.Equal("starttyped", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.Equal("typedstart", shell.Controller.FormControlValue(tab.Id, 0));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(field.X + field.Width - 4), (float)(ShellChrome.Height + field.Y + 8)));
+        Assert.Equal("typedstart".Length, shell.Controller.FormControlCaret(tab.Id));
+        shell.Dispatch(new TextEntered(native.Id, "!"));
+        Assert.Equal("typedstart!", shell.Controller.FormControlValue(tab.Id, 0));
 
         void Wait()
         {

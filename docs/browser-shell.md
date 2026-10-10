@@ -314,8 +314,11 @@ including button text; the renderer raster is untouched outside control
 rectangles. These defaults are bounded layout accommodations, not complete UA
 widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
 tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/date/time/month/week/number field or textarea
-focuses it without starting page text selection; clicking a single-select opens its bounded shell popup, with wheel scrolling and
-pointer selection of enabled options. Escape or an outside click closes the popup. Range controls can be adjusted by
+focuses it without starting page text selection; clicking within a supported
+single-line text field places its caret at the nearest shell-font glyph boundary
+(the shell font is used for the overlay, not the page font). Clicking a single-select
+opens its bounded shell popup, with wheel scrolling and pointer selection of enabled
+options. Escape or an outside click closes the popup. Range controls can be adjusted by
 pointer click/drag. Focusing an editable
 control enables SDL committed text input, disabled again when focus leaves.
 Textareas store LF internally: Enter inserts a line break, and pasted CR/LF

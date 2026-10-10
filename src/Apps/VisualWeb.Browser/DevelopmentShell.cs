@@ -416,6 +416,22 @@ public sealed class DevelopmentShell : IDisposable
                             var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pageY, pageViewport);
                             var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
                             if (activated && focusedControl >= 0
+                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "month" or "week" or "number" or "password", Rect: { } textRect } textControl)
+                            {
+                                var value = Controller.FormControlValue(pageTab.Id, focusedControl);
+                                var selectAll = Controller.FormControlSelectAll(pageTab.Id);
+                                var caret = selectAll ? -1 : Controller.FormControlCaret(pageTab.Id);
+                                var display = textControl.Kind == "password"
+                                    ? new string('*', ScalarCount(value)) : value;
+                                if (textControl.Kind == "password" && caret >= 0)
+                                { caret = ScalarCount(value[..caret]); }
+                                var targetCaret = chrome.CaretAtTextX(display, caret,
+                                    pointer.X - textRect.X - 4, Math.Max(0, textRect.Width - 8));
+                                if (textControl.Kind == "password")
+                                { targetCaret = Utf16OffsetAtScalar(value, targetCaret); }
+                                Controller.SetFormControlCaret(pageTab.Id, focusedControl, targetCaret);
+                            }
+                            if (activated && focusedControl >= 0
                                 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
                             { view.DraggingRangeControl = focusedControl; }
                             if (activated && focusedControl >= 0
@@ -503,6 +519,22 @@ public sealed class DevelopmentShell : IDisposable
         var trackRange = viewport.Height - thumbHeight;
         var fraction = trackRange <= 0 ? 0 : Math.Clamp((pointerY - ShellChrome.Height - thumbHeight / 2) / trackRange, 0, 1);
         Controller.Scroll(tab.Id, fraction * maximum - Controller.ScrollY(tab.Id));
+    }
+    private static int ScalarCount(string value)
+    {
+        var count = 0;
+        foreach (var _ in value.EnumerateRunes()) { count++; }
+        return count;
+    }
+    private static int Utf16OffsetAtScalar(string value, int scalar)
+    {
+        var offset = 0;
+        foreach (var rune in value.EnumerateRunes())
+        {
+            if (scalar-- <= 0) { return offset; }
+            offset += rune.Utf16SequenceLength;
+        }
+        return value.Length;
     }
     private void Key(BrowserWindow window, View view, KeyChanged key)
     {
