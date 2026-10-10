@@ -598,6 +598,9 @@ public sealed class DevelopmentShell : IDisposable
             if (shift && !control && !alt && code is (SDL.Scancode.Home or SDL.Scancode.End)
                 && Controller.FocusedControlIndex(tab.Id) < 0
                 && Controller.ExtendSelectedTextToLineBoundary(tab.Id, code == SDL.Scancode.End)) { return; }
+            if (shift && !control && !alt && code is (SDL.Scancode.Up or SDL.Scancode.Down)
+                && Controller.FocusedControlIndex(tab.Id) < 0
+                && Controller.ExtendSelectedTextVertically(tab.Id, code == SDL.Scancode.Down)) { return; }
             if (!control && !alt && code is SDL.Scancode.Left or SDL.Scancode.Down
                 && Controller.AdjustFocusedRange(tab.Id, -1)) { return; }
             if (!control && !alt && code is SDL.Scancode.Right or SDL.Scancode.Up

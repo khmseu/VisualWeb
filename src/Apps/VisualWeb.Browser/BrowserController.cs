@@ -288,6 +288,52 @@ public sealed class BrowserController : IDisposable
         }
         return true;
     }
+    /// <summary>Moves the active endpoint to the nearest fragment on the adjacent visual line.</summary>
+    public bool ExtendSelectedTextVertically(TabId id, bool down)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return false; }
+        var current = page.TextTargets[owner.TextSelectionEnd].Rect;
+        var centerX = current.X + current.Width / 2;
+        var nearestLineDistance = double.PositiveInfinity;
+        var targetY = 0.0;
+        foreach (var target in page.TextTargets)
+        {
+            var delta = target.Rect.Y - current.Y;
+            var distance = Math.Abs(delta);
+            if ((down ? delta > 0.5 : delta < -0.5) && distance < nearestLineDistance)
+            {
+                nearestLineDistance = distance;
+                targetY = target.Rect.Y;
+            }
+        }
+        var end = owner.TextSelectionEnd;
+        if (double.IsFinite(nearestLineDistance))
+        {
+            var nearestXDistance = double.PositiveInfinity;
+            for (var index = 0; index < page.TextTargets.Count; index++)
+            {
+                var rect = page.TextTargets[index].Rect;
+                var horizontalDistance = Math.Abs(rect.X + rect.Width / 2 - centerX);
+                if (Math.Abs(rect.Y - targetY) <= 0.5 && horizontalDistance < nearestXDistance)
+                {
+                    nearestXDistance = horizontalDistance;
+                    end = index;
+                }
+            }
+        }
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.SelectingText = false;
+        if (end != owner.TextSelectionEnd)
+        {
+            owner.TextSelectionEnd = end;
+            Changed?.Invoke(id);
+        }
+        return true;
+    }
     public bool SelectAllVisibleText(TabId id)
     {
         Check();

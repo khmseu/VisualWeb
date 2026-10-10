@@ -136,8 +136,9 @@ broader page interaction is still missing:
   instead of activating it. Drags beginning in ordinary text can include anchor
   fragments. Shift+primary click extends an existing coarse selection to a visible
   text fragment, including link text without navigating. Shift+Left/Right moves
-  the active endpoint by one paint-order fragment; Shift+Home/End extends it to the
-  current visual-line boundary. Selection resets on successful
+  the active endpoint by one paint-order fragment, Shift+Up/Down moves to the nearest
+  fragment on an adjacent visual line, and Shift+Home/End extends to that line's
+  boundary. Selection resets on successful
   document/scroll/resize publication and on page clicks before new control/link
   interaction.
   Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
