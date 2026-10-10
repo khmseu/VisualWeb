@@ -93,7 +93,8 @@ public static class FormSubmission
 
     /// <summary>Builds the tree-ordered entry list for <paramref name="form"/>; <paramref name="submitter"/> is -1 for the form itself.</summary>
     internal static List<(string Name, string Value)> Entries(IReadOnlyList<PageFormControl> controls, int form, int submitter,
-        Func<int, string> value, Func<int, bool> isChecked, Func<int, bool> isSuccessful)
+        Func<int, string> value, Func<int, bool> isChecked, Func<int, bool> isSuccessful,
+        Func<int, IEnumerable<string>> multipleSelectValues)
     {
         var entries = new List<(string, string)>();
         for (var index = 0; index < controls.Count; index++)
@@ -101,11 +102,22 @@ public static class FormSubmission
             var control = controls[index];
             if (control.Form != form || control.Disabled || control.Kind == "inert" || control.Kind is "submit" or "button" && index != submitter
                 || control.Kind is "checkbox" or "radio" && !isChecked(index) || !isSuccessful(index) || control.Name.Length == 0) { continue; }
+            if (control is { Kind: "select", Multiple: true })
+            {
+                AddMultipleSelectEntries(entries, control.Name, multipleSelectValues(index));
+                continue;
+            }
             var data = control.Kind == "hidden" && control.Name.Equals("_charset_", StringComparison.OrdinalIgnoreCase)
                 ? "UTF-8" : value(index);
             entries.Add((Newlines(control.Name), Newlines(data)));
         }
         return entries;
+    }
+
+    private static void AddMultipleSelectEntries(List<(string Name, string Value)> entries, string name,
+        IEnumerable<string> values)
+    {
+        foreach (var value in values) { entries.Add((Newlines(name), Newlines(value))); }
     }
 
     // Spec: html; https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#converting-an-entry-list-to-a-list-of-name-value-pairs

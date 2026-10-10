@@ -1347,6 +1347,17 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void MultipleSelectSubmitsEachEnabledInitiallySelectedOption()
+    {
+        using var harness = new Harness("<form action='/choose'><select multiple name=mode><option value=fast selected>Fast</option><option value=blocked selected disabled>Blocked</option><option value=slow selected>Slow</option></select><button>Go</button></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+
+        Assert.Equal("https://example.com/choose?mode=fast&mode=slow", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
     public void RequiredSelectWithOnlyDisabledSelectionBlocksSubmission()
     {
         using var harness = new Harness("""

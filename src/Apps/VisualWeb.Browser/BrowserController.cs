@@ -1145,7 +1145,8 @@ public sealed class BrowserController : IDisposable
                 if (control.Kind != "select") { return true; }
                 var selected = SelectedOption(owner, i);
                 return selected >= 0 && !control.Options[selected].Disabled;
-            }), limit);
+            }, i => page.FormControls[i].Options.Where(option => option.Selected && !option.Disabled)
+                .Select(option => option.Value)), limit);
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
             sameOriginRedirectOrigin, openInNewTab);
     }
