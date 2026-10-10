@@ -240,59 +240,10 @@ public sealed class DevelopmentShell : IDisposable
             {
                 case CloseRequested: Controller.CloseWindow(window.Id); break;
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
-                case FocusChanged { Focused: false }:
-                    view.ControlModifier = false;
-                    view.ShiftModifier = false;
-                    view.PendingLinkActivation = false;
-                    view.PendingLinkDragged = false;
-                    view.PendingLinkIndex = -1;
-                    view.PendingLinkTab = null;
-                    view.PendingLinkViewport = null;
-                    view.HoveredLink = -1;
-                    Edit(view, window, false);
-                    CloseSelectPopup(view);
-                    view.SelectingText = false;
-                    view.DraggingScrollbar = false;
-                    if (window.ActiveTab is { } blurredTab) { Controller.EndTextSelection(blurredTab.Id); }
-                    break;
-                case PointerMoved moved:
-                    view.PointerX = moved.X;
-                    view.PointerY = moved.Y;
-                    if (view.PendingLinkActivation
-                        && Math.Pow(moved.X - view.PendingLinkX, 2) + Math.Pow(moved.Y - view.PendingLinkY, 2) >= 16)
-                    { view.PendingLinkDragged = true; }
-                    UpdateSelectPopupHover(view, window, moved.X, moved.Y);
-                    UpdateHoveredLink(view, window);
-                    if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
-                    if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
-                    { Controller.SetRangeFromPointer(rangeTab.Id, view.DraggingRangeControl, moved.X); }
-                    if (view.SelectingText && window.ActiveTab is { } selectingTab
-                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } selectionViewport
-                        && moved.Y >= ShellChrome.Height && moved.Y < ShellChrome.Height + selectionViewport.Height)
-                    { Controller.ExtendTextSelection(selectingTab.Id, moved.X, moved.Y - ShellChrome.Height, selectionViewport); }
-                    break;
+                case FocusChanged { Focused: false }: HandleFocusLost(window, view); break;
+                case PointerMoved moved: HandlePointerMoved(window, view, moved); break;
                 case PointerScrolled wheel when !view.Editing && window.ActiveTab is { } active:
-                    if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
-                    { Controller.Report(active.Id, "Wheel delta must be finite."); break; }
-                    if (view.OpenSelectControl >= 0 && view.PointerX is { } menuX && view.PointerY is { } menuY
-                        && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } menuViewport
-                        && Controller.Page(active.Id) is { } menuPage
-                        && ShellChrome.PopupLayout(menuPage, view.OpenSelectControl, menuViewport, view.SelectPopupFirstOption) is { } menu
-                        && menuX >= menu.Bounds.X && menuX < menu.Bounds.X + menu.Bounds.Width
-                        && menuY >= menu.Bounds.Y && menuY < menu.Bounds.Y + menu.Bounds.Height)
-                    {
-                        var delta = (int)Math.Clamp(Math.Round(-wheel.Y * 3), -300, 300);
-                        var maxFirst = menuPage.FormControls[view.OpenSelectControl].Options.Length - menu.VisibleOptions;
-                        view.SelectPopupFirstOption = (int)Math.Clamp((long)view.SelectPopupFirstOption + delta, 0, maxFirst);
-                        UpdateSelectPopupHover(view, window, menuX, menuY);
-                        view.Dirty = true;
-                        break;
-                    }
-                    if (view.PointerY is < ShellChrome.Height) { break; }
-                    var overTextarea = view.PointerX is { } pointerX && view.PointerY is { } pointerY
-                        && Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height,
-                            (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300));
-                    if (!overTextarea) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
+                    HandlePointerWheel(window, view, active, wheel);
                     break;
                 case PointerButtonChanged { Pressed: true, Button: 2 } middle:
                     view.PointerX = middle.X;
@@ -512,18 +463,7 @@ public sealed class DevelopmentShell : IDisposable
                     view.ShiftModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Shift) != 0;
                     if (key.Pressed) { Key(window, view, key); }
                     break;
-                case TextEntered text when view.Editing && window.ActiveTab is { } tab:
-                    Controller.SetAddress(tab.Id, view.Editor.Insert(text.Text, Controller.Session.Options.MaxAddressCharacters));
-                    view.Dirty = true;
-                    break;
-                case TextEntered text when window.ActiveTab is { } fieldTab && Controller.EditingFormControl(fieldTab.Id):
-                    Controller.InsertFormText(fieldTab.Id, text.Text);
-                    RefreshTextareaLayouts(fieldTab.Id);
-                    view.Dirty = true;
-                    break;
-                case TextEntered text when window.ActiveTab is { } selectTab:
-                    if (HandleSelectTypeahead(view, selectTab.Id, text.Text)) { view.Dirty = true; }
-                    break;
+                case TextEntered text: HandleTextEntered(window, view, text); break;
             }
         }
         catch (Exception exception) when (BrowserController.IsPageFailure(exception))
@@ -533,6 +473,79 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (views.ContainsKey(pair.Key)) { SyncTextInput(view, window); }
         SynchronizeWindows();
+    }
+    private void HandleFocusLost(BrowserWindow window, View view)
+    {
+        view.ControlModifier = false;
+        view.ShiftModifier = false;
+        view.PendingLinkActivation = false;
+        view.PendingLinkDragged = false;
+        view.PendingLinkIndex = -1;
+        view.PendingLinkTab = null;
+        view.PendingLinkViewport = null;
+        view.HoveredLink = -1;
+        Edit(view, window, false);
+        CloseSelectPopup(view);
+        view.SelectingText = false;
+        view.DraggingScrollbar = false;
+        if (window.ActiveTab is { } tab) { Controller.EndTextSelection(tab.Id); }
+    }
+    private void HandlePointerMoved(BrowserWindow window, View view, PointerMoved moved)
+    {
+        view.PointerX = moved.X;
+        view.PointerY = moved.Y;
+        if (view.PendingLinkActivation
+            && Math.Pow(moved.X - view.PendingLinkX, 2) + Math.Pow(moved.Y - view.PendingLinkY, 2) >= 16)
+        { view.PendingLinkDragged = true; }
+        UpdateSelectPopupHover(view, window, moved.X, moved.Y);
+        UpdateHoveredLink(view, window);
+        if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
+        if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
+        { Controller.SetRangeFromPointer(rangeTab.Id, view.DraggingRangeControl, moved.X); }
+        if (view.SelectingText && window.ActiveTab is { } selectingTab
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } selectionViewport
+            && moved.Y >= ShellChrome.Height && moved.Y < ShellChrome.Height + selectionViewport.Height)
+        { Controller.ExtendTextSelection(selectingTab.Id, moved.X, moved.Y - ShellChrome.Height, selectionViewport); }
+    }
+    private void HandlePointerWheel(BrowserWindow window, View view, BrowserTab active, PointerScrolled wheel)
+    {
+        if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
+        { Controller.Report(active.Id, "Wheel delta must be finite."); return; }
+        if (view.OpenSelectControl >= 0 && view.PointerX is { } menuX && view.PointerY is { } menuY
+            && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } menuViewport
+            && Controller.Page(active.Id) is { } menuPage
+            && ShellChrome.PopupLayout(menuPage, view.OpenSelectControl, menuViewport, view.SelectPopupFirstOption) is { } menu
+            && menuX >= menu.Bounds.X && menuX < menu.Bounds.X + menu.Bounds.Width
+            && menuY >= menu.Bounds.Y && menuY < menu.Bounds.Y + menu.Bounds.Height)
+        {
+            var delta = (int)Math.Clamp(Math.Round(-wheel.Y * 3), -300, 300);
+            var maxFirst = menuPage.FormControls[view.OpenSelectControl].Options.Length - menu.VisibleOptions;
+            view.SelectPopupFirstOption = (int)Math.Clamp((long)view.SelectPopupFirstOption + delta, 0, maxFirst);
+            UpdateSelectPopupHover(view, window, menuX, menuY);
+            view.Dirty = true;
+            return;
+        }
+        if (view.PointerY is < ShellChrome.Height) { return; }
+        var overTextarea = view.PointerX is { } pointerX && view.PointerY is { } pointerY
+            && Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height,
+                (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300));
+        if (!overTextarea) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
+    }
+    private void HandleTextEntered(BrowserWindow window, View view, TextEntered text)
+    {
+        if (view.Editing && window.ActiveTab is { } tab)
+        {
+            Controller.SetAddress(tab.Id, view.Editor.Insert(text.Text, Controller.Session.Options.MaxAddressCharacters));
+            view.Dirty = true;
+        }
+        else if (window.ActiveTab is { } fieldTab && Controller.EditingFormControl(fieldTab.Id))
+        {
+            Controller.InsertFormText(fieldTab.Id, text.Text);
+            RefreshTextareaLayouts(fieldTab.Id);
+            view.Dirty = true;
+        }
+        else if (window.ActiveTab is { } selectTab && HandleSelectTypeahead(view, selectTab.Id, text.Text))
+        { view.Dirty = true; }
     }
     private void ScrollScrollbar(BrowserWindow window, View view, double pointerY)
     {

@@ -443,6 +443,11 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
+    private const string HelloKind = "hello";
+    private const string RenderKind = "render";
+    private const string FrameKind = "frame";
+    private const string ErrorKind = "error";
+
     public const int Version = 38;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
@@ -474,22 +479,22 @@ public static class RendererProtocol
     {
         ArgumentNullException.ThrowIfNull(message);
         if (message.Version != Version) { throw new IpcProtocolException("Unsupported renderer protocol version."); }
-        if (message.Kind != "frame" && message.LinkTargets is not null)
+        if (message.Kind != FrameKind && message.LinkTargets is not null)
         { throw new IpcProtocolException("Link targets belong only to frame replies."); }
-        if (message.Kind != "frame" && message.FragmentTargets is not null)
+        if (message.Kind != FrameKind && message.FragmentTargets is not null)
         { throw new IpcProtocolException("Fragment targets belong only to frame replies."); }
-        if (message.Kind != "frame" && (message.Forms is not null || message.FormControls is not null))
+        if (message.Kind != FrameKind && (message.Forms is not null || message.FormControls is not null))
         { throw new IpcProtocolException("Form metadata belongs only to frame replies."); }
-        if (message.Kind != "frame" && message.TextTargets is not null)
+        if (message.Kind != FrameKind && message.TextTargets is not null)
         { throw new IpcProtocolException("Text targets belong only to frame replies."); }
-        if (message.Kind != "render" && message.Stylesheets is not null)
+        if (message.Kind != RenderKind && message.Stylesheets is not null)
         { throw new IpcProtocolException("Linked stylesheets belong only to render requests."); }
-        if ((message.Kind != "render" && message.ScrollY != 0) || (message.Kind != "frame" && message.ScrollHeight != 0))
+        if ((message.Kind != RenderKind && message.ScrollY != 0) || (message.Kind != FrameKind && message.ScrollHeight != 0))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
-        if (message.Kind != "render" && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
+        if (message.Kind != RenderKind && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
             || message.ExecuteInlineScripts || message.ReuseDocument))
         { throw new IpcProtocolException("Document policy fields belong only to render requests."); }
-        if (message.Kind == "hello")
+        if (message.Kind == HelloKind)
         {
             if (message.Id != 0 || payloadLength != 0 || message.SandboxProfile is { Length: > MaxTextCharacters })
             {
@@ -500,7 +505,7 @@ public static class RendererProtocol
         if (message.Id <= 0) { throw new IpcProtocolException("Renderer request identity must be positive."); }
         switch (message.Kind)
         {
-            case "render":
+            case RenderKind:
                 if (payloadLength != 0 || message.DocumentId == Guid.Empty || message.Html is null || message.Html.Length > MaxHtmlCharacters
                     || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters
                     || message.StatusCode is < 100 or > 599 || message.Diagnostics is null || message.Diagnostics.Length > 64
@@ -513,7 +518,7 @@ public static class RendererProtocol
                 if (!double.IsFinite(message.ScrollY) || message.ScrollY < 0 || message.ScrollY > 1e9)
                 { throw new IpcProtocolException("Invalid renderer scroll offset."); }
                 break;
-            case "frame":
+            case FrameKind:
                 var dimensions = Dimensions(message.Width, message.Height, message.Scale);
                 if (message.PixelWidth <= 0 || message.PixelHeight <= 0
                     || message.PixelWidth != dimensions.Width || message.PixelHeight != dimensions.Height
@@ -532,7 +537,7 @@ public static class RendererProtocol
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
                 ValidateTextTargets(message.TextTargets, message.Width, message.Height);
                 break;
-            case "error":
+            case ErrorKind:
                 if (payloadLength != 0 || string.IsNullOrEmpty(message.Error) || message.Error.Length > MaxTextCharacters)
                 {
                     throw new IpcProtocolException("Invalid renderer failure reply.");

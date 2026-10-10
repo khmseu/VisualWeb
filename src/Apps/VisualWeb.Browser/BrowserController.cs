@@ -1067,116 +1067,19 @@ public sealed class BrowserController : IDisposable
                 normalizedEmailValues[index] = value;
             }
             if (skipValidation) { continue; }
-            var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
-            if (control.Required && (control.Kind == "checkbox" ? !isChecked
-                : control.Kind == "radio" ? !RadioGroupChecked(owner, index) : value.Length == 0))
-            { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
-            if (control.Kind == "date" && value.Length > 0 && !FormDate.IsValid(value))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid date; submission blocked."); }
-            if (control.Kind == "date" && value.Length > 0 && FormDate.TryGetDayNumber(value, out var dateDayNumber))
-            {
-                if (control.Minimum is { } minimum && dateDayNumber < minimum)
-                { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
-                if (control.Maximum is { } maximum && dateDayNumber > maximum)
-                { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
-                if (!control.StepAny && control.Step is { } dateStep
-                    && !FormNumber.IsStepAligned(dateDayNumber, control.Minimum
-                        ?? (FormDate.TryGetDayNumber(control.Value, out var initialValue) ? initialValue : 0), dateStep))
-                { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
-            }
-            if (control.Kind == "time" && value.Length > 0 && !FormTime.IsValid(value))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid time; submission blocked."); }
-            if (control.Kind == "time" && value.Length > 0 && FormTime.TryGetMilliseconds(value, out var timeMilliseconds))
-            {
-                if (control.Minimum is { } minimum && timeMilliseconds < minimum)
-                { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
-                if (control.Maximum is { } maximum && timeMilliseconds > maximum)
-                { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
-                if (!control.StepAny)
-                {
-                    var stepBase = control.Minimum ?? (FormTime.TryGetMilliseconds(control.Value, out var initialValue) ? initialValue : 0);
-                    if (!FormNumber.IsStepAligned(timeMilliseconds, stepBase, control.Step!.Value))
-                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
-                }
-            }
-            if (control.Kind == "month" && value.Length > 0 && !FormMonth.IsValid(value))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid month; submission blocked."); }
-            if (control.Kind == "month" && value.Length > 0 && FormMonth.TryGetMonthNumber(value, out var monthNumber))
-            {
-                if (control.Minimum is { } minimum && monthNumber < minimum)
-                { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
-                if (control.Maximum is { } maximum && monthNumber > maximum)
-                { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
-                if (!control.StepAny)
-                {
-                    var stepBase = control.Minimum ?? (FormMonth.TryGetMonthNumber(control.Value, out var initialValue) ? initialValue : 0);
-                    if (!FormNumber.IsStepAligned(monthNumber, stepBase, control.Step!.Value))
-                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
-                }
-            }
-            if (control.Kind == "week" && value.Length > 0 && !FormWeek.IsValid(value))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid week; submission blocked."); }
-            if (control.Kind == "week" && value.Length > 0 && FormWeek.TryGetWeekNumber(value, out var weekNumber))
-            {
-                if (control.Minimum is { } minimum && weekNumber < minimum)
-                { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
-                if (control.Maximum is { } maximum && weekNumber > maximum)
-                { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
-                if (!control.StepAny)
-                {
-                    var stepBase = control.Minimum ?? (FormWeek.TryGetWeekNumber(control.Value, out var initialValue) ? initialValue : 0);
-                    if (!FormNumber.IsStepAligned(weekNumber, stepBase, control.Step!.Value))
-                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
-                }
-            }
-            if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
-            if (control.Kind == "email" && value.Length > 0 && !FormEmail.IsValid(value, control.Multiple))
-            {
-                var requiredFormat = control.Multiple ? "valid email address list" : "valid email address";
-                throw new PageNavigationException($"Form field '{control.Name}' must contain a {requiredFormat}; submission blocked.");
-            }
-            if (control.Kind == "color" && !FormColor.IsValid(value))
-            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid color; submission blocked."); }
-            if ((control.Kind is "number" or "range") && value.Length > 0)
-            {
-                if (!FormNumber.TryParse(value, out var number))
-                { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid number; submission blocked."); }
-                if (control.Minimum is { } minimum && number < minimum)
-                { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
-                if (control.Maximum is { } maximum && number > maximum)
-                { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
-                if (!control.StepAny)
-                {
-                    var stepBase = control.Minimum ?? (FormNumber.TryParse(control.Value, out var initialValue) ? initialValue : 0);
-                    if (!FormNumber.IsStepAligned(number, stepBase, control.Step!.Value))
-                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
-                }
-            }
-            if (control.Pattern is { } pattern && value.Length > 0)
-            {
-                try
-                {
-                    if (!FormPattern.Matches(pattern, value))
-                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its pattern; submission blocked."); }
-                }
-                catch (RegexMatchTimeoutException)
-                { throw new PageNavigationException($"Form field '{control.Name}' pattern matching exceeded the time limit; submission blocked."); }
-                catch (ArgumentException)
-                { throw new PageNavigationException($"Form field '{control.Name}' has an unsupported pattern; submission blocked."); }
-                catch (NotSupportedException)
-                { throw new PageNavigationException($"Form field '{control.Name}' has an unsupported pattern; submission blocked."); }
-            }
-            if (control.MinLength > 0 && owner.Dirty.Contains(index) && value.Length > 0 && value.Length < control.MinLength)
-            { throw new PageNavigationException($"Form field '{control.Name}' is shorter than minlength {control.MinLength}; submission blocked."); }
-            if (control.MaxLength >= 0 && owner.Dirty.Contains(index) && value.Length > control.MaxLength)
-            { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
+            ValidateFormControl(owner, index, control, value);
         }
         var limit = Session.Options.MaxAddressCharacters;
         var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
         var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:" ? document.Origin : null;
         if (openInNewTab) { owner.Source.ValidateNavigationTarget(action, preventHttpsDowngrade, sameOriginRedirectOrigin); }
-        var query = FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter,
+        var query = SerializeForm(page, owner, formIndex, submitter, normalizedEmailValues, limit);
+        return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
+            sameOriginRedirectOrigin, openInNewTab);
+    }
+    private static string SerializeForm(BrowserPage page, Content owner, int formIndex, int submitter,
+        IReadOnlyDictionary<int, string> normalizedEmailValues, int limit) =>
+        FormSubmission.Serialize(FormSubmission.Entries(page.FormControls, formIndex, submitter,
             i => normalizedEmailValues.TryGetValue(i, out var email) ? email
                 : page.FormControls[i] is { Kind: "textarea", TextareaWrapHard: true } textarea
                     ? FormSubmission.HardWrapTextarea(Value(owner, i), textarea.TextareaWrapColumns)
@@ -1189,9 +1092,141 @@ public sealed class BrowserController : IDisposable
                 var selected = SelectedOption(owner, i);
                 return selected >= 0 && !control.Options[selected].Disabled;
             }, i => SelectedOptions(owner, i).Order().Select(option => page.FormControls[i].Options[option].Value)), limit);
-        return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
-            sameOriginRedirectOrigin, openInNewTab);
+
+    private static void ValidateFormControl(Content owner, int index, PageFormControl control, string value)
+    {
+        var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
+        if (control.Required && (control.Kind == "checkbox" ? !isChecked
+            : control.Kind == "radio" ? !RadioGroupChecked(owner, index) : value.Length == 0))
+        { throw new PageNavigationException($"Form field '{control.Name}' is required; submission blocked."); }
+        if (control.Kind == "date" && value.Length > 0 && !FormDate.IsValid(value))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid date; submission blocked."); }
+        if (control.Kind == "date" && value.Length > 0 && FormDate.TryGetDayNumber(value, out var dateDayNumber))
+        { ValidateDateBounds(control, dateDayNumber); }
+        if (control.Kind == "time" && value.Length > 0 && !FormTime.IsValid(value))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid time; submission blocked."); }
+        if (control.Kind == "time" && value.Length > 0 && FormTime.TryGetMilliseconds(value, out var timeMilliseconds))
+        { ValidateTimeBounds(control, timeMilliseconds); }
+        if (control.Kind == "month" && value.Length > 0 && !FormMonth.IsValid(value))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid month; submission blocked."); }
+        if (control.Kind == "month" && value.Length > 0 && FormMonth.TryGetMonthNumber(value, out var monthNumber))
+        { ValidateMonthBounds(control, monthNumber); }
+        if (control.Kind == "week" && value.Length > 0 && !FormWeek.IsValid(value))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid week; submission blocked."); }
+        if (control.Kind == "week" && value.Length > 0 && FormWeek.TryGetWeekNumber(value, out var weekNumber))
+        { ValidateWeekBounds(control, weekNumber); }
+        if (control.Kind == "url" && value.Length > 0 && (value != value.Trim() || !BrowserUrl.ParseResult(value).Success))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid absolute URL; submission blocked."); }
+        if (control.Kind == "email" && value.Length > 0 && !FormEmail.IsValid(value, control.Multiple))
+        {
+            var requiredFormat = control.Multiple ? "valid email address list" : "valid email address";
+            throw new PageNavigationException($"Form field '{control.Name}' must contain a {requiredFormat}; submission blocked.");
+        }
+        if (control.Kind == "color" && !FormColor.IsValid(value))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid color; submission blocked."); }
+        if ((control.Kind is "number" or "range") && value.Length > 0)
+        { ValidateNumberBounds(control, value); }
+        ValidatePattern(control, value);
+        if (control.MinLength > 0 && owner.Dirty.Contains(index) && value.Length > 0 && value.Length < control.MinLength)
+        { throw new PageNavigationException($"Form field '{control.Name}' is shorter than minlength {control.MinLength}; submission blocked."); }
+        if (control.MaxLength >= 0 && owner.Dirty.Contains(index) && value.Length > control.MaxLength)
+        { throw new PageNavigationException($"Form field '{control.Name}' exceeds maxlength {control.MaxLength}; submission blocked."); }
     }
+
+    private static void ValidateDateBounds(PageFormControl control, double value)
+    {
+        ValidateBounds(control, value);
+        if (!control.StepAny && control.Step is { } step
+            && !FormNumber.IsStepAligned(value, control.Minimum
+                ?? (FormDate.TryGetDayNumber(control.Value, out var initialValue) ? initialValue : 0), step))
+        { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
+    }
+
+    private static void ValidateTimeBounds(PageFormControl control, double value) =>
+        ValidateTemporalBounds(control, value,
+            (string input, out double number) => TryParseTemporal(input, FormTime.TryGetMilliseconds, out number));
+
+    private static void ValidateMonthBounds(PageFormControl control, double value) =>
+        ValidateTemporalBounds(control, value,
+            (string input, out double number) => TryParseTemporal(input, FormMonth.TryGetMonthNumber, out number));
+
+    private static void ValidateWeekBounds(PageFormControl control, double value) =>
+        ValidateTemporalBounds(control, value,
+            (string input, out double number) => TryParseTemporal(input, FormWeek.TryGetWeekNumber, out number));
+
+    private static void ValidateTemporalBounds(PageFormControl control, double value, TryParseFormValue tryParse)
+    {
+        ValidateBounds(control, value);
+        if (!control.StepAny)
+        {
+            var stepBase = control.Minimum ?? (tryParse(control.Value, out var initialValue) ? initialValue : 0);
+            if (!FormNumber.IsStepAligned(value, stepBase, control.Step!.Value))
+            { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
+        }
+    }
+
+    private static bool TryParseTemporal(string value, TryParseFormInteger tryParse, out double number)
+    {
+        if (tryParse(value, out var parsed))
+        {
+            number = parsed;
+            return true;
+        }
+        number = 0;
+        return false;
+    }
+
+    private static bool TryParseTemporal(string value, TryParseFormInt tryParse, out double number)
+    {
+        if (tryParse(value, out var parsed))
+        {
+            number = parsed;
+            return true;
+        }
+        number = 0;
+        return false;
+    }
+
+    private static void ValidateNumberBounds(PageFormControl control, string value)
+    {
+        if (!FormNumber.TryParse(value, out var number))
+        { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid number; submission blocked."); }
+        ValidateBounds(control, number);
+        if (!control.StepAny)
+        {
+            var stepBase = control.Minimum ?? (FormNumber.TryParse(control.Value, out var initialValue) ? initialValue : 0);
+            if (!FormNumber.IsStepAligned(number, stepBase, control.Step!.Value))
+            { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
+        }
+    }
+
+    private static void ValidateBounds(PageFormControl control, double value)
+    {
+        if (control.Minimum is { } minimum && value < minimum)
+        { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
+        if (control.Maximum is { } maximum && value > maximum)
+        { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
+    }
+
+    private static void ValidatePattern(PageFormControl control, string value)
+    {
+        if (control.Pattern is not { } pattern || value.Length == 0) { return; }
+        try
+        {
+            if (!FormPattern.Matches(pattern, value))
+            { throw new PageNavigationException($"Form field '{control.Name}' does not match its pattern; submission blocked."); }
+        }
+        catch (RegexMatchTimeoutException)
+        { throw new PageNavigationException($"Form field '{control.Name}' pattern matching exceeded the time limit; submission blocked."); }
+        catch (ArgumentException)
+        { throw new PageNavigationException($"Form field '{control.Name}' has an unsupported pattern; submission blocked."); }
+        catch (NotSupportedException)
+        { throw new PageNavigationException($"Form field '{control.Name}' has an unsupported pattern; submission blocked."); }
+    }
+
+    private delegate bool TryParseFormValue(string value, out double number);
+    private delegate bool TryParseFormInt(string value, out int number);
+    private delegate bool TryParseFormInteger(string value, out long number);
     private static bool CanUpgradeSameHostFormAction(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
         documentOrigin.Scheme == "https" && actionOrigin.Scheme == "http"
         && documentOrigin.Host == actionOrigin.Host
