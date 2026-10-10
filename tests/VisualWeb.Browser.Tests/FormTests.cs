@@ -73,6 +73,15 @@ public sealed class FormTests
         Assert.Contains("method", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task SubmitterGetMethodOverrideIsAccepted()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><input name=q><button formmethod=get>Search</button></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

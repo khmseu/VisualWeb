@@ -130,7 +130,9 @@ internal static class PageForms
                 }
                 foreach (var name in SubmitterOverrides)
                 {
-                    if (element.GetAttribute(name) is not null) { Reject(index, $"submit button override {name}"); }
+                    var overrideValue = element.GetAttribute(name);
+                    if (overrideValue is not null && !(name == "formmethod" && overrideValue.Equals("get", StringComparison.OrdinalIgnoreCase)))
+                    { Reject(index, $"submit button override {name}"); }
                 }
             }
             if (Ancestors(element).Any(a => a.LocalName == "datalist"))
