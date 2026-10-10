@@ -347,10 +347,13 @@ public sealed class ShellChrome : IDisposable
                     control.Disabled ? new(235, 235, 235) : control.Kind is "submit" or "button" or "reset" or "inert" ? new(225, 225, 225)
                     : forms.SelectAll && index == forms.Focused ? new(176, 213, 249) : white);
                 var selectedOption = forms.SelectIndices?[index] ?? Array.FindIndex(control.Options, option => option.Selected);
+                var selectedCount = forms.SelectSets is { } sets && index < sets.Count ? sets[index].Count
+                    : selectedOption >= 0 ? 1 : 0;
                 var value = forms.Values[index];
                 var showingPlaceholder = value.Length == 0 && control.Placeholder.Length > 0;
                 var text = control.Kind is "submit" or "button" or "reset" or "inert" ? control.Label
-                    : control.Kind == "select" ? (selectedOption >= 0 ? control.Options[selectedOption].Label : "") + "  v"
+                    : control.Kind == "select" ? control.Multiple ? $"{selectedCount} selected  v"
+                        : (selectedOption >= 0 ? control.Options[selectedOption].Label : "") + "  v"
                     : control.Kind == "password" ? PasswordText(value,
                         index == forms.Focused && !forms.SelectAll ? forms.Caret : -1)
                     : showingPlaceholder ? index == forms.Focused && !forms.SelectAll && forms.Caret == 0
