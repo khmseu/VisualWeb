@@ -80,8 +80,8 @@ internal static class PageForms
             }
             if (kind == "select")
             {
-                if (element.GetAttribute("multiple") is not null) { Reject(index, "select multiple"); }
-                if (SelectSize(element.GetAttribute("size")) != 1) { Reject(index, "select display size other than 1"); }
+                if (element.GetAttribute("multiple") is null && SelectSize(element.GetAttribute("size")) != 1)
+                { Reject(index, "select display size other than 1"); }
             }
             if (kind is "date" or "time" or "month" or "week")
             {
@@ -155,9 +155,10 @@ internal static class PageForms
             { throw new PageNavigationException($"Form minlength exceeds the supported {RendererProtocol.MaxTextCharacters} code-unit limit."); }
             var options = kind == "select" ? Options(element, ref optionCount) : Array.Empty<PageFormOption>();
             var selectedOption = Array.FindLastIndex(options, option => option.Selected);
-            if (kind == "select" && selectedOption < 0)
+            var multiple = kind == "select" && element.GetAttribute("multiple") is not null;
+            if (kind == "select" && !multiple && selectedOption < 0)
             { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
-            if (kind == "select" && selectedOption >= 0)
+            if (kind == "select" && !multiple && selectedOption >= 0)
             { options = options.Select((option, optionIndex) => option with { Selected = optionIndex == selectedOption }).ToArray(); }
             var placeholder = kind is "text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea"
                 ? element.GetAttribute("placeholder") ?? "" : "";
@@ -166,7 +167,8 @@ internal static class PageForms
             if (placeholder.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("Form placeholder text limit exceeded."); }
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
-                : kind == "select" ? selectedOption >= 0 ? options[selectedOption].Value : ""
+                : kind == "select" ? multiple ? options.FirstOrDefault(option => option.Selected && !option.Disabled)?.Value ?? ""
+                    : selectedOption >= 0 ? options[selectedOption].Value : ""
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
             var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
                 : kind == "time" ? TimeBound(element.GetAttribute("min"))
@@ -247,7 +249,7 @@ internal static class PageForms
                 kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum, step, stepAny)
             {
                 Options = options,
-                Multiple = kind == "email" && element.GetAttribute("multiple") is not null,
+                Multiple = (kind is "email" or "select") && element.GetAttribute("multiple") is not null,
                 Placeholder = placeholder,
                 FormNoValidate = (kind is "submit" or "button") && element.GetAttribute("formnovalidate") is not null,
                 FormAction = submitterAction,

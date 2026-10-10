@@ -190,6 +190,22 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsMultipleSelectOptionsAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><select multiple name=mode><option value=fast selected>Fast</option><option value=slow selected>Slow</option></select></form>"),
+            new(200, 400, 1), Cancellation);
+
+        var control = Assert.Single(page.FormControls);
+        Assert.True(control.Multiple);
+        Assert.Equal("select", control.Kind);
+        Assert.Equal([true, true], control.Options.Select(option => option.Selected));
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererFlattensOptgroupsAndInheritsDisabledState(bool process)
     {
         using var renderer = Renderer(process);

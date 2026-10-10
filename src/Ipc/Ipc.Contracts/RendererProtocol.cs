@@ -89,7 +89,7 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported only for email controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
 /// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formtarget">formtarget</see>.
 /// TextareaWrapColumns is present only for textarea hard wrapping. Label carries submit/reset-input text or button text.</remarks>
@@ -609,7 +609,7 @@ public static class RendererProtocol
                 || control.Placeholder is null || control.Placeholder.Length > MaxTextCharacters
                 || control.Kind is not ("submit" or "reset" or "button" or "inert") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
-                || control.Multiple && control.Kind != "email"
+                || control.Multiple && control.Kind is not ("email" or "select")
                 || control.FormNoValidate && control.Kind is not ("submit" or "button")
                 || control.FormAction is { Length: > MaxTextCharacters }
                 || control.FormActionError is { Length: 0 or > MaxTextCharacters }
@@ -658,10 +658,11 @@ public static class RendererProtocol
                 || control.Kind != "select" && control.Options.Length != 0
                 || control.Options.Any(option => option is null || option.Value is null || option.Label is null
                     || option.Value.Length > MaxTextCharacters || option.Label.Length > MaxTextCharacters)
-                || control.Options.Count(option => option.Selected) > 1)
+                || !control.Multiple && control.Options.Count(option => option.Selected) > 1
+                || control.Multiple && control.Kind is not ("email" or "select"))
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
             optionCount += control.Options.Length;
-            if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected)?.Value
+            if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected && !option.Disabled)?.Value
                 && !(control.Options.All(option => !option.Selected) && control.Value.Length == 0))
             { throw new IpcProtocolException("Invalid renderer select value or selected option."); }
             if (control.Kind == "date" && control.Value.Length > 0 && !FormDate.IsValid(control.Value))
