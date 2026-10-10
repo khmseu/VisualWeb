@@ -1,11 +1,14 @@
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Text;
 
 namespace VisualWeb.Engine.Layout;
 
+[SuppressMessage("Sonar", "S2166", Justification = "These public exception types intentionally expose only the failure-category constructor used by the bounded layout API.")]
 public sealed class UnsupportedLayoutException(string message) : Exception(message);
+[SuppressMessage("Sonar", "S2166", Justification = "These public exception types intentionally expose only the failure-category constructor used by the bounded layout API.")]
 public sealed class LayoutLimitException(string message) : Exception(message);
 
 /// <summary>CSS-pixel geometry; no device-pixel snapping or rasterization.</summary>
@@ -18,6 +21,7 @@ public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyLis
 {
     public IReadOnlyList<LayoutInlineWidget> Widgets { get; init; } = Array.Empty<LayoutInlineWidget>();
 }
+[SuppressMessage("Sonar", "S2094", Justification = "This intentional marker record is the closed layout-flow contract that distinguishes block and line items without mutable state.")]
 public abstract record LayoutFlowItem;
 public sealed record LayoutBlockItem(LayoutBox Box) : LayoutFlowItem;
 public sealed record LayoutLineItem(LayoutLine Line) : LayoutFlowItem;
@@ -99,6 +103,7 @@ public static class StaticLayout
         private CssComputedStyle Style(DomElement element) => styles.Styles.TryGetValue(element, out var style) ? style
             : throw new InvalidOperationException("Styles are incomplete or stale; recompute for the current DOM.");
         private string Display(DomElement element) => ((CssKeyword)Style(element)["display"]).Value;
+        [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The repeated explicit element and input-kind literals define the finite supported layout grammar at its rejection boundary.")]
         private void Check(DomElement element, int depth, bool block = false)
         {
             cancellation.ThrowIfCancellationRequested();
@@ -131,6 +136,7 @@ public static class StaticLayout
             }
         }
 
+        [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The repeated CSS box-model vocabulary is intentionally local to the bounded block-formatting calculation.")]
         private LayoutBox Block(DomElement element, double containingX, double top, double containingWidth,
             double? containingHeight, int depth, bool isRoot = false, bool suppressTopMargin = false,
             bool suppressBottomMargin = false)
@@ -310,6 +316,7 @@ public static class StaticLayout
         private static double CollapseMargins(IReadOnlyList<double> margins)
             => Math.Max(0, margins.Max()) + Math.Min(0, margins.Min());
 
+        [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit inline-layout element and whitespace vocabulary keeps the finite supported grammar visible at this traversal boundary.")]
         private void Gather(DomNode node, CssComputedStyle inheritedStyle, List<InlineUnit> output, int depth)
         {
             cancellation.ThrowIfCancellationRequested();

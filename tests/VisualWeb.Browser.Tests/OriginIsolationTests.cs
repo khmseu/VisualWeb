@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 using VisualWeb.Core.Url;
@@ -543,6 +544,8 @@ public sealed class OriginIsolationTests
 
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "HttpClient dispatches this deterministic response fixture through the HttpMessageHandler override.")]
+        [SuppressMessage("Sonar", "S1172:Unused method parameters should be removed", Justification = "HttpMessageHandler requires a cancellation token; this deterministic fixture completes synchronously.")]
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(respond(request));
     }

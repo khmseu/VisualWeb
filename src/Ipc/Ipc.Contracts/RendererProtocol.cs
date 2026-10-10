@@ -7,6 +7,8 @@ using VisualWeb.Core.Url;
 
 namespace VisualWeb.Ipc.Contracts;
 
+[SuppressMessage("Sonar", "S2166", Justification = "This public protocol-boundary exception intentionally exposes only the diagnostic constructor used for malformed peer data.")]
+[SuppressMessage("Sonar", "S2094", Justification = "The exception type itself is the data-only IPC failure contract; it carries meaning through its public type and base diagnostic message.")]
 public sealed class IpcProtocolException(string message) : IOException(message);
 
 /// <summary>Data-only clipped visible CSS viewport rectangle.</summary>
