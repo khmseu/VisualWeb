@@ -92,6 +92,26 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void PointerFocusesColorInputForCommittedText()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;height:20px}</style><form><input type=color value=#112233></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 10)));
+
+        Assert.True(shell.Controller.EditingFormControl(tab.Id));
+    }
+
+    [Fact]
     public void ListboxRowsExposeShellOwnedOptionTargets()
     {
         using var system = new Windows();

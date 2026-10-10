@@ -422,7 +422,7 @@ public sealed class DevelopmentShell : IDisposable
                             var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pageY, pageViewport);
                             var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
                             if (activated && focusedControl >= 0
-                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "month" or "week" or "number" or "password", Rect: { } textRect } textControl)
+                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "month" or "week" or "number" or "color" or "password", Rect: { } textRect } textControl)
                             {
                                 var value = Controller.FormControlValue(pageTab.Id, focusedControl);
                                 var selectAll = Controller.FormControlSelectAll(pageTab.Id);
