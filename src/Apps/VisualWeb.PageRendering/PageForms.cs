@@ -83,7 +83,7 @@ internal static class PageForms
             }
             if (kind is "date" or "time" or "month" or "week")
             {
-                foreach (var attribute in new[] { "min", "max", "step", "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
+                foreach (var attribute in new[] { "step", "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
             }
             if (kind is "number" or "range")
@@ -157,9 +157,11 @@ internal static class PageForms
             var value = kind == "textarea" ? NormalizeTextArea(element.TextContent ?? "")
                 : kind == "select" ? selectedOption >= 0 ? options[selectedOption].Value : ""
                 : kind is "checkbox" or "radio" ? element.GetAttribute("value") ?? "on" : element.GetAttribute("value");
-            var minimum = kind == "number" ? NumberBound(element.GetAttribute("min"))
+            var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
+                : kind == "number" ? NumberBound(element.GetAttribute("min"))
                 : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
-            var maximum = kind == "number" ? NumberBound(element.GetAttribute("max"))
+            var maximum = kind == "date" ? DateBound(element.GetAttribute("max"))
+                : kind == "number" ? NumberBound(element.GetAttribute("max"))
                 : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
             var stepAny = (kind is "number" or "range") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
             double? step = kind is not ("number" or "range") || stepAny ? null
@@ -366,6 +368,9 @@ internal static class PageForms
         { return null; }
         return columns;
     }
+
+    private static double? DateBound(string? value) => value is not null && FormDate.TryGetDayNumber(value, out var dayNumber)
+        ? dayNumber : null;
 
     private static int SelectSize(string? value)
     {

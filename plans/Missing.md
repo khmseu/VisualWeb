@@ -87,9 +87,9 @@ broader page interaction is still missing:
   remain unsupported. Optgroups flatten into the option list, prefix group labels,
   and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
-  sanitize invalid initial values to empty, and validate nonempty values and
-  `required` before submission; no calendar picker or date constraints are
-  implemented (`min`, `max`, `step`, `pattern`, length, `list`, `multiple` and
+  sanitize invalid initial values to empty, and validate nonempty values, `required`,
+  and valid `min`/`max` bounds before submission; no calendar picker or date step
+  behavior is implemented (`step`, `pattern`, length, `list`, `multiple` and
   `dirname` are rejected visibly). Time values use strict bounded HTML time
   syntax with generic text editing and validation; no clock picker or time
   constraints are implemented (the same constraint attributes are rejected). Month values use positive years of at least four digits and months 01–12, with generic text editing and validation; no month picker or constraints are implemented (the same constraint attributes are rejected). Week values enforce valid ISO week-years (including the 52/53-week boundary) and use generic text editing; no week picker or constraints are implemented (the same constraint attributes are rejected). Number inputs support finite floating-point syntax, optional finite min/max

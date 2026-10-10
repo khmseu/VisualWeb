@@ -259,9 +259,10 @@ GET submission. URL requires a valid absolute URL on submission; date values use
 strict `YYYY-MM-DD` Gregorian syntax
 for years 0001–9999 and are edited as text (there is no calendar picker); invalid
 initial date values become empty, required dates must be nonempty, and nonempty
-values are checked before submission. Date `min`, `max`, `step`, `pattern`, length,
-`list`, `multiple` and `dirname` attributes are unsupported and mark the form with
-a visible error. Time values use strict HTML `HH:mm`, `HH:mm:ss`, or
+values are checked before submission. Valid date `min` and `max` bounds are enforced
+before submission; invalid bounds are ignored. Date `step`, `pattern`, length, `list`,
+`multiple` and `dirname` attributes are unsupported and mark the form with a visible
+error. Time values use strict HTML `HH:mm`, `HH:mm:ss`, or
 `HH:mm:ss.fraction` syntax (one to three fractional digits, no leap seconds or
 zone); invalid initial values become empty and nonempty values are validated
 before submission. Time `min`, `max`, `step`, `pattern`, length, `list`,

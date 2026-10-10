@@ -148,6 +148,18 @@ public sealed record PageFormOption(
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#valid-date-string">valid date string</see>.</remarks>
 public static class FormDate
 {
+    /// <summary>Returns the Gregorian day ordinal for a valid bounded date.</summary>
+    public static bool TryGetDayNumber(string value, out int dayNumber)
+    {
+        dayNumber = 0;
+        if (!IsValid(value)) { return false; }
+        var year = int.Parse(value.AsSpan(0, 4), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        var month = int.Parse(value.AsSpan(5, 2), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        var day = int.Parse(value.AsSpan(8, 2), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        dayNumber = new DateOnly(year, month, day).DayNumber;
+        return true;
+    }
+
     public static bool IsValid(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -576,9 +588,12 @@ public static class RendererProtocol
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
-                || control.Kind is not ("number" or "range") && (control.Minimum is not null || control.Maximum is not null
+                || control.Kind is not ("number" or "range" or "date") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
                 || (control.Kind is "number" or "range") && (control.StepAny ? control.Step is not null : control.Step is null)
+                || control.Kind == "date" && (control.Step is not null || control.StepAny
+                    || control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
+                    || control.Maximum is { } dateMaximum && dateMaximum != Math.Truncate(dateMaximum))
                 || control.Kind == "range" && (control.Minimum is null || control.Maximum is null
                     || control.Minimum > control.Maximum || control.MinLength != -1 || control.MaxLength != -1
                     || control.Required || control.ReadOnly || control.Pattern is not null)

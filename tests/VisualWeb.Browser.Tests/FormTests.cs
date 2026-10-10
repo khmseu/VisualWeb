@@ -300,13 +300,34 @@ public sealed class FormTests
     }
 
     [Fact]
-    public async Task DateInputRejectsUnsupportedConstraintAttributes()
+    public async Task DateInputStillRejectsUnsupportedStepConstraint()
     {
         using var renderer = Renderer(false);
-        var page = await renderer.RenderAsync(Document("<form><input type=date name=day min=2024-01-01></form>"),
+        var page = await renderer.RenderAsync(Document("<form><input type=date name=day step=2></form>"),
             new(200, 400, 1), Cancellation);
 
-        Assert.Contains("date min", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("date step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DateInputEnforcesValidMinimumAndMaximumOnSubmission()
+    {
+        using var harness = new Harness("<form action='/save'><input type=date name=day min=2024-01-01 max=2024-12-31 value=2024-06-01><button>Save</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.Null(Assert.Single(controller.Page(tab)!.Forms).Error);
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "2023-12-31");
+
+        var below = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Contains("minimum", below.Message, StringComparison.OrdinalIgnoreCase);
+
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "2025-01-01");
+        var above = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Contains("maximum", above.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
     }
 
     [Theory]
