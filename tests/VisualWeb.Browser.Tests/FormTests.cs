@@ -207,6 +207,21 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsBoundedSingleSelectListboxRowsAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><select name=mode size=4><option>Fast</option><option>Slow</option></select></form>"),
+            new(200, 400, 1), Cancellation);
+
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal(4, control.SelectRows);
+        Assert.Equal(80, control.Rect!.Height);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererFlattensOptgroupsAndInheritsDisabledState(bool process)
     {
         using var renderer = Renderer(process);

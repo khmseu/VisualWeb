@@ -80,7 +80,7 @@ internal static class PageForms
             }
             if (kind == "select")
             {
-                if (element.GetAttribute("multiple") is null && SelectSize(element.GetAttribute("size")) != 1)
+                if (element.GetAttribute("multiple") is null && SelectSize(element.GetAttribute("size")) is not (>= 1 and <= 12))
                 { Reject(index, "select display size other than 1"); }
             }
             if (kind is "date" or "time" or "month" or "week")
@@ -156,6 +156,7 @@ internal static class PageForms
             var options = kind == "select" ? Options(element, ref optionCount) : Array.Empty<PageFormOption>();
             var selectedOption = Array.FindLastIndex(options, option => option.Selected && !option.Disabled);
             var multiple = kind == "select" && element.GetAttribute("multiple") is not null;
+            var selectRows = kind == "select" && !multiple ? SelectSize(element.GetAttribute("size")) : 1;
             if (kind == "select" && !multiple && selectedOption < 0)
             { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
             if (kind == "select" && !multiple && selectedOption >= 0)
@@ -258,7 +259,7 @@ internal static class PageForms
                 FormTargetError = submitterTargetError,
                 TextareaWrapColumns = textareaWrapColumns,
                 TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0,
-                SelectRows = 1
+                SelectRows = selectRows
             });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
@@ -406,18 +407,15 @@ internal static class PageForms
     private static int SelectSize(string? value)
     {
         if (value is null) { return 1; }
-        var text = value.TrimStart(' ', '\t', '\n', '\f', '\r');
-        var negative = text.StartsWith('-');
-        var position = text.StartsWith('+') || negative ? 1 : 0;
-        var end = position;
-        while (end < text.Length && char.IsAsciiDigit(text[end])) { end++; }
-        if (end == position) { return 1; }
-        var digits = text.AsSpan(position, end - position);
-        var firstNonZero = 0;
-        while (firstNonZero < digits.Length && digits[firstNonZero] == '0') { firstNonZero++; }
-        if (negative && firstNonZero < digits.Length) { return 1; }
-        if (firstNonZero == digits.Length) { return 0; }
-        return digits.Length - firstNonZero == 1 && digits[firstNonZero] == '1' ? 1 : 2;
+        var text = value.Trim(' ', '\t', '\n', '\f', '\r');
+        if (text.Length == 0 || text.Any(character => !char.IsAsciiDigit(character))) { return 13; }
+        var rows = 0;
+        foreach (var character in text)
+        {
+            rows = rows * 10 + character - '0';
+            if (rows > 12) { return 13; }
+        }
+        return rows;
     }
 
     private static PageFormOption[] Options(DomElement select, ref int total)

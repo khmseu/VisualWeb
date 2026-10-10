@@ -545,6 +545,15 @@ public static class StaticLayout
             return parsed;
         }
 
+        private static int SelectRows(DomElement element)
+        {
+            if (element.GetAttribute("multiple") is not null || element.GetAttribute("size") is not { } raw) { return 1; }
+            var value = raw.Trim(' ', '\t', '\n', '\f', '\r');
+            if (value.Length == 0 || value.Any(character => !char.IsAsciiDigit(character))
+                || !int.TryParse(value, out var rows) || rows is < 1 or > 12) { return 1; }
+            return rows;
+        }
+
         private static (double Width, double Height) WidgetSize(CssComputedStyle style, double containingWidth, DomElement element)
         {
             var margin = Edges(style, "margin", containingWidth);
@@ -561,8 +570,10 @@ public static class StaticLayout
             var maxHeight = Dimension(style["max-height"], null) ?? double.PositiveInfinity;
             var width = Dimension(style["width"], containingWidth) ?? (element.LocalName == "textarea"
                 ? TextareaDimension(element, "cols", 20, 128) * 8 : 160);
-            var height = Dimension(style["height"], null) ?? (element.LocalName == "textarea"
-                ? TextareaDimension(element, "rows", 2, 64) * 20 : 20);
+            var defaultHeight = 20;
+            if (element.LocalName == "textarea") { defaultHeight = TextareaDimension(element, "rows", 2, 64) * 20; }
+            else if (element.LocalName == "select") { defaultHeight = SelectRows(element) * 20; }
+            var height = Dimension(style["height"], null) ?? defaultHeight;
             if (sizing == "border-box")
             {
                 minWidth = Math.Max(0, minWidth - horizontal);

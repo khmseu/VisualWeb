@@ -628,7 +628,7 @@ public static class RendererProtocol
                 || control.Kind == "textarea" && (control.TextareaWrapColumns is < 0 or > 128
                     || (control.TextareaWrapColumns > 0) != control.TextareaWrapHard)
                 || control.Kind != "textarea" && (control.TextareaWrapHard || control.TextareaWrapColumns != 0)
-                || control.Kind == "select" && control.SelectRows != 1
+                || control.Kind == "select" && control.SelectRows is < 1 or > 12
                 || control.Kind != "select" && control.SelectRows != 1
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
