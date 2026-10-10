@@ -410,7 +410,8 @@ internal static class PageForms
         if (value is null) { return 1; }
         var text = value.TrimStart(' ', '\t', '\n', '\f', '\r');
         var negative = text.StartsWith('-');
-        var position = text.StartsWith('+') || negative ? 1 : 0;
+        var explicitPlus = text.StartsWith('+');
+        var position = explicitPlus || negative ? 1 : 0;
         var end = position;
         while (end < text.Length && char.IsAsciiDigit(text[end])) { end++; }
         if (end == position || negative) { return 1; }
@@ -420,6 +421,7 @@ internal static class PageForms
             rows = rows * 10 + character - '0';
             if (rows > 12) { return 13; }
         }
+        if (explicitPlus && rows > 1) { return 13; }
         return rows;
     }
 
