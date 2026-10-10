@@ -6,8 +6,8 @@ instructions, references and contextual text/script/CDATA modes. Official named
 references are embedded [pinned data](Data/README.md).
 
 Tree construction supplies implicit html/head/body, head metadata/text elements,
-ordinary body elements, lists, paragraphs, headings, void elements and documented
-recovery rules. Advanced features throw `UnsupportedHtmlException`; safety limits
+ordinary body elements, lists, paragraphs, headings, void elements, bounded
+select/optgroup parsing and documented recovery rules. Advanced features throw `UnsupportedHtmlException`; safety limits
 throw `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.
 

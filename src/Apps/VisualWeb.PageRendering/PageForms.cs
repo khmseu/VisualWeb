@@ -386,22 +386,39 @@ internal static class PageForms
 
     private static PageFormOption[] Options(DomElement select, ref int total)
     {
-        var elements = select.ChildNodes.OfType<DomElement>().ToArray();
-        if ((long)total + elements.Length > RendererProtocol.MaxSelectOptions)
-        { throw new PageNavigationException("Select option count limit exceeded."); }
-        total += elements.Length;
-        var result = new PageFormOption[elements.Length];
-        for (var index = 0; index < elements.Length; index++)
+        var options = new List<(DomElement Option, string GroupLabel, bool GroupDisabled)>();
+        foreach (var child in select.ChildNodes.OfType<DomElement>())
         {
-            var option = elements[index];
-            if (option.LocalName != "option")
-            { throw new PageNavigationException("Only direct option children are supported in select controls."); }
+            if (child.LocalName == "option")
+            {
+                options.Add((child, "", false));
+                continue;
+            }
+            if (child.LocalName != "optgroup")
+            { throw new PageNavigationException("Only option and optgroup children are supported in select controls."); }
+            var groupLabel = child.GetAttribute("label") ?? "";
+            var groupDisabled = child.GetAttribute("disabled") is not null;
+            foreach (var option in child.ChildNodes.OfType<DomElement>())
+            {
+                if (option.LocalName != "option")
+                { throw new PageNavigationException("Only option children are supported in optgroup elements."); }
+                options.Add((option, groupLabel, groupDisabled));
+            }
+        }
+        if ((long)total + options.Count > RendererProtocol.MaxSelectOptions)
+        { throw new PageNavigationException("Select option count limit exceeded."); }
+        total += options.Count;
+        var result = new PageFormOption[options.Count];
+        for (var index = 0; index < options.Count; index++)
+        {
+            var (option, groupLabel, groupDisabled) = options[index];
             var text = OptionText(option.TextContent ?? "");
             var value = option.GetAttribute("value") ?? text;
-            var label = option.GetAttribute("label") ?? text;
+            var optionLabel = option.GetAttribute("label") ?? text;
+            var label = groupLabel.Length == 0 ? optionLabel : $"{groupLabel}: {optionLabel}";
             if (value.Length > RendererProtocol.MaxTextCharacters || label.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("Select option text limit exceeded."); }
-            result[index] = new(value, label, option.GetAttribute("disabled") is not null,
+            result[index] = new(value, label, groupDisabled || option.GetAttribute("disabled") is not null,
                 option.GetAttribute("selected") is not null);
         }
         return result;

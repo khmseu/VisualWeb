@@ -109,6 +109,31 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererFlattensOptgroupsAndInheritsDisabledState(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form><select name=mode>
+              <option value=base>Base</option>
+              <optgroup label="Modes"><option value=fast>Fast</option><option value=blocked disabled>Blocked</option></optgroup>
+              <optgroup label="Unavailable" disabled><option value=offline>Offline</option></optgroup>
+            </select></form>
+            """), new(200, 400, 1), Cancellation);
+
+        var control = Assert.Single(page.FormControls);
+        Assert.Equal("base", control.Value);
+        Assert.Equal(
+        [
+            new PageFormOption("base", "Base", false, true),
+            new PageFormOption("fast", "Modes: Fast", false, false),
+            new PageFormOption("blocked", "Modes: Blocked", true, false),
+            new PageFormOption("offline", "Unavailable: Offline", true, false),
+        ], control.Options);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererReportsPasswordControlsAndConstraints(bool process)
     {
         using var renderer = Renderer(process);

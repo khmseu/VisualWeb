@@ -78,8 +78,9 @@ broader page interaction is still missing:
   lists, with Escape/outside-click dismissal. Text fields
   and textareas display bounded placeholders
   without changing submitted values. Email `multiple` supports sanitized
-  comma-separated address lists, while select multiple selection, listboxes and
-  optgroups remain unsupported.
+  comma-separated address lists, while select multiple selection and listboxes
+  remain unsupported. Optgroups flatten into the option list, prefix group labels,
+  and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values and
   `required` before submission; no calendar picker or date constraints are
@@ -168,7 +169,7 @@ Evidence: `stylesheet collection`, `script classification`, `HTML loading policy
 
 The tokenizer is considerably more complete than the tree builder. Remaining parser work includes:
 
-- Tables, templates, general forms (only the simple form-pointer subset exists), optgroup and unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
+- Tables, templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 - Broader legacy doctype handling.

@@ -372,6 +372,8 @@ public static class HtmlParser
                         return;
                     case "option":
                         throw Unsupported("Option elements outside the supported select subset are not implemented.");
+                    case "optgroup":
+                        throw Unsupported("Optgroup elements outside the supported select subset are not implemented.");
                     case "hr":
                         CloseParagraph();
                         Insert(tag, push: false);
@@ -496,10 +498,25 @@ public static class HtmlParser
                 Insert(tag);
                 return;
             }
+            if (!tag.IsEndTag && tag.Name == "optgroup")
+            {
+                if (open[^1].LocalName == "option") { Close("option"); }
+                if (open[^1].LocalName == "optgroup") { Close("optgroup"); }
+                Insert(tag);
+                return;
+            }
             if (tag.IsEndTag && tag.Name == "option")
             {
                 if (open[^1].LocalName == "option") { Close("option"); }
                 else { Error("unexpected-option-end-tag"); }
+                return;
+            }
+            if (tag.IsEndTag && tag.Name == "optgroup")
+            {
+                if (open[^1].LocalName == "option" && open.Count > selectIndex + 1
+                    && open[^2].LocalName == "optgroup") { Close("option"); }
+                if (open[^1].LocalName == "optgroup") { Close("optgroup"); }
+                else { Error("unexpected-optgroup-end-tag"); }
                 return;
             }
             if (tag.IsEndTag && tag.Name == "select")
@@ -507,7 +524,7 @@ public static class HtmlParser
                 CloseAt(selectIndex);
                 return;
             }
-            throw Unsupported("Only direct option children and text are supported inside select elements.");
+            throw Unsupported("Only option and optgroup children with text are supported inside select elements.");
         }
 
         private DomElement Insert(HtmlTag token, bool push = true)
@@ -663,7 +680,7 @@ public static class HtmlParser
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
         "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th", "template",
-        "svg", "math", "optgroup", "frameset", "frame", "noscript",
+        "svg", "math", "frameset", "frame", "noscript",
         "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
     };
     private static readonly HashSet<string> VoidTags = new(StringComparer.Ordinal)

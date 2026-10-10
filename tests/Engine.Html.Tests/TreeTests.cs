@@ -89,6 +89,19 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void SelectOptgroupsRemainNestedInTheStaticDom()
+    {
+        var result = Parse("<!doctype html><select><optgroup label=Modes><option>a</option></optgroup>"
+            + "<optgroup label=Other><option>b</option></optgroup></select>");
+        var select = Assert.IsType<DomElement>(Assert.Single(result.Document.Descendants()
+            .OfType<DomElement>(), element => element.LocalName == "select"));
+        var groups = select.ChildNodes.OfType<DomElement>().ToArray();
+        Assert.Equal(["optgroup", "optgroup"], groups.Select(group => group.LocalName));
+        Assert.Equal(["a", "b"], groups.Select(group => Assert.IsType<DomElement>(group.FirstChild).TextContent));
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void UnclosedSelectReportsASelectSpecificParseError()
     {
         var result = Parse("<!doctype html><select><option>x");
@@ -105,8 +118,9 @@ public sealed class TreeTests
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
     [InlineData("<ruby>x")]
-    [InlineData("<select><optgroup><option>x</optgroup></select>")]
+    [InlineData("<optgroup><option>x</optgroup>")]
     [InlineData("<select><option>x<div>y</div></select>")]
+    [InlineData("<select><optgroup><div>x</div></optgroup></select>")]
     [InlineData("<p><b>x</p>y")]
     [InlineData("<b><i>x</b>y</i>")]
     [InlineData("<a><a>x")]

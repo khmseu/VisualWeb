@@ -13,7 +13,7 @@ The `_blank` target keyword opens an active tab in the source window. Same-docum
 fragment links and their Back/Forward traversal update URL-only history and scroll
 to bounded rendered element IDs without a new load; named targets
 and DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/password/date/time/month/week/number fields (password values are masked in browser chrome), checkboxes, radio groups,
-single-select controls with bounded options, Up/Down/Home/End selection, and
+single-select controls with bounded options and flattened optgroup labels, Up/Down/Home/End selection, and
 click/Enter/Space popup activation, and multiline textareas with Tab focus,
 committed-text entry and Enter/click submission
 of current/new-tab GET `application/x-www-form-urlencoded` queries through the ordinary
