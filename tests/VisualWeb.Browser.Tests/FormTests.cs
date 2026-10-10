@@ -791,6 +791,8 @@ public sealed class FormTests
     [InlineData("list=palette")]
     [InlineData("min=#000000")]
     [InlineData("step=1")]
+    [InlineData("readonly")]
+    [InlineData("required")]
     public async Task UnsupportedColorInputSemanticsAreVisible(string attribute)
     {
         using var renderer = Renderer(false);

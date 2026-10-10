@@ -96,7 +96,7 @@ internal static class PageForms
             }
             if (kind == "color")
             {
-                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname", "min", "max", "step", "placeholder" })
+                foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname", "min", "max", "step", "placeholder", "readonly", "required" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"color {attribute}"); } }
             }
             string? pattern = null;
