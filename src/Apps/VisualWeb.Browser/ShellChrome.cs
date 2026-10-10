@@ -274,72 +274,12 @@ public sealed class ShellChrome : IDisposable
                 var gray = new CssColor(118, 118, 118);
                 if (control.Kind == "range")
                 {
-                    var inset = Math.Min(7, box.Width / 2);
-                    var trackStart = box.X + inset;
-                    var end = box.X + box.Width - inset;
-                    var centerY = box.Y + box.Height / 2;
-                    Fill(new(trackStart, centerY, Math.Max(1, end - trackStart), 2), gray);
-                    var rangeValue = double.Parse(forms.Values[index], System.Globalization.CultureInfo.InvariantCulture);
-                    var range = control.Maximum!.Value - control.Minimum!.Value;
-                    var fraction = range == 0 || !double.IsFinite(range) ? 0.5 : (rangeValue - control.Minimum.Value) / range;
-                    if (!double.IsFinite(fraction)) { fraction = 0.5; }
-                    var thumbWidth = Math.Min(12, box.Width);
-                    var thumbHeight = Math.Min(16, box.Height);
-                    var trackRange = Math.Max(0, end - trackStart);
-                    var thumbX = Math.Clamp(trackStart + Math.Clamp(fraction, 0, 1) * trackRange,
-                        box.X + thumbWidth / 2, box.X + box.Width - thumbWidth / 2);
-                    var thumbColor = control.Disabled ? gray : index == forms.Focused
-                        ? new CssColor(40, 90, 160) : new CssColor(80, 88, 98);
-                    Fill(new(thumbX - thumbWidth / 2, centerY - thumbHeight / 2, thumbWidth, thumbHeight), thumbColor);
+                    DrawRangeControl(control, index, box, gray);
                     continue;
                 }
                 if (control.Kind is "checkbox" or "radio")
                 {
-                    var side = Math.Min(13, Math.Min(box.Width, box.Height));
-                    var check = new LayoutRect(box.X + 3, box.Y + (box.Height - side) / 2, side, side);
-                    if (control.Kind == "checkbox")
-                    {
-                        Fill(check, gray);
-                        Fill(new(check.X + 1, check.Y + 1, Math.Max(0, side - 2), Math.Max(0, side - 2)),
-                            control.Disabled ? new(235, 235, 235) : white);
-                        if (forms.Checked?[index] == true)
-                        {
-                            var mark = control.Disabled ? gray : ink;
-                            Fill(new(check.X + 2, check.Y + 6, 2, 2), mark);
-                            Fill(new(check.X + 4, check.Y + 8, 2, 2), mark);
-                            Fill(new(check.X + 6, check.Y + 6, 2, 2), mark);
-                            Fill(new(check.X + 8, check.Y + 4, 2, 2), mark);
-                            Fill(new(check.X + 10, check.Y + 2, 2, 2), mark);
-                        }
-                    }
-                    else
-                    {
-                        var center = side / 2;
-                        var radius = Math.Max(1, center);
-                        for (var row = -radius; row <= radius; row++)
-                        {
-                            var half = (int)Math.Floor(Math.Sqrt(Math.Max(0, radius * radius - row * row)));
-                            Fill(new(check.X + center - half, check.Y + center + row, half * 2 + 1, 1), gray);
-                        }
-                        if (forms.Checked?[index] == true)
-                        {
-                            var mark = control.Disabled ? gray : ink;
-                            var dot = Math.Max(1, side / 4);
-                            var dotOffset = center - dot / 2;
-                            for (var row = 0; row < dot; row++)
-                            { Fill(new(check.X + dotOffset, check.Y + dotOffset + row, dot, 1), mark); }
-                        }
-                        else
-                        {
-                            var inner = Math.Max(1, radius - 1);
-                            for (var row = -inner; row <= inner; row++)
-                            {
-                                var half = (int)Math.Floor(Math.Sqrt(Math.Max(0, inner * inner - row * row)));
-                                Fill(new(check.X + center - half, check.Y + center + row, half * 2 + 1, 1),
-                                    control.Disabled ? new(235, 235, 235) : white);
-                            }
-                        }
-                    }
+                    DrawCheckControl(control, index, box, gray);
                     continue;
                 }
                 Fill(box, gray);
@@ -358,17 +298,7 @@ public sealed class ShellChrome : IDisposable
                     : selectedOption >= 0 ? 1 : 0;
                 if (control.Kind == "select" && control.SelectRows > 1)
                 {
-                    var rows = Math.Min(control.SelectRows, control.Options.Length);
-                    for (var row = 0; row < rows; row++)
-                    {
-                        var option = control.Options[row];
-                        var rowBounds = new LayoutRect(box.X + 1, box.Y + 1 + row * 20,
-                            Math.Max(0, box.Width - 2), Math.Min(20, Math.Max(0, box.Height - 2 - row * 20)));
-                        if (row == selectedOption) { Fill(rowBounds, new(176, 213, 249)); }
-                        Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8,
-                            option.Disabled ? gray : ink);
-                        targets.Add(new(rowBounds, ChromeAction.SelectListboxOption, tab?.Id, index, row));
-                    }
+                    DrawSelectListbox(control, index, box, selectedOption, gray);
                     continue;
                 }
                 var value = forms.Values[index];
@@ -413,25 +343,7 @@ public sealed class ShellChrome : IDisposable
             }
             if (forms.OpenSelect >= 0 && pageViewport is { } popupViewport
                 && (selectPopup = PopupLayout(page, forms.OpenSelect, popupViewport, forms.SelectPopupFirstOption)) is { } popup)
-            {
-                Fill(popup.Bounds, new(118, 118, 118));
-                Fill(new(popup.Bounds.X + 1, popup.Bounds.Y + 1,
-                    Math.Max(0, popup.Bounds.Width - 2), Math.Max(0, popup.Bounds.Height - 2)), white);
-                for (var row = 0; row < popup.VisibleOptions; row++)
-                {
-                    var optionIndex = popup.FirstOption + row;
-                    var option = page.FormControls[forms.OpenSelect].Options[optionIndex];
-                    var rowBounds = new LayoutRect(popup.Bounds.X + 1, popup.Bounds.Y + 1 + row * popup.RowHeight,
-                        Math.Max(0, popup.Bounds.Width - 2), popup.RowHeight);
-                    if (optionIndex == forms.SelectPopupHoverOption)
-                    { Fill(rowBounds, option.Disabled ? new(230, 230, 230) : new(205, 224, 245)); }
-                    else if (forms.SelectSets?[forms.OpenSelect].Contains(optionIndex) == true
-                        || optionIndex == forms.SelectIndices?[forms.OpenSelect])
-                    { Fill(rowBounds, new(176, 213, 249)); }
-                    Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8,
-                        option.Disabled ? new(118, 118, 118) : ink);
-                }
-            }
+            { DrawSelectPopup(popup); }
         }
         var chrome = CpuRasterizer.Render(new(width, height, commands), fonts, density, options: options);
         var pixels = chrome.Pixels.ToArray();
@@ -513,6 +425,91 @@ public sealed class ShellChrome : IDisposable
         return new(pixels, chrome.Size, chrome.Stride, targets.AsReadOnly());
 
         void Fill(LayoutRect rect, CssColor color) => commands.Add(new FillRectangle(rect, color));
+        void DrawRangeControl(PageFormControl control, int index, LayoutRect box, CssColor gray)
+        {
+            var inset = Math.Min(7, box.Width / 2);
+            var trackStart = box.X + inset;
+            var end = box.X + box.Width - inset;
+            var centerY = box.Y + box.Height / 2;
+            Fill(new(trackStart, centerY, Math.Max(1, end - trackStart), 2), gray);
+            var rangeValue = double.Parse(forms!.Values[index], System.Globalization.CultureInfo.InvariantCulture);
+            var range = control.Maximum!.Value - control.Minimum!.Value;
+            var fraction = range == 0 || !double.IsFinite(range) ? 0.5 : (rangeValue - control.Minimum.Value) / range;
+            if (!double.IsFinite(fraction)) { fraction = 0.5; }
+            var thumbWidth = Math.Min(12, box.Width);
+            var thumbHeight = Math.Min(16, box.Height);
+            var trackRange = Math.Max(0, end - trackStart);
+            var thumbX = Math.Clamp(trackStart + Math.Clamp(fraction, 0, 1) * trackRange,
+                box.X + thumbWidth / 2, box.X + box.Width - thumbWidth / 2);
+            var thumbColor = control.Disabled ? gray : index == forms.Focused
+                ? new CssColor(40, 90, 160) : new CssColor(80, 88, 98);
+            Fill(new(thumbX - thumbWidth / 2, centerY - thumbHeight / 2, thumbWidth, thumbHeight), thumbColor);
+        }
+        void DrawCheckControl(PageFormControl control, int index, LayoutRect box, CssColor gray)
+        {
+            var side = Math.Min(13, Math.Min(box.Width, box.Height));
+            var check = new LayoutRect(box.X + 3, box.Y + (box.Height - side) / 2, side, side);
+            if (control.Kind == "checkbox")
+            {
+                Fill(check, gray);
+                Fill(new(check.X + 1, check.Y + 1, Math.Max(0, side - 2), Math.Max(0, side - 2)), control.Disabled ? new(235, 235, 235) : white);
+                if (forms!.Checked?[index] == true)
+                {
+                    var mark = control.Disabled ? gray : ink;
+                    Fill(new(check.X + 2, check.Y + 6, 2, 2), mark); Fill(new(check.X + 4, check.Y + 8, 2, 2), mark);
+                    Fill(new(check.X + 6, check.Y + 6, 2, 2), mark); Fill(new(check.X + 8, check.Y + 4, 2, 2), mark);
+                    Fill(new(check.X + 10, check.Y + 2, 2, 2), mark);
+                }
+                return;
+            }
+            var center = side / 2;
+            var radius = Math.Max(1, center);
+            for (var row = -radius; row <= radius; row++)
+            {
+                var half = (int)Math.Floor(Math.Sqrt(Math.Max(0, radius * radius - row * row)));
+                Fill(new(check.X + center - half, check.Y + center + row, half * 2 + 1, 1), gray);
+            }
+            if (forms!.Checked?[index] == true)
+            {
+                var mark = control.Disabled ? gray : ink;
+                var dot = Math.Max(1, side / 4);
+                var dotOffset = center - dot / 2;
+                for (var row = 0; row < dot; row++) { Fill(new(check.X + dotOffset, check.Y + dotOffset + row, dot, 1), mark); }
+                return;
+            }
+            var inner = Math.Max(1, radius - 1);
+            for (var row = -inner; row <= inner; row++)
+            {
+                var half = (int)Math.Floor(Math.Sqrt(Math.Max(0, inner * inner - row * row)));
+                Fill(new(check.X + center - half, check.Y + center + row, half * 2 + 1, 1), control.Disabled ? new(235, 235, 235) : white);
+            }
+        }
+        void DrawSelectListbox(PageFormControl control, int index, LayoutRect box, int selectedOption, CssColor gray)
+        {
+            var rows = Math.Min(control.SelectRows, control.Options.Length);
+            for (var row = 0; row < rows; row++)
+            {
+                var option = control.Options[row];
+                var rowBounds = new LayoutRect(box.X + 1, box.Y + 1 + row * 20, Math.Max(0, box.Width - 2), Math.Min(20, Math.Max(0, box.Height - 2 - row * 20)));
+                if (row == selectedOption) { Fill(rowBounds, new(176, 213, 249)); }
+                Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8, option.Disabled ? gray : ink);
+                targets.Add(new(rowBounds, ChromeAction.SelectListboxOption, tab?.Id, index, row));
+            }
+        }
+        void DrawSelectPopup(SelectPopupLayout popup)
+        {
+            Fill(popup.Bounds, new(118, 118, 118));
+            Fill(new(popup.Bounds.X + 1, popup.Bounds.Y + 1, Math.Max(0, popup.Bounds.Width - 2), Math.Max(0, popup.Bounds.Height - 2)), white);
+            for (var row = 0; row < popup.VisibleOptions; row++)
+            {
+                var optionIndex = popup.FirstOption + row;
+                var option = page!.FormControls[forms!.OpenSelect].Options[optionIndex];
+                var rowBounds = new LayoutRect(popup.Bounds.X + 1, popup.Bounds.Y + 1 + row * popup.RowHeight, Math.Max(0, popup.Bounds.Width - 2), popup.RowHeight);
+                if (optionIndex == forms.SelectPopupHoverOption) { Fill(rowBounds, option.Disabled ? new(230, 230, 230) : new(205, 224, 245)); }
+                else if (forms.SelectSets?[forms.OpenSelect].Contains(optionIndex) == true || optionIndex == forms.SelectIndices?[forms.OpenSelect]) { Fill(rowBounds, new(176, 213, 249)); }
+                Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8, option.Disabled ? new(118, 118, 118) : ink);
+            }
+        }
         void FillSurface(LayoutRect rect, byte red, byte green, byte blue)
         {
             var left = Math.Clamp((int)Math.Floor(rect.X * density), 0, size.Width - 1);
