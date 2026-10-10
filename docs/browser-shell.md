@@ -277,8 +277,9 @@ Committed text performs a case-insensitive, 32-scalar-bounded prefix search; rep
 cycles through matching options, and the search prefix expires after one second. A primary click, Enter or Space
 opens a browser-owned popup with up to 12 visible rows; arrow/Home/End and Page Up/Down keys continue to select
 enabled options (page keys move by the visible row count and skip disabled options), wheel input scrolls longer
-option lists, clicking a disabled row leaves selection unchanged, and Escape or an outside click dismisses the popup.
-Listboxes, multiple selection and optgroups remain unsupported. Radios sharing a form and nonempty name are
+option lists, clicking a disabled row leaves the popup open without changing selection, and Escape or an outside click dismisses the popup.
+Optgroup labels are prefixed to their flattened options, and disabled groups disable their options.
+Listboxes and multiple selection remain unsupported. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
 within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded

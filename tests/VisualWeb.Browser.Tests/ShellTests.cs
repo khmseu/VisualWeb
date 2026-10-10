@@ -422,17 +422,21 @@ public sealed class ShellTests
         }
     }
 
-    [Fact]
-    public void SingleSelectPopupSkipsDisabledOptionsAndDismissesWithEscape()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SingleSelectPopupKeepsDisabledOptionsInertAndDismissesWithEscape(bool multiprocess)
     {
         using var system = new Windows();
-        using var shell = new DevelopmentShell(system, FontPath);
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
         var window = shell.OpenWindow();
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
             "<!doctype html><style>*{margin:0}</style><form><select name=mode>" +
             "<option value=one>One</option><option value=blocked disabled>Blocked</option>" +
+            "<optgroup label=Unavailable disabled><option value=group-blocked>Group blocked</option></optgroup>" +
             "<option value=three>Three</option></select></form>"));
         Wait();
         var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
@@ -444,13 +448,15 @@ public sealed class ShellTests
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 30)));
         Assert.Equal(0, shell.Controller.SelectedOptionIndex(tab.Id, 0));
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 50)));
-        Assert.Equal(2, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 70)));
+        Assert.Equal(3, shell.Controller.SelectedOptionIndex(tab.Id, 0));
 
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
             (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 4)));
         shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4), (float)(popupY + 10)));
-        Assert.Equal(2, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        Assert.Equal(3, shell.Controller.SelectedOptionIndex(tab.Id, 0));
 
         void Wait()
         {
