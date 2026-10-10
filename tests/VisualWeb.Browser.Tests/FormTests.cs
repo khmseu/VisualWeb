@@ -109,6 +109,15 @@ public sealed class FormTests
         Assert.Contains("textarea multiple", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task TextareaMinimumIsVisibleUnsupportedFormSemantics()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><textarea name=notes min=2></textarea></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Contains("textarea min", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
