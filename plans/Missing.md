@@ -115,10 +115,10 @@ broader page interaction is still missing:
   rejected. None bypass destination or origin restrictions; new-tab destination
   checks run before tab creation, with shared HSTS applied before downgrade checks.
   Visible text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
-  selection. Pointer clicks in single-line text fields place the caret at a
-  shell-font glyph boundary; page-font hit-testing and textarea pointer caret
-  placement remain absent. Editable text-like fields and textareas support Ctrl+A
-  select-all, edit replacement, and Ctrl+V clipboard paste. Single-select
+  selection. Pointer clicks in single-line text fields and textareas place the
+  caret at a shell-font glyph boundary; page-font hit-testing remains absent.
+  Editable text-like fields and textareas support Ctrl+A select-all, edit
+  replacement, and Ctrl+V clipboard paste. Single-select
   popup option selection is browser-owned, bounded to 12 displayed rows, and wheel-scrollable.
   Clipboard support remains bounded to selection copy and paste into focused
   editable text/search/email/tel/url/password/date/time/month/week/number/textarea

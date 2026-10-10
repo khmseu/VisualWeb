@@ -432,6 +432,41 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void PointerClickPlacesTextareaCaretOnClickedVisualLine(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}textarea{width:160px;height:40px}</style><textarea>first\nsecond</textarea>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        var textarea = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+
+        Click(textarea.X + 4, ShellChrome.Height + textarea.Y + 8);
+        Assert.Equal(0, shell.Controller.FormControlCaret(tab.Id));
+        shell.Dispatch(new TextEntered(system.Items[0].Id, "A"));
+        Assert.Equal("Afirst\nsecond", shell.Controller.FormControlValue(tab.Id, 0));
+
+        Click(textarea.X + 4, ShellChrome.Height + textarea.Y + 23);
+        Assert.Equal(7, shell.Controller.FormControlCaret(tab.Id));
+        shell.Dispatch(new TextEntered(system.Items[0].Id, "B"));
+        Assert.Equal("Afirst\nBsecond", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.Empty(shell.Controller.SelectedTextRects(tab.Id));
+
+        void Click(double x, double y) => shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, (float)x, (float)y));
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void SingleSelectPopupKeepsDisabledOptionsInertAndDismissesWithEscape(bool multiprocess)
     {
         using var system = new Windows();
@@ -790,7 +825,7 @@ public sealed class ShellTests
         Wait();
         var textarea = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
         shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
-            (float)(textarea.X + 8), (float)(ShellChrome.Height + textarea.Y + 8)));
+            (float)(textarea.X + textarea.Width - 4), (float)(ShellChrome.Height + textarea.Y + 8)));
 
         Assert.True(native.TextInput);
         Key(SDL.Scancode.Return);

@@ -650,11 +650,13 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
-        if (!EditingFormControl(id) || owner.FocusedControl != controlIndex || owner.Page!.FormControls[controlIndex].Kind == "textarea")
-        { throw new PageNavigationException("A focused single-line editable form control is required."); }
+        if (!EditingFormControl(id) || owner.FocusedControl != controlIndex)
+        { throw new PageNavigationException("A focused editable form control is required."); }
         var value = Value(owner, controlIndex);
         if ((uint)caret > (uint)value.Length) { throw new ArgumentOutOfRangeException(nameof(caret)); }
         Field(owner, controlIndex).SetCaret(caret);
+        if (owner.Page!.FormControls[controlIndex].Kind == "textarea")
+        { EnsureTextareaCaretVisible(owner, controlIndex, Field(owner, controlIndex)); }
         Changed?.Invoke(id);
     }
     public int TextareaFirstLine(TabId id, int index)

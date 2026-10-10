@@ -303,8 +303,9 @@ to 128 and 64. Author CSS may size the controls within the layout limits; author
 `display:none` still hides them. Textarea values are drawn by the shell overlay
 with soft wrapping measured using the shell font and the available control width.
 The visible line window follows the caret across explicit and wrapped lines;
-Up/Down and Home/End operate on those visual lines, and wheel input over a
-textarea scrolls its line window independently of the page. Form-control inline
+pointer clicks place the caret on the clicked measured visual line. Up/Down and
+Home/End operate on those visual lines, and wheel input over a textarea scrolls
+its line window independently of the page. Form-control inline
 boxes wrap atomically with text; nonzero control margins and general inline-block/
 replaced-element layout remain unsupported.
 

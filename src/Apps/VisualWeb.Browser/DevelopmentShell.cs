@@ -432,6 +432,25 @@ public sealed class DevelopmentShell : IDisposable
                                 Controller.SetFormControlCaret(pageTab.Id, focusedControl, targetCaret);
                             }
                             if (activated && focusedControl >= 0
+                                && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "textarea", Rect: { } textareaRect })
+                            {
+                                var textareaPage = Controller.Page(pageTab.Id)!;
+                                var textareaValues = Enumerable.Range(0, textareaPage.FormControls.Count)
+                                    .Select(index => Controller.FormControlValue(pageTab.Id, index)).ToArray();
+                                var lines = RefreshTextareaLayouts(pageTab.Id, textareaPage, textareaValues);
+                                var controlLines = lines[focusedControl];
+                                var value = Controller.FormControlValue(pageTab.Id, focusedControl);
+                                var visibleRows = Math.Max(1, (int)((textareaRect.Height - 8) / 15));
+                                var clickedRow = Math.Clamp((int)Math.Floor((pageY - textareaRect.Y - 4) / 15), 0, visibleRows - 1);
+                                var lineIndex = Math.Clamp(Controller.TextareaFirstLine(pageTab.Id, focusedControl) + clickedRow,
+                                    0, controlLines.Count - 1);
+                                var line = controlLines[lineIndex];
+                                var lineValue = value[line.Start..line.End];
+                                var lineCaret = chrome.CaretAtTextX(lineValue, -1,
+                                    pointer.X - textareaRect.X - 4, Math.Max(0, textareaRect.Width - 8));
+                                Controller.SetFormControlCaret(pageTab.Id, focusedControl, line.Start + lineCaret);
+                            }
+                            if (activated && focusedControl >= 0
                                 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
                             { view.DraggingRangeControl = focusedControl; }
                             if (activated && focusedControl >= 0
