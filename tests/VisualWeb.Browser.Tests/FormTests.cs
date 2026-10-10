@@ -341,6 +341,20 @@ public sealed class FormTests
         Assert.Contains("step", Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void DateInputUsesInitialValueAsStepBaseWithoutMinimum()
+    {
+        using var harness = new Harness("<form><input type=date name=day value=2024-01-01 step=2><button>Save</button></form>");
+        var controller = harness.Controller;
+        Assert.True(controller.FocusControl(harness.Tab.Id, 0));
+        controller.SelectAllFormControl(harness.Tab.Id);
+        controller.InsertFormText(harness.Tab.Id, "2024-01-02");
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+
+        Assert.Contains("step", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

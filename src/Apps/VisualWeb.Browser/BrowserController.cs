@@ -1040,7 +1040,8 @@ public sealed class BrowserController : IDisposable
                 if (control.Maximum is { } maximum && dateDayNumber > maximum)
                 { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
                 if (!control.StepAny && control.Step is { } dateStep
-                    && !FormNumber.IsStepAligned(dateDayNumber, control.Minimum ?? dateDayNumber, dateStep))
+                    && !FormNumber.IsStepAligned(dateDayNumber, control.Minimum
+                        ?? (FormDate.TryGetDayNumber(control.Value, out var initialValue) ? initialValue : 0), dateStep))
                 { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
             }
             if (control.Kind == "time" && value.Length > 0 && !FormTime.IsValid(value))
