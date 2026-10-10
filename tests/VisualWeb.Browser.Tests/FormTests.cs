@@ -64,6 +64,15 @@ public sealed class FormTests
         Assert.Equal(20, controls[5].Rect!.Y - controls[4].Rect!.Y);
     }
 
+    [Fact]
+    public async Task UnsupportedNonGetFormMethodIsVisible()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form method=put><input name=q></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Contains("method", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

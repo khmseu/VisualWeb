@@ -276,7 +276,7 @@ internal static class PageForms
     private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, BrowserUrl baseUrl)
     {
         var method = form.GetAttribute("method")?.ToLowerInvariant();
-        if (method is "post" or "dialog")
+        if (method is not (null or "" or "get"))
         { return ("", $"Unsupported form method: {method} (only GET submission is implemented)."); }
         if (form.GetAttribute("enctype") is { } enctype && !enctype.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
             && (enctype.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase) || enctype.Equals("text/plain", StringComparison.OrdinalIgnoreCase)))
