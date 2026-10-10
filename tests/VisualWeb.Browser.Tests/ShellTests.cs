@@ -1,5 +1,6 @@
 using System.Net;
 using SDL3;
+using VisualWeb.Ipc.Contracts;
 using VisualWeb.Platform.Abstractions;
 using Xunit;
 
@@ -1113,6 +1114,52 @@ public sealed class ShellTests
             do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
             Assert.False(tab.IsLoading);
             Assert.True(tab.Error is null, tab.Error);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShiftClickExtendsCoarseSelectionInsteadOfActivatingLink(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><p>first</p>" +
+            "<p><a href='#destination'>second</a></p><p id=destination>done</p>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        var first = page.TextTargets[0].Rect;
+        var second = Assert.Single(page.LinkTargets).Rects[0];
+        Click(first);
+        Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
+
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.A, 0,
+            (ushort)SDL.Keymod.Shift, true, false));
+        Click(second);
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.A, 0, 0, false, false));
+
+        Assert.Equal("first\nsecond", shell.Controller.SelectedText(tab.Id));
+        Assert.Single(tab.History.Entries);
+        Assert.Null(tab.Error);
+
+        void Click(PageLinkRect rect)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        }
+
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
         }
     }
 

@@ -224,6 +224,27 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
+    /// <summary>Extends the existing coarse selection to the visible text fragment under a Shift-click.</summary>
+    public bool ExtendSelectedText(TabId id, double x, double y, PageViewport? displayedViewport = null)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return false; }
+        if (!double.IsFinite(x) || !double.IsFinite(y))
+        { throw new PageNavigationException("Text selection coordinates must be finite."); }
+        if (owner.Page is null || owner.Viewport is not { } viewport || !MatchesViewport(owner, displayedViewport)
+            || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height) { return false; }
+        var index = HitText(owner.Page, x, y);
+        if (index < 0) { return false; }
+        if (index == owner.TextSelectionEnd) { return true; }
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.TextSelectionEnd = index;
+        owner.SelectingText = false;
+        Changed?.Invoke(id);
+        return true;
+    }
     public bool SelectAllVisibleText(TabId id)
     {
         Check();

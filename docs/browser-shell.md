@@ -97,6 +97,7 @@ The native window title retains the same warning alongside the active page title
 | Space on a focused inert button | No action; inert buttons never submit or navigate |
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
+| Shift+primary click with an existing selection | Extend the coarse fragment selection to the clicked text, including link text without activating the link |
 | Ctrl+A with page focus outside editable controls | Select all currently visible shaped text fragments |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
 | Escape with page text selected | Clear the browser-owned selection without changing the clipboard |
@@ -112,8 +113,10 @@ moving. Text input activation uses SDL committed text. Page selection is limited
 to whole visible shaped fragments (not character offsets). A primary click on a link
 navigates on release only if the pointer remains over the same anchor; dragging
 at least four logical pixels from link text selects fragments instead. Drags beginning in ordinary text can also include anchor fragments.
-Selection is cleared on successful document, scroll or resize publications,
-and on page clicks before a new interaction begins.
+Shift+primary click extends an existing selection to a visible text fragment,
+including text inside a link without navigating. Selection is cleared on successful
+document, scroll or resize publications and on other page clicks before a new
+interaction begins.
 Ctrl+C copies selected fragment text. Text/search fields support Ctrl+A
 select-all and Ctrl+V paste; address editing supports Ctrl+V over its existing
 Ctrl+L selection. IME preedit and richer accessibility remain deferred.

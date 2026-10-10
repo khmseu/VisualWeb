@@ -35,6 +35,7 @@ public sealed class DevelopmentShell : IDisposable
         internal bool Editing { get; set; }
         internal bool TextInput { get; set; }
         internal bool ControlModifier { get; set; }
+        internal bool ShiftModifier { get; set; }
         internal bool SelectingText { get; set; }
         internal bool PendingLinkActivation { get; set; }
         internal bool PendingLinkDragged { get; set; }
@@ -241,6 +242,7 @@ public sealed class DevelopmentShell : IDisposable
                 case WindowResized or WindowExposed or WindowScaleChanged: view.Dirty = true; break;
                 case FocusChanged { Focused: false }:
                     view.ControlModifier = false;
+                    view.ShiftModifier = false;
                     view.PendingLinkActivation = false;
                     view.PendingLinkDragged = false;
                     view.PendingLinkIndex = -1;
@@ -384,9 +386,13 @@ public sealed class DevelopmentShell : IDisposable
                             && pointer.Y < ShellChrome.Height + pageViewport.Height)
                         {
                             Controller.FocusPage(pageTab.Id);
-                            Controller.ClearSelectedText(pageTab.Id);
                             var pageY = pointer.Y - ShellChrome.Height;
                             var page = Controller.Page(pageTab.Id);
+                            var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true) == true;
+                            if (view.ShiftModifier && !overControl
+                                && Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport))
+                            { break; }
+                            Controller.ClearSelectedText(pageTab.Id);
                             var linkIndex = -1;
                             if (page is not null)
                             {
@@ -462,6 +468,7 @@ public sealed class DevelopmentShell : IDisposable
                     break;
                 case KeyChanged key:
                     view.ControlModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Ctrl) != 0;
+                    view.ShiftModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Shift) != 0;
                     if (key.Pressed) { Key(window, view, key); }
                     break;
                 case TextEntered text when view.Editing && window.ActiveTab is { } tab:

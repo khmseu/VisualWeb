@@ -131,7 +131,10 @@ broader page interaction is still missing:
   level (not character-level); primary clicks on anchors navigate on release,
   while a drag beginning over a visible link selects coarse text fragments
   instead of activating it. Drags beginning in ordinary text can include anchor
-  fragments. Selection resets on successful document/scroll/resize publication and on page clicks before new control/link interaction.
+  fragments. Shift+primary click extends an existing coarse selection to a visible
+  text fragment, including link text without navigating. Selection resets on
+  successful document/scroll/resize publication and on page clicks before new
+  control/link interaction.
   Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
   Page Up/Down and Home/End outside editable fields, retaining DOM/scripts across
   local/process repaints.
