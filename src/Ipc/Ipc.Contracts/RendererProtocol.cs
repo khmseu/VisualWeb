@@ -42,8 +42,9 @@ public sealed record PageLinkTarget(
 }
 
 
-/// <summary>Bounded rendered element identifier and its document-space top offset for fragment navigation.</summary>
-/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-fragid">navigate to a fragment</see>.</remarks>
+/// <summary>Bounded rendered element ID or legacy anchor name and its document-space top offset for fragment navigation.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-fragid">navigate to a fragment</see> and
+/// <see href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#attr-a-name">the a element name attribute</see>.</remarks>
 public sealed record PageFragmentTarget(
     [property: JsonRequired] string Id,
     [property: JsonRequired] double Y);

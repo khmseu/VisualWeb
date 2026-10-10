@@ -219,6 +219,47 @@ public sealed class LinkTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FragmentNavigationScrollsToRenderedLegacyNamedAnchors(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source,
+            () => process ? new ProcessPageRenderer(RendererPath, FontPath) : new StaticPageRenderer(FontPath, 100000));
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        var viewport = new PageViewport(120, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/page");
+        source.Requests[0].Completion.SetResult(new(BrowserUrl.Parse("https://example.com/page"), """
+            <!doctype html><style>*{margin:0}div{height:80px}</style>
+            <a href="#legacy">jump</a><div></div><a name="legacy">Legacy section</a>
+            """, 200, []));
+        PumpUntilComplete();
+        var page = controller.Page(tab.Id)!;
+        var target = Assert.Single(page.FragmentTargets, item => item.Id == "legacy");
+        Assert.True(target.Y > 0);
+        var link = Assert.Single(page.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + link.Width / 2, link.Y + link.Height / 2, viewport));
+
+        Assert.Equal("https://example.com/page#legacy", tab.History.Current!.Href);
+        Assert.Equal(Math.Min(target.Y, page.ScrollHeight - viewport.Height), controller.ScrollY(tab.Id));
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
     [Fact]
     public void OpaqueDocumentCanNavigateToItsOwnFragment()
     {

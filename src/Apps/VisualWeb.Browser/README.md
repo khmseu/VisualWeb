@@ -11,7 +11,7 @@ traversal visits chrome before visible anchors;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
 The `_blank` target keyword opens an active tab in the source window. Same-document
 fragment links and their Back/Forward traversal update URL-only history and scroll
-to bounded rendered element IDs without a new load; named targets
+to bounded rendered element IDs or text-bearing legacy `<a name>` anchors without a new load; named browsing contexts
 and DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/password/date/time/month/week/number fields (password values are masked in browser chrome), checkboxes, radio groups,
 single-select controls with bounded options and flattened optgroup labels, Up/Down/Home/End selection, and
 click/Enter/Space popup activation, and multiline textareas with Tab focus,

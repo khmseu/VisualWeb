@@ -256,25 +256,36 @@ public sealed class StaticPageRenderer : IPageRenderer
         CancellationToken cancellationToken)
     {
         var targets = new List<PageFragmentTarget>();
+        var namedTargets = new List<PageFragmentTarget>();
         var elements = new HashSet<DomElement>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
+        var names = new HashSet<string>(StringComparer.Ordinal);
         long bytes = 0;
         if (layout.Root is { } root) { Visit(root); }
+        targets.AddRange(namedTargets.Where(target => !ids.Contains(target.Id)));
         try { RendererProtocol.ValidateFragmentTargets(targets, scrollHeight); }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
         return targets.AsReadOnly();
 
         void Register(DomElement element, double y)
         {
-            if (!elements.Add(element) || element.GetAttribute("id") is not { } id || !ids.Add(id)) { return; }
-            if (targets.Count >= RendererProtocol.MaxFragmentTargets)
+            if (!elements.Add(element)) { return; }
+            AddTarget(element.GetAttribute("id"), ids, targets, y, allowEmpty: true);
+            if (element.LocalName == "a")
+            { AddTarget(element.GetAttribute("name"), names, namedTargets, y, allowEmpty: false); }
+        }
+
+        void AddTarget(string? id, HashSet<string> seen, List<PageFragmentTarget> destination, double y, bool allowEmpty)
+        {
+            if (id is null || !allowEmpty && id.Length == 0 || !seen.Add(id)) { return; }
+            if (targets.Count + namedTargets.Count >= RendererProtocol.MaxFragmentTargets)
             { throw new PageNavigationException("Renderer fragment target count limit exceeded."); }
             if (id.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("Renderer fragment target ID limit exceeded."); }
             bytes += System.Text.Encoding.UTF8.GetByteCount(id);
             if (bytes > RendererProtocol.MaxFragmentMetadataBytes)
             { throw new PageNavigationException("Renderer fragment target metadata byte limit exceeded."); }
-            targets.Add(new(id, Math.Clamp(y, 0, scrollHeight)));
+            destination.Add(new(id, Math.Clamp(y, 0, scrollHeight)));
         }
 
         void Visit(LayoutBox box)

@@ -129,8 +129,9 @@ traversal wraps among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab retain tab switch
 and editing, navigation and scrolling shortcuts retain their existing meanings.
 
 Page keyboard ownership and selected anchor are per-tab and survive switching
-or moving tabs. Clicking chrome gives it keyboard ownership; clicking a page link
-still navigates immediately. A subtle shell-owned blue-gray border outlines **all**
+or moving tabs. Clicking chrome gives it keyboard ownership; a primary link click
+navigates on pointer release, while visible link hover gets a separate browser-owned
+outline. A subtle shell-owned blue-gray border outlines **all**
 visible rectangles of the selected anchor, including wrapped/nested text; one
 anchor is one stop even if it has many fragments, while identical URLs on different
 anchors remain separate stops. Without page focus or an active text selection,
@@ -209,9 +210,11 @@ metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
 Relative and fragment URL components are preserved. Same-document fragment
 links update the URL-only history entry and scroll the retained document to a
-rendered element with the matching decoded `id`; an empty fragment scrolls to the
-top. This does not fetch, reparse or rerun scripts. Unrendered/unknown IDs and
-legacy named anchors do not scroll. Back/Forward between fragment entries for the
+rendered element with the matching decoded `id`, or to rendered text inside an
+`a[name]` legacy anchor when no ID matches; an empty fragment scrolls to the top.
+ID matches take precedence over named anchors. This does not fetch, reparse or
+rerun scripts. Unknown IDs and empty/unrendered named anchors do not scroll.
+Back/Forward between fragment entries for the
 retained document updates the URL and restores fragment scrolling without a load;
 cross-document traversal still reloads.
 The hyperlink `target="_blank"` keyword opens a new active tab in the source

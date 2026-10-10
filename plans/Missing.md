@@ -47,8 +47,8 @@ broader page interaction is still missing:
   rectangles each, 1 MiB metadata), plus bounded fragment-ID offsets for
   same-document scrolling, without element IDs/DOM/native handles. Fragment
   links update URL-only history and repaint the retained document without a
-  resource load; only rendered element IDs and empty-fragment top scrolling are
-  supported. `_blank` opens an active tab in the source window through the
+  resource load; rendered element IDs, text-bearing legacy `<a name>` targets,
+  and empty-fragment top scrolling are supported. `_blank` opens an active tab in the source window through the
   existing broker policy; `_self`, `_parent`, and `_top` use the current tab,
   and the first `<base target>` supplies fallback for links. Named browsing
   contexts remain unsupported and fail visibly. Hyperlink URLs resolve against
