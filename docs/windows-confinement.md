@@ -77,7 +77,8 @@ dotnet run --project src/Apps/VisualWeb.Browser -- \
 
 The browser suite exercises confined worker launch, native Job Object memory
 pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
-on Windows. `WindowsSandboxSmoke` probes actual host-file/environment,
+on Windows. The native Windows x64/arm64 workflow runs the full solution test
+suite. `WindowsSandboxSmoke` probes actual host-file/environment,
 process-creation, loopback-network and storage-write denials. The native platform
 smoke separately validates actual SDL windows, events, pixels, fonts and
 lifecycle. On native Windows x64 and arm64 runners, the Windows confinement
