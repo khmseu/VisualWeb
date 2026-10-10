@@ -110,8 +110,8 @@ Browser windows and tab IDs are distinct; tab identity/history/content survives
 moving. Text input activation uses SDL committed text. Page selection is limited
 to whole visible shaped fragments (not character offsets). A primary press beginning
 on an anchor still activates it immediately; a drag that begins in ordinary text
-can include anchor fragments. Selection is cleared on successful document, scroll
-or resize publications.
+can include anchor fragments. Selection is cleared on successful document, scroll or resize publications,
+and on page clicks before a new interaction begins.
 Ctrl+C copies selected fragment text. Text/search fields support Ctrl+A
 select-all and Ctrl+V paste; address editing supports Ctrl+V over its existing
 Ctrl+L selection. IME preedit and richer accessibility remain deferred.

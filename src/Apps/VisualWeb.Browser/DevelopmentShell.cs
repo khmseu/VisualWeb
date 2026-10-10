@@ -288,6 +288,7 @@ public sealed class DevelopmentShell : IDisposable
                         && middle.Y < ShellChrome.Height + linkViewport.Height)
                     {
                         Controller.FocusPage(linkTab.Id);
+                        Controller.ClearSelectedText(linkTab.Id);
                         Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height,
                             linkViewport, forceNewTab: true);
                     }
@@ -309,6 +310,7 @@ public sealed class DevelopmentShell : IDisposable
                             && pointer.Y < ShellChrome.Height + modifiedLinkViewport.Height)
                         {
                             Controller.FocusPage(modifiedLinkTab.Id);
+                            Controller.ClearSelectedText(modifiedLinkTab.Id);
                             Controller.ActivateLink(modifiedLinkTab.Id, pointer.X, pointer.Y - ShellChrome.Height,
                                 modifiedLinkViewport, forceNewTab: true, activateNewTab: false);
                         }
@@ -343,6 +345,7 @@ public sealed class DevelopmentShell : IDisposable
                             && pointer.Y < ShellChrome.Height + pageViewport.Height)
                         {
                             Controller.FocusPage(pageTab.Id);
+                            Controller.ClearSelectedText(pageTab.Id);
                             var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pointer.Y - ShellChrome.Height, pageViewport);
                             var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
                             if (activated && focusedControl >= 0

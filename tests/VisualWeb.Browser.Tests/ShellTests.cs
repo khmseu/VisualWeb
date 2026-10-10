@@ -940,7 +940,8 @@ public sealed class ShellTests
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
-            "<!doctype html><style>body{margin:0} p{margin:0}</style><p>Hello world!</p><div style='height:1000px'></div>"));
+            "<!doctype html><style>body{margin:0} p{margin:0} input{display:block;height:20px}</style>"
+            + "<input type=checkbox><p>Hello world!</p><div style='height:1000px'></div>"));
         Wait();
         var page = shell.Controller.Page(tab.Id)!;
         Assert.Equal("Hello world!", string.Concat(page.TextTargets.Select(target => target.Text)));
@@ -968,6 +969,12 @@ public sealed class ShellTests
         Assert.Equal("Hello world!", shell.Controller.SelectedText(tab.Id));
         shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.C, 0, (ushort)SDL.Keymod.Ctrl, true, false));
         Assert.Equal("Hello world!", native.ClipboardText);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.LCtrl, 0, 0, false, false));
+        var checkbox = Assert.Single(shell.Controller.Page(tab.Id)!.FormControls);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(checkbox.Rect!.X + 2),
+            (float)(ShellChrome.Height + checkbox.Rect.Y + checkbox.Rect.Height / 2)));
+        Assert.Equal("", shell.Controller.SelectedText(tab.Id));
+        Assert.True(shell.Controller.FormControlChecked(tab.Id, 0));
         shell.Controller.Scroll(tab.Id, 20);
         var scrollDeadline = DateTime.UtcNow.AddSeconds(30);
         while (shell.Controller.SelectedText(tab.Id).Length > 0 && DateTime.UtcNow < scrollDeadline)

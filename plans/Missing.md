@@ -125,7 +125,7 @@ broader page interaction is still missing:
   Selection is fragment-
   level (not character-level); a primary press beginning on an anchor retains
   immediate navigation, while a drag begun in ordinary text can include anchor
-  fragments. Selection resets on successful document/scroll/resize publication.
+  fragments. Selection resets on successful document/scroll/resize publication and on page clicks before new control/link interaction.
   Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
   Page Up/Down and Home/End outside editable fields, retaining DOM/scripts across
   local/process repaints.
