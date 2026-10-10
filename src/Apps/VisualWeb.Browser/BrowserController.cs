@@ -467,6 +467,19 @@ public sealed class BrowserController : IDisposable
         return SelectedOption(owner, index);
     }
 
+    /// <summary>Gets browser-owned enabled select options in document order.</summary>
+    public IReadOnlyList<int> SelectedOptionIndices(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index] is not { Kind: "select" } control)
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        if (control.Multiple) { return SelectedOptions(owner, index).Order().ToArray(); }
+        var selected = SelectedOption(owner, index);
+        return selected >= 0 && !control.Options[selected].Disabled ? [selected] : [];
+    }
+
     /// <summary>Sets a single-select option from browser-owned popup interaction.</summary>
     public bool SelectOptionFromPointer(TabId id, int controlIndex, int optionIndex)
     {

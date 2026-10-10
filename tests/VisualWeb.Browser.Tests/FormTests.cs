@@ -1374,6 +1374,19 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void MultipleSelectExposesEnabledSelectionsInOptionOrder()
+    {
+        using var harness = new Harness("<form><select multiple name=mode><option value=fast selected>Fast</option><option value=blocked selected disabled>Blocked</option><option value=slow>Slow</option></select></form>");
+        var tab = harness.Tab.Id;
+
+        Assert.Equal([0], harness.Controller.SelectedOptionIndices(tab, 0));
+        Assert.True(harness.Controller.FocusControl(tab, 0));
+        Assert.True(harness.Controller.SelectOptionFromPointer(tab, 0, 2));
+
+        Assert.Equal([0, 2], harness.Controller.SelectedOptionIndices(tab, 0));
+    }
+
+    [Fact]
     public void ResetRestoresMultipleSelectInitialOptions()
     {
         using var harness = new Harness("<form><select multiple name=mode><option value=fast selected>Fast</option><option value=slow>Slow</option></select><button type=reset>Reset</button><button>Go</button></form>");
