@@ -134,6 +134,43 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void MultipleSelectPopupAllowsConsecutivePointerToggles()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}select{display:block;height:20px}</style>"
+            + "<form><select multiple><option>Fast</option><option>Slow</option></select></form>"));
+        Wait(shell, tab);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        var control = Assert.Single(page.FormControls);
+        var viewport = ShellChrome.Viewport(native.PixelSize, native.Density)!.Value;
+        var popup = ShellChrome.PopupLayout(page, 0, viewport, 0)!;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(control.Rect!.X + 1), (float)(ShellChrome.Height + control.Rect.Y + 1)));
+        shell.Tick();
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(popup.Bounds.X + 1), (float)(popup.Bounds.Y + popup.RowHeight / 2)));
+        shell.Tick();
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(popup.Bounds.X + 1), (float)(popup.Bounds.Y + popup.RowHeight * 1.5)));
+
+        Assert.Equal([0, 1], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+
+        static void Wait(DevelopmentShell shell, BrowserTab tab)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void EnterActivatesFocusedResetAndRestoresShellOwnedFormState()
     {
         using var system = new Windows();

@@ -363,7 +363,10 @@ public sealed class DevelopmentShell : IDisposable
                         if (window.ActiveTabId is { } optionTab && view.OpenSelectControl == target.ControlIndex
                             && target.Tab == optionTab && ReferenceEquals(view.SelectPopupPage, Controller.Page(optionTab))
                             && Controller.SelectOptionFromPointer(optionTab, target.ControlIndex, target.OptionIndex))
-                        { CloseSelectPopup(view); }
+                        {
+                            if (Controller.Page(optionTab)!.FormControls[target.ControlIndex].Multiple) { view.Dirty = true; }
+                            else { CloseSelectPopup(view); }
+                        }
                         break;
                     }
                     var dismissingSelect = view.OpenSelectControl >= 0;
