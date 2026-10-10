@@ -1,4 +1,5 @@
 using System.Net;
+using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Net;
 using VisualWeb.Ipc.Contracts;
@@ -178,7 +179,7 @@ public sealed class FormTests
         Assert.Equal("slow", control.Value);
         Assert.Equal(1, control.SelectRows);
         Assert.NotNull(control.Rect);
-        Assert.Equal(160, control.Rect!.Width);
+        Assert.Equal(160, control.Rect.Width);
         Assert.Equal(20, control.Rect.Height);
         Assert.Equal([new PageFormOption("fast", "Fast mode", false, false),
             new PageFormOption("slow", "Slow choice", false, true)], control.Options);
@@ -1310,6 +1311,7 @@ public sealed class FormTests
             Assert.Null(tab.Error);
         }
         internal void Pump() => Controller.Pump(_ => Viewport);
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "The using declaration dispatches this test harness through IDisposable.")]
         public void Dispose() => Controller.Dispose();
     }
 
@@ -1317,13 +1319,18 @@ public sealed class FormTests
     {
         internal int LoadCount { get; private set; }
 
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "BrowserController invokes this fixture through IPageSource during navigation tests.")]
+        [SuppressMessage("Sonar", "S1172:Unused method parameters should be removed", Justification = "IPageSource requires a cancellation token; this deterministic fixture completes synchronously.")]
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
         {
             LoadCount++;
             return Task.FromResult(Document(html, url.Href));
         }
 
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "BrowserController disposes page sources through the IPageSource contract.")]
+    #pragma warning disable S1186 // This in-memory fixture owns no resources; IPageSource requires an empty disposal hook.
         public void Dispose() { }
+    #pragma warning restore S1186
     }
 
     private const string SearchForm = """
@@ -3022,6 +3029,7 @@ public sealed class FormTests
 
     private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "HttpClient invokes this response fixture through the HttpMessageHandler override.")]
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(respond(request));
     }

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Diagnostics.CodeAnalysis;
 using SDL3;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Platform.Abstractions;
@@ -1999,6 +2000,8 @@ public sealed class ShellTests
 
     private sealed class HstsHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "HttpClient dispatches this response fixture through the HttpMessageHandler override.")]
+        [SuppressMessage("Sonar", "S1172:Unused method parameters should be removed", Justification = "HttpMessageHandler requires a cancellation token; this deterministic fixture completes synchronously.")]
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(respond(request));
     }
@@ -2395,7 +2398,9 @@ public sealed class ShellTests
     {
         internal List<Window> Items { get; } = [];
         internal Queue<WindowEvent> Events { get; } = [];
+        [SuppressMessage("Sonar", "S2325:Methods and properties that don't access instance data should be static", Justification = "IWindowSystem requires an instance backend identifier.")]
         public string Backend => "fake";
+        [SuppressMessage("Sonar", "S1186:Methods should not be empty", Justification = "The IWindowSystem contract requires a quit subscription point; this fixture drives only explicit window events.")]
         event Action? IWindowSystem.QuitRequested
         {
             add { }
@@ -2419,9 +2424,11 @@ public sealed class ShellTests
         internal float Density { get; set; } = 1;
         public PixelSize LogicalSize => new((int)(Size.Width / Density), (int)(Size.Height / Density));
         public PixelSize PixelSize => Size;
+        [SuppressMessage("Sonar", "S2325:Methods and properties that don't access instance data should be static", Justification = "IPlatformWindow requires an instance display-scale property.")]
         public float DisplayScale => 1;
         public float PixelDensity => Density;
         public IPixelSurface Surface => this;
+        [SuppressMessage("Sonar", "S3264:Events should not have empty accessors", Justification = "IPlatformWindow requires this event; Dispatch invokes subscribed handlers for the fixture's queued platform events.")]
         public event Action<WindowEvent>? EventReceived;
         internal bool TextInput { get; private set; }
         internal bool Disposed { get; private set; }

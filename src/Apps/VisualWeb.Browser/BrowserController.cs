@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Core.Encoding;
 using VisualWeb.Core.Url;
 using VisualWeb.Ipc.Contracts;
@@ -1093,6 +1094,7 @@ public sealed class BrowserController : IDisposable
                 return selected >= 0 && !control.Options[selected].Disabled;
             }, i => SelectedOptions(owner, i).Order().Select(option => page.FormControls[i].Options[option].Value)), limit);
 
+    [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit control-kind literals keep each supported form constraint adjacent to its browser-owned validation behavior.")]
     private static void ValidateFormControl(Content owner, int index, PageFormControl control, string value)
     {
         var isChecked = owner.CheckedStates.GetValueOrDefault(index, control.Checked);
@@ -1423,6 +1425,7 @@ public sealed class BrowserController : IDisposable
             Advance(operation, () => viewport(operation.Tab));
         }
     }
+    [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This bounded navigation state machine keeps cancellation, candidate renderer ownership, render publication, and history commit transactional in one audited sequence.")]
     private void Advance(Operation operation, Func<PageViewport?> viewport)
     {
         var current = Session.Contains(operation.Tab) && Session.Tab(operation.Tab).Generation == operation.Generation;

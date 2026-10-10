@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Ipc.Contracts;
@@ -20,6 +21,8 @@ internal static class PageForms
     private static readonly string[] SubmitterOverrides = ["formenctype", "formmethod"];
     private static readonly string[] TextOnlyAttributes = ["dirname", "list"];
 
+    [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the bounded form-subset collector; its ordered checks preserve visible unsupported-semantics diagnostics and shared quotas.")]
+    [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form-control and attribute literals document the supported subset at the collection boundary.")]
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
         BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry, int linkCount,
         double width, double height, CancellationToken cancellationToken)
@@ -217,6 +220,8 @@ internal static class PageForms
         return (options, selectedOption, multiple, selectRows);
     }
 
+    [SuppressMessage("Sonar", "S107:Methods should not have too many parameters", Justification = "This private construction boundary transfers the fully validated, context-coupled form metadata without introducing mutable intermediate state.")]
+    [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form-control literals mirror the bounded metadata contract assembled by this method.")]
     private static PageFormControl CreateControl(DomElement element, int formIndex, string kind, string name,
         string value, string label, string? pattern, bool text, int minLength, int beforeLink, PageLinkRect? rect,
         double? minimum, double? maximum, double? step, bool stepAny, PageFormOption[] options, string placeholder,
@@ -243,6 +248,7 @@ internal static class PageForms
             SelectRows = selectRows
         };
 
+    [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit control and attribute literals make unsupported form semantics visible at their local validation point.")]
     private static void RejectUnsupportedAttributes(DomElement element, string kind, int formIndex,
         Action<int, string> reject)
     {
@@ -274,6 +280,7 @@ internal static class PageForms
         { if (element.GetAttribute(attribute) is not null) { reject(formIndex, $"color {attribute}"); } }
     }
 
+    [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit numeric-control literals define the finite supported constraint subset at this validation boundary.")]
     private static (double? Minimum, double? Maximum, double? Step, bool StepAny, string? Value) NumericConstraints(
         DomElement element, string kind, string? value, int formIndex, Action<int, string> reject)
     {

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -475,6 +476,7 @@ public static class RendererProtocol
     /// <summary>Budget for the UTF-8 JSON serialization of the whole linked stylesheet collection.</summary>
     public const int MaxStylesheetBytes = 1024 * 1024;
 
+    [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the versioned untrusted-message boundary; ordered kind scoping and payload checks form one auditable finite protocol state machine.")]
     public static void Validate(RendererMessage message, int payloadLength)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -596,6 +598,8 @@ public static class RendererProtocol
     }
 
     /// <summary>Checks form/control counts, owner indexes, kinds, string limits, action URLs, geometry and the JSON budget.</summary>
+    [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the bounded untrusted form-metadata validator; consolidating its ordered invariants preserves a single auditable protocol boundary.")]
+    [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form and attribute kind literals define the finite wire contract and remain local to its validator.")]
     public static void ValidateForms(IReadOnlyList<PageForm>? forms, IReadOnlyList<PageFormControl>? controls,
         int linkCount, double width, double height)
     {

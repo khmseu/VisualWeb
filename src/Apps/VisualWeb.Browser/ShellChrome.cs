@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Paint;
@@ -196,6 +197,8 @@ public sealed class ShellChrome : IDisposable
             }
         }
     }
+    [SuppressMessage("Sonar", "S107:Methods should not have too many parameters", Justification = "The renderer composes the complete explicit shell and page snapshot without retaining mutable cross-tab presentation state.")]
+    [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This bounded composition method must keep chrome, form overlays, selection, scrolling, and pixel ownership in one ordered render pass.")]
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
         IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0, int hoveredLink = -1)

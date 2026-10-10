@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using SDL3;
 using VisualWeb.Platform.Abstractions;
 
@@ -84,6 +85,7 @@ public sealed class DevelopmentShell : IDisposable
     /// <remarks>Spec: rfc6797; <see href="https://www.rfc-editor.org/rfc/rfc6797.html#section-8">UA processing</see>.
     /// An optional transport factory returns a fresh owned handler per tab, subject to ResourceLoader's trusted
     /// handler contract (including certificate authentication). Cookies remain off; independent shells share no policy state.</remarks>
+    [SuppressMessage("Sonar", "S107:Methods should not have too many parameters", Justification = "This composition-root constructor binds the shell's explicit platform, rendering, confinement, and trusted transport dependencies.")]
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
         bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false,
         bool executeInlineScripts = false, Func<HttpMessageHandler>? pageTransportFactory = null)
@@ -560,6 +562,7 @@ public sealed class DevelopmentShell : IDisposable
         }
         return value.Length;
     }
+    [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This bounded input state machine preserves mutually exclusive address, form, popup, selection, and page keyboard ownership.")]
     private void Key(BrowserWindow window, View view, KeyChanged key)
     {
         var modifiers = (SDL.Keymod)key.Modifiers;

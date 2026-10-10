@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -943,6 +944,7 @@ public sealed class ProtocolTests
     }
     private sealed class Chunks(byte[] bytes) : MemoryStream(bytes)
     {
+        [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "RendererChannel invokes this stream override to verify fragmented protocol reads.")]
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
             base.ReadAsync(buffer[..Math.Min(buffer.Length, 1)], cancellationToken);
     }
