@@ -153,15 +153,15 @@ FontSet registration and caller-owned font counts remain caller resource policy.
 
 LayoutOptions defaults:
 
-| Limit | Default |
-| --- | ---: |
-| Nesting, including gathered text nodes | 128 |
-| Generated block boxes | 100,000 |
-| Visited visible nodes | 1,000,000 |
-| Generated lines | 100,000 |
+| Limit                                            |   Default |
+| ------------------------------------------------ | --------: |
+| Nesting, including gathered text nodes           |       128 |
+| Generated block boxes                            |   100,000 |
+| Visited visible nodes                            | 1,000,000 |
+| Generated lines                                  |   100,000 |
 | Input text characters across gathered text nodes | 1,000,000 |
-| Glyphs returned across all shaping calls | 1,000,000 |
-| Shaping calls, including spaces/struts | 100,000 |
+| Glyphs returned across all shaping calls         | 1,000,000 |
+| Shaping calls, including spaces/struts           |   100,000 |
 
 All limits are positive/configurable, tested at boundaries and throw typed
 limit exceptions. Nonfinite computed geometry also fails explicitly.

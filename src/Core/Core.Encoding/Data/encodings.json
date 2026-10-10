@@ -18,12 +18,7 @@
   {
     "encodings": [
       {
-        "labels": [
-          "866",
-          "cp866",
-          "csibm866",
-          "ibm866"
-        ],
+        "labels": ["866", "cp866", "csibm866", "ibm866"],
         "name": "IBM866"
       },
       {
@@ -134,11 +129,7 @@
         "name": "ISO-8859-8"
       },
       {
-        "labels": [
-          "csiso88598i",
-          "iso-8859-8-i",
-          "logical"
-        ],
+        "labels": ["csiso88598i", "iso-8859-8-i", "logical"],
         "name": "ISO-8859-8-I"
       },
       {
@@ -154,19 +145,11 @@
         "name": "ISO-8859-10"
       },
       {
-        "labels": [
-          "iso-8859-13",
-          "iso8859-13",
-          "iso885913"
-        ],
+        "labels": ["iso-8859-13", "iso8859-13", "iso885913"],
         "name": "ISO-8859-13"
       },
       {
-        "labels": [
-          "iso-8859-14",
-          "iso8859-14",
-          "iso885914"
-        ],
+        "labels": ["iso-8859-14", "iso8859-14", "iso885914"],
         "name": "ISO-8859-14"
       },
       {
@@ -181,35 +164,19 @@
         "name": "ISO-8859-15"
       },
       {
-        "labels": [
-          "iso-8859-16"
-        ],
+        "labels": ["iso-8859-16"],
         "name": "ISO-8859-16"
       },
       {
-        "labels": [
-          "cskoi8r",
-          "koi",
-          "koi8",
-          "koi8-r",
-          "koi8_r"
-        ],
+        "labels": ["cskoi8r", "koi", "koi8", "koi8-r", "koi8_r"],
         "name": "KOI8-R"
       },
       {
-        "labels": [
-          "koi8-ru",
-          "koi8-u"
-        ],
+        "labels": ["koi8-ru", "koi8-u"],
         "name": "KOI8-U"
       },
       {
-        "labels": [
-          "csmacintosh",
-          "mac",
-          "macintosh",
-          "x-mac-roman"
-        ],
+        "labels": ["csmacintosh", "mac", "macintosh", "x-mac-roman"],
         "name": "macintosh"
       },
       {
@@ -224,19 +191,11 @@
         "name": "windows-874"
       },
       {
-        "labels": [
-          "cp1250",
-          "windows-1250",
-          "x-cp1250"
-        ],
+        "labels": ["cp1250", "windows-1250", "x-cp1250"],
         "name": "windows-1250"
       },
       {
-        "labels": [
-          "cp1251",
-          "windows-1251",
-          "x-cp1251"
-        ],
+        "labels": ["cp1251", "windows-1251", "x-cp1251"],
         "name": "windows-1251"
       },
       {
@@ -262,11 +221,7 @@
         "name": "windows-1252"
       },
       {
-        "labels": [
-          "cp1253",
-          "windows-1253",
-          "x-cp1253"
-        ],
+        "labels": ["cp1253", "windows-1253", "x-cp1253"],
         "name": "windows-1253"
       },
       {
@@ -287,42 +242,23 @@
         "name": "windows-1254"
       },
       {
-        "labels": [
-          "cp1255",
-          "windows-1255",
-          "x-cp1255"
-        ],
+        "labels": ["cp1255", "windows-1255", "x-cp1255"],
         "name": "windows-1255"
       },
       {
-        "labels": [
-          "cp1256",
-          "windows-1256",
-          "x-cp1256"
-        ],
+        "labels": ["cp1256", "windows-1256", "x-cp1256"],
         "name": "windows-1256"
       },
       {
-        "labels": [
-          "cp1257",
-          "windows-1257",
-          "x-cp1257"
-        ],
+        "labels": ["cp1257", "windows-1257", "x-cp1257"],
         "name": "windows-1257"
       },
       {
-        "labels": [
-          "cp1258",
-          "windows-1258",
-          "x-cp1258"
-        ],
+        "labels": ["cp1258", "windows-1258", "x-cp1258"],
         "name": "windows-1258"
       },
       {
-        "labels": [
-          "x-mac-cyrillic",
-          "x-mac-ukrainian"
-        ],
+        "labels": ["x-mac-cyrillic", "x-mac-ukrainian"],
         "name": "x-mac-cyrillic"
       }
     ],
@@ -345,9 +281,7 @@
         "name": "GBK"
       },
       {
-        "labels": [
-          "gb18030"
-        ],
+        "labels": ["gb18030"],
         "name": "gb18030"
       }
     ],
@@ -356,13 +290,7 @@
   {
     "encodings": [
       {
-        "labels": [
-          "big5",
-          "big5-hkscs",
-          "cn-big5",
-          "csbig5",
-          "x-x-big5"
-        ],
+        "labels": ["big5", "big5-hkscs", "cn-big5", "csbig5", "x-x-big5"],
         "name": "Big5"
       }
     ],
@@ -371,18 +299,11 @@
   {
     "encodings": [
       {
-        "labels": [
-          "cseucpkdfmtjapanese",
-          "euc-jp",
-          "x-euc-jp"
-        ],
+        "labels": ["cseucpkdfmtjapanese", "euc-jp", "x-euc-jp"],
         "name": "EUC-JP"
       },
       {
-        "labels": [
-          "csiso2022jp",
-          "iso-2022-jp"
-        ],
+        "labels": ["csiso2022jp", "iso-2022-jp"],
         "name": "ISO-2022-JP"
       },
       {
@@ -435,10 +356,7 @@
         "name": "replacement"
       },
       {
-        "labels": [
-          "unicodefffe",
-          "utf-16be"
-        ],
+        "labels": ["unicodefffe", "utf-16be"],
         "name": "UTF-16BE"
       },
       {
@@ -454,9 +372,7 @@
         "name": "UTF-16LE"
       },
       {
-        "labels": [
-          "x-user-defined"
-        ],
+        "labels": ["x-user-defined"],
         "name": "x-user-defined"
       }
     ],

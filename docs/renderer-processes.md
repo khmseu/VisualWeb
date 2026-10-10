@@ -89,32 +89,32 @@ Messages start with twelve bytes: ASCII `VWR1`, little-endian signed int32
 metadata byte count, then little-endian signed int32 pixel byte count.
 UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
-| Bound | Value |
-| --- | ---: |
-| Protocol version | 36, explicitly present; v1 through v35 rejected |
-| Metadata bytes | 32 MiB |
-| JSON nesting | 16 |
-| Decoded HTML UTF-16 characters | 4 Mi |
-| URL/title/status/error/diagnostic characters | 8192 each |
-| Response diagnostics | 64 |
-| Physical frame pixels | 4,194,304 |
-| Raw BGRA bytes | 16 MiB |
-| Startup/render/exchange deadline | 30 seconds by default |
-| Request scroll offset | finite, 0 through 1e9 CSS pixels |
-| Frame/document scroll height | finite, 0 through 10,000,000 CSS pixels |
-| Visible textual anchors per frame | 4096 |
-| Visible rectangles per anchor | 64 |
-| Absolute destination URL | 8192 UTF-16 characters each |
-| Serialized link metadata | 1 MiB UTF-8 JSON total |
-| Forms / form controls / select options per frame | 256 / 1024 / 1024 |
-| Form action, control name/value/label and option value/label | 8192 UTF-16 characters each |
-| Pattern per text field / patterns per frame | 256 UTF-16 characters / 64 |
-| Serialized form metadata | 1 MiB UTF-8 JSON total |
-| Visible text fragments per frame | 32,768 |
-| Serialized text-selection metadata | 1 MiB UTF-8 JSON total |
-| Linked stylesheets per render request | 32 unique absolute serialized URLs (8192 characters each) |
-| Linked stylesheet text | 256 Ki UTF-16 characters each |
-| Serialized linked stylesheets | 1 MiB UTF-8 JSON total |
+| Bound                                                        |                                                     Value |
+| ------------------------------------------------------------ | --------------------------------------------------------: |
+| Protocol version                                             |           36, explicitly present; v1 through v35 rejected |
+| Metadata bytes                                               |                                                    32 MiB |
+| JSON nesting                                                 |                                                        16 |
+| Decoded HTML UTF-16 characters                               |                                                      4 Mi |
+| URL/title/status/error/diagnostic characters                 |                                                 8192 each |
+| Response diagnostics                                         |                                                        64 |
+| Physical frame pixels                                        |                                                 4,194,304 |
+| Raw BGRA bytes                                               |                                                    16 MiB |
+| Startup/render/exchange deadline                             |                                     30 seconds by default |
+| Request scroll offset                                        |                          finite, 0 through 1e9 CSS pixels |
+| Frame/document scroll height                                 |                   finite, 0 through 10,000,000 CSS pixels |
+| Visible textual anchors per frame                            |                                                      4096 |
+| Visible rectangles per anchor                                |                                                        64 |
+| Absolute destination URL                                     |                               8192 UTF-16 characters each |
+| Serialized link metadata                                     |                                    1 MiB UTF-8 JSON total |
+| Forms / form controls / select options per frame             |                                         256 / 1024 / 1024 |
+| Form action, control name/value/label and option value/label |                               8192 UTF-16 characters each |
+| Pattern per text field / patterns per frame                  |                                256 UTF-16 characters / 64 |
+| Serialized form metadata                                     |                                    1 MiB UTF-8 JSON total |
+| Visible text fragments per frame                             |                                                    32,768 |
+| Serialized text-selection metadata                           |                                    1 MiB UTF-8 JSON total |
+| Linked stylesheets per render request                        | 32 unique absolute serialized URLs (8192 characters each) |
+| Linked stylesheet text                                       |                             256 Ki UTF-16 characters each |
+| Serialized linked stylesheets                                |                                    1 MiB UTF-8 JSON total |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
 confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows

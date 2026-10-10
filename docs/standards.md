@@ -26,29 +26,29 @@ entry (it still uses conditional requests where possible).
 
 ## Initial document ownership
 
-| IDs | Used by |
-| --- | --- |
-| `url`, `encoding`, `mime-sniffing` | Core URL, Encoding and MIME (Core.Encoding also cites `html` for the charset prescan) |
-| `unicode-idna`, `unicode-bidi` | URL internationalized domains and Unicode bidi defaults |
-| `fetch` | Networking and resource policies |
-| `rfc6797` | Bounded, memory-only DNS-host HSTS learning/upgrades shared within a browser shell session |
-| `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler` | Basic session cookies and HTTP transport, not full browser cookie policy |
-| `html`, `dom` | HTML parser, DOM, navigation, event loop |
-| `css-syntax`, `selectors`, `css-cascade`, `css-values` | CSS parsing and computed styles |
-| `css-color`, `css-sizing`, `css-backgrounds` | Initial computed colors, dimensions and physical borders |
-| `css2-visual`, `css2-sizing` | Initial block/inline formatting and geometry constraints |
-| `harfbuzz-shaping`, `harfbuzz-font` | Native shaping and font APIs |
-| `css2-paint`, `skia-canvas` | Normal-flow display order and native CPU canvas API |
-| `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts` | Layout, shaping and painting |
-| `ecmascript`, `webidl` | V8 host, future script/DOM bindings |
-| `clearscript-v8`, `clearscript-v8-constraints` | Pinned native host API, interruption, monitored heap/stack and ArrayBuffer limits |
-| `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input |
-| `xdg-directories`, `dotnet-process`, `dotnet-process-start`, `windows-fonts`, `fontconfig` | OS paths, process launch/lifecycle and font sources |
-| `dotnet-process-pipes`, `dotnet-stream-read` | Private renderer pipes, continuous diagnostic draining and exact framed reads |
-| `dotnet-host-environment` | Runtime host/root selection and deployment configuration |
-| `bubblewrap`, `linux-seccomp`, `libseccomp`, `linux-resource-limits` | Linux renderer namespace/mount isolation, exact syscall filter and resource limits |
-| `linux-cgroup-v2`, `systemd-run`, `systemd-resource-control` | Hard per-worker memory/swap/task/CPU accounting and transient scope lifecycle |
-| `windows-appcontainer`, `windows-process-attributes`, `windows-job-objects` | Windows renderer token isolation, startup attributes and process limits |
+| IDs                                                                                                             | Used by                                                                                    |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `url`, `encoding`, `mime-sniffing`                                                                              | Core URL, Encoding and MIME (Core.Encoding also cites `html` for the charset prescan)      |
+| `unicode-idna`, `unicode-bidi`                                                                                  | URL internationalized domains and Unicode bidi defaults                                    |
+| `fetch`                                                                                                         | Networking and resource policies                                                           |
+| `rfc6797`                                                                                                       | Bounded, memory-only DNS-host HSTS learning/upgrades shared within a browser shell session |
+| `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler`                                                | Basic session cookies and HTTP transport, not full browser cookie policy                   |
+| `html`, `dom`                                                                                                   | HTML parser, DOM, navigation, event loop                                                   |
+| `css-syntax`, `selectors`, `css-cascade`, `css-values`                                                          | CSS parsing and computed styles                                                            |
+| `css-color`, `css-sizing`, `css-backgrounds`                                                                    | Initial computed colors, dimensions and physical borders                                   |
+| `css2-visual`, `css2-sizing`                                                                                    | Initial block/inline formatting and geometry constraints                                   |
+| `harfbuzz-shaping`, `harfbuzz-font`                                                                             | Native shaping and font APIs                                                               |
+| `css2-paint`, `skia-canvas`                                                                                     | Normal-flow display order and native CPU canvas API                                        |
+| `css-box`, `css-display`, `css-inline`, `css-text`, `css-fonts`                                                 | Layout, shaping and painting                                                               |
+| `ecmascript`, `webidl`                                                                                          | V8 host, future script/DOM bindings                                                        |
+| `clearscript-v8`, `clearscript-v8-constraints`                                                                  | Pinned native host API, interruption, monitored heap/stack and ArrayBuffer limits          |
+| `sdl-video`, `sdl-init`, `sdl-create-window`, `sdl-window-surface`, `sdl-events`, `sdl-text-input`, `sdl-linux` | Native windows, presentation and input                                                     |
+| `xdg-directories`, `dotnet-process`, `dotnet-process-start`, `windows-fonts`, `fontconfig`                      | OS paths, process launch/lifecycle and font sources                                        |
+| `dotnet-process-pipes`, `dotnet-stream-read`                                                                    | Private renderer pipes, continuous diagnostic draining and exact framed reads              |
+| `dotnet-host-environment`                                                                                       | Runtime host/root selection and deployment configuration                                   |
+| `bubblewrap`, `linux-seccomp`, `libseccomp`, `linux-resource-limits`                                            | Linux renderer namespace/mount isolation, exact syscall filter and resource limits         |
+| `linux-cgroup-v2`, `systemd-run`, `systemd-resource-control`                                                    | Hard per-worker memory/swap/task/CPU accounting and transient scope lifecycle              |
+| `windows-appcontainer`, `windows-process-attributes`, `windows-job-objects`                                     | Windows renderer token isolation, startup attributes and process limits                    |
 
 Add further official standards and native API references as their interfaces
 are introduced. CSS drafts and living standards change: cite the exact section,

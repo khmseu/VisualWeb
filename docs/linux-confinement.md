@@ -88,21 +88,21 @@ unit and reruns the complete resource/confinement bootstrap.
 There is no bind of the host root, home, session sockets, browser working
 directory or host temporary directory.
 
-| Sandbox path | Source / access |
-| --- | --- |
-| `/app` | Trusted renderer deployment directory, read-only |
-| `/font/font` | One explicitly selected trusted font file, read-only |
-| `/runtime/dotnet` | Active runtime's host, read-only |
-| `/runtime/host/fxr` | Matching installation's host resolver directory, read-only |
-| `/runtime/shared/Microsoft.NETCore.App/<version>` | Only the active shared runtime directory, read-only |
-| `/usr/lib`, optional `/usr/lib64` | Host native system libraries, read-only; no `/usr/bin` |
-| `/lib`, optional `/lib64` | Symlinks into the mounted system library trees |
-| `/etc/ld.so.cache` | Native loader cache only, read-only when present |
-| `/proc` | Private PID namespace procfs, read-only |
-| `/resource-limits` | Only this worker's kernel cgroup directory, read-only |
-| `/dev` | Bubblewrap's synthetic minimal devices, read-only mount |
-| `/tmp` | Private 64 MiB tmpfs, writable, discarded on worker exit |
-| `/` | Read-only mount skeleton |
+| Sandbox path                                      | Source / access                                            |
+| ------------------------------------------------- | ---------------------------------------------------------- |
+| `/app`                                            | Trusted renderer deployment directory, read-only           |
+| `/font/font`                                      | One explicitly selected trusted font file, read-only       |
+| `/runtime/dotnet`                                 | Active runtime's host, read-only                           |
+| `/runtime/host/fxr`                               | Matching installation's host resolver directory, read-only |
+| `/runtime/shared/Microsoft.NETCore.App/<version>` | Only the active shared runtime directory, read-only        |
+| `/usr/lib`, optional `/usr/lib64`                 | Host native system libraries, read-only; no `/usr/bin`     |
+| `/lib`, optional `/lib64`                         | Symlinks into the mounted system library trees             |
+| `/etc/ld.so.cache`                                | Native loader cache only, read-only when present           |
+| `/proc`                                           | Private PID namespace procfs, read-only                    |
+| `/resource-limits`                                | Only this worker's kernel cgroup directory, read-only      |
+| `/dev`                                            | Bubblewrap's synthetic minimal devices, read-only mount    |
+| `/tmp`                                            | Private 64 MiB tmpfs, writable, discarded on worker exit   |
+| `/`                                               | Read-only mount skeleton                                   |
 
 Read-only device mounting still permits normal I/O to the synthetic null/random
 devices; it prevents creating extra writable files in that mount. The system
@@ -147,15 +147,15 @@ There is no exposed general executable tree or permission to create a child
 process. Seccomp alone is not the filesystem sandbox: it is combined with
 namespace/mount policy.
 
-| Bound | Value |
-| --- | ---: |
-| RLIMIT_CORE | 0 |
-| RLIMIT_NOFILE | 256 |
-| RLIMIT_FSIZE | 64 MiB |
-| RLIMIT_MEMLOCK | 1 MiB |
-| Private tmpfs | 64 MiB |
-| Managed GC heap hard limit | 256 MiB |
-| .NET configured processor count | 2 |
+| Bound                                |               Value |
+| ------------------------------------ | ------------------: |
+| RLIMIT_CORE                          |                   0 |
+| RLIMIT_NOFILE                        |                 256 |
+| RLIMIT_FSIZE                         |              64 MiB |
+| RLIMIT_MEMLOCK                       |               1 MiB |
+| Private tmpfs                        |              64 MiB |
+| Managed GC heap hard limit           |             256 MiB |
+| .NET configured processor count      |                   2 |
 | Per-exchange startup/render deadline | Existing 30 seconds |
 
 Phase 10b alone had no cgroup-enforced total native/JIT memory, CPU or task quota.
@@ -168,12 +168,12 @@ isolation still require future work.
 
 ## Hard resource accounting
 
-| cgroup control | Required value / meaning |
-| --- | --- |
-| `memory.max` | 536870912 bytes (512 MiB) |
-| `memory.swap.max` | 0 (no cgroup swap allowance) |
-| `pids.max` | 64 tasks, including threads and trusted bootstrap/reaper |
-| `cpu.max` | `100000 100000`: at most one CPU's bandwidth per 100 ms period |
+| cgroup control    | Required value / meaning                                       |
+| ----------------- | -------------------------------------------------------------- |
+| `memory.max`      | 536870912 bytes (512 MiB)                                      |
+| `memory.swap.max` | 0 (no cgroup swap allowance)                                   |
+| `pids.max`        | 64 tasks, including threads and trusted bootstrap/reaper       |
+| `cpu.max`         | `100000 100000`: at most one CPU's bandwidth per 100 ms period |
 
 The transient scope applies before bootstrap execution and covers its entire
 descendant tree: native resident allocation, JIT/runtime memory, page cache,

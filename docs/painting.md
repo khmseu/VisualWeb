@@ -116,15 +116,15 @@ This is a bounded document-scrolling primitive, not CSS overflow conformance.
 
 PaintOptions defaults:
 
-| Limit | Default |
-| --- | ---: |
-| Display/raster commands | 1,000,000 |
-| Display/raster glyphs | 1,000,000 |
-| Layout paint nesting | 128 |
+| Limit                       |    Default |
+| --------------------------- | ---------: |
+| Display/raster commands     |  1,000,000 |
+| Display/raster glyphs       |  1,000,000 |
+| Layout paint nesting        |        128 |
 | Physical framebuffer pixels | 16,777,216 |
-| Registered fonts | 256 |
-| Bytes per font | 32 MiB |
-| Registered font bytes | 128 MiB |
+| Registered fonts            |        256 |
+| Bytes per font              |     32 MiB |
+| Registered font bytes       |    128 MiB |
 
 All limits must be positive. Constructors bound their collection snapshots;
 generation and rasterization enforce aggregate limits. Native framebuffer

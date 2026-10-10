@@ -18,13 +18,17 @@ runtimes:
 lint:
   enabled:
     - yamllint@1.38.0
-    - pinact@5.0.0
+    - pinact@4.0.0
     - checkov@3.3.26
     - actionlint@1.7.12
     - git-diff-check
     - markdownlint@0.49.1
-    - prettier@3.9.9
+    - prettier@3.9.10
     - trufflehog@3.99.2
+  ignore:
+    - linters: [checkov]
+      paths:
+        - tests/**
 actions:
   enabled:
     - trunk-announce

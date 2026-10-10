@@ -21,7 +21,13 @@
       "label": "refresh standards cache",
       "type": "shell",
       "command": "dotnet",
-      "args": ["run", "--project", "tools/SpecCache", "--", "specs/manifest.json"],
+      "args": [
+        "run",
+        "--project",
+        "tools/SpecCache",
+        "--",
+        "specs/manifest.json"
+      ],
       "problemMatcher": []
     }
   ]

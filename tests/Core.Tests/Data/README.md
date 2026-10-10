@@ -7,13 +7,13 @@ Exception: `IdnaTestV2.json` is pinned to
 The user selected stable Unicode 17 rather than updating the parser to Unicode
 18 preview tables. No fixture vectors are edited or suppressed.
 
-| Local file | Upstream path in web-platform-tests/wpt |
-| --- | --- |
-| urltestdata.json | url/resources/urltestdata.json |
-| toascii.json | url/resources/toascii.json |
-| IdnaTestV2.json | url/resources/IdnaTestV2.json |
-| mime-types.json | mimesniff/mime-types/resources/mime-types.json |
-| iso-2022-jp-decoder.any.js | encoding/iso-2022-jp-decoder.any.js |
+| Local file                 | Upstream path in web-platform-tests/wpt        |
+| -------------------------- | ---------------------------------------------- |
+| urltestdata.json           | url/resources/urltestdata.json                 |
+| toascii.json               | url/resources/toascii.json                     |
+| IdnaTestV2.json            | url/resources/IdnaTestV2.json                  |
+| mime-types.json            | mimesniff/mime-types/resources/mime-types.json |
+| iso-2022-jp-decoder.any.js | encoding/iso-2022-jp-decoder.any.js            |
 
 Files are unmodified upstream downloads; [WPT-LICENSE.md](WPT-LICENSE.md)
 contains the upstream licensing terms. ISO-2022-JP tests parse only the literal

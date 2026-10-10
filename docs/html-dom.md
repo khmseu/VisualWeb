@@ -203,12 +203,12 @@ the one-bound-document bridge.
 
 `HtmlParserOptions` defaults:
 
-| Limit | Default |
-| --- | --- |
-| Input UTF-16 characters before newline normalization | 16 Mi |
+| Limit                                                  | Default   |
+| ------------------------------------------------------ | --------- |
+| Input UTF-16 characters before newline normalization   | 16 Mi     |
 | Created document/element/text/comment/PI/doctype nodes | 1,000,000 |
-| Open element stack depth, including html/head/body | 512 |
-| Combined input/tokenizer/tree diagnostics | 10,000 |
+| Open element stack depth, including html/head/body     | 512       |
+| Combined input/tokenizer/tree diagnostics              | 10,000    |
 
 Limits are validated and configurable. The four-node implicit skeleton and
 two-open-element depth are tested at exact boundaries. Whole-string parsing
@@ -257,13 +257,13 @@ Validated on Linux x64: all **30 projects** build and all **11,286 tests** pass,
 with no failed or skipped tests:
 
 | Test project | Passed |
-| --- | ---: |
-| HTML | 7,202 |
-| DOM | 17 |
-| Core | 3,815 |
-| Networking | 210 |
-| Platform | 19 |
-| SpecCache | 23 |
+| ------------ | -----: |
+| HTML         |  7,202 |
+| DOM          |     17 |
+| Core         |  3,815 |
+| Networking   |    210 |
+| Platform     |     19 |
+| SpecCache    |     23 |
 
 First-party formatting verification and editor diagnostics are clean. A
 separate standards-cache check reports all **34 documents** fresh; it is not

@@ -113,8 +113,7 @@ Both `LoadAsync` and `LoadSameOriginAsync` apply Fetch
 [should be blocked due to a bad port](https://fetch.spec.whatwg.org/#block-bad-port)
 to the initial URL and to every redirect target, before credentials, cookie
 headers or any transport request. An HTTP(S) URL whose port is in the 83-entry
-[bad port](https://fetch.spec.whatwg.org/#bad-port) table (0, 1, 7, … 6697,
-10080) throws `ResourceError.BlockedPort`; no DNS or connection is attempted.
+[bad port](https://fetch.spec.whatwg.org/#bad-port) table (0, 1, 7, … 6697, 10080) throws `ResourceError.BlockedPort`; no DNS or connection is attempted.
 A blocked redirect stops after the response that named it, so cookies stored
 from earlier allowed responses remain, but nothing is sent to the blocked target.
 

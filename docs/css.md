@@ -135,15 +135,15 @@ computed color (or inherited color for the color property itself).
 
 Supported longhands:
 
-| Group | Properties and supported values |
-| --- | --- |
-| Display | `display`: none, block, inline, inline-block |
-| Sizing | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size |
-| Box | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box |
-| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset |
-| Color | color, background-color, border colors; hex 3/4/6/8, legacy comma rgb/rgba, transparent/currentColor, 16 basic named colors plus orange/rebeccapurple |
-| Fonts | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique |
-| Text | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
+| Group   | Properties and supported values                                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display | `display`: none, block, inline, inline-block                                                                                                                              |
+| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                      |
+| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                   |
+| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                         |
+| Color   | color, background-color, border colors; hex 3/4/6/8, legacy comma rgb/rgba, transparent/currentColor, 16 basic named colors plus orange/rebeccapurple                     |
+| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique        |
+| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. Font/background/text-decoration shorthands are deferred.
@@ -178,16 +178,16 @@ No layout, shaping, painting, used-value resolution or V8 work is performed.
 
 All CssOptions limits are positive and configurable:
 
-| Limit | Default |
-| --- | ---: |
-| Input characters per individual CSS string, before normalization | 4 Mi |
-| Non-EOF tokens per individual CSS string | 1,000,000 |
-| Component/selector nesting and selector evaluation depth | 128 |
-| Diagnostics per parse / combined style computation | 10,000 |
-| Styled elements | 100,000 |
-| Style sources including the optional UA sheet | 256 |
-| Rules per parse / compiled rules across sources | 100,000 |
-| Expanded assignments across compiled sheets and inline styles | 1,000,000 |
+| Limit                                                              |    Default |
+| ------------------------------------------------------------------ | ---------: |
+| Input characters per individual CSS string, before normalization   |       4 Mi |
+| Non-EOF tokens per individual CSS string                           |  1,000,000 |
+| Component/selector nesting and selector evaluation depth           |        128 |
+| Diagnostics per parse / combined style computation                 |     10,000 |
+| Styled elements                                                    |    100,000 |
+| Style sources including the optional UA sheet                      |        256 |
+| Rules per parse / compiled rules across sources                    |    100,000 |
+| Expanded assignments across compiled sheets and inline styles      |  1,000,000 |
 | Selector evaluation operations across a computation / direct match | 10,000,000 |
 
 Exceeding any limit throws CssLimitException. Cancellation is checked during

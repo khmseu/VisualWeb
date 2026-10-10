@@ -148,13 +148,13 @@ algorithms for ordinary trees without shadow DOM:
   target and canceled state remain. There are no shadow roots/retargeting,
   so composed has no shadow-boundary effect.
 
-| Event budget | Bound |
-| --- | ---: |
-| Registered listener entries per host, across all targets | 1,024 |
-| Listener invocations per evaluation/single script/whole batch | 4,096 |
-| Nested simultaneous dispatches | 32 |
-| Snapshotted targets per ancestor path, including target/document | 1,024 |
-| UTF-16 event/listener type characters | 65,536 |
+| Event budget                                                     |  Bound |
+| ---------------------------------------------------------------- | -----: |
+| Registered listener entries per host, across all targets         |  1,024 |
+| Listener invocations per evaluation/single script/whole batch    |  4,096 |
+| Nested simultaneous dispatches                                   |     32 |
+| Snapshotted targets per ancestor path, including target/document |  1,024 |
+| UTF-16 event/listener type characters                            | 65,536 |
 
 Explicit removal/once releases listener capacity. Garbage collection of an
 unreachable standalone target does not refund accounting; that conservative
@@ -279,16 +279,16 @@ remain unavailable. Optional phase-11g synthetic events are described above.
 Phase-11e factories/accessors/mutations are listed below.
 Expandos are ordinary JavaScript properties, not native DOM mutations.
 
-| Binding budget | Value |
-| --- | ---: |
-| Retained non-document node wrappers per host, including detached/created nodes | 1,024 |
-| Callbacks per evaluation/single script/whole batch | 4,096 |
-| Descendants per traversal/destination subtree; siblings per scan | 8,192 |
-| Ancestor chain per connectivity/mutation check, including receiver | 8,192 |
-| UTF-16 text per callback argument/result | 65,536 |
-| Aggregate callback argument/result UTF-16 characters per execution | 262,144 |
-| Attributes per script-mutated element | 128 |
-| Stored attribute name/value UTF-16 characters per script-mutated element | 65,536 |
+| Binding budget                                                                 |   Value |
+| ------------------------------------------------------------------------------ | ------: |
+| Retained non-document node wrappers per host, including detached/created nodes |   1,024 |
+| Callbacks per evaluation/single script/whole batch                             |   4,096 |
+| Descendants per traversal/destination subtree; siblings per scan               |   8,192 |
+| Ancestor chain per connectivity/mutation check, including receiver             |   8,192 |
+| UTF-16 text per callback argument/result                                       |  65,536 |
+| Aggregate callback argument/result UTF-16 characters per execution             | 262,144 |
+| Attributes per script-mutated element                                          |     128 |
+| Stored attribute name/value UTF-16 characters per script-mutated element       |  65,536 |
 
 Budgets are checked before writes; traversal/text assembly is bounded. Counters
 reset per execution, but wrapper identities persist until host disposal.
@@ -775,14 +775,14 @@ constructor: this is not full Web IDL inheritance/expando conformance.
 Caller changes to array/string/map intrinsics cannot alter private list storage.
 No CLR collections, nodes or exceptions cross the bridge.
 
-| Per-query budget | Bound |
-| --- | ---: |
-| Selector UTF-16 characters | 4,096 |
-| CSS tokens | 8,192 |
-| Selector chain/nesting/evaluation depth | 64 |
+| Per-query budget                                 |  Bound |
+| ------------------------------------------------ | -----: |
+| Selector UTF-16 characters                       |  4,096 |
+| CSS tokens                                       |  8,192 |
+| Selector chain/nesting/evaluation depth          |     64 |
 | Shared matching operations across all candidates | 65,536 |
-| Traversed descendants or inclusive ancestors | 8,192 |
-| Static result entries | 1,024 |
+| Traversed descendants or inclusive ancestors     |  8,192 |
+| Static result entries                            |  1,024 |
 
 Query results also consume the existing **1,024 host-lifetime Node identities**,
 including all previously created/detached wrappers. Full-list result and identity
@@ -979,18 +979,18 @@ The cancellation timer remains responsible for interrupting in-flight native
 work, but a delayed timer callback cannot make an expired finite task succeed
 or start the next source/lifecycle stage. The timeout is shared and never reset.
 
-| Bound | Value |
-| --- | ---: |
-| Input UTF-16 characters per evaluation/classic script | 65,536 |
-| Classic scripts per batch | 64 |
-| Aggregate UTF-16 characters per batch | 262,144 |
-| Copied String/BigInt UTF-16 characters | 16,384 |
-| Evaluation/single-script/whole-batch deadline | 2 seconds by default; configurable `(0, 30]` seconds |
-| Monitored V8 heap | 32 MiB, sampled every 10 ms |
-| Old-space constraint | 128 MiB, no on-demand expansion |
-| New-space constraint | 16 MiB |
-| External ArrayBuffer allocation | 16 MiB per isolate |
-| Script stack growth | 512 KiB |
+| Bound                                                 |                                                Value |
+| ----------------------------------------------------- | ---------------------------------------------------: |
+| Input UTF-16 characters per evaluation/classic script |                                               65,536 |
+| Classic scripts per batch                             |                                                   64 |
+| Aggregate UTF-16 characters per batch                 |                                              262,144 |
+| Copied String/BigInt UTF-16 characters                |                                               16,384 |
+| Evaluation/single-script/whole-batch deadline         | 2 seconds by default; configurable `(0, 30]` seconds |
+| Monitored V8 heap                                     |                          32 MiB, sampled every 10 ms |
+| Old-space constraint                                  |                      128 MiB, no on-demand expansion |
+| New-space constraint                                  |                                               16 MiB |
+| External ArrayBuffer allocation                       |                                   16 MiB per isolate |
+| Script stack growth                                   |                                              512 KiB |
 
 Pre-canceled calls do not execute or invalidate a usable host. An in-flight
 cancellation, deadline interruption or fatal engine error invalidates the

@@ -31,18 +31,18 @@ when the owned worker is disposed.
 
 ## Process and resource limits
 
-| Control | Required value |
-| --- | --- |
-| AppContainer capabilities | None |
-| Job Object active process limit | 1 |
-| Job Object per-process commit limit | 512 MiB |
-| Job Object total commit limit | 512 MiB |
-| Job Object CPU hard cap | 100% of one logical processor |
-| Job Object lifetime | Kill all assigned processes when the owned job handle closes |
-| Renderer writes to staged temp/profile storage | Denied |
-| Managed heap | 256 MiB |
-| Configured processor count | 2 |
-| IPC startup/render deadline | Existing 30 seconds |
+| Control                                        | Required value                                               |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| AppContainer capabilities                      | None                                                         |
+| Job Object active process limit                | 1                                                            |
+| Job Object per-process commit limit            | 512 MiB                                                      |
+| Job Object total commit limit                  | 512 MiB                                                      |
+| Job Object CPU hard cap                        | 100% of one logical processor                                |
+| Job Object lifetime                            | Kill all assigned processes when the owned job handle closes |
+| Renderer writes to staged temp/profile storage | Denied                                                       |
+| Managed heap                                   | 256 MiB                                                      |
+| Configured processor count                     | 2                                                            |
+| IPC startup/render deadline                    | Existing 30 seconds                                          |
 
 The Job Object is assigned at process creation, before the suspended worker is
 resumed. The startup handshake requires `windows-appcontainer-job-v1`; the
