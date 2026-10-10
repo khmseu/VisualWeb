@@ -225,13 +225,13 @@ However:
 - Modules, external scripts, timers, workers, script-visible networking/storage, and full Window/Web IDL behavior remain deferred.
 - Synthetic events and finite lifecycle/microtask processing exist, but not normal ongoing page interaction.
 - WebAssembly is explicitly disabled in the current host.
-- A focused regression currently fails: `CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
-  expects `InvalidOperationException`, but none is thrown. This was reproduced on
-  2026-10-10; investigate the cancellation behavior/test before treating the
-  scripting suite as clean.
+- The deep-clone cancellation regression now distinguishes pre-canceled calls
+  (which do not invalidate an unused host) from cancellation after execution starts
+  (which invalidates it), preventing timer scheduling from turning a pre-cancel
+  into a false in-flight cancellation test.
 
-Evidence: `scripting scope`, `short-lived page script host`, and the focused
-cloning-cancellation regression.
+Evidence: `scripting scope`, `short-lived page script host`, and clone-cancellation
+regressions.
 
 ### 7. Internationalization, accessibility, and broader web APIs
 
@@ -271,7 +271,5 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
 *Status cross-checked against the implementation and subsystem guides on
-2026-10-10. The solution build and all 776 browser tests passed on this snapshot;
-format verification also passed. The focused scripting cancellation regression
-listed above currently fails. These checks are not full conformance, security,
-CI-matrix or real-desktop validation.
+2026-10-10. These checks are not full conformance, security, CI-matrix or
+real-desktop validation.
