@@ -88,11 +88,17 @@ broader page interaction is still missing:
   and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values, `required`,
-  and valid `min`/`max` bounds before submission; no calendar picker or date step
-  behavior is implemented (`step`, `pattern`, length, `list`, `multiple` and
-  `dirname` are rejected visibly). Time values use strict bounded HTML time
-  syntax with generic text editing and validation; no clock picker or time
-  constraints are implemented (the same constraint attributes are rejected). Month values use positive years of at least four digits and months 01–12, with generic text editing and validation; no month picker or constraints are implemented (the same constraint attributes are rejected). Week values enforce valid ISO week-years (including the 52/53-week boundary) and use generic text editing; no week picker or constraints are implemented (the same constraint attributes are rejected). Number inputs support finite floating-point syntax, optional finite min/max
+  and valid `min`/`max` bounds before submission; no calendar picker is implemented.
+  Bounded date step grids are supported; `pattern`, length, `list`, `multiple` and
+  `dirname` are rejected visibly. Time values use strict bounded HTML time
+  syntax with generic text editing and validation; no clock picker is implemented,
+  while bounded step grids are supported and remaining constraint attributes are rejected.
+  Month values use positive years of at least four digits and months 01–12, with generic
+  text editing and validation; no month picker is implemented, bounded step grids are
+  supported, and remaining constraint attributes are rejected. Week values enforce valid
+  ISO week-years (including the 52/53-week boundary), bounded continuous step grids,
+  and generic text editing; no week picker is implemented and remaining constraint attributes
+  are rejected. Number inputs support finite floating-point syntax, optional finite min/max
   bounds and step-grid validation; `step=any` disables the grid, absent/invalid
   steps default to 1, and reversed ranges are surfaced as form errors. The step
   base is a valid minimum, otherwise the valid initial value, otherwise zero.

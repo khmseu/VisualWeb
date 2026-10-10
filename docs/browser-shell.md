@@ -282,7 +282,8 @@ strict `YYYY-Www` ISO week syntax; positive years need at least four ASCII digit
 and week 53 is accepted only in 53-week week-years. Values are edited as text
 without a week picker; invalid initial values become empty and nonempty values
 are validated before submission. Valid week `min` and `max` bounds are enforced
-before submission; invalid bounds are ignored. Week `step`, `pattern`, length,
+before submission; invalid bounds are ignored. Valid numeric week `step` values
+enforce a bounded continuous ISO-week grid; `step=any` disables it. Week `pattern`, length,
 `list`, `multiple` and `dirname` are unsupported and mark the form with a visible
 error. Number accepts finite HTML floating-point values with optional
 min/max and step-grid validation. `step=any` disables step checks, while

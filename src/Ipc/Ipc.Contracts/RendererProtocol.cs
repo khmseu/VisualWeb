@@ -276,8 +276,17 @@ public static class FormWeek
         weekNumber = 0;
         if (!IsValid(value) || !long.TryParse(value.AsSpan(0, value.IndexOf("-W", StringComparison.Ordinal)),
                 System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var year)) { return false; }
-        weekNumber = checked(year * 53 + (value[^2] - '0') * 10 + value[^1] - '0');
-        return true;
+        try
+        {
+            var precedingYear = checked(year - 1);
+            var daysBeforeYear = checked(365 * precedingYear + precedingYear / 4 - precedingYear / 100 + precedingYear / 400);
+            var fourthOfJanuary = checked(daysBeforeYear + 3);
+            var weekOneMonday = fourthOfJanuary - fourthOfJanuary % 7;
+            var week = (value[^2] - '0') * 10 + value[^1] - '0';
+            weekNumber = checked(weekOneMonday / 7 + week - 1);
+            return true;
+        }
+        catch (OverflowException) { return false; }
     }
 
     public static bool IsValid(string value)
@@ -625,15 +634,14 @@ public static class RendererProtocol
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
                 || control.Kind is not ("number" or "range" or "date" or "time" or "month" or "week") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
-                || (control.Kind is "number" or "range" or "date" or "time" or "month") && (control.StepAny ? control.Step is not null : control.Step is null)
+                || (control.Kind is "number" or "range" or "date" or "time" or "month" or "week") && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Kind == "date" && (control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
                     || control.Maximum is { } dateMaximum && dateMaximum != Math.Truncate(dateMaximum))
                 || control.Kind == "time" && (control.Minimum is { } timeMinimum && timeMinimum != Math.Truncate(timeMinimum)
                     || control.Maximum is { } timeMaximum && timeMaximum != Math.Truncate(timeMaximum))
                 || control.Kind == "month" && (control.Minimum is { } monthMinimum && monthMinimum != Math.Truncate(monthMinimum)
                     || control.Maximum is { } monthMaximum && monthMaximum != Math.Truncate(monthMaximum))
-                || control.Kind == "week" && (control.Step is not null || control.StepAny
-                    || control.Minimum is { } weekMinimum && weekMinimum != Math.Truncate(weekMinimum)
+                || control.Kind == "week" && (control.Minimum is { } weekMinimum && weekMinimum != Math.Truncate(weekMinimum)
                     || control.Maximum is { } weekMaximum && weekMaximum != Math.Truncate(weekMaximum))
                 || control.Kind == "range" && (control.Minimum is null || control.Maximum is null
                     || control.Minimum > control.Maximum || control.MinLength != -1 || control.MaxLength != -1

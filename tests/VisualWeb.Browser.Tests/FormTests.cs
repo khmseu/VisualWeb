@@ -574,14 +574,25 @@ public sealed class FormTests
         }
     }
 
-    [Fact]
-    public async Task WeekInputRejectsUnsupportedStepConstraint()
+    [Theory]
+    [InlineData("2022-W02", true)]
+    [InlineData("2022-W01", false)]
+    public void WeekInputEnforcesContinuousStepGridOnSubmission(string value, bool valid)
     {
-        using var renderer = Renderer(false);
-        var page = await renderer.RenderAsync(Document("<form><input type=week name=week step=2></form>"),
-            new(200, 400, 1), Cancellation);
-
-        Assert.Contains("week step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        using var harness = new Harness($"<form><input type=week name=week min=2021-W52 step=2 value={value}><button>Save</button></form>");
+        Assert.Null(Assert.Single(harness.Controller.Page(harness.Tab.Id)!.Forms).Error);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        if (valid)
+        {
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+            Assert.EndsWith("?week=" + value, harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+            Assert.Contains("step", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
     }
 
     [Fact]

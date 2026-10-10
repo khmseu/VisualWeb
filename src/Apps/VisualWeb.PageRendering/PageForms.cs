@@ -85,7 +85,6 @@ internal static class PageForms
             {
                 foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
                 { if (element.GetAttribute(attribute) is not null) { Reject(index, $"{kind} {attribute}"); } }
-                if (kind == "week" && element.GetAttribute("step") is not null) { Reject(index, $"{kind} step"); }
             }
             if (kind is "number" or "range")
             {
@@ -170,8 +169,8 @@ internal static class PageForms
                 : kind == "week" ? WeekBound(element.GetAttribute("max"))
                 : kind == "number" ? NumberBound(element.GetAttribute("max"))
                 : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
-            var stepAny = (kind is "number" or "range" or "date" or "time" or "month") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
-            double? step = kind is not ("number" or "range" or "date" or "time" or "month") || stepAny ? null
+            var stepAny = (kind is "number" or "range" or "date" or "time" or "month" or "week") && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
+            double? step = kind is not ("number" or "range" or "date" or "time" or "month" or "week") || stepAny ? null
                 : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0
                     ? kind == "time" ? parsedStep * 1000 : parsedStep
                     : kind == "time" ? 60_000 : 1;

@@ -217,7 +217,7 @@ public sealed class ProtocolTests
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "week", Value = "2020-W53", MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "week", Value = "2020-W53", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
