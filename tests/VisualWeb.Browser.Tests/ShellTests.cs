@@ -1263,6 +1263,32 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void CtrlPageUpAndPageDownCycleTabs(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var first = window.ActiveTab!;
+        var second = shell.Controller.CreateTab(window.Id);
+
+        Key(SDL.Scancode.Pageup);
+        Assert.Equal(second.Id, window.ActiveTabId);
+        Key(SDL.Scancode.Pageup, SDL.Keymod.Ctrl);
+        Assert.Equal(first.Id, window.ActiveTabId);
+        Key(SDL.Scancode.Pagedown, SDL.Keymod.Ctrl);
+        Assert.Equal(second.Id, window.ActiveTabId);
+
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None)
+        {
+            shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)scan, 0, (ushort)mod, true, false));
+            shell.Tick();
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void KeyboardFocusTraversesChromeAndRestoresIndependentTabFocus(bool multiprocess)
     {
         using var system = new Windows();

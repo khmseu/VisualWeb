@@ -74,7 +74,7 @@ The native window title retains the same warning alongside the active page title
 | +T / Ctrl+T | New tab with offline welcome page |
 | Tab label | Activate that tab; middle-click closes it without activating it first |
 | Tab x / Ctrl+W | Close tab; closing the active tab selects the next tab in its former position, or the previous tab when closing the last tab; the window closes when its only tab is closed |
-| Tab arrows / Ctrl+Tab / Ctrl+Shift+Tab | Cycle next/previous tab |
+| Tab arrows / Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+PageUp/PageDown | Cycle next/previous tab |
 | +W / Ctrl+N | New window with welcome tab |
 | M / Ctrl+M | Move active tab to the first other window, or create an empty destination |
 | Native window close | Close that window and only its tabs |
@@ -130,7 +130,7 @@ page anchor Shift+Tab returns to the address (or last drawn chrome control);
 at the last anchor Tab wraps to the first chrome control. Disabled/undrawn controls
 are skipped. Focusing an offscreen text anchor scrolls it into view; empty and
 non-text anchors remain unsupported. With no rendered text links, traversal wraps
-among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab retain tab switching,
+among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab and Ctrl+PageUp/PageDown retain tab switching,
 and editing, navigation and scrolling shortcuts retain their existing meanings.
 
 Page keyboard ownership and selected anchor are per-tab and survive switching

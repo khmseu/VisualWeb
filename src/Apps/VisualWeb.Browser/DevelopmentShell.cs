@@ -523,6 +523,8 @@ public sealed class DevelopmentShell : IDisposable
                     if (window.ActiveTabId is { } close) { Controller.CloseTab(close); }
                     return;
                 case SDL.Scancode.Tab: Action(window, view, shift ? ChromeAction.PreviousTab : ChromeAction.NextTab); return;
+                case SDL.Scancode.Pageup when !alt: Action(window, view, ChromeAction.PreviousTab); return;
+                case SDL.Scancode.Pagedown when !alt: Action(window, view, ChromeAction.NextTab); return;
                 case SDL.Scancode.R: Action(window, view, ChromeAction.Reload); return;
                 case SDL.Scancode.A when view.Editing: view.Editor.SelectAll = true; view.Dirty = true; return;
             }
