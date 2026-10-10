@@ -359,7 +359,7 @@ public sealed class FormTests
     [Fact]
     public void TimeInputSupportsEditingAndValidatesBeforeSubmission()
     {
-        using (var valid = new Harness("<form action='/save'><input type=time name=meeting value=09:30><button>Save</button></form>"))
+        using (var valid = new Harness("<form action='/save'><input type=time name=meeting value=09:30 step=any><button>Save</button></form>"))
         {
             var controller = valid.Controller;
             var tab = valid.Tab.Id;
@@ -394,14 +394,25 @@ public sealed class FormTests
         }
     }
 
-    [Fact]
-    public async Task TimeInputRejectsUnsupportedConstraintAttributes()
+    [Theory]
+    [InlineData("09:00:00.5", true)]
+    [InlineData("09:00:00.6", false)]
+    public void TimeInputEnforcesStepGridOnSubmission(string value, bool valid)
     {
-        using var renderer = Renderer(false);
-        var page = await renderer.RenderAsync(Document("<form><input type=time name=meeting step=900></form>"),
-            new(200, 400, 1), Cancellation);
-
-        Assert.Contains("time step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        using var harness = new Harness($"<form><input type=time name=meeting min=09:00 step=0.5 value={value}><button>Save</button></form>");
+        Assert.Null(Assert.Single(harness.Controller.Page(harness.Tab.Id)!.Forms).Error);
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        if (valid)
+        {
+            Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+            Assert.EndsWith("?meeting=" + Uri.EscapeDataString(value), harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+            Assert.Contains("step", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
     }
 
     [Fact]

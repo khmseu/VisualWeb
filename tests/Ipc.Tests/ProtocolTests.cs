@@ -205,11 +205,11 @@ public sealed class ProtocolTests
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "date", Value = "2024-02-29", MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "date", Value = "2024-02-29", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "time", Value = "23:59:59.999", MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "time", Value = "23:59:59.999", Step = 60_000, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {

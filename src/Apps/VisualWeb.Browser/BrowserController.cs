@@ -1051,6 +1051,12 @@ public sealed class BrowserController : IDisposable
                 { throw new PageNavigationException($"Form field '{control.Name}' is below its minimum; submission blocked."); }
                 if (control.Maximum is { } maximum && timeMilliseconds > maximum)
                 { throw new PageNavigationException($"Form field '{control.Name}' exceeds its maximum; submission blocked."); }
+                if (!control.StepAny)
+                {
+                    var stepBase = control.Minimum ?? (FormTime.TryGetMilliseconds(control.Value, out var initialValue) ? initialValue : 0);
+                    if (!FormNumber.IsStepAligned(timeMilliseconds, stepBase, control.Step!.Value))
+                    { throw new PageNavigationException($"Form field '{control.Name}' does not match its step; submission blocked."); }
+                }
             }
             if (control.Kind == "month" && value.Length > 0 && !FormMonth.IsValid(value))
             { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid month; submission blocked."); }
