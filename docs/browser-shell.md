@@ -97,6 +97,7 @@ The native window title retains the same warning alongside the active page title
 | Primary left click on non-link page text | Begin a coarse text selection and give the page keyboard focus |
 | Drag across visible non-link text | Select whole shaped text fragments; selection is highlighted by browser-owned pixels |
 | Ctrl+C with page text selected | Copy selected fragment text to the system clipboard |
+| Escape with page text selected | Clear the browser-owned selection without changing the clipboard |
 | Ctrl+V while editing the address or a text/search/email/tel/url/password/date/time/month/week/number/textarea field | Paste clipboard text at the caret or over the current field selection |
 
 The visible tab strip follows the active tab when tabs exceed available slots.

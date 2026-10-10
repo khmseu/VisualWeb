@@ -460,8 +460,11 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (!view.Editing)
         {
-            if (!control && !alt && !key.Repeat && code == SDL.Scancode.Escape && view.OpenSelectControl >= 0)
-            { CloseSelectPopup(view); return; }
+            if (!control && !alt && !key.Repeat && code == SDL.Scancode.Escape)
+            {
+                if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); return; }
+                if (Controller.ClearSelectedText(tab.Id)) { return; }
+            }
             if (!control && !alt && code == SDL.Scancode.Tab && view.OpenSelectControl >= 0)
             { CloseSelectPopup(view); }
             if (control && !alt && !key.Repeat && code == SDL.Scancode.A && Controller.EditingFormControl(tab.Id))

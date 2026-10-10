@@ -120,7 +120,8 @@ broader page interaction is still missing:
   encodings. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
 - A bounded browser-owned selection supports mouse drag across visible non-link
-  shaped text fragments and Ctrl+C to the system clipboard. Selection is fragment-
+  shaped text fragments, Ctrl+C to copy, and Escape to clear the selection.
+  Selection is fragment-
   level (not character-level); a primary press beginning on an anchor retains
   immediate navigation, while a drag begun in ordinary text can include anchor
   fragments. Selection resets on successful document/scroll/resize publication.

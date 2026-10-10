@@ -205,6 +205,15 @@ public sealed class BrowserController : IDisposable
         Check();
         content[id].SelectingText = false;
     }
+    public bool ClearSelectedText(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return false; }
+        ClearTextSelection(owner);
+        Changed?.Invoke(id);
+        return true;
+    }
     /// <summary>Selected fragment text in paint order, with line breaks between visibly distinct lines.</summary>
     public string SelectedText(TabId id)
     {

@@ -961,6 +961,9 @@ public sealed class ShellTests
         Assert.False(page.Frame.Pixels.Span.Slice(pageOffset, 4).SequenceEqual(native.Pixels!.AsSpan(chromeOffset, 4)));
         shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.C, 0, (ushort)SDL.Keymod.Ctrl, true, false));
         Assert.Equal("Hello world!", native.ClipboardText);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+        Assert.Equal("", shell.Controller.SelectedText(tab.Id));
+        Assert.Equal("Hello world!", native.ClipboardText);
         shell.Controller.Scroll(tab.Id, 20);
         var scrollDeadline = DateTime.UtcNow.AddSeconds(30);
         while (shell.Controller.SelectedText(tab.Id).Length > 0 && DateTime.UtcNow < scrollDeadline)
