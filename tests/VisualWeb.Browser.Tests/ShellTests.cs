@@ -467,11 +467,14 @@ public sealed class ShellTests
         }
     }
 
-    [Fact]
-    public void EnterAndSpaceToggleFocusedSelectPopupForKeyboardOptionPicking()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnterAndSpaceToggleFocusedSelectPopupForKeyboardOptionPicking(bool multiprocess)
     {
         using var system = new Windows();
-        using var shell = new DevelopmentShell(system, FontPath);
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
         var window = shell.OpenWindow();
         var native = system.Items[0];
         var tab = window.ActiveTab!;
