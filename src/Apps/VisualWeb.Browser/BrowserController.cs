@@ -42,6 +42,7 @@ public sealed class BrowserController : IDisposable
         internal HashSet<int> Dirty { get; } = [];
         internal Dictionary<int, bool> CheckedStates { get; } = [];
         internal Dictionary<int, int> SelectedOptions { get; } = [];
+        internal Dictionary<int, HashSet<int>> MultipleSelectedOptions { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
         internal bool SelectingText { get; set; }
@@ -477,6 +478,13 @@ public sealed class BrowserController : IDisposable
             || optionIndex < 0 || optionIndex >= control.Options.Length)
         { return false; }
         if (control.Options[optionIndex].Disabled) { return false; }
+        if (control.Multiple)
+        {
+            var selected = MultipleSelectedOptions(owner, controlIndex);
+            if (!selected.Add(optionIndex)) { selected.Remove(optionIndex); }
+            Changed?.Invoke(id);
+            return true;
+        }
         if (SelectedOption(owner, controlIndex) != optionIndex)
         {
             owner.SelectedOptions[controlIndex] = optionIndex;
@@ -867,6 +875,11 @@ public sealed class BrowserController : IDisposable
         var control = owner.Page!.FormControls[index];
         if (control.Kind == "select")
         {
+            if (control.Multiple)
+            {
+                var selectedIndices = SelectedOptions(owner, index);
+                return selectedIndices.Count == 0 ? "" : control.Options[selectedIndices.Min()].Value;
+            }
             var selected = SelectedOption(owner, index);
             return selected >= 0 && !control.Options[selected].Disabled ? control.Options[selected].Value : "";
         }
@@ -879,6 +892,18 @@ public sealed class BrowserController : IDisposable
         if (owner.SelectedOptions.TryGetValue(index, out var selected)) { return selected; }
         return Array.FindIndex(control.Options, option => option.Selected);
     }
+    private static IReadOnlySet<int> SelectedOptions(Content owner, int index)
+    {
+        if (owner.MultipleSelectedOptions.TryGetValue(index, out var selected)) { return selected; }
+        var initial = owner.Page!.FormControls[index].Options
+            .Select((option, optionIndex) => (option, optionIndex))
+            .Where(pair => pair.option.Selected && !pair.option.Disabled)
+            .Select(pair => pair.optionIndex).ToHashSet();
+        owner.MultipleSelectedOptions[index] = initial;
+        return initial;
+    }
+    private static HashSet<int> MultipleSelectedOptions(Content owner, int index) =>
+        SelectedOptions(owner, index) as HashSet<int> ?? throw new InvalidOperationException();
     public bool ActivateFocusedLink(TabId id, PageViewport? displayedViewport = null,
         bool forceNewTab = false, bool activateNewTab = true)
     {
@@ -979,6 +1004,7 @@ public sealed class BrowserController : IDisposable
             owner.Dirty.Remove(index);
             owner.CheckedStates.Remove(index);
             owner.SelectedOptions.Remove(index);
+            owner.MultipleSelectedOptions.Remove(index);
             owner.TextareaFirstLines.Remove(index);
             owner.TextareaLines.Remove(index);
         }
@@ -1143,10 +1169,10 @@ public sealed class BrowserController : IDisposable
             {
                 var control = page.FormControls[i];
                 if (control.Kind != "select") { return true; }
+                if (control.Multiple) { return SelectedOptions(owner, i).Count > 0; }
                 var selected = SelectedOption(owner, i);
                 return selected >= 0 && !control.Options[selected].Disabled;
-            }, i => page.FormControls[i].Options.Where(option => option.Selected && !option.Disabled)
-                .Select(option => option.Value)), limit);
+            }, i => SelectedOptions(owner, i).Order().Select(option => page.FormControls[i].Options[option].Value)), limit);
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
             sameOriginRedirectOrigin, openInNewTab);
     }
@@ -1417,7 +1443,7 @@ public sealed class BrowserController : IDisposable
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
-            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.FocusedControl = -1; }
+            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;

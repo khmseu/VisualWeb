@@ -1358,6 +1358,22 @@ public sealed class FormTests
     }
 
     [Fact]
+    public void MultipleSelectPointerTogglesEnabledOptions()
+    {
+        using var harness = new Harness("<form><select multiple name=mode><option value=fast selected>Fast</option><option value=slow>Slow</option><option value=blocked disabled>Blocked</option></select><button>Go</button></form>");
+        var tab = harness.Tab.Id;
+
+        Assert.True(harness.Controller.FocusControl(tab, 0));
+        Assert.True(harness.Controller.SelectOptionFromPointer(tab, 0, 1));
+        Assert.True(harness.Controller.SelectOptionFromPointer(tab, 0, 0));
+        Assert.False(harness.Controller.SelectOptionFromPointer(tab, 0, 2));
+
+        Assert.True(harness.Controller.FocusControl(tab, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(tab));
+        Assert.Equal("https://example.com/final/index.html?mode=slow", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
     public void RequiredSelectWithOnlyDisabledSelectionBlocksSubmission()
     {
         using var harness = new Harness("""
