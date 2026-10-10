@@ -873,6 +873,7 @@ public sealed class DevelopmentShell : IDisposable
         var index = Controller.FocusedControlIndex(id);
         if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
             || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
+        if (page.FormControls[index].SelectRows > 1) { return true; }
         if (view.OpenSelectControl == index) { CloseSelectPopup(view); }
         else if (window.ActiveTab is { } tab) { OpenSelectPopup(view, tab, index); }
         return true;
