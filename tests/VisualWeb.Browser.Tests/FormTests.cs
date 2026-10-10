@@ -176,6 +176,7 @@ public sealed class FormTests
         Assert.Equal("select", control.Kind);
         Assert.True(control.Required);
         Assert.Equal("slow", control.Value);
+        Assert.Equal(1, control.SelectRows);
         Assert.NotNull(control.Rect);
         Assert.Equal(160, control.Rect!.Width);
         Assert.Equal(20, control.Rect.Height);

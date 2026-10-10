@@ -257,7 +257,8 @@ internal static class PageForms
                 FormTargetOpenInNewTab = submitterTarget,
                 FormTargetError = submitterTargetError,
                 TextareaWrapColumns = textareaWrapColumns,
-                TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0
+                TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0,
+                SelectRows = 1
             });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {

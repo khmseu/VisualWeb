@@ -92,7 +92,8 @@ public sealed record PageForm(
 /// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
 /// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formtarget">formtarget</see>.
-/// TextareaWrapColumns is present only for textarea hard wrapping. Label carries submit/reset-input text or button text.</remarks>
+/// TextareaWrapColumns is present only for textarea hard wrapping. SelectRows is one for the compact select subset.
+/// Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
     [property: JsonRequired] string Kind,
@@ -133,6 +134,9 @@ public sealed record PageFormControl(
     public int TextareaWrapColumns { get; init; }
     [JsonRequired]
     public bool TextareaWrapHard { get; init; }
+    /// <summary>Visible rows for a bounded select control; single-row selects report one.</summary>
+    [JsonRequired]
+    public int SelectRows { get; init; } = 1;
 }
 
 /// <summary>Data-only option value, label and initial disabled/selected state for a supported select control.</summary>
@@ -427,7 +431,7 @@ public sealed record RendererMessage
 
 public static class RendererProtocol
 {
-    public const int Version = 37;
+    public const int Version = 38;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -624,6 +628,8 @@ public static class RendererProtocol
                 || control.Kind == "textarea" && (control.TextareaWrapColumns is < 0 or > 128
                     || (control.TextareaWrapColumns > 0) != control.TextareaWrapHard)
                 || control.Kind != "textarea" && (control.TextareaWrapHard || control.TextareaWrapColumns != 0)
+                || control.Kind == "select" && control.SelectRows != 1
+                || control.Kind != "select" && control.SelectRows != 1
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
                 || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))
