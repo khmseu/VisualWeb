@@ -936,7 +936,7 @@ public sealed class FormTests
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
     [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
-    [InlineData("<form><select size=2 name=q><option>x</option></select></form>", "display size")]
+    [InlineData("<form><select size=13 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=999999999999999999999 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=0 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=+2 name=q><option>x</option></select></form>", "display size")]

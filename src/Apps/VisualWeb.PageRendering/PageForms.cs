@@ -156,7 +156,8 @@ internal static class PageForms
             var options = kind == "select" ? Options(element, ref optionCount) : Array.Empty<PageFormOption>();
             var selectedOption = Array.FindLastIndex(options, option => option.Selected && !option.Disabled);
             var multiple = kind == "select" && element.GetAttribute("multiple") is not null;
-            var selectRows = kind == "select" && !multiple ? SelectSize(element.GetAttribute("size")) : 1;
+            var requestedSelectRows = kind == "select" && !multiple ? SelectSize(element.GetAttribute("size")) : 1;
+            var selectRows = requestedSelectRows is >= 1 and <= 12 ? requestedSelectRows : 1;
             if (kind == "select" && !multiple && selectedOption < 0)
             { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
             if (kind == "select" && !multiple && selectedOption >= 0)
