@@ -408,6 +408,30 @@ public sealed class LinkTests
     }
 
     [Fact]
+    public void ShiftEnterOpensFocusedSameTargetLinkInNewActiveTab()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var window = controller.Session.CreateWindow();
+        var original = controller.CreateTab(window.Id);
+        controller.Navigate(original.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document(
+            "<!doctype html><style>*{margin:0}</style><a href='/next' target='_self'>open</a>"));
+        controller.Pump(_ => new(100, 50, 1));
+        var originalPage = controller.Page(original.Id);
+        controller.FocusPage(original.Id);
+        controller.FocusLink(original.Id, 0);
+
+        Assert.True(controller.ActivateFocusedLink(original.Id, forceNewTab: true));
+
+        var opened = window.ActiveTab!;
+        Assert.NotEqual(original.Id, opened.Id);
+        Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+        Assert.Same(originalPage, controller.Page(original.Id));
+        Assert.Single(original.History.Entries);
+    }
+
+    [Fact]
     public void BlankTargetCannotBypassSecurePageDowngradePolicy()
     {
         var source = new ControllerTests.Source();

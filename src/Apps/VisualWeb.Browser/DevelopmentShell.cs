@@ -526,7 +526,7 @@ public sealed class DevelopmentShell : IDisposable
                 }
                 if (view.KeyboardTarget is { } target) { Action(window, view, target.Action, target.Tab); }
                 else if (Controller.PageHasFocus(tab.Id))
-                { Controller.ActivateFocusedLink(tab.Id, ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity)); }
+                { Controller.ActivateFocusedLink(tab.Id, ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity), forceNewTab: shift); }
                 return;
             }
             if (!control && !alt && ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is { } viewport)

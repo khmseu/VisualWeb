@@ -82,7 +82,7 @@ The native window title retains the same warning alongside the active page title
 | Middle click on visible anchor text | Open its resolved href in a new active tab, regardless of the link target |
 | Ctrl+primary click on visible anchor text | Open its resolved href in a background tab, regardless of the link target |
 | Tab / Shift+Tab | Traverse drawn chrome controls, then visible textual anchors, forwards/backwards; wrap at either end |
-| Enter outside address editing | Activate the focused chrome control or textual anchor in the current tab |
+| Enter outside address editing | Activate the focused chrome control or textual anchor; Shift+Enter opens a focused anchor in a new active tab |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields | Scroll the active page vertically |
 | Vertical page scrollbar | Click or drag the browser-owned thumb to scroll the active page |
 | Single-select control | Click, Enter, or Space to open; arrows/Home/End, Page Up/Down, and committed-text prefix search select enabled options; hovered popup rows are highlighted; click an enabled option to select; wheel scrolls long lists; Escape/outside click dismisses |

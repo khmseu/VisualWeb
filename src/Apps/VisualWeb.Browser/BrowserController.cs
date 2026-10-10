@@ -722,7 +722,7 @@ public sealed class BrowserController : IDisposable
         if (owner.SelectedOptions.TryGetValue(index, out var selected)) { return selected; }
         return Array.FindIndex(control.Options, option => option.Selected);
     }
-    public bool ActivateFocusedLink(TabId id, PageViewport? displayedViewport = null)
+    public bool ActivateFocusedLink(TabId id, PageViewport? displayedViewport = null, bool forceNewTab = false)
     {
         Check();
         var owner = content[id];
@@ -730,7 +730,7 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedControl >= 0) { return ActivateControl(id, owner, owner.FocusedControl); }
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         var link = owner.Page.LinkTargets[owner.FocusedLink];
-        return NavigateLink(id, link.Url, openInNewTab: link.OpenInNewTab);
+        return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab);
     }
     /// <summary>Enter activates submit/reset controls; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
