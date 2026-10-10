@@ -49,8 +49,9 @@ broader page interaction is still missing:
   document-space offsets for offscreen text anchors, without element IDs/DOM/native
   handles. v28 also added bounded fragment-ID offsets for
   same-document scrolling, without element IDs/DOM/native handles. Fragment
-  links update URL-only history and repaint the retained document without a
-  resource load; rendered element IDs, text-bearing legacy `<a name>` targets,
+  links update same-document URL history and bounded per-entry scroll positions,
+  then repaint the retained document without a resource load; rendered element IDs,
+  text-bearing legacy `<a name>` targets,
   and empty-fragment top scrolling are supported. `_blank` opens an active tab in the source window through the
   existing broker policy; `_self`, `_parent`, and `_top` use the current tab,
   and the first `<base target>` supplies fallback for links. Named browsing
@@ -114,10 +115,12 @@ broader page interaction is still missing:
   rejected. None bypass destination or origin restrictions; new-tab destination
   checks run before tab creation, with shared HSTS applied before downgrade checks.
   Visible text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea/select controls support pointer focus without starting page text
-  selection, Ctrl+A select-all/edit replacement, and Ctrl+V clipboard paste. Single-select
+  selection. Editable text-like fields and textareas support Ctrl+A select-all,
+  edit replacement, and Ctrl+V clipboard paste. Single-select
   popup option selection is browser-owned, bounded to 12 displayed rows, and wheel-scrollable.
   Clipboard support remains bounded to selection copy and paste into focused
-  text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea fields or the selected address bar. General forms remain
+  editable text/search/email/tel/url/password/date/time/month/week/number/textarea
+  fields or the selected address bar. General forms remain
   missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/reset,
   broader textarea behavior (`dirname` remains unsupported),
   full constraint-validation UI and semantics, submitter overrides other than
@@ -140,8 +143,10 @@ broader page interaction is still missing:
   local/process repaints.
   A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
   Horizontal/nested scrolling and general CSS overflow remain missing.
-- No automatic page mouse/keyboard events or general default actions beyond
-  ordinary current-tab textual link navigation.
+- The shell does not dispatch pointer/keyboard input to pages or synthesize page
+  focus. It implements only the documented bounded link, form, and control
+  interactions; DOM event delivery/default actions for ordinary shell input remain
+  unavailable to scripts.
 - No downloads, persistent browser sessions, or complete history behavior. History
   stores URLs, per-entry scroll positions and internal same-document grouping:
   Back/Forward between user-created fragment entries retains the active document
@@ -186,7 +191,9 @@ The tokenizer is considerably more complete than the tree builder. Remaining par
 - Adoption-agency/active-formatting recovery for malformed markup.
 - Broader legacy doctype handling.
 
-The DOM also lacks full Web IDL bindings, specialized HTML element behavior, form state, custom-element reactions, and other browser APIs.
+The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
+script-visible form state and APIs, custom-element reactions, and other browser APIs;
+the browser-shell form state is a separate bounded shell-owned subset.
 
 These are compatibility blockers: unsupported constructs can reject a page.
 
@@ -218,8 +225,13 @@ However:
 - Modules, external scripts, timers, workers, script-visible networking/storage, and full Window/Web IDL behavior remain deferred.
 - Synthetic events and finite lifecycle/microtask processing exist, but not normal ongoing page interaction.
 - WebAssembly is explicitly disabled in the current host.
+- A focused regression currently fails: `CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
+  expects `InvalidOperationException`, but none is thrown. This was reproduced on
+  2026-10-10; investigate the cancellation behavior/test before treating the
+  scripting suite as clean.
 
-Evidence: `scripting scope` and `short-lived page script host`.
+Evidence: `scripting scope`, `short-lived page script host`, and the focused
+cloning-cancellation regression.
 
 ### 7. Internationalization, accessibility, and broader web APIs
 
@@ -228,7 +240,8 @@ Remaining areas include:
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
-  focused text/search/email/tel/url/password/date/time/month/week/number/checkbox/radio/textarea fields or the selected address bar; character-level page
+  editable text/search/email/tel/url/password/date/time/month/week/number/textarea
+  fields or the selected address bar; character-level page
   selection and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
@@ -247,15 +260,6 @@ Still outstanding:
 
 Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windows CI`, and `deployment prerequisites`.
 
-## Documentation reconciliation still needed
-
-The opt-in page-script pipeline exists, so documentation should distinguish
-"disabled by default / unavailable in ordinary modes" from "not implemented."
-The Windows confinement note now describes the bounded inline-classic opt-in
-and its limitations. The browser foundation plan now labels its phase-by-phase
-statements as historical snapshots and points to the current capability map and
-remaining-work tracker.
-
 ## Recommended priority
 
 1. **Security model and mandatory supported isolation** before untrusted browsing.
@@ -266,28 +270,8 @@ remaining-work tracker.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
 
-*Status cross-checked against the current implementation on 2026-10-09. Placeholder text is drawn by the shell only for empty fields, input line breaks are stripped, textarea line breaks are preserved, and placeholder text never becomes a submitted value. Clipboard editing includes field Ctrl+A/Ctrl+V and address-bar
-Ctrl+V; telephone inputs use the generic text-field path without telephone-specific
-keyboard or validation semantics; email inputs use generic text editing and
-bounded validation for one address or sanitized `multiple` comma-separated address
-lists; checkbox state is shell-owned, keyboard/pointer toggled and submitted
-only when checked; radio state is mutually exclusive by form/name, selected by
-pointer, Space, and arrow-key navigation, and required validation applies to the group; bounded editable textareas submit newline-normalized
-GET values and use shell-font-measured soft wrapping with visual-line-aware caret
-movement; `minlength` is checked for edited nonempty values and bounded text
-field patterns (bounded non-backtracking subset), email address/list validation, URL/date/time/month/week input validation and required-checkbox and radio-group state plus numeric syntax/range/step constraints are enforced on submission; password controls are shell-masked and use bounded text constraints; range controls
-are sanitized to finite bounds and the step grid and remain shell-owned; reset
-controls restore initial values/checks and clear shell-owned edits without
-navigation or validation; page-initiated `file:`/`data:` link and form
-navigations are blocked while explicit address-bar navigation remains available;
-local file documents cannot initiate HTTP(S) link/form navigation, HTTPS links
-and forms block cleartext paths unless HSTS upgrades them, opaque `data:` forms
-cannot target HTTP(S), and HTTP(S) forms are restricted to same-origin actions
-and redirect hops (with the same-host HTTPS downgrade path delegated to HSTS
-policy). Cross-origin redirects are rejected before the target request. These
-are narrow broker restrictions, not production authorization. For bounded
-form placeholders, the browser suite passes (659 tests), IPC passes (147), the
-solution builds with zero warnings/errors, and format verification passes. A prior full-solution test invocation also reported
-`Engine.Scripting.Tests.CloningTests.CancellationDuringCloningInvalidatesTheHostWithoutChangingSource`
-(expected `InvalidOperationException`, none thrown). These checks are not full
-conformance, security, CI-matrix or real-desktop validation.
+*Status cross-checked against the implementation and subsystem guides on
+2026-10-10. The solution build and all 776 browser tests passed on this snapshot;
+format verification also passed. The focused scripting cancellation regression
+listed above currently fails. These checks are not full conformance, security,
+CI-matrix or real-desktop validation.
