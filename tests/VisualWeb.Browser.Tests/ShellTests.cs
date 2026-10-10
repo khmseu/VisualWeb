@@ -87,6 +87,27 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void PointerSelectsAnEnabledListboxOption()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select size=3><option>Fast</option><option>Slow</option></select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        shell.Tick();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + 25)));
+
+        Assert.Equal(1, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+    }
+
+    [Fact]
     public void PasswordOverlayDoesNotRevealFieldValue()
     {
         using var system = new Windows();

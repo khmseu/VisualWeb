@@ -358,13 +358,16 @@ public sealed class DevelopmentShell : IDisposable
                         break;
                     }
                     var target = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
-                    if (target?.Action == ChromeAction.SelectOption)
+                    if (target?.Action is ChromeAction.SelectOption or ChromeAction.SelectListboxOption)
                     {
-                        if (window.ActiveTabId is { } optionTab && view.OpenSelectControl == target.ControlIndex
-                            && target.Tab == optionTab && ReferenceEquals(view.SelectPopupPage, Controller.Page(optionTab))
+                        var listbox = target.Action == ChromeAction.SelectListboxOption;
+                        if (window.ActiveTabId is { } optionTab
+                            && (listbox || view.OpenSelectControl == target.ControlIndex && ReferenceEquals(view.SelectPopupPage, Controller.Page(optionTab)))
+                            && target.Tab == optionTab
+                            && (!listbox || Controller.FocusControl(optionTab, target.ControlIndex))
                             && Controller.SelectOptionFromPointer(optionTab, target.ControlIndex, target.OptionIndex))
                         {
-                            if (Controller.Page(optionTab)!.FormControls[target.ControlIndex].Multiple) { view.Dirty = true; }
+                            if (listbox || Controller.Page(optionTab)!.FormControls[target.ControlIndex].Multiple) { view.Dirty = true; }
                             else { CloseSelectPopup(view); }
                         }
                         break;
