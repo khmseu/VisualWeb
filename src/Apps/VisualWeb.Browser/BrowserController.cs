@@ -998,13 +998,13 @@ public sealed class BrowserController : IDisposable
         }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
         if (control.Kind == "select") { return true; }
-        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number")) { return false; }
+        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
         {
             if (controls[candidate].Form == control.Form && controls[candidate].Kind is "submit" or "button")
             { return !controls[candidate].Disabled && Submit(id, owner, control.Form, candidate); }
         }
-        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number") > 1) { return false; }
+        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color") > 1) { return false; }
         return Submit(id, owner, control.Form, -1);
     }
     private void ResetForm(TabId id, Content owner, int formIndex)
@@ -1058,7 +1058,7 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "textarea" or "checkbox" or "radio" or "select") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "color" or "textarea" or "checkbox" or "radio" or "select") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             if (control.Kind == "email")
             {

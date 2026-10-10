@@ -800,6 +800,17 @@ public sealed class FormTests
         Assert.Contains("color", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void ColorInputSubmitsItsNormalizedSuccessfulValue()
+    {
+        using var harness = new Harness("<form action='/theme'><input type=color name=accent value=#12AbCd><button>Save</button></form>");
+
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+
+        Assert.Equal("https://example.com/theme?accent=%2312abcd", harness.Source.Requests[^1].Url.Href);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
