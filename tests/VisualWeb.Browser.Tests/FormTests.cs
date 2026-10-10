@@ -65,12 +65,12 @@ public sealed class FormTests
     }
 
     [Fact]
-    public async Task UnsupportedNonGetFormMethodIsVisible()
+    public async Task InvalidFormMethodUsesGetDefault()
     {
         using var renderer = Renderer(false);
         var page = await renderer.RenderAsync(Document("<form method=put><input name=q></form>"), new(200, 400, 1), Cancellation);
 
-        Assert.Contains("method", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(Assert.Single(page.Forms).Error);
     }
 
     [Fact]
@@ -134,6 +134,15 @@ public sealed class FormTests
         var page = await renderer.RenderAsync(Document("<form><textarea name=notes step=2></textarea></form>"), new(200, 400, 1), Cancellation);
 
         Assert.Contains("textarea step", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task TextFieldMultipleIsVisibleUnsupportedFormSemantics()
+    {
+        using var renderer = Renderer(false);
+        var page = await renderer.RenderAsync(Document("<form><input name=notes multiple></form>"), new(200, 400, 1), Cancellation);
+
+        Assert.Contains("text field attribute multiple", Assert.Single(page.Forms).Error, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

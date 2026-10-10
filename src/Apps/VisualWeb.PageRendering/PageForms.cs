@@ -75,6 +75,8 @@ internal static class PageForms
                 {
                     if (element.GetAttribute(name) is not null) { Reject(index, $"text field attribute {name}"); }
                 }
+                if (kind != "email" && element.GetAttribute("multiple") is not null)
+                { Reject(index, "text field attribute multiple"); }
             }
             if (kind == "select")
             {
@@ -285,7 +287,7 @@ internal static class PageForms
     private static (string Action, string? Error) Form(DomElement form, BrowserUrl url, BrowserUrl baseUrl)
     {
         var method = form.GetAttribute("method")?.ToLowerInvariant();
-        if (method is not (null or "" or "get"))
+        if (method is "post" or "dialog")
         { return ("", $"Unsupported form method: {method} (only GET submission is implemented)."); }
         if (form.GetAttribute("enctype") is { } enctype && !enctype.Equals("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase)
             && (enctype.Equals("multipart/form-data", StringComparison.OrdinalIgnoreCase) || enctype.Equals("text/plain", StringComparison.OrdinalIgnoreCase)))
