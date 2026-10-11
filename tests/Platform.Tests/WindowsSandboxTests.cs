@@ -39,6 +39,27 @@ public sealed class WindowsSandboxTests
     }
 
     [Fact]
+    public void NativeLaunchStructuresMatchWindows64BitAbi()
+    {
+        if (IntPtr.Size != 8) { return; }
+        var native = typeof(WindowsRendererSandbox).GetNestedType("Native", BindingFlags.NonPublic);
+        Assert.NotNull(native);
+        var startup = native.GetNestedType("StartupInfo", BindingFlags.NonPublic);
+        Assert.NotNull(startup);
+        Assert.Equal(104, Marshal.SizeOf(startup));
+        Assert.Equal((IntPtr)80, Marshal.OffsetOf(startup, "StandardInput"));
+        Assert.Equal((IntPtr)88, Marshal.OffsetOf(startup, "StandardOutput"));
+        Assert.Equal((IntPtr)96, Marshal.OffsetOf(startup, "StandardError"));
+        foreach (var (name, size) in new[] { ("StartupInfoEx", 112), ("SecurityCapabilities", 24),
+            ("SecurityAttributes", 24), ("ProcessInformation", 24) })
+        {
+            var structure = native.GetNestedType(name, BindingFlags.NonPublic);
+            Assert.NotNull(structure);
+            Assert.Equal(size, Marshal.SizeOf(structure));
+        }
+    }
+
+    [Fact]
     public void WorkerEnvironmentUsesOnlyPrivateProfileStorage()
     {
         var method = typeof(WindowsRendererSandbox).GetMethod("BuildEnvironment",

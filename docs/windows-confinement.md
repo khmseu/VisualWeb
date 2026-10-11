@@ -36,6 +36,12 @@ minimal environment includes `LOCALAPPDATA` pointing only to that write-denied
 AppContainer profile storage, required for Windows AppContainer environment
 redirection; it never inherits the host user's local app-data path.
 
+The inherited handle list contains only the inheritable child pipe endpoints:
+stdin's read end and stdout/stderr's write ends. The parent retains the opposite,
+non-inheritable endpoints. Reversing the stdout/stderr endpoints supplies
+non-inheritable handles to `PROC_THREAD_ATTRIBUTE_HANDLE_LIST`, violating its
+launch contract and causing `CreateProcessW` to reject the launch with error 87.
+
 ## Process and resource limits
 
 | Control                                        | Required value                                               |
@@ -86,7 +92,10 @@ dotnet run --project src/Apps/VisualWeb.Browser -- \
 
 The browser suite exercises confined worker launch, native Job Object memory
 pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
-on Windows. The native Windows x64/arm64 workflow runs the full solution test
+on Windows, including a private stdin roundtrip to distinct stdout/stderr pipes
+and checks that the parent endpoints are non-inheritable. Platform tests verify
+the 64-bit native startup structure sizes and standard-handle offsets used on
+x64 and arm64. The native Windows x64/arm64 workflow runs the full solution test
 suite. `WindowsSandboxSmoke` probes actual host-file/environment,
 process-creation, loopback-network and storage-write denials. The native platform
 smoke separately validates actual SDL windows, events, pixels, fonts and

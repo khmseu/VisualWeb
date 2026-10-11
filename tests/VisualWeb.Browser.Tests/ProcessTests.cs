@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Platform.Linux.Sandbox;
@@ -17,6 +19,41 @@ public sealed class ProcessTests
     private static string PeerPath => Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
     private static LoadedPage Blue => new(BrowserUrl.Parse("data:text/html,blue"),
         "<!doctype html><title>Blue</title><style>body{margin:0;background-color:blue}</style>", 200, []);
+    [Fact]
+    public async Task WindowsConfinedWorkerUsesPrivateDirectionalStandardPipes()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        deadline.CancelAfter(TimeSpan.FromSeconds(30));
+        using var worker = WindowsRendererSandbox.Start(Path.GetDirectoryName(PeerPath)!, FontPath,
+            RuntimeEnvironment.GetRuntimeDirectory(), Path.GetFileName(PeerPath), ["--probe-standard-streams"]);
+        try
+        {
+            foreach (var stream in new[] { worker.Input, worker.Output, worker.Error })
+            {
+                var file = Assert.IsType<FileStream>(stream);
+                Assert.True(GetHandleInformation(file.SafeFileHandle, out var flags));
+                Assert.Equal(0u, flags & 1u);
+            }
+            using var writer = new StreamWriter(worker.Input, leaveOpen: true);
+            using var output = new StreamReader(worker.Output, leaveOpen: true);
+            using var error = new StreamReader(worker.Error, leaveOpen: true);
+            await writer.WriteLineAsync("private-pipe-roundtrip".AsMemory(), deadline.Token);
+            await writer.FlushAsync(deadline.Token);
+            var lines = await Task.WhenAll(output.ReadLineAsync(deadline.Token).AsTask(),
+                error.ReadLineAsync(deadline.Token).AsTask()).WaitAsync(deadline.Token);
+            Assert.Equal("stdout:private-pipe-roundtrip", lines[0]);
+            Assert.Equal("stderr:private-pipe-roundtrip", lines[1]);
+            await worker.Process.WaitForExitAsync(deadline.Token);
+            Assert.Equal(0, worker.Process.ExitCode);
+        }
+        finally { worker.Terminate(); }
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetHandleInformation(SafeFileHandle handle, out uint flags);
+
     [Fact]
     public async Task ActualRendererOwnsDistinctProcessAndReturnsExactScaledOpaquePixels()
     {

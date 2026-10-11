@@ -240,8 +240,8 @@ public static class WindowsRendererSandbox
         string workerAssembly, IReadOnlyList<string>? workerArguments)
     {
         CreatePipePair(childReads: true, out var childInput, out var parentInput);
-        CreatePipePair(childReads: false, out var parentOutput, out var childOutput);
-        CreatePipePair(childReads: false, out var parentError, out var childError);
+        CreatePipePair(childReads: false, out var childOutput, out var parentOutput);
+        CreatePipePair(childReads: false, out var childError, out var parentError);
         var streamsOwnHandles = false;
         try
         {
