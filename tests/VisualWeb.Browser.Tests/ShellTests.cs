@@ -111,6 +111,50 @@ public sealed class ShellTests
         Assert.True(shell.Controller.EditingFormControl(tab.Id));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void DateTimeLocalPointerPlacesCaretAndAcceptsCommittedText(bool multiprocess, bool readOnly)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}input{display:block;width:220px;height:24px}</style>" +
+            $"<form><input type=datetime-local value=2024-01-01T09:00 {(readOnly ? "readonly" : "")}></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        var field = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(field.X + 4), (float)(ShellChrome.Height + field.Y + 8)));
+        Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.Null(tab.Error);
+        if (readOnly)
+        {
+            Assert.False(shell.Controller.EditingFormControl(tab.Id));
+            Assert.False(native.TextInput);
+            shell.Dispatch(new TextEntered(native.Id, "x"));
+            Assert.Equal("2024-01-01T09:00", shell.Controller.FormControlValue(tab.Id, 0));
+            return;
+        }
+        Assert.True(shell.Controller.EditingFormControl(tab.Id));
+        Assert.Equal(0, shell.Controller.FormControlCaret(tab.Id));
+        Assert.Empty(shell.Controller.SelectedTextRects(tab.Id));
+        Assert.True(native.TextInput);
+        shell.Dispatch(new TextEntered(native.Id, "x"));
+        Assert.Equal("x2024-01-01T09:00", shell.Controller.FormControlValue(tab.Id, 0));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(field.X + field.Width - 4), (float)(ShellChrome.Height + field.Y + 8)));
+        Assert.Equal(17, shell.Controller.FormControlCaret(tab.Id));
+    }
+
     [Fact]
     public void ListboxRowsExposeShellOwnedOptionTargets()
     {

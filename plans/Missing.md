@@ -64,7 +64,7 @@ broader page interaction is still missing:
   focus/events and non-text/empty-anchor traversal remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
-  text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/hidden/submit/reset,
+  text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select and multiple `select`, `button` submit/reset controls, and inert `input type=button`/`button type=button` controls; supported successful controls
   submit current/new-tab GET urlencoded queries via IPC v36 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
@@ -97,6 +97,15 @@ broader page interaction is still missing:
   `dirname` are rejected visibly. Time values use strict bounded HTML time
   syntax with generic text editing and validation; no clock picker is implemented,
   while bounded step grids are supported and remaining constraint attributes are rejected.
+  Datetime-local combines bounded Gregorian dates (0001–9999) and millisecond-precision
+  times without timezones, using generic shell editing, focus and pointer caret placement,
+  implicit GET submission, required/min/max and bounded step validation (default 60 seconds).
+  Initial/submitted values normalize to `T` and shortest time strings; invalid initial
+  values become empty, invalid edits block validation, and reset restores normalized initial
+  values. Readonly/disabled and validation bypass use existing form policy; bypassed invalid
+  editor text submits empty. Pattern/length/list/multiple/dirname/placeholder semantics
+  remain visibly rejected; pickers, localization, timezone UI, wider years/precision and
+  DOM form APIs/events remain missing.
   Month values use positive years of at least four digits and months 01–12, with generic
   text editing and validation; no month picker is implemented, bounded step grids are
   supported, and remaining constraint attributes are rejected. Week values enforce valid
@@ -124,16 +133,16 @@ broader page interaction is still missing:
   request/tab startup. Named/other non-keyword contexts remain missing and visibly
   rejected. None bypass destination or origin restrictions; new-tab destination
   checks run before tab creation, with shared HSTS applied before downgrade checks.
-  Visible text/search/email/tel/url/password/date/time/month/week/number/color/checkbox/radio/textarea/select controls support pointer focus without starting page text
+  Visible text/search/email/tel/url/password/date/time/datetime-local/month/week/number/color/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection. Pointer clicks in single-line text fields and textareas place the
   caret at a shell-font glyph boundary; page-font hit-testing remains absent.
   Editable text-like fields and textareas support Ctrl+A select-all, edit
   replacement, and Ctrl+V clipboard paste. Single-select
   popup option selection is browser-owned, bounded to 12 displayed rows, and wheel-scrollable.
   Clipboard support remains bounded to selection copy and paste into focused
-  editable text/search/email/tel/url/password/date/time/month/week/number/textarea
+  editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea
   fields or the selected address bar. General forms remain
-  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/month/week/number/range/color/checkbox/radio/reset,
+  missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color/checkbox/radio/reset,
   broader textarea behavior (`dirname` remains unsupported),
   full constraint-validation UI and semantics, submitter overrides other than
   `formaction`/`formtarget`/`formnovalidate`, form events/scripted submission, unsupported `form=` ownership on object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
@@ -255,7 +264,7 @@ Remaining areas include:
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
-  editable text/search/email/tel/url/password/date/time/month/week/number/textarea
+  editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea
   fields or the selected address bar; character-level page
   selection and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.

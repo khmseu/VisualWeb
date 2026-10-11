@@ -21,6 +21,230 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task DateTimeLocalInputReportsNormalizedMetadataAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form><input type=datetime-local name=meeting value="2024-02-29 09:30:00.000"
+                min="2024-02-28 09:00" max=2024-03-01T17:00 step=0.5 required readonly>
+            <input type=datetime-local value=2023-02-29T12:00>
+            <input type=datetime-local value=2024-01-01T24:00>
+            <input type=datetime-local value=2024-01-01T09:00Z>
+            <input type=datetime-local value=10000-01-01T09:00>
+            <input type=datetime-local value=0000-01-01T09:00>
+            <input type=datetime-local value=2024-01-01T09:00:01.120>
+            </form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.All(page.FormControls, control => Assert.Equal("datetime-local", control.Kind));
+        Assert.Equal(["2024-02-29T09:30", "", "", "", "", "", "2024-01-01T09:00:01.12"],
+            page.FormControls.Select(control => control.Value));
+        var first = page.FormControls[0];
+        Assert.True(first.Required);
+        Assert.True(first.ReadOnly);
+        Assert.NotNull(first.Rect);
+        Assert.NotNull(first.Minimum);
+        Assert.NotNull(first.Maximum);
+        Assert.Equal(500d, first.Step);
+        Assert.Equal(60_000d, page.FormControls[1].Step);
+        Assert.Null(Assert.Single(page.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DateTimeLocalInputRejectsUnsupportedAttributesAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form><input type=datetime-local list=times></form>
+            <form><input type=datetime-local pattern=".*"></form>
+            <form><input type=datetime-local minlength=1></form>
+            <form><input type=datetime-local maxlength=20></form>
+            <form><input type=datetime-local multiple></form>
+            <form><input type=datetime-local dirname=direction></form>
+            <form><input type=datetime-local placeholder=When></form>
+            <form><input type=datetime-local min=2024-02-01T00:00 max=2024-01-01T00:00></form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.All(page.Forms, form => Assert.Contains("datetime-local", form.Error!, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DateTimeLocalInputSupportsOwnedEditingCaretResetAndImplicitSubmission()
+    {
+        using var harness = new Harness("""
+            <form action=/save><input type=datetime-local name=meeting value="2024-02-29 09:30:00">
+            <button type=reset>Reset</button><button name=send value=yes>Save</button></form>
+            """);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        var page = controller.Page(tab)!;
+        var rect = page.FormControls[0].Rect!;
+        controller.FocusPage(tab);
+        Assert.True(controller.ActivateLink(tab, rect.X + 1, rect.Y + 1, harness.Viewport));
+        Assert.True(controller.EditingFormControl(tab));
+        controller.SetFormControlCaret(tab, 0, 0);
+        Assert.Equal(0, controller.FormControlCaret(tab));
+        controller.EditFormControl(tab, FormEdit.Right);
+        Assert.Equal(1, controller.FormControlCaret(tab));
+        controller.SelectAllFormControl(tab);
+        Assert.Equal("2025-03-09 02:30:00", controller.InsertFormText(tab, "2025-03-09 02:30:00"));
+        Assert.Equal("2024-02-29T09:30", page.FormControls[0].Value);
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Single(harness.Source.Requests);
+        Assert.Equal("2024-02-29T09:30", controller.FormControlValue(tab, 0));
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, "2025-03-09 02:30:00");
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/save?meeting=2025-03-09T02%3A30&send=yes", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("", "required")]
+    [InlineData("2023-02-29T12:00", "datetime-local")]
+    [InlineData("2024-01-01T12:00Z", "datetime-local")]
+    [InlineData("2024-01-01T08:59", "minimum")]
+    [InlineData("2024-01-02T17:01", "maximum")]
+    [InlineData("2024-01-01T09:00:00.6", "step")]
+    public void DateTimeLocalInputBlocksInvalidOwnedValues(string value, string expected)
+    {
+        using var harness = new Harness("""
+            <form><input type=datetime-local name=meeting required min=2024-01-01T09:00
+                max=2024-01-02T17:00 step=0.5><button>Save</button></form>
+            """);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.Null(Assert.Single(controller.Page(tab)!.Forms).Error);
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, value);
+        Assert.Contains(expected, Assert.Throws<PageNavigationException>(() =>
+            controller.ActivateFocusedLink(tab, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(harness.Source.Requests);
+        Assert.Equal(value, controller.FormControlValue(tab, 0));
+    }
+
+    [Theory]
+    [InlineData("min=1970-01-01T00:00 step=0.5", "1970-01-01T00:00:00.500", true)]
+    [InlineData("step=any", "0001-01-01T00:00:00.001", true)]
+    [InlineData("step=any", "9999-12-31T23:59:59.999", true)]
+    [InlineData("", "1969-12-31T23:59:30", false)]
+    [InlineData("value=2024-01-01T09:00:30", "2024-01-01T09:01:30", true)]
+    [InlineData("min=bad max=bad step=bad", "1970-01-01T00:01", true)]
+    public void DateTimeLocalInputUsesBoundedStepBases(string attributes, string value, bool valid)
+    {
+        using var harness = new Harness($"<form><input type=datetime-local name=meeting {attributes}><button>Save</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.Null(Assert.Single(controller.Page(tab)!.Forms).Error);
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, value);
+        if (valid)
+        {
+            Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+            var normalized = value.Replace(".500", ".5", StringComparison.Ordinal);
+            Assert.EndsWith("?meeting=" + Uri.EscapeDataString(normalized), harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.Contains("step", Assert.Throws<PageNavigationException>(() =>
+                controller.ActivateFocusedLink(tab, harness.Viewport)).Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(harness.Source.Requests);
+        }
+    }
+
+    [Theory]
+    [InlineData("readonly required", true)]
+    [InlineData("disabled required", false)]
+    public void DateTimeLocalInputPreservesReadonlyAndDisabledSubmission(string attributes, bool included)
+    {
+        using var harness = new Harness($"<form><input type=datetime-local name=meeting {attributes}><button>Save</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        controller.FocusControl(tab, 0);
+        Assert.False(controller.EditingFormControl(tab));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal(included ? "?meeting=" : "", harness.Source.Requests[^1].Url.Search);
+    }
+
+    [Fact]
+    public void DateTimeLocalInputBlocksMultipleImplicitFieldsWithoutSubmitter()
+    {
+        using var harness = new Harness("<form><input type=datetime-local name=meeting><input name=other></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.False(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+        Assert.Single(harness.Source.Requests);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DateTimeLocalMetadataUsesTimezoneFreeEpochMilliseconds(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form><input type=datetime-local min="1969-12-31 23:59:59.999"
+                max=1970-01-02T00:00 step=any value=1970-01-01T00:00:00.010>
+            <input type=datetime-local value=2024-01-01T09:00:00.1234>
+            <input type=datetime-local value=2024-01-01t09:00>
+            <input type=datetime-local value=2024-01-01T09:00+01:00>
+            <input type=datetime-local value=2024-01-01T09:00:60>
+            <input type=datetime-local value=２０２４-01-01T09:00></form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        var first = page.FormControls[0];
+        Assert.Equal(-1d, first.Minimum);
+        Assert.Equal(86_400_000d, first.Maximum);
+        Assert.True(first.StepAny);
+        Assert.Null(first.Step);
+        Assert.Equal("1970-01-01T00:00:00.01", first.Value);
+        Assert.All(page.FormControls.Skip(1), control => Assert.Equal("", control.Value));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateForms(page.Forms.ToArray(),
+            [first with { Value = "1970-01-01 00:00:00.010" }], 0, 200, 400));
+    }
+
+    [Theory]
+    [InlineData("novalidate", "", "2024-01-01T09:00:00.600", "2024-01-01T09%3A00%3A00.6")]
+    [InlineData("", "formnovalidate", "invalid", "")]
+    public void DateTimeLocalValidationBypassStillSanitizesSubmission(string formAttributes,
+        string submitAttributes, string value, string expected)
+    {
+        using var harness = new Harness($"<form {formAttributes}><input type=datetime-local name=meeting required step=1>" +
+            $"<button {submitAttributes}>Save</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        controller.SelectAllFormControl(tab);
+        controller.InsertFormText(tab, value);
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.EndsWith("?meeting=" + expected, harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DateTimeLocalSingleFieldImplicitSubmissionIncludesEmptyOptionalValue()
+    {
+        using var harness = new Harness("<form><input type=datetime-local name=meeting></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 0));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
+        Assert.EndsWith("?meeting=", harness.Source.Requests[^1].Url.Href, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DateTimeLocalUnsupportedSemanticsBlockSubmissionWithoutNavigation()
+    {
+        using var harness = new Harness("<form><input type=datetime-local name=meeting list=times><button>Save</button></form>");
+        Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
+        Assert.Contains("datetime-local list", Assert.Throws<PageNavigationException>(() =>
+            harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport)).Message, StringComparison.Ordinal);
+        Assert.Single(harness.Source.Requests);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererReportsSupportedControlsInTreeOrderWithGeometry(bool process)
     {
         using var renderer = Renderer(process);

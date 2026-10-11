@@ -90,12 +90,14 @@ public sealed record PageForm(
 }
 
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
-/// <remarks>Kind is text, search, email, tel, url, password, date, time, month, week, number, range, color, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
+/// <remarks>Kind is text, search, email, tel, url, password, date, time, datetime-local, month, week, number, range, color, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
 /// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
 /// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formtarget">formtarget</see>.
 /// TextareaWrapColumns is present only for textarea hard wrapping. SelectRows is one for the compact select subset.
+/// Datetime-local values are normalized timezone-free strings (years 0001–9999); Minimum/Maximum are
+/// milliseconds from 1970-01-01 and Step is in milliseconds, with default 60000 or StepAny.
 /// Label carries submit/reset-input text or button text.</remarks>
 public sealed record PageFormControl(
     [property: JsonRequired] int Form,
@@ -249,6 +251,36 @@ public static class FormTime
 
     private static int TwoDigits(string value, int offset) =>
         (value[offset] - '0') * 10 + value[offset + 1] - '0';
+}
+
+/// <summary>Checks and normalizes timezone-free HTML local date/time strings for years 0001–9999 and millisecond precision.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/input.html#local-date-and-time-state-(type=datetime-local)">local date and time state</see>
+/// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#local-dates-and-times">local dates and times</see>.
+/// Numeric values are milliseconds from 1970-01-01 without applying a timezone.</remarks>
+public static class FormDateTimeLocal
+{
+    public static bool TryGetMilliseconds(string value, out double milliseconds)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        milliseconds = 0;
+        if (value.Length is < 16 or > 23 || value[10] is not ('T' or ' ')
+            || !FormDate.TryGetDayNumber(value[..10], out var day)
+            || !FormTime.TryGetMilliseconds(value[11..], out var time)) { return false; }
+        milliseconds = (day - new DateOnly(1970, 1, 1).DayNumber) * 86_400_000d + time;
+        return true;
+    }
+
+    public static string Normalize(string value)
+    {
+        if (!TryGetMilliseconds(value, out _)) { return ""; }
+        var time = value[11..];
+        if (time.Length > 8)
+        {
+            time = time.TrimEnd('0').TrimEnd('.');
+        }
+        if (time.Length == 8 && time.AsSpan(5).SequenceEqual(":00")) { time = time[..5]; }
+        return value[..10] + "T" + time;
+    }
 }
 
 /// <summary>Checks a bounded HTML month string: a positive year with at least four digits and a two-digit month.</summary>
@@ -629,7 +661,7 @@ public static class RendererProtocol
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
-                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "color" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button" or "inert")
+                || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "range" or "color" or "checkbox" or "radio" or "select" or "textarea" or "hidden" or "submit" or "reset" or "button" or "inert")
                 || control.Name is null || control.Name.Length > MaxTextCharacters
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
@@ -656,18 +688,20 @@ public static class RendererProtocol
                 || control.Kind == "email" && control.Value != FormEmail.Sanitize(control.Value, control.Multiple)
                 || control.Placeholder.Length > 0 && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "number" or "textarea")
                 || control.Kind != "textarea" && (control.Placeholder.Contains('\r') || control.Placeholder.Contains('\n'))
-                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "textarea")
-                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "checkbox" or "radio" or "select" or "textarea")
+                || control.ReadOnly && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color" or "textarea")
+                || control.Required && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color" or "checkbox" or "radio" or "select" or "textarea")
                 || control.Minimum is { } minimum && !double.IsFinite(minimum)
                 || control.Maximum is { } maximum && !double.IsFinite(maximum)
                 || control.Step is { } step && (!double.IsFinite(step) || step <= 0)
-                || control.Kind is not ("number" or "range" or "date" or "time" or "month" or "week") && (control.Minimum is not null || control.Maximum is not null
+                || control.Kind is not ("number" or "range" or "date" or "time" or "datetime-local" or "month" or "week") && (control.Minimum is not null || control.Maximum is not null
                     || control.Step is not null || control.StepAny)
-                || (control.Kind is "number" or "range" or "date" or "time" or "month" or "week") && (control.StepAny ? control.Step is not null : control.Step is null)
+                || (control.Kind is "number" or "range" or "date" or "time" or "datetime-local" or "month" or "week") && (control.StepAny ? control.Step is not null : control.Step is null)
                 || control.Kind == "date" && (control.Minimum is { } dateMinimum && dateMinimum != Math.Truncate(dateMinimum)
                     || control.Maximum is { } dateMaximum && dateMaximum != Math.Truncate(dateMaximum))
                 || control.Kind == "time" && (control.Minimum is { } timeMinimum && timeMinimum != Math.Truncate(timeMinimum)
                     || control.Maximum is { } timeMaximum && timeMaximum != Math.Truncate(timeMaximum))
+                || control.Kind == "datetime-local" && (control.Minimum is { } localMinimum && localMinimum != Math.Truncate(localMinimum)
+                    || control.Maximum is { } localMaximum && localMaximum != Math.Truncate(localMaximum))
                 || control.Kind == "month" && (control.Minimum is { } monthMinimum && monthMinimum != Math.Truncate(monthMinimum)
                     || control.Maximum is { } monthMaximum && monthMaximum != Math.Truncate(monthMaximum))
                 || control.Kind == "week" && (control.Minimum is { } weekMinimum && weekMinimum != Math.Truncate(weekMinimum)
@@ -680,7 +714,7 @@ public static class RendererProtocol
                 || control.Pattern is { } pattern && !FormPattern.IsValid(pattern)
                 || control.Pattern is not null && ++patternCount > MaxFormPatterns
                 || control.MinLength < -1 || control.MinLength > MaxTextCharacters
-                || control.MaxLength < -1 || (control.Kind is "date" or "time" or "month" or "week") && control.MaxLength != -1
+                || control.MaxLength < -1 || (control.Kind is "date" or "time" or "datetime-local" or "month" or "week") && control.MaxLength != -1
                 || control.BeforeLink < 0 || control.BeforeLink > linkCount
                 || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea") && control.MinLength != -1
                 || control.Options is null || (long)optionCount + control.Options.Length > MaxSelectOptions
@@ -698,6 +732,9 @@ public static class RendererProtocol
             { throw new IpcProtocolException("Invalid renderer date value."); }
             if (control.Kind == "time" && control.Value.Length > 0 && !FormTime.IsValid(control.Value))
             { throw new IpcProtocolException("Invalid renderer time value."); }
+            if (control.Kind == "datetime-local" && control.Value.Length > 0
+                && control.Value != FormDateTimeLocal.Normalize(control.Value))
+            { throw new IpcProtocolException("Invalid renderer datetime-local value."); }
             if (control.Kind == "month" && control.Value.Length > 0 && !FormMonth.IsValid(control.Value))
             { throw new IpcProtocolException("Invalid renderer month value."); }
             if (control.Kind == "week" && control.Value.Length > 0 && !FormWeek.IsValid(control.Value))

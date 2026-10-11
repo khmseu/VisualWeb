@@ -150,6 +150,7 @@ internal static class PageForms
                 "email" => FormEmail.Sanitize(value ?? "", element.GetAttribute("multiple") is not null),
                 "date" => FormDate.IsValid(value ?? "") ? value ?? "" : "",
                 "time" => FormTime.IsValid(value ?? "") ? value ?? "" : "",
+                "datetime-local" => FormDateTimeLocal.Normalize(value ?? ""),
                 "month" => FormMonth.IsValid(value ?? "") ? value ?? "" : "",
                 "week" => FormWeek.IsValid(value ?? "") ? value ?? "" : "",
                 "color" => FormColor.Normalize(value),
@@ -229,8 +230,8 @@ internal static class PageForms
         int textareaWrapColumns, bool textareaWrapHard, int selectRows) =>
         new(formIndex, kind, name, value, label, pattern,
             element.GetAttribute("disabled") is not null || IsDisabledByFieldset(element),
-            (text || kind is "date" or "time" or "month" or "week") && element.GetAttribute("readonly") is not null,
-            (text || kind is "checkbox" or "radio" or "select" or "date" or "time" or "month" or "week") && element.GetAttribute("required") is not null,
+            (text || kind is "date" or "time" or "datetime-local" or "month" or "week") && element.GetAttribute("readonly") is not null,
+            (text || kind is "checkbox" or "radio" or "select" or "date" or "time" or "datetime-local" or "month" or "week") && element.GetAttribute("required") is not null,
             minLength, text && kind != "number" ? MaxLength(element.GetAttribute("maxlength")) : -1, beforeLink,
             rect, kind is "checkbox" or "radio" && element.GetAttribute("checked") is not null, minimum, maximum,
             step, stepAny)
@@ -264,10 +265,12 @@ internal static class PageForms
         if (kind == "select" && element.GetAttribute("multiple") is null
             && SelectSize(element.GetAttribute("size")) is not (>= 1 and <= 12))
         { reject(formIndex, "select display size other than 1"); }
-        if (kind is "date" or "time" or "month" or "week")
+        if (kind is "date" or "time" or "datetime-local" or "month" or "week")
         {
             foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })
             { if (element.GetAttribute(attribute) is not null) { reject(formIndex, $"{kind} {attribute}"); } }
+            if (kind == "datetime-local" && element.GetAttribute("placeholder") is not null)
+            { reject(formIndex, "datetime-local placeholder"); }
         }
         if (kind is "number" or "range")
         {
@@ -287,22 +290,24 @@ internal static class PageForms
         var range = kind == "range";
         var minimum = kind == "date" ? DateBound(element.GetAttribute("min"))
             : kind == "time" ? TimeBound(element.GetAttribute("min"))
+            : kind == "datetime-local" ? DateTimeLocalBound(element.GetAttribute("min"))
             : kind == "month" ? MonthBound(element.GetAttribute("min"))
             : kind == "week" ? WeekBound(element.GetAttribute("min"))
             : kind == "number" ? NumberBound(element.GetAttribute("min"))
             : range ? NumberBound(element.GetAttribute("min")) ?? 0 : null;
         var maximum = kind == "date" ? DateBound(element.GetAttribute("max"))
             : kind == "time" ? TimeBound(element.GetAttribute("max"))
+            : kind == "datetime-local" ? DateTimeLocalBound(element.GetAttribute("max"))
             : kind == "month" ? MonthBound(element.GetAttribute("max"))
             : kind == "week" ? WeekBound(element.GetAttribute("max"))
             : kind == "number" ? NumberBound(element.GetAttribute("max"))
             : range ? NumberBound(element.GetAttribute("max")) ?? 100 : null;
-        var stepAny = (kind is "number" or "range" or "date" or "time" or "month" or "week")
+        var stepAny = (kind is "number" or "range" or "date" or "time" or "datetime-local" or "month" or "week")
             && element.GetAttribute("step")?.Equals("any", StringComparison.OrdinalIgnoreCase) == true;
-        double? step = kind is not ("number" or "range" or "date" or "time" or "month" or "week") || stepAny ? null
+        double? step = kind is not ("number" or "range" or "date" or "time" or "datetime-local" or "month" or "week") || stepAny ? null
             : NumberBound(element.GetAttribute("step")) is { } parsedStep && parsedStep > 0
-                ? kind == "time" ? parsedStep * 1000 : parsedStep
-                : kind == "time" ? 60_000 : 1;
+                ? kind is "time" or "datetime-local" ? parsedStep * 1000 : parsedStep
+                : kind is "time" or "datetime-local" ? 60_000 : 1;
         if (minimum is { } min && maximum is { } max && min > max)
         {
             reject(formIndex, $"{kind} minimum exceeds maximum");
@@ -407,7 +412,7 @@ internal static class PageForms
 
     private static string? Kind(DomElement element) => element.LocalName switch
     {
-        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "color" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : type == "button" ? "inert" : null,
+        "input" => DomFormControls.InputType(element) is var type && type is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "range" or "color" or "checkbox" or "radio" or "hidden" or "submit" or "reset" ? type : type == "button" ? "inert" : null,
         "button" => DomFormControls.ButtonType(element) switch
         {
             "submit" => "button",
@@ -439,6 +444,9 @@ internal static class PageForms
 
     private static double? MonthBound(string? value) => value is not null && FormMonth.TryGetMonthNumber(value, out var monthNumber)
         ? monthNumber : null;
+
+    private static double? DateTimeLocalBound(string? value) => value is not null && FormDateTimeLocal.TryGetMilliseconds(value, out var milliseconds)
+        ? milliseconds : null;
 
     private static double? WeekBound(string? value) => value is not null && FormWeek.TryGetWeekNumber(value, out var weekNumber)
         ? weekNumber : null;

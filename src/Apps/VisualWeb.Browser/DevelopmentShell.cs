@@ -407,8 +407,8 @@ public sealed class DevelopmentShell : IDisposable
     private void SetPointerControlCaret(TabId tabId, double pointerX, double pageY, bool activated)
     {
         var focusedControl = Controller.FocusedControlIndex(tabId);
-        if (!activated || focusedControl < 0) { return; }
-        if (Controller.Page(tabId)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "month" or "week" or "number" or "color" or "password", Rect: { } textRect } textControl)
+        if (!activated || focusedControl < 0 || !Controller.EditingFormControl(tabId)) { return; }
+        if (Controller.Page(tabId)?.FormControls[focusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color" or "password", Rect: { } textRect } textControl)
         {
             var value = Controller.FormControlValue(tabId, focusedControl);
             var selectAll = Controller.FormControlSelectAll(tabId);

@@ -413,7 +413,7 @@ public sealed class BrowserController : IDisposable
         Check();
         var owner = content[id];
         return owner.PageFocused && owner.Page is { } page && owner.FocusedControl >= 0
-            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "textarea", ReadOnly: false, Disabled: false };
+            && page.FormControls[owner.FocusedControl] is { Kind: "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color" or "textarea", ReadOnly: false, Disabled: false };
     }
     public bool IsMultilineFormControl(TabId id)
     {
@@ -665,7 +665,7 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
-        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color" or "textarea"
+        return owner.FocusedControl >= 0 && owner.Page?.FormControls[owner.FocusedControl].Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color" or "textarea"
             ? Field(owner, owner.FocusedControl).Caret : -1;
     }
     public void SetFormControlCaret(TabId id, int controlIndex, int caret)
@@ -1000,13 +1000,13 @@ public sealed class BrowserController : IDisposable
         }
         if (control.Kind is "submit" or "button") { return Submit(id, owner, control.Form, index); }
         if (control.Kind == "select") { return true; }
-        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color")) { return false; }
+        if (control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color")) { return false; }
         for (var candidate = 0; candidate < controls.Count; candidate++)
         {
             if (controls[candidate].Form == control.Form && controls[candidate].Kind is "submit" or "button")
             { return !controls[candidate].Disabled && Submit(id, owner, control.Form, candidate); }
         }
-        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "color") > 1) { return false; }
+        if (controls.Count(c => c.Form == control.Form && c.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "color") > 1) { return false; }
         return Submit(id, owner, control.Form, -1);
     }
     private void ResetForm(TabId id, Content owner, int formIndex)
@@ -1060,7 +1060,7 @@ public sealed class BrowserController : IDisposable
         for (var index = 0; index < page.FormControls.Count; index++)
         {
             var control = page.FormControls[index];
-            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "range" or "color" or "textarea" or "checkbox" or "radio" or "select") || control.Disabled || control.ReadOnly) { continue; }
+            if (control.Form != formIndex || control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "range" or "color" or "textarea" or "checkbox" or "radio" or "select") || control.Disabled || control.ReadOnly) { continue; }
             var value = Value(owner, index);
             if (control.Kind == "email")
             {
@@ -1084,6 +1084,8 @@ public sealed class BrowserController : IDisposable
             i => normalizedEmailValues.TryGetValue(i, out var email) ? email
                 : page.FormControls[i] is { Kind: "textarea", TextareaWrapHard: true } textarea
                     ? FormSubmission.HardWrapTextarea(Value(owner, i), textarea.TextareaWrapColumns)
+                    : page.FormControls[i].Kind == "datetime-local"
+                        ? FormDateTimeLocal.Normalize(Value(owner, i))
                     : Value(owner, i),
             i => owner.CheckedStates.GetValueOrDefault(i, page.FormControls[i].Checked), i =>
             {
@@ -1109,6 +1111,12 @@ public sealed class BrowserController : IDisposable
         { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid time; submission blocked."); }
         if (control.Kind == "time" && value.Length > 0 && FormTime.TryGetMilliseconds(value, out var timeMilliseconds))
         { ValidateTimeBounds(control, timeMilliseconds); }
+        if (control.Kind == "datetime-local" && value.Length > 0)
+        {
+            if (!FormDateTimeLocal.TryGetMilliseconds(value, out var localMilliseconds))
+            { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid datetime-local; submission blocked."); }
+            ValidateTemporalBounds(control, localMilliseconds, FormDateTimeLocal.TryGetMilliseconds);
+        }
         if (control.Kind == "month" && value.Length > 0 && !FormMonth.IsValid(value))
         { throw new PageNavigationException($"Form field '{control.Name}' must contain a valid month; submission blocked."); }
         if (control.Kind == "month" && value.Length > 0 && FormMonth.TryGetMonthNumber(value, out var monthNumber))
@@ -1342,7 +1350,7 @@ public sealed class BrowserController : IDisposable
             if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
             if (control.Kind == "range") { SetRangeFromPointer(id, index, x); return true; }
-            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "month" or "week" or "number" or "textarea" or "select";
+            return control.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "textarea" or "select";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)
         {
