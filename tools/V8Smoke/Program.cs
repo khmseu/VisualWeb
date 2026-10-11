@@ -269,10 +269,17 @@ static void Probe()
     using var recovered = new V8ScriptHost();
     Check(recovered.Evaluate("42").Number == 42, "Fresh V8 isolate failed after interruption.");
     Console.WriteLine("PROBE: monitored heap interruption");
-    using var heap = new V8ScriptHost();
+    using var heap = new V8ScriptHost(TimeSpan.FromSeconds(10));
     try
     {
-        heap.Evaluate("globalThis.leak = []; while(true) leak.push(new Array(4096).fill(42));");
+        heap.Evaluate("""
+            globalThis.leak = [];
+            while (true) {
+                leak.push(new Array(16384).fill(42));
+                const next = Date.now() + 5;
+                while (Date.now() < next) {}
+            }
+            """);
         throw new InvalidOperationException("V8 monitored heap limit was not enforced.");
     }
     catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }

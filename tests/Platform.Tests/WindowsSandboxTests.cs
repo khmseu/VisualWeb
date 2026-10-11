@@ -27,6 +27,34 @@ public sealed class WindowsSandboxTests
     }
 
     [Fact]
+    public void WorkerEnvironmentUsesOnlyPrivateProfileStorage()
+    {
+        var method = typeof(WindowsRendererSandbox).GetMethod("BuildEnvironment",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        var block = Assert.IsType<IntPtr>(method.Invoke(null, ["runtime", "temp", "windows", "private-profile"]));
+        try
+        {
+            var entries = new List<string>();
+            var offset = 0;
+            while (Marshal.ReadInt16(block, offset) != 0)
+            {
+                var entry = Marshal.PtrToStringUni(IntPtr.Add(block, offset));
+                Assert.NotNull(entry);
+                entries.Add(entry);
+                offset += (entry.Length + 1) * sizeof(char);
+            }
+            Assert.Equal(9, entries.Count);
+            Assert.Contains("LOCALAPPDATA=private-profile", entries);
+            Assert.Contains("TEMP=temp", entries);
+            Assert.Contains("TMP=temp", entries);
+            Assert.Contains("SystemRoot=windows", entries);
+            Assert.DoesNotContain(entries, entry => entry.StartsWith("USERPROFILE=", StringComparison.OrdinalIgnoreCase));
+        }
+        finally { Marshal.FreeHGlobal(block); }
+    }
+
+    [Fact]
     public void NativeFailureIncludesErrorCodeAndSystemMessage()
     {
         var native = typeof(WindowsRendererSandbox).GetNestedType("Native", BindingFlags.NonPublic);

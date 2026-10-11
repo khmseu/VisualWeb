@@ -300,7 +300,7 @@ public static class WindowsRendererSandbox
                     if (workerArguments is not null) { command.AddRange(workerArguments); }
                     var commandLine = new System.Text.StringBuilder(string.Join(" ", command.Select(QuoteArgument)));
                     var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-                    var environment = BuildEnvironment(runtime, temp, windows);
+                    var environment = BuildEnvironment(runtime, temp, windows, profileStorage);
                     try
                     {
                         if (!Native.CreateProcessW(command[0], commandLine, IntPtr.Zero, IntPtr.Zero, true,
@@ -483,7 +483,7 @@ public static class WindowsRendererSandbox
         }
     }
 
-    private static IntPtr BuildEnvironment(string runtime, string temp, string windows)
+    private static IntPtr BuildEnvironment(string runtime, string temp, string windows, string profileStorage)
     {
         var values = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -491,6 +491,7 @@ public static class WindowsRendererSandbox
             ["DOTNET_GCHeapHardLimit"] = "10000000",
             ["DOTNET_PROCESSOR_COUNT"] = "2",
             ["DOTNET_ROOT"] = runtime,
+            ["LOCALAPPDATA"] = profileStorage,
             ["SystemRoot"] = windows,
             ["TEMP"] = temp,
             ["TMP"] = temp,

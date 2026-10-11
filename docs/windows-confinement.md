@@ -31,7 +31,10 @@ when the owned worker is disposed. Profile storage lookup converts the binary
 AppContainer SID to a Unicode SID string before calling
 `GetAppContainerFolderPath`; the SID string and returned path are released with
 `LocalFree` and `CoTaskMemFree`, respectively. Native launch failures include the
-Win32 error code and system message so CI diagnostics retain the cause of refusal.
+Win32 error code and system message so CI diagnostics retain the cause of refusal. The
+minimal environment includes `LOCALAPPDATA` pointing only to that write-denied
+AppContainer profile storage, required for Windows AppContainer environment
+redirection; it never inherits the host user's local app-data path.
 
 ## Process and resource limits
 
