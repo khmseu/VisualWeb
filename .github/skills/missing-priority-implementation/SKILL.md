@@ -13,21 +13,31 @@ moving to another priority.
 ## Procedure
 
 1. Read `docs/README.md`, `docs/architecture/overview.md`,
-   `docs/project-map.md`, `plans/Missing.md`, the relevant subsystem guide and
-   README, `plans/browser-foundation-plan.md`, and
+   `docs/project-map.md`, `plans/Missing.md`, `plans/browser-foundation-plan.md`, and
    `docs/adr/0001-browser-foundation.md`. Check the working-tree status first;
    preserve unrelated or pre-existing changes.
 2. Follow the priority order in `plans/Missing.md`. Select the next actionable
    work that is not already implemented. Treat broad headings as areas to
    break down, not as one-commit deliverables. Verify the current code and tests
    before choosing a concrete increment; do not infer completion from a title
-   or stale tracker wording. If no actionable, unimplemented item exists, or
-   every remaining item depends on an unresolved decision, report this with
-   the evidence you checked and ask the user how to proceed instead of
-   selecting speculative work.
-3. Define a small, coherent change with observable behavior and focused tests.
+   or stale tracker wording. If an unresolved user decision is what prevents
+   selecting the next increment, follow step 3 before declaring the work
+   blocked. If no actionable, unimplemented item exists for other reasons,
+   report this with the evidence you checked and ask the user how to proceed
+   instead of selecting speculative work.
+3. After selecting the increment in step 2, read the owning subsystem's guide
+   and README before defining the change. Define a small, coherent change
+   with observable behavior and focused tests.
    Respect the approved roadmap and subsystem constraints. If a material
-   behavior or design choice is unresolved, ask the user before choosing.
+   behavior or design choice is unresolved and would otherwise block progress,
+   explain the missing decision and ask the user to choose among concrete,
+   roadmap-compatible options, describing their relevant trade-offs. Always
+   include "Block further actions until this decision is resolved" as one
+   option. Use a question tool if available; otherwise present numbered options
+   in chat. Wait for the user's decision before implementing or selecting
+   alternative work; do not assume a choice or treat silence as approval. If
+   the user chooses to block further actions, report the unresolved decision
+   and stop until the user resolves it.
 4. For standards-dependent changes, read the relevant local files under
    `specs/cache/`. If a required document is missing, or its recorded fetch date
    in `specs/manifest.json` (or, if absent, the file's last-modified time) is more
@@ -41,6 +51,10 @@ moving to another priority.
 6. Run the smallest relevant test command, then any required build, format,
    or platform smoke validation warranted by the change. Fix regressions caused
    by the change. Do not suppress failures or claim unrun target validation.
+   If failures are pre-existing and unrelated to the change, do not fix them
+   in this increment; verify they fail on the base commit, report them
+   explicitly in the summary and commit body, and proceed only if the change's
+   own tests pass.
 7. Review the diff and status. Commit only the completed, related files with a
    Conventional Commit message. For non-trivial changes use a descriptive body,
    and include the repository's required
@@ -49,11 +63,14 @@ moving to another priority.
    contains unrelated pre-existing modifications, stage only your hunks
    (e.g. `git add -p`) or, if that is not feasible, stop and ask the user how to
    handle the overlapping changes before committing.
-8. If the user requested multiple passes, repeat from step 1 against the
+8. If no pass count is given, perform exactly one pass and stop after its
+   commit. If the user requested multiple passes, repeat from step 1 against the
    updated tracker, making each pass a separately tested, separately committed
    increment. Do not repeat the same item or make speculative changes merely
-   to reach a requested count. If safe, testable work is blocked, explain why
-   and ask how to proceed rather than creating an empty or misleading commit.
+   to reach a requested count. If safe, testable work is blocked by a missing
+   user decision, follow step 3 and offer blocking further actions as an
+   option. For other blockers, explain why and ask how to proceed rather than
+   creating an empty or misleading commit.
 
 ## Repository guardrails
 
