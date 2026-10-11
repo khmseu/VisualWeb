@@ -82,6 +82,15 @@ public sealed class HostTests
         Assert.Equal(42, fresh.Evaluate("42", TestContext.Current.CancellationToken).Number);
     }
     [Fact]
+    public void RuntimeHeapLimitIsReportedAsAResourceLimitAndInvalidatesTheContext()
+    {
+        using var host = new V8ScriptHost(TimeSpan.FromSeconds(10));
+        var failure = Assert.Throws<ScriptLimitException>(() => host.ExecuteClassic(
+            "globalThis.leak=[]; while(true) leak.push(new Array(10000).fill(0))", TestContext.Current.CancellationToken));
+        Assert.Contains("heap limit", failure.Message);
+        Assert.Throws<InvalidOperationException>(() => host.Evaluate("42", TestContext.Current.CancellationToken));
+    }
+    [Fact]
     public void CancellationInterruptsRunningScriptButPreCanceledCallsDoNotPoison()
     {
         using var host = new V8ScriptHost();

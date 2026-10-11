@@ -232,6 +232,11 @@ public sealed class V8ScriptHost : IDisposable
                 if (cancellationToken.IsCancellationRequested) { throw new OperationCanceledException("V8 execution canceled; isolate invalidated.", exception, cancellationToken); }
                 throw new ScriptLimitException("V8 execution deadline exceeded; isolate invalidated.", exception);
             }
+            if (exception.Message.Contains("V8 runtime has exceeded its memory limit", StringComparison.OrdinalIgnoreCase))
+            {
+                poisoned = true;
+                throw new ScriptLimitException("V8 runtime heap limit exceeded; isolate invalidated.", exception);
+            }
             if (exception.IsFatal || microtasks is not null || events is not null) { poisoned = true; }
             throw new ScriptExecutionException("V8 execution failed: " + Bounded(exception.Message), exception);
         }
