@@ -30,7 +30,8 @@ capabilities are added. Staging and AppContainer profile resources are removed
 when the owned worker is disposed. Profile storage lookup converts the binary
 AppContainer SID to a Unicode SID string before calling
 `GetAppContainerFolderPath`; the SID string and returned path are released with
-`LocalFree` and `CoTaskMemFree`, respectively.
+`LocalFree` and `CoTaskMemFree`, respectively. Native launch failures include the
+Win32 error code and system message so CI diagnostics retain the cause of refusal.
 
 ## Process and resource limits
 

@@ -7,7 +7,23 @@ using VisualWeb.Platform.Windows.Sandbox;
 
 try
 {
-    if (args is ["--local"]) { Probe(); return 0; }
+    if (args is ["--local-worker"]) { Probe(); return 0; }
+    if (args is ["--local"])
+    {
+        var root = new DirectoryInfo(RuntimeEnvironment.GetRuntimeDirectory()).Parent?.Parent?.Parent
+            ?? throw new InvalidOperationException("Unsupported .NET runtime directory layout.");
+        var launch = new ProcessStartInfo(Path.Combine(root.FullName, OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet"))
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        launch.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "VisualWeb.V8Smoke.dll"));
+        launch.ArgumentList.Add("--local-worker");
+        using var process = Process.Start(launch) ?? throw new InvalidOperationException("Cannot launch local V8 probe.");
+        Wait(process, process.StandardOutput, process.StandardError, () => process.Kill(entireProcessTree: true));
+        return 0;
+    }
     if (args is ["--linux-sandbox-bootstrap", "--font", var font])
     {
         LinuxRendererSandbox.Enter(AppContext.BaseDirectory, font, "VisualWeb.V8Smoke.dll");
@@ -74,15 +90,16 @@ static void Wait(Process process, StreamReader output, StreamReader error, Actio
 {
     var stdout = output.ReadToEndAsync();
     var stderr = error.ReadToEndAsync();
-    if (!process.WaitForExit(30000))
+    var timedOut = !process.WaitForExit(30000);
+    if (timedOut)
     {
         terminate();
         process.WaitForExit();
-        throw new TimeoutException("Confined V8 probe exceeded 30 seconds.");
     }
     Console.Write(stdout.GetAwaiter().GetResult());
     Console.Error.Write(stderr.GetAwaiter().GetResult());
-    if (process.ExitCode != 0) { throw new InvalidOperationException("Confined V8 probe exited: " + process.ExitCode); }
+    if (timedOut) { throw new TimeoutException("V8 probe exceeded 30 seconds; worker terminated."); }
+    if (process.ExitCode != 0) { throw new InvalidOperationException("V8 probe exited: " + process.ExitCode); }
 }
 
 static void Probe()
@@ -223,6 +240,7 @@ static void Probe()
     ]);
     Check(lifecycle.Evaluate("readiness.join(',')").Text == "loading,interactive,dom,complete"
         && document.Title == "ready checkpoint", "Finite document lifecycle failed.");
+    Console.WriteLine("PROBE: microtask deadline interruption");
     using var taskDeadline = new V8ScriptHost(TimeSpan.FromMilliseconds(150), enableMicrotasks: true);
     try { taskDeadline.ExecuteClassic("queueMicrotask(()=>{while(true){}});"); throw new InvalidOperationException("Microtask escaped deadline."); }
     catch (ScriptLimitException) { }
@@ -244,11 +262,13 @@ static void Probe()
         throw new InvalidOperationException("V8 external allocation limit was not enforced.");
     }
     catch (ScriptExecutionException) { }
+    Console.WriteLine("PROBE: classic batch deadline interruption");
     using var bounded = new V8ScriptHost(TimeSpan.FromMilliseconds(150));
     try { bounded.ExecuteClassicBatch(["let prefix = 1;", "while (true) {}"]); throw new InvalidOperationException("Infinite script escaped its batch deadline."); }
     catch (ScriptLimitException exception) when (exception.Message.Contains("deadline", StringComparison.Ordinal)) { }
     using var recovered = new V8ScriptHost();
     Check(recovered.Evaluate("42").Number == 42, "Fresh V8 isolate failed after interruption.");
+    Console.WriteLine("PROBE: monitored heap interruption");
     using var heap = new V8ScriptHost();
     try
     {

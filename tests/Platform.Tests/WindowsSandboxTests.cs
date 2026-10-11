@@ -27,6 +27,18 @@ public sealed class WindowsSandboxTests
     }
 
     [Fact]
+    public void NativeFailureIncludesErrorCodeAndSystemMessage()
+    {
+        var native = typeof(WindowsRendererSandbox).GetNestedType("Native", BindingFlags.NonPublic);
+        Assert.NotNull(native);
+        var method = native.GetMethod("Failure", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        var failure = Assert.IsType<System.ComponentModel.Win32Exception>(method.Invoke(null, ["launch renderer"]));
+        Assert.Contains("Cannot launch renderer: Win32 error " + failure.NativeErrorCode, failure.Message);
+        Assert.Contains(new System.ComponentModel.Win32Exception(failure.NativeErrorCode).Message, failure.Message);
+    }
+
+    [Fact]
     public void NativeAppContainerProfileStorageResolvesBinarySid()
     {
         if (!OperatingSystem.IsWindows()) { return; }

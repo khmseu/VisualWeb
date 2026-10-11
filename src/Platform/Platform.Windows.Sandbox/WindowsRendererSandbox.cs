@@ -664,7 +664,12 @@ public static class WindowsRendererSandbox
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool TerminateProcess(IntPtr process, uint exitCode);
         [DllImport("kernel32.dll")][return: MarshalAs(UnmanagedType.Bool)] internal static extern bool CloseHandle(IntPtr handle);
-        internal static Exception Failure(string action) => new Win32Exception(Marshal.GetLastPInvokeError(), "Cannot " + action + ".");
+        internal static Exception Failure(string action)
+        {
+            var code = Marshal.GetLastPInvokeError();
+            return new Win32Exception(code, "Cannot " + action + ": Win32 error " + code + " ("
+                + new Win32Exception(code).Message + ").");
+        }
     }
 }
 

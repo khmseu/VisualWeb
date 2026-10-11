@@ -12,8 +12,9 @@ dotnet run --project tools/V8Smoke -- \
 Required confinement uses the existing Linux x64/ARM64 or Windows AppContainer/Job
 Object launcher, with no weaker fallback. The worker verifies that profile
 before creating V8. Unsupported targets/refused policy/native initialization
-fail visibly. The outer 30-second deadline cleans up only the owned scope/tree
-or job. The supplied trusted font is a launcher prerequisite, not loaded by V8.
+fail visibly. Local and confined probes both run in owned workers under an outer 30-second
+deadline, which cleans up only the owned scope/tree or job and reports captured
+output on timeout. Local mode remains unsandboxed; the watchdog is not confinement. The supplied trusted font is a launcher prerequisite, not loaded by V8.
 
 Measures private isolates, precise primitives, no CLR/browser globals, copied
 result and external-buffer limits, monitored heap invalidation, infinite-script
