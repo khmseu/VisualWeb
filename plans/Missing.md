@@ -74,7 +74,7 @@ broader page interaction is still missing:
   and checked states, clears their edited/dirty/check state, preserves focus,
   and does not navigate or run submission validation. Text-field implicit Enter
   continues to target only a submitter and never activates reset controls.
-  Selects expose bounded direct options, default selection, disabled-option
+  Single-selects expose bounded direct options, default selection, disabled-option
   skipping and Up/Down/Home/End/PageUp/PageDown keyboard selection. Page keys move
   by the visible popup row count and skip disabled options. Bounded committed-text prefix
   search selects matching enabled options and cycles repeated single-character
@@ -88,7 +88,15 @@ broader page interaction is still missing:
   unsupported. Multiple selects preserve bounded initially selected options and use the
   browser-owned popup for pointer toggles; selected rows are highlighted, enabled toggles retain the popup,
   and the closed control shows the selected count. Enabled selections submit in option order and reset restores
-  their initial state. Multiple-select keyboard behavior remains unsupported. Optgroups flatten
+  their initial state. Multiple-select keyboard interaction now uses an independent enabled-option cursor:
+  unmodified Up/Down/Home/End/PageUp/PageDown navigate without changing selections or wrapping; page keys use
+  the visible popup row count (one when closed), skip disabled options, and leave the cursor unchanged if a
+  full step exceeds the list. The cursor starts at the first enabled selected option, otherwise the first
+  enabled option, is kept visible/highlighted, follows pointer toggles, and resets with the form.
+  Space/Enter opens a closed popup; non-repeated Space toggles while retaining an open popup, Enter dismisses,
+  and Escape/Tab/outside clicks dismiss without reverting toggles. Empty/all-disabled options are inert;
+  retained repaints preserve cursor/selection. Multiple-select type-ahead, Shift/range selection, Ctrl+A,
+  listboxes, platform-native behavior and DOM keyboard/input/change events remain unsupported. Optgroups flatten
   into the option list, prefix group labels, and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values, `required`,

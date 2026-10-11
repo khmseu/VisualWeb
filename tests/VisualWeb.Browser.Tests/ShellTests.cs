@@ -1,5 +1,5 @@
-using System.Net;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using SDL3;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Platform.Abstractions;
@@ -778,6 +778,112 @@ public sealed class ShellTests
             Assert.False(tab.IsLoading);
             Assert.Null(tab.Error);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MultipleSelectKeyboardTogglesRetainPopupAndDismissWithoutReverting(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select multiple name=mode>" +
+            "<option selected disabled>Blocked</option><option value=one selected>One</option>" +
+            "<option disabled>Blocked too</option><option value=three>Three</option></select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+
+        Key(SDL.Scancode.Return);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.End, 0, (ushort)SDL.Keymod.Shift, true, false));
+        Assert.Equal(1, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Key(SDL.Scancode.Down);
+        Assert.Equal([1], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([1, 3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Space, repeat: true);
+        Assert.Equal([1, 3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Home);
+        Key(SDL.Scancode.Space);
+        Assert.Equal([3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Down);
+        shell.Tick();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var popupY = ShellChrome.Height + rect.Y + rect.Height;
+        Assert.Equal(new byte[] { 255, 255, 255, 255 }, RowPixel(0)); // Disabled default is not selected.
+        Assert.Equal(new byte[] { 255, 255, 255, 255 }, RowPixel(1)); // Deselected default stays unselected.
+        Key(SDL.Scancode.Home);
+        Key(SDL.Scancode.Escape);
+        Key(SDL.Scancode.Space); // Opens, rather than toggling, the closed popup.
+        Assert.Equal([3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([1, 3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Return); // Dismisses without modifying selection.
+        Key(SDL.Scancode.Space);
+        Assert.Equal([1, 3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Escape);
+        shell.Tick();
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true,
+            (float)(rect.X + 4), (float)(ShellChrome.Height + rect.Y + rect.Height + 30)));
+        Assert.Equal([3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+
+        void Key(SDL.Scancode code, bool repeat = false) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, repeat));
+        byte[] RowPixel(int row) => native.Pixels!.AsSpan(
+            ((int)(popupY + row * 20 + 5) * native.Size.Width + (int)(rect.X + 4)) * 4, 4).ToArray();
+    }
+
+    [Fact]
+    public void MultipleSelectPopupPageKeysKeepCursorVisibleWithoutSelecting()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 20).Select(index =>
+            $"<option value={index}{(index is 0 or 12 ? " disabled" : "")}>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select multiple>" + options + "</select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Key(SDL.Scancode.Pagedown);
+        Assert.Equal(14, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Empty(shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        shell.Dispatch(new TextEntered(native.Id, "19"));
+        Assert.Equal(14, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([14], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Pageup);
+        Assert.Equal(1, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Key(SDL.Scancode.End);
+        Assert.Equal(19, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([14, 19], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        shell.Tick();
+        var page = shell.Controller.Page(tab.Id)!;
+        var rect = page.FormControls[0].Rect!;
+        var popup = ShellChrome.PopupLayout(page, 0,
+            ShellChrome.Viewport(native.PixelSize, native.PixelDensity)!.Value, 8)!;
+        // The final cursor must be in view: click its last displayed popup row.
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, (float)(rect.X + 4),
+            (float)(popup.Bounds.Y + (popup.VisibleOptions - 1) * popup.RowHeight + 10)));
+        Assert.Equal([14], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+
+        void Key(SDL.Scancode code) => shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, false));
     }
 
     [Fact]

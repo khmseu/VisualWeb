@@ -1,6 +1,6 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Core.Encoding;
 using VisualWeb.Core.Url;
 using VisualWeb.Ipc.Contracts;
@@ -43,6 +43,7 @@ public sealed class BrowserController : IDisposable
         internal HashSet<int> Dirty { get; } = [];
         internal Dictionary<int, bool> CheckedStates { get; } = [];
         internal Dictionary<int, int> SelectedOptions { get; } = [];
+        internal Dictionary<int, int> ActiveSelectOptions { get; } = [];
         internal Dictionary<int, HashSet<int>> MultipleSelectedOptions { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
@@ -468,6 +469,29 @@ public sealed class BrowserController : IDisposable
         return SelectedOption(owner, index);
     }
 
+    /// <summary>Gets the browser-owned navigation cursor, independent of multiple selection.</summary>
+    public int ActiveSelectOptionIndex(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index].Kind != "select") { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return ActiveSelectOption(owner, index);
+    }
+
+    /// <summary>Toggles the enabled multiple-select cursor option without dismissing browser chrome.</summary>
+    public bool ToggleFocusedMultipleSelectOption(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false, Multiple: true })
+        { return false; }
+        var option = ActiveSelectOption(owner, owner.FocusedControl);
+        if (option >= 0) { _ = SelectOptionFromPointer(id, owner.FocusedControl, option); }
+        return true;
+    }
+
     /// <summary>Gets browser-owned enabled select options in document order.</summary>
     public IReadOnlyList<int> SelectedOptionIndices(TabId id, int index)
     {
@@ -494,6 +518,7 @@ public sealed class BrowserController : IDisposable
         if (control.Options[optionIndex].Disabled) { return false; }
         if (control.Multiple)
         {
+            owner.ActiveSelectOptions[controlIndex] = optionIndex;
             var selected = MultipleSelectedOptions(owner, controlIndex);
             if (!selected.Add(optionIndex)) { selected.Remove(optionIndex); }
             Changed?.Invoke(id);
@@ -516,7 +541,7 @@ public sealed class BrowserController : IDisposable
         { throw new ArgumentOutOfRangeException(nameof(prefix)); }
         var owner = content[id];
         if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
-            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false, Multiple: false } control)
         { return false; }
         if (control.Options.Length == 0) { return true; }
         var selected = SelectedOption(owner, owner.FocusedControl);
@@ -544,13 +569,13 @@ public sealed class BrowserController : IDisposable
         if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
             || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
         { return false; }
-        var selected = SelectedOption(owner, owner.FocusedControl);
+        var selected = ActiveSelectOption(owner, owner.FocusedControl);
         var candidate = selected < 0 ? (direction > 0 ? 0 : control.Options.Length - 1) : selected + direction;
         while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
         { candidate += direction; }
         if (candidate >= 0 && candidate < control.Options.Length && candidate != selected)
         {
-            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            SetActiveSelectOption(owner, owner.FocusedControl, candidate);
             Changed?.Invoke(id);
         }
         return true;
@@ -565,7 +590,7 @@ public sealed class BrowserController : IDisposable
         if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
             || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
         { return false; }
-        var selected = SelectedOption(owner, owner.FocusedControl);
+        var selected = ActiveSelectOption(owner, owner.FocusedControl);
         var candidate = selected < 0 ? (direction > 0 ? 0 : control.Options.Length - 1) : selected + direction;
         var moved = 0;
         while (candidate >= 0 && candidate < control.Options.Length && moved < optionCount)
@@ -577,7 +602,7 @@ public sealed class BrowserController : IDisposable
         { candidate += direction; }
         if (candidate >= 0 && candidate < control.Options.Length && candidate != selected)
         {
-            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            SetActiveSelectOption(owner, owner.FocusedControl, candidate);
             Changed?.Invoke(id);
         }
         return true;
@@ -593,9 +618,9 @@ public sealed class BrowserController : IDisposable
         var direction = last ? -1 : 1;
         while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
         { candidate += direction; }
-        if (candidate >= 0 && candidate < control.Options.Length && candidate != SelectedOption(owner, owner.FocusedControl))
+        if (candidate >= 0 && candidate < control.Options.Length && candidate != ActiveSelectOption(owner, owner.FocusedControl))
         {
-            owner.SelectedOptions[owner.FocusedControl] = candidate;
+            SetActiveSelectOption(owner, owner.FocusedControl, candidate);
             Changed?.Invoke(id);
         }
         return true;
@@ -907,6 +932,19 @@ public sealed class BrowserController : IDisposable
         if (owner.SelectedOptions.TryGetValue(index, out var selected)) { return selected; }
         return Array.FindIndex(control.Options, option => option.Selected);
     }
+    private static int ActiveSelectOption(Content owner, int index)
+    {
+        var control = owner.Page!.FormControls[index];
+        if (!control.Multiple) { return SelectedOption(owner, index); }
+        if (owner.ActiveSelectOptions.TryGetValue(index, out var active)) { return active; }
+        var selected = SelectedOptions(owner, index);
+        return selected.Count > 0 ? selected.Min() : Array.FindIndex(control.Options, option => !option.Disabled);
+    }
+    private static void SetActiveSelectOption(Content owner, int index, int option)
+    {
+        if (owner.Page!.FormControls[index].Multiple) { owner.ActiveSelectOptions[index] = option; }
+        else { owner.SelectedOptions[index] = option; }
+    }
     private static IReadOnlySet<int> SelectedOptions(Content owner, int index)
     {
         if (owner.MultipleSelectedOptions.TryGetValue(index, out var selected)) { return selected; }
@@ -1019,6 +1057,7 @@ public sealed class BrowserController : IDisposable
             owner.Dirty.Remove(index);
             owner.CheckedStates.Remove(index);
             owner.SelectedOptions.Remove(index);
+            owner.ActiveSelectOptions.Remove(index);
             owner.MultipleSelectedOptions.Remove(index);
             owner.TextareaFirstLines.Remove(index);
             owner.TextareaLines.Remove(index);
@@ -1505,7 +1544,7 @@ public sealed class BrowserController : IDisposable
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
-            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.FocusedControl = -1; }
+            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;

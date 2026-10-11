@@ -17,7 +17,13 @@ single-select controls with bounded options and flattened optgroup labels, Up/Do
 click/Enter/Space popup activation, and multiline textareas with Tab focus,
 committed-text entry and Enter/click submission
 of current/new-tab GET `application/x-www-form-urlencoded` queries through the ordinary
-navigation transaction. Textareas have bounded rows/columns, soft wrapping and
+navigation transaction. Multiple selects use browser-owned popups and an independent enabled-option
+cursor: unmodified Up/Down/Home/End/PageUp/PageDown move without changing selection; Space/Enter opens,
+Space toggles while keeping an open popup, and Enter/Escape dismiss without reverting toggles.
+Selection is submitted in option order and reset restores initial selections/cursor. Type-ahead,
+Shift/range selection, Ctrl+A and multiple-select listboxes remain unsupported; no DOM input events
+are generated. See the controls guide for exact bounds and page-key behavior.
+Textareas have bounded rows/columns, soft wrapping and
 independent line-window scrolling; `wrap=hard` inserts bounded line breaks only
 when submitting and requires explicit supported `cols`; number fields validate finite values, optional min/max bounds and supported
 step grids; email fields support sanitized comma-separated lists when `multiple`

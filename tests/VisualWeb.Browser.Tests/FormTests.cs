@@ -1,5 +1,5 @@
-using System.Net;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Net;
 using VisualWeb.Ipc.Contracts;
@@ -1072,7 +1072,7 @@ public sealed class FormTests
         harness.Controller.SelectAllFormControl(harness.Tab.Id);
         Assert.Equal("#aabbcc", harness.Controller.InsertFormText(harness.Tab.Id, "#AaBbCc"));
     }
-    
+
     [Fact]
     public void ResetRestoresTheInitialColorValue()
     {
@@ -1552,9 +1552,9 @@ public sealed class FormTests
         }
 
         [SuppressMessage("Sonar", "S1144:Unused private types or members should be removed", Justification = "BrowserController disposes page sources through the IPageSource contract.")]
-    #pragma warning disable S1186 // This in-memory fixture owns no resources; IPageSource requires an empty disposal hook.
+#pragma warning disable S1186 // This in-memory fixture owns no resources; IPageSource requires an empty disposal hook.
         public void Dispose() { }
-    #pragma warning restore S1186
+#pragma warning restore S1186
     }
 
     private const string SearchForm = """
@@ -1681,6 +1681,90 @@ public sealed class FormTests
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
         Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id, harness.Viewport));
         Assert.Equal("https://example.com/final/index.html?", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void MultipleSelectKeyboardCursorSkipsDisabledOptionsAndPreservesOrderedSubmissionAndReset()
+    {
+        using var harness = new Harness("<form action='/choose'><select multiple name=mode>" +
+            "<option selected disabled>Blocked</option><option value=one selected>One</option>" +
+            "<option disabled>Blocked too</option><option value=three>Three</option>" +
+            "<option value=four>Four</option></select><button type=reset>Reset</button><button>Go</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.Equal(1, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.True(controller.MoveFocusedSelect(tab, -1));
+        Assert.Equal(1, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.True(controller.MoveFocusedSelect(tab, 1));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.Equal([1], controller.SelectedOptionIndices(tab, 0));
+        Assert.Equal("one", controller.FormControlValue(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.True(controller.MoveFocusedSelectPage(tab, -1, 1));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.Equal([1, 3, 4], controller.SelectedOptionIndices(tab, 0));
+        Assert.False(controller.SelectFocusedOptionByPrefix(tab, "One"));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, false));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.Equal([3, 4], controller.SelectedOptionIndices(tab, 0));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.False(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.True(controller.ActivateFocusedLink(tab));
+        Assert.Equal([1], controller.SelectedOptionIndices(tab, 0));
+        Assert.Equal(1, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.True(controller.MoveFocusedSelect(tab, -1));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.True(controller.FocusControl(tab, 2));
+        Assert.True(controller.ActivateFocusedLink(tab));
+        Assert.Equal("https://example.com/choose?mode=one&mode=three&mode=four", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("<option disabled selected>Blocked</option>")]
+    public void MultipleSelectKeyboardWithNoEnabledOptionsIsInert(string options)
+    {
+        using var harness = new Harness($"<form><select multiple>{options}</select></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.Equal(-1, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.True(controller.MoveFocusedSelect(tab, 1));
+        Assert.True(controller.MoveFocusedSelectPage(tab, -1, 12));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.Equal(-1, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.Empty(controller.SelectedOptionIndices(tab, 0));
+    }
+
+    [Fact]
+    public void MultipleSelectCursorAndSelectionSurviveResizeButResetOnNewDocument()
+    {
+        const string form = "<form><select multiple><option selected>One</option><option>Two</option></select></form>";
+        using var harness = new Harness(form);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, false));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
+        Assert.True(controller.SetFocusedSelectEndpoint(tab, true));
+        controller.Resize(tab, new(201, harness.Viewport.Height, harness.Viewport.Scale));
+        Assert.Equal([1], controller.SelectedOptionIndices(tab, 0));
+        Assert.Equal(1, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.Equal(0, controller.FocusedControlIndex(tab));
+        harness.Load(harness.Tab, form);
+        Assert.Equal([0], controller.SelectedOptionIndices(tab, 0));
+        Assert.Equal(0, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.False(controller.ToggleFocusedMultipleSelectOption(tab));
     }
 
     [Fact]

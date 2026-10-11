@@ -1,5 +1,5 @@
-using System.Text;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using SDL3;
 using VisualWeb.Platform.Abstractions;
 
@@ -666,8 +666,13 @@ public sealed class DevelopmentShell : IDisposable
                 && Controller.AdjustFocusedRange(tab.Id, 1)) { return; }
             if (!control && !alt && code == SDL.Scancode.Home && Controller.SetFocusedRangeEndpoint(tab.Id, false)) { return; }
             if (!control && !alt && code == SDL.Scancode.End && Controller.SetFocusedRangeEndpoint(tab.Id, true)) { return; }
+            if (shift && Controller.FocusedControlIndex(tab.Id) is >= 0 and var selectIndex
+                && Controller.Page(tab.Id)!.FormControls[selectIndex] is { Kind: "select", Multiple: true }
+                && code is SDL.Scancode.Space or SDL.Scancode.Return or SDL.Scancode.Up or SDL.Scancode.Down
+                    or SDL.Scancode.Home or SDL.Scancode.End or SDL.Scancode.Pageup or SDL.Scancode.Pagedown)
+            { return; }
             if (!control && !alt && code == SDL.Scancode.Space && !key.Repeat
-                && ToggleFocusedSelectPopup(window, view, tab.Id)) { return; }
+                && ToggleFocusedSelectPopup(window, view, tab.Id, toggleOption: true)) { return; }
             if (!control && !alt && code is SDL.Scancode.Pageup or SDL.Scancode.Pagedown
                 && MoveFocusedSelectPage(view, tab.Id, code == SDL.Scancode.Pageup ? -1 : 1)) { return; }
             if (!control && !alt && code is SDL.Scancode.Up or SDL.Scancode.Down
@@ -863,20 +868,26 @@ public sealed class DevelopmentShell : IDisposable
         var checkedStates = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "checkbox" && Controller.FormControlChecked(id, index)).ToArray();
         var selectIndices = Enumerable.Range(0, page.FormControls.Count).Select(index =>
-            page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
+            page.FormControls[index] is { Kind: "select", Multiple: false }
+                ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
         var selectSets = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndices(id, index).ToHashSet() : []).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
             selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption);
     }
-    private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id)
+    private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id, bool toggleOption = false)
     {
         var index = Controller.FocusedControlIndex(id);
         if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
             || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
         if (page.FormControls[index].SelectRows > 1) { return true; }
-        if (view.OpenSelectControl == index) { CloseSelectPopup(view); }
+        if (view.OpenSelectControl == index && toggleOption && page.FormControls[index].Multiple)
+        {
+            _ = Controller.ToggleFocusedMultipleSelectOption(id);
+            KeepPopupSelectionVisible(view, id);
+        }
+        else if (view.OpenSelectControl == index) { CloseSelectPopup(view); }
         else if (window.ActiveTab is { } tab) { OpenSelectPopup(view, tab, index); }
         return true;
     }
@@ -885,6 +896,7 @@ public sealed class DevelopmentShell : IDisposable
         var index = Controller.FocusedControlIndex(id);
         if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
             || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
+        if (page.FormControls[index].Multiple) { return true; }
         if (view.SelectTypeaheadControl != index || !ReferenceEquals(view.SelectTypeaheadPage, page))
         { view.SelectTypeaheadText = ""; }
         view.SelectTypeaheadControl = index;
@@ -926,9 +938,11 @@ public sealed class DevelopmentShell : IDisposable
             || ShellChrome.PopupLayout(page, controlIndex, viewport, 0) is not { } popup)
         { CloseSelectPopup(view); return; }
         view.OpenSelectControl = controlIndex;
-        view.SelectPopupFirstOption = Math.Clamp(Controller.SelectedOptionIndex(tab.Id, controlIndex), 0,
+        view.SelectPopupFirstOption = Math.Clamp(Controller.ActiveSelectOptionIndex(tab.Id, controlIndex), 0,
             Math.Max(0, page.FormControls[controlIndex].Options.Length - popup.VisibleOptions));
         view.SelectPopupPage = page;
+        view.SelectPopupHoverOption = page.FormControls[controlIndex].Multiple
+            ? Controller.ActiveSelectOptionIndex(tab.Id, controlIndex) : -1;
         view.Dirty = true;
     }
     private bool MoveFocusedSelectPage(View view, TabId id, int direction)
@@ -989,7 +1003,9 @@ public sealed class DevelopmentShell : IDisposable
             || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } viewport
             || ShellChrome.PopupLayout(page, view.OpenSelectControl, viewport, view.SelectPopupFirstOption) is not { } popup)
         { return; }
-        var selected = Controller.SelectedOptionIndex(id, view.OpenSelectControl);
+        var selected = Controller.ActiveSelectOptionIndex(id, view.OpenSelectControl);
+        if (selected < 0) { return; }
+        if (page.FormControls[view.OpenSelectControl].Multiple) { view.SelectPopupHoverOption = selected; }
         if (selected < popup.FirstOption) { view.SelectPopupFirstOption = selected; }
         else if (selected >= popup.FirstOption + popup.VisibleOptions)
         { view.SelectPopupFirstOption = selected - popup.VisibleOptions + 1; }

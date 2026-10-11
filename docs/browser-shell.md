@@ -326,7 +326,18 @@ their visible rows support pointer selection and existing keyboard selection, wh
 remains unsupported. Multiple selects preserve bounded initially selected options and use the same browser-owned popup for
 pointer toggles: selected rows are highlighted, an enabled toggle keeps the popup open, and the closed
 control shows the selected count. Enabled selections submit in option order and reset restores their
-initial state. Listboxes and multiple-select keyboard behavior remain unsupported. Radios sharing a form and nonempty name are
+initial state. Multiple-select keyboard interaction is browser-owned: an independent enabled-option cursor
+starts at the first enabled selected option, or the first enabled option when none are selected.
+Unmodified Up/Down, Home/End and Page Up/Down move that cursor without changing selection, with no wrapping;
+page keys use the visible popup row count (one option when closed), skip disabled options, and leave the
+cursor unchanged if a full step would run beyond the list. Opening and keyboard movement keep the cursor
+visible and highlighted. Space or Enter opens the focused control's closed popup; while open, non-repeated
+Space toggles the cursor option and retains the popup, while Enter dismisses without changing selection.
+Escape, Tab and outside clicks dismiss without reverting toggles. Pointer toggles also move the cursor.
+Reset restores both initial selections and the initial cursor; retained repaints preserve them.
+Empty/all-disabled option lists cannot be toggled. Multiple-select type-ahead, Shift/range selection,
+Ctrl+A selection and platform-native select behavior remain unsupported. These interactions do not dispatch
+DOM keyboard, input or change events. Multiple-select listboxes remain unsupported. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
 within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
