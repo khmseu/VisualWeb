@@ -27,6 +27,18 @@ public sealed class WindowsSandboxTests
     }
 
     [Fact]
+    public void ProcessAttributeApiUsesPointerSizedIdentifierAndOwnedStorage()
+    {
+        var native = typeof(WindowsRendererSandbox).GetNestedType("Native", BindingFlags.NonPublic);
+        Assert.NotNull(native);
+        var method = native.GetMethod("UpdateProcThreadAttribute", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        var parameters = method.GetParameters();
+        Assert.Equal(typeof(UIntPtr), parameters[2].ParameterType);
+        Assert.Equal(typeof(IntPtr), parameters[3].ParameterType);
+    }
+
+    [Fact]
     public void WorkerEnvironmentUsesOnlyPrivateProfileStorage()
     {
         var method = typeof(WindowsRendererSandbox).GetMethod("BuildEnvironment",

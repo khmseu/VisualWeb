@@ -96,9 +96,10 @@ public sealed class HostTests
     [Fact]
     public void StackAndExternalArrayBufferLimitsFailExplicitly()
     {
-        using var host = new V8ScriptHost();
-        Assert.Throws<ScriptExecutionException>(() => host.Evaluate("function recurse(){return recurse()} recurse()", TestContext.Current.CancellationToken));
-        Assert.Throws<ScriptExecutionException>(() => host.Evaluate($"new ArrayBuffer({V8ScriptHost.MaxArrayBufferBytes + 1})", TestContext.Current.CancellationToken));
+        using var stack = new V8ScriptHost(TimeSpan.FromSeconds(10));
+        Assert.Throws<ScriptExecutionException>(() => stack.Evaluate("function recurse(){return recurse()} recurse()", TestContext.Current.CancellationToken));
+        using var external = new V8ScriptHost(TimeSpan.FromSeconds(10));
+        Assert.Throws<ScriptExecutionException>(() => external.Evaluate($"new ArrayBuffer({V8ScriptHost.MaxArrayBufferBytes + 1})", TestContext.Current.CancellationToken));
     }
     [Fact]
     public void OwnershipAndDisposalAreThreadAffine()

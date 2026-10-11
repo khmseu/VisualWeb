@@ -52,7 +52,9 @@ redirection; it never inherits the host user's local app-data path.
 | IPC startup/render deadline                    | Existing 30 seconds                                          |
 
 The Job Object is assigned at process creation, before the suspended worker is
-resumed. The startup handshake requires `windows-appcontainer-job-v1`; the
+resumed. Security capabilities, the Job Object list and the inherited handle
+list use owned unmanaged storage retained until process creation completes;
+process attribute identifiers match the native pointer-sized ABI. The startup handshake requires `windows-appcontainer-job-v1`; the
 worker checks its token and Job Object membership before opening its font or
 receiving content. It queries and verifies the active Job Object's process,
 per-process and total commit limits, and CPU hard cap. This profile string is

@@ -250,7 +250,7 @@ public static class WindowsRendererSandbox
             using (childError)
             {
                 var handles = new[] { childInput.DangerousGetHandle(), childOutput.DangerousGetHandle(), childError.DangerousGetHandle() };
-                var capabilities = new Native.SecurityCapabilities { AppContainerSid = sid };
+                var capabilities = IntPtr.Zero;
                 var attributeBytes = IntPtr.Zero;
                 var attributeListInitialized = false;
                 var size = IntPtr.Zero;
@@ -260,6 +260,8 @@ public static class WindowsRendererSandbox
                 var processInfo = default(Native.ProcessInformation);
                 try
                 {
+                    capabilities = Marshal.AllocHGlobal(Marshal.SizeOf<Native.SecurityCapabilities>());
+                    Marshal.StructureToPtr(new Native.SecurityCapabilities { AppContainerSid = sid }, capabilities, false);
                     Marshal.WriteIntPtr(jobHandles, jobHandle);
                     for (var index = 0; index < handles.Length; index++)
                     {
@@ -273,11 +275,11 @@ public static class WindowsRendererSandbox
                         throw Native.Failure("initialize renderer process attributes");
                     }
                     attributeListInitialized = true;
-                    if (!Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeSecurityCapabilities,
-                            ref capabilities, (IntPtr)Marshal.SizeOf<Native.SecurityCapabilities>(), IntPtr.Zero, IntPtr.Zero)
-                        || !Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeJobList,
+                    if (!Native.UpdateProcThreadAttribute(attributeBytes, 0, (UIntPtr)ProcessAttributeSecurityCapabilities,
+                            capabilities, (IntPtr)Marshal.SizeOf<Native.SecurityCapabilities>(), IntPtr.Zero, IntPtr.Zero)
+                        || !Native.UpdateProcThreadAttribute(attributeBytes, 0, (UIntPtr)ProcessAttributeJobList,
                             jobHandles, (IntPtr)IntPtr.Size, IntPtr.Zero, IntPtr.Zero)
-                        || !Native.UpdateProcThreadAttribute(attributeBytes, 0, ProcessAttributeHandleList,
+                        || !Native.UpdateProcThreadAttribute(attributeBytes, 0, (UIntPtr)ProcessAttributeHandleList,
                             inheritedHandles, (IntPtr)(3 * IntPtr.Size), IntPtr.Zero, IntPtr.Zero))
                     {
                         throw Native.Failure("configure renderer process attributes");
@@ -344,6 +346,7 @@ public static class WindowsRendererSandbox
                         if (attributeListInitialized) { Native.DeleteProcThreadAttributeList(attributeBytes); }
                         Marshal.FreeHGlobal(attributeBytes);
                     }
+                    if (capabilities != IntPtr.Zero) { Marshal.FreeHGlobal(capabilities); }
                     Marshal.FreeHGlobal(jobHandles);
                     Marshal.FreeHGlobal(inheritedHandles);
                 }
@@ -647,11 +650,7 @@ public static class WindowsRendererSandbox
         internal static extern bool InitializeProcThreadAttributeList(IntPtr list, int count, int flags, ref IntPtr size);
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool UpdateProcThreadAttribute(IntPtr list, uint flags, int attribute, ref SecurityCapabilities value,
-            IntPtr size, IntPtr previous, IntPtr returned);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool UpdateProcThreadAttribute(IntPtr list, uint flags, int attribute, IntPtr value,
+        internal static extern bool UpdateProcThreadAttribute(IntPtr list, uint flags, UIntPtr attribute, IntPtr value,
             IntPtr size, IntPtr previous, IntPtr returned);
         [DllImport("kernel32.dll")] internal static extern void DeleteProcThreadAttributeList(IntPtr list);
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
