@@ -1,5 +1,15 @@
 # Agent guide
 
+## Repository paths
+
+- Anchor repository file paths at the repository root, not its parent directory.
+  In this workspace the root is `/bigdata/KAI/projects/VisualWeb`; all repository
+  paths are beneath it.
+- Resolve project directories through the project map or filesystem before using
+  them; do not infer a directory from a project name. For example,
+  `VisualWeb.Browser` is at `src/Apps/VisualWeb.Browser/` beneath the repository
+  root, never at `/bigdata/KAI/projects/VisualWeb.Browser`.
+
 ## Find context before changing code
 
 1. Read the [docs index](docs/README.md) and [architecture](docs/architecture/overview.md).
@@ -72,9 +82,10 @@
 - Read the [shell guide](docs/browser-shell.md) before navigation/chrome changes.
   Recommend CLI `--multiprocess`; it and legacy `--development-multiprocess`
   require supported confinement before SDL/content/worker startup, no fallback.
-  Unsandboxed development (including single-process) requires explicit
-  `--allow-unsandboxed-development` trusted-content acknowledgement; reject it
-  with normal mode or `--require-sandbox`. Preserve low-level library/test defaults.
+  Unsandboxed development (including single-process) requires the explicit
+  `--allow-unsandboxed-development` flag as a trusted-content acknowledgement.
+  If that flag is combined with normal mode or with `--require-sandbox`, the CLI
+  must reject the invocation with an error. Preserve low-level library/test defaults.
   Require an explicit mode and trusted font setup.
   Keep asynchronous loading separate from owning-thread native rendering, preserve
   transactional history and stale-load cancellation, and do not claim isolation.
@@ -116,104 +127,177 @@
   The approved live DOM foundation uses one hidden primitive-only delegate
   captured and deleted by trusted bootstrap; do not expose it on facades or
   return CLR objects/exceptions. Preserve receiver brands, identity/ownership
-  checks and exact callback/text/traversal budgets. Phase 11e extends the hidden
-  primitive contract for attributes, element/text/fragment factories and Node
-  mutation/navigation. All non-document wrappers share one lifetime budget;
-  mutations preflight native tree/attribute work and fail without partial writes.
-  Never schedule dynamically appended/changed script elements.
-  Classic execution preserves native global lexical state; batches snapshot
-  all source budgets before running in order under one shared deadline. Do not
-  replace this with wrapped eval or imply rollback after script errors.
-  Phase-11d page execution requires explicit `--enable-inline-scripts`, snapshots
-  inline classic sources after parsing and recomputes styles/paint after mutation.
-  Keep script errors transactional and committed DOM pinned for resize; never
-  rerun scripts to hide lost worker state. IPC v3 carries identities/policy only.
-  Phase 11f uses optional native Promise-backed queueMicrotask, verified checkpoints
-  after each classic source, and one shared task deadline/DOM/queue budget. Preserve
-  1,024 pending/4,096 total limits and failure latching/invalidation; never replace
-  native FIFO ordering with a separate queue or claim a persistent HTML event loop.
-  Phase 11g adds optional native Event/EventTarget and synchronous Node/document
-  listener propagation on snapshotted ancestor paths. Preserve listener brands,
-  capture/once/passive/removal semantics, 1,024 entries/path targets, 4,096 shared
-  invocations, 32 nested dispatches and caught-failure latching. No automatic
-  input/load events, on* handlers, AbortSignal or persistent listeners on resize.
-  Phase 11h opts inline pages into one-shot loading/interactive/DOMContentLoaded/
-  complete readiness with private dispatch and checkpoints between stages.
-  Sources and lifecycle callbacks share one deadline and all task budgets.
-  Keep readyState readonly, lifecycle trust internal, failures transactional,
-  and no Window/load event or retained V8/listeners. Empty opted-in batches
-  still complete lifecycle; static mode does not construct V8.
-  Phase 11i reuses Engine.Css for bounded querySelector/querySelectorAll and
-  Element matches/closest. Preserve static NodeList identities, atomic result
-  reservation, SyntaxError vs unsupported TypeError, receiver/ownership guards,
-  linked cancellation and one shared matching budget per query. `:scope` uses
-  an explicit per-call CssSelectorScope (receiver; closest keeps the original
-  receiver; fragments are featureless virtual roots, never fake elements).
-  Filtered nth-child/nth-last-child use strict complex selector lists, inclusive
-  element siblings and pseudo-class plus maximum argument specificity. Nested
-  filtering must keep that original scope and shared budgets/cancellation;
-  of-type variants still reject of clauses.
-  No live collections, :has, new parser or dynamically scheduled scripts.
-  Phase 11j adds className/live classList over the primitive attribute bridge.
-  Preserve ordered-set and live iteration semantics, atomic argument/token/
-  storage preflight, private receiver brands and shared callback/text budgets.
-  Token syntax errors are native named errors, not yet DOMException objects.
-  Phase 11k adds bounded tree inspection and element-only navigation. Preserve
-  inclusive containment, detached/fragment roots, options getter ordering,
-  both-operand ownership, exact ancestor/child scans and lifetime identity limits.
-  No shadow DOM or live children/childNodes collections are implied.
-  Phase 11l adds reflected id and toggleAttribute. Preserve live conversion
-  ordering, forced no-op validation/value retention, ordered attributes and
-  shared native storage/callback limits. No custom-element reactions are implied.
-  Phase 11m adds nodeValue and bounded CharacterData editing. Preserve UTF-16/
-  unsigned offset semantics, conversion order, atomic storage/result budgets
-  and identity. Observers/range/PI pseudoattribute reactions remain deferred.
-  Phase 11n adds Text splitText/wholeText. Preflight output/identity/data/tree
-  capacity before splitting; preserve original listeners and UTF-16 boundaries.
-  WholeText stops at non-Text siblings; no range repair is implied.
-  Phase 11o adds Node.normalize through a shared iterative native plan. Preflight
-  the entire subtree and all surviving Text runs before writes; preserve the
-  first nonempty identity and detached data/listeners. Charge shared task text
-  budgets even for singleton runs; never recycle removed wrapper identities.
-  No observers/live-range repair or dynamic scheduling is implied.
-  Phase 11p adds isEqualNode over shared iterative native equality. Preflight
-  both complete non-null trees (including roots) and both payloads before
-  identity/mismatch shortcuts. Attribute order is ignored, child order and
-  Text segmentation are not; keep both operand ownership checks and allocate
-  no descendant wrappers. Native cross-document comparison is not a script
-  ownership exception.
-  Phase 11q adds readonly nodeName/ownerDocument and Element name/namespace
-  metadata. Preserve ASCII-only HTML name casing, null prefixes and same
-  document facade ownership for detached nodes. Preflight uppercase name
-  allocation and shared text limits; never expose an adopted foreign document.
-  Phase 11r adds hasAttributes/getAttributeNames over native ordered attributes.
-  Return fresh mutable arrays via captured length-prefixed decoding, not live
-  CLR collections or Attr objects. Preserve recovered names, shared encoded
-  output/count limits and prototype-tampering defenses.
-  Phase 11s adds comment/instruction factories and branded readonly target.
-  Convert target then data before native validation; share all factory input/
-  output/identity limits. Empty XML targets must report DOM InvalidCharacter,
-  not BCL exceptions. Preserve raw editing, non-Text barriers and inert insertion;
-  instruction pseudoattributes/reactions remain deferred.
-  Phase 11t adds branded ChildNode.remove with pre-write parent-subtree/
-  ancestor/cancellation checks and unscopable lookup. Preserve detached
-  identity, ownership, descendants and listeners; allocate/recycle no handles.
-  Phase 11u adds document.doctype and privately branded readonly name/publicId/
-  systemId. Bound the document child scan and per-field/shared output; reuse
-  existing identities, reject adopted wrappers, and do not fetch identifiers
-  or broaden parser mode selection.
-  Phase 11v adds native deep/shallow cloneNode for supported non-Document
-  wrappers. Preflight the whole copied tree, attributes and primitive payloads
-  before allocating detached copies; enforce per-element/shared traversal/text,
-  identity/output and cancellation limits. Never copy parents or listeners.
-  Script Document cloning remains explicitly unsupported by the single-document
-  bridge; native Document clones preserve mode and remap cloned owners.
-  HTML scheduling/full DOM/generated Web IDL bindings are deferred. Run V8Smoke explicitly;
-  Windows/arm64 guarantees require native target evidence.
+  checks and exact callback/text/traversal budgets. See the scripting phase rules
+  below for feature-specific constraints.
 - Add xUnit v3 tests under `tests/<project>.Tests/` when a subsystem gains code.
   Follow `tests/Tools.SpecCache.Tests/` for package references, project references,
   injected HTTP/time dependencies, and test cancellation tokens.
 - Use Conventional Commits when requested to commit.
+
+## Scripting phase rules
+
+### Phase 11e — Live DOM foundation
+
+- Extend the hidden primitive contract for attributes, element/text/fragment
+  factories, and Node mutation/navigation.
+- All non-document wrappers share one lifetime budget. Preflight native tree and
+  attribute work so mutations fail without partial writes.
+- Never schedule dynamically appended or changed script elements.
+- Preserve native global lexical state; batches snapshot all source budgets before
+  running in order under one shared deadline. Do not use wrapped eval or imply
+  rollback after script errors.
+
+### Phase 11d — Inline page execution
+
+- Require explicit `--enable-inline-scripts`; snapshot inline classic sources
+  after parsing and recompute styles and paint after mutation.
+- Keep script errors transactional and the committed DOM pinned for resize.
+- Never rerun scripts to hide lost worker state; IPC v3 carries identities and
+  policy only.
+
+### Phase 11f — Microtasks
+
+- Use optional native Promise-backed queueMicrotask with verified checkpoints
+  after each classic source and one shared task deadline/DOM/queue budget.
+- Preserve the 1,024 pending and 4,096 total limits plus failure
+  latching/invalidation.
+- Never replace native FIFO ordering with a separate queue or claim a persistent
+  HTML event loop.
+
+### Phase 11g — Events
+
+- Add optional native Event/EventTarget and synchronous Node/document listener
+  propagation on snapshotted ancestor paths.
+- Preserve listener brands and capture/once/passive/removal semantics; enforce
+  1,024 entries/path targets, 4,096 shared invocations, 32 nested dispatches,
+  and caught-failure latching.
+- Do not add automatic input/load events, on* handlers, AbortSignal, or
+  persistent listeners on resize.
+
+### Phase 11h — Document readiness
+
+- Opt inline pages into one-shot loading/interactive/DOMContentLoaded/complete
+  readiness with private dispatch and checkpoints between stages.
+- Sources and lifecycle callbacks share one deadline and all task budgets.
+- Keep readyState readonly, lifecycle trust internal, and failures transactional.
+  Do not retain Window/load events or V8/listeners; empty opted-in batches still
+  complete lifecycle, while static mode does not construct V8.
+
+### Phase 11i — Selectors
+
+- Reuse Engine.Css for bounded querySelector/querySelectorAll and Element
+  matches/closest. Preserve static NodeList identities, atomic result reservation,
+  SyntaxError versus unsupported TypeError, receiver/ownership guards, linked
+  cancellation, and one shared matching budget per query.
+- Use a per-call CssSelectorScope for `:scope`: the receiver for queries, the
+  original receiver for closest, and a featureless virtual root for fragments.
+- Filtered nth-child/nth-last-child requires strict complex selector lists,
+  inclusive element siblings, and pseudo-class plus maximum argument specificity.
+  Nested filtering retains the original scope and shared budgets/cancellation;
+  of-type variants still reject of clauses.
+- Do not add live collections, :has, a new parser, or dynamically scheduled
+  scripts.
+
+### Phase 11j — Classes
+
+- Implement className/live classList over the primitive attribute bridge.
+- Preserve ordered-set and live iteration semantics, atomic argument/token/storage
+  preflight, private receiver brands, and shared callback/text budgets.
+- Token syntax errors are native named errors, not DOMException objects.
+
+### Phase 11k — Tree inspection
+
+- Provide bounded tree inspection and element-only navigation with inclusive
+  containment, detached/fragment roots, options getter ordering, both-operand
+  ownership, exact ancestor/child scans, and lifetime identity limits.
+- Do not imply shadow DOM or live children/childNodes collections.
+
+### Phase 11l — Reflected attributes
+
+- Add reflected id and toggleAttribute with live conversion ordering, forced
+  no-op validation/value retention, ordered attributes, and shared native
+  storage/callback limits.
+- Do not add custom-element reactions.
+
+### Phase 11m — CharacterData editing
+
+- Support nodeValue and bounded CharacterData editing with UTF-16/unsigned offset
+  semantics, conversion order, atomic storage/result budgets, and identity.
+- Observers, ranges, and PI pseudoattribute reactions remain deferred.
+
+### Phase 11n — Text splitting
+
+- Add Text splitText/wholeText. Preflight output, identity, data, and tree
+  capacity before splitting; preserve original listeners and UTF-16 boundaries.
+- WholeText stops at non-Text siblings; do not imply range repair.
+
+### Phase 11o — Normalization
+
+- Implement Node.normalize with a shared iterative native plan. Preflight the
+  entire subtree and all surviving Text runs before writes; preserve the first
+  nonempty identity and detached data/listeners.
+- Charge shared task text budgets even for singleton runs and never recycle
+  removed wrapper identities. Observers, live-range repair, and dynamic
+  scheduling remain unsupported.
+
+### Phase 11p — Node equality
+
+- Implement isEqualNode using shared iterative native equality. Preflight both
+  complete non-null trees, including roots, and both payloads before identity or
+  mismatch shortcuts.
+- Ignore attribute order, but preserve child order and Text segmentation; keep
+  both operand ownership checks and allocate no descendant wrappers.
+- Native cross-document comparison is not a script ownership exception.
+
+### Phase 11q — Node metadata
+
+- Add readonly nodeName/ownerDocument and Element name/namespace metadata.
+- Preserve ASCII-only HTML name casing, null prefixes, and same-document facade
+  ownership for detached nodes. Preflight uppercase name allocation and shared
+  text limits; never expose an adopted foreign document.
+
+### Phase 11r — Attribute inspection
+
+- Add hasAttributes/getAttributeNames over native ordered attributes.
+- Return fresh mutable arrays through captured length-prefixed decoding, not live
+  CLR collections or Attr objects. Preserve recovered names, shared encoded
+  output/count limits, and prototype-tampering defenses.
+
+### Phase 11s — Comment and instruction factories
+
+- Add comment/instruction factories and a branded readonly target. Convert target
+  then data before native validation and share all factory input/output/identity
+  limits.
+- Empty XML targets must report DOM InvalidCharacter, not BCL exceptions.
+  Preserve raw editing, non-Text barriers, and inert insertion; instruction
+  pseudoattributes/reactions remain deferred.
+
+### Phase 11t — ChildNode removal
+
+- Add branded ChildNode.remove with pre-write parent-subtree/ancestor/cancellation
+  checks and unscopable lookup.
+- Preserve detached identity, ownership, descendants, and listeners; allocate or
+  recycle no handles.
+
+### Phase 11u — Doctype
+
+- Add document.doctype and privately branded readonly name/publicId/systemId.
+- Bound the document child scan and per-field/shared output; reuse existing
+  identities, reject adopted wrappers, and do not fetch identifiers or broaden
+  parser mode selection.
+
+### Phase 11v — Cloning
+
+- Add native deep/shallow cloneNode for supported non-Document wrappers.
+  Preflight the complete copied tree, attributes, and primitive payloads before
+  allocating detached copies; enforce per-element/shared traversal/text,
+  identity/output, and cancellation limits.
+- Never copy parents or listeners. Script Document cloning remains unsupported by
+  the single-document bridge; native Document clones preserve mode and remap
+  cloned owners.
+
+HTML scheduling, full DOM, and generated Web IDL bindings remain deferred. Run
+V8Smoke explicitly; Windows/arm64 guarantees require native target evidence.
 
 ## Validation commands (repository root)
 
