@@ -84,8 +84,10 @@ broader page interaction is still missing:
   and textareas display bounded placeholders
   without changing submitted values. Email `multiple` supports sanitized
   comma-separated address lists. Single-select controls with a bounded `size` from 2 through 12 render as
-  browser-owned listboxes with pointer selection and existing keyboard selection; listbox scrolling remains
-  unsupported. Multiple selects preserve bounded initially selected options and use the
+  browser-owned listboxes with pointer selection and existing keyboard selection. A shell-owned, row-bounded
+  first visible option supports wheel scrolling over enabled listboxes (consumed at bounds, no page scroll), offset
+  pointer mapping and keyboard auto-visibility; it survives retained repaints and resets with the form. CSS overflow,
+  nested scrolling and DOM scroll events remain unsupported. Multiple selects preserve bounded initially selected options and use the
   browser-owned popup for pointer toggles; selected rows are highlighted, enabled toggles retain the popup,
   and the closed control shows the selected count. Enabled selections submit in option order and reset restores
   their initial state. Multiple-select keyboard interaction now uses an independent enabled-option cursor:

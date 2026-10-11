@@ -197,6 +197,109 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void ScrolledListboxRowsMapTargetsThroughFirstVisibleOption()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 6).Select(index => $"<option>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select size=3>" + options + "</select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var page = shell.Controller.Page(tab.Id)!;
+        int[] Rows(int first) => chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+                forms: new ShellFormState(["0"], -1, -1, SelectIndices: [0], ListboxFirstOptions: [first])).Targets
+            .Where(target => target.Action == ChromeAction.SelectListboxOption).Select(target => target.OptionIndex).ToArray();
+        Assert.Equal([2, 3, 4], Rows(2));
+        Assert.Equal([3, 4, 5], Rows(99));
+        Assert.Equal([0, 1, 2], Rows(-5));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ListboxWheelPointerKeyboardAndRepaintShareFirstVisibleOption(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 8).Select(index =>
+            index == 4 ? "<option disabled>4</option>" : $"<option>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}p{height:100px}div{height:2000px}</style><p></p><form><select size=3>"
+            + options + "</select></form><div></div>"));
+        Wait();
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var x = (float)(rect.X + 4);
+        float Row(double top, int row) => (float)(ShellChrome.Height + top + 5 + row * 20);
+
+        shell.Dispatch(new PointerMoved(native.Id, x, Row(rect.Y, 1)));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        shell.Tick();
+        Assert.Equal(3, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, Row(rect.Y, 0)));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, Row(rect.Y, 0)));
+        Assert.Equal(3, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, Row(rect.Y, 1)));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, Row(rect.Y, 1)));
+        Assert.Equal(3, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+
+        shell.Dispatch(new PointerScrolled(native.Id, 0, float.MaxValue));
+        shell.Tick();
+        Assert.Equal(5, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, -1));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, -100));
+        shell.Tick();
+        Assert.Equal(0, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+
+        Key(SDL.Scancode.End);
+        Assert.Equal(7, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        Assert.Equal(5, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Key(SDL.Scancode.Up);
+        Key(SDL.Scancode.Up);
+        Key(SDL.Scancode.Up);
+        Assert.Equal(3, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        Assert.Equal(3, shell.Controller.ListboxFirstOption(tab.Id, 0));
+
+        shell.Dispatch(new PointerMoved(native.Id, x, (float)(ShellChrome.Height + rect.Y + rect.Height + 40)));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        Wait(() => shell.Controller.Page(tab.Id)!.FormControls[0].Rect!.Y != rect.Y);
+        Assert.Equal(48, shell.Controller.ScrollY(tab.Id));
+        Assert.Equal(3, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        var moved = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        Assert.Equal(rect.Y - 48, moved.Y);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, Row(moved.Y, 2)));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, Row(moved.Y, 2)));
+        Assert.Equal(5, shell.Controller.SelectedOptionIndex(tab.Id, 0));
+        Assert.Equal(3, shell.Controller.ListboxFirstOption(tab.Id, 0));
+
+        void Key(SDL.Scancode scan)
+        {
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, 0, true, false));
+            shell.Tick();
+        }
+        void Wait(Func<bool>? ready = null)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while ((tab.IsLoading || ready?.Invoke() == false) && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
     public void PasswordOverlayDoesNotRevealFieldValue()
     {
         using var system = new Windows();

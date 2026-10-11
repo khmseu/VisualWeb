@@ -514,10 +514,11 @@ public sealed class DevelopmentShell : IDisposable
             return;
         }
         if (view.PointerY is < ShellChrome.Height) { return; }
-        var overTextarea = view.PointerX is { } pointerX && view.PointerY is { } pointerY
-            && Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height,
-                (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300));
-        if (!overTextarea) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
+        var rows = (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300);
+        var overControl = view.PointerX is { } pointerX && view.PointerY is { } pointerY
+            && (Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height, rows)
+                || Controller.ScrollListboxAt(active.Id, pointerX, pointerY - ShellChrome.Height, rows));
+        if (!overControl) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
     }
     private void HandleTextEntered(BrowserWindow window, View view, TextEntered text)
     {
@@ -872,9 +873,12 @@ public sealed class DevelopmentShell : IDisposable
                 ? Controller.SelectedOptionIndex(id, index) : -1).ToArray();
         var selectSets = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndices(id, index).ToHashSet() : []).ToArray();
+        var listboxFirstOptions = Enumerable.Range(0, page.FormControls.Count).Select(index =>
+            page.FormControls[index] is { Kind: "select", Multiple: false, SelectRows: > 1 }
+                ? Controller.ListboxFirstOption(id, index) : 0).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
-            selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption);
+            selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption, listboxFirstOptions);
     }
     private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id, bool toggleOption = false)
     {

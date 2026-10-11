@@ -322,8 +322,12 @@ enabled options (page keys move by the visible row count and skip disabled optio
 option lists, clicking a disabled row leaves the popup open without changing selection, and Escape or an outside click dismisses the popup.
 Optgroup labels are prefixed to their flattened options, and disabled groups disable their options.
 Single-select controls with a bounded `size` from 2 through 12 render as browser-owned listboxes;
-their visible rows support pointer selection and existing keyboard selection, while listbox scrolling
-remains unsupported. Multiple selects preserve bounded initially selected options and use the same browser-owned popup for
+their visible rows support pointer selection and existing keyboard selection. Each listbox keeps a
+shell-owned first visible option row: wheel input over an enabled listbox scrolls whole rows (three per notch),
+clamped exactly to `0..options-rows` and consumed at the bounds without scrolling the page; pointer row targets map
+through the offset; keyboard/type-ahead selection scrolls the minimum rows needed to keep the selected enabled option
+visible; disabled options stay nonselectable. The offset survives retained repaints/scrolls and resets with the form
+or a non-retained document. CSS overflow, nested scrolling and DOM scroll events remain unsupported. Multiple selects preserve bounded initially selected options and use the same browser-owned popup for
 pointer toggles: selected rows are highlighted, an enabled toggle keeps the popup open, and the closed
 control shows the selected count. Enabled selections submit in option order and reset restores their
 initial state. Multiple-select keyboard interaction is browser-owned: an independent enabled-option cursor

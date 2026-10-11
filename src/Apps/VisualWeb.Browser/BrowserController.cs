@@ -45,6 +45,8 @@ public sealed class BrowserController : IDisposable
         internal Dictionary<int, int> SelectedOptions { get; } = [];
         internal Dictionary<int, int> ActiveSelectOptions { get; } = [];
         internal Dictionary<int, HashSet<int>> MultipleSelectedOptions { get; } = [];
+        /// <summary>First visible option row of single-select listboxes, keyed by control index.</summary>
+        internal Dictionary<int, int> ListboxFirstOptions { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
         internal bool SelectingText { get; set; }
@@ -527,6 +529,7 @@ public sealed class BrowserController : IDisposable
         if (SelectedOption(owner, controlIndex) != optionIndex)
         {
             owner.SelectedOptions[controlIndex] = optionIndex;
+            KeepListboxOptionVisible(owner, controlIndex, optionIndex);
             Changed?.Invoke(id);
         }
         return true;
@@ -547,7 +550,10 @@ public sealed class BrowserController : IDisposable
         var selected = SelectedOption(owner, owner.FocusedControl);
         if (!cycleFromCurrent && selected >= 0 && !control.Options[selected].Disabled
             && control.Options[selected].Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        { return true; }
+        {
+            if (KeepListboxOptionVisible(owner, owner.FocusedControl, selected)) { Changed?.Invoke(id); }
+            return true;
+        }
         var start = selected < 0 ? 0 : (selected + 1) % control.Options.Length;
         for (var offset = 0; offset < control.Options.Length; offset++)
         {
@@ -555,7 +561,8 @@ public sealed class BrowserController : IDisposable
             if (control.Options[candidate].Disabled
                 || !control.Options[candidate].Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) { continue; }
             owner.SelectedOptions[owner.FocusedControl] = candidate;
-            if (candidate != selected) { Changed?.Invoke(id); }
+            var scrolled = KeepListboxOptionVisible(owner, owner.FocusedControl, candidate);
+            if (candidate != selected || scrolled) { Changed?.Invoke(id); }
             return true;
         }
         return true;
@@ -760,6 +767,42 @@ public sealed class BrowserController : IDisposable
         }
         return false;
     }
+    /// <summary>Gets the first visible option row of a browser-owned single-select listbox.</summary>
+    public int ListboxFirstOption(TabId id, int index)
+    {
+        Check();
+        var owner = content[id];
+        if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
+            || page.FormControls[index] is not { Kind: "select", Multiple: false, SelectRows: > 1 })
+        { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return ListboxFirstOption(owner, index);
+    }
+    /// <summary>Scrolls the enabled single-select listbox under a viewport point by whole option rows.</summary>
+    /// <returns>Whether a listbox consumed the wheel input, including at its scroll bounds.</returns>
+    public bool ScrollListboxAt(TabId id, double x, double y, int rows)
+    {
+        Check();
+        if (!double.IsFinite(x) || !double.IsFinite(y)) { throw new PageNavigationException("Listbox scroll coordinates must be finite."); }
+        var owner = content[id];
+        if (owner.Page is not { } page || owner.Viewport is not { } viewport || x < 0 || y < 0
+            || x >= viewport.Width || y >= viewport.Height) { return false; }
+        for (var index = page.FormControls.Count - 1; index >= 0; index--)
+        {
+            var control = page.FormControls[index];
+            if (control is not { Kind: "select", Multiple: false, SelectRows: > 1, Disabled: false, Rect: { } rect }
+                || !rect.Contains(x, y)) { continue; }
+            var maximum = Math.Max(0, control.Options.Length - ListboxRows(control));
+            var current = ListboxFirstOption(owner, index);
+            var next = (int)Math.Clamp((long)current + rows, 0, maximum);
+            if (next != current)
+            {
+                owner.ListboxFirstOptions[index] = next;
+                Changed?.Invoke(id);
+            }
+            return true;
+        }
+        return false;
+    }
     /// <summary>Whether the focused editable text field has its full value selected.</summary>
     public bool FormControlSelectAll(TabId tab)
     {
@@ -943,7 +986,31 @@ public sealed class BrowserController : IDisposable
     private static void SetActiveSelectOption(Content owner, int index, int option)
     {
         if (owner.Page!.FormControls[index].Multiple) { owner.ActiveSelectOptions[index] = option; }
-        else { owner.SelectedOptions[index] = option; }
+        else
+        {
+            owner.SelectedOptions[index] = option;
+            KeepListboxOptionVisible(owner, index, option);
+        }
+    }
+    /// <summary>Number of option rows a single-select listbox draws, or zero for other controls.</summary>
+    private static int ListboxRows(PageFormControl control) =>
+        control is { Kind: "select", Multiple: false, SelectRows: > 1 } ? Math.Min(control.SelectRows, control.Options.Length) : 0;
+    private static int ListboxFirstOption(Content owner, int index)
+    {
+        var control = owner.Page!.FormControls[index];
+        return Math.Clamp(owner.ListboxFirstOptions.GetValueOrDefault(index), 0,
+            Math.Max(0, control.Options.Length - ListboxRows(control)));
+    }
+    /// <summary>Scrolls a single-select listbox by whole rows so <paramref name="option"/> is visible.</summary>
+    private static bool KeepListboxOptionVisible(Content owner, int index, int option)
+    {
+        var rows = ListboxRows(owner.Page!.FormControls[index]);
+        if (rows == 0 || option < 0) { return false; }
+        var first = ListboxFirstOption(owner, index);
+        var next = option < first ? option : option >= first + rows ? option - rows + 1 : first;
+        if (next == owner.ListboxFirstOptions.GetValueOrDefault(index)) { return false; }
+        owner.ListboxFirstOptions[index] = next;
+        return true;
     }
     private static IReadOnlySet<int> SelectedOptions(Content owner, int index)
     {
@@ -1061,6 +1128,7 @@ public sealed class BrowserController : IDisposable
             owner.MultipleSelectedOptions.Remove(index);
             owner.TextareaFirstLines.Remove(index);
             owner.TextareaLines.Remove(index);
+            owner.ListboxFirstOptions.Remove(index);
         }
         Changed?.Invoke(id);
     }
@@ -1544,7 +1612,7 @@ public sealed class BrowserController : IDisposable
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
-            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.FocusedControl = -1; }
+            { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.ListboxFirstOptions.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;

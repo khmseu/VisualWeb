@@ -490,13 +490,16 @@ public sealed class ShellChrome : IDisposable
         void DrawSelectListbox(PageFormControl control, int index, LayoutRect box, int selectedOption, CssColor gray)
         {
             var rows = Math.Min(control.SelectRows, control.Options.Length);
+            var first = Math.Clamp(forms.ListboxFirstOptions is { } firsts && index < firsts.Count ? firsts[index] : 0,
+                0, control.Options.Length - rows);
             for (var row = 0; row < rows; row++)
             {
-                var option = control.Options[row];
+                var optionIndex = first + row;
+                var option = control.Options[optionIndex];
                 var rowBounds = new LayoutRect(box.X + 1, box.Y + 1 + row * 20, Math.Max(0, box.Width - 2), Math.Min(20, Math.Max(0, box.Height - 2 - row * 20)));
-                if (row == selectedOption) { Fill(rowBounds, new(176, 213, 249)); }
+                if (optionIndex == selectedOption) { Fill(rowBounds, new(176, 213, 249)); }
                 Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8, option.Disabled ? gray : ink);
-                targets.Add(new(rowBounds, ChromeAction.SelectListboxOption, tab?.Id, index, row));
+                targets.Add(new(rowBounds, ChromeAction.SelectListboxOption, tab?.Id, index, optionIndex));
             }
         }
         void DrawSelectPopup(SelectPopupLayout popup)
@@ -588,4 +591,5 @@ public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, i
     IReadOnlyList<int>? TextareaFirstLines = null, IReadOnlyList<IReadOnlyList<TextareaVisualLine>>? TextareaLines = null,
     IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null,
     IReadOnlyList<IReadOnlySet<int>>? SelectSets = null,
-    int OpenSelect = -1, int SelectPopupFirstOption = 0, int SelectPopupHoverOption = -1);
+    int OpenSelect = -1, int SelectPopupFirstOption = 0, int SelectPopupHoverOption = -1,
+    IReadOnlyList<int>? ListboxFirstOptions = null);

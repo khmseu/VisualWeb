@@ -2861,6 +2861,94 @@ public sealed class FormTests
         Assert.Equal(0, harness.Controller.SelectedOptionIndex(harness.Tab.Id, 0));
     }
 
+    private const string ScrollingListbox = "<form><select size=3 name=mode><option value=a>A</option><option value=b>B</option>"
+        + "<option disabled value=c>C</option><option value=d>D</option><option value=e>E</option><option disabled value=f>F</option>"
+        + "</select><input type=reset></form>";
+
+    [Fact]
+    public void ListboxWheelScrollIsRowBoundedAndConsumedAtBoundaries()
+    {
+        using var harness = new Harness(ScrollingListbox);
+        var id = harness.Tab.Id;
+        var rect = harness.Controller.Page(id)!.FormControls[0].Rect!;
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, 2));
+        Assert.Equal(2, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, int.MaxValue));
+        Assert.Equal(3, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, 1));
+        Assert.Equal(3, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, int.MinValue));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, -1));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.False(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + rect.Height + 4, 1));
+        Assert.Throws<PageNavigationException>(() => harness.Controller.ScrollListboxAt(id, double.NaN, rect.Y, 1));
+        Assert.Equal(0, harness.Controller.ScrollY(id));
+        Assert.Equal(0, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => harness.Controller.ListboxFirstOption(id, 1));
+    }
+
+    [Fact]
+    public void ListboxWheelIgnoresDropDownSelectsAndShortListboxesStayAtZero()
+    {
+        using var harness = new Harness("<form><select size=4 name=a><option>A</option><option>B</option></select>"
+            + "<select name=b><option>A</option><option>B</option><option>C</option></select></form>");
+        var id = harness.Tab.Id;
+        var listbox = harness.Controller.Page(id)!.FormControls[0].Rect!;
+        var dropDown = harness.Controller.Page(id)!.FormControls[1].Rect!;
+        Assert.True(harness.Controller.ScrollListboxAt(id, listbox.X + 4, listbox.Y + 4, 3));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.False(harness.Controller.ScrollListboxAt(id, dropDown.X + 4, dropDown.Y + 4, 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => harness.Controller.ListboxFirstOption(id, 1));
+    }
+
+    [Fact]
+    public void ListboxKeyboardSelectionStaysVisibleAndSkipsDisabledOptions()
+    {
+        using var harness = new Harness(ScrollingListbox);
+        var id = harness.Tab.Id;
+        Assert.True(harness.Controller.FocusControl(id, 0));
+        Assert.True(harness.Controller.MoveFocusedSelect(id, 1));
+        Assert.True(harness.Controller.MoveFocusedSelect(id, 1));
+        Assert.Equal(3, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Equal(1, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.SetFocusedSelectEndpoint(id, true));
+        Assert.Equal(4, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Equal(2, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.SetFocusedSelectEndpoint(id, false));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.MoveFocusedSelectPage(id, 1, 3));
+        Assert.Equal(4, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Equal(2, harness.Controller.ListboxFirstOption(id, 0));
+        var rect = harness.Controller.Page(id)!.FormControls[0].Rect!;
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, -2));
+        Assert.True(harness.Controller.SelectFocusedOptionByPrefix(id, "e", cycleFromCurrent: true));
+        Assert.Equal(4, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Equal(2, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, 1));
+        Assert.Equal(3, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.False(harness.Controller.SelectOptionFromPointer(id, 0, 5));
+        Assert.Equal(4, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Equal(3, harness.Controller.ListboxFirstOption(id, 0));
+    }
+
+    [Fact]
+    public void ResetRestoresListboxSelectionAndScrollOffset()
+    {
+        using var harness = new Harness(ScrollingListbox);
+        var id = harness.Tab.Id;
+        Assert.True(harness.Controller.FocusControl(id, 0));
+        Assert.True(harness.Controller.SetFocusedSelectEndpoint(id, true));
+        Assert.Equal(2, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.FocusControl(id, 1));
+        Assert.True(harness.Controller.ActivateFocusedLink(id));
+
+        Assert.Equal(0, harness.Controller.SelectedOptionIndex(id, 0));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+    }
+
     [Fact]
     public void CheckedMemberSatisfiesRequiredRadioGroup()
     {
