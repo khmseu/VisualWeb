@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using VisualWeb.Platform.Windows.Sandbox;
 using Xunit;
@@ -13,6 +14,51 @@ public sealed class WindowsSandboxTests
         Assert.Equal(512L * 1024 * 1024, WindowsRendererSandbox.MemoryLimitBytes);
         Assert.Equal(1u, WindowsRendererSandbox.ActiveProcessLimit);
     }
+
+    [Fact]
+    public void AppContainerFolderApiAcceptsUnicodeSidText()
+    {
+        var native = typeof(WindowsRendererSandbox).GetNestedType("Native", BindingFlags.NonPublic);
+        Assert.NotNull(native);
+        var method = native.GetMethod("GetAppContainerFolderPath", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        Assert.Equal(typeof(string), method.GetParameters()[0].ParameterType);
+        Assert.Equal(CharSet.Unicode, method.GetCustomAttribute<DllImportAttribute>()?.CharSet);
+    }
+
+    [Fact]
+    public void NativeAppContainerProfileStorageResolvesBinarySid()
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        WindowsRendererSandbox.RequireSupport();
+        var profile = "VisualWeb.ProfileTest-" + Guid.NewGuid().ToString("N");
+        Assert.Equal(0, CreateAppContainerProfile(profile, profile, "Profile path regression",
+            IntPtr.Zero, 0, out var sid));
+        try
+        {
+            var method = typeof(WindowsRendererSandbox).GetMethod("GetAppContainerFolderPath",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+            var path = Assert.IsType<string>(method.Invoke(null, [sid]));
+            Assert.True(Path.IsPathFullyQualified(path));
+            Assert.True(Directory.Exists(path));
+        }
+        finally
+        {
+            _ = FreeSid(sid);
+            Assert.Equal(0, DeleteAppContainerProfile(profile));
+        }
+    }
+
+    [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+    private static extern int CreateAppContainerProfile(string name, string displayName, string description,
+        IntPtr capabilities, uint capabilityCount, out IntPtr sid);
+
+    [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
+    private static extern int DeleteAppContainerProfile(string name);
+
+    [DllImport("advapi32.dll")]
+    private static extern IntPtr FreeSid(IntPtr sid);
 
     [Fact]
     public void UnsupportedHostsFailClosed()

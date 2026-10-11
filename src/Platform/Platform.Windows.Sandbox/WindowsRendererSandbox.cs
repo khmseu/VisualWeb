@@ -89,14 +89,24 @@ public static class WindowsRendererSandbox
 
     private static string GetAppContainerFolderPath(IntPtr sid)
     {
-        var result = Native.GetAppContainerFolderPath(sid, out var path);
-        if (result != 0) { throw new Win32Exception(result, "Cannot resolve AppContainer profile storage."); }
+        if (!Native.ConvertSidToStringSidW(sid, out var sidText))
+        {
+            throw Native.Failure("convert AppContainer SID to text");
+        }
         try
         {
-            return Marshal.PtrToStringUni(path)
-                ?? throw new InvalidOperationException("AppContainer profile storage path is empty.");
+            var appContainerSid = Marshal.PtrToStringUni(sidText)
+                ?? throw new InvalidOperationException("AppContainer SID text is empty.");
+            var result = Native.GetAppContainerFolderPath(appContainerSid, out var path);
+            if (result != 0) { throw new Win32Exception(result, "Cannot resolve AppContainer profile storage."); }
+            try
+            {
+                return Marshal.PtrToStringUni(path)
+                    ?? throw new InvalidOperationException("AppContainer profile storage path is empty.");
+            }
+            finally { Native.CoTaskMemFree(path); }
         }
-        finally { Native.CoTaskMemFree(path); }
+        finally { _ = Native.LocalFree(sidText); }
     }
 
     internal static int RemoveAppContainerProfile(string name) => Native.DeleteAppContainerProfile(name);
@@ -582,7 +592,10 @@ public static class WindowsRendererSandbox
             string name, string displayName, string description, IntPtr capabilities, uint capabilityCount, out IntPtr sid);
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)] internal static extern int DeleteAppContainerProfile(string name);
         [DllImport("userenv.dll", CharSet = CharSet.Unicode)]
-        internal static extern int GetAppContainerFolderPath(IntPtr appContainerSid, out IntPtr path);
+        internal static extern int GetAppContainerFolderPath(string appContainerSid, out IntPtr path);
+        [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool ConvertSidToStringSidW(IntPtr sid, out IntPtr sidText);
         [DllImport("ole32.dll")] internal static extern void CoTaskMemFree(IntPtr memory);
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

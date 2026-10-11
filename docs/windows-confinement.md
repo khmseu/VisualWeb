@@ -27,7 +27,10 @@ read-only, and the AppContainer profile directory denies writes to the
 container SID. The host process supplies only private standard streams and a
 minimal runtime environment. No network, broad host filesystem, or other
 capabilities are added. Staging and AppContainer profile resources are removed
-when the owned worker is disposed.
+when the owned worker is disposed. Profile storage lookup converts the binary
+AppContainer SID to a Unicode SID string before calling
+`GetAppContainerFolderPath`; the SID string and returned path are released with
+`LocalFree` and `CoTaskMemFree`, respectively.
 
 ## Process and resource limits
 
