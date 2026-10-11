@@ -80,13 +80,18 @@
   offline Content never collects embedded CSS or fetches resources automatically.
   Unsupported paint must fail; preserve independent pixel and native glyph tests.
 - Read the [shell guide](docs/browser-shell.md) before navigation/chrome changes.
-  Recommend CLI `--multiprocess`; it and legacy `--development-multiprocess`
-  require supported confinement before SDL/content/worker startup, no fallback.
+  `--multiprocess` is the preferred process mode; when documenting or explaining
+  how to run the CLI, point users to it rather than the legacy
+  `--development-multiprocess`. Both flags require supported confinement before
+  SDL/content/worker startup, with no fallback.
   Unsandboxed development (including single-process) requires the explicit
   `--allow-unsandboxed-development` flag as a trusted-content acknowledgement.
   If that flag is combined with normal mode or with `--require-sandbox`, the CLI
   must reject the invocation with an error. Preserve low-level library/test defaults.
-  Require an explicit mode and trusted font setup.
+  The CLI must require an explicit process mode flag (`--multiprocess`,
+  `--development-multiprocess`, or single-process with
+  `--allow-unsandboxed-development`) and an explicitly registered trusted font
+  face; it must not default to any mode or synthesize a fallback font.
   Keep asynchronous loading separate from owning-thread native rendering, preserve
   transactional history and stale-load cancellation, and do not claim isolation.
   Multiprocess shells always enable controller origin isolation: compare final
@@ -300,6 +305,12 @@ HTML scheduling, full DOM, and generated Web IDL bindings remain deferred. Run
 V8Smoke explicitly; Windows/arm64 guarantees require native target evidence.
 
 ## Validation commands (repository root)
+
+After changing code, run `dotnet build VisualWeb.slnx`, the test project(s) for
+every subsystem you touched, and
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`.
+Run `dotnet test VisualWeb.slnx --no-build` before proposing a commit. Report any
+command that fails rather than skipping it.
 
 ```sh
 dotnet build VisualWeb.slnx
