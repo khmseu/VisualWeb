@@ -249,9 +249,22 @@ anchors; it does not add hit-testing for empty or non-text anchors. This is a bo
 This is a deliberately narrow subset of HTML
 [form submission](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm)
 (cached standard ID `html`); general forms remain unsupported. The renderer
-reports data-only form/control snapshots (IPC v36); the browser owns all values,
+reports data-only form/control snapshots (IPC v39); the browser owns all values,
 focus, carets and submission. Supported controls are `input` text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color, checkbox, radio, textarea,
 hidden, submit and reset, single-select `select`, plus `button` submit/reset and inert `button type=button`, plus visible `input type=button` as shell-owned inert buttons. Color controls accept and submit only strict ASCII `#RRGGBB` values, normalize complete entries to lowercase, and draw a shell-owned swatch; there is no picker or datalist integration.
+Text/search/email/tel/url/password inputs and textarea support a nonempty
+[`dirname`](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fe-dirname)
+of at most 8192 UTF-16 code units. Every successful named control appends its
+companion name with value `ltr` immediately after its value, preserving tree order
+and duplicates. Companion names use the same CRLF normalization and UTF-8 GET
+serializer as other names; they count toward the 1 MiB metadata and query/URL budgets.
+Disabled/unnamed/unsuccessful controls emit neither entry; read-only controls still
+submit both. Editing/reset affects only the value, not the companion name.
+This is LTR-only: empty names, other control kinds, any `dir=rtl`/`auto` on the
+control or its ancestors, and `bdi`/`bdo` ancestry are rejected, even on controls
+omitted from layout. Visible bidi configurations may fail earlier at the existing
+layout boundary. No direction inference, bidi layout, direction-switching UI or
+DOM/form events are added.
 Text fields use generic editing and draw applicable placeholders in muted chrome only while the shell-owned value is empty; input placeholders strip line breaks and never become submitted values. Password values are shell-masked while editing and are never drawn as plaintext; tel has no telephone-specific keyboard or validation;
 email supports one valid address or, with `multiple`, a comma-separated list of
 valid addresses; list tokens are ASCII-whitespace-trimmed before validation and
@@ -469,7 +482,7 @@ remain unsupported.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target
 (including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
-textarea `dirname`, select `size` above 12 (including `+`-prefixed sizes above 1) or a zero single-select size, optgroups and unsupported select content,
+unsupported/empty `dirname` or non-LTR directionality, select `size` above 12 (including `+`-prefixed sizes above 1) or a zero single-select size, optgroups and unsupported select content,
 `object` controls,
 `datalist` controls, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,

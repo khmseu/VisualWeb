@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v37
+## Private stream protocol v39
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -136,6 +136,14 @@ it to v18; number step-grid metadata advances it to v19; range controls advance 
 submitter metadata. Bounded document-space anchor offsets advance the protocol to
 v37 so keyboard traversal can scroll rendered text links into view while visible
 rectangles remain viewport-clipped. Document-space anchor offsets advance it to v37, allowing bounded keyboard traversal to scroll rendered text anchors into view while visible rectangles remain viewport-clipped.
+
+Bounded `datetime-local` controls advance the protocol to v38. Required nullable
+`Dirname` advances it to v39: a non-null name is nonempty, at most 8192 UTF-16 code
+units, and valid only on text/search/email/tel/url/password inputs and textarea.
+It counts toward the combined 1 MiB form JSON budget. Only supported LTR scope
+is accepted; the browser appends the companion with value `ltr` immediately after
+the successful control's value. No bidi algorithm or DOM identity crosses IPC.
+Missing fields and old versions fail closed.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require

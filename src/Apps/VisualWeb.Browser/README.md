@@ -17,7 +17,13 @@ single-select controls with bounded options and flattened optgroup labels, Up/Do
 click/Enter/Space popup activation, and multiline textareas with Tab focus,
 committed-text entry and Enter/click submission
 of current/new-tab GET `application/x-www-form-urlencoded` queries through the ordinary
-navigation transaction. Multiple selects use browser-owned popups and an independent enabled-option
+navigation transaction. Supported text/search/email/tel/url/password inputs and textarea also
+submit bounded nonempty `dirname` companions with value `ltr`, immediately after
+each successful named value. Disabled/unnamed controls emit neither entry;
+read-only controls submit both, and reset preserves the companion name.
+Names use the existing newline normalization, UTF-8 serializer and submission
+limits. Unsupported kinds, empty names and RTL/auto/bdi/bdo scopes fail visibly;
+no bidi or DOM events are implemented. Multiple selects use browser-owned popups and an independent enabled-option
 cursor: unmodified Up/Down/Home/End/PageUp/PageDown move without changing selection; Space/Enter opens,
 Space toggles while keeping an open popup, and Enter/Escape dismiss without reverting toggles.
 Selection is submitted in option order and reset restores initial selections/cursor. Type-ahead,

@@ -48,7 +48,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(38, RendererProtocol.Version);
+        Assert.Equal(39, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 38 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 38 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 35 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 35 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 34 }, 0));
@@ -141,6 +143,91 @@ public sealed class ProtocolTests
         Assert.True(json.ContainsKey(nameof(PageFormControl.Placeholder)));
         json.Remove(nameof(PageFormControl.Placeholder));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(json.ToJsonString()));
+    }
+
+    [Fact]
+    public void DirnameMetadataIsRequiredOnTheWire()
+    {
+        var json = JsonNode.Parse(JsonSerializer.Serialize(FormFrame.FormControls![0]))!.AsObject();
+        Assert.True(json.ContainsKey("Dirname"));
+        json.Remove("Dirname");
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(json.ToJsonString()));
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("search")]
+    [InlineData("email")]
+    [InlineData("tel")]
+    [InlineData("url")]
+    [InlineData("password")]
+    [InlineData("textarea")]
+    public void DirnameMetadataRoundTripsAndHonorsExactLimits(string kind)
+    {
+        var name = new string('d', RendererProtocol.MaxTextCharacters);
+        var frame = FormFrame with
+        {
+            FormControls = [FormFrame.FormControls![0] with { Kind = kind, Dirname = name }]
+        };
+        RendererProtocol.Validate(frame, 16);
+        var roundTrip = JsonSerializer.Deserialize<RendererMessage>(JsonSerializer.Serialize(frame))!;
+        RendererProtocol.Validate(roundTrip, 16);
+        Assert.Equal(name, Assert.Single(roundTrip.FormControls!).Dirname);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        {
+            FormControls = [frame.FormControls![0] with { Dirname = name + "d" }]
+        }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        {
+            FormControls = [frame.FormControls![0] with { Dirname = "" }]
+        }, 16));
+    }
+
+    [Theory]
+    [InlineData("hidden")]
+    [InlineData("checkbox")]
+    [InlineData("radio")]
+    [InlineData("submit")]
+    [InlineData("reset")]
+    [InlineData("button")]
+    [InlineData("inert")]
+    [InlineData("color")]
+    [InlineData("number")]
+    [InlineData("range")]
+    [InlineData("date")]
+    [InlineData("time")]
+    [InlineData("datetime-local")]
+    [InlineData("month")]
+    [InlineData("week")]
+    [InlineData("select")]
+    public void DirnameMetadataRejectsUnsupportedControlKinds(string kind)
+    {
+        var numeric = kind is "number" or "range" or "date" or "time" or "datetime-local" or "month" or "week";
+        var control = FormFrame.FormControls![1] with
+        {
+            Kind = kind,
+            Dirname = "d",
+            Value = kind == "color" ? "#000000" : kind == "range" ? "0" : "",
+            Step = numeric ? 1 : null,
+            Minimum = kind == "range" ? 0 : null,
+            Maximum = kind == "range" ? 100 : null
+        };
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateForms(FormFrame.Forms, [control], 1, 2, 2));
+        RendererProtocol.ValidateForms(FormFrame.Forms, [control with { Dirname = null }], 1, 2, 2);
+    }
+
+    [Fact]
+    public void DirnameMetadataCountsTowardAggregateBudget()
+    {
+        var control = FormFrame.FormControls![0] with
+        {
+            Rect = null,
+            Dirname = new string('d', RendererProtocol.MaxTextCharacters)
+        };
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.ValidateForms(FormFrame.Forms,
+            Enumerable.Repeat(control, 128).ToArray(), 1, 2, 2));
+        RendererProtocol.ValidateForms(FormFrame.Forms,
+            Enumerable.Repeat(control with { Dirname = null }, 128).ToArray(), 1, 2, 2);
     }
 
     [Fact]
@@ -667,7 +754,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(38, RendererProtocol.Version);
+        Assert.Equal(39, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

@@ -8,6 +8,10 @@ The browser CLI requires supported OS renderer confinement in multiprocess
 modes by default; it is **not safe for hostile content**.
 Every shell mode shares bounded, memory-only session HSTS across its tabs/windows;
 standalone loaders require explicit opt-in. See [scope and limits](docs/networking.md#session-hsts).
+The bounded [simple GET forms](docs/browser-shell.md#simple-get-forms) subset
+supports nonempty `dirname` names on text/search/email/tel/url/password inputs
+and textarea, submitting an adjacent `ltr` companion for successful controls.
+RTL/auto directionality and general form events remain unsupported.
 
 ## Getting started
 

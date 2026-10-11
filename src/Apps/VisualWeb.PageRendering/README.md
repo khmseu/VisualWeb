@@ -49,7 +49,7 @@ expose name, initial value, label, disabled/readonly/required/pattern/minlength/
 traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain,
 non-UTF-8 `accept-charset`, unsupported `form=`
-owners on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern/dirname,
+owners on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern,
 select `size` above 12 (including `+`-prefixed sizes above 1) or a zero single-select size and unsupported select content, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), object and datalist) become a per-form `Error`, rejected visibly only
 when that form is submitted. Select metadata reports `SelectRows` as the leading non-negative integer of
 `size` when it is 2..12 (single or `multiple`), matching static layout's 20px-per-row height; otherwise one row
@@ -67,7 +67,13 @@ new active tab. Selected button/input `formtarget` overrides the form target;
 an empty override selects the current tab. Named/non-keyword targets become
 separate bounded target errors; an invalid submitter affects only its own
 activation, and a valid override can replace an invalid form/base target.
-IPC v36 carries form-level `novalidate` state alongside current/new-tab flags and diagnostics, never raw context names.
+IPC v39 carries form-level `novalidate` state alongside current/new-tab flags and diagnostics, never raw context names.
+Text/search/email/tel/url/password inputs and textarea may carry a nonempty
+`Dirname` companion name, bounded to 8192 UTF-16 code units and the combined
+1 MiB form metadata budget. The shell emits `ltr` immediately after a successful
+control's value. Other kinds, empty names, RTL/auto directionality anywhere in
+the control's ancestor chain, and bdi/bdo ancestry fail visibly rather than infer
+directionality, including controls omitted from layout. No bidi or events are added.
 Browser-discovered linked stylesheets also resolve against the
 first `<base href>`; invalid, `data:`, or `javascript:` values fall back to the
 document URL, and cross-origin requests remain blocked by the browser broker.

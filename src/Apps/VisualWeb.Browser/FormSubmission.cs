@@ -12,7 +12,10 @@ public enum FormEdit { Backspace, Delete, Left, Right, Up, Down, Home, End }
 /// the entry list</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#submit-mutate-action">mutate
 /// action URL</see>; url; <see href="https://url.spec.whatwg.org/#concept-urlencoded-serializer">application/x-www-form-urlencoded
 /// serializer</see>. Only UTF-8 output is implemented. file: actions are mutated like http(s), as the HTML scheme table leaves
-/// file undefined. No POST, multipart, text/plain, dirname or script-visible events exist.</remarks>
+/// file undefined. Supported text-like inputs and textarea append a bounded <c>dirname</c> companion with value <c>ltr</c>,
+/// immediately after their successful value entry; no bidi direction inference is performed.
+/// See html <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fe-dirname">dirname</see>.
+/// No POST, multipart, text/plain or script-visible events exist.</remarks>
 public static class FormSubmission
 {
     private static readonly UTF8Encoding Utf8 = new(false, false);
@@ -110,6 +113,7 @@ public static class FormSubmission
             var data = control.Kind == "hidden" && control.Name.Equals("_charset_", StringComparison.OrdinalIgnoreCase)
                 ? "UTF-8" : value(index);
             entries.Add((Newlines(control.Name), Newlines(data)));
+            if (control.Dirname is { } dirname) { entries.Add((Newlines(dirname), "ltr")); }
         }
         return entries;
     }

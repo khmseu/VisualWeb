@@ -66,7 +66,7 @@ broader page interaction is still missing:
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color/checkbox/radio/hidden/submit/reset,
   `textarea`, single-select and multiple `select`, `button` submit/reset controls, and inert `input type=button`/`button type=button` controls; supported successful controls
-  submit current/new-tab GET urlencoded queries via IPC v36 data-only metadata and the ordinary
+  submit current/new-tab GET urlencoded queries via IPC v39 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
   Reset controls are shell-owned: pointer activation or Enter on the focused
@@ -158,11 +158,20 @@ broader page interaction is still missing:
   editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea
   fields or the selected address bar. General forms remain
   missing: POST/multipart, other input types beyond text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color/checkbox/radio/reset,
-  broader textarea behavior (`dirname` remains unsupported),
+  broader textarea behavior and bidi directionality,
   full constraint-validation UI and semantics, submitter overrides other than
   `formaction`/`formtarget`/`formnovalidate`, form events/scripted submission, unsupported `form=` ownership on object, intrinsic widget sizing, control margins, autofill and non-UTF-8 submission
   encodings. See
   [simple GET forms](../docs/browser-shell.md#simple-get-forms).
+  Bounded `dirname` is implemented for text/search/email/tel/url/password inputs
+  and textarea using the repository's LTR-only scope: a nonempty name of at most
+  8192 UTF-16 code units crosses IPC v39 and emits an adjacent `ltr` entry after
+  each successful named value. Disabled/unnamed controls emit neither entry;
+  read-only values submit both and reset preserves names. Companion names use
+  existing CRLF/UTF-8 serialization and form metadata/query limits. Other control
+  kinds, empty names, RTL/auto on controls or ancestors and bdi/bdo ancestry fail
+  visibly (including controls omitted from layout). Bidi, direction switching,
+  DOM events and broader form behavior remain missing.
 - A bounded browser-owned selection supports mouse drag across visible non-link
   shaped text fragments, Ctrl+A to select all visible fragments, Ctrl+C to copy,
   and Escape to clear the selection.

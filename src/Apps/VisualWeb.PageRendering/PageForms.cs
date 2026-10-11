@@ -19,7 +19,7 @@ internal static class PageForms
     private static readonly string[] Utf8Labels =
         ["unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8"];
     private static readonly string[] SubmitterOverrides = ["formenctype", "formmethod"];
-    private static readonly string[] TextOnlyAttributes = ["dirname", "list"];
+    private static readonly string[] TextOnlyAttributes = ["list"];
 
     [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the bounded form-subset collector; its ordered checks preserve visible unsupported-semantics diagnostics and shared quotas.")]
     [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form-control and attribute literals document the supported subset at the collection boundary.")]
@@ -73,6 +73,7 @@ internal static class PageForms
                 continue;
             }
             RejectUnsupportedAttributes(element, kind, index, Reject);
+            var dirname = Dirname(element, kind, index, Reject);
             string? pattern = null;
             if ((kind is "text" or "search" or "email" or "tel" or "url" or "password") && element.GetAttribute("pattern") is { } sourcePattern)
             {
@@ -88,7 +89,6 @@ internal static class PageForms
             var textareaWrapColumns = 0;
             if (kind == "textarea")
             {
-                if (element.GetAttribute("dirname") is not null) { Reject(index, "textarea dirname"); }
                 if (element.GetAttribute("list") is not null) { Reject(index, "textarea list"); }
                 if (element.GetAttribute("multiple") is not null) { Reject(index, "textarea multiple"); }
                 if (element.GetAttribute("min") is not null) { Reject(index, "textarea min"); }
@@ -178,7 +178,8 @@ internal static class PageForms
             controls.Add(CreateControl(element, index, kind, controlName, value, label, pattern, text, minLength,
                 lastLink, rect, minimum, maximum, step, stepAny, options, placeholder, submitterAction,
                 submitterActionError, submitterTarget, submitterTargetError, textareaWrapColumns, textareaWrapHard,
-                selectRows));
+                selectRows) with
+            { Dirname = dirname });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)
@@ -249,6 +250,31 @@ internal static class PageForms
             TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0,
             SelectRows = selectRows
         };
+
+    private static string? Dirname(DomElement element, string kind, int formIndex, Action<int, string> reject)
+    {
+        if (element.GetAttribute("dirname") is not { } name) { return null; }
+        if (name.Length > RendererProtocol.MaxTextCharacters)
+        { throw new PageNavigationException("Renderer form dirname text limit exceeded."); }
+        if (name.Length == 0 || kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea"))
+        {
+            reject(formIndex, "dirname requires a nonempty name on a supported text-like input or textarea");
+            return null;
+        }
+        // Do not approximate inherited/automatic bidi, even on controls omitted from layout.
+        foreach (var ancestor in Ancestors(element).Prepend(element))
+        {
+            var direction = ancestor.GetAttribute("dir");
+            if (direction?.Equals("rtl", StringComparison.OrdinalIgnoreCase) == true
+                || direction?.Equals("auto", StringComparison.OrdinalIgnoreCase) == true
+                || ancestor.LocalName is "bdi" or "bdo")
+            {
+                reject(formIndex, "dirname directionality requires supported LTR scope (no rtl/auto/bdi/bdo)");
+                return null;
+            }
+        }
+        return name;
+    }
 
     [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit control and attribute literals make unsupported form semantics visible at their local validation point.")]
     private static void RejectUnsupportedAttributes(DomElement element, string kind, int formIndex,

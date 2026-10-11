@@ -1,5 +1,5 @@
-using System.Text;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -125,6 +125,13 @@ public sealed record PageFormControl(
     public bool Multiple { get; init; }
     [JsonRequired]
     public string Placeholder { get; init; } = "";
+    /// <summary>Nonempty companion entry name for supported LTR text/search/email/tel/url/password inputs and textarea; null means absent.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fe-dirname">dirname</see>
+    /// and <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#constructing-the-form-data-set">entry list</see>.
+    /// Bounded by <see cref="RendererProtocol.MaxTextCharacters"/> and the aggregate form metadata budget.
+    /// The renderer rejects unsupported directionality; the browser emits only <c>ltr</c> after a successful control's value.</remarks>
+    [JsonRequired]
+    public string? Dirname { get; init; }
     [JsonRequired]
     public bool FormNoValidate { get; init; }
     [JsonRequired]
@@ -483,7 +490,7 @@ public static class RendererProtocol
     private const string FrameKind = "frame";
     private const string ErrorKind = "error";
 
-    public const int Version = 38;
+    public const int Version = 39;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -666,6 +673,8 @@ public static class RendererProtocol
                 || control.Value is null || control.Value.Length > MaxTextCharacters
                 || control.Label is null || control.Label.Length > MaxTextCharacters
                 || control.Placeholder is null || control.Placeholder.Length > MaxTextCharacters
+                || control.Dirname is { Length: 0 or > MaxTextCharacters }
+                || control.Dirname is not null && control.Kind is not ("text" or "search" or "email" or "tel" or "url" or "password" or "textarea")
                 || control.Kind is not ("submit" or "reset" or "button" or "inert") && control.Label.Length != 0
                 || control.Kind is not ("checkbox" or "radio") && control.Checked
                 || control.Multiple && control.Kind is not ("email" or "select")

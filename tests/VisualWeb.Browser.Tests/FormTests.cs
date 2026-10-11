@@ -21,6 +21,124 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task DirnameMetadataCrossesBothRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form dir=LTR><input name=q dirname=q.dir readonly>
+            <input type=search dirname=s><input type=email dirname=e>
+            <input type=tel dirname=t><input type=url dirname=u>
+            <input type=password dirname=p><textarea dirname=message.dir disabled></textarea>
+            <input name=plain></form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        Assert.Equal(["q.dir", "s", "e", "t", "u", "p", "message.dir", null],
+            page.FormControls.Select(control => control.Dirname));
+        Assert.True(page.FormControls[0].ReadOnly);
+        Assert.True(page.FormControls[6].Disabled);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DirnameScopeFailsClosedAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("""
+            <form style=display:none><input name=q dirname=""></form>
+            <form style=display:none><input type=hidden dirname=d></form>
+            <form style=display:none><input type=number dirname=d></form>
+            <form style=display:none><button dirname=d>Go</button></form>
+            <form style=display:none><input dirname=d dir=rtl></form>
+            <form style=display:none dir=auto><textarea dirname=d></textarea></form>
+            <form style=display:none><bdi><input dirname=d></bdi></form>
+            """), new(200, 400, 1), Cancellation);
+        Assert.Equal(7, page.Forms.Count);
+        Assert.All(page.Forms, form => Assert.Contains("dirname", form.Error, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DirnameNameHonorsExactRendererTextLimit(bool process)
+    {
+        using var renderer = Renderer(process);
+        var name = new string('d', RendererProtocol.MaxTextCharacters);
+        var page = await renderer.RenderAsync(Document($"<form><input name=q dirname='{name}'></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Null(Assert.Single(page.Forms).Error);
+        await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(
+            Document($"<form><input name=q dirname='{name}d'></form>"), new(200, 400, 1), Cancellation));
+    }
+
+    [Fact]
+    public void DirnameSubmissionPreservesOrderingNewlinesSuccessfulControlsAndReset()
+    {
+        using var harness = new Harness("""
+            <input form=f name=before value=b dirname=before.dir>
+            <form id=f action=/send>
+            <input name=q value=initial dirname="q&#10;dir">
+            <textarea name=t dirname=t.dir wrap=hard cols=3>abcdef</textarea>
+            <input name=r readonly value=ro dirname=r.dir>
+            <input name=disabled disabled dirname=disabled.dir>
+            <fieldset disabled><input name=field dirname=field.dir></fieldset>
+            <input dirname=unnamed.dir>
+            <input name=empty dirname=empty.dir>
+            <button type=reset>Reset</button><button name=send value=yes>Send</button>
+            </form><input form=f name=after value=a dirname=after.dir>
+            """);
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 1));
+        controller.SelectAllFormControl(tab);
+        Assert.Equal("edited", controller.InsertFormText(tab, "edited"));
+        Assert.True(controller.FocusControl(tab, 8));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("initial", controller.FormControlValue(tab, 1));
+        Assert.Single(harness.Source.Requests);
+        Assert.True(controller.FocusControl(tab, 9));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/send?before=b&before.dir=ltr&q=initial&q%0D%0Adir=ltr"
+            + "&t=abc%0D%0Adef&t.dir=ltr&r=ro&r.dir=ltr&empty=&empty.dir=ltr&send=yes&after=a&after.dir=ltr",
+            harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData("text", "edited")]
+    [InlineData("search", "edited")]
+    [InlineData("email", "user@example.com")]
+    [InlineData("tel", "12345")]
+    [InlineData("url", "https://example.org/")]
+    [InlineData("password", "secret")]
+    public void DirnameSubmitsCurrentEditedValueWithDuplicateCompanionNames(string kind, string value)
+    {
+        using var harness = new Harness($"<form action=/send><input type={kind} name=q dirname=q><button>Go</button></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+        Assert.Equal(value, controller.InsertFormText(tab, value));
+        Assert.True(controller.FocusControl(tab, 1));
+        Assert.True(controller.ActivateFocusedLink(tab, harness.Viewport));
+        Assert.Equal("https://example.com/send?" + FormSubmission.Serialize([("q", value), ("q", "ltr")]),
+            harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void DirnameDoesNotBypassValidationOrSubmissionLimits()
+    {
+        using var invalid = new Harness("<form><input name=q required dirname=d><button>Go</button></form>");
+        Assert.True(invalid.Controller.FocusControl(invalid.Tab.Id, 1));
+        Assert.Throws<PageNavigationException>(() => invalid.Controller.ActivateFocusedLink(invalid.Tab.Id));
+        Assert.Single(invalid.Source.Requests);
+        using var oversized = new Harness($"<form><input name=q dirname='{new string('d', RendererProtocol.MaxTextCharacters)}'><button>Go</button></form>");
+        Assert.True(oversized.Controller.FocusControl(oversized.Tab.Id, 1));
+        Assert.Throws<BrowserLimitException>(() => oversized.Controller.ActivateFocusedLink(oversized.Tab.Id));
+        Assert.Single(oversized.Source.Requests);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task DateTimeLocalInputReportsNormalizedMetadataAcrossRenderers(bool process)
     {
         using var renderer = Renderer(process);
@@ -1269,12 +1387,12 @@ public sealed class FormTests
     [InlineData("<form action='javascript:alert(1)'><input name=q></form>", "scheme")]
     [InlineData("<form action='ftp://example.com/'><input name=q></form>", "scheme")]
     [InlineData("<form action='http://[bad'><input name=q></form>", "action")]
-    [InlineData("<form><input name=q dirname=d></form>", "dirname")]
+    [InlineData("<form><input name=q dirname=''></form>", "dirname")]
     [InlineData("<form><input name=q list=l></form>", "list")]
     [InlineData("<form><input type=submit formmethod=post></form>", "formmethod")]
     [InlineData("<form><input type=submit formenctype=text/plain></form>", "formenctype")]
     [InlineData("<form><input type=file name=c style=display:none></form>", "file")]
-    [InlineData("<form><textarea name=t dirname=d></textarea></form>", "dirname")]
+    [InlineData("<form><textarea name=t dirname=''></textarea></form>", "dirname")]
     [InlineData("<form><textarea name=t wrap=hard></textarea></form>", "wrap=hard")]
     [InlineData("<form><select size=13 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=999999999999999999999 name=q><option>x</option></select></form>", "display size")]
