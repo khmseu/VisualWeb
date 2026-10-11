@@ -28,6 +28,7 @@ lint:
   ignore:
     - linters: [checkov]
       paths:
+        - "**/Data/**"
         - tests/**
 actions:
   enabled:
