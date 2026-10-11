@@ -341,7 +341,17 @@ Escape, Tab and outside clicks dismiss without reverting toggles. Pointer toggle
 Reset restores both initial selections and the initial cursor; retained repaints preserve them.
 Empty/all-disabled option lists cannot be toggled. Multiple-select type-ahead, Shift/range selection,
 Ctrl+A selection and platform-native select behavior remain unsupported. These interactions do not dispatch
-DOM keyboard, input or change events. Multiple-select listboxes remain unsupported. Radios sharing a form and nonempty name are
+DOM keyboard, input or change events. Multiple selects with an explicit `size` from 2 through 12 instead render
+as browser-owned multiple-select listboxes and never open the popup; an absent, invalid, zero or one `size` keeps
+the popup (the HTML default of four listbox rows for multiple selects is not implemented) and a `size` above 12 is a
+visible form error. Listbox rows highlight every selected enabled option and outline the focused control's cursor
+option; they share the single-select listbox's row-bounded, shell-owned first visible option for wheel scrolling
+(consumed at bounds, no page scroll) and offset pointer targets. Clicking an enabled row toggles it and moves the
+cursor; disabled rows are inert. The keyboard keeps the multiple-select semantics above without a popup: Up/Down,
+Home/End and Page Up/Down (by the listbox row count) move the cursor without changing selection and scroll the minimum
+rows to keep it visible; non-repeated Space toggles the cursor option, scrolling it into view; Enter is consumed without
+changing selection; Shift-modified selection keys are inert. Reset restores selections, cursor and scroll offset, and
+submission sends enabled selections in option order. Radios sharing a form and nonempty name are
 mutually exclusive; Space selects the focused member and arrow keys move/select
 within its enabled group. Input/button/select controls default to 160 by 20 CSS pixels. Textareas
 default to 20 columns by 2 rows (160 by 40 pixels); `cols` and `rows` are bounded
@@ -459,7 +469,7 @@ remain unsupported.
 Visible failures, without navigation and keeping the committed page: a form with
 `method` post/dialog, unsupported `enctype`, unsupported named or non-keyword target
 (including inherited `<base target>` or the selected `formtarget`), non-UTF-8 `accept-charset`, unsupported `form=` ownership on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, unsupported input types, invalid email/address-list, URL or number values, and reversed numeric bounds,
-textarea `dirname`, listbox/multiple select semantics, optgroups and unsupported select content,
+textarea `dirname`, select `size` above 12 (including `+`-prefixed sizes above 1) or a zero single-select size, optgroups and unsupported select content,
 `object` controls,
 `datalist` controls, invalid/unsupported action schemes,
 unsupported document encodings, HTTPS form downgrades not upgraded by HSTS,

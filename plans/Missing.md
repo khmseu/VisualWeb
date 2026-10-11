@@ -97,8 +97,13 @@ broader page interaction is still missing:
   enabled option, is kept visible/highlighted, follows pointer toggles, and resets with the form.
   Space/Enter opens a closed popup; non-repeated Space toggles while retaining an open popup, Enter dismisses,
   and Escape/Tab/outside clicks dismiss without reverting toggles. Empty/all-disabled options are inert;
-  retained repaints preserve cursor/selection. Multiple-select type-ahead, Shift/range selection, Ctrl+A,
-  listboxes, platform-native behavior and DOM keyboard/input/change events remain unsupported. Optgroups flatten
+  retained repaints preserve cursor/selection. Multiple selects with an explicit `size` 2..12 render as
+  browser-owned listboxes without a popup: selected rows are highlighted and the focused cursor outlined, the
+  shared row-bounded first visible option supports wheel scrolling and offset pointer toggles of enabled options,
+  cursor keys keep the cursor visible, non-repeated Space toggles it, Enter is consumed, and reset restores
+  selection/cursor/offset. Absent/invalid/0/1 `size` keeps the popup (no HTML default of four rows); `size` above
+  12 is a visible form error. Multiple-select type-ahead, Shift/range selection, Ctrl+A,
+  platform-native behavior and DOM keyboard/input/change events remain unsupported. Optgroups flatten
   into the option list, prefix group labels, and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values, `required`,

@@ -45,7 +45,7 @@ public sealed class BrowserController : IDisposable
         internal Dictionary<int, int> SelectedOptions { get; } = [];
         internal Dictionary<int, int> ActiveSelectOptions { get; } = [];
         internal Dictionary<int, HashSet<int>> MultipleSelectedOptions { get; } = [];
-        /// <summary>First visible option row of single-select listboxes, keyed by control index.</summary>
+        /// <summary>First visible option row of single- and multiple-select listboxes, keyed by control index.</summary>
         internal Dictionary<int, int> ListboxFirstOptions { get; } = [];
         internal int TextSelectionStart { get; set; } = -1;
         internal int TextSelectionEnd { get; set; } = -1;
@@ -521,6 +521,7 @@ public sealed class BrowserController : IDisposable
         if (control.Multiple)
         {
             owner.ActiveSelectOptions[controlIndex] = optionIndex;
+            KeepListboxOptionVisible(owner, controlIndex, optionIndex);
             var selected = MultipleSelectedOptions(owner, controlIndex);
             if (!selected.Add(optionIndex)) { selected.Remove(optionIndex); }
             Changed?.Invoke(id);
@@ -767,17 +768,17 @@ public sealed class BrowserController : IDisposable
         }
         return false;
     }
-    /// <summary>Gets the first visible option row of a browser-owned single-select listbox.</summary>
+    /// <summary>Gets the first visible option row of a browser-owned single- or multiple-select listbox.</summary>
     public int ListboxFirstOption(TabId id, int index)
     {
         Check();
         var owner = content[id];
         if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count
-            || page.FormControls[index] is not { Kind: "select", Multiple: false, SelectRows: > 1 })
+            || page.FormControls[index] is not { Kind: "select", SelectRows: > 1 })
         { throw new ArgumentOutOfRangeException(nameof(index)); }
         return ListboxFirstOption(owner, index);
     }
-    /// <summary>Scrolls the enabled single-select listbox under a viewport point by whole option rows.</summary>
+    /// <summary>Scrolls the enabled single- or multiple-select listbox under a viewport point by whole option rows.</summary>
     /// <returns>Whether a listbox consumed the wheel input, including at its scroll bounds.</returns>
     public bool ScrollListboxAt(TabId id, double x, double y, int rows)
     {
@@ -789,7 +790,7 @@ public sealed class BrowserController : IDisposable
         for (var index = page.FormControls.Count - 1; index >= 0; index--)
         {
             var control = page.FormControls[index];
-            if (control is not { Kind: "select", Multiple: false, SelectRows: > 1, Disabled: false, Rect: { } rect }
+            if (control is not { Kind: "select", SelectRows: > 1, Disabled: false, Rect: { } rect }
                 || !rect.Contains(x, y)) { continue; }
             var maximum = Math.Max(0, control.Options.Length - ListboxRows(control));
             var current = ListboxFirstOption(owner, index);
@@ -986,22 +987,19 @@ public sealed class BrowserController : IDisposable
     private static void SetActiveSelectOption(Content owner, int index, int option)
     {
         if (owner.Page!.FormControls[index].Multiple) { owner.ActiveSelectOptions[index] = option; }
-        else
-        {
-            owner.SelectedOptions[index] = option;
-            KeepListboxOptionVisible(owner, index, option);
-        }
+        else { owner.SelectedOptions[index] = option; }
+        KeepListboxOptionVisible(owner, index, option);
     }
-    /// <summary>Number of option rows a single-select listbox draws, or zero for other controls.</summary>
+    /// <summary>Number of option rows a single- or multiple-select listbox draws, or zero for other controls.</summary>
     private static int ListboxRows(PageFormControl control) =>
-        control is { Kind: "select", Multiple: false, SelectRows: > 1 } ? Math.Min(control.SelectRows, control.Options.Length) : 0;
+        control is { Kind: "select", SelectRows: > 1 } ? Math.Min(control.SelectRows, control.Options.Length) : 0;
     private static int ListboxFirstOption(Content owner, int index)
     {
         var control = owner.Page!.FormControls[index];
         return Math.Clamp(owner.ListboxFirstOptions.GetValueOrDefault(index), 0,
             Math.Max(0, control.Options.Length - ListboxRows(control)));
     }
-    /// <summary>Scrolls a single-select listbox by whole rows so <paramref name="option"/> is visible.</summary>
+    /// <summary>Scrolls a listbox by whole rows so <paramref name="option"/> is visible.</summary>
     private static bool KeepListboxOptionVisible(Content owner, int index, int option)
     {
         var rows = ListboxRows(owner.Page!.FormControls[index]);

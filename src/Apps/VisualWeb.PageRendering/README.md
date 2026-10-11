@@ -50,8 +50,10 @@ traversal position before a link group and clipped visible border box.
 Unsupported semantics (POST/dialog, multipart/text-plain,
 non-UTF-8 `accept-charset`, unsupported `form=`
 owners on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern/dirname,
-listbox/multiple/optgroup select semantics, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), object and datalist) become a per-form `Error`, rejected visibly only
-when that form is submitted. Supported controls resolve `form=` to the first
+select `size` above 12 (including `+`-prefixed sizes above 1) or a zero single-select size and unsupported select content, date/time/month/week constraints (`min`, `max`, `step`, `pattern`, length, `list`, `multiple`, `dirname`), object and datalist) become a per-form `Error`, rejected visibly only
+when that form is submitted. Select metadata reports `SelectRows` as the leading non-negative integer of
+`size` when it is 2..12 (single or `multiple`), matching static layout's 20px-per-row height; otherwise one row
+(multiple selects without such a size stay compact popups). Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
 owner and never fall back to an ancestor. Controls without `form=` use the
 nearest ancestor form. `<output>` is form-associated but non-submittable and contributes no browser form snapshot. `<input type="button">` and `<button type="button">` are non-submittable and contribute no GET entry. Visible instances use bounded widget layout and are reported as inert `inert` controls, labelled by the input's `value` or the button's text content (empty when absent); activation never submits. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state

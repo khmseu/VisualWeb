@@ -21,9 +21,11 @@ navigation transaction. Multiple selects use browser-owned popups and an indepen
 cursor: unmodified Up/Down/Home/End/PageUp/PageDown move without changing selection; Space/Enter opens,
 Space toggles while keeping an open popup, and Enter/Escape dismiss without reverting toggles.
 Selection is submitted in option order and reset restores initial selections/cursor. Type-ahead,
-Shift/range selection, Ctrl+A and multiple-select listboxes remain unsupported; no DOM input events
-are generated. Single-select `size` 2..12 listboxes keep a row-bounded, shell-owned first visible option
+Shift/range selection and Ctrl+A remain unsupported; no DOM input events
+are generated. Single- and multiple-select `size` 2..12 listboxes keep a row-bounded, shell-owned first visible option
 for wheel scrolling (no page scroll over the listbox), offset pointer targets and keyboard auto-visibility.
+Multiple listboxes never open a popup: clicks toggle enabled rows, keys move an outlined cursor, Space toggles it
+and Enter is consumed; multiple selects without an explicit `size` 2..12 keep the popup.
 See the controls guide for exact bounds and page-key behavior.
 Textareas have bounded rows/columns, soft wrapping and
 independent line-window scrolling; `wrap=hard` inserts bounded line breaks only

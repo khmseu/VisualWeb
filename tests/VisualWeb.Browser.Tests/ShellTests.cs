@@ -300,6 +300,117 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void MultipleListboxRendersSelectedRowsCursorAndOffsetTargets()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 6).Select(index => $"<option>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select multiple size=3>" + options + "</select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+
+        using var chrome = new ShellChrome(FontPath, 1_000_000);
+        var page = shell.Controller.Page(tab.Id)!;
+        var rect = page.FormControls[0].Rect!;
+        var frame = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState([""], 0, -1, SelectIndices: [-1], SelectSets: [new HashSet<int> { 2, 4 }],
+                ListboxFirstOptions: [2], ListboxCursorOptions: [3]));
+        Assert.Equal([2, 3, 4], frame.Targets.Where(target => target.Action == ChromeAction.SelectListboxOption)
+            .Select(target => target.OptionIndex));
+        Assert.DoesNotContain(frame.Targets, target => target.Action == ChromeAction.SelectOption);
+        Assert.Equal(new byte[] { 249, 213, 176, 255 }, Pixel(frame, (int)rect.X + 3, Row(0)));
+        Assert.Equal(new byte[] { 255, 255, 255, 255 }, Pixel(frame, (int)rect.X + 3, Row(1)));
+        Assert.Equal(new byte[] { 160, 96, 32, 255 }, Pixel(frame, (int)rect.X + 1, Row(1)));
+        Assert.Equal(new byte[] { 249, 213, 176, 255 }, Pixel(frame, (int)rect.X + 3, Row(2)));
+
+        var unfocused = chrome.Render(window, page, system.Items[0].Size, system.Items[0].Density,
+            forms: new ShellFormState([""], -1, -1, SelectIndices: [-1], SelectSets: [new HashSet<int> { 2, 4 }],
+                ListboxFirstOptions: [2], ListboxCursorOptions: [3]));
+        Assert.Equal(new byte[] { 255, 255, 255, 255 }, Pixel(unfocused, (int)rect.X + 1, Row(1)));
+
+        int Row(int row) => (int)(ShellChrome.Height + rect.Y + 1 + row * 20 + 10);
+        static byte[] Pixel(ShellFrame frame, int x, int y) => frame.Pixels.AsSpan(y * frame.Stride + x * 4, 4).ToArray();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MultipleListboxWheelPointerAndKeyboardToggleWithoutPopup(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var options = string.Concat(Enumerable.Range(0, 8).Select(index =>
+            index == 4 ? "<option disabled>4</option>" : $"<option>{index}</option>"));
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}div{height:2000px}</style><form><select multiple size=3 name=m>"
+            + options + "</select></form><div></div>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        var rect = shell.Controller.Page(tab.Id)!.FormControls[0].Rect!;
+        var x = (float)(rect.X + 4);
+        float Row(int row) => (float)(ShellChrome.Height + rect.Y + 5 + row * 20);
+
+        shell.Dispatch(new PointerMoved(native.Id, x, Row(1)));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        shell.Tick();
+        Assert.Equal(3, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+        Click(Row(0));
+        Click(Row(2));
+        Assert.Equal([3, 5], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Click(Row(1));
+        Assert.Equal([3, 5], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Click(Row(0));
+        Assert.Equal([5], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Assert.Equal(3, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+
+        Key(SDL.Scancode.Space);
+        Assert.Equal([3, 5], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Return);
+        Key(SDL.Scancode.Space);
+        Assert.Equal([5], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.End);
+        Assert.Equal(7, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal(5, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Key(SDL.Scancode.Home);
+        Assert.Equal(0, shell.Controller.ListboxFirstOption(tab.Id, 0));
+        Key(SDL.Scancode.Down);
+        Key(SDL.Scancode.Space, SDL.Keymod.Shift);
+        Key(SDL.Scancode.Space, repeat: true);
+        Assert.Equal([5, 7], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([1, 5, 7], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        shell.Tick();
+        var below = (int)(ShellChrome.Height + rect.Y + rect.Height + 10);
+        Assert.Equal(new byte[] { 255, 255, 255, 255 },
+            native.Pixels!.AsSpan((below * native.Size.Width + (int)x) * 4, 4).ToArray());
+        Assert.Equal(0, shell.Controller.ScrollY(tab.Id));
+
+        void Click(float y)
+        {
+            shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+            shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        }
+        void Key(SDL.Scancode scan, SDL.Keymod modifiers = 0, bool repeat = false)
+        {
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)modifiers, true, repeat));
+            shell.Tick();
+        }
+    }
+
+    [Fact]
     public void PasswordOverlayDoesNotRevealFieldValue()
     {
         using var system = new Windows();

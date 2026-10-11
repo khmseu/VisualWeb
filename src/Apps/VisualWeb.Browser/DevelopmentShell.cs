@@ -874,18 +874,27 @@ public sealed class DevelopmentShell : IDisposable
         var selectSets = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index].Kind == "select" ? Controller.SelectedOptionIndices(id, index).ToHashSet() : []).ToArray();
         var listboxFirstOptions = Enumerable.Range(0, page.FormControls.Count).Select(index =>
-            page.FormControls[index] is { Kind: "select", Multiple: false, SelectRows: > 1 }
+            page.FormControls[index] is { Kind: "select", SelectRows: > 1 }
                 ? Controller.ListboxFirstOption(id, index) : 0).ToArray();
+        var listboxCursorOptions = Enumerable.Range(0, page.FormControls.Count).Select(index =>
+            page.FormControls[index] is { Kind: "select", Multiple: true, SelectRows: > 1 }
+                ? Controller.ActiveSelectOptionIndex(id, index) : -1).ToArray();
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
-            selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption, listboxFirstOptions);
+            selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption, listboxFirstOptions,
+            listboxCursorOptions);
     }
     private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id, bool toggleOption = false)
     {
         var index = Controller.FocusedControlIndex(id);
         if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
             || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
-        if (page.FormControls[index].SelectRows > 1) { return true; }
+        if (page.FormControls[index].SelectRows > 1)
+        {
+            // Listboxes never open a popup: Space toggles a multiple listbox cursor option; Enter is consumed.
+            if (toggleOption && page.FormControls[index].Multiple) { _ = Controller.ToggleFocusedMultipleSelectOption(id); }
+            return true;
+        }
         if (view.OpenSelectControl == index && toggleOption && page.FormControls[index].Multiple)
         {
             _ = Controller.ToggleFocusedMultipleSelectOption(id);

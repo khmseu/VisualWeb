@@ -95,7 +95,7 @@ public sealed record PageForm(
 /// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
 /// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formtarget">formtarget</see>.
-/// TextareaWrapColumns is present only for textarea hard wrapping. SelectRows is one for the compact select subset.
+/// TextareaWrapColumns is present only for textarea hard wrapping. SelectRows is one for compact (popup) selects and 2..12 for browser-owned single or multiple listboxes.
 /// Datetime-local values are normalized timezone-free strings (years 0001–9999); Minimum/Maximum are
 /// milliseconds from 1970-01-01 and Step is in milliseconds, with default 60000 or StepAny.
 /// Label carries submit/reset-input text or button text.</remarks>
@@ -139,7 +139,7 @@ public sealed record PageFormControl(
     public int TextareaWrapColumns { get; init; }
     [JsonRequired]
     public bool TextareaWrapHard { get; init; }
-    /// <summary>Visible rows for a bounded select control; single-row selects report one.</summary>
+    /// <summary>Visible rows (1..12) for a select control; compact popup selects, including multiple selects without an explicit size of 2..12, report one.</summary>
     [JsonRequired]
     public int SelectRows { get; init; } = 1;
 }

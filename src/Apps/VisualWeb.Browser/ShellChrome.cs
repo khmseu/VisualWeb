@@ -492,15 +492,29 @@ public sealed class ShellChrome : IDisposable
             var rows = Math.Min(control.SelectRows, control.Options.Length);
             var first = Math.Clamp(forms.ListboxFirstOptions is { } firsts && index < firsts.Count ? firsts[index] : 0,
                 0, control.Options.Length - rows);
+            var selectedSet = control.Multiple && forms.SelectSets is { } sets && index < sets.Count ? sets[index] : null;
+            var cursor = control.Multiple && index == forms.Focused && forms.ListboxCursorOptions is { } cursors
+                && index < cursors.Count ? cursors[index] : -1;
             for (var row = 0; row < rows; row++)
             {
                 var optionIndex = first + row;
                 var option = control.Options[optionIndex];
                 var rowBounds = new LayoutRect(box.X + 1, box.Y + 1 + row * 20, Math.Max(0, box.Width - 2), Math.Min(20, Math.Max(0, box.Height - 2 - row * 20)));
-                if (optionIndex == selectedOption) { Fill(rowBounds, new(176, 213, 249)); }
+                var selected = selectedSet?.Contains(optionIndex) ?? (!control.Multiple && optionIndex == selectedOption);
+                if (selected) { Fill(rowBounds, new(176, 213, 249)); }
+                if (optionIndex == cursor) { CursorFrame(rowBounds); }
                 Label(option.Label, rowBounds.X + 4, rowBounds.Y + 15, rowBounds.Width - 8, option.Disabled ? gray : ink);
                 targets.Add(new(rowBounds, ChromeAction.SelectListboxOption, tab?.Id, index, optionIndex));
             }
+        }
+        void CursorFrame(LayoutRect row)
+        {
+            if (row.Width < 2 || row.Height < 2) { return; }
+            var color = new CssColor(32, 96, 160);
+            Fill(new(row.X, row.Y, row.Width, 1), color);
+            Fill(new(row.X, row.Y + row.Height - 1, row.Width, 1), color);
+            Fill(new(row.X, row.Y, 1, row.Height), color);
+            Fill(new(row.X + row.Width - 1, row.Y, 1, row.Height), color);
         }
         void DrawSelectPopup(SelectPopupLayout popup)
         {
@@ -592,4 +606,4 @@ public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, i
     IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null,
     IReadOnlyList<IReadOnlySet<int>>? SelectSets = null,
     int OpenSelect = -1, int SelectPopupFirstOption = 0, int SelectPopupHoverOption = -1,
-    IReadOnlyList<int>? ListboxFirstOptions = null);
+    IReadOnlyList<int>? ListboxFirstOptions = null, IReadOnlyList<int>? ListboxCursorOptions = null);

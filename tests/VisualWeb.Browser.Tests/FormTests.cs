@@ -447,6 +447,30 @@ public sealed class FormTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task RendererReportsBoundedMultipleSelectListboxRowsAcrossRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<form><select multiple name=a size=3><option>A</option><option>B</option></select>"
+            + "<select multiple name=b size=1><option>A</option></select><select multiple name=c><option>A</option></select>"
+            + "<select multiple name=d size=0><option>A</option></select><select multiple name=e size=x><option>A</option></select>"
+            + "<select name=g size=' 2rows'><option>A</option></select></form>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Equal([3, 1, 1, 1, 1, 2], page.FormControls.Select(control => control.SelectRows));
+        Assert.Equal([60.0, 20, 20, 20, 20, 40], page.FormControls.Select(control => control.Rect!.Height));
+        Assert.All(page.FormControls.Take(5), control => Assert.True(control.Multiple));
+        Assert.Null(Assert.Single(page.Forms).Error);
+
+        var largest = await renderer.RenderAsync(Document("<form><select multiple name=f size=012><option>A</option></select></form>"),
+            new(200, 400, 1), Cancellation);
+        Assert.Equal(12, Assert.Single(largest.FormControls).SelectRows);
+        Assert.Equal(240, largest.FormControls[0].Rect!.Height);
+        Assert.Null(Assert.Single(largest.Forms).Error);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task RendererFlattensOptgroupsAndInheritsDisabledState(bool process)
     {
         using var renderer = Renderer(process);
@@ -1256,6 +1280,8 @@ public sealed class FormTests
     [InlineData("<form><select size=999999999999999999999 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=0 name=q><option>x</option></select></form>", "display size")]
     [InlineData("<form><select size=+2 name=q><option>x</option></select></form>", "display size")]
+    [InlineData("<form><select multiple size=13 name=q><option>x</option></select></form>", "display size")]
+    [InlineData("<form><select multiple size=+2 name=q><option>x</option></select></form>", "display size")]
     public async Task UnsupportedFormSemanticsAreVisibleFormErrors(string body, string expected)
     {
         using var renderer = Renderer(false);
@@ -2932,6 +2958,107 @@ public sealed class FormTests
         Assert.False(harness.Controller.SelectOptionFromPointer(id, 0, 5));
         Assert.Equal(4, harness.Controller.SelectedOptionIndex(id, 0));
         Assert.Equal(3, harness.Controller.ListboxFirstOption(id, 0));
+    }
+
+    private const string MultipleListbox = "<form action='/choose'><select multiple size=3 name=mode>"
+        + "<option value=a selected>A</option><option value=b>B</option><option disabled selected value=c>C</option>"
+        + "<option value=d>D</option><option value=e selected>E</option><option disabled value=f>F</option><option value=g>G</option>"
+        + "</select><button type=reset>Reset</button><button>Go</button></form>";
+
+    [Fact]
+    public void MultipleListboxWheelScrollIsRowBoundedAndLeavesSelectionAlone()
+    {
+        using var harness = new Harness(MultipleListbox);
+        var id = harness.Tab.Id;
+        var rect = harness.Controller.Page(id)!.FormControls[0].Rect!;
+        Assert.Equal(3, harness.Controller.Page(id)!.FormControls[0].SelectRows);
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, 3));
+        Assert.Equal(3, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, int.MaxValue));
+        Assert.Equal(4, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.True(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, int.MinValue));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.False(harness.Controller.ScrollListboxAt(id, rect.X + 4, rect.Y + rect.Height + 4, 1));
+        Assert.Equal(0, harness.Controller.ScrollY(id));
+        Assert.Equal([0, 4], harness.Controller.SelectedOptionIndices(id, 0));
+        Assert.Equal(0, harness.Controller.ActiveSelectOptionIndex(id, 0));
+    }
+
+    [Fact]
+    public void MultipleListboxWheelIgnoresDisabledListboxesAndMultiplePopups()
+    {
+        using var harness = new Harness("<form><select multiple size=2 disabled><option>A</option><option>B</option><option>C</option></select>"
+            + "<select multiple><option>A</option><option>B</option><option>C</option></select></form>");
+        var id = harness.Tab.Id;
+        var disabled = harness.Controller.Page(id)!.FormControls[0].Rect!;
+        var popup = harness.Controller.Page(id)!.FormControls[1].Rect!;
+        Assert.False(harness.Controller.ScrollListboxAt(id, disabled.X + 4, disabled.Y + 4, 1));
+        Assert.Equal(0, harness.Controller.ListboxFirstOption(id, 0));
+        Assert.False(harness.Controller.ScrollListboxAt(id, popup.X + 4, popup.Y + 4, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => harness.Controller.ListboxFirstOption(id, 1));
+    }
+
+    [Fact]
+    public void MultipleListboxPointerTogglesEnabledOptionsAndKeyboardCursorStaysVisible()
+    {
+        using var harness = new Harness(MultipleListbox);
+        var controller = harness.Controller;
+        var id = harness.Tab.Id;
+        var rect = controller.Page(id)!.FormControls[0].Rect!;
+        Assert.True(controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, 3));
+        Assert.True(controller.FocusControl(id, 0));
+        Assert.True(controller.SelectOptionFromPointer(id, 0, 3));
+        Assert.Equal([0, 3, 4], controller.SelectedOptionIndices(id, 0));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(id, 0));
+        Assert.Equal(3, controller.ListboxFirstOption(id, 0));
+        Assert.False(controller.SelectOptionFromPointer(id, 0, 5));
+        Assert.True(controller.SelectOptionFromPointer(id, 0, 4));
+        Assert.Equal([0, 3], controller.SelectedOptionIndices(id, 0));
+
+        Assert.True(controller.SetFocusedSelectEndpoint(id, false));
+        Assert.Equal(0, controller.ActiveSelectOptionIndex(id, 0));
+        Assert.Equal(0, controller.ListboxFirstOption(id, 0));
+        Assert.Equal([0, 3], controller.SelectedOptionIndices(id, 0));
+        Assert.True(controller.MoveFocusedSelect(id, 1));
+        Assert.True(controller.MoveFocusedSelect(id, 1));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(id, 0));
+        Assert.Equal(1, controller.ListboxFirstOption(id, 0));
+        Assert.True(controller.MoveFocusedSelectPage(id, 1, 2));
+        Assert.Equal(6, controller.ActiveSelectOptionIndex(id, 0));
+        Assert.Equal(4, controller.ListboxFirstOption(id, 0));
+        Assert.Equal([0, 3], controller.SelectedOptionIndices(id, 0));
+        Assert.True(controller.ScrollListboxAt(id, rect.X + 4, rect.Y + 4, -4));
+        Assert.Equal(0, controller.ListboxFirstOption(id, 0));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(id));
+        Assert.Equal([0, 3, 6], controller.SelectedOptionIndices(id, 0));
+        Assert.Equal(4, controller.ListboxFirstOption(id, 0));
+        Assert.False(controller.SelectFocusedOptionByPrefix(id, "A"));
+        Assert.Equal(4, controller.ListboxFirstOption(id, 0));
+
+        Assert.True(controller.FocusControl(id, 2));
+        Assert.True(controller.ActivateFocusedLink(id));
+        Assert.Equal("https://example.com/choose?mode=a&mode=d&mode=g", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void ResetRestoresMultipleListboxSelectionCursorAndScrollOffset()
+    {
+        using var harness = new Harness(MultipleListbox);
+        var controller = harness.Controller;
+        var id = harness.Tab.Id;
+        Assert.True(controller.FocusControl(id, 0));
+        Assert.True(controller.SetFocusedSelectEndpoint(id, true));
+        Assert.True(controller.ToggleFocusedMultipleSelectOption(id));
+        Assert.Equal(4, controller.ListboxFirstOption(id, 0));
+        Assert.Equal([0, 4, 6], controller.SelectedOptionIndices(id, 0));
+        Assert.True(controller.FocusControl(id, 1));
+        Assert.True(controller.ActivateFocusedLink(id));
+
+        Assert.Equal([0, 4], controller.SelectedOptionIndices(id, 0));
+        Assert.Equal(0, controller.ActiveSelectOptionIndex(id, 0));
+        Assert.Equal(0, controller.ListboxFirstOption(id, 0));
     }
 
     [Fact]

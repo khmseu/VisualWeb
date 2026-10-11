@@ -212,7 +212,8 @@ internal static class PageForms
         var options = kind == "select" ? Options(element, ref optionCount) : Array.Empty<PageFormOption>();
         var selectedOption = Array.FindLastIndex(options, option => option.Selected && !option.Disabled);
         var multiple = kind == "select" && element.GetAttribute("multiple") is not null;
-        var requestedSelectRows = kind == "select" && !multiple ? SelectSize(element.GetAttribute("size")) : 1;
+        // Multiple selects keep the compact popup unless an explicit size of 2..12 requests a bounded listbox.
+        var requestedSelectRows = kind == "select" ? SelectSize(element.GetAttribute("size")) : 1;
         var selectRows = requestedSelectRows is >= 1 and <= 12 ? requestedSelectRows : 1;
         if (kind == "select" && !multiple && selectedOption < 0)
         { selectedOption = Array.FindIndex(options, option => !option.Disabled); }
@@ -262,9 +263,9 @@ internal static class PageForms
             if (kind != "email" && element.GetAttribute("multiple") is not null)
             { reject(formIndex, "text field attribute multiple"); }
         }
-        if (kind == "select" && element.GetAttribute("multiple") is null
-            && SelectSize(element.GetAttribute("size")) is not (>= 1 and <= 12))
-        { reject(formIndex, "select display size other than 1"); }
+        if (kind == "select" && SelectSize(element.GetAttribute("size")) is var displaySize
+            && (displaySize > 12 || element.GetAttribute("multiple") is null && displaySize < 1))
+        { reject(formIndex, "select display size outside the supported 1..12 rows"); }
         if (kind is "date" or "time" or "datetime-local" or "month" or "week")
         {
             foreach (var attribute in new[] { "pattern", "minlength", "maxlength", "list", "multiple", "dirname" })

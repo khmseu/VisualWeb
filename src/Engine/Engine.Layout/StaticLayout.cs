@@ -552,13 +552,26 @@ public static class StaticLayout
             return parsed;
         }
 
+        /// <summary>
+        /// Rows drawn by the bounded select subset: the leading non-negative integer of <c>size</c>
+        /// (https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers,
+        /// local spec ID <c>html</c>) when it is 1..12, otherwise one compact row. Multiple selects use the same
+        /// explicit-size rule; an absent size stays compact rather than using the HTML default of four rows.
+        /// </summary>
         private static int SelectRows(DomElement element)
         {
-            if (element.GetAttribute("multiple") is not null || element.GetAttribute("size") is not { } raw) { return 1; }
-            var value = raw.Trim(' ', '\t', '\n', '\f', '\r');
-            if (value.Length == 0 || value.Any(character => !char.IsAsciiDigit(character))
-                || !int.TryParse(value, out var rows) || rows is < 1 or > 12) { return 1; }
-            return rows;
+            if (element.GetAttribute("size") is not { } raw) { return 1; }
+            var value = raw.TrimStart(' ', '\t', '\n', '\f', '\r');
+            var rows = 0;
+            var digits = 0;
+            foreach (var character in value)
+            {
+                if (!char.IsAsciiDigit(character)) { break; }
+                rows = rows * 10 + character - '0';
+                digits++;
+                if (rows > 12) { return 1; }
+            }
+            return digits > 0 && rows >= 1 ? rows : 1;
         }
 
         private static (double Width, double Height) WidgetSize(CssComputedStyle style, double containingWidth, DomElement element)
