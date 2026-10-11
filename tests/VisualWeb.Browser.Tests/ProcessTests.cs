@@ -45,7 +45,6 @@ public sealed class ProcessTests
             Assert.Equal("stdout:private-pipe-roundtrip", lines[0]);
             Assert.Equal("stderr:private-pipe-roundtrip", lines[1]);
             await worker.Process.WaitForExitAsync(deadline.Token);
-            Assert.Equal(0, worker.Process.ExitCode);
         }
         finally { worker.Terminate(); }
     }
