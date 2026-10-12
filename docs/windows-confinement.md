@@ -23,10 +23,10 @@ The browser launches the trusted framework-dependent renderer DLL. The
 renderer, its deployment directory, active runtime and selected font are
 copied into a unique staging directory. The AppContainer SID receives
 read/execute access to that staged tree. Its temporary directory is also
-read-only, and the AppContainer profile directory denies writes to the
-container SID. The host process supplies only private standard streams and a
-minimal runtime environment. No network, broad host filesystem, or other
-capabilities are added. Staging and AppContainer profile resources are removed
+read-only, and the profile storage ACL replaces the container SID's default
+access with read/execute only. The host process supplies only private standard
+streams and a minimal runtime environment. No network, broad host filesystem, or
+other capabilities are added. Staging and AppContainer profile resources are removed
 when the owned worker is disposed. Profile storage lookup converts the binary
 AppContainer SID to a Unicode SID string before calling
 `GetAppContainerFolderPath`; the SID string and returned path are released with

@@ -84,7 +84,7 @@ static async Task<int> ProbeWorker(string[] arguments)
         ?? throw new InvalidOperationException("Profile storage path was not supplied.");
     DeniedRead(canary);
     DeniedWrite(AppContext.BaseDirectory, "app-write-probe");
-    DeniedWrite(Path.GetTempPath(), "temp-write-probe");
+    DeniedWrite(Path.GetTempPath(), "temp-write-probe", allowMissingDirectory: true);
     DeniedWrite(profileStorage, "profile-write-probe");
     Check(Environment.GetEnvironmentVariable("VISUALWEB_HOST_SECRET") is null, "Host environment leaked.");
     DeniedProcessStart();
@@ -105,7 +105,7 @@ static void DeniedRead(string path)
     catch (IOException exception) when ((exception.HResult & 0xffff) is 2 or 5) { }
 }
 
-static void DeniedWrite(string directory, string name)
+static void DeniedWrite(string directory, string name, bool allowMissingDirectory = false)
 {
     var path = Path.Combine(directory, name);
     try
@@ -113,7 +113,8 @@ static void DeniedWrite(string directory, string name)
         File.WriteAllText(path, "must be denied");
     }
     catch (UnauthorizedAccessException) { return; }
-    catch (IOException exception) when ((exception.HResult & 0xffff) is 3 or 5 or 19) { return; }
+    catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19
+        || allowMissingDirectory && (exception.HResult & 0xffff) == 3) { return; }
     File.Delete(path);
     throw new InvalidOperationException("Renderer storage was writable: " + directory);
 }

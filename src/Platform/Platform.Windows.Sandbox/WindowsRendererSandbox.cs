@@ -23,14 +23,9 @@ public static class WindowsRendererSandbox
     private const uint GenericRead = 0x80000000;
     private const uint GenericWrite = 0x40000000;
     private const uint GenericExecute = 0x20000000;
-    private const uint Delete = 0x00010000;
-    private const uint WriteDac = 0x00040000;
-    private const uint WriteOwner = 0x00080000;
-    private const uint DeleteChild = 0x00000040;
     private const uint ObjectInherit = 1;
     private const uint ContainerInherit = 2;
     private const int SetAccess = 2;
-    private const int DenyAccess = 3;
     private const uint FileObject = 1;
     private const uint DaclSecurityInformation = 4;
     private const uint CreateSuspended = 4;
@@ -53,7 +48,7 @@ public static class WindowsRendererSandbox
         }
     }
 
-    private static void DenyAppContainerWrites(string path, IntPtr sid)
+    private static void RestrictAppContainerWrites(string path, IntPtr sid)
     {
         var trustee = new Native.Trustee
         {
@@ -63,8 +58,8 @@ public static class WindowsRendererSandbox
         };
         var access = new Native.ExplicitAccess
         {
-            Permissions = GenericWrite | Delete | DeleteChild | WriteDac | WriteOwner,
-            AccessMode = DenyAccess,
+            Permissions = GenericRead | GenericExecute,
+            AccessMode = SetAccess,
             Inheritance = ObjectInherit | ContainerInherit,
             Trustee = trustee
         };
@@ -78,7 +73,7 @@ public static class WindowsRendererSandbox
             if (result != 0) { throw new Win32Exception(unchecked((int)result), "Cannot restrict AppContainer profile storage."); }
             result = Native.SetNamedSecurityInfoW(path, FileObject, DaclSecurityInformation,
                 IntPtr.Zero, IntPtr.Zero, acl, IntPtr.Zero);
-            if (result != 0) { throw new Win32Exception(unchecked((int)result), "Cannot deny renderer writes to AppContainer profile storage."); }
+            if (result != 0) { throw new Win32Exception(unchecked((int)result), "Cannot restrict renderer access to AppContainer profile storage."); }
         }
         finally
         {
@@ -200,7 +195,7 @@ public static class WindowsRendererSandbox
 
             var profileStorage = GetAppContainerFolderPath(appContainerSid);
             Directory.CreateDirectory(profileStorage);
-            DenyAppContainerWrites(profileStorage, appContainerSid);
+            RestrictAppContainerWrites(profileStorage, appContainerSid);
 
             var stagedRoot = Path.Combine(staging, "worker");
             var stagedApp = Path.Combine(stagedRoot, "app");
