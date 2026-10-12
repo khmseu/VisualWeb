@@ -64,7 +64,7 @@ public sealed class V8ScriptHost : IDisposable
             engine.MaxRuntimeHeapSize = new UIntPtr(MonitoredHeapBytes);
             engine.RuntimeHeapSizeSampleInterval = TimeSpan.FromMilliseconds(10);
             engine.RuntimeHeapSizeViolationPolicy = V8RuntimeViolationPolicy.Interrupt;
-            engine.MaxRuntimeStackUsage = new UIntPtr(512 * 1024);
+            engine.MaxRuntimeStackUsage = new UIntPtr(128 * 1024);
             engine.EnableRuntimeInterruptPropagation = true;
             engine.Execute("delete globalThis.SharedArrayBuffer; delete globalThis.Atomics; delete globalThis.WebAssembly;");
             // Capture pristine intrinsics before scripts can replace global functions.
