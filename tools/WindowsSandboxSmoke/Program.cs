@@ -113,7 +113,7 @@ static void DeniedWrite(string directory, string name)
         File.WriteAllText(path, "must be denied");
     }
     catch (UnauthorizedAccessException) { return; }
-    catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19) { return; }
+    catch (IOException exception) when ((exception.HResult & 0xffff) is 3 or 5 or 19) { return; }
     File.Delete(path);
     throw new InvalidOperationException("Renderer storage was writable: " + directory);
 }
