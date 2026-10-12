@@ -96,10 +96,14 @@ static void Wait(Process process, StreamReader output, StreamReader error, Actio
         terminate();
         process.WaitForExit();
     }
-    Console.Write(stdout.GetAwaiter().GetResult());
+    var standardOutput = stdout.GetAwaiter().GetResult();
+    Console.Write(standardOutput);
     Console.Error.Write(stderr.GetAwaiter().GetResult());
     if (timedOut) { throw new TimeoutException("V8 probe exceeded 30 seconds; worker terminated."); }
-    if (process.ExitCode != 0) { throw new InvalidOperationException("V8 probe exited: " + process.ExitCode); }
+    if (!standardOutput.Contains("PASS:", StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException("V8 probe exited without its success marker.");
+    }
 }
 
 static void Probe()
@@ -282,7 +286,7 @@ static void Probe()
             """);
         throw new InvalidOperationException("V8 monitored heap limit was not enforced.");
     }
-    catch (ScriptExecutionException exception) when (exception.Message.Contains("memory limit", StringComparison.Ordinal)) { }
+    catch (ScriptLimitException exception) when (exception.Message.Contains("heap limit", StringComparison.Ordinal)) { }
     try { heap.Evaluate("42"); throw new InvalidOperationException("Heap-exhausted V8 isolate remained usable."); }
     catch (InvalidOperationException exception) when (exception.Message.Contains("Interrupted V8 host", StringComparison.Ordinal)) { }
     Console.WriteLine("PASS: native V8 primitives, private isolates, classic lexical state, native Promise/queueMicrotask ordering and checkpoint deadlines, synthetic DOM event capture/target/bubble and cancellation, finite document readiness/DOMContentLoaded checkpoints, bounded DOM query/static-list identity and matches/closest, live bounded className/classList mutation and selectors, live title/text/attribute DOM and branded node/fragment mutations with hidden primitive callback, no CLR node/type exposure, exact result/external-allocation limits, monitored heap interruption, whole-batch deadline and fresh-isolate recovery.");

@@ -64,7 +64,7 @@ public sealed class V8ScriptHost : IDisposable
             engine.MaxRuntimeHeapSize = new UIntPtr(MonitoredHeapBytes);
             engine.RuntimeHeapSizeSampleInterval = TimeSpan.FromMilliseconds(10);
             engine.RuntimeHeapSizeViolationPolicy = V8RuntimeViolationPolicy.Interrupt;
-            engine.MaxRuntimeStackUsage = new UIntPtr(512 * 1024);
+            engine.MaxRuntimeStackUsage = new UIntPtr(128 * 1024);
             engine.EnableRuntimeInterruptPropagation = true;
             engine.Execute("delete globalThis.SharedArrayBuffer; delete globalThis.Atomics; delete globalThis.WebAssembly;");
             // Capture pristine intrinsics before scripts can replace global functions.
@@ -231,6 +231,12 @@ public sealed class V8ScriptHost : IDisposable
                 poisoned = true;
                 if (cancellationToken.IsCancellationRequested) { throw new OperationCanceledException("V8 execution canceled; isolate invalidated.", exception, cancellationToken); }
                 throw new ScriptLimitException("V8 execution deadline exceeded; isolate invalidated.", exception);
+            }
+            if (exception.ScriptException is null
+                && exception.Message.Contains("V8 runtime has exceeded its memory limit", StringComparison.OrdinalIgnoreCase))
+            {
+                poisoned = true;
+                throw new ScriptLimitException("V8 runtime heap limit exceeded; isolate invalidated.", exception);
             }
             if (exception.IsFatal || microtasks is not null || events is not null) { poisoned = true; }
             throw new ScriptExecutionException("V8 execution failed: " + Bounded(exception.Message), exception);

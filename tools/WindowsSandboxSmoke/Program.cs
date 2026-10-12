@@ -84,11 +84,11 @@ static async Task<int> ProbeWorker(string[] arguments)
         ?? throw new InvalidOperationException("Profile storage path was not supplied.");
     DeniedRead(canary);
     DeniedWrite(AppContext.BaseDirectory, "app-write-probe");
-    DeniedWrite(Path.GetTempPath(), "temp-write-probe");
+    DeniedWrite(Path.GetTempPath(), "temp-write-probe", allowMissingDirectory: true);
     DeniedWrite(profileStorage, "profile-write-probe");
     Check(Environment.GetEnvironmentVariable("VISUALWEB_HOST_SECRET") is null, "Host environment leaked.");
     DeniedProcessStart();
-    DeniedLoopback(port);
+    await DeniedLoopback(port);
     Console.Error.WriteLine("PASS: AppContainer and Job Object limits confirmed; host file/environment, child-process, loopback-network, staged-app, temp and profile-storage access denied.");
     await Task.CompletedTask;
     return 0;
@@ -105,7 +105,7 @@ static void DeniedRead(string path)
     catch (IOException exception) when ((exception.HResult & 0xffff) is 2 or 5) { }
 }
 
-static void DeniedWrite(string directory, string name)
+static void DeniedWrite(string directory, string name, bool allowMissingDirectory = false)
 {
     var path = Path.Combine(directory, name);
     try
@@ -113,7 +113,11 @@ static void DeniedWrite(string directory, string name)
         File.WriteAllText(path, "must be denied");
     }
     catch (UnauthorizedAccessException) { return; }
-    catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19) { return; }
+    catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19
+        || allowMissingDirectory && (exception.HResult & 0xffff) == 3)
+    {
+        return;
+    }
     File.Delete(path);
     throw new InvalidOperationException("Renderer storage was writable: " + directory);
 }
@@ -135,15 +139,17 @@ static void DeniedProcessStart()
     catch (UnauthorizedAccessException) { }
 }
 
-static void DeniedLoopback(int port)
+static async Task DeniedLoopback(int port)
 {
     using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+    using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
     try
     {
-        socket.Connect(IPAddress.Loopback, port);
+        await socket.ConnectAsync(IPAddress.Loopback, port, deadline.Token);
         throw new InvalidOperationException("Capability-free renderer connected to loopback.");
     }
-    catch (SocketException exception) when (exception.SocketErrorCode == SocketError.AccessDenied) { }
+    catch (SocketException exception) when (exception.SocketErrorCode is SocketError.AccessDenied or SocketError.TimedOut) { }
+    catch (OperationCanceledException) when (deadline.IsCancellationRequested) { }
 }
 
 static void Check(bool condition, string message)

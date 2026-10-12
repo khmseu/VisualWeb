@@ -23,10 +23,10 @@ The browser launches the trusted framework-dependent renderer DLL. The
 renderer, its deployment directory, active runtime and selected font are
 copied into a unique staging directory. The AppContainer SID receives
 read/execute access to that staged tree. Its temporary directory is also
-read-only, and the AppContainer profile directory denies writes to the
-container SID. The host process supplies only private standard streams and a
-minimal runtime environment. No network, broad host filesystem, or other
-capabilities are added. Staging and AppContainer profile resources are removed
+read-only, and the profile storage ACL replaces the container SID's default
+access with read/execute only. The host process supplies only private standard
+streams and a minimal runtime environment. No network, broad host filesystem, or
+other capabilities are added. Staging and AppContainer profile resources are removed
 when the owned worker is disposed. Profile storage lookup converts the binary
 AppContainer SID to a Unicode SID string before calling
 `GetAppContainerFolderPath`; the SID string and returned path are released with
@@ -35,6 +35,12 @@ Win32 error code and system message so CI diagnostics retain the cause of refusa
 minimal environment includes `LOCALAPPDATA` pointing only to that write-denied
 AppContainer profile storage, required for Windows AppContainer environment
 redirection; it never inherits the host user's local app-data path.
+
+The inherited handle list contains only the inheritable child pipe endpoints:
+stdin's read end and stdout/stderr's write ends. The parent retains the opposite,
+non-inheritable endpoints. Reversing the stdout/stderr endpoints supplies
+non-inheritable handles to `PROC_THREAD_ATTRIBUTE_HANDLE_LIST`, violating its
+launch contract and causing `CreateProcessW` to reject the launch with error 87.
 
 ## Process and resource limits
 
@@ -86,7 +92,10 @@ dotnet run --project src/Apps/VisualWeb.Browser -- \
 
 The browser suite exercises confined worker launch, native Job Object memory
 pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
-on Windows. The native Windows x64/arm64 workflow runs the full solution test
+on Windows, including a private stdin roundtrip to distinct stdout/stderr pipes
+and checks that the parent endpoints are non-inheritable. Platform tests verify
+the 64-bit native startup structure sizes and standard-handle offsets used on
+x64 and arm64. The native Windows x64/arm64 workflow runs the full solution test
 suite. `WindowsSandboxSmoke` probes actual host-file/environment,
 process-creation, loopback-network and storage-write denials. The native platform
 smoke separately validates actual SDL windows, events, pixels, fonts and

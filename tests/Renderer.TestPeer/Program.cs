@@ -28,6 +28,14 @@ if (args is ["--confined-bootstrap", "--font", var confinedFont])
     LinuxRendererSandbox.Enter(AppContext.BaseDirectory, confinedFont, "VisualWeb.Renderer.TestPeer.dll");
     throw new InvalidOperationException("Test bootstrap unexpectedly returned.");
 }
+if (args is ["--windows-sandbox-worker", "--font", _, "--probe-standard-streams"])
+{
+    WindowsRendererSandbox.VerifyWorker();
+    var message = await Console.In.ReadLineAsync();
+    Console.Out.WriteLine("stdout:" + message);
+    Console.Error.WriteLine("stderr:" + message);
+    return 0;
+}
 if (args is ["--windows-sandbox-worker", "--font", _])
 {
     WindowsRendererSandbox.VerifyWorker();

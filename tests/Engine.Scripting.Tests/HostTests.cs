@@ -82,6 +82,15 @@ public sealed class HostTests
         Assert.Equal(42, fresh.Evaluate("42", TestContext.Current.CancellationToken).Number);
     }
     [Fact]
+    public void ScriptErrorsAreNotMisclassifiedAsRuntimeHeapLimit()
+    {
+        using var host = new V8ScriptHost();
+        Assert.Contains("V8 runtime has exceeded its memory limit",
+            Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic(
+                "throw Error('V8 runtime has exceeded its memory limit')", TestContext.Current.CancellationToken)).Message);
+        Assert.Equal(42, host.Evaluate("42", TestContext.Current.CancellationToken).Number);
+    }
+    [Fact]
     public void CancellationInterruptsRunningScriptButPreCanceledCallsDoNotPoison()
     {
         using var host = new V8ScriptHost();

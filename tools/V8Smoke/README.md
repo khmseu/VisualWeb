@@ -20,7 +20,8 @@ Measures private isolates, precise primitives, no CLR/browser globals, copied
 result and external-buffer limits, monitored heap invalidation, infinite-script
 deadlines and fresh-isolate recovery. The heap probe paces retained allocations to
 allow the 10 ms heap sampler to interrupt before V8 reaches its fatal native
-heap ceiling on faster targets. Its 10-second execution deadline remains inside
+heap ceiling on faster targets. Runtime heap exhaustion is reported as a resource
+limit and invalidates the isolate. Its 10-second execution deadline remains inside
 the outer 30-second worker watchdog; the host's memory limits are unchanged.
 Classic-script probes additionally verify persistent lexical bindings, isolate
 separation and whole-batch deadline interruption.
