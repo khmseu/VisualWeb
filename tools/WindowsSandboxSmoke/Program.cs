@@ -114,7 +114,10 @@ static void DeniedWrite(string directory, string name, bool allowMissingDirector
     }
     catch (UnauthorizedAccessException) { return; }
     catch (IOException exception) when ((exception.HResult & 0xffff) is 5 or 19
-        || allowMissingDirectory && (exception.HResult & 0xffff) == 3) { return; }
+        || allowMissingDirectory && (exception.HResult & 0xffff) == 3)
+    {
+        return;
+    }
     File.Delete(path);
     throw new InvalidOperationException("Renderer storage was writable: " + directory);
 }
