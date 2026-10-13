@@ -109,3 +109,12 @@ C# Dev Kit recommendation and build/test/cache tasks.
 Start with the [documentation index](docs/README.md), [architecture](docs/architecture/overview.md),
 [project map](docs/project-map.md), and [approved plan](plans/browser-foundation-plan.md).
 AI agents should read [AGENTS.md](AGENTS.md) first.
+
+## Licensing
+
+VisualWeb's first-party code and documentation are licensed under the
+[MIT License](LICENSE). Bundled third-party code, data, fixtures and fonts
+retain their own licenses; the repository is not MIT-only.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the inventory,
+provenance, upstream license files and items requiring license verification.
+Preserve the applicable upstream notices when redistributing those components.
