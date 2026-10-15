@@ -1528,19 +1528,16 @@ public sealed class FormTests
     }
 
     [Fact]
-    public void CrossOriginBaseHrefCannotBypassFormOriginPolicy()
+    public void CrossOriginHttpsBaseHrefUsesAuthorizedTargetOrigin()
     {
         using var harness = new Harness("<base href='https://outside.example/path/'>"
             + "<form action='submit'><input name=private value=secret><input type=submit></form>");
-        var committed = harness.Controller.Page(harness.Tab.Id);
         harness.Controller.FocusPage(harness.Tab.Id);
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
 
-        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
 
-        Assert.Contains("Cross-origin form submissions are blocked", error.Message, StringComparison.Ordinal);
-        Assert.Single(harness.Source.Requests);
-        Assert.Same(committed, harness.Controller.Page(harness.Tab.Id));
+        Assert.Equal("https://outside.example/path/submit?private=secret", harness.Source.Requests[^1].Url.Href);
     }
 
     [Theory]
@@ -2293,15 +2290,14 @@ public sealed class FormTests
     }
 
     [Fact]
-    public void FormNoValidateDoesNotBypassCrossOriginPolicy()
+    public void FormNoValidateAllowsAuthorizedCrossOriginHttpsSubmission()
     {
         using var harness = new Harness("<form action='https://other.example/save' novalidate><input name=secret value=private><button>Send</button></form>");
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
 
-        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
 
-        Assert.Contains("Cross-origin", error.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Single(harness.Source.Requests);
+        Assert.Equal("https://other.example/save?secret=private", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]
@@ -2355,17 +2351,16 @@ public sealed class FormTests
     }
 
     [Fact]
-    public void CrossOriginSubmitterActionIsBlockedBeforeSendingValues()
+    public void CrossOriginHttpsSubmitterActionUsesAuthorizedTargetOrigin()
     {
         using var harness = new Harness("<form><input name=secret value=private><button formaction='https://other.example/save'>Send</button></form>");
         Assert.True(harness.Controller.FocusControl(harness.Tab.Id, 1));
-        var error = Assert.Throws<PageNavigationException>(() => harness.Controller.ActivateFocusedLink(harness.Tab.Id));
-        Assert.Contains("Cross-origin", error.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Single(harness.Source.Requests);
+        Assert.True(harness.Controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal("https://other.example/save?secret=private", harness.Source.Requests[^1].Url.Href);
     }
 
     [Fact]
-    public void FormNoValidateDoesNotApplyToOtherSubmittersOrBypassOriginPolicy()
+    public void FormNoValidateDoesNotApplyToOtherSubmittersAndAllowsAuthorizedCrossOriginHttps()
     {
         using (var otherSubmitter = new Harness("<form><input type=email name=contact required value=invalid><button formnovalidate>Skip</button><button>Check</button></form>"))
         {
@@ -2386,10 +2381,8 @@ public sealed class FormTests
         using (var crossOrigin = new Harness("<form action='https://other.example/save'><input name=secret required><button formnovalidate>Save</button></form>"))
         {
             Assert.True(crossOrigin.Controller.FocusControl(crossOrigin.Tab.Id, 1));
-            var policyError = Assert.Throws<PageNavigationException>(() =>
-                crossOrigin.Controller.ActivateFocusedLink(crossOrigin.Tab.Id));
-            Assert.Contains("Cross-origin", policyError.Message, StringComparison.OrdinalIgnoreCase);
-            Assert.Single(crossOrigin.Source.Requests);
+            Assert.True(crossOrigin.Controller.ActivateFocusedLink(crossOrigin.Tab.Id));
+            Assert.Equal("https://other.example/save?secret=", crossOrigin.Source.Requests[^1].Url.Href);
         }
     }
 
@@ -2507,13 +2500,13 @@ public sealed class FormTests
         var committed = controller.Page(tab.Id);
         controller.FocusPage(tab.Id);
         Assert.True(controller.FocusControl(tab.Id, 1));
-        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
 
-        Assert.Contains("Cross-origin form submissions are blocked", error.Message, StringComparison.Ordinal);
+        Assert.Contains("blocks HTTP", tab.Error, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
-        Assert.Null(tab.Error);
 
         void PumpUntilComplete()
         {
@@ -2573,7 +2566,7 @@ public sealed class FormTests
     }
 
     [Fact]
-    public void SecurePageCannotSubmitFormValuesToCrossOriginHttps()
+    public void SecurePageCanSubmitFormValuesToAuthorizedCrossOriginHttps()
     {
         var requests = new List<Uri>();
         using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
@@ -2590,16 +2583,16 @@ public sealed class FormTests
         controller.Navigate(tab.Id, "https://secure.example/secure");
         PumpUntilComplete();
         Assert.Null(tab.Error);
-        var committed = controller.Page(tab.Id);
         controller.FocusPage(tab.Id);
         Assert.True(controller.FocusControl(tab.Id, 1));
 
-        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
 
-        Assert.Contains("Cross-origin form submissions are blocked", error.Message, StringComparison.Ordinal);
-        Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
-        Assert.Same(committed, controller.Page(tab.Id));
-        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+        Assert.Equal(["https://secure.example/secure", "https://outside.example/search?q=private"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Equal("https://outside.example/search?q=private", tab.History.Current!.Href);
+        Assert.Equal("https://outside.example", tab.Origin!.Serialize());
         Assert.Null(tab.Error);
 
         void PumpUntilComplete()
@@ -2694,6 +2687,55 @@ public sealed class FormTests
 
         Assert.Contains("same origin", tab.Error, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/secure", "https://secure.example/submit?q=private"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void AuthorizedCrossOriginHttpsFormCannotRedirectSubmissionToThirdOrigin()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            if (request.RequestUri!.Host == "secure.example")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(Style
+                        + "<form action='https://outside.example/submit'><input name=q value=private>"
+                        + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+                };
+            }
+            return new(HttpStatusCode.Found)
+            { Headers = { Location = new Uri("https://third.example/leak?q=private") } };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://secure.example/secure");
+        PumpUntilComplete();
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Contains("same origin", tab.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/secure", "https://outside.example/submit?q=private"],
             requests.Select(request => request.AbsoluteUri));
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
@@ -3751,7 +3793,6 @@ public sealed class FormTests
     }
 
     [Theory]
-    [InlineData("https://other.example/save", "https://example.com/", "Cross-origin")]
     [InlineData("http://example.com/save", "https://example.com/", "downgrade")]
     [InlineData("file:///etc/passwd", "https://example.com/", "file navigation")]
     [InlineData("data:text/html,result", "https://example.com/", "data URL")]

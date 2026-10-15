@@ -1154,8 +1154,9 @@ public sealed class BrowserController : IDisposable
             { throw new PageNavigationException("Network form submissions from opaque documents are blocked."); }
             if (document.Url.Protocol is "http:" or "https:"
                 && !document.Origin.IsSameOrigin(action.Origin)
-                && !CanUpgradeSameHostFormAction(document.Origin, action.Origin))
-            { throw new PageNavigationException("Cross-origin form submissions are blocked; forms must target the document's origin."); }
+                && !CanUpgradeSameHostFormAction(document.Origin, action.Origin)
+                && document.Url.Protocol == "http:" && action.Protocol == "http:")
+            { throw new PageNavigationException("Cross-origin cleartext form submissions are blocked."); }
         }
         var encoding = document.CharacterEncoding;
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
@@ -1177,7 +1178,9 @@ public sealed class BrowserController : IDisposable
         }
         var limit = Session.Options.MaxAddressCharacters;
         var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
-        var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:" ? document.Origin : null;
+        var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:"
+            ? AuthorizedFormTargetOrigin(document.Origin, action.Origin)
+            : null;
         if (openInNewTab) { owner.Source.ValidateNavigationTarget(action, preventHttpsDowngrade, sameOriginRedirectOrigin); }
         var query = SerializeForm(page, owner, formIndex, submitter, normalizedEmailValues, limit);
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
@@ -1346,6 +1349,10 @@ public sealed class BrowserController : IDisposable
         documentOrigin.Scheme == "https" && actionOrigin.Scheme == "http"
         && documentOrigin.Host == actionOrigin.Host
         && (actionOrigin.Port == 80 ? documentOrigin.Port == 443 : documentOrigin.Port == actionOrigin.Port);
+    private static SecurityOrigin AuthorizedFormTargetOrigin(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
+        documentOrigin.IsSameOrigin(actionOrigin) || CanUpgradeSameHostFormAction(documentOrigin, actionOrigin)
+            ? documentOrigin
+            : actionOrigin;
     private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
