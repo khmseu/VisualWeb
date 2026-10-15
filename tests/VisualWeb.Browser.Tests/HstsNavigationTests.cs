@@ -45,6 +45,54 @@ public sealed class HstsNavigationTests
     }
 
     [Fact]
+    public void CrossOriginFormAuthorizationUsesHstsResolvedTargetOrigin()
+    {
+        var store = new HstsPolicyStore();
+        store.ProcessResponse(BrowserUrl.Parse("https://outside.test/"), ["max-age=60"], true, new List<string>());
+        var requests = new List<Uri>();
+        var font = Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent(request.RequestUri!.Host == "source.test"
+                    ? """
+                        <!doctype html><style>*{margin:0}input{display:block;height:20px}</style>
+                        <form action='http://outside.test/save'><input name=q value=private><button>Go</button></form>
+                        """
+                    : "<!doctype html>", System.Text.Encoding.UTF8, "text/html")
+            };
+        }), store), () => new StaticPageRenderer(font, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 100, 1);
+        controller.Navigate(tab.Id, "http://source.test/start");
+        PumpUntilComplete();
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Equal(["http://source.test/start", "https://outside.test/save?q=private"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Equal("https://outside.test/save?q=private", tab.History.Current!.Href);
+        Assert.Equal("https://outside.test", tab.Origin!.Serialize());
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
     public async Task InjectedStoreIsSharedAcrossSourcesButCookiesRemainDisabled()
     {
         var store = new HstsPolicyStore();

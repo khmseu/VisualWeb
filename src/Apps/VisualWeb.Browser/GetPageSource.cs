@@ -11,6 +11,12 @@ public interface IPageSource : IDisposable
     /// <summary>Checks initial new-tab form policy without starting a load; loading still checks every redirect.</summary>
     void ValidateNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin) =>
         PageNavigationPolicy.Validate(url, preventHttpsDowngrade, sameOriginRedirectOrigin);
+    /// <summary>Authorizes an HTTP(S) form target and returns the fixed effective origin for its redirect chain.</summary>
+    SecurityOrigin AuthorizeFormTarget(BrowserUrl url, bool preventHttpsDowngrade)
+    {
+        ValidateNavigationTarget(url, preventHttpsDowngrade, url.Origin);
+        return url.Origin;
+    }
 
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken);
     Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade)
@@ -61,6 +67,12 @@ public sealed class GetPageSource : IPageSource
     }
     public void ValidateNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin) =>
         PageNavigationPolicy.Validate(hstsPolicyStore?.Upgrade(url) ?? url, preventHttpsDowngrade, sameOriginRedirectOrigin);
+    public SecurityOrigin AuthorizeFormTarget(BrowserUrl url, bool preventHttpsDowngrade)
+    {
+        var effective = hstsPolicyStore?.Upgrade(url) ?? url;
+        PageNavigationPolicy.Validate(effective, preventHttpsDowngrade, effective.Origin);
+        return effective.Origin;
+    }
     public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken) =>
         LoadAsync(url, cancellationToken, preventHttpsDowngrade: false);
     public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade) =>

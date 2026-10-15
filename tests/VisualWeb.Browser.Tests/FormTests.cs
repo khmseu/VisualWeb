@@ -2500,13 +2500,56 @@ public sealed class FormTests
         var committed = controller.Page(tab.Id);
         controller.FocusPage(tab.Id);
         Assert.True(controller.FocusControl(tab.Id, 1));
-        Assert.True(controller.ActivateFocusedLink(tab.Id));
-        PumpUntilComplete();
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
 
-        Assert.Contains("blocks HTTP", tab.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("downgrade", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/secure"], requests.Select(request => request.AbsoluteUri));
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal("https://secure.example/secure", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void HttpPageCanSubmitToAuthorizedCrossOriginHttp()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new(HttpStatusCode.OK)
+            {
+                Content = new StringContent(request.RequestUri!.Host == "source.example"
+                    ? Style + "<form action='http://outside.example/search'><input name=q value=private>"
+                        + "<input type=submit></form>"
+                    : "<!doctype html>", System.Text.Encoding.UTF8, "text/html")
+            };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "http://source.example/start");
+        PumpUntilComplete();
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        Assert.True(controller.ActivateFocusedLink(tab.Id));
+        PumpUntilComplete();
+
+        Assert.Equal(["http://source.example/start", "http://outside.example/search?q=private"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Equal("http://outside.example/search?q=private", tab.History.Current!.Href);
+        Assert.Equal("http://outside.example", tab.Origin!.Serialize());
 
         void PumpUntilComplete()
         {

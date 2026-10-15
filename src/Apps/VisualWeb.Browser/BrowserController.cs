@@ -1148,15 +1148,14 @@ public sealed class BrowserController : IDisposable
         var openInNewTab = submitterControl?.FormTargetOpenInNewTab ?? form.OpenInNewTab;
         if (submitterControl?.FormActionError is { } actionError) { throw new PageNavigationException(actionError); }
         var action = BrowserUrl.Parse(submitterControl?.FormAction ?? form.Action);
+        var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
+        SecurityOrigin? sameOriginRedirectOrigin = null;
         if (action.Protocol is "http:" or "https:")
         {
             if (document.Url.Protocol == "data:")
             { throw new PageNavigationException("Network form submissions from opaque documents are blocked."); }
-            if (document.Url.Protocol is "http:" or "https:"
-                && !document.Origin.IsSameOrigin(action.Origin)
-                && !CanUpgradeSameHostFormAction(document.Origin, action.Origin)
-                && document.Url.Protocol == "http:" && action.Protocol == "http:")
-            { throw new PageNavigationException("Cross-origin cleartext form submissions are blocked."); }
+            if (document.Url.Protocol is "http:" or "https:")
+            { sameOriginRedirectOrigin = owner.Source.AuthorizeFormTarget(action, preventHttpsDowngrade); }
         }
         var encoding = document.CharacterEncoding;
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
@@ -1177,11 +1176,6 @@ public sealed class BrowserController : IDisposable
             ValidateFormControl(owner, index, control, value);
         }
         var limit = Session.Options.MaxAddressCharacters;
-        var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
-        var sameOriginRedirectOrigin = document.Url.Protocol is "http:" or "https:"
-            ? AuthorizedFormTargetOrigin(document.Origin, action.Origin)
-            : null;
-        if (openInNewTab) { owner.Source.ValidateNavigationTarget(action, preventHttpsDowngrade, sameOriginRedirectOrigin); }
         var query = SerializeForm(page, owner, formIndex, submitter, normalizedEmailValues, limit);
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
             sameOriginRedirectOrigin, openInNewTab);
@@ -1345,14 +1339,6 @@ public sealed class BrowserController : IDisposable
     private delegate bool TryParseFormValue(string value, out double number);
     private delegate bool TryParseFormInt(string value, out int number);
     private delegate bool TryParseFormInteger(string value, out long number);
-    private static bool CanUpgradeSameHostFormAction(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
-        documentOrigin.Scheme == "https" && actionOrigin.Scheme == "http"
-        && documentOrigin.Host == actionOrigin.Host
-        && (actionOrigin.Port == 80 ? documentOrigin.Port == 443 : documentOrigin.Port == actionOrigin.Port);
-    private static SecurityOrigin AuthorizedFormTargetOrigin(SecurityOrigin documentOrigin, SecurityOrigin actionOrigin) =>
-        documentOrigin.IsSameOrigin(actionOrigin) || CanUpgradeSameHostFormAction(documentOrigin, actionOrigin)
-            ? documentOrigin
-            : actionOrigin;
     private static bool MatchesViewport(Content owner, PageViewport? displayedViewport) =>
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));

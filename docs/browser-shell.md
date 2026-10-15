@@ -429,13 +429,10 @@ and `data:` actions are rejected by the navigation broker. The query is capped
 at 8192 characters and the resulting URL at the existing URL limit.
 
 Trusted shell activation may submit HTTP(S) forms in HTTP(S) documents to
-cross-origin HTTPS actions. The authorized action origin becomes the fixed
-redirect origin, so a redirect cannot forward the query to another origin.
-Cross-origin cleartext actions remain blocked, and redirects are checked against
-the authorized origin before the redirected request is sent. HTTPS-to-HTTP
-actions for the same host and effective port are allowed to reach the existing
-HSTS/downgrade policy, so HSTS may upgrade them and an unupgraded downgrade
-remains blocked. Opaque `data:`
+cross-origin HTTP(S) actions. The page source resolves HSTS before returning the
+authorized action origin, which becomes the fixed redirect origin so a redirect
+cannot forward the query to another origin. HTTPS documents still block
+unupgraded HTTP actions. Opaque `data:`
 documents cannot submit to HTTP(S) destinations. Custom `IPageSource`
 implementations must explicitly support HTTPS downgrade protection for secure
 page links and fixed-origin redirects for constrained form navigation; the
@@ -504,14 +501,13 @@ documents also cannot initiate HTTP(S) link or form navigation, preventing an
 untrusted local page from sending form values to a remote endpoint. Forms in
 opaque `data:` documents also block HTTP submissions (subject to a prior HSTS
 upgrade), and block HTTPS form submissions as well because their origin is
-opaque. HTTP(S) documents may submit forms to a cross-origin HTTPS action only
-through trusted shell activation; the target origin is fixed across redirects.
-Cross-origin cleartext actions remain blocked, and a same-host HTTPS document's
-HTTP action can proceed only through the existing HSTS/downgrade check. Users can
-still enter an explicit URL in the address bar. These are narrow
-guards, not filesystem sandboxing: locally selected file documents remain
-privileged/trusted content, and there is no general origin/CORS/CSP or local-file
-isolation policy yet.
+opaque. HTTP(S) documents may submit forms to a cross-origin HTTP(S) action only
+through trusted shell activation; HSTS resolves the effective target before its
+origin is fixed across redirects. HTTPS documents continue to reject unupgraded
+HTTP actions. Users can still enter an explicit URL in the address bar. These
+are narrow guards, not filesystem sandboxing: locally selected file documents
+remain privileged/trusted content, and there is no general origin/CORS/CSP or
+local-file isolation policy yet.
 
 BrowserController owns independent per-tab IPageSource/IPageRenderer instances.
 GetPageSource uses a separate ResourceLoader per tab, with **4 MiB responses**,
