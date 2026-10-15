@@ -49,10 +49,43 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Theory]
+    [InlineData("sha256", "8Q56ftgtlXxkQr5RiA6Pw+WlboQEeqNCt3JbdRNi/+I=")]
+    [InlineData("sha384", "sAr3Ml3K/YNdYoP1xtdZwYjiA62YQm+18yiR7XnBY95bi2OJlGYwhP+rtAeSYXIP")]
+    [InlineData("sha512", "l5ALJocGkaIXY5pnKDowBSe2/3tDF8TeMWItw6b0vEO6hkP41bd2I/jQSyiDkAIMi+AweSqwtbnY9TWWTkEdaA==")]
+    [InlineData("SHA512", "l5ALJocGkaIXY5pnKDowBSe2_3tDF8TeMWItw6b0vEO6hkP41bd2I_jQSyiDkAIMi-AweSqwtbnY9TWWTkEdaA==")]
+    public void SupportedHashAlgorithmsMatchInlineText(string algorithm, string digest)
+    {
+        var policy = ContentSecurityPolicy.Parse([$"script-src '{algorithm}-{digest}'"], []);
+
+        Assert.True(policy.AllowsInlineScript(null, "document.title='hashed'"));
+    }
+
+    [Fact]
+    public void GrammaticalHashWithWrongDigestLengthDoesNotMatch()
+    {
+        var policy = ContentSecurityPolicy.Parse(["script-src 'sha256-YQ=='"], []);
+
+        Assert.False(policy.AllowsInlineScript(null, "document.title='hashed'"));
+    }
+
+    [Fact]
+    public void HashesMatchExactInlineContentAcrossIntersectingPolicies()
+    {
+        const string source = "document.title='hashed'";
+        const string hash = "'sha256-8Q56ftgtlXxkQr5RiA6Pw+WlboQEeqNCt3JbdRNi/+I='";
+        var policy = ContentSecurityPolicy.Parse([$"script-src {hash}", $"default-src {hash}"], []);
+
+        Assert.True(policy.AllowsInlineScript(null, source));
+        Assert.False(policy.AllowsInlineScript(null, source + " "));
+    }
+
+    [Theory]
     [InlineData("script-src 'nonce-'")]
     [InlineData("script-src 'nonce-a==='")]
     [InlineData("style-src 'nonce-a!'")]
-    public void MalformedNonceSourcesFailVisibly(string field)
+    [InlineData("script-src 'sha1-YQ=='")]
+    [InlineData("script-src 'sha256-a==='")]
+    public void MalformedNonceOrHashSourcesFailVisibly(string field)
     {
         var error = Assert.Throws<PageNavigationException>(() => ContentSecurityPolicy.Parse([field], []));
 

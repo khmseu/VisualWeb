@@ -402,31 +402,45 @@ public sealed class StaticPageRenderer : IPageRenderer
     {
         ArgumentNullException.ThrowIfNull(html);
         if (allowInlineScripts && allowInlineStyles) { return; }
-        EnforceInlineContentPolicy(html, _ => allowInlineScripts, _ => allowInlineStyles, cancellationToken);
+        EnforceInlineContentPolicy(html, (_, _) => allowInlineScripts, (_, _) => allowInlineStyles,
+            allowInlineStyles, cancellationToken);
     }
 
     /// <summary>Rejects inline script or style markup disabled by browser-selected response policy.</summary>
     /// <remarks>Spec: csp3;
     /// <see href="https://www.w3.org/TR/CSP3/#should-block-inline">should element's inline type behavior be blocked</see>.
-    /// Matching nonce callbacks apply to script/style elements; style attributes remain nonce-ineligible.</remarks>
+    /// Matching nonce callbacks apply to script/style elements; style attributes remain nonce/hash-ineligible.</remarks>
     public static void EnforceInlineContentPolicy(string html, Func<string?, bool> allowsInlineScripts,
         Func<string?, bool> allowsInlineStyles, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(html);
         ArgumentNullException.ThrowIfNull(allowsInlineScripts);
         ArgumentNullException.ThrowIfNull(allowsInlineStyles);
-        if (allowsInlineScripts(null) && allowsInlineStyles(null)) { return; }
+        EnforceInlineContentPolicy(html, (nonce, _) => allowsInlineScripts(nonce),
+            (nonce, _) => allowsInlineStyles(nonce), allowsInlineStyles(null), cancellationToken);
+    }
+
+    /// <summary>Applies nonce/hash decisions to inline elements and blocks disallowed style attributes.</summary>
+    /// <remarks>Spec: csp3; <see href="https://www.w3.org/TR/CSP3/#should-block-inline">inline type checks</see>.</remarks>
+    public static void EnforceInlineContentPolicy(string html, Func<string?, string, bool> allowsInlineScripts,
+        Func<string?, string, bool> allowsInlineStyles, bool allowInlineStyleAttributes,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(html);
+        ArgumentNullException.ThrowIfNull(allowsInlineScripts);
+        ArgumentNullException.ThrowIfNull(allowsInlineStyles);
         var document = HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document;
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (element.LocalName == "script" && element.GetAttribute("src") is null
-                && !allowsInlineScripts(element.GetAttribute("nonce")))
+                && !allowsInlineScripts(element.GetAttribute("nonce"), element.TextContent ?? string.Empty))
             {
                 throw new PageNavigationException("Content-Security-Policy blocked an inline script element.");
             }
-            if ((element.LocalName == "style" && !allowsInlineStyles(element.GetAttribute("nonce")))
-                || (element.GetAttribute("style") is not null && !allowsInlineStyles(null)))
+            if ((element.LocalName == "style"
+                    && !allowsInlineStyles(element.GetAttribute("nonce"), element.TextContent ?? string.Empty))
+                || (element.GetAttribute("style") is not null && !allowInlineStyleAttributes))
             {
                 throw new PageNavigationException("Content-Security-Policy blocked inline style content.");
             }

@@ -44,6 +44,56 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task MatchingHashAllowsExactInlineClassicScript()
+    {
+        using var source = Serving("<script>document.title='hashed'</script>",
+            "script-src 'sha256-8Q56ftgtlXxkQr5RiA6Pw+WlboQEeqNCt3JbdRNi/+I='");
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Contains("document.title='hashed'", page.Html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task EmptyContentHashDoesNotAuthorizeNonemptyInlineScript()
+    {
+        using var source = Serving("<script>document.title='not empty'</script>",
+            "script-src 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='");
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("inline script", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task HashMismatchBlocksInlineClassicScript()
+    {
+        using var source = Serving("<script>document.title='changed'</script>",
+            "script-src 'sha256-8Q56ftgtlXxkQr5RiA6Pw+WlboQEeqNCt3JbdRNi/+I='");
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("inline script", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task MatchingStyleHashAllowsOnlyStyleElementContent()
+    {
+        using var style = Serving("<style>body{color:red}</style>",
+            "style-src 'sha512-fmZ7KIvKJWaEORLQ2z2++C7Hlc1fyYRXraeMLFwi38W00+Az3xZ+yFQsve16eKZwL0+yPrJQ0W/s+IT2XZ3i0Q=='");
+        var page = await style.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+        Assert.Contains("body{color:red}", page.Html, StringComparison.Ordinal);
+
+        using var attribute = Serving("<p style='body{color:red}'>blocked</p>",
+            "style-src 'sha256-FcQqt3aNlV7AZnGV4zkQRVeCeJOxbMPnQSx258L803E='");
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            attribute.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+        Assert.Contains("inline style", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task NonMatchingNonceStillBlocksInlineClassicScript()
     {
         using var source = Serving("<script nonce='YWJk'>document.title='blocked'</script>", "script-src 'nonce-YWJj'");
