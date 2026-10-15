@@ -493,6 +493,15 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 
 ## Navigation and page policy
 
+Response `Content-Security-Policy` parsing has a bounded header-only foundation
+(spec ID `csp3`). It recognizes `default-src`, `script-src`, and `style-src`
+source lists containing only `'none'`, `'self'`, and exact HTTP(S) origins.
+Multiple fields intersect, the first duplicate directive wins, unsupported
+directives produce diagnostics, and unsupported source expressions fail visibly.
+Enforcement is not wired yet; meta policies, report-only mode, nonces, hashes,
+wildcards, schemes, paths, reporting, frames, and the remaining directives are
+deferred.
+
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;
 explicit address-bar navigation remains available. This prevents page content
 from choosing privileged local-file loading or constructing navigable `data:`
