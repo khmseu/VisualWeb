@@ -394,24 +394,39 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         return imports.AsReadOnly();
     }
-    /// <summary>Rejects inline script or style markup disabled by browser-selected response policy.</summary>
+    /// <summary>Applies fixed inline-content decisions to a document before publication.</summary>
     /// <remarks>Spec: csp3;
-    /// <see href="https://www.w3.org/TR/CSP3/#should-block-inline">should element's inline type behavior be blocked</see>.
-    /// This bounded rendering subset treats script/style elements and style attributes as inline content.</remarks>
+    /// <see href="https://www.w3.org/TR/CSP3/#should-block-inline">should element's inline type behavior be blocked</see>.</remarks>
     public static void EnforceInlineContentPolicy(string html, bool allowInlineScripts, bool allowInlineStyles,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(html);
         if (allowInlineScripts && allowInlineStyles) { return; }
+        EnforceInlineContentPolicy(html, _ => allowInlineScripts, _ => allowInlineStyles, cancellationToken);
+    }
+
+    /// <summary>Rejects inline script or style markup disabled by browser-selected response policy.</summary>
+    /// <remarks>Spec: csp3;
+    /// <see href="https://www.w3.org/TR/CSP3/#should-block-inline">should element's inline type behavior be blocked</see>.
+    /// Matching nonce callbacks apply to script/style elements; style attributes remain nonce-ineligible.</remarks>
+    public static void EnforceInlineContentPolicy(string html, Func<string?, bool> allowsInlineScripts,
+        Func<string?, bool> allowsInlineStyles, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(html);
+        ArgumentNullException.ThrowIfNull(allowsInlineScripts);
+        ArgumentNullException.ThrowIfNull(allowsInlineStyles);
+        if (allowsInlineScripts(null) && allowsInlineStyles(null)) { return; }
         var document = HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document;
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!allowInlineScripts && element.LocalName == "script" && element.GetAttribute("src") is null)
+            if (element.LocalName == "script" && element.GetAttribute("src") is null
+                && !allowsInlineScripts(element.GetAttribute("nonce")))
             {
                 throw new PageNavigationException("Content-Security-Policy blocked an inline script element.");
             }
-            if (!allowInlineStyles && (element.LocalName == "style" || element.GetAttribute("style") is not null))
+            if ((element.LocalName == "style" && !allowsInlineStyles(element.GetAttribute("nonce")))
+                || (element.GetAttribute("style") is not null && !allowsInlineStyles(null)))
             {
                 throw new PageNavigationException("Content-Security-Policy blocked inline style content.");
             }

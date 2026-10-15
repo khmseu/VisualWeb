@@ -4,9 +4,11 @@ namespace VisualWeb.Browser;
 
 /// <summary>Bounded response-header Content Security Policy source-list subset.</summary>
 /// <remarks>Spec: csp3; <see href="https://www.w3.org/TR/CSP3/#parse-serialized-policy">parse a serialized CSP</see>,
-/// <see href="https://www.w3.org/TR/CSP3/#framework-directive-source-list">source lists</see>, and
+/// <see href="https://www.w3.org/TR/CSP3/#framework-directive-source-list">source lists</see>,
+/// <see href="https://www.w3.org/TR/CSP3/#match-nonce-to-source-list">nonce matching</see>, and
 /// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>.
-/// Supports only default-src, script-src, and style-src with 'none', 'self', or exact HTTP(S) origins.</remarks>
+/// Supports default-src, script-src, and style-src with 'none', 'self', exact HTTP(S) origins, and
+/// strict nonce-source matching for inline script and style elements.</remarks>
 internal sealed class ContentSecurityPolicy
 {
     private const int MaxFields = 16;
@@ -36,8 +38,10 @@ internal sealed class ContentSecurityPolicy
         return new(policies);
     }
 
-    internal bool AllowsInlineScript() => policies.All(policy => policy.Directive("script-src") is null);
-    internal bool AllowsInlineStyle() => policies.All(policy => policy.Directive("style-src") is null);
+    internal bool AllowsInlineScript() => AllowsInlineScript(null);
+    internal bool AllowsInlineScript(string? nonce) => policies.All(policy => policy.AllowsInline("script-src", nonce));
+    internal bool AllowsInlineStyle() => AllowsInlineStyle(null);
+    internal bool AllowsInlineStyle(string? nonce) => policies.All(policy => policy.AllowsInline("style-src", nonce));
     internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.Directive("script-src"), resource, documentOrigin));
     internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin) =>
@@ -78,7 +82,7 @@ internal sealed class ContentSecurityPolicy
     {
         if (tokens.Length > MaxSources)
         { throw new PageNavigationException($"Content-Security-Policy {directive} source count limit ({MaxSources}) exceeded."); }
-        if (tokens.Length == 0) { return new(false, []); }
+        if (tokens.Length == 0) { return new(false, [], []); }
         var hasNone = false;
         foreach (var token in tokens)
         {
@@ -88,13 +92,23 @@ internal sealed class ContentSecurityPolicy
         {
             if (tokens.Length != 1)
             { throw new PageNavigationException($"Content-Security-Policy {directive} cannot combine 'none' with other sources."); }
-            return new(false, []);
+            return new(false, [], []);
         }
 
         var self = false;
         var origins = new List<SecurityOrigin>();
+        var nonces = new List<string>();
         foreach (var token in tokens)
         {
+            if (token.StartsWith("'nonce-", StringComparison.Ordinal))
+            {
+                if (!TryParseNonceSource(token, out var nonce))
+                {
+                    throw new PageNavigationException($"Content-Security-Policy {directive} contains an invalid nonce source.");
+                }
+                nonces.Add(nonce);
+                continue;
+            }
             if (token.Equals("'self'", StringComparison.OrdinalIgnoreCase))
             {
                 self = true;
@@ -110,13 +124,50 @@ internal sealed class ContentSecurityPolicy
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
-        return new(self, origins.ToArray());
+        return new(self, origins.ToArray(), nonces.ToArray());
     }
 
-    private sealed record SourceList(bool Self, SecurityOrigin[] Origins);
+    private static bool TryParseNonceSource(string token, out string nonce)
+    {
+        nonce = "";
+        const string prefix = "'nonce-";
+        if (!token.StartsWith(prefix, StringComparison.Ordinal) || !token.EndsWith('\'')
+            || token.Length <= prefix.Length + 1)
+        {
+            return false;
+        }
+
+        var value = token[prefix.Length..^1];
+        var unpaddedLength = value.TrimEnd('=').Length;
+        if (unpaddedLength == 0 || value.Length - unpaddedLength > 2)
+        {
+            return false;
+        }
+        for (var index = 0; index < unpaddedLength; index++)
+        {
+            var character = value[index];
+            if (!(character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9'
+                or '+' or '/' or '-' or '_'))
+            {
+                return false;
+            }
+        }
+
+        nonce = value;
+        return true;
+    }
+
+    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives)
     {
         internal SourceList? Directive(string name) =>
             directives.GetValueOrDefault(name) ?? directives.GetValueOrDefault("default-src");
+
+        internal bool AllowsInline(string name, string? nonce)
+        {
+            var sources = Directive(name);
+            return sources is null || nonce is { Length: > 0 }
+                && sources.Nonces.Contains(nonce, StringComparer.Ordinal);
+        }
     }
 }

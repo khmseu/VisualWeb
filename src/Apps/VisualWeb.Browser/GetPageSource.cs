@@ -121,8 +121,8 @@ public sealed class GetPageSource : IPageSource
         if (response.Headers.TryGetValue("Content-Security-Policy", out var policyFields))
         {
             policy = ContentSecurityPolicy.Parse(policyFields, diagnostics);
-            StaticPageRenderer.EnforceInlineContentPolicy(decoded.Text, policy.AllowsInlineScript(),
-                policy.AllowsInlineStyle(), cancellationToken);
+            StaticPageRenderer.EnforceInlineContentPolicy(decoded.Text, policy.AllowsInlineScript,
+                policy.AllowsInlineStyle, cancellationToken);
             diagnostics.Add("Content-Security-Policy: bounded response policy enforced for inline and external style content.");
         }
         var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, policy, diagnostics,

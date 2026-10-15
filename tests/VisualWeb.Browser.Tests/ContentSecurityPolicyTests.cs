@@ -38,6 +38,28 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void NonceMustMatchExactlyInEveryApplicablePolicy()
+    {
+        var policy = ContentSecurityPolicy.Parse(
+            ["script-src 'nonce-AbC+/=='", "default-src 'nonce-AbC+/=='"], []);
+
+        Assert.True(policy.AllowsInlineScript("AbC+/=="));
+        Assert.False(policy.AllowsInlineScript("abc+/=="));
+        Assert.False(policy.AllowsInlineScript(null));
+    }
+
+    [Theory]
+    [InlineData("script-src 'nonce-'")]
+    [InlineData("script-src 'nonce-a==='")]
+    [InlineData("style-src 'nonce-a!'")]
+    public void MalformedNonceSourcesFailVisibly(string field)
+    {
+        var error = Assert.Throws<PageNavigationException>(() => ContentSecurityPolicy.Parse([field], []));
+
+        Assert.Contains("Content-Security-Policy", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(

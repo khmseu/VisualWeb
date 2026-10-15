@@ -25,8 +25,9 @@ Each shell owns one bounded, thread-safe, memory-only
 future HTTP navigation and redirects before destination checks. Per-tab cookies
 stay off; independent shells share no policies. Final upgraded URLs determine
 committed document origins and transactional renderer rotation, without changing
-an existing document on failed navigation. No persistence, preload, public-suffix
-policy or general SOP/CSP enforcement is implied.
+an existing document on failed navigation. HSTS rejects valid policies from
+public suffixes using the pinned list. Persistence, preload and general SOP/CSP
+enforcement remain unavailable.
 
 ## Run it
 
@@ -497,16 +498,17 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 
 Response `Content-Security-Policy` parsing has a bounded header-only foundation
 (spec ID `csp3`). It recognizes `default-src`, `script-src`, and `style-src`
-source lists containing only `'none'`, `'self'`, and exact HTTP(S) origins.
-Multiple fields intersect, the first duplicate directive wins, unsupported
-directives produce diagnostics, and unsupported source expressions fail visibly.
-The final response policy rejects inline script elements, style elements and
-style attributes before linked stylesheet requests when an applicable source
-list is present. It authorizes linked stylesheets and CSS imports against
+source lists containing `'none'`, `'self'`, exact HTTP(S) origins, and strict
+nonce sources for inline script/style elements. Nonces match exactly and policies
+intersect. The first duplicate directive wins, unsupported directives produce
+diagnostics, and unsupported source expressions fail visibly. Inline script
+and style elements need a matching nonce when an applicable source list is
+present; nonce sources do not authorize style attributes. It authorizes linked
+stylesheets and CSS imports against
 `style-src` (or `default-src`) before each browser-owned request and redirect;
 the existing stricter same-origin HTTP(S) stylesheet rule remains in force.
-Meta policies, report-only mode, nonces, hashes, wildcards, schemes, paths,
-reporting, frames, and the remaining directives are deferred.
+Meta policies, report-only mode, hashes, wildcards, schemes, paths, reporting,
+frames, and the remaining directives are deferred.
 
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;
 explicit address-bar navigation remains available. This prevents page content

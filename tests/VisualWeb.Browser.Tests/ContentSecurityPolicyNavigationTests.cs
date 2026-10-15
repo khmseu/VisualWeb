@@ -33,6 +33,40 @@ public sealed class ContentSecurityPolicyNavigationTests
         Assert.Equal(["https://example.test/start", "https://example.test/page"], requests);
     }
 
+    [Fact]
+    public async Task MatchingNonceAllowsInlineClassicScript()
+    {
+        using var source = Serving("<script nonce='YWJj'>document.title='allowed'</script>", "script-src 'nonce-YWJj'");
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Contains("nonce='YWJj'", page.Html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NonMatchingNonceStillBlocksInlineClassicScript()
+    {
+        using var source = Serving("<script nonce='YWJk'>document.title='blocked'</script>", "script-src 'nonce-YWJj'");
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("inline script", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task MatchingNonceAllowsStyleElementButNotStyleAttribute()
+    {
+        using var style = Serving("<style nonce='c3R5bGU='>body{color:red}</style>", "style-src 'nonce-c3R5bGU='");
+        var page = await style.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+        Assert.Contains("nonce='c3R5bGU='", page.Html, StringComparison.Ordinal);
+
+        using var attribute = Serving("<p style='color:red'>blocked</p>", "style-src 'nonce-c3R5bGU='");
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            attribute.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+        Assert.Contains("inline style", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData("<style>body{color:red}</style>")]
     [InlineData("<p style='color:red'>blocked</p>")]
