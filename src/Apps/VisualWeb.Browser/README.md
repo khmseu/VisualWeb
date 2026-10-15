@@ -3,10 +3,12 @@
 Runnable development-only browser executable. Draws SDL
 address/tab chrome, navigates GET HTML into the static engine, and manages
 history, tabs and multiple windows.
-Visible textual HTML anchors activate through the current tab's GET navigation
-on primary left click or Tab/Shift+Tab/Enter, open in a new active tab on
-middle click, and open in a background tab on Ctrl+primary click, using
-renderer-owned clipped CSS rectangle groups. Keyboard
+Visible textual HTML anchors and anchors with non-empty rendered block boxes
+activate through the current tab's GET navigation on primary left click or
+Tab/Shift+Tab/Enter, open in a new active tab on middle click, and open in a
+background tab on Ctrl+primary click, using renderer-owned clipped CSS rectangle
+groups. Empty inline anchors and non-text anchors without a measurable block box
+remain unsupported. Keyboard
 traversal visits chrome before visible anchors;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
 The `_blank` target keyword opens an active tab in the source window. Same-document

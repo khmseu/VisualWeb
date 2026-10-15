@@ -35,18 +35,19 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux conf
 The shell supports bounded textual link activation and vertical document scrolling, including Ctrl+Home/End outside editable controls;
 broader page interaction is still missing:
 
-- Textual `<a href>` links support primary left-click (release must remain over the
-  same anchor) and Tab/Shift+Tab/Enter navigation in shell, local and actual
+- Textual `<a href>` links and empty/non-text anchors with a non-empty rendered
+  block box support primary left-click (release must remain over the same anchor)
+  and Tab/Shift+Tab/Enter navigation in shell, local and actual
   renderer-process paths; middle-click opens
   the visible link in a new active tab and Ctrl+primary-click opens it in a
   background tab, regardless of its target. Shift+Enter opens the focused link
   in a new active tab; Ctrl+Enter opens it in a background tab. Enabled drawn
-  chrome controls precede rendered text links in traversal; focusing an offscreen
+  chrome controls precede rendered links in traversal; focusing an offscreen
   anchor scrolls it into view. Ctrl+L retains address editing. Focus is per-tab,
   with shell-only outlines across visible rectangles and no page raster changes.
   IPC v28 introduced grouped visible rectangles plus bounded `_blank` target
   metadata (4096 anchors, 64 rectangles each, 1 MiB metadata); IPC v37 adds
-  document-space offsets for offscreen text anchors, without element IDs/DOM/native
+  document-space offsets for offscreen anchors, without element IDs/DOM/native
   handles. v28 also added bounded fragment-ID offsets for
   same-document scrolling, without element IDs/DOM/native handles. Fragment
   links update same-document URL history and bounded per-entry scroll positions,
@@ -60,8 +61,9 @@ broader page interaction is still missing:
   response URL); form actions and linked stylesheets use the same resolution.
   Successful document commits and resize repaints clear frame-local anchor focus;
   retained scroll repaints preserve the focused anchor. Failed navigation preserves it. Hovering visible link rectangles draws a
-  shell-owned outline without changing renderer pixels. General hit-testing, DOM
-  focus/events and non-text/empty-anchor traversal remain missing.
+  shell-owned outline without changing renderer pixels. Empty inline anchors and
+  non-text anchors without a measurable rendered block box remain unsupported.
+  General hit-testing and DOM focus/events remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color/checkbox/radio/hidden/submit/reset,

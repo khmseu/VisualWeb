@@ -25,8 +25,10 @@ public sealed class StaticPageRenderer : IPageRenderer
     {
         public string Url { get; } = url;
         public bool OpenInNewTab { get; } = openInNewTab;
-        public double DocumentY { get; } = documentY;
+        public double DocumentY { get; set; } = documentY;
         public List<PageLinkRect> Rects { get; } = [];
+        public bool IsBlockBoxAnchor { get; set; }
+        public PageLinkRect? BlockRectangle { get; set; }
     }
     private static readonly HtmlParserOptions DocumentHtmlOptions = new();
     private static readonly char[] AsciiWhitespace = ['\t', '\n', '\f', '\r', ' '];
@@ -131,6 +133,34 @@ public sealed class StaticPageRenderer : IPageRenderer
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
         return (links.AsReadOnly(), controls, textTargets.AsReadOnly());
 
+        LinkTargetData GetLinkTarget(DomElement anchor, string href, double documentY)
+        {
+            if (anchors.TryGetValue(anchor, out var existing)) { return existing; }
+            if (linkData.Count >= RendererProtocol.MaxLinkTargets)
+            { throw new PageNavigationException("Renderer link count limit exceeded."); }
+            if (href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer link URL limit exceeded."); }
+            var parsed = BrowserUrl.ParseResult(href, baseUrl);
+            var destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
+            if (destination.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("Renderer link URL limit exceeded."); }
+            urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
+            if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
+            { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
+            var target = new LinkTargetData(destination,
+                IsBlankTarget(anchor.GetAttribute("target"), baseTarget), documentY);
+            anchors.Add(anchor, target);
+            linkData.Add(target);
+            return target;
+        }
+
+        void AddLinkRectangle(LinkTargetData target, PageLinkRect rect)
+        {
+            if (target.Rects.Count >= RendererProtocol.MaxLinkRects)
+            { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
+            target.Rects.Add(rect);
+        }
+
         void Visit(LayoutBox box)
         {
             foreach (var item in box.Flow)
@@ -138,6 +168,24 @@ public sealed class StaticPageRenderer : IPageRenderer
                 cancellationToken.ThrowIfCancellationRequested();
                 if (item is LayoutBlockItem block)
                 {
+                    if (block.Box.Element is { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } anchor
+                        && anchor.GetAttribute("href") is { } href
+                        && block.Box.BorderBox.Width > 0 && block.Box.BorderBox.Height > 0)
+                    {
+                        var border = block.Box.BorderBox;
+                        var target = GetLinkTarget(anchor, href, border.Y);
+                        target.IsBlockBoxAnchor = true;
+                        var left = Math.Clamp(border.X, 0, layout.ViewportWidth);
+                        var right = Math.Clamp(border.X + border.Width, 0, layout.ViewportWidth);
+                        var top = Math.Clamp(border.Y - scrollY, 0, layout.ViewportHeight);
+                        var bottom = Math.Clamp(border.Y + border.Height - scrollY, 0, layout.ViewportHeight);
+                        if (right > left && bottom > top)
+                        {
+                            var rect = new PageLinkRect(left, top, right - left, bottom - top);
+                            AddLinkRectangle(target, rect);
+                            target.BlockRectangle = rect;
+                        }
+                    }
                     if (block.Box.Element.LocalName is "input" or "button" or "select")
                     {
                         var border = block.Box.BorderBox;
@@ -169,21 +217,16 @@ public sealed class StaticPageRenderer : IPageRenderer
                         {
                             if (!anchors.TryGetValue(anchor, out target))
                             {
-                                if (linkData.Count >= RendererProtocol.MaxLinkTargets)
-                                { throw new PageNavigationException("Renderer link count limit exceeded."); }
-                                if (href.Length > RendererProtocol.MaxTextCharacters)
-                                { throw new PageNavigationException("Renderer link URL limit exceeded."); }
-                                var parsed = BrowserUrl.ParseResult(href, baseUrl);
-                                var destination = parsed.Url?.Href ?? throw new PageNavigationException("Invalid link URL: " + parsed.Error);
-                                if (destination.Length > RendererProtocol.MaxTextCharacters)
-                                { throw new PageNavigationException("Renderer link URL limit exceeded."); }
-                                urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
-                                if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
-                                { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
-                                target = new(destination, IsBlankTarget(anchor.GetAttribute("target"), baseTarget), line.Line.Bounds.Y);
-                                anchors.Add(anchor, target);
+                                target = GetLinkTarget(anchor, href, line.Line.Bounds.Y);
                                 lineNewAnchors.Add(anchor);
-                                linkData.Add(target);
+                            }
+                            if (target.IsBlockBoxAnchor)
+                            {
+                                if (target.BlockRectangle is { } blockRectangle)
+                                { target.Rects.Remove(blockRectangle); }
+                                target.BlockRectangle = null;
+                                target.IsBlockBoxAnchor = false;
+                                target.DocumentY = line.Line.Bounds.Y;
                             }
                         }
                         var left = Math.Clamp(fragment.X, 0, layout.ViewportWidth);
@@ -200,9 +243,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                         { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
                         textTargets.Add(new(text, rect));
                         if (target is null) { continue; }
-                        if (target.Rects.Count >= RendererProtocol.MaxLinkRects)
-                        { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
-                        target.Rects.Add(rect);
+                        AddLinkRectangle(target, rect);
                         lineAnchors[anchor!] = lineAnchors.TryGetValue(anchor!, out var firstX) ? Math.Min(firstX, fragment.X) : fragment.X;
                     }
                     foreach (var widget in line.Line.Widgets)

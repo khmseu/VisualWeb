@@ -424,6 +424,65 @@ public sealed class LinkTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmptyBlockAnchorsAreLinkTargetsButUnrenderedAnchorsAreNot(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var page = await renderer.RenderAsync(Document("""
+            <!doctype html><style>
+            *{margin:0}a.block{display:block;width:20px;height:18px}a.hidden{display:none}
+            </style>
+            <a href="/empty-inline"></a>
+            <a class="block" href="/empty-block"></a>
+            <a class="block hidden" href="/hidden-block"></a>
+            <a href="/text">text</a>
+            """), new(100, 50, 1), Cancellation);
+
+        Assert.Equal(["https://example.com/empty-block", "https://example.com/text"],
+            page.LinkTargets.Select(target => target.Url));
+        var emptyBlock = page.LinkTargets[0];
+        var rect = Assert.Single(emptyBlock.Rects);
+        Assert.Equal(20, rect.Width);
+        Assert.Equal(18, rect.Height);
+        Assert.NotEmpty(page.LinkTargets[1].Rects);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EmptyBlockAnchorSupportsPointerAndKeyboardActivation(bool keyboard)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document("""
+            <!doctype html><style>*{margin:0}a{display:block;width:20px;height:18px}</style>
+            <a href="https://other.example/visit"></a>
+            """));
+        controller.Pump(_ => viewport);
+
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+        Assert.NotEmpty(link.Rects);
+        if (keyboard)
+        {
+            controller.FocusPage(tab.Id);
+            Assert.Equal(0, controller.MoveLinkFocus(tab.Id));
+            Assert.True(controller.ActivateFocusedLink(tab.Id, viewport));
+        }
+        else
+        {
+            var rect = Assert.Single(link.Rects);
+            Assert.True(controller.ActivateLink(tab.Id, rect.X + 1, rect.Y + 1, viewport));
+        }
+
+        Assert.Equal("https://other.example/visit", source.Requests[1].Url.Href);
+    }
+
+    [Theory]
     [InlineData("data:text/html,blocked")]
     [InlineData("javascript:alert(1)")]
     [InlineData("http://[invalid")]

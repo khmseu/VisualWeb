@@ -78,12 +78,12 @@ The native window title retains the same warning alongside the active page title
 | +W / Ctrl+N                                                                                                                                               | New window with welcome tab                                                                                                                                                                                                                                                                              |
 | M / Ctrl+M                                                                                                                                                | Move active tab to the first other window, or create an empty destination                                                                                                                                                                                                                                |
 | Native window close                                                                                                                                       | Close that window and only its tabs                                                                                                                                                                                                                                                                      |
-| Pointer hover on visible anchor text                                                                                                                      | Draw a shell-owned outline around its visible text rectangles without modifying the page raster                                                                                                                                                                                                          |
-| Primary click on visible anchor text                                                                                                                      | Navigate on release only if it remains on the same anchor; dragging at least four logical pixels instead selects coarse text fragments without navigating                                                                                                                                                |
-| Middle click on visible anchor text                                                                                                                       | Open its resolved href in a new active tab, regardless of the link target                                                                                                                                                                                                                                |
-| Ctrl+primary click on visible anchor text                                                                                                                 | Open its resolved href in a background tab, regardless of the link target                                                                                                                                                                                                                                |
-| Tab / Shift+Tab                                                                                                                                           | Traverse drawn chrome controls, then rendered textual anchors, forwards/backwards; focused offscreen anchors scroll into view                                                                                                                                                                            |
-| Enter outside address editing                                                                                                                             | Activate the focused chrome control or textual anchor; Shift+Enter opens a focused anchor in a new active tab; Ctrl+Enter opens it in a background tab                                                                                                                                                   |
+| Pointer hover on visible anchor text or an empty anchor's rendered block box                                                                              | Draw a shell-owned outline around its visible link rectangles without modifying the page raster                                                                                                                                                                                                          |
+| Primary click on visible anchor text or an empty anchor's rendered block box                                                                              | Navigate on release only if it remains on the same anchor; dragging at least four logical pixels from text instead selects coarse text fragments without navigating                                                                                                                                      |
+| Middle click on visible anchor text or an empty anchor's rendered block box                                                                               | Open its resolved href in a new active tab, regardless of the link target                                                                                                                                                                                                                                |
+| Ctrl+primary click on visible anchor text or an empty anchor's rendered block box                                                                         | Open its resolved href in a background tab, regardless of the link target                                                                                                                                                                                                                                |
+| Tab / Shift+Tab                                                                                                                                           | Traverse drawn chrome controls, then rendered text and non-empty block-box anchors, forwards/backwards; focused offscreen anchors scroll into view                                                                                                                                                       |
+| Enter outside address editing                                                                                                                             | Activate the focused chrome control or rendered anchor; Shift+Enter opens a focused anchor in a new active tab; Ctrl+Enter opens it in a background tab                                                                                                                                                  |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields; Ctrl+Home/End outside address editing and form controls                                    | Scroll the active page vertically                                                                                                                                                                                                                                                                        |
 | Vertical page scrollbar                                                                                                                                   | Click or drag the browser-owned thumb to scroll the active page                                                                                                                                                                                                                                          |
 | Single-select control                                                                                                                                     | Click, Enter, or Space to open; arrows/Home/End, Page Up/Down, and committed-text prefix search select enabled options; optgroup labels prefix flattened options and disabled groups disable their options; hovered popup rows are highlighted; wheel scrolls long lists; Escape/outside click dismisses |
@@ -125,22 +125,22 @@ select-all and Ctrl+V paste; address editing supports Ctrl+V over its existing
 Ctrl+L selection. IME preedit and richer accessibility remain deferred.
 Keyboard traversal starts with enabled, drawn chrome targets in drawing order:
 tab arrows, visible tab labels/close buttons, navigation/window controls, then
-the address editor, followed by rendered textual anchors in first-fragment paint
-order. Ctrl+L still selects the address; Tab leaves editing for the first rendered
-anchor, while Shift+Tab returns to the preceding chrome control. At the first
+the address editor, followed by rendered anchors in target order. Ctrl+L still
+selects the address; Tab leaves editing for the first rendered anchor, while Shift+Tab returns to the preceding chrome control. At the first
 page anchor Shift+Tab returns to the address (or last drawn chrome control);
 at the last anchor Tab wraps to the first chrome control. Disabled/undrawn controls
-are skipped. Focusing an offscreen text anchor scrolls it into view; empty and
-non-text anchors remain unsupported. With no rendered text links, traversal wraps
-among chrome controls. Ctrl+Tab/Ctrl+Shift+Tab and Ctrl+PageUp/PageDown retain tab switching,
+are skipped. Focusing an offscreen anchor scrolls it into view using its document
+offset. Empty inline anchors and non-text anchors without a non-empty rendered
+block box remain unsupported. With no rendered links, traversal wraps among
+chrome controls. Ctrl+Tab/Ctrl+Shift+Tab and Ctrl+PageUp/PageDown retain tab switching,
 and editing, navigation and scrolling shortcuts retain their existing meanings.
 
 Page keyboard ownership and selected anchor are per-tab and survive switching
 or moving tabs. Clicking chrome gives it keyboard ownership; a primary link click
 navigates on pointer release, while visible link hover gets a separate browser-owned
 outline. A subtle shell-owned blue-gray border outlines **all**
-visible rectangles of the selected anchor, including wrapped/nested text; one
-anchor is one stop even if it has many fragments, while identical URLs on different
+visible rectangles of the selected anchor, including wrapped/nested text or its
+rendered block box; one anchor is one stop even if it has many fragments, while identical URLs on different
 anchors remain separate stops. Without page focus or an active text selection,
 page pixels are copied unchanged; the renderer raster is never modified by either
 overlay. Successful document commits and resize repaints clear the selected anchor
@@ -189,11 +189,13 @@ before publication without rerunning scripts.
 
 Both rendering modes collect visible rectangles from shaped text fragments,
 using the nearest HTML `a` ancestor with `href`, after optional script mutations.
-Each rectangle uses the run's width and line's height, clipped to the CSS viewport
+An anchor without shaped text is also a target when it has a non-empty rendered
+block box; its clipped border box supplies the hit area. Empty inline anchors,
+non-text anchors without a measurable block box, and non-link text have no targets.
+Text rectangles use the run's width and line's height, clipped to the CSS viewport
 after the clamped scroll translation. Retained resize/scroll recomputes targets
-without rerunning scripts. Each anchor groups all its visible rectangles, in
-first-fragment paint order; the last matching group wins hit-testing. Empty anchors
-and non-link text have no targets.
+without rerunning scripts. Each anchor groups its visible rectangles in renderer
+target order; the last matching group wins hit-testing.
 
 The renderer resolves destinations with Core.Url against the final `LoadedPage.Url`
 before returning data-only rectangles and absolute URLs; it never navigates or
@@ -239,8 +241,7 @@ URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
 response URL. Form actions and browser-discovered linked stylesheets use the same
 first-base resolution and fallback. `tabindex`, DOM focus APIs, downloads, image/area
 links, CSS link decoration, page mouse/keyboard events and JavaScript default-action
-cancellation remain deferred. Keyboard traversal can reveal text-bearing rendered
-anchors; it does not add hit-testing for empty or non-text anchors. This is a bounded subset of HTML
+cancellation remain deferred. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
 (cached standard ID `html`), not a full DOM event/default-action implementation.
 

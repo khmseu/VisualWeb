@@ -24,13 +24,16 @@ bounded root extent (at least the viewport height). Scroll changes raster
 translation only, not layout viewport geometry or frame size.
 `BrowserPage.LinkTargets` is a nonpositional read-only list, empty by default.
 Rendering gathers nearest-anchor ancestry from shaped text fragments in paint
-order, using run widths and line heights, then translates/clips to visible CSS
-viewport space. URLs resolve against the final source URL before returning
-data-only IPC-contract targets. Each rendered text anchor is one target containing
-its currently visible rectangles and bounded document-space top offset; groups
-follow first-fragment order, without exposing element identity. Offscreen text
-anchors have an empty rectangle list until scrolled into view. IPC v37 adds the
-offset without exposing renderer DOM identity. `_blank` opens a new tab; `_self`,
+order, using run widths and line heights, and also reports non-empty rendered
+block boxes for anchors without shaped text. Text rectangles and block boxes are
+translated/clipped to visible CSS viewport space. URLs resolve against the final
+source URL before returning data-only IPC-contract targets. Each anchor is one
+target containing its visible rectangles and bounded document-space top offset;
+groups follow renderer target order, without exposing element identity. Offscreen
+anchors have an empty rectangle list until scrolled into view. Empty inline
+anchors and non-text anchors without a non-empty rendered block box remain
+unsupported. IPC v37 adds the offset without exposing renderer DOM identity.
+`_blank` opens a new tab; `_self`,
 `_parent`, and `_top` use the current tab, including the first `<base target>`
 fallback. Unsupported named contexts
 fail visibly. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
