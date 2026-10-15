@@ -84,6 +84,12 @@ destination checks. There is no preload, persistence, public-suffix list,
 localhost exclusion, DNS HTTPS-record upgrade, SOP/CORS/CSP, mixed-content or
 full Fetch conformance claim. Official source ID: `rfc6797`.
 
+The networking project also embeds the complete pinned Public Suffix List
+(official source ID `public-suffix-list`) and provides a bounded immutable
+matcher for exact, wildcard, exception, IDNA and prevailing-default rules across
+its ICANN and PRIVATE sections. HSTS does not consume the matcher yet; public
+suffix rejection is the next separate policy increment.
+
 ## Schemes and redirects
 
 - **HTTP(S):** BCL transport, platform TLS certificate verification, automatic

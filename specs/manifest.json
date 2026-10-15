@@ -322,6 +322,16 @@
       "lastModified": "2026-09-16T13:44:14+00:00"
     },
     {
+      "id": "public-suffix-list",
+      "title": "Public Suffix List",
+      "url": "https://publicsuffix.org/list/",
+      "file": "public-suffix-list.html",
+      "fetchedAt": "2026-10-15T18:23:19.2822886+00:00",
+      "checkedAt": "2026-10-15T18:23:19.2822886+00:00",
+      "eTag": "\u002289611f1c94c39134f92f4a88d6a4980f\u0022",
+      "lastModified": "2026-10-07T07:28:29+00:00"
+    },
+    {
       "id": "html",
       "title": "WHATWG HTML",
       "url": "https://html.spec.whatwg.org/",

@@ -4,6 +4,9 @@
     <ProjectReference Include="../../Core/Core.Url/Core.Url.csproj" />
     <ProjectReference Include="../../Core/Core.Mime/Core.Mime.csproj" />
     <ProjectReference Include="../../Core/Core.Encoding/Core.Encoding.csproj" />
+    <EmbeddedResource Include="Data/public_suffix_list.dat"
+                      LogicalName="VisualWeb.Engine.Net.public_suffix_list.dat" />
+    <InternalsVisibleTo Include="VisualWeb.Engine.Net.Tests" />
   </ItemGroup>
 
   <PropertyGroup>
