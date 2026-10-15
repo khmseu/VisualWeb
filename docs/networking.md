@@ -109,7 +109,7 @@ full Fetch conformance claim. Official source ID: `rfc6797`.
 
 ## Fetch bad-port blocking
 
-Both `LoadAsync` and `LoadSameOriginAsync` apply Fetch
+`LoadAsync`, `LoadSameOriginAsync`, and `LoadAuthorizedNavigationAsync` apply Fetch
 [should be blocked due to a bad port](https://fetch.spec.whatwg.org/#block-bad-port)
 to the initial URL and to every redirect target, before credentials, cookie
 headers or any transport request. An HTTP(S) URL whose port is in the 83-entry
@@ -127,6 +127,14 @@ This is an intentional, standards-aligned behavior change: explicit developer
 navigations to blocked ports (for example `http://localhost:6000/`) now fail
 with a visible page error in the browser. There is no CLI flag or fallback to
 bypass it. It is not CORS, CSP, mixed-content or safe-browsing enforcement.
+
+`LoadAuthorizedNavigationAsync` is an HTTP(S)-only browser-side primitive for
+brokered top-level navigation. It resolves HSTS and checks bad ports before
+calling a browser-owned destination authorizer for the initial URL and each
+redirect. A denied destination fails with `NavigationDenied` before URL
+credentials, cookies or transport are used for that destination. The callback
+is never exposed to renderers or page script; it is not CORS, CSP, referrer
+policy, response tainting or a general Fetch implementation.
 
 System.Uri is only a transport/path adapter after WHATWG parsing, not the URL
 parser. An injected handler is owned by the loader. Built-in SocketsHttpHandler

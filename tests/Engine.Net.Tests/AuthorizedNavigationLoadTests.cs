@@ -1,0 +1,138 @@
+using System.Net;
+using System.Text;
+using VisualWeb.Core.Url;
+using Xunit;
+
+namespace VisualWeb.Engine.Net.Tests;
+
+public sealed class AuthorizedNavigationLoadTests
+{
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task AuthorizerChecksInitialAndCrossOriginRedirectDestinations()
+    {
+        var authorized = new List<string>();
+        var requests = new List<string>();
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return requests.Count == 1
+                ? Redirect("https://outside.example/final")
+                : Text("ok");
+        }));
+
+        var response = await loader.LoadAuthorizedNavigationAsync(
+            BrowserUrl.Parse("https://source.example/start"),
+            url => { authorized.Add(url.Href); return true; },
+            cancellationToken: Token);
+
+        Assert.Equal(["https://source.example/start", "https://outside.example/final"], authorized);
+        Assert.Equal(authorized, requests);
+        Assert.Equal("ok", Encoding.UTF8.GetString(response.Body.Span));
+    }
+
+    [Fact]
+    public async Task InitialDenialPreventsTransport()
+    {
+        var calls = 0;
+        using var loader = new ResourceLoader(handler: new Handler(_ =>
+        {
+            calls++;
+            return Text("leak");
+        }));
+
+        var error = await Assert.ThrowsAsync<ResourceLoadException>(() =>
+            loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("https://denied.example/"), _ => false,
+                includeCookies: true, cancellationToken: Token));
+
+        Assert.Equal(ResourceError.NavigationDenied, error.Error);
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    public async Task RedirectDenialPreventsDestinationTransport()
+    {
+        var authorized = new List<string>();
+        var calls = 0;
+        using var loader = new ResourceLoader(handler: new Handler(_ =>
+        {
+            calls++;
+            return Redirect("https://denied.example/final");
+        }));
+
+        var error = await Assert.ThrowsAsync<ResourceLoadException>(() =>
+            loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("https://allowed.example/start"), url =>
+            {
+                authorized.Add(url.Href);
+                return url.Hostname == "allowed.example";
+            }, includeCookies: true, cancellationToken: Token));
+
+        Assert.Equal(ResourceError.NavigationDenied, error.Error);
+        Assert.Equal(["https://allowed.example/start", "https://denied.example/final"], authorized);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task HstsAndBadPortChecksPrecedeAuthorization()
+    {
+        var store = new HstsPolicyStore();
+        store.ProcessResponse(BrowserUrl.Parse("https://example.test/"), ["max-age=60"], true, new List<string>());
+        var authorized = new List<string>();
+        var calls = 0;
+        using var loader = new ResourceLoader(handler: new Handler(_ =>
+        {
+            calls++;
+            return Text("ok");
+        }), hstsPolicyStore: store);
+
+        var response = await loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("http://example.test/start"), url =>
+        {
+            authorized.Add(url.Href);
+            return true;
+        }, cancellationToken: Token);
+        var blocked = await Assert.ThrowsAsync<ResourceLoadException>(() =>
+            loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("http://example.test:25/"), url =>
+            {
+                authorized.Add(url.Href);
+                return true;
+            }, cancellationToken: Token));
+
+        Assert.Equal("https://example.test/start", response.Url.Href);
+        Assert.Equal(ResourceError.BlockedPort, blocked.Error);
+        Assert.Equal(["https://example.test/start"], authorized);
+        Assert.Equal(1, calls);
+    }
+
+    [Theory]
+    [InlineData("data:text/plain,blocked")]
+    [InlineData("file:///tmp/blocked")]
+    public async Task NonHttpDestinationsAreDeniedBeforeAuthorization(string input)
+    {
+        var authorized = 0;
+        using var loader = new ResourceLoader(handler: new Handler(_ => Text("leak")));
+
+        var error = await Assert.ThrowsAsync<ResourceLoadException>(() =>
+            loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse(input), _ => { authorized++; return true; },
+                cancellationToken: Token));
+
+        Assert.Equal(ResourceError.NavigationDenied, error.Error);
+        Assert.Equal(0, authorized);
+    }
+
+    private static HttpResponseMessage Redirect(string location) => new(HttpStatusCode.Found)
+    {
+        Headers = { Location = new Uri(location) }
+    };
+
+    private static HttpResponseMessage Text(string text) => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent(text, Encoding.UTF8, "text/plain")
+    };
+
+    private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) => Task.FromResult(respond(request));
+    }
+}

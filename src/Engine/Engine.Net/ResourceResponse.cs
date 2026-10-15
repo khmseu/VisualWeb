@@ -73,6 +73,9 @@ public enum ResourceError
     /// <summary>A restricted same-origin load was denied by origin or scheme policy before the request was sent.</summary>
     SameOriginDenied,
 
+    /// <summary>A browser-owned navigation authorizer denied an HTTP(S) destination before the request was sent.</summary>
+    NavigationDenied,
+
     /// <summary>An HTTP(S) URL targeted a Fetch <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see>;
     /// the request was blocked before transport or cookie work.</summary>
     BlockedPort,

@@ -8,7 +8,8 @@ namespace VisualWeb.Engine.Net;
 /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#scheme-fetch">scheme fetch</see>
 /// and <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
 /// HTTP(S) <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad ports</see> are blocked for every request.
-/// <see cref="LoadSameOriginAsync"/> is an opt-in same-origin restricted mode; CORS, other origin policy,
+/// <see cref="LoadSameOriginAsync"/> is an opt-in same-origin restricted mode;
+/// <see cref="LoadAuthorizedNavigationAsync"/> applies a browser-owned destination authorizer. CORS, other origin policy,
 /// SameSite, caching and script-visible Fetch are not implemented.
 /// Cookies require explicit opt-in and are isolated per loader. Session HSTS requires an explicitly supplied
 /// <see cref="HstsPolicyStore"/> (spec: rfc6797;
@@ -74,7 +75,33 @@ public sealed class ResourceLoader : IDisposable
         }
 
         BadPortPolicy.ThrowIfBlocked(url);
-        return await LoadCoreAsync(url, null, includeCookies, preventHttpsDowngrade, cancellationToken);
+        return await LoadCoreAsync(url, null, null, includeCookies, preventHttpsDowngrade, cancellationToken);
+    }
+
+    /// <summary>Browser-owned HTTP(S) navigation whose effective initial and redirect destinations require authorization.</summary>
+    /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
+    /// HSTS and bad-port checks run before <paramref name="authorizeDestination"/> for each destination. A false
+    /// result throws <see cref="ResourceLoadException"/> with <see cref="ResourceError.NavigationDenied"/> before credentials,
+    /// cookies or transport are used for that destination. The callback is not a script-visible policy surface and does not
+    /// implement CORS, CSP, referrers or response tainting.</remarks>
+    public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, bool> authorizeDestination, bool includeCookies = false,
+        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(authorizeDestination);
+        url = hstsPolicyStore?.Upgrade(url) ?? url;
+        if (url.Protocol is not ("http:" or "https:"))
+        {
+            throw new ResourceLoadException(ResourceError.NavigationDenied,
+                "Authorized navigation requires an HTTP(S) destination.");
+        }
+        if (preventHttpsDowngrade && url.Protocol == "http:") { throw InsecureTransport(); }
+
+        BadPortPolicy.ThrowIfBlocked(url);
+        EnforceAuthorized(url, authorizeDestination);
+        return await LoadCoreAsync(url, null, authorizeDestination, includeCookies, preventHttpsDowngrade, cancellationToken);
     }
 
     /// <summary>Opt-in restricted GET: loads only HTTP(S) URLs same origin with a fixed HTTP(S) tuple request origin.</summary>
@@ -109,11 +136,12 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
-        return await LoadCoreAsync(url, requestOrigin, includeCookies, preventHttpsDowngrade, cancellationToken);
+        return await LoadCoreAsync(url, requestOrigin, null, includeCookies, preventHttpsDowngrade, cancellationToken);
     }
 
-    private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin, bool includeCookies,
-        bool preventHttpsDowngrade, CancellationToken cancellationToken)
+    private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin,
+        Func<BrowserUrl, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -124,7 +152,8 @@ public sealed class ResourceLoader : IDisposable
             {
                 "data:" => DataUrlProcessor.Load(url, options.MaxResponseBytes, deadline.Token),
                 "file:" => await LoadFileAsync(url, deadline.Token),
-                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, includeCookies, preventHttpsDowngrade, deadline.Token),
+                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, authorizeDestination, includeCookies,
+                    preventHttpsDowngrade, deadline.Token),
                 _ => throw new ResourceLoadException(ResourceError.UnsupportedScheme, "Unsupported resource URL scheme.")
             };
         }
@@ -147,8 +176,18 @@ public sealed class ResourceLoader : IDisposable
         }
     }
 
-    private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin, bool includeCookies,
-        bool preventHttpsDowngrade, CancellationToken token)
+    private static void EnforceAuthorized(BrowserUrl url, Func<BrowserUrl, bool> authorizeDestination)
+    {
+        if (!authorizeDestination(url))
+        {
+            throw new ResourceLoadException(ResourceError.NavigationDenied,
+                "Browser-owned navigation authorization denied the destination.");
+        }
+    }
+
+    private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin,
+        Func<BrowserUrl, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
+        CancellationToken token)
     {
         var url = initial;
         var diagnostics = new List<string>();
@@ -211,6 +250,10 @@ public sealed class ResourceLoader : IDisposable
                 if (requestOrigin is not null)
                 {
                     EnforceSameOrigin(next, requestOrigin);
+                }
+                if (authorizeDestination is not null)
+                {
+                    EnforceAuthorized(next, authorizeDestination);
                 }
 
                 url = next;
