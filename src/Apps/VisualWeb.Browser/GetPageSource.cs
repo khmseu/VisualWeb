@@ -8,11 +8,11 @@ namespace VisualWeb.Browser;
 
 public interface IPageSource : IDisposable
 {
-    /// <summary>Checks initial new-tab form policy without starting a load; loading still checks every redirect.</summary>
+    /// <summary>Checks initial page-navigation policy without starting a load; loading still checks every redirect.</summary>
     void ValidateNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin) =>
         PageNavigationPolicy.Validate(url, preventHttpsDowngrade, sameOriginRedirectOrigin);
-    /// <summary>Authorizes an HTTP(S) form target and returns the fixed effective origin for its redirect chain.</summary>
-    SecurityOrigin AuthorizeFormTarget(BrowserUrl url, bool preventHttpsDowngrade)
+    /// <summary>Authorizes an HTTP(S) page-navigation target and returns the fixed effective origin for its redirect chain.</summary>
+    SecurityOrigin AuthorizeNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade)
     {
         ValidateNavigationTarget(url, preventHttpsDowngrade, url.Origin);
         return url.Origin;
@@ -67,7 +67,7 @@ public sealed class GetPageSource : IPageSource
     }
     public void ValidateNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin) =>
         PageNavigationPolicy.Validate(hstsPolicyStore?.Upgrade(url) ?? url, preventHttpsDowngrade, sameOriginRedirectOrigin);
-    public SecurityOrigin AuthorizeFormTarget(BrowserUrl url, bool preventHttpsDowngrade)
+    public SecurityOrigin AuthorizeNavigationTarget(BrowserUrl url, bool preventHttpsDowngrade)
     {
         var effective = hstsPolicyStore?.Upgrade(url) ?? url;
         PageNavigationPolicy.Validate(effective, preventHttpsDowngrade, effective.Origin);
@@ -260,9 +260,9 @@ internal static class PageNavigationPolicy
     internal static void Validate(BrowserUrl url, bool preventHttpsDowngrade, SecurityOrigin? sameOriginRedirectOrigin)
     {
         if (preventHttpsDowngrade && url.Protocol == "http:")
-        { throw new PageNavigationException("HTTPS downgrade form navigation is blocked."); }
+        { throw new PageNavigationException("HTTPS downgrade page navigation is blocked."); }
         if (sameOriginRedirectOrigin is not null && url.Protocol is "http:" or "https:"
             && !sameOriginRedirectOrigin.IsSameOrigin(url.Origin))
-        { throw new PageNavigationException("Cross-origin form navigation is blocked."); }
+        { throw new PageNavigationException("Cross-origin page navigation is blocked."); }
     }
 }

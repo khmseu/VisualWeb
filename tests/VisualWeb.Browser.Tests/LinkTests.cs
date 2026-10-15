@@ -648,7 +648,7 @@ public sealed class LinkTests
         var error = Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id,
             link.X + link.Width / 2, link.Y + link.Height / 2));
 
-        Assert.Contains("does not enforce HTTPS downgrade protection", error.Message, StringComparison.Ordinal);
+        Assert.Contains("downgrade", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, source.LoadCount);
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Same(history, tab.History.Current);
@@ -733,14 +733,73 @@ public sealed class LinkTests
         var committed = controller.Page(tab.Id);
         var link = Assert.Single(committed!.LinkTargets);
 
-        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
-        PumpUntilComplete();
+        if (redirect)
+        {
+            Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+            PumpUntilComplete();
+            Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
+        }
+        else
+        {
+            var error = Assert.Throws<PageNavigationException>(() =>
+                controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+            Assert.Contains("downgrade", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Null(tab.Error);
+        }
 
-        Assert.Contains("Secure transport policy blocks HTTP loads", tab.Error, StringComparison.Ordinal);
         Assert.Equal(redirect ? 2 : 1, requests.Count);
         Assert.All(requests, request => Assert.Equal("https", request.Scheme));
         Assert.Same(committed, controller.Page(tab.Id));
         Assert.Equal("https://secure.example/document", tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void AuthorizedCrossOriginLinkCannotRedirectToThirdOrigin()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            if (request.RequestUri!.Host == "source.example")
+            {
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                        <!doctype html><style>*{margin:0}</style>
+                        <a href='https://outside.example/next'>open</a>
+                        """, System.Text.Encoding.UTF8, "text/html")
+                };
+            }
+            return new(HttpStatusCode.Found)
+            { Headers = { Location = new Uri("https://third.example/final") } };
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://source.example/document");
+        PumpUntilComplete();
+        var committed = controller.Page(tab.Id);
+        var link = Assert.Single(committed!.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+        PumpUntilComplete();
+
+        Assert.Contains("same origin", tab.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://source.example/document", "https://outside.example/next"],
+            requests.Select(request => request.AbsoluteUri));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://source.example/document", tab.History.Current!.Href);
 
         void PumpUntilComplete()
         {

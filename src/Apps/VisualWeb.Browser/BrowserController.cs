@@ -1155,7 +1155,7 @@ public sealed class BrowserController : IDisposable
             if (document.Url.Protocol == "data:")
             { throw new PageNavigationException("Network form submissions from opaque documents are blocked."); }
             if (document.Url.Protocol is "http:" or "https:")
-            { sameOriginRedirectOrigin = owner.Source.AuthorizeFormTarget(action, preventHttpsDowngrade); }
+            { sameOriginRedirectOrigin = owner.Source.AuthorizeNavigationTarget(action, preventHttpsDowngrade); }
         }
         var encoding = document.CharacterEncoding;
         if (encoding is not ("UTF-8" or "UTF-16BE" or "UTF-16LE" or "replacement"))
@@ -1359,6 +1359,10 @@ public sealed class BrowserController : IDisposable
         if (sourceDocument?.Url.Protocol == "file:" && url.Protocol is "http:" or "https:")
         {
             throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");
+        }
+        if (sameOriginRedirectOrigin is null && url.Protocol is "http:" or "https:")
+        {
+            sameOriginRedirectOrigin = content[id].Source.AuthorizeNavigationTarget(url, preventHttpsDowngrade);
         }
         var target = id;
         if (openInNewTab)
