@@ -536,7 +536,7 @@ public sealed class BrowserController : IDisposable
         return true;
     }
 
-    /// <summary>Selects an enabled option matching a bounded browser-owned text prefix.</summary>
+    /// <summary>Selects a single-select option or moves a multiple-select cursor to a bounded text prefix.</summary>
     public bool SelectFocusedOptionByPrefix(TabId id, string prefix, bool cycleFromCurrent = false)
     {
         Check();
@@ -545,10 +545,10 @@ public sealed class BrowserController : IDisposable
         { throw new ArgumentOutOfRangeException(nameof(prefix)); }
         var owner = content[id];
         if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
-            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false, Multiple: false } control)
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false } control)
         { return false; }
         if (control.Options.Length == 0) { return true; }
-        var selected = SelectedOption(owner, owner.FocusedControl);
+        var selected = ActiveSelectOption(owner, owner.FocusedControl);
         if (!cycleFromCurrent && selected >= 0 && !control.Options[selected].Disabled
             && control.Options[selected].Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
         {
@@ -561,8 +561,9 @@ public sealed class BrowserController : IDisposable
             var candidate = (start + offset) % control.Options.Length;
             if (control.Options[candidate].Disabled
                 || !control.Options[candidate].Label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) { continue; }
-            owner.SelectedOptions[owner.FocusedControl] = candidate;
-            var scrolled = KeepListboxOptionVisible(owner, owner.FocusedControl, candidate);
+            var firstVisible = ListboxFirstOption(owner, owner.FocusedControl);
+            SetActiveSelectOption(owner, owner.FocusedControl, candidate);
+            var scrolled = firstVisible != ListboxFirstOption(owner, owner.FocusedControl);
             if (candidate != selected || scrolled) { Changed?.Invoke(id); }
             return true;
         }

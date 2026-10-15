@@ -1077,15 +1077,17 @@ public sealed class ShellTests
         Key(SDL.Scancode.Pagedown);
         Assert.Equal(14, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
         Assert.Empty(shell.Controller.SelectedOptionIndices(tab.Id, 0));
-        shell.Dispatch(new TextEntered(native.Id, "19"));
-        Assert.Equal(14, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
         Key(SDL.Scancode.Space);
         Assert.Equal([14], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        shell.Dispatch(new TextEntered(native.Id, "19"));
+        Assert.Equal(19, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([14], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Space);
+        Assert.Equal([14, 19], shell.Controller.SelectedOptionIndices(tab.Id, 0));
         Key(SDL.Scancode.Pageup);
-        Assert.Equal(1, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal(6, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
         Key(SDL.Scancode.End);
         Assert.Equal(19, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
-        Key(SDL.Scancode.Space);
         Assert.Equal([14, 19], shell.Controller.SelectedOptionIndices(tab.Id, 0));
         shell.Tick();
         var page = shell.Controller.Page(tab.Id)!;
@@ -1204,6 +1206,37 @@ public sealed class ShellTests
         Assert.Equal(3, shell.Controller.SelectedOptionIndex(tab.Id, 0));
 
         void Key(SDL.Scancode code) => shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, 0, true, false));
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
+    [Fact]
+    public void MultipleSelectTypeaheadMovesCursorWithoutTogglingSelection()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select multiple name=mode>" +
+            "<option selected>Alpha</option><option disabled>Beta blocked</option>" +
+            "<option>Bravo</option><option>Blue</option></select></form>"));
+        Wait();
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+
+        shell.Dispatch(new TextEntered(native.Id, "b"));
+        Assert.Equal(2, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([0], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        shell.Dispatch(new TextEntered(native.Id, "b"));
+        Assert.Equal(3, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([0], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+
         void Wait()
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);

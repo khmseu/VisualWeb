@@ -909,7 +909,6 @@ public sealed class DevelopmentShell : IDisposable
         var index = Controller.FocusedControlIndex(id);
         if (Controller.Page(id) is not { } page || index < 0 || index >= page.FormControls.Count
             || page.FormControls[index] is not { Kind: "select", Disabled: false }) { return false; }
-        if (page.FormControls[index].Multiple) { return true; }
         if (view.SelectTypeaheadControl != index || !ReferenceEquals(view.SelectTypeaheadPage, page))
         { view.SelectTypeaheadText = ""; }
         view.SelectTypeaheadControl = index;

@@ -1847,7 +1847,7 @@ public sealed class FormTests
         Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
         Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
         Assert.Equal([1, 3, 4], controller.SelectedOptionIndices(tab, 0));
-        Assert.False(controller.SelectFocusedOptionByPrefix(tab, "One"));
+        Assert.True(controller.SelectFocusedOptionByPrefix(tab, "Three"));
         Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
         Assert.True(controller.SetFocusedSelectEndpoint(tab, false));
         Assert.True(controller.ToggleFocusedMultipleSelectOption(tab));
@@ -1865,6 +1865,28 @@ public sealed class FormTests
         Assert.True(controller.FocusControl(tab, 2));
         Assert.True(controller.ActivateFocusedLink(tab));
         Assert.Equal("https://example.com/choose?mode=one&mode=three&mode=four", harness.Source.Requests[^1].Url.Href);
+    }
+
+    [Fact]
+    public void MultipleSelectTypeaheadMovesCursorWithoutChangingSelections()
+    {
+        using var harness = new Harness("<form><select multiple size=2 name=mode>" +
+            "<option selected>Alpha</option><option disabled>Beta blocked</option>" +
+            "<option>Bravo</option><option>Blue</option></select></form>");
+        var controller = harness.Controller;
+        var tab = harness.Tab.Id;
+        Assert.True(controller.FocusControl(tab, 0));
+
+        Assert.True(controller.SelectFocusedOptionByPrefix(tab, "b"));
+        Assert.Equal(2, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.Equal([0], controller.SelectedOptionIndices(tab, 0));
+        Assert.Equal(1, controller.ListboxFirstOption(tab, 0));
+        Assert.True(controller.SelectFocusedOptionByPrefix(tab, "b", cycleFromCurrent: true));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
+        Assert.Equal([0], controller.SelectedOptionIndices(tab, 0));
+        Assert.Equal(2, controller.ListboxFirstOption(tab, 0));
+        Assert.True(controller.SelectFocusedOptionByPrefix(tab, "missing"));
+        Assert.Equal(3, controller.ActiveSelectOptionIndex(tab, 0));
     }
 
     [Theory]
@@ -3237,8 +3259,10 @@ public sealed class FormTests
         Assert.True(controller.ToggleFocusedMultipleSelectOption(id));
         Assert.Equal([0, 3, 6], controller.SelectedOptionIndices(id, 0));
         Assert.Equal(4, controller.ListboxFirstOption(id, 0));
-        Assert.False(controller.SelectFocusedOptionByPrefix(id, "A"));
-        Assert.Equal(4, controller.ListboxFirstOption(id, 0));
+        Assert.True(controller.SelectFocusedOptionByPrefix(id, "A"));
+        Assert.Equal(0, controller.ActiveSelectOptionIndex(id, 0));
+        Assert.Equal(0, controller.ListboxFirstOption(id, 0));
+        Assert.Equal([0, 3, 6], controller.SelectedOptionIndices(id, 0));
 
         Assert.True(controller.FocusControl(id, 2));
         Assert.True(controller.ActivateFocusedLink(id));
