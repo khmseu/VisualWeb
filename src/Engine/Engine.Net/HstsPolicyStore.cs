@@ -47,6 +47,12 @@ public sealed class HstsPolicyStore
             return;
         }
 
+        if (PublicSuffixList.Default.IsPublicSuffix(host))
+        {
+            diagnostics.Add("Ignored Strict-Transport-Security header from a public suffix.");
+            return;
+        }
+
         lock (gate)
         {
             var now = timeProvider.GetUtcNow();

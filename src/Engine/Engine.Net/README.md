@@ -34,7 +34,9 @@ are removed first; a full store throws `ResourceError.HstsCapacity` rather than
 evicting active protection. Initial URLs and each redirect are upgraded before
 destination bad-port/origin/cookie/transport work. The browser shell supplies one
 store per session in every mode; standalone loaders remain unchanged by default.
-No persistence, preload or public-suffix policy is supplied.
+Valid STS fields from hosts identified as public suffixes by the pinned
+ICANN+PRIVATE Public Suffix List are ignored with a response diagnostic. No persistence or
+preload policy is supplied.
 
 Use only from trusted browser-side callers. HttpClient is a transport, not
 complete Fetch. See the [networking guide](../../../docs/networking.md) for

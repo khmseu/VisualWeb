@@ -87,6 +87,35 @@ public sealed class HstsPolicyStoreTests
         Assert.Equal("http:", store.Upgrade(Url(host, "http")).Protocol);
     }
 
+    [Theory]
+    [InlineData("com")]
+    [InlineData("co.uk")]
+    [InlineData("github.io")]
+    [InlineData("unknown")]
+    [InlineData("localhost")]
+    public void PublicSuffixHostsAreNotLearned(string host)
+    {
+        var store = new HstsPolicyStore();
+
+        var diagnostics = Learn(store, "max-age=60; includeSubDomains", host);
+
+        Assert.Contains(diagnostics, item => item.Contains("public suffix", StringComparison.Ordinal));
+        Assert.Equal("http:", store.Upgrade(Url(host, "http")).Protocol);
+    }
+
+    [Theory]
+    [InlineData("example.com")]
+    [InlineData("project.github.io")]
+    [InlineData("www.ck")]
+    public void RegistrableHostsCanStillLearn(string host)
+    {
+        var store = new HstsPolicyStore();
+
+        Assert.Empty(Learn(store, "max-age=60", host));
+
+        Assert.Equal("https:", store.Upgrade(Url(host, "http")).Protocol);
+    }
+
     [Fact]
     public void InsecureOrUnauthenticatedTransportCannotLearnOrRemove()
     {

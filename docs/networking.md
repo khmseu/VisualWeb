@@ -80,15 +80,19 @@ feed browser document origins and transactional renderer swaps.
 
 This is the RFC-oriented loading order: cached Fetch's current main-fetch HSTS
 step is **after** bad-port checking; this bounded loader upgrades **before**
-destination checks. There is no preload, persistence, public-suffix list,
-localhost exclusion, DNS HTTPS-record upgrade, SOP/CORS/CSP, mixed-content or
-full Fetch conformance claim. Official source ID: `rfc6797`.
+destination checks. Valid STS fields from hosts identified as public suffixes
+by the pinned ICANN+PRIVATE Public Suffix List are ignored with a response
+diagnostic. The prevailing default rule includes single-label names such as
+`localhost`; there is no separate localhost override. There is no preload,
+persistence, DNS HTTPS-record upgrade, SOP/CORS/CSP, mixed-content or full Fetch
+conformance claim. Official source ID: `rfc6797`.
 
 The networking project also embeds the complete pinned Public Suffix List
 (official source ID `public-suffix-list`) and provides a bounded immutable
 matcher for exact, wildcard, exception, IDNA and prevailing-default rules across
-its ICANN and PRIVATE sections. HSTS does not consume the matcher yet; public
-suffix rejection is the next separate policy increment.
+its ICANN and PRIVATE sections. HSTS uses the matcher to reject policy learning
+from public suffixes; the matcher is not a registrable-domain or site-isolation
+API.
 
 ## Schemes and redirects
 

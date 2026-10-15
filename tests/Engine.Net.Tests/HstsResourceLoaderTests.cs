@@ -16,6 +16,20 @@ public sealed class HstsResourceLoaderTests
         return response;
     }
 
+    [Fact]
+    public async Task PublicSuffixHeaderIsIgnoredWithResponseDiagnostic()
+    {
+        var store = new HstsPolicyStore();
+        using var loader = new ResourceLoader(
+            handler: new Handler(_ => Response(sts: "max-age=60")),
+            hstsPolicyStore: store);
+
+        var response = await loader.LoadAsync(Url("https://com/"), cancellationToken: Token);
+
+        Assert.Contains(response.Diagnostics, item => item.Contains("public suffix", StringComparison.Ordinal));
+        Assert.Equal("http:", store.Upgrade(Url("http://com/")).Protocol);
+    }
+
     [Theory]
     [InlineData(200)]
     [InlineData(204)]
