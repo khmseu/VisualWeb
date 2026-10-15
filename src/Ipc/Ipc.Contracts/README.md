@@ -27,7 +27,7 @@ selects new tab; submitter choice and error are mutually exclusive and restricte
 to submit buttons. Target errors remain separate from other form errors.
 
 These are internal contracts, not a web standard. See the
-[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v39).
+[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v40).
 Every control requires nullable `Dirname` metadata. Non-null names must be
 nonempty, at most 8192 UTF-16 code units, and restricted to text/search/email/tel/url/password
 or textarea; their JSON counts toward the aggregate form budget. The renderer

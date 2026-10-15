@@ -141,9 +141,9 @@ for their ephemeral loopback servers.
 HTTP(S), local file and data URLs, with redirects to any HTTP(S) origin. The
 browser's `GetPageSource` top-level navigation keeps using it without a
 same-origin restriction; the bad-port policy above still applies. Its brokered
-linked-stylesheet subresources use the same tab loader and session HSTS store,
-with cookies off. HTTP(S) stylesheets are additionally restricted to the final
-document's fixed origin across every redirect; this deliberate compatibility
+linked and imported stylesheet subresources use the same tab loader and session
+HSTS store, with cookies off. HTTP(S) stylesheets are additionally restricted
+to the final document's fixed origin across every redirect; this deliberate compatibility
 restriction is not CORS, browser-wide SOP, general mixed-content policy or
 request authorization (see the [shell guide](browser-shell.md)).
 
@@ -174,7 +174,7 @@ origin check of Fetch
   by allowed responses, including the redirect response that was denied, stay in
   this loader's session.
 
-The browser uses this primitive for HTTP(S) linked stylesheets, with the final
+The browser uses this primitive for HTTP(S) linked and imported stylesheets, with the final
 document URL's origin held fixed across every stylesheet redirect. It also uses
 it for HTTP(S) form submissions, holding the submitting document's origin fixed
 across every redirect so submitted query data cannot be forwarded to a
@@ -213,7 +213,7 @@ broader conformance data and persistence decisions.
 **Do not expose this loader directly to hostile page scripts or use it as an
 authorization boundary.** It is an unfiltered browser-side loader, not the Fetch
 API. It can access local files and arbitrary network endpoints. The browser
-applies `LoadSameOriginAsync` only to HTTP(S) linked stylesheets; top-level
+applies `LoadSameOriginAsync` only to HTTP(S) linked and imported stylesheets; top-level
 navigation remains unrestricted, and other request classes do not have
 browser-wide origin authorization. Apart from that narrow stylesheet restriction
 and bad-port blocking above, there is no CORS, CSP, general mixed-content policy,

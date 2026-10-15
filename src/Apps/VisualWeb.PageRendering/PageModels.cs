@@ -37,10 +37,11 @@ public sealed record LoadedPage
     /// an encoding for the form</see>. Browser-only metadata; it is not sent to renderers.</remarks>
     public string CharacterEncoding { get; init; } = "UTF-8";
     private readonly IReadOnlyList<PageStylesheet> stylesheets = Array.Empty<PageStylesheet>();
-    /// <summary>Browser-fetched linked stylesheet texts keyed by resolved request URL; published with the document.</summary>
-    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
-    /// "stylesheet"</see>. A bounded immutable data snapshot (<see cref="RendererProtocol.ValidateStylesheets"/>);
-    /// renderers never fetch, so links absent from this collection fail rendering.</remarks>
+    /// <summary>Browser-fetched linked and imported stylesheet texts keyed by request URL; published with the document.</summary>
+    /// <remarks>Specs: html, css-cascade; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link
+    /// type "stylesheet"</see> and <see href="https://www.w3.org/TR/css-cascade-5/#at-import">CSS @import</see>.
+    /// A bounded immutable data snapshot (<see cref="RendererProtocol.ValidateStylesheets"/>); renderers never fetch,
+    /// so missing sources fail rendering.</remarks>
     public IReadOnlyList<PageStylesheet> Stylesheets
     {
         get => stylesheets;

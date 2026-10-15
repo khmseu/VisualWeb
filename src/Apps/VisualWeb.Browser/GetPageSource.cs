@@ -42,9 +42,11 @@ public interface IPageSource : IDisposable
 /// discovered from the pre-script parse and fetched here with the same tab loader and session HSTS store, without cookies,
 /// before the document is published. Each must be an ok text/css response (or a MIME-less file from a file document) decoded
 /// per css-syntax <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">fallback encoding</see>;
-/// unknown labels fail visibly. Any stylesheet failure fails the whole navigation. CSS @import, url() resources, fonts,
-/// images and CORS are not fetched. HTTP(S) stylesheet requests are restricted to the final document's fixed origin,
-/// including redirects; this deliberate restriction is not CORS or general request authorization.</remarks>
+/// unknown labels fail visibly. Unconditional leading CSS <c>@import</c> rules in embedded and fetched stylesheets are
+/// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions. Any stylesheet
+/// failure fails the whole navigation. Conditional/layer imports, <c>url()</c> resources, fonts, images and CORS are not
+/// fetched. HTTP(S) stylesheet requests are restricted to the final document's fixed origin, including redirects; this
+/// deliberate restriction is not CORS or general request authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -97,22 +99,50 @@ public sealed class GetPageSource : IPageSource
         List<string> diagnostics, CancellationToken cancellationToken)
     {
         IReadOnlyList<string> urls;
-        try { urls = StaticPageRenderer.DiscoverStylesheets(html, documentUrl, cancellationToken); }
+        IReadOnlyList<string> inlineImports;
+        try
+        {
+            urls = StaticPageRenderer.DiscoverStylesheets(html, documentUrl, cancellationToken);
+            inlineImports = StaticPageRenderer.DiscoverInlineStylesheetImports(html, documentUrl, cancellationToken);
+        }
         // The renderer parses identically and reports the same failure; nothing is fetched for an unparsable document.
         catch (Exception exception) when (exception is HtmlLimitException or UnsupportedHtmlException) { return []; }
-        if (urls.Count == 0) { return []; }
-        var sheets = new PageStylesheet[urls.Count];
-        for (var i = 0; i < urls.Count; i++)
+
+        var pending = new Queue<BrowserUrl>();
+        var queued = new HashSet<string>(StringComparer.Ordinal);
+        void Enqueue(string href)
         {
-            sheets[i] = new(urls[i], await LoadStylesheetAsync(BrowserUrl.Parse(urls[i]), documentUrl, documentEncoding,
-                cancellationToken).ConfigureAwait(false));
+            if (!queued.Add(href)) { return; }
+            if (queued.Count > RendererProtocol.MaxStylesheets)
+            {
+                throw new PageNavigationException($"Stylesheet and CSS @import count limit ({RendererProtocol.MaxStylesheets}) exceeded.");
+            }
+            pending.Enqueue(BrowserUrl.Parse(href));
         }
-        diagnostics.Add($"Linked stylesheets: {sheets.Length} browser-fetched classic text/css; @import, url() resources, "
-            + "fonts, images and CORS are not loaded.");
-        return sheets;
+        foreach (var url in urls) { Enqueue(url); }
+        foreach (var url in inlineImports) { Enqueue(url); }
+        if (pending.Count == 0) { return []; }
+
+        var sheets = new List<PageStylesheet>(pending.Count);
+        while (pending.TryDequeue(out var url))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var sheet = await LoadStylesheetAsync(url, documentUrl, documentEncoding, cancellationToken).ConfigureAwait(false);
+            sheets.Add(sheet);
+            try { RendererProtocol.ValidateStylesheets(sheets); }
+            catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+            foreach (var import in StaticPageRenderer.DiscoverStylesheetImports(sheet.Css,
+                BrowserUrl.Parse(sheet.BaseUrl), cancellationToken))
+            {
+                Enqueue(import);
+            }
+        }
+        diagnostics.Add($"Stylesheets: {sheets.Count} browser-fetched text/css sources including unconditional CSS @import; "
+            + "conditional imports/layers, url() resources, fonts, images and CORS are unsupported.");
+        return sheets.ToArray();
     }
 
-    private async Task<string> LoadStylesheetAsync(BrowserUrl url, BrowserUrl documentUrl, WebEncoding documentEncoding,
+    private async Task<PageStylesheet> LoadStylesheetAsync(BrowserUrl url, BrowserUrl documentUrl, WebEncoding documentEncoding,
         CancellationToken cancellationToken)
     {
         var secureDocument = documentUrl.Protocol == "https:";
@@ -144,7 +174,7 @@ public sealed class GetPageSource : IPageSource
         var text = response.DecodeText(CssFallbackEncoding(response, documentEncoding, url)).Text;
         if (text.Length > RendererProtocol.MaxStylesheetCharacters)
         { throw new PageNavigationException($"Linked stylesheet {url.Href} exceeds the {RendererProtocol.MaxStylesheetCharacters}-character limit."); }
-        return text;
+        return new(url.Href, text) { BaseUrl = response.Url.Href };
     }
 
     /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">determine

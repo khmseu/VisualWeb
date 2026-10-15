@@ -48,7 +48,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(39, RendererProtocol.Version);
+        Assert.Equal(40, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 38 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 38 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 35 }, 0));
@@ -676,6 +676,14 @@ public sealed class ProtocolTests
     public void LinkedStylesheetUrlsMustBeSerializedAbsoluteUrls(string url) =>
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Stylesheets = [new(url, "")] }, 0));
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("relative.css")]
+    [InlineData("HTTPS://EXAMPLE.COM/base.css")]
+    public void StylesheetBaseUrlMustBeSerializedAbsoluteUrl(string baseUrl) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with
+        { Stylesheets = [new("https://example.com/a.css", "") { BaseUrl = baseUrl }] }, 0));
+
     [Fact]
     public void LinkedStylesheetCountCharacterUrlAndUtf8WireLimitsAreExact()
     {
@@ -754,7 +762,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(39, RendererProtocol.Version);
+        Assert.Equal(40, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -864,7 +872,8 @@ public sealed class ProtocolTests
             ReuseDocument = true,
             CommittedDocumentId = Request.DocumentId,
             ScrollY = 48,
-            Stylesheets = [new("https://example.com/a.css", "p{content:\"café <&>\"}")]
+            Stylesheets = [new("https://example.com/a.css", "p{content:\"café <&>\"}")
+                { BaseUrl = "https://example.com/assets/a.css" }]
         };
         await writer.WriteAsync(input, cancellationToken: Cancellation);
         var pixels = new byte[] { 1, 2, 3, 255, 4, 5, 6, 255 };
@@ -902,6 +911,7 @@ public sealed class ProtocolTests
         Assert.True(request.ExecuteInlineScripts); Assert.True(request.ReuseDocument);
         Assert.Equal(input.ScrollY, request.ScrollY);
         Assert.Equal(input.Stylesheets, request.Stylesheets);
+        Assert.Equal("https://example.com/assets/a.css", Assert.Single(request.Stylesheets!).BaseUrl);
         var frame = (await reader.ReadAsync(Cancellation))!;
         Assert.Equal(pixels, frame.Pixels); Assert.Equal(reply.Title, frame.Message.Title);
         Assert.Equal(reply.ScrollHeight, frame.Message.ScrollHeight);

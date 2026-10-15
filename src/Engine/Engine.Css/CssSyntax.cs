@@ -106,6 +106,7 @@ public sealed class CssTokenizer
     private readonly CssContext context;
     private int position;
     private int emitted;
+    internal string NormalizedInput => input;
     public IReadOnlyList<CssDiagnostic> Diagnostics => context.Diagnostics.AsReadOnly();
 
     public CssTokenizer(string input, CssOptions? options = null, CancellationToken cancellationToken = default)
@@ -391,10 +392,18 @@ public sealed record CssDeclaration(string Name, IReadOnlyList<CssToken> Value, 
 /// <summary>A syntactic at-rule or qualified rule, before selector/descriptor interpretation.</summary>
 /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#parsing">rules</see>.</remarks>
 public sealed record CssRule(string? AtName, IReadOnlyList<CssToken> Prelude,
-    IReadOnlyList<CssToken>? Block, int Offset);
+    IReadOnlyList<CssToken>? Block, int Offset)
+{
+    /// <summary>Exclusive end offset in the containing stylesheet's normalized UTF-16 text.</summary>
+    public int EndOffset { get; init; }
+}
 /// <summary>Whole-string stylesheet syntax and recoverable diagnostics.</summary>
 /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#parse-stylesheet">stylesheet parsing</see>.</remarks>
-public sealed record CssStyleSheet(IReadOnlyList<CssRule> Rules, IReadOnlyList<CssDiagnostic> Diagnostics);
+public sealed record CssStyleSheet(IReadOnlyList<CssRule> Rules, IReadOnlyList<CssDiagnostic> Diagnostics)
+{
+    /// <summary>The stylesheet's normalized UTF-16 input used by rule offsets.</summary>
+    public string NormalizedText { get; init; } = "";
+}
 /// <summary>Whole-string declaration syntax and recoverable diagnostics.</summary>
 /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#consume-declaration">declaration parsing</see>.</remarks>
 public sealed record CssDeclarationList(IReadOnlyList<CssDeclaration> Declarations, IReadOnlyList<CssDiagnostic> Diagnostics);
@@ -407,12 +416,15 @@ public static class CssSyntax
     public static CssStyleSheet ParseStyleSheet(string input, CssOptions? options = null, CancellationToken cancellationToken = default)
     {
         var context = new CssContext(options, cancellationToken);
-        var tokens = Tokens(input, context);
+        var tokenizer = new CssTokenizer(input, context);
+        var tokens = new List<CssToken>();
+        for (var token = tokenizer.Read(); token.Kind != CssTokenKind.Eof; token = tokenizer.Read()) { tokens.Add(token); }
         var rules = new List<CssRule>();
         var position = 0;
         while (position < tokens.Count)
         {
             context.Cancellation.ThrowIfCancellationRequested();
+            var start = position;
             var first = tokens[position];
             if (first.Kind is CssTokenKind.Whitespace or CssTokenKind.Cdo or CssTokenKind.Cdc) { position++; continue; }
             var at = first.Kind == CssTokenKind.AtKeyword ? first.Value : null;
@@ -440,11 +452,15 @@ public static class CssSyntax
             if (at is not null || terminated)
             {
                 if (rules.Count >= context.Options.MaxRules) { throw new CssLimitException("CSS rule limit exceeded."); }
-                rules.Add(new(at, CssText.Trim(prelude).AsReadOnly(), block?.AsReadOnly(), first.Offset));
+                var last = tokens[Math.Max(start, position - 1)];
+                rules.Add(new(at, CssText.Trim(prelude).AsReadOnly(), block?.AsReadOnly(), first.Offset)
+                {
+                    EndOffset = last.Offset + last.Text.Length
+                });
             }
             else { context.Error("eof-in-qualified-rule", first.Offset, "Qualified rule has no block."); }
         }
-        return new(rules.AsReadOnly(), context.Diagnostics.AsReadOnly());
+        return new(rules.AsReadOnly(), context.Diagnostics.AsReadOnly()) { NormalizedText = tokenizer.NormalizedInput };
     }
 
     public static CssDeclarationList ParseDeclarations(string input, CssOptions? options = null, CancellationToken cancellationToken = default)

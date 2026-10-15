@@ -42,9 +42,11 @@ public sealed class StylesheetTests
         var page = await source.LoadAsync(BrowserUrl.Parse("https://initial.example/start"), Cancellation);
         Assert.Equal(["https://initial.example/start", "https://final.example/dir/page", "https://final.example/dir/a.css",
             "https://final.example/dir/moved.css", "https://final.example/b.css"], requests);
-        Assert.Equal([new("https://final.example/dir/a.css", "p{color:red}"), new PageStylesheet("https://final.example/b.css#x", "body{margin:0}")],
+        Assert.Equal([new PageStylesheet("https://final.example/dir/a.css", "p{color:red}")
+            { BaseUrl = "https://final.example/dir/moved.css" },
+            new PageStylesheet("https://final.example/b.css#x", "body{margin:0}")],
             page.Stylesheets);
-        Assert.Contains(page.Diagnostics, d => d.StartsWith("Linked stylesheets: 2", StringComparison.Ordinal));
+        Assert.Contains(page.Diagnostics, d => d.StartsWith("Stylesheets: 2", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -68,6 +70,149 @@ public sealed class StylesheetTests
         Assert.Equal(["https://example.test/docs/page", "https://example.test/assets/site.css"], requests);
         Assert.Equal(new PageStylesheet("https://example.test/assets/site.css", "body{margin:0}"),
             Assert.Single(page.Stylesheets));
+    }
+
+    [Fact]
+    public async Task BrowserFetchesRecursiveImportsAndRendererExpandsThemAtEachImportPoint()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "https://example.test/page" => Text("<!doctype html><base href='/styles/'>"
+                    + "<style>@import 'embedded.css';p{color:green}</style>"
+                    + "<link rel=stylesheet href='https://example.test/css/root.css'>", "text/html"),
+                "https://example.test/css/root.css" => Redirect("https://example.test/assets/root.css"),
+                "https://example.test/assets/root.css" => Text("@import url('nested.css');p{color:blue}", "text/css"),
+                "https://example.test/styles/embedded.css" => Text("@import url(child.css);p{color:red}", "text/css"),
+                "https://example.test/assets/nested.css" => Text("p{color:yellow}", "text/css"),
+                "https://example.test/styles/child.css" => Text("p{color:purple}", "text/css"),
+                _ => throw new InvalidOperationException($"Unexpected stylesheet request: {requestUrl}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        var document = HtmlParser.Parse(page.Html, cancellationToken: Cancellation).Document;
+        var sources = StaticPageRenderer.CollectStyles(document, null, Cancellation, page.Url, page.Stylesheets);
+
+        Assert.Equal([
+            "https://example.test/css/root.css",
+            "https://example.test/styles/embedded.css",
+            "https://example.test/assets/nested.css",
+            "https://example.test/styles/child.css"
+        ], page.Stylesheets.Select(sheet => sheet.Url));
+        Assert.Equal("https://example.test/assets/root.css", page.Stylesheets[0].BaseUrl);
+        Assert.Equal([
+            "https://example.test/page",
+            "https://example.test/css/root.css",
+            "https://example.test/assets/root.css",
+            "https://example.test/styles/embedded.css",
+            "https://example.test/assets/nested.css",
+            "https://example.test/styles/child.css"
+        ], requests);
+        Assert.Equal(["p{color:purple}", "p{color:red}", "p{color:green}", "p{color:yellow}", "p{color:blue}"],
+            sources.Select(style => style.Text));
+    }
+
+    [Fact]
+    public async Task CrossOriginCssImportFailsBeforeRequest()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/page" => Text("<!doctype html><link rel=stylesheet href=main.css>", "text/html"),
+                "/main.css" => Text("@import 'https://cdn.example/foreign.css';", "text/css"),
+                _ => throw new InvalidOperationException("A cross-origin CSS import was requested.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation));
+
+        Assert.Contains("failed to load", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://example.test/page", "https://example.test/main.css"], requests);
+    }
+
+    [Theory]
+    [InlineData("<style>@import 'file:///etc/passwd';</style>", 1)]
+    [InlineData("<link rel=stylesheet href=main.css>", 2)]
+    public async Task FileCssImportsAreBlockedBeforeRequest(string markup, int expectedRequests)
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/page" => Text($"<!doctype html>{markup}", "text/html"),
+                "/main.css" => Text("@import 'file:///etc/passwd';", "text/css"),
+                _ => throw new InvalidOperationException("A file CSS import was requested.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation));
+
+        Assert.Contains("file URLs are blocked", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(expectedRequests, requests.Count);
+    }
+
+    [Fact]
+    public async Task OpaqueDocumentsCannotUseCssImportsForNetworkRequests()
+    {
+        var requests = 0;
+        using var source = new GetPageSource(new Handler(_ =>
+        {
+            requests++;
+            return Text("p{color:red}", "text/css");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("data:text/html,%3Cstyle%3E%40import%20%27https%3A%2F%2Fexample.test%2Fx.css%27%3B%3C%2Fstyle%3E"),
+                Cancellation));
+
+        Assert.Contains("stylesheet", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, requests);
+    }
+
+    [Theory]
+    [InlineData("@import 'conditional.css' screen;")]
+    [InlineData("@import 'layered.css' layer(theme);")]
+    [InlineData("@import 'conditional.css' supports(display: grid);")]
+    [InlineData("p{color:red}@import 'late.css';")]
+    public async Task UnsupportedCssImportConditionsAndOrderingFailBeforeSubresourceRequests(string css)
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Text($"<!doctype html><style>{css}</style>", "text/html");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation));
+
+        Assert.Contains("CSS @import", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(requests);
+    }
+
+    [Fact]
+    public void RendererRequiresTheBrowserToProvideImportedStylesheets()
+    {
+        var document = HtmlParser.Parse("<!doctype html><style>@import 'missing.css';p{color:red}</style>",
+            cancellationToken: Cancellation).Document;
+
+        var error = Assert.Throws<PageNavigationException>(() =>
+            StaticPageRenderer.CollectStyles(document, cancellationToken: Cancellation,
+                documentUrl: BrowserUrl.Parse("https://example.test/page")));
+
+        Assert.Contains("not provided by the browser", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -240,6 +385,23 @@ public sealed class StylesheetTests
         var ex = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(
             Page("<style>body{margin:0}</style><link rel=stylesheet href=missing.css>", "body{}"), Viewport, Cancellation));
         Assert.Contains("not provided", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LocalAndProcessRenderersExpandImportsFromTheBrowserSnapshot(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath) : new StaticPageRenderer(FontPath, 100000);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"),
+            "<!doctype html><style>@import 'child.css';body{margin:0}</style>", 200, [])
+        {
+            Stylesheets = [new("https://example.test/child.css", "body{background-color:blue}")]
+        };
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+
+        Assert.Equal(Blue, rendered.Frame.Pixels.Span[..4].ToArray());
     }
 
     [Fact]
@@ -478,22 +640,26 @@ public sealed class StylesheetTests
     }
 
     [Fact]
-    public async Task ImportsAndCssUrlsAreNeverFetchedAndFailRenderingVisibly()
+    public async Task ImportsAreFetchedButCssUrlResourcesAreNot()
     {
         var requests = new List<string>();
         using var source = new GetPageSource(new Handler(request =>
         {
             requests.Add(request.RequestUri!.AbsolutePath);
-            return request.RequestUri.AbsolutePath == "/s.css"
-                ? Text("@import 'other.css';body{margin:0;background-image:url(i.png)}", "text/css")
-                : Text("<!doctype html><link rel=stylesheet href=s.css>", "text/html");
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/s.css" => Text("@import 'other.css';body{margin:0;background-image:url(i.png)}", "text/css"),
+                "/other.css" => Text("body{color:red}", "text/css"),
+                _ => Text("<!doctype html><link rel=stylesheet href=s.css>", "text/html")
+            };
         }));
         var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
-        Assert.Equal(["/", "/s.css"], requests);
+        Assert.Equal(["/", "/s.css", "/other.css"], requests);
         using var renderer = new StaticPageRenderer(FontPath, 100000);
         var failure = Assert.ThrowsAny<Exception>(() => renderer.Render(page, Viewport, Cancellation));
+        Assert.Contains("Resolve CSS diagnostics", failure.Message, StringComparison.OrdinalIgnoreCase);
         Assert.True(StaticPageRenderer.IsRenderFailure(failure), failure.ToString());
-        Assert.Equal(["/", "/s.css"], requests);
+        Assert.Equal(["/", "/s.css", "/other.css"], requests);
     }
 
     [Fact]

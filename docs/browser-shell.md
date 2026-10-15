@@ -582,13 +582,14 @@ This is strict per-origin top-level navigation rotation only: there is no site
 computation, cross-site frame isolation, inherited origin selection, browser-wide
 same-origin/CORS/CSP policy or production request authorization.
 
-The shared VisualWeb.PageRendering StaticPageRenderer parses once and collects connected embedded `style` blocks
+The shared VisualWeb.PageRendering StaticPageRenderer collects connected embedded `style` blocks
 and supported linked stylesheets in document (cascade) order, taking style child text. Inline attributes also participate.
-Named stylesheet sets, non-CSS type values, media other than absent/`all`/a single
-`screen` media type, media-query conditions, and CSS imports fail explicitly rather
-than silently producing a partially styled page.
+Leading unconditional `@import` rules using a string or `url()` are expanded at
+their cascade positions, including nested imports. Conditional/layer imports,
+late imports, named stylesheet sets, non-CSS types and media other than absent,
+`all` or a single `screen` media type fail explicitly.
 
-Bounded linked stylesheets are brokered by the browser, never by renderers.
+Bounded linked and imported stylesheets are brokered by the browser, never by renderers.
 `GetPageSource` parses the decoded document with the renderer's exact parser
 options (bounded managed parsing in the browser process, for discovery only),
 then fetches each supported classic `link rel=stylesheet` (tokens ASCII
@@ -597,11 +598,11 @@ using the final response URL as fallback)
 through the same tab-local `ResourceLoader`, sharing the shell session HSTS store,
 before the document is published. Requests keep cookies disabled and the bad-port
 and HSTS checks. HTTP(S) stylesheets must remain same-origin with the final
-document URL across every redirect; cross-origin requests and redirect targets
+document URL across every redirect; this includes imports, and cross-origin requests and redirect targets
 fail before that request is sent. This intentionally rejects cross-origin CSS
 loads that ordinary HTML permits. HTTPS documents also block HTTP stylesheet
 URLs and HTTPS-to-HTTP redirects before the downgraded request is sent. This is
-limited to linked stylesheets, not a general mixed-content policy. HTTP(S)
+applies to linked and imported stylesheets, not a general mixed-content policy. HTTP(S)
 documents can load same-origin HTTP(S) and data URLs; `file:` and opaque `data:`
 documents can load only data URLs. This prevents local/opaque page content from
 using the privileged browser broker to access additional local files or trigger
@@ -612,21 +613,24 @@ absent/empty/`text/css`, `crossorigin`, `integrity`, `referrerpolicy`, the obsol
 `charset` attribute and unsupported schemes fail navigation. The first `<base href>`
 resolves relative stylesheet URLs; invalid, `data:`, and `javascript:` base values
 fall back to the final response URL. Cross-origin destinations remain blocked before
-request, even when introduced by a base URL. Each response
+request, even when introduced by a base URL. Each linked or imported response
 must be 2xx `text/css` (no sniffing or quirks-mode fallback), at most 1 MiB of body bytes and 256 Ki decoded characters.
 Decoding follows the CSS fallback encoding order (BOM, Content-Type charset,
 exact `@charset "…";` prefix with UTF-16 mapped to UTF-8, document encoding).
 A valid leading `@charset` marker is consumed as an encoding signature before
-CSS parsing; unknown labels fail instead of falling through. At most 32 unique URLs, with
-a 1 MiB UTF-8 JSON budget for the whole collection, are published on
-`LoadedPage.Stylesheets` as data only (request URL and decoded text; no headers,
-redirect URL, DOM or capability). Any stylesheet failure fails the whole navigation,
+CSS parsing; unknown labels fail instead of falling through. The browser recursively
+loads unconditional imports from both embedded and linked sources; relative imports
+use the final URL of their containing stylesheet, and cycles are bounded by the
+unique-URL limit. At most 32 unique linked/imported URLs, with a 1 MiB UTF-8 JSON
+budget for the whole collection, are published on `LoadedPage.Stylesheets` as data
+only (request URL, final base URL and decoded text; no headers, DOM or capability).
+Any stylesheet failure fails the whole navigation,
 so the committed document, frame, history and origin are retained and no partial
 document is published. Cross-origin candidates receive only this data, never
 fetch authority. Renderers look up each link's resolved URL and fail
 visibly when a link added or changed by an enabled inline script was not provided.
-`@import`, `url()` resources, fonts, images, CORS/SOP and general mixed-content policy
-for other subresources remain unimplemented; the narrow HTTPS stylesheet downgrade
+Conditional/layer/late `@import`, `url()` resources, fonts, images, CORS/SOP and
+general mixed-content policy for other subresources remain unimplemented; the narrow HTTPS stylesheet downgrade
 guard does not provide those policies. Caching remains unimplemented; unsupported CSS
 still yields diagnostics that fail layout.
 Scripts are inert by default; the explicit

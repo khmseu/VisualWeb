@@ -55,12 +55,17 @@ public sealed record PageFragmentTarget(
     [property: JsonRequired] string Id,
     [property: JsonRequired] double Y);
 
-/// <summary>Browser-fetched, decoded linked stylesheet text keyed by its serialized absolute request URL.</summary>
-/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
-/// "stylesheet"</see>. Data only: no response headers, final redirect URL, DOM node or fetch capability crosses IPC.</remarks>
+/// <summary>Browser-fetched, decoded stylesheet text keyed by its serialized absolute request URL.</summary>
+/// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">imported stylesheets</see>.
+/// Data only: no response headers, DOM node or fetch capability crosses IPC. BaseUrl is the final response URL
+/// used to resolve relative imports and defaults to Url when no redirect occurred.</remarks>
 public sealed record PageStylesheet(
     [property: JsonRequired] string Url,
-    [property: JsonRequired] string Css);
+    [property: JsonRequired] string Css)
+{
+    [JsonRequired]
+    public string BaseUrl { get; init; } = Url;
+}
 
 /// <summary>One bounded visible text fragment and its clipped viewport rectangle for browser-owned selection.</summary>
 public sealed record PageTextTarget(
@@ -490,7 +495,7 @@ public static class RendererProtocol
     private const string FrameKind = "frame";
     private const string ErrorKind = "error";
 
-    public const int Version = 39;
+    public const int Version = 40;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -798,10 +803,13 @@ public static class RendererProtocol
         foreach (var sheet in stylesheets)
         {
             if (sheet is null || string.IsNullOrEmpty(sheet.Url) || sheet.Url.Length > MaxTextCharacters
-                || sheet.Css is null || sheet.Css.Length > MaxStylesheetCharacters)
+                || sheet.Css is null || sheet.Css.Length > MaxStylesheetCharacters
+                || string.IsNullOrEmpty(sheet.BaseUrl) || sheet.BaseUrl.Length > MaxTextCharacters)
             { throw new IpcProtocolException("Invalid linked stylesheet URL or character limit."); }
             if (BrowserUrl.ParseResult(sheet.Url).Url?.Href != sheet.Url)
             { throw new IpcProtocolException("Linked stylesheet URL must be serialized and absolute."); }
+            if (BrowserUrl.ParseResult(sheet.BaseUrl).Url?.Href != sheet.BaseUrl)
+            { throw new IpcProtocolException("Stylesheet base URL must be serialized and absolute."); }
             if (!urls.Add(sheet.Url)) { throw new IpcProtocolException("Linked stylesheet URLs must be unique."); }
         }
         if (JsonSerializer.SerializeToUtf8Bytes(stylesheets).Length > MaxStylesheetBytes)

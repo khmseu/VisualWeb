@@ -23,9 +23,15 @@ Callers supply already-decoded CSS text and stylesheets **in document source
 order**, with explicit origins. The built-in UA sheet is first unless disabled.
 Inline `style` attributes are parsed automatically. Extracting applicable
 `style` elements, ordering linked/embedded sheets, byte decoding and loading
-remain the responsibility of the future Engine.Content pipeline. This API does
+remain the responsibility of the caller and the browser's PageRendering layer. This API does
 not automatically collect document style elements or fetch `link`/`@import`
 URLs. It never executes JavaScript.
+
+The browser's PageRendering layer separately supports recursive, unconditional
+leading `@import` rules from embedded and browser-fetched stylesheets. The
+browser broker fetches those resources; Engine.Css still receives an ordered,
+already-expanded source list and has no network dependency. Conditional imports,
+`layer` modifiers and late imports fail visibly.
 
 The result is a read-only computed snapshot keyed by renderer-local DOM
 elements. It does not observe mutations: call Compute again after a DOM/style
@@ -168,11 +174,13 @@ complete HTML rendering stylesheet (controls keep `display: inline` rather
 than inline-block, and have no UA borders/padding/fonts). List markers, decoration and replaced-element sizing are
 not yet implemented.
 
-Unsupported: custom properties/var()/env(), calculations, cascade layers,
-conditional rules (including media/supports/container), imports/font-face,
+Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
+layers, conditional rules (including media/supports/container), imports/font-face,
 logical properties, positioning, flex/grid/table display, animations,
 transitions, modern color spaces/functions and unlisted properties/units.
-No layout, shaping, painting, used-value resolution or V8 work is performed.
+The browser applies the limited `@import` preprocessing described above before
+passing sources to Engine.Css. No layout, shaping, painting, used-value
+resolution or V8 work is performed here.
 
 ## Limits and cancellation
 

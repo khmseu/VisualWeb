@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v39
+## Private stream protocol v40
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -112,9 +112,9 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Serialized form metadata                                     |                                    1 MiB UTF-8 JSON total |
 | Visible text fragments per frame                             |                                                    32,768 |
 | Serialized text-selection metadata                           |                                    1 MiB UTF-8 JSON total |
-| Linked stylesheets per render request                        | 32 unique absolute serialized URLs (8192 characters each) |
-| Linked stylesheet text                                       |                             256 Ki UTF-16 characters each |
-| Serialized linked stylesheets                                |                                    1 MiB UTF-8 JSON total |
+| Linked/imported stylesheets per render request               | 32 unique absolute serialized URLs (8192 characters each) |
+| Linked/imported stylesheet text                              |                             256 Ki UTF-16 characters each |
+| Serialized stylesheet collection                             |                                    1 MiB UTF-8 JSON total |
 
 The startup `hello` has ID zero and a nullable sandbox profile. Required Linux
 confinement confirms `linux-bwrap-seccomp-cgroup-v2`; required Windows
@@ -143,7 +143,10 @@ units, and valid only on text/search/email/tel/url/password inputs and textarea.
 It counts toward the combined 1 MiB form JSON budget. Only supported LTR scope
 is accepted; the browser appends the companion with value `ltr` immediately after
 the successful control's value. No bidi algorithm or DOM identity crosses IPC.
-Missing fields and old versions fail closed.
+Version 40 adds each stylesheet's required serialized absolute `BaseUrl`, the
+final response URL used to resolve relative `@import` rules. Request `Url`,
+`BaseUrl`, and decoded CSS remain data only; no response headers or fetch capability
+cross IPC. Missing fields and old versions fail closed.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require

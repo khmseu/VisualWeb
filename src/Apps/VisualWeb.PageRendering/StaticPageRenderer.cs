@@ -376,6 +376,31 @@ public sealed class StaticPageRenderer : IPageRenderer
     /// <inheritdoc cref="DiscoverStylesheets(string, BrowserUrl, CancellationToken)"/>
     public static IReadOnlyList<string> DiscoverStylesheets(DomDocument document, BrowserUrl documentUrl,
         CancellationToken cancellationToken = default) => LinkedStylesheets.Discover(document, documentUrl, cancellationToken);
+    /// <summary>Import URLs referenced by supported embedded stylesheets, resolved against the document base URL.</summary>
+    /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">import rules</see>.
+    /// Only unconditional imports before all other rules are supported; conditions and cascade layers fail visibly.</remarks>
+    public static IReadOnlyList<string> DiscoverInlineStylesheetImports(string html, BrowserUrl documentUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var document = HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document;
+        var baseUrl = LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken);
+        var imports = new List<string>();
+        foreach (var element in document.Descendants().OfType<DomElement>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element.LocalName != "style") { continue; }
+            var css = InlineCss(element);
+            imports.AddRange(CssImports.Parse(css, baseUrl, cancellationToken).Imports.Select(url => url.Href));
+        }
+        return imports.AsReadOnly();
+    }
+    /// <summary>Import URLs in one stylesheet, resolved against its final response URL.</summary>
+    /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">import rules</see>.
+    /// Only unconditional imports before all other rules are supported; conditions and cascade layers fail visibly.</remarks>
+    public static IReadOnlyList<string> DiscoverStylesheetImports(string css, BrowserUrl stylesheetUrl,
+        CancellationToken cancellationToken = default) =>
+        CssImports.Parse(LinkedStylesheets.StripCharsetRule(css), stylesheetUrl, cancellationToken)
+            .Imports.Select(url => url.Href).ToArray();
     /// <summary>Embedded and browser-provided linked author sources in document (cascade) order.</summary>
     /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#cascade-order">order of appearance</see>.
     /// Links whose resolved URL is absent from <paramref name="stylesheets"/> (for example, added or changed by scripts)
@@ -387,7 +412,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         ArgumentNullException.ThrowIfNull(document);
         var limits = options ?? new();
         if (limits.MaxStyleSources <= 0 || limits.MaxInputCharacters <= 0) { throw new ArgumentOutOfRangeException(nameof(options)); }
-        var provided = (stylesheets ?? []).ToDictionary(sheet => sheet.Url, sheet => sheet.Css, StringComparer.Ordinal);
+        var provided = (stylesheets ?? []).ToDictionary(sheet => sheet.Url, sheet => sheet, StringComparer.Ordinal);
         var sources = new List<CssStyleSource>();
         long characters = 0;
         var baseUrl = documentUrl is null ? null : LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken);
@@ -401,34 +426,57 @@ public sealed class StaticPageRenderer : IPageRenderer
                     throw new PageNavigationException($"Linked stylesheet {url} was not provided by the browser; "
                         + "renderers never fetch and links added or changed by scripts are unsupported.");
                 }
-                Add(LinkedStylesheets.StripCharsetRule(linked), "Linked");
+                Expand(LinkedStylesheets.StripCharsetRule(linked.Css), BrowserUrl.Parse(linked.BaseUrl),
+                    "Linked", [linked.Url, linked.BaseUrl]);
                 continue;
             }
             if (element.LocalName != "style") { continue; }
-            var type = element.GetAttribute("type");
-            if (type is { Length: > 0 } && !type.Equals("text/css", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new PageNavigationException("Non-CSS style elements are unsupported.");
-            }
-            if (!LinkedStylesheets.SupportsMedia(element.GetAttribute("media")))
-            {
-                throw new PageNavigationException("Embedded stylesheet media must be absent, 'all', or the single 'screen' media type.");
-            }
-            if (element.GetAttribute("title") is { Length: > 0 })
-            {
-                throw new PageNavigationException("Named/alternate stylesheet sets are deferred.");
-            }
-            Add(string.Concat(element.ChildNodes.OfType<DomText>().Select(node => node.Data)), "Embedded");
+            Expand(InlineCss(element), baseUrl, "Embedded", []);
         }
         return sources.AsReadOnly();
 
-        void Add(string css, string kind)
+        void Expand(string css, BrowserUrl? sourceBaseUrl, string kind, HashSet<string> ancestors)
         {
-            if (sources.Count >= limits.MaxStyleSources) { throw new CssLimitException(kind + " stylesheet source limit exceeded."); }
             characters += css.Length;
             if (characters > limits.MaxInputCharacters) { throw new CssLimitException(kind + " stylesheet character limit exceeded."); }
-            sources.Add(new(css));
+            var parsed = CssImports.Parse(css, sourceBaseUrl, cancellationToken);
+            foreach (var import in parsed.Imports)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (ancestors.Contains(import.Href)) { continue; }
+                if (!provided.TryGetValue(import.Href, out var imported))
+                {
+                    throw new PageNavigationException($"Imported stylesheet {import.Href} was not provided by the browser; "
+                        + "renderers never fetch.");
+                }
+                var nextAncestors = new HashSet<string>(ancestors, StringComparer.Ordinal)
+                {
+                    import.Href,
+                    imported.BaseUrl
+                };
+                Expand(LinkedStylesheets.StripCharsetRule(imported.Css), BrowserUrl.Parse(imported.BaseUrl), kind, nextAncestors);
+            }
+            if (sources.Count >= limits.MaxStyleSources) { throw new CssLimitException(kind + " stylesheet source limit exceeded."); }
+            sources.Add(new(parsed.Css));
         }
+    }
+
+    private static string InlineCss(DomElement element)
+    {
+        var type = element.GetAttribute("type");
+        if (type is { Length: > 0 } && !type.Equals("text/css", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PageNavigationException("Non-CSS style elements are unsupported.");
+        }
+        if (!LinkedStylesheets.SupportsMedia(element.GetAttribute("media")))
+        {
+            throw new PageNavigationException("Embedded stylesheet media must be absent, 'all', or the single 'screen' media type.");
+        }
+        if (element.GetAttribute("title") is { Length: > 0 })
+        {
+            throw new PageNavigationException("Named/alternate stylesheet sets are deferred.");
+        }
+        return string.Concat(element.ChildNodes.OfType<DomText>().Select(node => node.Data));
     }
     public static bool IsRenderFailure(Exception exception) => exception is PageNavigationException or HtmlLimitException
         or UnsupportedHtmlException or CssLimitException or UnsupportedCssException or LayoutLimitException or UnsupportedLayoutException

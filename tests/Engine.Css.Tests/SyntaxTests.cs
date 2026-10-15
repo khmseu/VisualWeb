@@ -109,6 +109,15 @@ public sealed class SyntaxTests
     }
 
     [Fact]
+    public void StylesheetRuleOffsetsUseNormalizedInput()
+    {
+        var sheet = CssSyntax.ParseStyleSheet("a{}\r\n@import 'x.css';\r\nb{}", cancellationToken: Cancellation);
+        Assert.Equal("a{}\n@import 'x.css';\nb{}", sheet.NormalizedText);
+        var import = Assert.Single(sheet.Rules, rule => rule.AtName == "import");
+        Assert.Equal("@import 'x.css';", sheet.NormalizedText[import.Offset..import.EndOffset]);
+    }
+
+    [Fact]
     public void DeclarationParsingRespectsNestedSemicolonsAndImportant()
     {
         var result = CssSyntax.ParseDeclarations("COLOR : rgb(1,2,3); font-family:'a;b'; margin:1px ! IMPORTANT; broken; color:blue",
