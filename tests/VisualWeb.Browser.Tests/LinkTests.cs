@@ -655,15 +655,41 @@ public sealed class LinkTests
         Assert.False(tab.IsLoading);
     }
 
+    [Fact]
+    public void LegacyPageSourceFailsClosedForPerHopAuthorization()
+    {
+        var source = new LegacyPageSource("https://outside.example/");
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://secure.example/");
+        controller.Pump(_ => new(100, 50, 1));
+        var committed = controller.Page(tab.Id);
+        var history = tab.History.Current;
+        var link = Assert.Single(committed!.LinkTargets);
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateLink(tab.Id,
+            link.X + link.Width / 2, link.Y + link.Height / 2));
+
+        Assert.Contains("per-hop navigation authorization", error.Message, StringComparison.Ordinal);
+        Assert.Equal(1, source.LoadCount);
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Same(history, tab.History.Current);
+        Assert.False(tab.IsLoading);
+    }
+
     private sealed class LegacyPageSource : IPageSource
     {
+        private readonly string destination;
         internal int LoadCount { get; private set; }
+
+        internal LegacyPageSource(string destination = "http://outside.example/") =>
+            this.destination = destination;
 
         public Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken)
         {
             LoadCount++;
             return Task.FromResult(new LoadedPage(url,
-                "<!doctype html><style>*{margin:0}</style><a href='http://outside.example/'>insecure</a>", 200, []));
+                $"<!doctype html><style>*{{margin:0}}</style><a href='{destination}'>link</a>", 200, []));
         }
 
         public void Dispose() { }
@@ -766,7 +792,7 @@ public sealed class LinkTests
     }
 
     [Fact]
-    public void AuthorizedCrossOriginLinkCannotRedirectToThirdOrigin()
+    public void AuthorizedCrossOriginLinkReauthorizesRedirectToThirdOrigin()
     {
         var requests = new List<Uri>();
         using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
@@ -782,24 +808,25 @@ public sealed class LinkTests
                         """, System.Text.Encoding.UTF8, "text/html")
                 };
             }
-            return new(HttpStatusCode.Found)
-            { Headers = { Location = new Uri("https://third.example/final") } };
+            return request.RequestUri.Host == "outside.example"
+                ? new(HttpStatusCode.Found) { Headers = { Location = new Uri("https://third.example/final") } }
+                : new(HttpStatusCode.OK)
+                { Content = new StringContent("<!doctype html><title>Final</title>", System.Text.Encoding.UTF8, "text/html") };
         })), () => new StaticPageRenderer(FontPath, 100000));
         var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
         var viewport = new PageViewport(100, 50, 1);
         controller.Navigate(tab.Id, "https://source.example/document");
         PumpUntilComplete();
-        var committed = controller.Page(tab.Id);
-        var link = Assert.Single(committed!.LinkTargets);
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
 
         Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
         PumpUntilComplete();
 
-        Assert.Contains("same origin", tab.Error, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(["https://source.example/document", "https://outside.example/next"],
+        Assert.Null(tab.Error);
+        Assert.Equal(["https://source.example/document", "https://outside.example/next", "https://third.example/final"],
             requests.Select(request => request.AbsoluteUri));
-        Assert.Same(committed, controller.Page(tab.Id));
-        Assert.Equal("https://source.example/document", tab.History.Current!.Href);
+        Assert.Equal("https://third.example/final", tab.History.Current!.Href);
+        Assert.Equal("https://third.example", tab.Origin!.Serialize());
 
         void PumpUntilComplete()
         {

@@ -1032,7 +1032,7 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         var link = owner.Page.LinkTargets[owner.FocusedLink];
         return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
-            activateNewTab: activateNewTab);
+            activateNewTab: activateNewTab, authorizeRedirects: true);
     }
     /// <summary>Enter activates submit/reset controls; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
@@ -1343,7 +1343,8 @@ public sealed class BrowserController : IDisposable
         owner.Viewport is { } viewport && (displayedViewport is not { } visible
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
-        SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true)
+        SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true,
+        bool authorizeRedirects = false)
     {
         var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
@@ -1360,7 +1361,11 @@ public sealed class BrowserController : IDisposable
         {
             throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");
         }
-        if (sameOriginRedirectOrigin is null && url.Protocol is "http:" or "https:")
+        if (authorizeRedirects)
+        {
+            _ = content[id].Source.AuthorizeNavigationTarget(url, preventHttpsDowngrade);
+        }
+        else if (sameOriginRedirectOrigin is null && url.Protocol is "http:" or "https:")
         {
             sameOriginRedirectOrigin = content[id].Source.AuthorizeNavigationTarget(url, preventHttpsDowngrade);
         }
@@ -1370,7 +1375,11 @@ public sealed class BrowserController : IDisposable
             var window = Session.Windows.Single(candidate => candidate.Tabs.Any(tab => tab.Id == id));
             target = CreateTab(window.Id, activateNewTab).Id;
         }
-        try { Start(Session.Tab(target), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin); }
+        try
+        {
+            Start(Session.Tab(target), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin,
+                authorizeRedirects: authorizeRedirects);
+        }
         catch
         {
             if (target != id)
@@ -1460,7 +1469,7 @@ public sealed class BrowserController : IDisposable
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
-                activateNewTab: activateNewTab);
+                activateNewTab: activateNewTab, authorizeRedirects: true);
         }
         return false;
     }
@@ -1505,7 +1514,7 @@ public sealed class BrowserController : IDisposable
         Start(tab, tab.History.Current ?? throw new InvalidOperationException("No committed page to reload."), null, true);
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
-        SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0)
+        SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false)
     {
         Limit();
         Cancel(tab.Id);
@@ -1514,7 +1523,12 @@ public sealed class BrowserController : IDisposable
         tab.History.SetCurrentScrollPosition(owner.ScrollY);
         var cancellation = new CancellationTokenSource();
         Task<LoadedPage> task;
-        try { task = content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade, sameOriginRedirectOrigin); }
+        try
+        {
+            task = authorizeRedirects
+                ? content[tab.Id].Source.LoadAuthorizedNavigationAsync(url, cancellation.Token, preventHttpsDowngrade)
+                : content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade, sameOriginRedirectOrigin);
+        }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace,
             restoreScrollY: restoreScrollY));

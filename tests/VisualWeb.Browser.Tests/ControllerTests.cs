@@ -556,6 +556,8 @@ public sealed class ControllerTests
             }
             return LoadAsync(url, cancellationToken, preventHttpsDowngrade);
         }
+        public Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url, CancellationToken cancellationToken,
+            bool preventHttpsDowngrade) => LoadAsync(url, cancellationToken, preventHttpsDowngrade);
         public void Dispose() => Disposed = true;
     }
     internal sealed class Renderer : IPageRenderer

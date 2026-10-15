@@ -504,8 +504,11 @@ upgrade), and block HTTPS form submissions as well because their origin is
 opaque. HTTP(S) documents may submit forms to a cross-origin HTTP(S) action only
 through trusted shell activation; HSTS resolves the effective target before its
 origin is fixed across redirects. Trusted HTTP(S) link activation uses the same
-effective-target authorization, including links from opaque `data:` documents
-to HTTPS. HTTPS and opaque documents continue to reject unupgraded HTTP targets.
+effective-target preflight, then reauthorizes every HSTS-resolved redirect
+through the browser-owned loader, including links from opaque `data:` documents
+to HTTPS. Forms remain fixed to their authorized action origin so query data is
+not forwarded by a redirect. HTTPS and opaque documents continue to reject
+unupgraded HTTP targets.
 Users can still enter an explicit URL in the address bar. These are narrow
 guards, not filesystem sandboxing: locally selected file documents remain
 privileged/trusted content, and there is no general origin/CORS/CSP or local-file
