@@ -62,7 +62,7 @@ that same loader/store (cookies off) before publication and sent to renderers
 only as bounded data; renderers never fetch. Conditional/layer imports fail visibly.
 Final upgraded URLs feed document origins and
 transactional swaps. See [session HSTS](../../../docs/networking.md#session-hsts)
-(official source ID `rfc6797`); persistence/preload/public-suffix policy is deferred.
+(official source ID `rfc6797`); persistence and preload policy remain deferred.
 
 Requires exactly one mode and a trusted `--font` path. Recommended
 `--multiprocess` and legacy `--development-multiprocess` require `--renderer`
