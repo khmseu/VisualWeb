@@ -67,7 +67,69 @@ public sealed class ContentSecurityPolicyNavigationTests
         var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
 
         Assert.Contains(page.Diagnostics, item => item.Contains("img-src", StringComparison.Ordinal));
-        Assert.Contains(page.Diagnostics, item => item.Contains("inline script and style", StringComparison.Ordinal));
+        Assert.Contains(page.Diagnostics, item => item.Contains("inline and external style", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StyleDirectiveBlocksLinkedStylesheetBeforeRequest()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Html("<link rel=stylesheet href=site.css>", "style-src 'none'");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("Content-Security-Policy", error.Message, StringComparison.Ordinal);
+        Assert.Equal(["https://example.test/"], requests);
+    }
+
+    [Fact]
+    public async Task StyleDirectiveAllowsSelfAndChecksImportedDataBeforeLoad()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/" => Html("<link rel=stylesheet href=site.css>", "style-src 'self'"),
+                "/site.css" => Css("@import 'data:text/css,p{color:red}';"),
+                _ => throw new InvalidOperationException("A denied imported stylesheet was requested.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("Content-Security-Policy", error.Message, StringComparison.Ordinal);
+        Assert.Contains("data:text/css", error.Message, StringComparison.Ordinal);
+        Assert.Equal(["https://example.test/", "https://example.test/site.css"], requests);
+    }
+
+    [Fact]
+    public async Task ExactDocumentOriginAllowsLinkedAndImportedStylesheets()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/" => Html("<link rel=stylesheet href=site.css>", "style-src https://example.test"),
+                "/site.css" => Css("@import 'nested.css';"),
+                "/nested.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException("Unexpected stylesheet request.")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Equal(2, page.Stylesheets.Count);
+        Assert.Equal(["https://example.test/", "https://example.test/site.css", "https://example.test/nested.css"], requests);
     }
 
     private static GetPageSource Serving(string html, params string[] policies) =>
@@ -81,6 +143,16 @@ public sealed class ContentSecurityPolicyNavigationTests
         };
         response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/html");
         response.Headers.TryAddWithoutValidation("Content-Security-Policy", policies);
+        return response;
+    }
+
+    private static HttpResponseMessage Css(string body)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, Encoding.UTF8)
+        };
+        response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/css");
         return response;
     }
 

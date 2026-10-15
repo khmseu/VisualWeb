@@ -55,7 +55,9 @@ public interface IPageSource : IDisposable
 /// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions. Any stylesheet
 /// failure fails the whole navigation. Conditional/layer imports, <c>url()</c> resources, fonts, images and CORS are not
 /// fetched. HTTP(S) stylesheet requests are restricted to the final document's fixed origin, including redirects; this
-/// deliberate restriction is not CORS or general request authorization.</remarks>
+/// deliberate restriction is not CORS or general request authorization. A bounded final-response Content Security Policy
+/// additionally rejects inline script/style content and applies style-src/default-src to linked/imported stylesheet
+/// destinations before requests and redirects.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -115,21 +117,22 @@ public sealed class GetPageSource : IPageSource
 
         var decoded = response.DecodeText(sniffed.Encoding);
         var diagnostics = response.Diagnostics.Append(Describe(sniffed)).ToList();
+        ContentSecurityPolicy? policy = null;
         if (response.Headers.TryGetValue("Content-Security-Policy", out var policyFields))
         {
-            var policy = ContentSecurityPolicy.Parse(policyFields, diagnostics);
+            policy = ContentSecurityPolicy.Parse(policyFields, diagnostics);
             StaticPageRenderer.EnforceInlineContentPolicy(decoded.Text, policy.AllowsInlineScript(),
                 policy.AllowsInlineStyle(), cancellationToken);
-            diagnostics.Add("Content-Security-Policy: bounded response policy enforced for inline script and style content.");
+            diagnostics.Add("Content-Security-Policy: bounded response policy enforced for inline and external style content.");
         }
-        var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, diagnostics, cancellationToken)
-            .ConfigureAwait(false);
+        var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, policy, diagnostics,
+            cancellationToken).ConfigureAwait(false);
         return new(response.Url, decoded.Text, response.StatusCode, diagnostics.ToArray())
         { Stylesheets = stylesheets, CharacterEncoding = sniffed.Encoding.Name };
     }
 
     private async Task<PageStylesheet[]> LoadStylesheetsAsync(BrowserUrl documentUrl, string html, WebEncoding documentEncoding,
-        List<string> diagnostics, CancellationToken cancellationToken)
+        ContentSecurityPolicy? policy, List<string> diagnostics, CancellationToken cancellationToken)
     {
         IReadOnlyList<string> urls;
         IReadOnlyList<string> inlineImports;
@@ -160,7 +163,8 @@ public sealed class GetPageSource : IPageSource
         while (pending.TryDequeue(out var url))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var sheet = await LoadStylesheetAsync(url, documentUrl, documentEncoding, cancellationToken).ConfigureAwait(false);
+            var sheet = await LoadStylesheetAsync(url, documentUrl, documentEncoding, policy, cancellationToken)
+                .ConfigureAwait(false);
             sheets.Add(sheet);
             try { RendererProtocol.ValidateStylesheets(sheets); }
             catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
@@ -176,15 +180,26 @@ public sealed class GetPageSource : IPageSource
     }
 
     private async Task<PageStylesheet> LoadStylesheetAsync(BrowserUrl url, BrowserUrl documentUrl, WebEncoding documentEncoding,
-        CancellationToken cancellationToken)
+        ContentSecurityPolicy? policy, CancellationToken cancellationToken)
     {
         var secureDocument = documentUrl.Protocol == "https:";
+        var effectiveUrl = hstsPolicyStore?.Upgrade(url) ?? url;
+        if (policy is not null && !policy.AllowsStyle(effectiveUrl, documentUrl.Origin))
+        {
+            throw new PageNavigationException(
+                $"Content-Security-Policy blocked linked or imported stylesheet {effectiveUrl.Href}.");
+        }
         ResourceResponse response;
         try
         {
             response = url.Protocol is "http:" or "https:"
-                ? await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
-                    .ConfigureAwait(false)
+                ? policy is null
+                    ? await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
+                        .ConfigureAwait(false)
+                    : await loader.LoadAuthorizedNavigationAsync(url,
+                        destination => documentUrl.Origin.IsSameOrigin(destination.Origin)
+                            && policy.AllowsStyle(destination, documentUrl.Origin),
+                        includeCookies: false, cancellationToken, preventHttpsDowngrade: secureDocument).ConfigureAwait(false)
                 : await loader.LoadAsync(url, includeCookies: false, cancellationToken,
                     preventHttpsDowngrade: secureDocument).ConfigureAwait(false);
         }

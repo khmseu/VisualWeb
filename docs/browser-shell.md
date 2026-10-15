@@ -500,9 +500,11 @@ Multiple fields intersect, the first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
 The final response policy rejects inline script elements, style elements and
 style attributes before linked stylesheet requests when an applicable source
-list is present. External stylesheet source enforcement is not wired yet; meta
-policies, report-only mode, nonces, hashes, wildcards, schemes, paths, reporting,
-frames, and the remaining directives are deferred.
+list is present. It authorizes linked stylesheets and CSS imports against
+`style-src` (or `default-src`) before each browser-owned request and redirect;
+the existing stricter same-origin HTTP(S) stylesheet rule remains in force.
+Meta policies, report-only mode, nonces, hashes, wildcards, schemes, paths,
+reporting, frames, and the remaining directives are deferred.
 
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;
 explicit address-bar navigation remains available. This prevents page content
