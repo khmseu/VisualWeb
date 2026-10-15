@@ -598,11 +598,12 @@ using the final response URL as fallback)
 through the same tab-local `ResourceLoader`, sharing the shell session HSTS store,
 before the document is published. Requests keep cookies disabled and the bad-port
 and HSTS checks. HTTP(S) stylesheets must remain same-origin with the final
-document URL across every redirect; this includes imports, and cross-origin requests and redirect targets
-fail before that request is sent. This intentionally rejects cross-origin CSS
+document URL across every redirect; cross-origin requests and redirect targets,
+including imports, fail before the request is sent. This intentionally rejects cross-origin CSS
 loads that ordinary HTML permits. HTTPS documents also block HTTP stylesheet
-URLs and HTTPS-to-HTTP redirects before the downgraded request is sent. This is
-applies to linked and imported stylesheets, not a general mixed-content policy. HTTP(S)
+URLs and HTTPS-to-HTTP redirects before the downgraded request is sent. This
+narrow policy applies to linked and imported stylesheets; it is not a general
+mixed-content policy. HTTP(S)
 documents can load same-origin HTTP(S) and data URLs; `file:` and opaque `data:`
 documents can load only data URLs. This prevents local/opaque page content from
 using the privileged browser broker to access additional local files or trigger
