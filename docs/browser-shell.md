@@ -498,8 +498,9 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 
 Response `Content-Security-Policy` parsing has a bounded header-only foundation
 (spec ID `csp3`). It recognizes `default-src`, `script-src`, and `style-src`
-source lists containing `'none'`, `'self'`, exact HTTP(S) origins, strict nonce
-sources, and SHA-256/384/512 hash sources for inline script/style elements.
+source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
+`data:` scheme source for resources, strict nonce sources, and SHA-256/384/512
+hash sources for inline script/style elements.
 Nonces match exactly; hashes match the exact parsed element text encoded as
 UTF-8; policies intersect. The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
@@ -508,8 +509,8 @@ applicable source list is present; neither authorizes style attributes. The
 policy also authorizes linked stylesheets and CSS imports against
 `style-src` (or `default-src`) before each browser-owned request and redirect;
 the existing stricter same-origin HTTP(S) stylesheet rule remains in force.
-Meta policies, report-only mode, wildcards, schemes, paths, reporting, frames,
-and the remaining directives are deferred.
+Meta policies, report-only mode, wildcards, other scheme sources, paths,
+reporting, frames, and the remaining directives are deferred.
 
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;
 explicit address-bar navigation remains available. This prevents page content

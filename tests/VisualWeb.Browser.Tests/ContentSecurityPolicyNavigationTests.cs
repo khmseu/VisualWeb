@@ -195,6 +195,28 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task ExplicitDataSchemeAllowsDataImportedStylesheet()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/" => Html("<link rel=stylesheet href=site.css>", "style-src 'self' data:"),
+                "/site.css" => Css("@import 'data:text/css,p%7Bcolor%3Ared%7D';"),
+                _ => throw new InvalidOperationException("A data stylesheet unexpectedly used HTTP transport.")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Equal(2, page.Stylesheets.Count);
+        Assert.Equal("p{color:red}", page.Stylesheets[1].Css);
+        Assert.Equal(["https://example.test/", "https://example.test/site.css"], requests);
+    }
+
+    [Fact]
     public async Task ExactDocumentOriginAllowsLinkedAndImportedStylesheets()
     {
         var requests = new List<string>();

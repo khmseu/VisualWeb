@@ -93,6 +93,15 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void DataSchemeSourceAllowsDataStylesheetsButNotNetworkResources()
+    {
+        var policy = ContentSecurityPolicy.Parse(["default-src DATA:"], []);
+
+        Assert.True(policy.AllowsStyle(BrowserUrl.Parse("data:text/css,p%7Bcolor%3Ared%7D"), Document.Origin));
+        Assert.False(policy.AllowsStyle(BrowserUrl.Parse("https://example.test/site.css"), Document.Origin));
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(
@@ -120,6 +129,7 @@ public sealed class ContentSecurityPolicyTests
     [InlineData("script-src https:")]
     [InlineData("script-src 'unsafe-inline'")]
     [InlineData("style-src https://example.test/path")]
+    [InlineData("style-src ftp:")]
     [InlineData("style-src https://user@example.test")]
     [InlineData("style-src 'none' 'self'")]
     public void UnsupportedOrAmbiguousSourcesFailVisibly(string field)

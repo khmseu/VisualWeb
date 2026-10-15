@@ -8,10 +8,11 @@ namespace VisualWeb.Browser;
 /// <remarks>Spec: csp3; <see href="https://www.w3.org/TR/CSP3/#parse-serialized-policy">parse a serialized CSP</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#framework-directive-source-list">source lists</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#match-nonce-to-source-list">nonce matching</see>,
-/// <see href="https://www.w3.org/TR/CSP3/#match-element-to-source-list">element hash matching</see>, and
+/// <see href="https://www.w3.org/TR/CSP3/#match-element-to-source-list">element hash matching</see>,
+/// <see href="https://www.w3.org/TR/CSP3/#scheme-part-match">scheme-source matching</see>, and
 /// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>.
 /// Supports default-src, script-src, and style-src with 'none', 'self', exact HTTP(S) origins, and
-/// strict nonce-source matching, and SHA-256/384/512 hash sources for inline script and style elements.</remarks>
+/// the data: scheme source for resources, strict nonce-source matching, and SHA-256/384/512 hashes for inline elements.</remarks>
 internal sealed class ContentSecurityPolicy
 {
     private const int MaxFields = 16;
@@ -89,7 +90,8 @@ internal sealed class ContentSecurityPolicy
     private static bool Allows(SourceList? sources, BrowserUrl resource, SecurityOrigin documentOrigin) =>
         sources is null
         || sources.Self && documentOrigin.IsSameOrigin(resource.Origin)
-        || sources.Origins.Any(origin => origin.IsSameOrigin(resource.Origin));
+        || sources.Origins.Any(origin => origin.IsSameOrigin(resource.Origin))
+        || sources.Schemes.Contains(resource.Protocol, StringComparer.OrdinalIgnoreCase);
 
     private static Policy ParsePolicy(string field, IList<string> diagnostics)
     {
@@ -121,7 +123,7 @@ internal sealed class ContentSecurityPolicy
     {
         if (tokens.Length > MaxSources)
         { throw new PageNavigationException($"Content-Security-Policy {directive} source count limit ({MaxSources}) exceeded."); }
-        if (tokens.Length == 0) { return new(false, [], [], []); }
+        if (tokens.Length == 0) { return new(false, [], [], [], []); }
         var hasNone = false;
         foreach (var token in tokens)
         {
@@ -131,13 +133,14 @@ internal sealed class ContentSecurityPolicy
         {
             if (tokens.Length != 1)
             { throw new PageNavigationException($"Content-Security-Policy {directive} cannot combine 'none' with other sources."); }
-            return new(false, [], [], []);
+            return new(false, [], [], [], []);
         }
 
         var self = false;
         var origins = new List<SecurityOrigin>();
         var nonces = new List<string>();
         var hashes = new List<HashSource>();
+        var schemes = new List<string>();
         foreach (var token in tokens)
         {
             if (token.StartsWith("'sha256-", StringComparison.OrdinalIgnoreCase)
@@ -160,6 +163,11 @@ internal sealed class ContentSecurityPolicy
                 nonces.Add(nonce);
                 continue;
             }
+            if (token.Equals("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                schemes.Add("data:");
+                continue;
+            }
             if (token.Equals("'self'", StringComparison.OrdinalIgnoreCase))
             {
                 self = true;
@@ -171,11 +179,11 @@ internal sealed class ContentSecurityPolicy
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', or an exact HTTP(S) origin.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'data:', or an exact HTTP(S) origin.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
-        return new(self, origins.ToArray(), nonces.ToArray(), hashes.ToArray());
+        return new(self, origins.ToArray(), nonces.ToArray(), hashes.ToArray(), schemes.ToArray());
     }
 
     private static bool TryParseHashSource(string token, out HashSource hash)
@@ -245,7 +253,7 @@ internal sealed class ContentSecurityPolicy
     }
 
     private readonly record struct HashSource(string Algorithm, string Expected);
-    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces, HashSource[] Hashes);
+    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces, HashSource[] Hashes, string[] Schemes);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives)
     {
         internal SourceList? Directive(string name) =>
