@@ -394,6 +394,29 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         return imports.AsReadOnly();
     }
+    /// <summary>Rejects inline script or style markup disabled by browser-selected response policy.</summary>
+    /// <remarks>Spec: csp3;
+    /// <see href="https://www.w3.org/TR/CSP3/#should-block-inline">should element's inline type behavior be blocked</see>.
+    /// This bounded rendering subset treats script/style elements and style attributes as inline content.</remarks>
+    public static void EnforceInlineContentPolicy(string html, bool allowInlineScripts, bool allowInlineStyles,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(html);
+        if (allowInlineScripts && allowInlineStyles) { return; }
+        var document = HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document;
+        foreach (var element in document.Descendants().OfType<DomElement>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!allowInlineScripts && element.LocalName == "script" && element.GetAttribute("src") is null)
+            {
+                throw new PageNavigationException("Content-Security-Policy blocked an inline script element.");
+            }
+            if (!allowInlineStyles && (element.LocalName == "style" || element.GetAttribute("style") is not null))
+            {
+                throw new PageNavigationException("Content-Security-Policy blocked inline style content.");
+            }
+        }
+    }
     /// <summary>Import URLs in one stylesheet, resolved against its final response URL.</summary>
     /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">import rules</see>.
     /// Only unconditional imports before all other rules are supported; conditions and cascade layers fail visibly.</remarks>

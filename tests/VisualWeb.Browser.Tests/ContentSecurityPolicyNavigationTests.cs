@@ -1,0 +1,99 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using VisualWeb.Core.Url;
+using Xunit;
+
+namespace VisualWeb.Browser.Tests;
+
+public sealed class ContentSecurityPolicyNavigationTests
+{
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task FinalResponsePolicyBlocksInlineScriptBeforeStylesheetRequests()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/start" => Redirect("/page"),
+                "/page" => Html("<script>document.title='blocked'</script><link rel=stylesheet href=site.css>",
+                    "script-src 'self'"),
+                _ => throw new InvalidOperationException("A stylesheet request escaped CSP validation.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/start"), Cancellation));
+
+        Assert.Contains("inline script", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://example.test/start", "https://example.test/page"], requests);
+    }
+
+    [Theory]
+    [InlineData("<style>body{color:red}</style>")]
+    [InlineData("<p style='color:red'>blocked</p>")]
+    [InlineData("<p style>blocked</p>")]
+    public async Task StyleDirectiveBlocksInlineStyleElementsAndAttributes(string markup)
+    {
+        using var source = Serving(markup, "style-src 'self'");
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("inline style", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DefaultDirectiveBlocksBothInlineContentTypes()
+    {
+        using var scripts = Serving("<script></script>", "default-src 'none'");
+        using var styles = Serving("<style></style>", "default-src 'none'");
+
+        await Assert.ThrowsAsync<PageNavigationException>(() =>
+            scripts.LoadAsync(BrowserUrl.Parse("https://example.test/script"), Cancellation));
+        await Assert.ThrowsAsync<PageNavigationException>(() =>
+            styles.LoadAsync(BrowserUrl.Parse("https://example.test/style"), Cancellation));
+    }
+
+    [Fact]
+    public async Task MissingApplicableDirectiveAllowsInlineContentAndPublishesDiagnostics()
+    {
+        using var source = Serving("<script>document.title='allowed'</script>", "style-src 'self'; img-src 'none'");
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Contains(page.Diagnostics, item => item.Contains("img-src", StringComparison.Ordinal));
+        Assert.Contains(page.Diagnostics, item => item.Contains("inline script and style", StringComparison.Ordinal));
+    }
+
+    private static GetPageSource Serving(string html, params string[] policies) =>
+        new(new Handler(_ => Html(html, policies)));
+
+    private static HttpResponseMessage Html(string body, params string[] policies)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("<!doctype html>" + body, Encoding.UTF8)
+        };
+        response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/html");
+        response.Headers.TryAddWithoutValidation("Content-Security-Policy", policies);
+        return response;
+    }
+
+    private static HttpResponseMessage Redirect(string location)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Found);
+        response.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute);
+        return response;
+    }
+
+    private sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(respond(request));
+    }
+}
