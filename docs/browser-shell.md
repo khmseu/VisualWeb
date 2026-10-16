@@ -510,11 +510,14 @@ The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
 Inline script and style elements need a matching nonce or content hash, or
 non-overridden `'unsafe-inline'`, when an applicable source list is present.
-Style attributes are allowed only by non-overridden `'unsafe-inline'`. The
+Style attributes are allowed by non-overridden `'unsafe-inline'` or an
+exact matching hash only when `'unsafe-hashes'` is present; nonces never apply.
+The
 policy also authorizes linked stylesheets and CSS imports against
 `style-src` (or `default-src`) before each browser-owned request and redirect;
 the existing stricter same-origin HTTP(S) stylesheet rule remains in force.
-Meta policies, report-only mode, wildcards, other scheme sources, paths,
+Event-handler and `javascript:` hashes, meta policies, report-only mode,
+wildcards, other scheme sources, paths,
 reporting, frames, and the remaining directives are deferred.
 
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;

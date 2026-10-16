@@ -94,6 +94,23 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task UnsafeHashesAuthorizesOnlyExactStyleAttributeText()
+    {
+        using var source = Serving("<p style='color:red'>allowed</p>",
+            "style-src 'unsafe-hashes' 'sha256-8f935d27GvUutRyY9yWScUMiFUk4WTdZURISiYfPOeQ='");
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Contains("style='color:red'", page.Html, StringComparison.Ordinal);
+
+        using var mismatch = Serving("<p style='color:blue'>blocked</p>",
+            "style-src 'unsafe-hashes' 'sha256-8f935d27GvUutRyY9yWScUMiFUk4WTdZURISiYfPOeQ='");
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            mismatch.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+        Assert.Contains("inline style", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task NonMatchingNonceStillBlocksInlineClassicScript()
     {
         using var source = Serving("<script nonce='YWJk'>document.title='blocked'</script>", "script-src 'nonce-YWJj'");

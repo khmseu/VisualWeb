@@ -50,6 +50,7 @@ internal sealed class ContentSecurityPolicy
     internal bool AllowsInlineStyle(string? nonce) => policies.All(policy => AllowsInlineNonce(policy.Directive("style-src"), nonce));
     internal bool AllowsInlineStyle(string? nonce, string source) => AllowsInline("style-src", nonce, source);
     internal bool AllowsInlineStyleAttribute() => policies.All(policy => AllowsAllInline(policy.Directive("style-src")));
+    internal bool AllowsInlineStyleAttribute(string source) => AllowsInline("style-src", null, source, styleAttribute: true);
     internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.Directive("script-src"), resource, documentOrigin));
     internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin) =>
@@ -61,11 +62,11 @@ internal sealed class ContentSecurityPolicy
     private static bool AllowsAllInline(SourceList? sources) => sources is null
         || sources.UnsafeInline && sources.Nonces.Length == 0 && sources.Hashes.Length == 0;
 
-    private bool AllowsInline(string directiveName, string? nonce, string source)
+    private bool AllowsInline(string directiveName, string? nonce, string source, bool styleAttribute = false)
     {
         ArgumentNullException.ThrowIfNull(source);
         var sourceLists = policies.Select(policy => policy.Directive(directiveName)).ToArray();
-        var algorithms = sourceLists.Where(list => list is not null)
+        var algorithms = sourceLists.Where(list => list is not null && (!styleAttribute || list.UnsafeHashes))
             .SelectMany(list => list!.Hashes)
             .Select(hash => hash.Algorithm)
             .Distinct(StringComparer.Ordinal)
@@ -87,8 +88,10 @@ internal sealed class ContentSecurityPolicy
         }
 
         return sourceLists.All(list => AllowsAllInline(list)
-            || nonce is { Length: > 0 } && list!.Nonces.Contains(nonce, StringComparer.Ordinal)
-            || list!.Hashes.Any(hash => string.Equals(hash.Expected, matchingHashes[hash.Algorithm], StringComparison.Ordinal)));
+            || !styleAttribute && nonce is { Length: > 0 } && list is not null
+                && list.Nonces.Contains(nonce, StringComparer.Ordinal)
+            || list is not null && (!styleAttribute || list.UnsafeHashes)
+                && list.Hashes.Any(hash => string.Equals(hash.Expected, matchingHashes[hash.Algorithm], StringComparison.Ordinal)));
     }
 
     private static bool Allows(SourceList? sources, BrowserUrl resource, SecurityOrigin documentOrigin) =>
@@ -132,7 +135,7 @@ internal sealed class ContentSecurityPolicy
     {
         if (tokens.Length > MaxSources)
         { throw new PageNavigationException($"Content-Security-Policy {directive} source count limit ({MaxSources}) exceeded."); }
-        if (tokens.Length == 0) { return new(false, [], [], [], [], false); }
+        if (tokens.Length == 0) { return new(false, [], [], [], [], false, false); }
         var hasNone = false;
         foreach (var token in tokens)
         {
@@ -142,7 +145,7 @@ internal sealed class ContentSecurityPolicy
         {
             if (tokens.Length != 1)
             { throw new PageNavigationException($"Content-Security-Policy {directive} cannot combine 'none' with other sources."); }
-            return new(false, [], [], [], [], false);
+            return new(false, [], [], [], [], false, false);
         }
 
         var self = false;
@@ -151,6 +154,7 @@ internal sealed class ContentSecurityPolicy
         var hashes = new List<HashSource>();
         var schemes = new List<string>();
         var unsafeInline = false;
+        var unsafeHashes = false;
         foreach (var token in tokens)
         {
             if (token.StartsWith("'sha256-", StringComparison.OrdinalIgnoreCase)
@@ -185,6 +189,11 @@ internal sealed class ContentSecurityPolicy
                 unsafeInline = true;
                 continue;
             }
+            if (token.Equals("'unsafe-hashes'", StringComparison.OrdinalIgnoreCase))
+            {
+                unsafeHashes = true;
+                continue;
+            }
             if (token.Equals("'self'", StringComparison.OrdinalIgnoreCase))
             {
                 self = true;
@@ -196,11 +205,11 @@ internal sealed class ContentSecurityPolicy
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', data:/http:/https:, or an exact HTTP(S) origin.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, or an exact HTTP(S) origin.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
-        return new(self, origins.ToArray(), nonces.ToArray(), hashes.ToArray(), schemes.ToArray(), unsafeInline);
+        return new(self, origins.ToArray(), nonces.ToArray(), hashes.ToArray(), schemes.ToArray(), unsafeInline, unsafeHashes);
     }
 
     private static bool TryParseHashSource(string token, out HashSource hash)
@@ -270,7 +279,8 @@ internal sealed class ContentSecurityPolicy
     }
 
     private readonly record struct HashSource(string Algorithm, string Expected);
-    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces, HashSource[] Hashes, string[] Schemes, bool UnsafeInline);
+    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces, HashSource[] Hashes,
+        string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives)
     {
         internal SourceList? Directive(string name) =>
