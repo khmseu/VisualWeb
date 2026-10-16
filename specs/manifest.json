@@ -312,6 +312,16 @@
       "lastModified": "2026-09-21T06:15:56+00:00"
     },
     {
+      "id": "upgrade-insecure-requests",
+      "title": "Upgrade Insecure Requests",
+      "url": "https://www.w3.org/TR/upgrade-insecure-requests/",
+      "file": "upgrade-insecure-requests.html",
+      "fetchedAt": "2026-10-16T01:54:01.0451297+00:00",
+      "checkedAt": "2026-10-16T01:54:01.0451297+00:00",
+      "eTag": null,
+      "lastModified": "2017-10-02T10:53:57+00:00"
+    },
+    {
       "id": "csp3",
       "title": "Content Security Policy Level 3",
       "url": "https://www.w3.org/TR/CSP3/",

@@ -75,23 +75,28 @@ public sealed class ResourceLoader : IDisposable
         }
 
         BadPortPolicy.ThrowIfBlocked(url);
-        return await LoadCoreAsync(url, null, null, includeCookies, preventHttpsDowngrade, cancellationToken);
+        return await LoadCoreAsync(url, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
     }
 
     /// <summary>Browser-owned HTTP(S) navigation whose effective initial and redirect destinations require authorization.</summary>
     /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
-    /// HSTS and bad-port checks run before <paramref name="authorizeDestination"/> for each destination. A false
-    /// result throws <see cref="ResourceLoadException"/> with <see cref="ResourceError.NavigationDenied"/> before credentials,
-    /// cookies or transport are used for that destination. The callback is not a script-visible policy surface and does not
-    /// implement CORS, CSP, referrers or response tainting.</remarks>
+    /// HSTS and optional <paramref name="rewriteDestination"/> processing run before bad-port checks and
+    /// <paramref name="authorizeDestination"/> for each destination. A rewrite must return an HTTP(S) URL; a false
+    /// authorization result throws <see cref="ResourceLoadException"/> with <see cref="ResourceError.NavigationDenied"/>
+    /// before credentials, cookies or transport are used for that destination. These callbacks are not script-visible
+    /// policy surfaces and do not implement CORS, CSP, referrers or response tainting.</remarks>
+    /// <param name="rewriteDestination">Optional browser-owned rewrite applied after HSTS and before security checks for
+    /// the initial destination and every redirect.</param>
     public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
         Func<BrowserUrl, bool> authorizeDestination, bool includeCookies = false,
-        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false)
+        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(authorizeDestination);
         url = hstsPolicyStore?.Upgrade(url) ?? url;
+        url = RewriteDestination(url, rewriteDestination);
         if (url.Protocol is not ("http:" or "https:"))
         {
             throw new ResourceLoadException(ResourceError.NavigationDenied,
@@ -101,7 +106,8 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceAuthorized(url, authorizeDestination);
-        return await LoadCoreAsync(url, null, authorizeDestination, includeCookies, preventHttpsDowngrade, cancellationToken);
+        return await LoadCoreAsync(url, null, authorizeDestination, includeCookies, preventHttpsDowngrade,
+            rewriteDestination, cancellationToken);
     }
 
     /// <summary>Opt-in restricted GET: loads only HTTP(S) URLs same origin with a fixed HTTP(S) tuple request origin.</summary>
@@ -136,12 +142,12 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
-        return await LoadCoreAsync(url, requestOrigin, null, includeCookies, preventHttpsDowngrade, cancellationToken);
+        return await LoadCoreAsync(url, requestOrigin, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
     }
 
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin,
         Func<BrowserUrl, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
-        CancellationToken cancellationToken)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -153,7 +159,7 @@ public sealed class ResourceLoader : IDisposable
                 "data:" => DataUrlProcessor.Load(url, options.MaxResponseBytes, deadline.Token),
                 "file:" => await LoadFileAsync(url, deadline.Token),
                 "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, authorizeDestination, includeCookies,
-                    preventHttpsDowngrade, deadline.Token),
+                    preventHttpsDowngrade, rewriteDestination, deadline.Token),
                 _ => throw new ResourceLoadException(ResourceError.UnsupportedScheme, "Unsupported resource URL scheme.")
             };
         }
@@ -187,7 +193,7 @@ public sealed class ResourceLoader : IDisposable
 
     private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin,
         Func<BrowserUrl, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
-        CancellationToken token)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token)
     {
         var url = initial;
         var diagnostics = new List<string>();
@@ -241,6 +247,7 @@ public sealed class ResourceLoader : IDisposable
                 }
 
                 next = hstsPolicyStore?.Upgrade(next) ?? next;
+                next = RewriteDestination(next, rewriteDestination);
                 if (preventHttpsDowngrade && url.Protocol == "https:" && next.Protocol == "http:")
                 {
                     throw InsecureTransport();
@@ -302,6 +309,19 @@ public sealed class ResourceLoader : IDisposable
 
             return new(url, status, redirects > 0, headers, mime, body, diagnostics);
         }
+    }
+
+    private static BrowserUrl RewriteDestination(BrowserUrl url, Func<BrowserUrl, BrowserUrl>? rewriteDestination)
+    {
+        if (rewriteDestination is null) { return url; }
+
+        var rewritten = rewriteDestination(url);
+        if (rewritten is null || rewritten.Protocol is not ("http:" or "https:"))
+        {
+            throw new ResourceLoadException(ResourceError.NavigationDenied,
+                "Browser-owned destination rewriting must return an HTTP(S) URL.");
+        }
+        return rewritten;
     }
 
     private async Task<ResourceResponse> LoadFileAsync(BrowserUrl url, CancellationToken token)

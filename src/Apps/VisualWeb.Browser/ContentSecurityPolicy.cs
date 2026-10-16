@@ -11,9 +11,12 @@ namespace VisualWeb.Browser;
 /// <see href="https://www.w3.org/TR/CSP3/#match-element-to-source-list">element hash matching</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#scheme-part-match">scheme-source matching</see>, and
 /// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>, and
-/// <see href="https://www.w3.org/TR/CSP3/#directive-style-src-elem">style-src-elem</see>.
+/// <see href="https://www.w3.org/TR/CSP3/#directive-style-src-elem">style-src-elem</see>; upgrade-insecure-requests
+/// follows <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>
+/// for browser-brokered stylesheets only (local source ID <c>upgrade-insecure-requests</c>).
 /// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, and style-src-attr with 'none', 'self', exact HTTP(S) origins,
-/// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), strict nonce-source
+/// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), the valueless
+/// upgrade-insecure-requests directive, strict nonce-source
 /// matching, SHA-256/384/512 inline-element hashes, and 'unsafe-inline' when not overridden by a nonce or hash.</remarks>
 internal sealed class ContentSecurityPolicy
 {
@@ -25,6 +28,7 @@ internal sealed class ContentSecurityPolicy
     private readonly Policy[] policies;
 
     private ContentSecurityPolicy(Policy[] policies) => this.policies = policies;
+    internal bool UpgradesInsecureRequests => policies.Any(policy => policy.UpgradesInsecureRequests);
 
     internal static ContentSecurityPolicy Parse(IReadOnlyList<string> fields, IList<string> diagnostics)
     {
@@ -56,6 +60,8 @@ internal sealed class ContentSecurityPolicy
         policies.All(policy => Allows(policy.ScriptElementDirective(), resource, documentOrigin));
     internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.StyleElementDirective(), resource, documentOrigin));
+    internal BrowserUrl UpgradeStyleUrl(BrowserUrl url) =>
+        UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
 
     private static bool AllowsInlineNonce(SourceList? sources, string? nonce) => AllowsAllInline(sources)
         || nonce is { Length: > 0 } && sources!.Nonces.Contains(nonce, StringComparer.Ordinal);
@@ -103,18 +109,59 @@ internal sealed class ContentSecurityPolicy
 
     private static bool Allows(SourceList? sources, BrowserUrl resource, SecurityOrigin documentOrigin) =>
         sources is null
-        || sources.Self && documentOrigin.IsSameOrigin(resource.Origin)
-        || sources.Origins.Any(origin => origin.IsSameOrigin(resource.Origin))
+        || sources.Self && SelfMatches(documentOrigin, resource.Origin)
+        || sources.Origins.Any(origin => OriginSourceMatches(origin, resource.Origin))
         || sources.Schemes.Any(scheme => SchemeMatches(scheme, resource.Protocol));
+
+    private static bool SelfMatches(SecurityOrigin origin, SecurityOrigin resource) =>
+        origin.IsSameOrigin(resource)
+        || !origin.IsOpaque && !resource.IsOpaque
+            && string.Equals(origin.Host, resource.Host, StringComparison.Ordinal)
+            && (origin.Port == resource.Port
+                || origin.Port == DefaultPort(origin.Scheme!) && resource.Port == DefaultPort(resource.Scheme!))
+            && SchemePartMatches(origin.Scheme!, resource.Scheme!);
+
+    private static bool OriginSourceMatches(SecurityOrigin source, SecurityOrigin resource) =>
+        !source.IsOpaque && !resource.IsOpaque
+        && string.Equals(source.Host, resource.Host, StringComparison.Ordinal)
+        && SchemePartMatches(source.Scheme!, resource.Scheme!)
+        && (source.Port == resource.Port
+            || source.Port == DefaultPort(source.Scheme!) && resource.Port == DefaultPort(resource.Scheme!));
 
     private static bool SchemeMatches(string sourceScheme, string resourceScheme) =>
         sourceScheme.Equals(resourceScheme, StringComparison.OrdinalIgnoreCase)
         || sourceScheme.Equals("http:", StringComparison.OrdinalIgnoreCase)
             && resourceScheme.Equals("https:", StringComparison.OrdinalIgnoreCase);
 
+    private static bool SchemePartMatches(string sourceScheme, string resourceScheme) =>
+        sourceScheme.Equals(resourceScheme, StringComparison.OrdinalIgnoreCase)
+        || sourceScheme.Equals("http", StringComparison.OrdinalIgnoreCase)
+            && resourceScheme.Equals("https", StringComparison.OrdinalIgnoreCase);
+
+    private static int DefaultPort(string scheme) => scheme switch
+    {
+        "http" => 80,
+        "https" => 443,
+        _ => 0,
+    };
+
+    private static BrowserUrl UpgradeHttpUrl(BrowserUrl url)
+    {
+        var credentials = url.Username.Length == 0 && url.Password.Length == 0 ? ""
+            : url.Username + (url.Password.Length == 0 ? "" : ":" + url.Password) + "@";
+        var port = url.Port.Length == 0 ? "" : ":" + url.Port;
+        var fragmentAt = url.Href.IndexOf('#');
+        var queryAt = url.Href.IndexOf('?');
+        var search = url.Search.Length != 0 ? url.Search
+            : queryAt >= 0 && (fragmentAt < 0 || queryAt < fragmentAt) ? "?" : "";
+        var hash = url.Hash.Length != 0 ? url.Hash : fragmentAt >= 0 ? "#" : "";
+        return BrowserUrl.Parse($"https://{credentials}{url.Hostname}{port}{url.Pathname}{search}{hash}");
+    }
+
     private static Policy ParsePolicy(string field, IList<string> diagnostics)
     {
         var directives = new Dictionary<string, SourceList>(StringComparer.OrdinalIgnoreCase);
+        var upgradesInsecureRequests = false;
         var serialized = field.Split(';');
         if (serialized.Length > MaxDirectives)
         { throw new PageNavigationException($"Content-Security-Policy directive count limit ({MaxDirectives}) exceeded."); }
@@ -123,6 +170,15 @@ internal sealed class ContentSecurityPolicy
             var parts = item.Split(AsciiWhitespace, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0) { continue; }
             var name = parts[0].ToLowerInvariant();
+            if (name == "upgrade-insecure-requests")
+            {
+                if (upgradesInsecureRequests)
+                {
+                    diagnostics.Add("Duplicate Content-Security-Policy directive 'upgrade-insecure-requests' was ignored after its first occurrence.");
+                }
+                upgradesInsecureRequests = true;
+                continue;
+            }
             if (name is not ("default-src" or "script-src" or "script-src-elem" or "style-src" or "style-src-elem" or "style-src-attr"))
             {
                 diagnostics.Add($"Content-Security-Policy directive '{parts[0]}' is unsupported and was ignored.");
@@ -135,7 +191,7 @@ internal sealed class ContentSecurityPolicy
             }
             directives.Add(name, ParseSources(name, parts.AsSpan(1)));
         }
-        return new(directives);
+        return new(directives, upgradesInsecureRequests);
     }
 
     private static SourceList ParseSources(string directive, ReadOnlySpan<string> tokens)
@@ -288,8 +344,9 @@ internal sealed class ContentSecurityPolicy
     private readonly record struct HashSource(string Algorithm, string Expected);
     private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces, HashSource[] Hashes,
         string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
-    private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives)
+    private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives, bool upgradesInsecureRequests)
     {
+        internal bool UpgradesInsecureRequests => upgradesInsecureRequests;
         internal SourceList? Directive(string name) =>
             directives.GetValueOrDefault(name) ?? directives.GetValueOrDefault("default-src");
 

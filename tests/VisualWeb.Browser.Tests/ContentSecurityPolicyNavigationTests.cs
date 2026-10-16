@@ -283,6 +283,85 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task UpgradeInsecureRequestsUpgradesStylesheetAndImportRedirectsBeforeTransport()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "http://example.test:8080/" => Html("<link rel=stylesheet href=site.css>",
+                    "upgrade-insecure-requests; style-src 'self'"),
+                "https://example.test:8080/site.css" => Redirect("http://example.test:8080/final.css"),
+                "https://example.test:8080/final.css" => Css("@import 'http://example.test:8080/nested.css';"),
+                "https://example.test:8080/nested.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException($"Unexpected request: {requestUrl}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("http://example.test:8080/"), Cancellation);
+
+        Assert.Equal(
+            [
+                "http://example.test:8080/",
+                "https://example.test:8080/site.css",
+                "https://example.test:8080/final.css",
+                "https://example.test:8080/nested.css"
+            ],
+            requests);
+        Assert.Equal("https://example.test:8080/final.css", page.Stylesheets[0].BaseUrl);
+        Assert.Equal("p{color:red}", page.Stylesheets[1].Css);
+    }
+
+    [Fact]
+    public async Task StylesheetUrlsRemainHttpWithoutUpgradeInsecureRequests()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "http://example.test/" => Html("<link rel=stylesheet href=site.css>", "style-src 'self'"),
+                "http://example.test/site.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException($"Unexpected request: {requestUrl}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("http://example.test/"), Cancellation);
+
+        Assert.Single(page.Stylesheets);
+        Assert.Equal(["http://example.test/", "http://example.test/site.css"], requests);
+    }
+
+    [Fact]
+    public async Task UpgradeInsecureRequestsDoesNotAuthorizeCrossOriginStylesheetRedirects()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "http://example.test/" => Html("<link rel=stylesheet href=site.css>",
+                    "upgrade-insecure-requests; style-src 'self'"),
+                "https://example.test/site.css" => Redirect("http://outside.test/final.css"),
+                _ => throw new InvalidOperationException($"Unexpected request: {requestUrl}")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("http://example.test/"), Cancellation));
+
+        Assert.Contains("failed to load", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["http://example.test/", "https://example.test/site.css"], requests);
+    }
+
+    [Fact]
     public async Task ExactDocumentOriginAllowsLinkedAndImportedStylesheets()
     {
         var requests = new List<string>();

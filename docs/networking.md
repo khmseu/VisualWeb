@@ -139,12 +139,13 @@ with a visible page error in the browser. There is no CLI flag or fallback to
 bypass it. It is not CORS, CSP, mixed-content or safe-browsing enforcement.
 
 `LoadAuthorizedNavigationAsync` is an HTTP(S)-only browser-side primitive for
-brokered top-level navigation. It resolves HSTS and checks bad ports before
-calling a browser-owned destination authorizer for the initial URL and each
-redirect. A denied destination fails with `NavigationDenied` before URL
-credentials, cookies or transport are used for that destination. The callback
-is never exposed to renderers or page script; it is not CORS, CSP, referrer
-policy, response tainting or a general Fetch implementation.
+brokered loads. It resolves HSTS, applies any optional browser-owned URL rewrite,
+and checks bad ports before calling a browser-owned destination authorizer for
+the initial URL and each redirect. A denied destination fails with
+`NavigationDenied` before URL credentials, cookies or transport are used for
+that destination. The callbacks are never exposed to renderers or page script;
+they are not CORS, CSP, referrer policy, response tainting or a general Fetch
+implementation.
 
 System.Uri is only a transport/path adapter after WHATWG parsing, not the URL
 parser. An injected handler is owned by the loader. Built-in SocketsHttpHandler

@@ -201,6 +201,33 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void UpgradeInsecureRequestsRewritesOnlyHttpStylesheetUrlsAndPreservesComponents()
+    {
+        var policy = ContentSecurityPolicy.Parse(
+            ["upgrade-insecure-requests; style-src 'self'"], []);
+        var insecure = BrowserUrl.Parse("http://example.test:8080/site.css?theme=dark#section");
+        var secure = BrowserUrl.Parse("https://example.test:8080/site.css?theme=dark#section");
+        var data = BrowserUrl.Parse("data:text/css,p%7Bcolor%3Ared%7D");
+
+        Assert.True(policy.UpgradesInsecureRequests);
+        Assert.Equal(secure.Href, policy.UpgradeStyleUrl(insecure).Href);
+        Assert.Same(secure, policy.UpgradeStyleUrl(secure));
+        Assert.Same(data, policy.UpgradeStyleUrl(data));
+        Assert.True(policy.AllowsStyle(secure, BrowserUrl.Parse("http://example.test:8080/").Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["style-src 'self'"], []).UpgradesInsecureRequests);
+    }
+
+    [Fact]
+    public void DuplicateUpgradeInsecureRequestsDirectiveIsDiagnosed()
+    {
+        var diagnostics = new List<string>();
+        var policy = ContentSecurityPolicy.Parse(["upgrade-insecure-requests; UPGRADE-INSECURE-REQUESTS"], diagnostics);
+
+        Assert.True(policy.UpgradesInsecureRequests);
+        Assert.Contains(diagnostics, item => item.Contains("Duplicate", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(

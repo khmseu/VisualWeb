@@ -514,6 +514,11 @@ non-overridden `'unsafe-inline'`, when an applicable source list is present.
 falling back through `style-src` to `default-src`. `style-src-attr`
 independently governs style attributes with the same fallback; matching hashes
 require `'unsafe-hashes'`. Nonces never apply to style attributes.
+The valueless `upgrade-insecure-requests` directive (source ID
+`upgrade-insecure-requests`) rewrites HTTP linked/imported stylesheet URLs to
+HTTPS before CSP, fixed-origin and bad-port checks, including each redirect;
+non-default ports and URL components are preserved. This browser-brokered
+stylesheet subset does not upgrade top-level navigation or other resource types.
 `script-src-elem` governs script checks with fallback through `script-src` to
 `default-src`; external script loading itself remains deferred. The policy
 checks linked stylesheets and CSS imports against the effective

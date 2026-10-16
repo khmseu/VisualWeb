@@ -104,6 +104,55 @@ public sealed class AuthorizedNavigationLoadTests
         Assert.Equal(1, calls);
     }
 
+    [Fact]
+    public async Task RewriteRunsAfterHstsAndBeforeAuthorizationForInitialAndRedirectDestinations()
+    {
+        var authorized = new List<string>();
+        var requests = new List<string>();
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return requests.Count == 1
+                ? Redirect("http://example.test/final")
+                : Text("ok");
+        }));
+
+        var response = await loader.LoadAuthorizedNavigationAsync(
+            BrowserUrl.Parse("http://example.test/start"),
+            url => { authorized.Add(url.Href); return true; },
+            cancellationToken: Token,
+            rewriteDestination: url => url.Protocol == "http:"
+                ? BrowserUrl.Parse("https://" + url.Href["http://".Length..])
+                : url);
+
+        Assert.Equal(["https://example.test/start", "https://example.test/final"], authorized);
+        Assert.Equal(authorized, requests);
+        Assert.Equal("https://example.test/final", response.Url.Href);
+    }
+
+    [Fact]
+    public async Task RewriteCannotReturnANonHttpDestination()
+    {
+        var authorized = 0;
+        var requests = 0;
+        using var loader = new ResourceLoader(handler: new Handler(_ =>
+        {
+            requests++;
+            return Text("unexpected");
+        }));
+
+        var error = await Assert.ThrowsAsync<ResourceLoadException>(() =>
+            loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("http://example.test/"), _ =>
+            {
+                authorized++;
+                return true;
+            }, cancellationToken: Token, rewriteDestination: _ => BrowserUrl.Parse("data:text/plain,denied")));
+
+        Assert.Equal(ResourceError.NavigationDenied, error.Error);
+        Assert.Equal(0, authorized);
+        Assert.Equal(0, requests);
+    }
+
     [Theory]
     [InlineData("data:text/plain,blocked")]
     [InlineData("file:///tmp/blocked")]

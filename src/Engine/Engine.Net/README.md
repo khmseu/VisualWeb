@@ -15,10 +15,11 @@ checked before the first request and every redirect hop. It throws
 `ResourceError.SameOriginDenied` otherwise. It is a loader primitive with no CORS,
 Origin header or script binding, and it is not browser-wide enforcement.
 `LoadAuthorizedNavigationAsync` is an HTTP(S)-only browser primitive that invokes
-a browser-owned destination authorizer after HSTS and bad-port checks for the
-initial URL and every redirect, before credentials, cookies or transport for that
-destination. Denials throw `ResourceError.NavigationDenied`; the callback is not
-exposed to page script and is not CORS, CSP or a general origin policy.
+a browser-owned destination authorizer after HSTS and optional caller-supplied URL
+rewriting, then bad-port checks, for the initial URL and every redirect, before
+credentials, cookies or transport for that destination. Denials throw
+`ResourceError.NavigationDenied`; callbacks are not exposed to page script and do
+not provide CORS, CSP or a general origin policy.
 
 All three entry points block Fetch bad ports (the 83-port official table) for HTTP(S)
 URLs and every redirect target before transport or cookie work, throwing

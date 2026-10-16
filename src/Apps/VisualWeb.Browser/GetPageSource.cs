@@ -56,8 +56,11 @@ public interface IPageSource : IDisposable
 /// failure fails the whole navigation. Conditional/layer imports, <c>url()</c> resources, fonts, images and CORS are not
 /// fetched. HTTP(S) stylesheet requests are restricted to the final document's fixed origin, including redirects; this
 /// deliberate restriction is not CORS or general request authorization. A bounded final-response Content Security Policy
-/// additionally rejects inline script/style content and applies style-src/default-src to linked/imported stylesheet
-/// destinations before requests and redirects.</remarks>
+/// additionally rejects inline script/style content, applies style-src-elem/style-src/default-src to linked/imported
+/// stylesheet destinations before requests and redirects, and upgrades insecure stylesheet URLs when the response policy
+/// includes <c>upgrade-insecure-requests</c> (spec ID upgrade-insecure-requests;
+/// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>). That directive
+/// is not applied to top-level navigation.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -124,6 +127,10 @@ public sealed class GetPageSource : IPageSource
             StaticPageRenderer.EnforceInlineContentPolicy(decoded.Text, policy.AllowsInlineScript,
                 policy.AllowsInlineStyle, policy.AllowsInlineStyleAttribute, cancellationToken);
             diagnostics.Add("Content-Security-Policy: bounded response policy enforced for inline and external style content.");
+            if (policy.UpgradesInsecureRequests)
+            {
+                diagnostics.Add("Content-Security-Policy upgrade-insecure-requests applies to browser-brokered stylesheet requests only; page navigation is unchanged.");
+            }
         }
         var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, policy, diagnostics,
             cancellationToken).ConfigureAwait(false);
@@ -183,12 +190,19 @@ public sealed class GetPageSource : IPageSource
         ContentSecurityPolicy? policy, CancellationToken cancellationToken)
     {
         var secureDocument = documentUrl.Protocol == "https:";
-        var effectiveUrl = hstsPolicyStore?.Upgrade(url) ?? url;
+        var hstsUrl = hstsPolicyStore?.Upgrade(url) ?? url;
+        var effectiveUrl = policy?.UpgradeStyleUrl(hstsUrl) ?? hstsUrl;
         if (policy is not null && !policy.AllowsStyle(effectiveUrl, documentUrl.Origin))
         {
             throw new PageNavigationException(
                 $"Content-Security-Policy blocked linked or imported stylesheet {effectiveUrl.Href}.");
         }
+        var sameOriginAllowed = documentUrl.Origin.IsSameOrigin(hstsUrl.Origin)
+            || policy?.UpgradesInsecureRequests == true
+                && hstsUrl.Protocol == "http:"
+                && effectiveUrl.Protocol == "https:"
+                && (documentUrl.Origin.IsSameOrigin(url.Origin)
+                    || documentUrl.Origin.IsSameOrigin(effectiveUrl.Origin));
         ResourceResponse response;
         try
         {
@@ -197,9 +211,10 @@ public sealed class GetPageSource : IPageSource
                     ? await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
                         .ConfigureAwait(false)
                     : await loader.LoadAuthorizedNavigationAsync(url,
-                        destination => documentUrl.Origin.IsSameOrigin(destination.Origin)
+                        destination => sameOriginAllowed && effectiveUrl.Origin.IsSameOrigin(destination.Origin)
                             && policy.AllowsStyle(destination, documentUrl.Origin),
-                        includeCookies: false, cancellationToken, preventHttpsDowngrade: secureDocument).ConfigureAwait(false)
+                        includeCookies: false, cancellationToken, preventHttpsDowngrade: secureDocument,
+                        rewriteDestination: policy.UpgradeStyleUrl).ConfigureAwait(false)
                 : await loader.LoadAsync(url, includeCookies: false, cancellationToken,
                     preventHttpsDowngrade: secureDocument).ConfigureAwait(false);
         }
