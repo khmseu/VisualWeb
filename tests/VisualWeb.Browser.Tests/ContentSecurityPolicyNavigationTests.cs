@@ -474,6 +474,24 @@ public sealed class ContentSecurityPolicyNavigationTests
         Assert.Equal(["https://example.test/page", "https://example.test/assets/site.css"], requests);
     }
 
+    [Fact]
+    public async Task BaseUriAllowsWildcardSubdomainButNotTheApexHost()
+    {
+        using var subdomain = Serving("<base href='https://cdn.example.test/assets/'>",
+            "base-uri https://*.example.test");
+
+        var subdomainPage = await subdomain.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+
+        Assert.Equal("https://cdn.example.test/assets/", subdomainPage.BaseUrl?.Href);
+
+        using var apex = Serving("<base href='https://example.test/assets/'>",
+            "base-uri https://*.example.test");
+        var apexPage = await apex.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+
+        Assert.Equal("https://example.test/page", apexPage.BaseUrl?.Href);
+        Assert.Contains(apexPage.Diagnostics, item => item.Contains("base-uri blocked", StringComparison.Ordinal));
+    }
+
     private static GetPageSource Serving(string html, params string[] policies) =>
         new(new Handler(_ => Html(html, policies)));
 

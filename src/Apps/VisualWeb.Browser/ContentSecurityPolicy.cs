@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using VisualWeb.Core.Url;
@@ -17,7 +18,7 @@ namespace VisualWeb.Browser;
 /// follows <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>
 /// for browser-brokered stylesheets only (local source ID <c>upgrade-insecure-requests</c>).
 /// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, style-src-attr, form-action,
-/// and base-uri with 'none', 'self', exact HTTP(S) origins,
+/// and base-uri with 'none', 'self', exact HTTP(S) origins, HTTP(S) wildcard subdomain hosts,
 /// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), the valueless
 /// upgrade-insecure-requests directive, strict nonce-source
 /// matching, SHA-256/384/512 inline-element hashes, and 'unsafe-inline' when not overridden by a nonce or hash.</remarks>
@@ -120,6 +121,7 @@ internal sealed class ContentSecurityPolicy
         sources is null
         || sources.Self && SelfMatches(documentOrigin, resource.Origin)
         || sources.Origins.Any(origin => OriginSourceMatches(origin, resource.Origin))
+        || sources.Hosts.Any(host => HostSourceMatches(host, resource.Origin, documentOrigin))
         || sources.Schemes.Any(scheme => SchemeMatches(scheme, resource.Protocol));
 
     private static bool SelfMatches(SecurityOrigin origin, SecurityOrigin resource) =>
@@ -136,6 +138,25 @@ internal sealed class ContentSecurityPolicy
         && SchemePartMatches(source.Scheme!, resource.Scheme!)
         && (source.Port == resource.Port
             || source.Port == DefaultPort(source.Scheme!) && resource.Port == DefaultPort(resource.Scheme!));
+
+    private static bool HostSourceMatches(HostSource source, SecurityOrigin resource, SecurityOrigin documentOrigin)
+    {
+        if (resource.IsOpaque || resource.Host is null || IPAddress.TryParse(resource.Host, out _)
+            || resource.Port != DefaultPort(resource.Scheme!))
+        {
+            return false;
+        }
+
+        var scheme = source.Scheme ?? documentOrigin.Scheme;
+        if (scheme is null || !SchemePartMatches(scheme, resource.Scheme!))
+        {
+            return false;
+        }
+
+        return source.Subdomains
+            ? resource.Host.EndsWith("." + source.Host, StringComparison.Ordinal)
+            : string.Equals(source.Host, resource.Host, StringComparison.Ordinal);
+    }
 
     private static bool SchemeMatches(string sourceScheme, string resourceScheme) =>
         sourceScheme.Equals(resourceScheme, StringComparison.OrdinalIgnoreCase)
@@ -208,7 +229,7 @@ internal sealed class ContentSecurityPolicy
     {
         if (tokens.Length > MaxSources)
         { throw new PageNavigationException($"Content-Security-Policy {directive} source count limit ({MaxSources}) exceeded."); }
-        if (tokens.Length == 0) { return new(false, [], [], [], [], false, false); }
+        if (tokens.Length == 0) { return new(false, [], [], [], [], [], false, false); }
         var hasNone = false;
         foreach (var token in tokens)
         {
@@ -218,11 +239,12 @@ internal sealed class ContentSecurityPolicy
         {
             if (tokens.Length != 1)
             { throw new PageNavigationException($"Content-Security-Policy {directive} cannot combine 'none' with other sources."); }
-            return new(false, [], [], [], [], false, false);
+            return new(false, [], [], [], [], [], false, false);
         }
 
         var self = false;
         var origins = new List<SecurityOrigin>();
+        var hosts = new List<HostSource>();
         var nonces = new List<string>();
         var hashes = new List<HashSource>();
         var schemes = new List<string>();
@@ -272,17 +294,73 @@ internal sealed class ContentSecurityPolicy
                 self = true;
                 continue;
             }
+            if (TryParseWildcardHostSource(token, out var hostSource))
+            {
+                hosts.Add(hostSource);
+                continue;
+            }
             var parsed = BrowserUrl.ParseResult(token).Url;
             if (parsed is null || parsed.Protocol is not ("http:" or "https:")
                 || parsed.Username.Length != 0 || parsed.Password.Length != 0
+                || parsed.Hostname.Contains('*')
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, or an exact HTTP(S) origin.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or an HTTP(S) wildcard subdomain host without a port or path.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
-        return new(self, origins.ToArray(), nonces.ToArray(), hashes.ToArray(), schemes.ToArray(), unsafeInline, unsafeHashes);
+        return new(self, origins.ToArray(), hosts.ToArray(), nonces.ToArray(), hashes.ToArray(), schemes.ToArray(),
+            unsafeInline, unsafeHashes);
+    }
+
+    private static bool TryParseWildcardHostSource(string token, out HostSource source)
+    {
+        source = default;
+        string? scheme = null;
+        var hostStart = 0;
+        var schemeSeparator = token.IndexOf("://*.", StringComparison.OrdinalIgnoreCase);
+        if (schemeSeparator >= 0)
+        {
+            scheme = token[..schemeSeparator];
+            if (!scheme.Equals("http", StringComparison.OrdinalIgnoreCase)
+                && !scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            hostStart = schemeSeparator + 5;
+        }
+        else if (!token.StartsWith("*.", StringComparison.Ordinal))
+        {
+            return false;
+        }
+        else
+        {
+            hostStart = 2;
+        }
+
+        var host = token[hostStart..];
+        if (host.EndsWith("/", StringComparison.Ordinal))
+        {
+            host = host[..^1];
+        }
+        if (host.Length == 0 || host[0] == '.' || host.Contains("..", StringComparison.Ordinal)
+            || host.Any(character =>
+            !(character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '-' or '.')))
+        {
+            return false;
+        }
+
+        var parsed = BrowserUrl.ParseResult($"https://{host}/").Url;
+        if (parsed is null || parsed.Protocol != "https:" || parsed.Pathname != "/"
+            || parsed.Search.Length != 0 || parsed.Hash.Length != 0
+            || IPAddress.TryParse(parsed.Origin.Host, out _))
+        {
+            return false;
+        }
+
+        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, true);
+        return true;
     }
 
     private static bool TryParseHashSource(string token, out HashSource hash)
@@ -352,8 +430,9 @@ internal sealed class ContentSecurityPolicy
     }
 
     private readonly record struct HashSource(string Algorithm, string Expected);
-    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, string[] Nonces, HashSource[] Hashes,
-        string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
+    private readonly record struct HostSource(string? Scheme, string Host, bool Subdomains);
+    private sealed record SourceList(bool Self, SecurityOrigin[] Origins, HostSource[] Hosts, string[] Nonces,
+        HashSource[] Hashes, string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives, bool upgradesInsecureRequests)
     {
         internal bool UpgradesInsecureRequests => upgradesInsecureRequests;

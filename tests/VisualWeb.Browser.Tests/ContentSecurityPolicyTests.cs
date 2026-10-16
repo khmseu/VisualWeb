@@ -266,6 +266,29 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void WildcardHostSourcesMatchSubdomainsButNotApexOrLookalikes()
+    {
+        var policy = ContentSecurityPolicy.Parse(["style-src https://*.example.test"], []);
+
+        Assert.True(policy.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/site.css"), Document.Origin));
+        Assert.True(policy.AllowsStyle(BrowserUrl.Parse("https://deep.cdn.example.test/site.css"), Document.Origin));
+        Assert.False(policy.AllowsStyle(BrowserUrl.Parse("https://example.test/site.css"), Document.Origin));
+        Assert.False(policy.AllowsStyle(BrowserUrl.Parse("https://notexample.test/site.css"), Document.Origin));
+        Assert.False(policy.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test:8443/site.css"), Document.Origin));
+    }
+
+    [Fact]
+    public void WildcardHostSourceSchemeMatchingUsesSecureUpgradeAndDocumentScheme()
+    {
+        var explicitHttp = ContentSecurityPolicy.Parse(["style-src HTTP://*.example.test"], []);
+        var schemeless = ContentSecurityPolicy.Parse(["style-src *.example.test"], []);
+
+        Assert.True(explicitHttp.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/site.css"), Document.Origin));
+        Assert.True(schemeless.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/site.css"), Document.Origin));
+        Assert.False(schemeless.AllowsStyle(BrowserUrl.Parse("http://cdn.example.test/site.css"), Document.Origin));
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(
@@ -293,6 +316,8 @@ public sealed class ContentSecurityPolicyTests
     [InlineData("script-src wss:")]
     [InlineData("script-src 'unsafe-eval'")]
     [InlineData("style-src https://example.test/path")]
+    [InlineData("style-src https://*.example.test:8443")]
+    [InlineData("style-src https://*.example.test/path")]
     [InlineData("style-src ftp:")]
     [InlineData("style-src https://user@example.test")]
     [InlineData("style-src 'none' 'self'")]

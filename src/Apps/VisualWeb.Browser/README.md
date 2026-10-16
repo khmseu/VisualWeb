@@ -48,6 +48,9 @@ The bounded response `base-uri` subset checks the first usable `<base href>`
 without `default-src` fallback. A blocked base uses the final document URL for
 browser stylesheet/import discovery and renderer link/form resolution; the
 effective base snapshot crosses IPC as data only.
+Supported CSP source lists include HTTP(S) wildcard subdomain hosts such as
+`https://*.example.test`; they do not match the apex and currently support only
+default ports and no path component.
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and
