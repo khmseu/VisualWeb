@@ -497,8 +497,8 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 ## Navigation and page policy
 
 Response `Content-Security-Policy` parsing has a bounded header-only foundation
-(spec ID `csp3`). It recognizes `default-src`, `script-src`, and `style-src`
-source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
+(spec ID `csp3`). It recognizes `default-src`, `script-src`, `style-src`, and
+`style-src-attr` source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
 `data:`, `http:`, and `https:` scheme sources for resources, strict nonce
 sources, and SHA-256/384/512 hash sources for inline script/style elements.
 The `http:` source also matches HTTPS resources as a secure upgrade; `https:`
@@ -510,8 +510,10 @@ The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
 Inline script and style elements need a matching nonce or content hash, or
 non-overridden `'unsafe-inline'`, when an applicable source list is present.
-Style attributes are allowed by non-overridden `'unsafe-inline'` or an
-exact matching hash only when `'unsafe-hashes'` is present; nonces never apply.
+`style-src-attr` independently governs style attributes, falling back to
+`style-src` and then `default-src`; matching hashes require `'unsafe-hashes'`.
+Nonces never apply to style attributes. The separate `style-src-elem` directive
+remains unsupported.
 The
 policy also authorizes linked stylesheets and CSS imports against
 `style-src` (or `default-src`) before each browser-owned request and redirect;

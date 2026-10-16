@@ -94,6 +94,17 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task StyleSrcAttrOverridesStyleSrcForStyleAttributes()
+    {
+        using var source = Serving("<p style='color:red'>allowed</p>",
+            "style-src 'none'; style-src-attr 'unsafe-inline'");
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Contains("style='color:red'", page.Html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task UnsafeHashesAuthorizesOnlyExactStyleAttributeText()
     {
         using var source = Serving("<p style='color:red'>allowed</p>",

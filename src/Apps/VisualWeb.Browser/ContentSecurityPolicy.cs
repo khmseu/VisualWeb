@@ -49,7 +49,7 @@ internal sealed class ContentSecurityPolicy
     internal bool AllowsInlineStyle() => policies.All(policy => AllowsAllInline(policy.Directive("style-src")));
     internal bool AllowsInlineStyle(string? nonce) => policies.All(policy => AllowsInlineNonce(policy.Directive("style-src"), nonce));
     internal bool AllowsInlineStyle(string? nonce, string source) => AllowsInline("style-src", nonce, source);
-    internal bool AllowsInlineStyleAttribute() => policies.All(policy => AllowsAllInline(policy.Directive("style-src")));
+    internal bool AllowsInlineStyleAttribute() => policies.All(policy => AllowsAllInline(policy.StyleAttributeDirective()));
     internal bool AllowsInlineStyleAttribute(string source) => AllowsInline("style-src", null, source, styleAttribute: true);
     internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.Directive("script-src"), resource, documentOrigin));
@@ -65,7 +65,9 @@ internal sealed class ContentSecurityPolicy
     private bool AllowsInline(string directiveName, string? nonce, string source, bool styleAttribute = false)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var sourceLists = policies.Select(policy => policy.Directive(directiveName)).ToArray();
+        var sourceLists = policies.Select(policy => styleAttribute
+            ? policy.StyleAttributeDirective()
+            : policy.Directive(directiveName)).ToArray();
         var algorithms = sourceLists.Where(list => list is not null && (!styleAttribute || list.UnsafeHashes))
             .SelectMany(list => list!.Hashes)
             .Select(hash => hash.Algorithm)
@@ -116,7 +118,7 @@ internal sealed class ContentSecurityPolicy
             var parts = item.Split(AsciiWhitespace, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0) { continue; }
             var name = parts[0].ToLowerInvariant();
-            if (name is not ("default-src" or "script-src" or "style-src"))
+            if (name is not ("default-src" or "script-src" or "style-src" or "style-src-attr"))
             {
                 diagnostics.Add($"Content-Security-Policy directive '{parts[0]}' is unsupported and was ignored.");
                 continue;
@@ -285,5 +287,8 @@ internal sealed class ContentSecurityPolicy
     {
         internal SourceList? Directive(string name) =>
             directives.GetValueOrDefault(name) ?? directives.GetValueOrDefault("default-src");
+
+        internal SourceList? StyleAttributeDirective() =>
+            directives.GetValueOrDefault("style-src-attr") ?? Directive("style-src");
     }
 }

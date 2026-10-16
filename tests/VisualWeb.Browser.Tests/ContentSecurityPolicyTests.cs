@@ -80,6 +80,21 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void StyleSrcAttrOverridesStyleSrcAndUsesStyleSrcFallback()
+    {
+        var independent = ContentSecurityPolicy.Parse(
+            ["style-src 'none'; style-src-attr 'unsafe-inline'"], []);
+        var fallback = ContentSecurityPolicy.Parse(["style-src 'unsafe-inline'"], []);
+        var restrictive = ContentSecurityPolicy.Parse(
+            ["default-src 'unsafe-inline'; style-src 'unsafe-inline'; style-src-attr 'none'"], []);
+
+        Assert.True(independent.AllowsInlineStyleAttribute("color:red"));
+        Assert.False(independent.AllowsInlineStyle());
+        Assert.True(fallback.AllowsInlineStyleAttribute("color:red"));
+        Assert.False(restrictive.AllowsInlineStyleAttribute("color:red"));
+    }
+
+    [Fact]
     public void UnsafeInlineAllowsInlineElementsAndStyleAttributes()
     {
         var policy = ContentSecurityPolicy.Parse(["default-src 'unsafe-inline'"], []);
