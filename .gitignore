@@ -6,3 +6,4 @@
 *.suo
 specs/cache/
 specs/*.lock
+*.orig
