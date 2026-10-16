@@ -120,9 +120,11 @@ public sealed class GetPageSource : IPageSource
 
         var decoded = response.DecodeText(sniffed.Encoding);
         var diagnostics = response.Diagnostics.Append(Describe(sniffed)).ToList();
+        IReadOnlyList<string> policyFields = Array.Empty<string>();
         ContentSecurityPolicy? policy = null;
-        if (response.Headers.TryGetValue("Content-Security-Policy", out var policyFields))
+        if (response.Headers.TryGetValue("Content-Security-Policy", out var responsePolicyFields))
         {
+            policyFields = responsePolicyFields;
             policy = ContentSecurityPolicy.Parse(policyFields, diagnostics);
             StaticPageRenderer.EnforceInlineContentPolicy(decoded.Text, policy.AllowsInlineScript,
                 policy.AllowsInlineStyle, policy.AllowsInlineStyleAttribute, cancellationToken);
@@ -135,7 +137,11 @@ public sealed class GetPageSource : IPageSource
         var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, policy, diagnostics,
             cancellationToken).ConfigureAwait(false);
         return new(response.Url, decoded.Text, response.StatusCode, diagnostics.ToArray())
-        { Stylesheets = stylesheets, CharacterEncoding = sniffed.Encoding.Name };
+        {
+            Stylesheets = stylesheets,
+            CharacterEncoding = sniffed.Encoding.Name,
+            ContentSecurityPolicyFields = policyFields
+        };
     }
 
     private async Task<PageStylesheet[]> LoadStylesheetsAsync(BrowserUrl documentUrl, string html, WebEncoding documentEncoding,

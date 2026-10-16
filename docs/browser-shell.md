@@ -498,7 +498,7 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 
 Response `Content-Security-Policy` parsing has a bounded header-only foundation
 (spec ID `csp3`). It recognizes `default-src`, `script-src`, `script-src-elem`,
-`style-src`, `style-src-elem`, and `style-src-attr` source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
+`style-src`, `style-src-elem`, `style-src-attr`, and `form-action` source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
 `data:`, `http:`, and `https:` scheme sources for resources, strict nonce
 sources, and SHA-256/384/512 hash sources for inline script/style elements.
 The `http:` source also matches HTTPS resources as a secure upgrade; `https:`
@@ -508,6 +508,9 @@ UTF-8; policies intersect. Explicit `'unsafe-inline'` allows inline elements
 and style attributes only when that source list has no nonce or hash sources.
 The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
+`form-action` checks the bounded GET form submission target before serializing
+query values; it does not fall back to `default-src` and does not restrict links
+or address-bar navigation.
 Inline script and style elements need a matching nonce or content hash, or
 non-overridden `'unsafe-inline'`, when an applicable source list is present.
 `style-src-elem` governs inline style elements and linked/imported stylesheets,

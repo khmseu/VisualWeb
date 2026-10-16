@@ -1149,6 +1149,12 @@ public sealed class BrowserController : IDisposable
         var openInNewTab = submitterControl?.FormTargetOpenInNewTab ?? form.OpenInNewTab;
         if (submitterControl?.FormActionError is { } actionError) { throw new PageNavigationException(actionError); }
         var action = BrowserUrl.Parse(submitterControl?.FormAction ?? form.Action);
+        if (document.ContentSecurityPolicyFields.Count > 0
+            && !ContentSecurityPolicy.Parse(document.ContentSecurityPolicyFields, []).AllowsFormAction(action, document.Origin))
+        {
+            throw new PageNavigationException(
+                $"Content-Security-Policy form-action blocked form submission to {action.Href}.");
+        }
         var preventHttpsDowngrade = document.Url.Protocol is "https:" or "data:";
         SecurityOrigin? sameOriginRedirectOrigin = null;
         if (action.Protocol is "http:" or "https:")

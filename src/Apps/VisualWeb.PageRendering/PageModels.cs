@@ -31,6 +31,19 @@ public sealed record LoadedPage
     public string Html { get; init; }
     public int StatusCode { get; init; }
     public IReadOnlyList<string> Diagnostics { get; init; }
+    private readonly IReadOnlyList<string> contentSecurityPolicyFields = Array.Empty<string>();
+    /// <summary>Immutable response policy fields retained for browser-owned form navigation checks.</summary>
+    /// <remarks>Spec: csp3; <see href="https://www.w3.org/TR/CSP3/#directive-form-action">form-action</see>.
+    /// Browser metadata only; renderer processes receive no policy callbacks or mutable policy state.</remarks>
+    public IReadOnlyList<string> ContentSecurityPolicyFields
+    {
+        get => contentSecurityPolicyFields;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            contentSecurityPolicyFields = Array.AsReadOnly(value.ToArray());
+        }
+    }
     public Guid DocumentId { get; init; } = Guid.NewGuid();
     /// <summary>Canonical WHATWG encoding name used to decode the document; selects the form submission encoding.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#pick-an-encoding-for-the-form">pick

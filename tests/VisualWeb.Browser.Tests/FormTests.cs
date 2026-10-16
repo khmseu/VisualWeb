@@ -2637,11 +2637,16 @@ public sealed class FormTests
         using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
         {
             requests.Add(request.RequestUri!);
-            return new(HttpStatusCode.OK)
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(Style + "<form action='https://outside.example/search'><input name=q value=private>"
                     + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
             };
+            if (request.RequestUri!.Host == "secure.example")
+            {
+                response.Headers.Add("Content-Security-Policy", "form-action https://outside.example");
+            }
+            return response;
         })), () => new StaticPageRenderer(FontPath, 100000));
         var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
         var viewport = new PageViewport(200, 400, 1);
@@ -2658,6 +2663,50 @@ public sealed class FormTests
             requests.Select(request => request.AbsoluteUri));
         Assert.Equal("https://outside.example/search?q=private", tab.History.Current!.Href);
         Assert.Equal("https://outside.example", tab.Origin!.Serialize());
+        Assert.Null(tab.Error);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+        }
+    }
+
+    [Fact]
+    public void FormActionPolicyBlocksCrossOriginSubmissionBeforeSendingValues()
+    {
+        var requests = new List<Uri>();
+        using var controller = new BrowserController(() => new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(Style + "<form action='https://outside.example/search'><input name=q value=private>"
+                    + "<input type=submit></form>", System.Text.Encoding.UTF8, "text/html")
+            };
+            response.Headers.Add("Content-Security-Policy", "form-action 'self'");
+            return response;
+        })), () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, "https://source.example/start");
+        PumpUntilComplete();
+        var committed = controller.Page(tab.Id);
+        controller.FocusPage(tab.Id);
+        Assert.True(controller.FocusControl(tab.Id, 1));
+
+        var error = Assert.Throws<PageNavigationException>(() => controller.ActivateFocusedLink(tab.Id));
+
+        Assert.Contains("form-action", error.Message, StringComparison.Ordinal);
+        Assert.Equal(["https://source.example/start"], requests.Select(request => request.AbsoluteUri));
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("https://source.example/start", tab.History.Current!.Href);
         Assert.Null(tab.Error);
 
         void PumpUntilComplete()

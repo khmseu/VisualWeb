@@ -228,6 +228,23 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void FormActionUsesOnlyItsOwnSourceListAndIntersectsPolicies()
+    {
+        var document = BrowserUrl.Parse("https://example.test/");
+        var sameOrigin = BrowserUrl.Parse("https://example.test/search");
+        var allowedHost = BrowserUrl.Parse("https://forms.test/search");
+        var otherHost = BrowserUrl.Parse("https://outside.test/search");
+
+        Assert.True(ContentSecurityPolicy.Parse(["form-action 'self'"], []).AllowsFormAction(sameOrigin, document.Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["form-action 'self'"], []).AllowsFormAction(allowedHost, document.Origin));
+        Assert.True(ContentSecurityPolicy.Parse(["form-action https://forms.test"], []).AllowsFormAction(allowedHost, document.Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["form-action https://forms.test"], []).AllowsFormAction(otherHost, document.Origin));
+        Assert.True(ContentSecurityPolicy.Parse(["default-src 'none'"], []).AllowsFormAction(otherHost, document.Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["form-action https:", "form-action 'self'"], [])
+            .AllowsFormAction(allowedHost, document.Origin));
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(
