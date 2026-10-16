@@ -79,6 +79,39 @@ public sealed class ContentSecurityPolicyTests
         Assert.False(policy.AllowsInlineScript(null, source + " "));
     }
 
+    [Fact]
+    public void UnsafeInlineAllowsInlineElementsAndStyleAttributes()
+    {
+        var policy = ContentSecurityPolicy.Parse(["default-src 'unsafe-inline'"], []);
+
+        Assert.True(policy.AllowsInlineScript());
+        Assert.True(policy.AllowsInlineStyle());
+        Assert.True(policy.AllowsInlineScript(null, "document.title='allowed'"));
+        Assert.True(policy.AllowsInlineStyle(null, "p{color:red}"));
+        Assert.True(policy.AllowsInlineStyleAttribute());
+    }
+
+    [Fact]
+    public void UnsafeInlineIsOverriddenByNonceOrHashSourcesAndIntersectsPolicies()
+    {
+        const string source = "document.title='hashed'";
+        const string hash = "'sha256-8Q56ftgtlXxkQr5RiA6Pw+WlboQEeqNCt3JbdRNi/+I='";
+        var noncePolicy = ContentSecurityPolicy.Parse(
+            ["script-src 'unsafe-inline' 'nonce-AbC+/=='", "style-src 'unsafe-inline' 'nonce-AbC+/=='"], []);
+        var hashPolicy = ContentSecurityPolicy.Parse([$"script-src 'unsafe-inline' {hash}"], []);
+        var intersectingPolicy = ContentSecurityPolicy.Parse(
+            ["script-src 'unsafe-inline'", "script-src 'none'"], []);
+
+        Assert.True(noncePolicy.AllowsInlineScript("AbC+/==", source));
+        Assert.False(noncePolicy.AllowsInlineScript());
+        Assert.False(noncePolicy.AllowsInlineStyle());
+        Assert.False(noncePolicy.AllowsInlineScript(null, source));
+        Assert.True(hashPolicy.AllowsInlineScript(null, source));
+        Assert.False(hashPolicy.AllowsInlineScript(null, source + " "));
+        Assert.False(intersectingPolicy.AllowsInlineScript(null, source));
+        Assert.False(noncePolicy.AllowsInlineStyleAttribute());
+    }
+
     [Theory]
     [InlineData("script-src 'nonce-'")]
     [InlineData("script-src 'nonce-a==='")]
@@ -140,7 +173,7 @@ public sealed class ContentSecurityPolicyTests
     [Theory]
     [InlineData("script-src *")]
     [InlineData("script-src wss:")]
-    [InlineData("script-src 'unsafe-inline'")]
+    [InlineData("script-src 'unsafe-eval'")]
     [InlineData("style-src https://example.test/path")]
     [InlineData("style-src ftp:")]
     [InlineData("style-src https://user@example.test")]

@@ -504,10 +504,13 @@ sources, and SHA-256/384/512 hash sources for inline script/style elements.
 The `http:` source also matches HTTPS resources as a secure upgrade; `https:`
 does not match HTTP resources.
 Nonces match exactly; hashes match the exact parsed element text encoded as
-UTF-8; policies intersect. The first duplicate directive wins, unsupported
+UTF-8; policies intersect. Explicit `'unsafe-inline'` allows inline elements
+and style attributes only when that source list has no nonce or hash sources.
+The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
-Inline script and style elements need a matching nonce or content hash when an
-applicable source list is present; neither authorizes style attributes. The
+Inline script and style elements need a matching nonce or content hash, or
+non-overridden `'unsafe-inline'`, when an applicable source list is present.
+Style attributes are allowed only by non-overridden `'unsafe-inline'`. The
 policy also authorizes linked stylesheets and CSS imports against
 `style-src` (or `default-src`) before each browser-owned request and redirect;
 the existing stricter same-origin HTTP(S) stylesheet rule remains in force.
