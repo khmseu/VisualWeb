@@ -94,6 +94,23 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task ScriptSrcElemOverridesScriptSrcForInlineScriptElements()
+    {
+        using var source = Serving("<script>document.title='allowed'</script>",
+            "script-src 'none'; script-src-elem 'unsafe-inline'");
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Contains("document.title='allowed'", page.Html, StringComparison.Ordinal);
+
+        using var blocked = Serving("<script>document.title='blocked'</script>",
+            "script-src 'unsafe-inline'; script-src-elem 'none'");
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            blocked.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+        Assert.Contains("inline script", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task StyleSrcAttrOverridesStyleSrcForStyleAttributes()
     {
         using var source = Serving("<p style='color:red'>allowed</p>",

@@ -80,6 +80,25 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void ScriptSrcElemOverridesScriptSrcAndUsesScriptSrcFallback()
+    {
+        const string source = "document.title='allowed'";
+        var specific = ContentSecurityPolicy.Parse(
+            ["script-src 'none'; script-src-elem 'unsafe-inline' https://scripts.test"], []);
+        var fallback = ContentSecurityPolicy.Parse(["script-src https://scripts.test"], []);
+        var defaultFallback = ContentSecurityPolicy.Parse(["default-src https://scripts.test"], []);
+        var restricted = ContentSecurityPolicy.Parse(
+            ["default-src 'unsafe-inline'; script-src 'unsafe-inline'; script-src-elem 'none'"], []);
+
+        Assert.True(specific.AllowsInlineScript(null, source));
+        Assert.True(specific.AllowsScript(BrowserUrl.Parse("https://scripts.test/app.js"), Document.Origin));
+        Assert.False(specific.AllowsScript(BrowserUrl.Parse("https://example.test/app.js"), Document.Origin));
+        Assert.True(fallback.AllowsScript(BrowserUrl.Parse("https://scripts.test/app.js"), Document.Origin));
+        Assert.True(defaultFallback.AllowsScript(BrowserUrl.Parse("https://scripts.test/app.js"), Document.Origin));
+        Assert.False(restricted.AllowsInlineScript(null, source));
+    }
+
+    [Fact]
     public void StyleSrcAttrOverridesStyleSrcAndUsesStyleSrcFallback()
     {
         var independent = ContentSecurityPolicy.Parse(
