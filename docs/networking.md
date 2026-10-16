@@ -145,7 +145,10 @@ the initial URL and each redirect. A denied destination fails with
 `NavigationDenied` before URL credentials, cookies or transport are used for
 that destination. The callbacks are never exposed to renderers or page script;
 they are not CORS, CSP, referrer policy, response tainting or a general Fetch
-implementation.
+implementation. Its redirect-count overload supplies zero for the initial URL
+and increments once per redirect so callers can implement rules such as CSP3
+source-path matching; the loader does not interpret the count. Official source
+IDs: `fetch` and `csp3`.
 
 System.Uri is only a transport/path adapter after WHATWG parsing, not the URL
 parser. An injected handler is owned by the loader. Built-in SocketsHttpHandler

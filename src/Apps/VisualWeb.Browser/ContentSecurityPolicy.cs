@@ -65,8 +65,8 @@ internal sealed class ContentSecurityPolicy
     internal bool AllowsInlineStyleAttribute(string source) => AllowsInline("style-src", null, source, styleAttribute: true);
     internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.ScriptElementDirective(), resource, documentOrigin));
-    internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin) =>
-        policies.All(policy => Allows(policy.StyleElementDirective(), resource, documentOrigin));
+    internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin, int redirectCount = 0) =>
+        policies.All(policy => Allows(policy.StyleElementDirective(), resource, documentOrigin, redirectCount));
     internal bool AllowsFormAction(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.FormActionDirective(), resource, documentOrigin));
     internal bool AllowsBaseUri(BrowserUrl resource, SecurityOrigin documentOrigin) =>
@@ -118,11 +118,12 @@ internal sealed class ContentSecurityPolicy
                 && list.Hashes.Any(hash => string.Equals(hash.Expected, matchingHashes[hash.Algorithm], StringComparison.Ordinal)));
     }
 
-    private static bool Allows(SourceList? sources, BrowserUrl resource, SecurityOrigin documentOrigin) =>
+    private static bool Allows(SourceList? sources, BrowserUrl resource, SecurityOrigin documentOrigin,
+        int redirectCount = 0) =>
         sources is null
         || sources.Self && SelfMatches(documentOrigin, resource.Origin)
         || sources.Origins.Any(origin => OriginSourceMatches(origin, resource.Origin))
-        || sources.Hosts.Any(host => HostSourceMatches(host, resource, documentOrigin))
+        || sources.Hosts.Any(host => HostSourceMatches(host, resource, documentOrigin, redirectCount))
         || sources.Schemes.Any(scheme => SchemeMatches(scheme, resource.Protocol));
 
     private static bool SelfMatches(SecurityOrigin origin, SecurityOrigin resource) =>
@@ -140,7 +141,8 @@ internal sealed class ContentSecurityPolicy
         && (source.Port == resource.Port
             || source.Port == DefaultPort(source.Scheme!) && resource.Port == DefaultPort(resource.Scheme!));
 
-    private static bool HostSourceMatches(HostSource source, BrowserUrl resource, SecurityOrigin documentOrigin)
+    private static bool HostSourceMatches(HostSource source, BrowserUrl resource, SecurityOrigin documentOrigin,
+        int redirectCount)
     {
         if (source.AnyHost)
         {
@@ -168,12 +170,12 @@ internal sealed class ContentSecurityPolicy
         var hostMatches = source.Subdomains
             ? origin.Host.EndsWith("." + source.Host, StringComparison.Ordinal)
             : string.Equals(source.Host, origin.Host, StringComparison.Ordinal);
-        return portMatches && hostMatches && PathPartMatches(source.Path, resource.Pathname);
+        return portMatches && hostMatches && PathPartMatches(source.Path, resource.Pathname, redirectCount);
     }
 
-    private static bool PathPartMatches(string sourcePath, string resourcePath)
+    private static bool PathPartMatches(string sourcePath, string resourcePath, int redirectCount)
     {
-        if (sourcePath.Length == 0 || sourcePath == "/" && resourcePath.Length == 0)
+        if (sourcePath.Length == 0 || redirectCount > 0 || sourcePath == "/" && resourcePath.Length == 0)
         {
             return true;
         }

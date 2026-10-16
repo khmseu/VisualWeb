@@ -514,7 +514,8 @@ Wildcard host sources such as `https://*.example.test` match subdomains but not
 the apex host. Exact DNS host sources such as `https://cdn.example.test` match
 only that host. Omitted ports match only the scheme's default port; numeric and
 `*` port parts are supported. DNS host sources support exact path matching and
-trailing-slash directory prefixes, comparing percent-decoded path segments.
+trailing-slash directory prefixes, comparing percent-decoded path segments only
+for the initial URL; CSP3 ignores source paths after a redirect.
 The bare `*` source matches HTTP(S) URLs and URLs using the protected document's
 scheme; it does not match unrelated schemes. Paths on IP-literal sources and
 non-root query/fragment components remain unsupported.

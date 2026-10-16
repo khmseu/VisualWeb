@@ -33,6 +33,42 @@ public sealed class AuthorizedNavigationLoadTests
     }
 
     [Fact]
+    public async Task AuthorizerReceivesZeroForInitialUrlAndIncrementedRedirectCounts()
+    {
+        var authorized = new List<(string Url, int RedirectCount)>();
+        var requests = new List<string>();
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Add(url);
+            return requests.Count < 3
+                ? Redirect(requests.Count == 1
+                    ? "https://source.example/next"
+                    : "https://source.example/final")
+                : Text("ok");
+        }));
+
+        var response = await loader.LoadAuthorizedNavigationAsync(
+            BrowserUrl.Parse("https://source.example/start"),
+            (url, redirectCount) =>
+            {
+                authorized.Add((url.Href, redirectCount));
+                return true;
+            },
+            cancellationToken: Token);
+
+        Assert.Equal(
+            [
+                ("https://source.example/start", 0),
+                ("https://source.example/next", 1),
+                ("https://source.example/final", 2)
+            ],
+            authorized);
+        Assert.Equal(authorized.Select(item => item.Url), requests);
+        Assert.Equal("ok", Encoding.UTF8.GetString(response.Body.Span));
+    }
+
+    [Fact]
     public async Task InitialDenialPreventsTransport()
     {
         var calls = 0;

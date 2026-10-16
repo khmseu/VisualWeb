@@ -19,7 +19,9 @@ a browser-owned destination authorizer after HSTS and optional caller-supplied U
 rewriting, then bad-port checks, for the initial URL and every redirect, before
 credentials, cookies or transport for that destination. Denials throw
 `ResourceError.NavigationDenied`; callbacks are not exposed to page script and do
-not provide CORS, CSP or a general origin policy.
+not provide CORS, CSP or a general origin policy. Its redirect-count overload
+reports zero for the initial URL and increments for each redirect so browser
+callers can apply policies such as CSP3 source-path matching.
 
 All three entry points block Fetch bad ports (the 83-port official table) for HTTP(S)
 URLs and every redirect target before transport or cookie work, throwing

@@ -230,8 +230,9 @@ public sealed class GetPageSource : IPageSource
                     ? await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
                         .ConfigureAwait(false)
                     : await loader.LoadAuthorizedNavigationAsync(url,
-                        destination => sameOriginAllowed && effectiveUrl.Origin.IsSameOrigin(destination.Origin)
-                            && policy.AllowsStyle(destination, documentUrl.Origin),
+                        (destination, redirectCount) =>
+                            sameOriginAllowed && effectiveUrl.Origin.IsSameOrigin(destination.Origin)
+                            && policy.AllowsStyle(destination, documentUrl.Origin, redirectCount),
                         includeCookies: false, cancellationToken, preventHttpsDowngrade: secureDocument,
                         rewriteDestination: policy.UpgradeStyleUrl).ConfigureAwait(false)
                 : await loader.LoadAsync(url, includeCookies: false, cancellationToken,

@@ -92,6 +92,22 @@ public sealed class ResourceLoader : IDisposable
         CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
     {
+        ArgumentNullException.ThrowIfNull(authorizeDestination);
+        return await LoadAuthorizedNavigationAsync(url, (destination, _) => authorizeDestination(destination),
+            includeCookies, cancellationToken, preventHttpsDowngrade, rewriteDestination).ConfigureAwait(false);
+    }
+
+    /// <summary>Browser-owned authorized GET with the Fetch redirect count supplied to its destination authorizer.</summary>
+    /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
+    /// Spec: csp3; <see href="https://www.w3.org/TR/CSP3/#match-url-to-source-expression">source-expression matching</see>
+    /// uses the redirect count to determine when a source path no longer restricts the destination. The count is zero
+    /// for the initial URL and increments for each redirect. This API supplies that value but does not implement CSP.</remarks>
+    /// <param name="authorizeDestination">Authorizes the effective URL and its redirect count before transport.</param>
+    public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, int, bool> authorizeDestination, bool includeCookies = false,
+        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+    {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(authorizeDestination);
@@ -105,7 +121,7 @@ public sealed class ResourceLoader : IDisposable
         if (preventHttpsDowngrade && url.Protocol == "http:") { throw InsecureTransport(); }
 
         BadPortPolicy.ThrowIfBlocked(url);
-        EnforceAuthorized(url, authorizeDestination);
+        EnforceAuthorized(url, authorizeDestination, redirectCount: 0);
         return await LoadCoreAsync(url, null, authorizeDestination, includeCookies, preventHttpsDowngrade,
             rewriteDestination, cancellationToken);
     }
@@ -146,7 +162,7 @@ public sealed class ResourceLoader : IDisposable
     }
 
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin,
-        Func<BrowserUrl, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
+        Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -182,9 +198,10 @@ public sealed class ResourceLoader : IDisposable
         }
     }
 
-    private static void EnforceAuthorized(BrowserUrl url, Func<BrowserUrl, bool> authorizeDestination)
+    private static void EnforceAuthorized(BrowserUrl url, Func<BrowserUrl, int, bool> authorizeDestination,
+        int redirectCount)
     {
-        if (!authorizeDestination(url))
+        if (!authorizeDestination(url, redirectCount))
         {
             throw new ResourceLoadException(ResourceError.NavigationDenied,
                 "Browser-owned navigation authorization denied the destination.");
@@ -192,7 +209,7 @@ public sealed class ResourceLoader : IDisposable
     }
 
     private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin,
-        Func<BrowserUrl, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
+        Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token)
     {
         var url = initial;
@@ -260,7 +277,7 @@ public sealed class ResourceLoader : IDisposable
                 }
                 if (authorizeDestination is not null)
                 {
-                    EnforceAuthorized(next, authorizeDestination);
+                    EnforceAuthorized(next, authorizeDestination, redirects + 1);
                 }
 
                 url = next;

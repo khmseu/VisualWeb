@@ -316,6 +316,36 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task HostSourcePathIsNotRecheckedAfterStylesheetRedirect()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "https://example.test/" => Html("<link rel=stylesheet href=/assets/site.css>",
+                    "style-src https://example.test/assets/"),
+                "https://example.test/assets/site.css" => Redirect("/moved/site.css"),
+                "https://example.test/moved/site.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException($"Unexpected request: {requestUrl}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Equal(
+            [
+                "https://example.test/",
+                "https://example.test/assets/site.css",
+                "https://example.test/moved/site.css"
+            ],
+            requests);
+        Assert.Equal("https://example.test/moved/site.css", page.Stylesheets[0].BaseUrl);
+    }
+
+    [Fact]
     public async Task StylesheetUrlsRemainHttpWithoutUpgradeInsecureRequests()
     {
         var requests = new List<string>();
