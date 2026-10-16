@@ -11,8 +11,9 @@ namespace VisualWeb.Browser;
 /// <see href="https://www.w3.org/TR/CSP3/#match-element-to-source-list">element hash matching</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#scheme-part-match">scheme-source matching</see>, and
 /// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>.
-/// Supports default-src, script-src, and style-src with 'none', 'self', exact HTTP(S) origins, and
-/// the data: scheme source for resources, strict nonce-source matching, and SHA-256/384/512 hashes for inline elements.</remarks>
+/// Supports default-src, script-src, and style-src with 'none', 'self', exact HTTP(S) origins,
+/// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), strict nonce-source
+/// matching, and SHA-256/384/512 hashes for inline elements.</remarks>
 internal sealed class ContentSecurityPolicy
 {
     private const int MaxFields = 16;
@@ -91,7 +92,12 @@ internal sealed class ContentSecurityPolicy
         sources is null
         || sources.Self && documentOrigin.IsSameOrigin(resource.Origin)
         || sources.Origins.Any(origin => origin.IsSameOrigin(resource.Origin))
-        || sources.Schemes.Contains(resource.Protocol, StringComparer.OrdinalIgnoreCase);
+        || sources.Schemes.Any(scheme => SchemeMatches(scheme, resource.Protocol));
+
+    private static bool SchemeMatches(string sourceScheme, string resourceScheme) =>
+        sourceScheme.Equals(resourceScheme, StringComparison.OrdinalIgnoreCase)
+        || sourceScheme.Equals("http:", StringComparison.OrdinalIgnoreCase)
+            && resourceScheme.Equals("https:", StringComparison.OrdinalIgnoreCase);
 
     private static Policy ParsePolicy(string field, IList<string> diagnostics)
     {
@@ -163,9 +169,11 @@ internal sealed class ContentSecurityPolicy
                 nonces.Add(nonce);
                 continue;
             }
-            if (token.Equals("data:", StringComparison.OrdinalIgnoreCase))
+            if (token.Equals("data:", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("http:", StringComparison.OrdinalIgnoreCase)
+                || token.Equals("https:", StringComparison.OrdinalIgnoreCase))
             {
-                schemes.Add("data:");
+                schemes.Add(token.ToLowerInvariant());
                 continue;
             }
             if (token.Equals("'self'", StringComparison.OrdinalIgnoreCase))
@@ -179,7 +187,7 @@ internal sealed class ContentSecurityPolicy
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'data:', or an exact HTTP(S) origin.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'data:', 'http:', 'https:', or an exact HTTP(S) origin.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }

@@ -499,8 +499,10 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 Response `Content-Security-Policy` parsing has a bounded header-only foundation
 (spec ID `csp3`). It recognizes `default-src`, `script-src`, and `style-src`
 source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
-`data:` scheme source for resources, strict nonce sources, and SHA-256/384/512
-hash sources for inline script/style elements.
+`data:`, `http:`, and `https:` scheme sources for resources, strict nonce
+sources, and SHA-256/384/512 hash sources for inline script/style elements.
+The `http:` source also matches HTTPS resources as a secure upgrade; `https:`
+does not match HTTP resources.
 Nonces match exactly; hashes match the exact parsed element text encoded as
 UTF-8; policies intersect. The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.

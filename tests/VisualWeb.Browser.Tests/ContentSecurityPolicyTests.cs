@@ -102,6 +102,19 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void HttpSchemeSourceAllowsOnlyHttpAndSecureUpgrade()
+    {
+        var httpPolicy = ContentSecurityPolicy.Parse(["style-src http:"], []);
+        var httpsPolicy = ContentSecurityPolicy.Parse(["style-src https:"], []);
+
+        Assert.True(httpPolicy.AllowsStyle(BrowserUrl.Parse("http://example.test/site.css"), Document.Origin));
+        Assert.True(httpPolicy.AllowsStyle(BrowserUrl.Parse("https://example.test/site.css"), Document.Origin));
+        Assert.False(httpPolicy.AllowsStyle(BrowserUrl.Parse("data:text/css,body{}"), Document.Origin));
+        Assert.True(httpsPolicy.AllowsStyle(BrowserUrl.Parse("https://example.test/site.css"), Document.Origin));
+        Assert.False(httpsPolicy.AllowsStyle(BrowserUrl.Parse("http://example.test/site.css"), Document.Origin));
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(
@@ -126,7 +139,7 @@ public sealed class ContentSecurityPolicyTests
 
     [Theory]
     [InlineData("script-src *")]
-    [InlineData("script-src https:")]
+    [InlineData("script-src wss:")]
     [InlineData("script-src 'unsafe-inline'")]
     [InlineData("style-src https://example.test/path")]
     [InlineData("style-src ftp:")]

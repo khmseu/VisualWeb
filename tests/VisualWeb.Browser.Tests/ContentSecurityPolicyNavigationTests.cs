@@ -217,6 +217,27 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task HttpSchemeSourceAllowsSameOriginHttpsStylesheetUpgrade()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/" => Html("<link rel=stylesheet href=site.css>", "style-src http:"),
+                "/site.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException("Unexpected stylesheet request.")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Single(page.Stylesheets);
+        Assert.Equal(["https://example.test/", "https://example.test/site.css"], requests);
+    }
+
+    [Fact]
     public async Task ExactDocumentOriginAllowsLinkedAndImportedStylesheets()
     {
         var requests = new List<string>();
