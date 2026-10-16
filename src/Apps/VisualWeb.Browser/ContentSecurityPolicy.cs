@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -141,8 +142,7 @@ internal sealed class ContentSecurityPolicy
 
     private static bool HostSourceMatches(HostSource source, SecurityOrigin resource, SecurityOrigin documentOrigin)
     {
-        if (resource.IsOpaque || resource.Host is null || IPAddress.TryParse(resource.Host, out _)
-            || resource.Port != DefaultPort(resource.Scheme!))
+        if (resource.IsOpaque || resource.Host is null || IPAddress.TryParse(resource.Host, out _))
         {
             return false;
         }
@@ -153,9 +153,13 @@ internal sealed class ContentSecurityPolicy
             return false;
         }
 
-        return source.Subdomains
+        var portMatches = source.AnyPort
+            || (source.Port is { } port
+                ? port == resource.Port
+                : resource.Port == DefaultPort(resource.Scheme!));
+        return portMatches && (source.Subdomains
             ? resource.Host.EndsWith("." + source.Host, StringComparison.Ordinal)
-            : string.Equals(source.Host, resource.Host, StringComparison.Ordinal);
+            : string.Equals(source.Host, resource.Host, StringComparison.Ordinal));
     }
 
     private static bool SchemeMatches(string sourceScheme, string resourceScheme) =>
@@ -306,7 +310,7 @@ internal sealed class ContentSecurityPolicy
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or an HTTP(S) wildcard subdomain host without a port or path.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or a wildcard subdomain host without a path.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
@@ -344,6 +348,28 @@ internal sealed class ContentSecurityPolicy
         {
             host = host[..^1];
         }
+        var sourcePort = (int?)null;
+        var anyPort = false;
+        var portSeparator = host.IndexOf(':');
+        if (portSeparator >= 0)
+        {
+            var portText = host[(portSeparator + 1)..];
+            host = host[..portSeparator];
+            if (portText == "*")
+            {
+                anyPort = true;
+            }
+            else if (portText.Length == 0 || portText.Any(character => character is < '0' or > '9')
+                || !int.TryParse(portText, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedPort)
+                || parsedPort > 65535)
+            {
+                return false;
+            }
+            else
+            {
+                sourcePort = parsedPort;
+            }
+        }
         if (host.Length == 0 || host[0] == '.' || host.Contains("..", StringComparison.Ordinal)
             || host.Any(character =>
             !(character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '-' or '.')))
@@ -359,7 +385,7 @@ internal sealed class ContentSecurityPolicy
             return false;
         }
 
-        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, true);
+        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, sourcePort, anyPort, true);
         return true;
     }
 
@@ -430,7 +456,7 @@ internal sealed class ContentSecurityPolicy
     }
 
     private readonly record struct HashSource(string Algorithm, string Expected);
-    private readonly record struct HostSource(string? Scheme, string Host, bool Subdomains);
+    private readonly record struct HostSource(string? Scheme, string Host, int? Port, bool AnyPort, bool Subdomains);
     private sealed record SourceList(bool Self, SecurityOrigin[] Origins, HostSource[] Hosts, string[] Nonces,
         HashSource[] Hashes, string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives, bool upgradesInsecureRequests)

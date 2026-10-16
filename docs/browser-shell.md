@@ -511,8 +511,8 @@ and style attributes only when that source list has no nonce or hash sources.
 The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
 Wildcard host sources such as `https://*.example.test` match subdomains but not
-the apex host and require the scheme's default port; wildcard source ports and
-paths remain unsupported.
+the apex host. Omitted ports match only the scheme's default port; numeric and
+`*` port parts are supported. Wildcard host source paths remain unsupported.
 `form-action` checks the bounded GET form submission target before serializing
 query values; it does not fall back to `default-src` and does not restrict links
 or address-bar navigation.

@@ -278,6 +278,22 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void WildcardHostSourceMatchesExplicitAndWildcardPorts()
+    {
+        var explicitPort = ContentSecurityPolicy.Parse(["style-src https://*.example.test:8443"], []);
+        var anyPort = ContentSecurityPolicy.Parse(["style-src https://*.example.test:*"], []);
+        var explicitDefaultPort = ContentSecurityPolicy.Parse(["style-src https://*.example.test:443"], []);
+
+        Assert.True(explicitPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test:8443/site.css"), Document.Origin));
+        Assert.False(explicitPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test:9443/site.css"), Document.Origin));
+        Assert.False(explicitPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/site.css"), Document.Origin));
+        Assert.True(anyPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test:8443/site.css"), Document.Origin));
+        Assert.True(anyPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/site.css"), Document.Origin));
+        Assert.True(explicitDefaultPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/site.css"), Document.Origin));
+        Assert.False(explicitDefaultPort.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test:8443/site.css"), Document.Origin));
+    }
+
+    [Fact]
     public void WildcardHostSourceSchemeMatchingUsesSecureUpgradeAndDocumentScheme()
     {
         var explicitHttp = ContentSecurityPolicy.Parse(["style-src HTTP://*.example.test"], []);
@@ -316,8 +332,10 @@ public sealed class ContentSecurityPolicyTests
     [InlineData("script-src wss:")]
     [InlineData("script-src 'unsafe-eval'")]
     [InlineData("style-src https://example.test/path")]
-    [InlineData("style-src https://*.example.test:8443")]
     [InlineData("style-src https://*.example.test/path")]
+    [InlineData("style-src https://*.example.test:8443/path")]
+    [InlineData("style-src https://*.example.test:65536")]
+    [InlineData("style-src https://*.example.test:999999999999999999999")]
     [InlineData("style-src ftp:")]
     [InlineData("style-src https://user@example.test")]
     [InlineData("style-src 'none' 'self'")]

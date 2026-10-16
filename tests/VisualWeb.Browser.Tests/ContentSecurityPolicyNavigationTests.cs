@@ -492,6 +492,29 @@ public sealed class ContentSecurityPolicyNavigationTests
         Assert.Contains(apexPage.Diagnostics, item => item.Contains("base-uri blocked", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task BaseUriWildcardSourceHonorsExplicitAndWildcardPorts()
+    {
+        using var explicitPort = Serving("<base href='https://cdn.example.test:8443/assets/'>",
+            "base-uri https://*.example.test:8443");
+        var explicitPortPage = await explicitPort.LoadAsync(
+            BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal("https://cdn.example.test:8443/assets/", explicitPortPage.BaseUrl?.Href);
+
+        using var wrongPort = Serving("<base href='https://cdn.example.test:9443/assets/'>",
+            "base-uri https://*.example.test:8443");
+        var wrongPortPage = await wrongPort.LoadAsync(
+            BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal("https://example.test/page", wrongPortPage.BaseUrl?.Href);
+        Assert.Contains(wrongPortPage.Diagnostics, item => item.Contains("base-uri blocked", StringComparison.Ordinal));
+
+        using var anyPort = Serving("<base href='https://cdn.example.test:9443/assets/'>",
+            "base-uri https://*.example.test:*");
+        var anyPortPage = await anyPort.LoadAsync(
+            BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal("https://cdn.example.test:9443/assets/", anyPortPage.BaseUrl?.Href);
+    }
+
     private static GetPageSource Serving(string html, params string[] policies) =>
         new(new Handler(_ => Html(html, policies)));
 
