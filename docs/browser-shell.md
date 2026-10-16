@@ -512,7 +512,10 @@ The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
 Wildcard host sources such as `https://*.example.test` match subdomains but not
 the apex host. Omitted ports match only the scheme's default port; numeric and
-`*` port parts are supported. Wildcard host source paths remain unsupported.
+`*` port parts are supported. Wildcard host sources also support exact path
+matching and trailing-slash directory prefixes, comparing percent-decoded path
+segments. Paths on exact-origin sources and non-root query/fragment components
+remain unsupported.
 `form-action` checks the bounded GET form submission target before serializing
 query values; it does not fall back to `default-src` and does not restrict links
 or address-bar navigation.
@@ -539,7 +542,7 @@ checks linked stylesheets and CSS imports against the effective
 `style-src-elem` source list before each browser-owned request and redirect; the
 existing stricter same-origin HTTP(S) stylesheet rule remains in force.
 Event-handler and `javascript:` hashes, meta policies, report-only mode,
-wildcards, other scheme sources, paths,
+other wildcard forms, other scheme sources, paths on exact-origin sources,
 reporting, frames, and the remaining directives are deferred.
 
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;

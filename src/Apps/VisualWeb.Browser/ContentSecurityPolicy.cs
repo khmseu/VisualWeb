@@ -122,7 +122,7 @@ internal sealed class ContentSecurityPolicy
         sources is null
         || sources.Self && SelfMatches(documentOrigin, resource.Origin)
         || sources.Origins.Any(origin => OriginSourceMatches(origin, resource.Origin))
-        || sources.Hosts.Any(host => HostSourceMatches(host, resource.Origin, documentOrigin))
+        || sources.Hosts.Any(host => HostSourceMatches(host, resource, documentOrigin))
         || sources.Schemes.Any(scheme => SchemeMatches(scheme, resource.Protocol));
 
     private static bool SelfMatches(SecurityOrigin origin, SecurityOrigin resource) =>
@@ -140,26 +140,92 @@ internal sealed class ContentSecurityPolicy
         && (source.Port == resource.Port
             || source.Port == DefaultPort(source.Scheme!) && resource.Port == DefaultPort(resource.Scheme!));
 
-    private static bool HostSourceMatches(HostSource source, SecurityOrigin resource, SecurityOrigin documentOrigin)
+    private static bool HostSourceMatches(HostSource source, BrowserUrl resource, SecurityOrigin documentOrigin)
     {
-        if (resource.IsOpaque || resource.Host is null || IPAddress.TryParse(resource.Host, out _))
+        var origin = resource.Origin;
+        if (origin.IsOpaque || origin.Host is null || IPAddress.TryParse(origin.Host, out _))
         {
             return false;
         }
 
         var scheme = source.Scheme ?? documentOrigin.Scheme;
-        if (scheme is null || !SchemePartMatches(scheme, resource.Scheme!))
+        if (scheme is null || !SchemePartMatches(scheme, origin.Scheme!))
         {
             return false;
         }
 
         var portMatches = source.AnyPort
             || (source.Port is { } port
-                ? port == resource.Port
-                : resource.Port == DefaultPort(resource.Scheme!));
-        return portMatches && (source.Subdomains
-            ? resource.Host.EndsWith("." + source.Host, StringComparison.Ordinal)
-            : string.Equals(source.Host, resource.Host, StringComparison.Ordinal));
+                ? port == origin.Port
+                : origin.Port == DefaultPort(origin.Scheme!));
+        var hostMatches = source.Subdomains
+            ? origin.Host.EndsWith("." + source.Host, StringComparison.Ordinal)
+            : string.Equals(source.Host, origin.Host, StringComparison.Ordinal);
+        return portMatches && hostMatches && PathPartMatches(source.Path, resource.Pathname);
+    }
+
+    private static bool PathPartMatches(string sourcePath, string resourcePath)
+    {
+        if (sourcePath.Length == 0 || sourcePath == "/" && resourcePath.Length == 0)
+        {
+            return true;
+        }
+
+        var exact = !sourcePath.EndsWith("/", StringComparison.Ordinal);
+        var sourceSegments = sourcePath.Split('/');
+        var resourceSegments = resourcePath.Split('/');
+        if (sourceSegments.Length > resourceSegments.Length
+            || exact && sourceSegments.Length != resourceSegments.Length)
+        {
+            return false;
+        }
+        if (!exact)
+        {
+            sourceSegments = sourceSegments[..^1];
+        }
+
+        for (var index = 0; index < sourceSegments.Length; index++)
+        {
+            if (!PercentDecodePathSegment(sourceSegments[index])
+                .AsSpan()
+                .SequenceEqual(PercentDecodePathSegment(resourceSegments[index])))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static byte[] PercentDecodePathSegment(string segment)
+    {
+        var decoded = new List<byte>(segment.Length);
+        for (var index = 0; index < segment.Length; index++)
+        {
+            if (segment[index] == '%' && index + 2 < segment.Length
+                && TryHexDigit(segment[index + 1], out var high)
+                && TryHexDigit(segment[index + 2], out var low))
+            {
+                decoded.Add((byte)((high << 4) | low));
+                index += 2;
+            }
+            else
+            {
+                decoded.Add((byte)segment[index]);
+            }
+        }
+        return [.. decoded];
+    }
+
+    private static bool TryHexDigit(char character, out int value)
+    {
+        value = character switch
+        {
+            >= '0' and <= '9' => character - '0',
+            >= 'A' and <= 'F' => character - 'A' + 10,
+            >= 'a' and <= 'f' => character - 'a' + 10,
+            _ => -1,
+        };
+        return value >= 0;
     }
 
     private static bool SchemeMatches(string sourceScheme, string resourceScheme) =>
@@ -310,7 +376,7 @@ internal sealed class ContentSecurityPolicy
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or a wildcard subdomain host without a path.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or a bounded HTTP(S) wildcard subdomain host source.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
@@ -343,11 +409,10 @@ internal sealed class ContentSecurityPolicy
             hostStart = 2;
         }
 
-        var host = token[hostStart..];
-        if (host.EndsWith("/", StringComparison.Ordinal))
-        {
-            host = host[..^1];
-        }
+        var hostAndPath = token[hostStart..];
+        var pathStart = hostAndPath.IndexOf('/');
+        var host = pathStart < 0 ? hostAndPath : hostAndPath[..pathStart];
+        var sourcePath = pathStart < 0 ? "" : hostAndPath[pathStart..];
         var sourcePort = (int?)null;
         var anyPort = false;
         var portSeparator = host.IndexOf(':');
@@ -377,15 +442,45 @@ internal sealed class ContentSecurityPolicy
             return false;
         }
 
-        var parsed = BrowserUrl.ParseResult($"https://{host}/").Url;
-        if (parsed is null || parsed.Protocol != "https:" || parsed.Pathname != "/"
+        if (sourcePath.Any(character => character is < '!' or > '~' or ';' or ',')
+            || sourcePath.Contains('?') || sourcePath.Contains('#')
+            || !HasValidPercentEscapes(sourcePath))
+        {
+            return false;
+        }
+
+        var parsed = BrowserUrl.ParseResult($"https://{host}{sourcePath}").Url;
+        if (parsed is null || parsed.Protocol != "https:"
             || parsed.Search.Length != 0 || parsed.Hash.Length != 0
             || IPAddress.TryParse(parsed.Origin.Host, out _))
         {
             return false;
         }
 
-        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, sourcePort, anyPort, true);
+        if (parsed.Pathname != (sourcePath.Length == 0 ? "/" : sourcePath))
+        {
+            return false;
+        }
+
+        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, sourcePort, anyPort, sourcePath, true);
+        return true;
+    }
+
+    private static bool HasValidPercentEscapes(string value)
+    {
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (value[index] != '%')
+            {
+                continue;
+            }
+            if (index + 2 >= value.Length || !TryHexDigit(value[index + 1], out _)
+                || !TryHexDigit(value[index + 2], out _))
+            {
+                return false;
+            }
+            index += 2;
+        }
         return true;
     }
 
@@ -456,7 +551,8 @@ internal sealed class ContentSecurityPolicy
     }
 
     private readonly record struct HashSource(string Algorithm, string Expected);
-    private readonly record struct HostSource(string? Scheme, string Host, int? Port, bool AnyPort, bool Subdomains);
+    private readonly record struct HostSource(string? Scheme, string Host, int? Port, bool AnyPort, string Path,
+        bool Subdomains);
     private sealed record SourceList(bool Self, SecurityOrigin[] Origins, HostSource[] Hosts, string[] Nonces,
         HashSource[] Hashes, string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives, bool upgradesInsecureRequests)

@@ -294,6 +294,44 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void WildcardHostSourcePathsMatchExactFilesAndDirectoryPrefixes()
+    {
+        var directory = ContentSecurityPolicy.Parse(
+            ["style-src https://*.example.test/assets/"], []);
+        var rootPath = ContentSecurityPolicy.Parse(
+            ["style-src https://*.example.test/"], []);
+        var directoryWithPort = ContentSecurityPolicy.Parse(
+            ["style-src https://*.example.test:8443/assets/"], []);
+        var exactFile = ContentSecurityPolicy.Parse(
+            ["style-src https://*.example.test/assets/site.css"], []);
+
+        Assert.True(directory.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/assets/site.css"), Document.Origin));
+        Assert.True(directory.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/assets/nested/site.css"), Document.Origin));
+        Assert.False(directory.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/assets-v2/site.css"), Document.Origin));
+        Assert.False(directory.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/Assets/site.css"), Document.Origin));
+        Assert.True(rootPath.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/other/site.css"), Document.Origin));
+        Assert.True(directoryWithPort.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test:8443/assets/site.css"), Document.Origin));
+        Assert.False(directoryWithPort.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test:8443/other/site.css"), Document.Origin));
+        Assert.True(exactFile.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/assets/site.css?version=1"), Document.Origin));
+        Assert.False(exactFile.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/assets/site.css/child"), Document.Origin));
+        Assert.False(exactFile.AllowsStyle(BrowserUrl.Parse("https://cdn.example.test/assets/other.css"), Document.Origin));
+    }
+
+    [Fact]
+    public void WildcardHostSourcePathsComparePercentDecodedSegments()
+    {
+        var encodedSlash = ContentSecurityPolicy.Parse(
+            ["style-src https://*.example.test/assets%2Fprivate/"], []);
+
+        Assert.True(encodedSlash.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets%2fprivate/site.css"), Document.Origin));
+        Assert.False(encodedSlash.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets/private/site.css"), Document.Origin));
+    }
+
+    [Fact]
     public void WildcardHostSourceSchemeMatchingUsesSecureUpgradeAndDocumentScheme()
     {
         var explicitHttp = ContentSecurityPolicy.Parse(["style-src HTTP://*.example.test"], []);
@@ -332,10 +370,11 @@ public sealed class ContentSecurityPolicyTests
     [InlineData("script-src wss:")]
     [InlineData("script-src 'unsafe-eval'")]
     [InlineData("style-src https://example.test/path")]
-    [InlineData("style-src https://*.example.test/path")]
-    [InlineData("style-src https://*.example.test:8443/path")]
     [InlineData("style-src https://*.example.test:65536")]
     [InlineData("style-src https://*.example.test:999999999999999999999")]
+    [InlineData("style-src https://*.example.test/assets?query")]
+    [InlineData("style-src https://*.example.test/assets#fragment")]
+    [InlineData("style-src https://*.example.test/assets%")]
     [InlineData("style-src ftp:")]
     [InlineData("style-src https://user@example.test")]
     [InlineData("style-src 'none' 'self'")]
