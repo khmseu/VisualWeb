@@ -332,6 +332,50 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void ExactDnsHostSourcePathsMatchFilesAndDirectoryPrefixes()
+    {
+        var directory = ContentSecurityPolicy.Parse(
+            ["style-src https://cdn.example.test/assets/"], []);
+        var exactFile = ContentSecurityPolicy.Parse(
+            ["style-src https://cdn.example.test/assets/site.css"], []);
+        var schemeless = ContentSecurityPolicy.Parse(
+            ["style-src cdn.example.test/assets/"], []);
+
+        Assert.True(directory.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets/nested/site.css"), Document.Origin));
+        Assert.False(directory.AllowsStyle(
+            BrowserUrl.Parse("https://deep.cdn.example.test/assets/site.css"), Document.Origin));
+        Assert.False(directory.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets-v2/site.css"), Document.Origin));
+        Assert.True(exactFile.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets/site.css?version=1"), Document.Origin));
+        Assert.False(exactFile.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets/site.css/child"), Document.Origin));
+        Assert.True(schemeless.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets/site.css"), Document.Origin));
+        Assert.False(schemeless.AllowsStyle(
+            BrowserUrl.Parse("http://cdn.example.test/assets/site.css"), Document.Origin));
+    }
+
+    [Fact]
+    public void ExactDnsHostSourcePathsHonorPortsAndRejectIpLiterals()
+    {
+        var explicitPort = ContentSecurityPolicy.Parse(
+            ["style-src https://cdn.example.test:8443/assets/"], []);
+        var anyPort = ContentSecurityPolicy.Parse(
+            ["style-src https://cdn.example.test:*/assets/"], []);
+
+        Assert.True(explicitPort.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test:8443/assets/site.css"), Document.Origin));
+        Assert.False(explicitPort.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test/assets/site.css"), Document.Origin));
+        Assert.True(anyPort.AllowsStyle(
+            BrowserUrl.Parse("https://cdn.example.test:9443/assets/site.css"), Document.Origin));
+        Assert.Throws<PageNavigationException>(() =>
+            ContentSecurityPolicy.Parse(["style-src https://127.0.0.1/assets/"], []));
+    }
+
+    [Fact]
     public void WildcardHostSourceSchemeMatchingUsesSecureUpgradeAndDocumentScheme()
     {
         var explicitHttp = ContentSecurityPolicy.Parse(["style-src HTTP://*.example.test"], []);
@@ -369,7 +413,6 @@ public sealed class ContentSecurityPolicyTests
     [InlineData("script-src *")]
     [InlineData("script-src wss:")]
     [InlineData("script-src 'unsafe-eval'")]
-    [InlineData("style-src https://example.test/path")]
     [InlineData("style-src https://*.example.test:65536")]
     [InlineData("style-src https://*.example.test:999999999999999999999")]
     [InlineData("style-src https://*.example.test/assets?query")]

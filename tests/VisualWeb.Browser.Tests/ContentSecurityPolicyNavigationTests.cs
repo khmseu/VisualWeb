@@ -532,6 +532,23 @@ public sealed class ContentSecurityPolicyNavigationTests
         Assert.Contains(deniedPage.Diagnostics, item => item.Contains("base-uri blocked", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task BaseUriExactHostSourceMatchesPathAndRejectsOtherHosts()
+    {
+        using var allowed = Serving("<base href='https://cdn.example.test/assets/nested/'>",
+            "base-uri https://cdn.example.test/assets/");
+        var allowedPage = await allowed.LoadAsync(
+            BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal("https://cdn.example.test/assets/nested/", allowedPage.BaseUrl?.Href);
+
+        using var denied = Serving("<base href='https://deep.cdn.example.test/assets/'>",
+            "base-uri https://cdn.example.test/assets/");
+        var deniedPage = await denied.LoadAsync(
+            BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal("https://example.test/page", deniedPage.BaseUrl?.Href);
+        Assert.Contains(deniedPage.Diagnostics, item => item.Contains("base-uri blocked", StringComparison.Ordinal));
+    }
+
     private static GetPageSource Serving(string html, params string[] policies) =>
         new(new Handler(_ => Html(html, policies)));
 

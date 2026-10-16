@@ -364,7 +364,7 @@ internal sealed class ContentSecurityPolicy
                 self = true;
                 continue;
             }
-            if (TryParseWildcardHostSource(token, out var hostSource))
+            if (TryParseDnsHostSource(token, out var hostSource))
             {
                 hosts.Add(hostSource);
                 continue;
@@ -376,7 +376,7 @@ internal sealed class ContentSecurityPolicy
                 || parsed.Pathname != "/" || parsed.Search.Length != 0 || parsed.Hash.Length != 0)
             {
                 throw new PageNavigationException(
-                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or a bounded HTTP(S) wildcard subdomain host source.");
+                    $"Content-Security-Policy {directive} source '{token}' is unsupported; use 'none', 'self', 'unsafe-inline', 'unsafe-hashes', data:/http:/https:, an exact HTTP(S) origin, or a bounded HTTP(S) DNS host source.");
             }
             if (!origins.Any(origin => origin.IsSameOrigin(parsed.Origin))) { origins.Add(parsed.Origin); }
         }
@@ -384,12 +384,12 @@ internal sealed class ContentSecurityPolicy
             unsafeInline, unsafeHashes);
     }
 
-    private static bool TryParseWildcardHostSource(string token, out HostSource source)
+    private static bool TryParseDnsHostSource(string token, out HostSource source)
     {
         source = default;
         string? scheme = null;
+        var schemeSeparator = token.IndexOf("://", StringComparison.OrdinalIgnoreCase);
         var hostStart = 0;
-        var schemeSeparator = token.IndexOf("://*.", StringComparison.OrdinalIgnoreCase);
         if (schemeSeparator >= 0)
         {
             scheme = token[..schemeSeparator];
@@ -398,21 +398,26 @@ internal sealed class ContentSecurityPolicy
             {
                 return false;
             }
-            hostStart = schemeSeparator + 5;
-        }
-        else if (!token.StartsWith("*.", StringComparison.Ordinal))
-        {
-            return false;
-        }
-        else
-        {
-            hostStart = 2;
+            hostStart = schemeSeparator + 3;
         }
 
         var hostAndPath = token[hostStart..];
+        var subdomains = hostAndPath.StartsWith("*.", StringComparison.Ordinal);
+        if (subdomains)
+        {
+            hostAndPath = hostAndPath[2..];
+        }
+        else if (hostAndPath.StartsWith('*'))
+        {
+            return false;
+        }
         var pathStart = hostAndPath.IndexOf('/');
         var host = pathStart < 0 ? hostAndPath : hostAndPath[..pathStart];
         var sourcePath = pathStart < 0 ? "" : hostAndPath[pathStart..];
+        if (!subdomains && sourcePath.Length == 0)
+        {
+            return false;
+        }
         var sourcePort = (int?)null;
         var anyPort = false;
         var portSeparator = host.IndexOf(':');
@@ -462,7 +467,7 @@ internal sealed class ContentSecurityPolicy
             return false;
         }
 
-        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, sourcePort, anyPort, sourcePath, true);
+        source = new(scheme?.ToLowerInvariant(), parsed.Origin.Host!, sourcePort, anyPort, sourcePath, subdomains);
         return true;
     }
 
