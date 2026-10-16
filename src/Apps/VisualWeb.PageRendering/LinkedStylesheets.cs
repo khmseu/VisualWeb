@@ -17,13 +17,14 @@ internal static class LinkedStylesheets
     private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\r', '\f'];
     private static readonly string[] UnsupportedAttributes = ["disabled", "crossorigin", "integrity", "referrerpolicy", "charset"];
 
-    public static IReadOnlyList<string> Discover(DomDocument document, BrowserUrl documentUrl, CancellationToken cancellationToken)
+    public static IReadOnlyList<string> Discover(DomDocument document, BrowserUrl documentUrl,
+        CancellationToken cancellationToken, BrowserUrl? baseUrlOverride = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(documentUrl);
         var urls = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var baseUrl = BaseUrl(document, documentUrl, cancellationToken);
+        var baseUrl = baseUrlOverride ?? BaseUrl(document, documentUrl, cancellationToken);
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -38,6 +39,16 @@ internal static class LinkedStylesheets
     /// <summary>Returns the document base URL from the first base element with an href, or the response URL fallback.</summary>
     public static BrowserUrl BaseUrl(DomDocument document, BrowserUrl documentUrl, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(documentUrl);
+        return BaseHrefUrl(document, documentUrl, cancellationToken) ?? documentUrl;
+    }
+
+    /// <summary>Returns the valid URL from the first base element with an href, or null when no usable href exists.</summary>
+    public static BrowserUrl? BaseHrefUrl(DomDocument document, BrowserUrl documentUrl, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(documentUrl);
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -46,12 +57,12 @@ internal static class LinkedStylesheets
             if (href.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("HTML base URL limit exceeded."); }
             var parsed = BrowserUrl.ParseResult(href, documentUrl).Url;
-            if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return documentUrl; }
+            if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return null; }
             if (parsed.Href.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("HTML base URL limit exceeded."); }
             return parsed;
         }
-        return documentUrl;
+        return null;
     }
 
     public static bool SupportsMedia(string? media) => media is null

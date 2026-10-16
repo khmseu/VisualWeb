@@ -126,6 +126,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             ReuseDocument = reuseDocument,
             Id = 1,
             Url = page.Url.Href,
+            BaseUrl = page.BaseUrl?.Href,
             Html = page.Html,
             StatusCode = page.StatusCode,
             Diagnostics = page.Diagnostics.ToArray(),

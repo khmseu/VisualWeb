@@ -89,6 +89,10 @@ Forms may carry a `novalidate` flag, and selected submit buttons may carry a res
 Each new construction gets a fresh opaque origin (including reused data/file URL
 instances); tuple origins use the URL's scheme/host/effective port. Metadata
 record copies and retained repaint keep the same origin and document ID. The
+optional `LoadedPage.BaseUrl` pins a browser-approved base URL across local and
+process rendering when response `base-uri` policy is present; null preserves
+renderer-side base discovery. Script changes to `<base href>` do not update this
+bounded snapshot.
 four-argument constructor and deconstruction remain supported, but `Url` and
 `Origin` are get-only: replace a URL by constructing a new document, not by `with`.
 The browser publishes this origin as `BrowserTab.Origin` only with a committed

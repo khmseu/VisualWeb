@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v40
+## Private stream protocol v41
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound                                                        |                                                     Value |
 | ------------------------------------------------------------ | --------------------------------------------------------: |
-| Protocol version                                             |           36, explicitly present; v1 through v35 rejected |
+| Protocol version                                             |           41, explicitly present; v1 through v40 rejected |
 | Metadata bytes                                               |                                                    32 MiB |
 | JSON nesting                                                 |                                                        16 |
 | Decoded HTML UTF-16 characters                               |                                                      4 Mi |
@@ -146,7 +146,10 @@ the successful control's value. No bidi algorithm or DOM identity crosses IPC.
 Version 40 adds each stylesheet's required serialized absolute `BaseUrl`, the
 final response URL used to resolve relative `@import` rules. Request `Url`,
 `BaseUrl`, and decoded CSS remain data only; no response headers or fetch capability
-cross IPC. Missing fields and old versions fail closed.
+cross IPC. Version 41 adds an optional serialized absolute render-request
+`BaseUrl` override for CSP-approved document base resolution; it is data only
+and carries no CSP policy or fetch capability. Missing required fields and old
+versions fail closed.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require

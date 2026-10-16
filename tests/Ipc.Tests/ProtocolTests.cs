@@ -48,7 +48,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(40, RendererProtocol.Version);
+        Assert.Equal(41, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 40 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 40 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 38 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 38 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 35 }, 0));
@@ -760,9 +762,21 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public void BaseUrlOverridesAreBoundedAbsoluteAndRenderOnly()
+    {
+        RendererProtocol.Validate(Request with { BaseUrl = "https://example.com/base/" }, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { BaseUrl = "" }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { BaseUrl = "/relative/" }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with
+        { BaseUrl = "https://example.com/" + new string('a', RendererProtocol.MaxTextCharacters) }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
+        { Kind = "frame", Id = 1, BaseUrl = "https://example.com/" }, 0));
+    }
+
+    [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(40, RendererProtocol.Version);
+        Assert.Equal(41, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -872,6 +886,7 @@ public sealed class ProtocolTests
             ReuseDocument = true,
             CommittedDocumentId = Request.DocumentId,
             ScrollY = 48,
+            BaseUrl = "https://example.com/base/",
             Stylesheets = [new("https://example.com/a.css", "p{content:\"café <&>\"}")
                 { BaseUrl = "https://example.com/assets/a.css" }]
         };
@@ -910,6 +925,7 @@ public sealed class ProtocolTests
         Assert.Equal(input.CommittedDocumentId, request.CommittedDocumentId);
         Assert.True(request.ExecuteInlineScripts); Assert.True(request.ReuseDocument);
         Assert.Equal(input.ScrollY, request.ScrollY);
+        Assert.Equal(input.BaseUrl, request.BaseUrl);
         Assert.Equal(input.Stylesheets, request.Stylesheets);
         Assert.Equal("https://example.com/assets/a.css", Assert.Single(request.Stylesheets!).BaseUrl);
         var frame = (await reader.ReadAsync(Cancellation))!;

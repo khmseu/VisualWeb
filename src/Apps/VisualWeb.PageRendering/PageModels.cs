@@ -28,6 +28,12 @@ public sealed record LoadedPage
 
     public BrowserUrl Url { get; }
     public SecurityOrigin Origin { get; }
+    /// <summary>Optional browser-approved document base URL override, retained for local and process rendering.</summary>
+    /// <remarks>Specs: html, csp3;
+    /// <see href="https://html.spec.whatwg.org/multipage/semantics.html#the-base-element">base element</see> and
+    /// <see href="https://www.w3.org/TR/CSP3/#directive-base-uri">base-uri</see>.
+    /// Data only; null preserves renderer-side base discovery.</remarks>
+    public BrowserUrl? BaseUrl { get; init; }
     public string Html { get; init; }
     public int StatusCode { get; init; }
     public IReadOnlyList<string> Diagnostics { get; init; }

@@ -44,6 +44,10 @@ text without a calendar picker; time fields validate bounded HTML time strings a
 Response `form-action` CSP source lists are also checked before bounded GET
 form values are serialized; this does not restrict links or address-bar
 navigation and does not use `default-src` as a fallback.
+The bounded response `base-uri` subset checks the first usable `<base href>`
+without `default-src` fallback. A blocked base uses the final document URL for
+browser stylesheet/import discovery and renderer link/form resolution; the
+effective base snapshot crosses IPC as data only.
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and

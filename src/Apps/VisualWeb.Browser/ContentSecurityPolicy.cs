@@ -12,10 +12,12 @@ namespace VisualWeb.Browser;
 /// <see href="https://www.w3.org/TR/CSP3/#scheme-part-match">scheme-source matching</see>, and
 /// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>, and
 /// <see href="https://www.w3.org/TR/CSP3/#directive-style-src-elem">style-src-elem</see>,
-/// <see href="https://www.w3.org/TR/CSP3/#directive-form-action">form-action</see>; upgrade-insecure-requests
+/// <see href="https://www.w3.org/TR/CSP3/#directive-form-action">form-action</see>,
+/// <see href="https://www.w3.org/TR/CSP3/#directive-base-uri">base-uri</see>; upgrade-insecure-requests
 /// follows <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>
 /// for browser-brokered stylesheets only (local source ID <c>upgrade-insecure-requests</c>).
-/// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, style-src-attr, and form-action with 'none', 'self', exact HTTP(S) origins,
+/// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, style-src-attr, form-action,
+/// and base-uri with 'none', 'self', exact HTTP(S) origins,
 /// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), the valueless
 /// upgrade-insecure-requests directive, strict nonce-source
 /// matching, SHA-256/384/512 inline-element hashes, and 'unsafe-inline' when not overridden by a nonce or hash.</remarks>
@@ -30,6 +32,7 @@ internal sealed class ContentSecurityPolicy
 
     private ContentSecurityPolicy(Policy[] policies) => this.policies = policies;
     internal bool UpgradesInsecureRequests => policies.Any(policy => policy.UpgradesInsecureRequests);
+    internal bool HasBaseUri => policies.Any(policy => policy.HasBaseUri);
 
     internal static ContentSecurityPolicy Parse(IReadOnlyList<string> fields, IList<string> diagnostics)
     {
@@ -64,6 +67,8 @@ internal sealed class ContentSecurityPolicy
         policies.All(policy => Allows(policy.StyleElementDirective(), resource, documentOrigin));
     internal bool AllowsFormAction(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.FormActionDirective(), resource, documentOrigin));
+    internal bool AllowsBaseUri(BrowserUrl resource, SecurityOrigin documentOrigin) =>
+        policies.All(policy => Allows(policy.BaseUriDirective(), resource, documentOrigin));
     internal BrowserUrl UpgradeStyleUrl(BrowserUrl url) =>
         UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
 
@@ -184,7 +189,7 @@ internal sealed class ContentSecurityPolicy
                 continue;
             }
             if (name is not ("default-src" or "script-src" or "script-src-elem" or "style-src" or "style-src-elem"
-                or "style-src-attr" or "form-action"))
+                or "style-src-attr" or "form-action" or "base-uri"))
             {
                 diagnostics.Add($"Content-Security-Policy directive '{parts[0]}' is unsupported and was ignored.");
                 continue;
@@ -352,6 +357,7 @@ internal sealed class ContentSecurityPolicy
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives, bool upgradesInsecureRequests)
     {
         internal bool UpgradesInsecureRequests => upgradesInsecureRequests;
+        internal bool HasBaseUri => directives.ContainsKey("base-uri");
         internal SourceList? Directive(string name) =>
             directives.GetValueOrDefault(name) ?? directives.GetValueOrDefault("default-src");
 
@@ -365,5 +371,6 @@ internal sealed class ContentSecurityPolicy
             directives.GetValueOrDefault("style-src-attr") ?? Directive("style-src");
 
         internal SourceList? FormActionDirective() => directives.GetValueOrDefault("form-action");
+        internal SourceList? BaseUriDirective() => directives.GetValueOrDefault("base-uri");
     }
 }

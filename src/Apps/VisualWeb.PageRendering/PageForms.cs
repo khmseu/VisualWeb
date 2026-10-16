@@ -25,7 +25,7 @@ internal static class PageForms
     [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form-control and attribute literals document the supported subset at the collection boundary.")]
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
         BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry, int linkCount,
-        double width, double height, CancellationToken cancellationToken)
+        double width, double height, CancellationToken cancellationToken, BrowserUrl? baseUrlOverride = null)
     {
         var formIndex = new Dictionary<DomElement, int>();
         var errors = new List<string?>();
@@ -35,7 +35,7 @@ internal static class PageForms
         var controls = new List<PageFormControl>();
         var elements = document.Descendants().OfType<DomElement>().ToList();
         var baseTarget = BaseTarget(elements, cancellationToken);
-        var baseUrl = BaseUrl(elements, url, cancellationToken);
+        var baseUrl = baseUrlOverride ?? BaseUrl(elements, url, cancellationToken);
         var firstElementById = new Dictionary<string, DomElement>(StringComparer.Ordinal);
         foreach (var element in elements)
         {

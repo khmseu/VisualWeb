@@ -73,6 +73,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                 : candidate?.Source.DocumentId == page.DocumentId ? candidate
                 : throw new PageNavigationException("Retained document was lost; reload explicitly rather than reparsing or rerunning scripts.");
             if (state.Source.Html != page.Html || state.Source.Url.Href != page.Url.Href
+                || state.Source.BaseUrl?.Href != page.BaseUrl?.Href
                 || !state.Source.Stylesheets.SequenceEqual(page.Stylesheets))
             { throw new PageNavigationException("Retained document identity does not match its source."); }
         }
@@ -83,13 +84,14 @@ public sealed class StaticPageRenderer : IPageRenderer
             state = new(page, fresh, scripts);
         }
         var parsed = state.Parsed;
-        var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url, state.Source.Stylesheets);
+        var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url,
+            state.Source.Stylesheets, state.Source.BaseUrl);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
         var (links, controlGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
-            Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken);
+            Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken, page.BaseUrl);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, links.Count,
-            rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken);
+            rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
@@ -111,10 +113,11 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
         IReadOnlyList<PageTextTarget> TextTargets)
-        CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY, CancellationToken cancellationToken)
+        CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY,
+            CancellationToken cancellationToken, BrowserUrl? baseUrlOverride)
     {
         var baseTarget = FindBaseTarget(document, cancellationToken);
-        var baseUrl = FindBaseUrl(document, url, cancellationToken);
+        var baseUrl = baseUrlOverride ?? FindBaseUrl(document, url, cancellationToken);
         var linkData = new List<LinkTargetData>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var anchors = new Dictionary<DomElement, LinkTargetData>();
@@ -292,6 +295,18 @@ public sealed class StaticPageRenderer : IPageRenderer
         return fallback;
     }
 
+    /// <summary>Returns the valid URL selected by the first parsed base element with an href.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/semantics.html#the-base-element">base element</see>.
+    /// Returns null for an absent, invalid, data, or javascript href, matching the response-URL fallback.</remarks>
+    public static BrowserUrl? DiscoverBaseHrefUrl(string html, BrowserUrl documentUrl,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(html);
+        ArgumentNullException.ThrowIfNull(documentUrl);
+        var document = HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document;
+        return LinkedStylesheets.BaseHrefUrl(document, documentUrl, cancellationToken);
+    }
+
     private static bool IsBlankTarget(string? target, string? baseTarget)
     {
         var name = (target ?? baseTarget)?.Trim(AsciiWhitespace);
@@ -371,19 +386,21 @@ public sealed class StaticPageRenderer : IPageRenderer
     /// "stylesheet"</see>. Used by the browser to broker fetches with the renderer's exact parser options;
     /// unsupported link semantics throw.</remarks>
     public static IReadOnlyList<string> DiscoverStylesheets(string html, BrowserUrl documentUrl,
-        CancellationToken cancellationToken = default) =>
-        DiscoverStylesheets(HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document, documentUrl, cancellationToken);
-    /// <inheritdoc cref="DiscoverStylesheets(string, BrowserUrl, CancellationToken)"/>
+        CancellationToken cancellationToken = default, BrowserUrl? baseUrlOverride = null) =>
+        DiscoverStylesheets(HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document, documentUrl,
+            cancellationToken, baseUrlOverride);
+    /// <inheritdoc cref="DiscoverStylesheets(string, BrowserUrl, CancellationToken, BrowserUrl)"/>
     public static IReadOnlyList<string> DiscoverStylesheets(DomDocument document, BrowserUrl documentUrl,
-        CancellationToken cancellationToken = default) => LinkedStylesheets.Discover(document, documentUrl, cancellationToken);
+        CancellationToken cancellationToken = default, BrowserUrl? baseUrlOverride = null) =>
+        LinkedStylesheets.Discover(document, documentUrl, cancellationToken, baseUrlOverride);
     /// <summary>Import URLs referenced by supported embedded stylesheets, resolved against the document base URL.</summary>
     /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">import rules</see>.
     /// Only unconditional imports before all other rules are supported; conditions and cascade layers fail visibly.</remarks>
     public static IReadOnlyList<string> DiscoverInlineStylesheetImports(string html, BrowserUrl documentUrl,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, BrowserUrl? baseUrlOverride = null)
     {
         var document = HtmlParser.Parse(html, DocumentHtmlOptions, cancellationToken).Document;
-        var baseUrl = LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken);
+        var baseUrl = baseUrlOverride ?? LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken);
         var imports = new List<string>();
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
@@ -468,7 +485,7 @@ public sealed class StaticPageRenderer : IPageRenderer
     /// throw; nothing is fetched here.</remarks>
     public static IReadOnlyList<CssStyleSource> CollectStyles(DomDocument document, CssOptions? options = null,
         CancellationToken cancellationToken = default, BrowserUrl? documentUrl = null,
-        IReadOnlyList<PageStylesheet>? stylesheets = null)
+        IReadOnlyList<PageStylesheet>? stylesheets = null, BrowserUrl? baseUrlOverride = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         var limits = options ?? new();
@@ -476,7 +493,9 @@ public sealed class StaticPageRenderer : IPageRenderer
         var provided = (stylesheets ?? []).ToDictionary(sheet => sheet.Url, sheet => sheet, StringComparer.Ordinal);
         var sources = new List<CssStyleSource>();
         long characters = 0;
-        var baseUrl = documentUrl is null ? null : LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken);
+        var baseUrl = baseUrlOverride ?? (documentUrl is null
+            ? null
+            : LinkedStylesheets.BaseUrl(document, documentUrl, cancellationToken));
         foreach (var element in document.Descendants().OfType<DomElement>())
         {
             cancellationToken.ThrowIfCancellationRequested();

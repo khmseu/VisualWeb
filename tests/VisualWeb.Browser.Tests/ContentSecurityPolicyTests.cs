@@ -245,6 +245,27 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void BaseUriUsesOnlyItsOwnSourceListAndIntersectsPolicies()
+    {
+        var document = BrowserUrl.Parse("https://example.test/");
+        var sameOrigin = BrowserUrl.Parse("https://example.test/assets/");
+        var allowedHost = BrowserUrl.Parse("https://base.test/assets/");
+        var otherHost = BrowserUrl.Parse("https://outside.test/assets/");
+
+        Assert.True(ContentSecurityPolicy.Parse(["base-uri 'self'"], []).HasBaseUri);
+        Assert.True(ContentSecurityPolicy.Parse(["base-uri 'self'"], []).AllowsBaseUri(sameOrigin, document.Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["base-uri 'self'"], []).AllowsBaseUri(allowedHost, document.Origin));
+        Assert.True(ContentSecurityPolicy.Parse(["base-uri https://base.test"], []).AllowsBaseUri(allowedHost, document.Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["base-uri https://base.test"], []).AllowsBaseUri(otherHost, document.Origin));
+        Assert.True(ContentSecurityPolicy.Parse(["default-src 'none'"], []).AllowsBaseUri(otherHost, document.Origin));
+        var intersected = ContentSecurityPolicy.Parse(
+            ["base-uri 'self' https://base.test", "base-uri https://base.test"], []);
+        Assert.True(intersected.AllowsBaseUri(allowedHost, document.Origin));
+        Assert.False(intersected.AllowsBaseUri(sameOrigin, document.Origin));
+        Assert.False(ContentSecurityPolicy.Parse(["base-uri"], []).AllowsBaseUri(sameOrigin, document.Origin));
+    }
+
+    [Fact]
     public void MultipleFieldsIntersect()
     {
         var policy = ContentSecurityPolicy.Parse(

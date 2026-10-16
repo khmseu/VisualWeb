@@ -122,6 +122,7 @@ public sealed class GetPageSource : IPageSource
         var diagnostics = response.Diagnostics.Append(Describe(sniffed)).ToList();
         IReadOnlyList<string> policyFields = Array.Empty<string>();
         ContentSecurityPolicy? policy = null;
+        BrowserUrl? baseUrlOverride = null;
         if (response.Headers.TryGetValue("Content-Security-Policy", out var responsePolicyFields))
         {
             policyFields = responsePolicyFields;
@@ -133,26 +134,38 @@ public sealed class GetPageSource : IPageSource
             {
                 diagnostics.Add("Content-Security-Policy upgrade-insecure-requests applies to browser-brokered stylesheet requests only; page navigation is unchanged.");
             }
+            if (policy.HasBaseUri)
+            {
+                var baseHref = StaticPageRenderer.DiscoverBaseHrefUrl(decoded.Text, response.Url, cancellationToken);
+                var baseAllowed = baseHref is null || policy.AllowsBaseUri(baseHref, response.Url.Origin);
+                baseUrlOverride = baseAllowed ? baseHref ?? response.Url : response.Url;
+                diagnostics.Add(baseAllowed
+                    ? "Content-Security-Policy base-uri applied to the initial document base URL; later base changes do not affect browser resource resolution."
+                    : "Content-Security-Policy base-uri blocked a base URL; the document URL is used instead.");
+            }
         }
         var stylesheets = await LoadStylesheetsAsync(response.Url, decoded.Text, sniffed.Encoding, policy, diagnostics,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken, baseUrlOverride).ConfigureAwait(false);
         return new(response.Url, decoded.Text, response.StatusCode, diagnostics.ToArray())
         {
             Stylesheets = stylesheets,
             CharacterEncoding = sniffed.Encoding.Name,
-            ContentSecurityPolicyFields = policyFields
+            ContentSecurityPolicyFields = policyFields,
+            BaseUrl = baseUrlOverride
         };
     }
 
     private async Task<PageStylesheet[]> LoadStylesheetsAsync(BrowserUrl documentUrl, string html, WebEncoding documentEncoding,
-        ContentSecurityPolicy? policy, List<string> diagnostics, CancellationToken cancellationToken)
+        ContentSecurityPolicy? policy, List<string> diagnostics, CancellationToken cancellationToken,
+        BrowserUrl? baseUrlOverride)
     {
         IReadOnlyList<string> urls;
         IReadOnlyList<string> inlineImports;
         try
         {
-            urls = StaticPageRenderer.DiscoverStylesheets(html, documentUrl, cancellationToken);
-            inlineImports = StaticPageRenderer.DiscoverInlineStylesheetImports(html, documentUrl, cancellationToken);
+            urls = StaticPageRenderer.DiscoverStylesheets(html, documentUrl, cancellationToken, baseUrlOverride);
+            inlineImports = StaticPageRenderer.DiscoverInlineStylesheetImports(html, documentUrl, cancellationToken,
+                baseUrlOverride);
         }
         // The renderer parses identically and reports the same failure; nothing is fetched for an unparsable document.
         catch (Exception exception) when (exception is HtmlLimitException or UnsupportedHtmlException) { return []; }

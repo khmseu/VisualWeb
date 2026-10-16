@@ -404,6 +404,24 @@ public sealed class StylesheetTests
         Assert.Equal(Blue, rendered.Frame.Pixels.Span[..4].ToArray());
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LocalAndProcessRenderersUseTheBrowserBaseUrlOverrideForLinksAndForms(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath) : new StaticPageRenderer(FontPath, 100000);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"),
+            "<!doctype html><a href=next>Next</a><form action=submit><input name=value></form>", 200, [])
+        {
+            BaseUrl = BrowserUrl.Parse("https://example.test/safe/")
+        };
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+
+        Assert.Equal("https://example.test/safe/next", Assert.Single(rendered.LinkTargets).Url);
+        Assert.Equal("https://example.test/safe/submit", Assert.Single(rendered.Forms).Action);
+    }
+
     [Fact]
     public async Task LocalAndProcessFramesAreByteIdentical()
     {

@@ -421,6 +421,59 @@ public sealed class ContentSecurityPolicyNavigationTests
         Assert.Equal(["https://example.test/"], requests);
     }
 
+    [Fact]
+    public async Task BaseUriBlocksForeignBaseAndUsesDocumentUrlForLinkedAndEmbeddedImports()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "https://example.test/page" => Html(
+                    "<base href='https://outside.test/assets/'><link rel=stylesheet href=site.css>"
+                    + "<style>@import 'embedded.css';</style>", "base-uri 'self'; style-src 'self' 'unsafe-inline'"),
+                "https://example.test/site.css" => Css("p{color:red}"),
+                "https://example.test/embedded.css" => Css("p{color:blue}"),
+                _ => throw new InvalidOperationException($"Unexpected request: {requestUrl}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+
+        Assert.Equal("https://example.test/page", page.BaseUrl?.Href);
+        Assert.Contains(page.Diagnostics, item => item.Contains("base-uri blocked", StringComparison.Ordinal));
+        Assert.Equal([
+            "https://example.test/page",
+            "https://example.test/site.css",
+            "https://example.test/embedded.css"
+        ], requests);
+    }
+
+    [Fact]
+    public async Task BaseUriAllowsSameOriginBaseForStylesheetDiscovery()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var requestUrl = request.RequestUri!.AbsoluteUri;
+            requests.Add(requestUrl);
+            return requestUrl switch
+            {
+                "https://example.test/page" => Html(
+                    "<base href='/assets/'><link rel=stylesheet href=site.css>", "base-uri 'self'; style-src 'self'"),
+                "https://example.test/assets/site.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException($"Unexpected request: {requestUrl}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+
+        Assert.Equal("https://example.test/assets/", page.BaseUrl?.Href);
+        Assert.Equal(["https://example.test/page", "https://example.test/assets/site.css"], requests);
+    }
+
     private static GetPageSource Serving(string html, params string[] policies) =>
         new(new Handler(_ => Html(html, policies)));
 

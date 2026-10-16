@@ -461,6 +461,7 @@ public sealed record RendererMessage
     public string Kind { get; init; } = "";
     public long Id { get; init; }
     public string? Url { get; init; }
+    public string? BaseUrl { get; init; }
     public string? Html { get; init; }
     public int StatusCode { get; init; }
     public string[]? Diagnostics { get; init; }
@@ -495,7 +496,7 @@ public static class RendererProtocol
     private const string FrameKind = "frame";
     private const string ErrorKind = "error";
 
-    public const int Version = 40;
+    public const int Version = 41;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -537,6 +538,8 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Text targets belong only to frame replies."); }
         if (message.Kind != RenderKind && message.Stylesheets is not null)
         { throw new IpcProtocolException("Linked stylesheets belong only to render requests."); }
+        if (message.Kind != RenderKind && message.BaseUrl is not null)
+        { throw new IpcProtocolException("Base URL overrides belong only to render requests."); }
         if ((message.Kind != RenderKind && message.ScrollY != 0) || (message.Kind != FrameKind && message.ScrollHeight != 0))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
         if (message.Kind != RenderKind && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
@@ -556,11 +559,14 @@ public static class RendererProtocol
             case RenderKind:
                 if (payloadLength != 0 || message.DocumentId == Guid.Empty || message.Html is null || message.Html.Length > MaxHtmlCharacters
                     || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters
+                    || message.BaseUrl is { Length: 0 or > MaxTextCharacters }
                     || message.StatusCode is < 100 or > 599 || message.Diagnostics is null || message.Diagnostics.Length > 64
                     || message.Diagnostics.Any(d => d is null || d.Length > MaxTextCharacters))
                 {
                     throw new IpcProtocolException("Invalid renderer request fields or limits.");
                 }
+                if (message.BaseUrl is { } baseUrl && BrowserUrl.ParseResult(baseUrl).Url?.Href != baseUrl)
+                { throw new IpcProtocolException("Base URL override must be serialized and absolute."); }
                 ValidateStylesheets(message.Stylesheets);
                 Dimensions(message.Width, message.Height, message.Scale);
                 if (!double.IsFinite(message.ScrollY) || message.ScrollY < 0 || message.ScrollY > 1e9)
