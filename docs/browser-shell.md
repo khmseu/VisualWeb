@@ -498,7 +498,7 @@ events, `requestSubmit`, script submission, autofill, IME preedit, or clipboard 
 
 Response `Content-Security-Policy` parsing has a bounded header-only foundation
 (spec ID `csp3`). It recognizes `default-src`, `script-src`, `script-src-elem`,
-`style-src`, and `style-src-attr` source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
+`style-src`, `style-src-elem`, and `style-src-attr` source lists containing `'none'`, `'self'`, exact HTTP(S) origins, the
 `data:`, `http:`, and `https:` scheme sources for resources, strict nonce
 sources, and SHA-256/384/512 hash sources for inline script/style elements.
 The `http:` source also matches HTTPS resources as a secure upgrade; `https:`
@@ -510,14 +510,15 @@ The first duplicate directive wins, unsupported
 directives produce diagnostics, and unsupported source expressions fail visibly.
 Inline script and style elements need a matching nonce or content hash, or
 non-overridden `'unsafe-inline'`, when an applicable source list is present.
-`style-src-attr` independently governs style attributes, falling back to
-`style-src` and then `default-src`; matching hashes require `'unsafe-hashes'`.
-Nonces never apply to style attributes. `script-src-elem` governs script
-checks with fallback through `script-src` to `default-src`; external script
-loading itself remains deferred. `script-src-attr` and `style-src-elem` remain
-unsupported. The policy also authorizes linked stylesheets and CSS imports against
-`style-src` (or `default-src`) before each browser-owned request and redirect;
-the existing stricter same-origin HTTP(S) stylesheet rule remains in force.
+`style-src-elem` governs inline style elements and linked/imported stylesheets,
+falling back through `style-src` to `default-src`. `style-src-attr`
+independently governs style attributes with the same fallback; matching hashes
+require `'unsafe-hashes'`. Nonces never apply to style attributes.
+`script-src-elem` governs script checks with fallback through `script-src` to
+`default-src`; external script loading itself remains deferred. The policy
+checks linked stylesheets and CSS imports against the effective
+`style-src-elem` source list before each browser-owned request and redirect; the
+existing stricter same-origin HTTP(S) stylesheet rule remains in force.
 Event-handler and `javascript:` hashes, meta policies, report-only mode,
 wildcards, other scheme sources, paths,
 reporting, frames, and the remaining directives are deferred.

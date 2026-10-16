@@ -304,6 +304,44 @@ public sealed class ContentSecurityPolicyNavigationTests
         Assert.Equal(["https://example.test/", "https://example.test/site.css", "https://example.test/nested.css"], requests);
     }
 
+    [Fact]
+    public async Task StyleSrcElemOverridesStyleSrcForLinkedStylesheets()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath switch
+            {
+                "/" => Html("<link rel=stylesheet href=site.css>", "style-src 'none'; style-src-elem 'self'"),
+                "/site.css" => Css("p{color:red}"),
+                _ => throw new InvalidOperationException("Unexpected stylesheet request.")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+
+        Assert.Single(page.Stylesheets);
+        Assert.Equal(["https://example.test/", "https://example.test/site.css"], requests);
+    }
+
+    [Fact]
+    public async Task StyleSrcElemBlocksLinkedStylesheetBeforeRequest()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Html("<link rel=stylesheet href=site.css>", "style-src 'self'; style-src-elem 'none'");
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation));
+
+        Assert.Contains("Content-Security-Policy", error.Message, StringComparison.Ordinal);
+        Assert.Equal(["https://example.test/"], requests);
+    }
+
     private static GetPageSource Serving(string html, params string[] policies) =>
         new(new Handler(_ => Html(html, policies)));
 

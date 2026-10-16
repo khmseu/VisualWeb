@@ -114,6 +114,25 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void StyleSrcElemOverridesStyleSrcAndUsesFallbacks()
+    {
+        var specific = ContentSecurityPolicy.Parse(
+            ["default-src 'none'; style-src 'none'; style-src-elem 'unsafe-inline' 'self' https://styles.test"], []);
+        var styleFallback = ContentSecurityPolicy.Parse(["style-src https://styles.test"], []);
+        var defaultFallback = ContentSecurityPolicy.Parse(["default-src https://styles.test"], []);
+
+        Assert.True(specific.AllowsInlineStyle(null, "p{color:red}"));
+        Assert.True(specific.AllowsStyle(Document, Document.Origin));
+        Assert.True(specific.AllowsStyle(BrowserUrl.Parse("https://styles.test/site.css"), Document.Origin));
+        Assert.False(specific.AllowsStyle(BrowserUrl.Parse("https://outside.test/site.css"), Document.Origin));
+        Assert.False(specific.AllowsInlineStyleAttribute("color:red"));
+        Assert.False(styleFallback.AllowsInlineStyle(null, "p{color:red}"));
+        Assert.True(styleFallback.AllowsStyle(BrowserUrl.Parse("https://styles.test/site.css"), Document.Origin));
+        Assert.False(defaultFallback.AllowsInlineStyle(null, "p{color:red}"));
+        Assert.True(defaultFallback.AllowsStyle(BrowserUrl.Parse("https://styles.test/site.css"), Document.Origin));
+    }
+
+    [Fact]
     public void UnsafeInlineAllowsInlineElementsAndStyleAttributes()
     {
         var policy = ContentSecurityPolicy.Parse(["default-src 'unsafe-inline'"], []);

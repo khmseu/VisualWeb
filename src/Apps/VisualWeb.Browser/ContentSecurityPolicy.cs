@@ -10,8 +10,9 @@ namespace VisualWeb.Browser;
 /// <see href="https://www.w3.org/TR/CSP3/#match-nonce-to-source-list">nonce matching</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#match-element-to-source-list">element hash matching</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#scheme-part-match">scheme-source matching</see>, and
-/// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>.
-/// Supports default-src, script-src, script-src-elem, style-src, and style-src-attr with 'none', 'self', exact HTTP(S) origins,
+/// <see href="https://www.w3.org/TR/CSP3/#directive-default-src">default-src</see>, and
+/// <see href="https://www.w3.org/TR/CSP3/#directive-style-src-elem">style-src-elem</see>.
+/// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, and style-src-attr with 'none', 'self', exact HTTP(S) origins,
 /// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), strict nonce-source
 /// matching, SHA-256/384/512 inline-element hashes, and 'unsafe-inline' when not overridden by a nonce or hash.</remarks>
 internal sealed class ContentSecurityPolicy
@@ -46,15 +47,15 @@ internal sealed class ContentSecurityPolicy
     internal bool AllowsInlineScript() => policies.All(policy => AllowsAllInline(policy.ScriptElementDirective()));
     internal bool AllowsInlineScript(string? nonce) => policies.All(policy => AllowsInlineNonce(policy.ScriptElementDirective(), nonce));
     internal bool AllowsInlineScript(string? nonce, string source) => AllowsInline("script-src-elem", nonce, source);
-    internal bool AllowsInlineStyle() => policies.All(policy => AllowsAllInline(policy.Directive("style-src")));
-    internal bool AllowsInlineStyle(string? nonce) => policies.All(policy => AllowsInlineNonce(policy.Directive("style-src"), nonce));
-    internal bool AllowsInlineStyle(string? nonce, string source) => AllowsInline("style-src", nonce, source);
+    internal bool AllowsInlineStyle() => policies.All(policy => AllowsAllInline(policy.StyleElementDirective()));
+    internal bool AllowsInlineStyle(string? nonce) => policies.All(policy => AllowsInlineNonce(policy.StyleElementDirective(), nonce));
+    internal bool AllowsInlineStyle(string? nonce, string source) => AllowsInline("style-src-elem", nonce, source);
     internal bool AllowsInlineStyleAttribute() => policies.All(policy => AllowsAllInline(policy.StyleAttributeDirective()));
     internal bool AllowsInlineStyleAttribute(string source) => AllowsInline("style-src", null, source, styleAttribute: true);
     internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.ScriptElementDirective(), resource, documentOrigin));
     internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin) =>
-        policies.All(policy => Allows(policy.Directive("style-src"), resource, documentOrigin));
+        policies.All(policy => Allows(policy.StyleElementDirective(), resource, documentOrigin));
 
     private static bool AllowsInlineNonce(SourceList? sources, string? nonce) => AllowsAllInline(sources)
         || nonce is { Length: > 0 } && sources!.Nonces.Contains(nonce, StringComparer.Ordinal);
@@ -69,7 +70,9 @@ internal sealed class ContentSecurityPolicy
             ? policy.StyleAttributeDirective()
             : directiveName == "script-src-elem"
                 ? policy.ScriptElementDirective()
-                : policy.Directive(directiveName)).ToArray();
+                : directiveName == "style-src-elem"
+                    ? policy.StyleElementDirective()
+                    : policy.Directive(directiveName)).ToArray();
         var algorithms = sourceLists.Where(list => list is not null && (!styleAttribute || list.UnsafeHashes))
             .SelectMany(list => list!.Hashes)
             .Select(hash => hash.Algorithm)
@@ -120,7 +123,7 @@ internal sealed class ContentSecurityPolicy
             var parts = item.Split(AsciiWhitespace, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0) { continue; }
             var name = parts[0].ToLowerInvariant();
-            if (name is not ("default-src" or "script-src" or "script-src-elem" or "style-src" or "style-src-attr"))
+            if (name is not ("default-src" or "script-src" or "script-src-elem" or "style-src" or "style-src-elem" or "style-src-attr"))
             {
                 diagnostics.Add($"Content-Security-Policy directive '{parts[0]}' is unsupported and was ignored.");
                 continue;
@@ -292,6 +295,9 @@ internal sealed class ContentSecurityPolicy
 
         internal SourceList? ScriptElementDirective() =>
             directives.GetValueOrDefault("script-src-elem") ?? Directive("script-src");
+
+        internal SourceList? StyleElementDirective() =>
+            directives.GetValueOrDefault("style-src-elem") ?? Directive("style-src");
 
         internal SourceList? StyleAttributeDirective() =>
             directives.GetValueOrDefault("style-src-attr") ?? Directive("style-src");
