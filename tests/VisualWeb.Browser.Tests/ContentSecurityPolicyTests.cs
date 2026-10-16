@@ -376,6 +376,21 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void WildcardSourceMatchesHttpSchemesAndTheDocumentScheme()
+    {
+        var policy = ContentSecurityPolicy.Parse(["style-src *"], []);
+        var httpsDocument = BrowserUrl.Parse("https://document.test/");
+
+        Assert.True(policy.AllowsStyle(BrowserUrl.Parse("http://cdn.test/site.css"), httpsDocument.Origin));
+        Assert.True(policy.AllowsStyle(BrowserUrl.Parse("https://cdn.test/site.css"), httpsDocument.Origin));
+        Assert.False(policy.AllowsStyle(BrowserUrl.Parse("ftp://cdn.test/site.css"), httpsDocument.Origin));
+        Assert.False(policy.AllowsStyle(BrowserUrl.Parse("data:text/css,p%7B%7D"), httpsDocument.Origin));
+
+        var ftpDocument = BrowserUrl.Parse("ftp://document.test/");
+        Assert.True(policy.AllowsStyle(BrowserUrl.Parse("ftp://cdn.test/site.css"), ftpDocument.Origin));
+    }
+
+    [Fact]
     public void WildcardHostSourceSchemeMatchingUsesSecureUpgradeAndDocumentScheme()
     {
         var explicitHttp = ContentSecurityPolicy.Parse(["style-src HTTP://*.example.test"], []);
@@ -410,7 +425,7 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Theory]
-    [InlineData("script-src *")]
+    [InlineData("style-src *example.test")]
     [InlineData("script-src wss:")]
     [InlineData("script-src 'unsafe-eval'")]
     [InlineData("style-src https://*.example.test:65536")]

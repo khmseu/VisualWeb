@@ -19,7 +19,7 @@ namespace VisualWeb.Browser;
 /// follows <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>
 /// for browser-brokered stylesheets only (local source ID <c>upgrade-insecure-requests</c>).
 /// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, style-src-attr, form-action,
-/// and base-uri with 'none', 'self', exact HTTP(S) origins, HTTP(S) wildcard subdomain hosts,
+/// and base-uri with 'none', 'self', '*', exact HTTP(S) origins, HTTP(S) wildcard subdomain hosts,
 /// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), the valueless
 /// upgrade-insecure-requests directive, strict nonce-source
 /// matching, SHA-256/384/512 inline-element hashes, and 'unsafe-inline' when not overridden by a nonce or hash.</remarks>
@@ -142,6 +142,13 @@ internal sealed class ContentSecurityPolicy
 
     private static bool HostSourceMatches(HostSource source, BrowserUrl resource, SecurityOrigin documentOrigin)
     {
+        if (source.AnyHost)
+        {
+            return resource.Protocol is "http:" or "https:"
+                || documentOrigin.Scheme is { } documentScheme
+                && string.Equals(documentScheme + ":", resource.Protocol, StringComparison.Ordinal);
+        }
+
         var origin = resource.Origin;
         if (origin.IsOpaque || origin.Host is null || IPAddress.TryParse(origin.Host, out _))
         {
@@ -364,6 +371,11 @@ internal sealed class ContentSecurityPolicy
                 self = true;
                 continue;
             }
+            if (token == "*")
+            {
+                hosts.Add(HostSource.Any);
+                continue;
+            }
             if (TryParseDnsHostSource(token, out var hostSource))
             {
                 hosts.Add(hostSource);
@@ -557,7 +569,10 @@ internal sealed class ContentSecurityPolicy
 
     private readonly record struct HashSource(string Algorithm, string Expected);
     private readonly record struct HostSource(string? Scheme, string Host, int? Port, bool AnyPort, string Path,
-        bool Subdomains);
+        bool Subdomains, bool AnyHost = false)
+    {
+        internal static HostSource Any { get; } = new(null, "", null, false, "", false, true);
+    }
     private sealed record SourceList(bool Self, SecurityOrigin[] Origins, HostSource[] Hosts, string[] Nonces,
         HashSource[] Hashes, string[] Schemes, bool UnsafeInline, bool UnsafeHashes);
     private sealed class Policy(IReadOnlyDictionary<string, SourceList> directives, bool upgradesInsecureRequests)

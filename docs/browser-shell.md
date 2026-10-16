@@ -500,7 +500,7 @@ Response `Content-Security-Policy` parsing has a bounded header-only foundation
 (spec ID `csp3`). It recognizes `default-src`, `script-src`, `script-src-elem`,
 `style-src`, `style-src-elem`, `style-src-attr`, `form-action`, and `base-uri`
 source lists containing `'none'`, `'self'`, exact HTTP(S) origins,
-HTTP(S) DNS host sources (including wildcard subdomains), the
+`*`, HTTP(S) DNS host sources (including wildcard subdomains), the
 `data:`, `http:`, and `https:` scheme sources for resources, strict nonce
 sources, and SHA-256/384/512 hash sources for inline script/style elements.
 The `http:` source also matches HTTPS resources as a secure upgrade; `https:`
@@ -515,8 +515,9 @@ the apex host. Exact DNS host sources such as `https://cdn.example.test` match
 only that host. Omitted ports match only the scheme's default port; numeric and
 `*` port parts are supported. DNS host sources support exact path matching and
 trailing-slash directory prefixes, comparing percent-decoded path segments.
-Paths on IP-literal sources and non-root query/fragment components remain
-unsupported.
+The bare `*` source matches HTTP(S) URLs and URLs using the protected document's
+scheme; it does not match unrelated schemes. Paths on IP-literal sources and
+non-root query/fragment components remain unsupported.
 `form-action` checks the bounded GET form submission target before serializing
 query values; it does not fall back to `default-src` and does not restrict links
 or address-bar navigation.
@@ -543,7 +544,7 @@ checks linked stylesheets and CSS imports against the effective
 `style-src-elem` source list before each browser-owned request and redirect; the
 existing stricter same-origin HTTP(S) stylesheet rule remains in force.
 Event-handler and `javascript:` hashes, meta policies, report-only mode,
-other wildcard forms, other scheme sources, reporting, frames, and the remaining
+malformed wildcard forms, other scheme sources, reporting, frames, and the remaining
 directives are deferred.
 
 Page-initiated link and form navigation to `file:` and `data:` URLs is blocked;

@@ -48,12 +48,13 @@ The bounded response `base-uri` subset checks the first usable `<base href>`
 without `default-src` fallback. A blocked base uses the final document URL for
 browser stylesheet/import discovery and renderer link/form resolution; the
 effective base snapshot crosses IPC as data only.
-Supported CSP source lists include HTTP(S) DNS hosts, including wildcard
-subdomain hosts such as `https://*.example.test`; wildcard sources do not match
-the apex. Host sources support omitted, numeric, or `*` port parts. A missing
-port matches only the scheme's default; paths support exact matching and
-trailing-slash directory prefixes over percent-decoded segments. Paths on
-IP-literal sources remain unsupported.
+Supported CSP source lists include the bare `*` source (HTTP(S) plus the
+protected document's scheme), HTTP(S) DNS hosts, and wildcard subdomain hosts
+such as `https://*.example.test`; wildcard subdomain sources do not match the
+apex. Host sources support omitted, numeric, or `*` port parts. A missing port
+matches only the scheme's default; paths support exact matching and trailing-
+slash directory prefixes over percent-decoded segments. Paths on IP-literal
+sources remain unsupported.
 
 Owns windows, tabs, browser chrome, privileged resource brokers and renderer
 supervision. Composes the platform backend with tab-local GET loaders and
