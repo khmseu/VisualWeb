@@ -22,22 +22,25 @@ public sealed record PageLinkRect(
         x >= X && y >= Y && x < X + Width && y < Y + Height;
 }
 
-/// <summary>One rendered textual anchor with visible rectangles, document-space top offset, absolute destination and bounded new-tab metadata; no element identity.</summary>
+/// <summary>One rendered textual anchor with visible rectangles, document-space top offset, absolute destination and bounded target metadata; no element identity.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-target">hyperlink target</see>.
 /// The browser maps <c>_blank</c> to a new tab and <c>_self</c>, <c>_parent</c>, and <c>_top</c> to the current
-/// tab because nested browsing contexts are not implemented; named targets are rejected by the renderer.</remarks>
+/// tab because nested browsing contexts are not implemented; named targets are scoped to tabs in the source window.</remarks>
 [method: JsonConstructor]
 public sealed record PageLinkTarget(
     [property: JsonRequired] IReadOnlyList<PageLinkRect> Rects,
     [property: JsonRequired] string Url,
     [property: JsonRequired] bool OpenInNewTab,
+    [property: JsonRequired] string? TargetName,
     [property: JsonRequired] double DocumentY)
 {
     public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url) : this(rects, url, false) { }
     public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url, bool openInNewTab)
-        : this(rects, url, openInNewTab, rects.Count == 0 ? 0 : rects[0].Y) { }
+        : this(rects, url, openInNewTab, null) { }
+    public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url, bool openInNewTab, string? targetName)
+        : this(rects, url, openInNewTab, targetName, rects.Count == 0 ? 0 : rects[0].Y) { }
     public PageLinkTarget(double x, double y, double width, double height, string url)
-        : this(new[] { new PageLinkRect(x, y, width, height) }, url, false, y) { }
+        : this(new[] { new PageLinkRect(x, y, width, height) }, url, false, null, y) { }
 
     // Compatibility accessors expose the first visible rectangle, or zero when the anchor is offscreen.
     [JsonIgnore] public double X => Rects.Count == 0 ? 0 : Rects[0].X;
@@ -79,7 +82,7 @@ public sealed record PageTextTarget(
 /// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formaction">formaction</see>;
 /// <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-attributes">submission targets</see>.
 /// Only the bounded GET/urlencoded subset is representable; Error is set
-/// (and Action empty) for anything else. TargetError is separate so a selected formtarget can override it;
+/// (and Action empty) for anything else. TargetName carries a named tab context in the source window. TargetError is separate so a selected formtarget can override it;
 /// NoValidate carries the form's validation-bypass flag, without navigation-policy privileges.
 /// No element identity or script capability crosses IPC.</remarks>
 public sealed record PageForm(
@@ -89,6 +92,8 @@ public sealed record PageForm(
     [JsonRequired]
     public bool OpenInNewTab { get; init; }
     [JsonRequired]
+    public string? TargetName { get; init; }
+    [JsonRequired]
     public string? TargetError { get; init; }
     [JsonRequired]
     public bool NoValidate { get; init; }
@@ -97,8 +102,8 @@ public sealed record PageForm(
 /// <summary>One tree-ordered supported form control with initial state and optional clipped visible border box.</summary>
 /// <remarks>Kind is text, search, email, tel, url, password, date, time, datetime-local, month, week, number, range, color, checkbox, radio, select, textarea, hidden, submit/reset (input) or button/reset (button type=submit/reset). Form is the owner index or -1.
 /// BeforeLink is the number of visible link targets preceding the control in tree order. Value is the initial
-/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and FormTargetOpenInNewTab apply only to submit buttons.
-/// A null FormTargetOpenInNewTab inherits the form target unless FormTargetError rejects the selected submitter.
+/// value; the browser shell owns user edits. Placeholder is bounded display-only text; Multiple is supported for email and select controls. FormNoValidate, FormAction and target overrides apply only to submit buttons.
+/// Null FormTargetOpenInNewTab/FormTargetName inherit the form target unless FormTargetError rejects the selected submitter.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-formtarget">formtarget</see>.
 /// TextareaWrapColumns is present only for textarea hard wrapping. SelectRows is one for compact (popup) selects and 2..12 for browser-owned single or multiple listboxes.
 /// Datetime-local values are normalized timezone-free strings (years 0001–9999); Minimum/Maximum are
@@ -145,6 +150,8 @@ public sealed record PageFormControl(
     public string? FormActionError { get; init; }
     [JsonRequired]
     public bool? FormTargetOpenInNewTab { get; init; }
+    [JsonRequired]
+    public string? FormTargetName { get; init; }
     [JsonRequired]
     public string? FormTargetError { get; init; }
     [JsonRequired]
@@ -610,8 +617,19 @@ public static class RendererProtocol
         {
             if (link is null || link.Rects is null || link.Rects.Count > MaxLinkRects
                 || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters
+                || link.TargetName is { Length: 0 or > MaxTextCharacters }
+                || link.OpenInNewTab && link.TargetName is not null
                 || !double.IsFinite(link.DocumentY) || link.DocumentY < 0 || link.DocumentY > MaxScrollHeight)
             { throw new IpcProtocolException("Invalid renderer link rectangle count, URL or document offset limit."); }
+            if (link.TargetName is { } targetName && (!targetName.All(char.IsAscii)
+                || targetName.Any(char.IsWhiteSpace)
+                || targetName.Equals("_blank", StringComparison.OrdinalIgnoreCase)
+                || targetName.Equals("_self", StringComparison.OrdinalIgnoreCase)
+                || targetName.Equals("_parent", StringComparison.OrdinalIgnoreCase)
+                || targetName.Equals("_top", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new IpcProtocolException("Invalid renderer hyperlink target metadata.");
+            }
             foreach (var rect in link.Rects)
             {
                 if (rect is null || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
@@ -621,6 +639,8 @@ public static class RendererProtocol
                 { throw new IpcProtocolException("Invalid renderer link rectangle."); }
             }
             urlBytes += Encoding.UTF8.GetByteCount(link.Url);
+            if (link.TargetName is { } targetNameValue)
+            { urlBytes += Encoding.UTF8.GetByteCount(targetNameValue); }
             if (urlBytes > MaxLinkMetadataBytes)
             { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }
             var parsed = BrowserUrl.ParseResult(link.Url);
@@ -661,9 +681,14 @@ public static class RendererProtocol
         {
             if (form is null || form.Action is null || form.Action.Length > MaxTextCharacters
                 || form.Error is { Length: 0 or > MaxTextCharacters }
+                || form.TargetName is { Length: 0 or > MaxTextCharacters }
                 || form.TargetError is { Length: 0 or > MaxTextCharacters }
+                || form.TargetName is not null && form.OpenInNewTab
                 || form.TargetError is not null && form.OpenInNewTab)
             { throw new IpcProtocolException("Invalid renderer form fields or limits."); }
+            if (form.TargetName is { } formTargetName && (!formTargetName.All(char.IsAscii)
+                || formTargetName.Any(char.IsWhiteSpace)))
+            { throw new IpcProtocolException("Invalid renderer form target metadata."); }
             if (form.Error is not null)
             {
                 if (form.Action.Length != 0) { throw new IpcProtocolException("Unsupported renderer forms carry no action."); }
@@ -694,10 +719,14 @@ public static class RendererProtocol
                 || control.FormActionError is { Length: 0 or > MaxTextCharacters }
                 || (control.FormAction is not null || control.FormActionError is not null) && control.Kind is not ("submit" or "button")
                 || control.FormActionError is not null && control.FormAction is not null
+                || control.FormTargetName is { Length: 0 or > MaxTextCharacters }
                 || control.FormTargetError is { Length: 0 or > MaxTextCharacters }
-                || (control.FormTargetOpenInNewTab is not null || control.FormTargetError is not null)
+                || (control.FormTargetOpenInNewTab is not null || control.FormTargetName is not null
+                    || control.FormTargetError is not null)
                     && control.Kind is not ("submit" or "button")
+                || control.FormTargetName is not null && control.FormTargetOpenInNewTab is not null
                 || control.FormTargetError is not null && control.FormTargetOpenInNewTab is not null
+                || control.FormTargetError is not null && control.FormTargetName is not null
                 || control.FormAction is { } formAction && (BrowserUrl.ParseResult(formAction).Url is not { } actionUrl
                     || actionUrl.Href != formAction || actionUrl.Protocol is not ("http:" or "https:" or "file:" or "data:"))
                 || control.Kind == "textarea" && (control.TextareaWrapColumns is < 0 or > 128
@@ -744,6 +773,9 @@ public static class RendererProtocol
                 || !control.Multiple && control.Options.Count(option => option.Selected) > 1
                 || control.Multiple && control.Kind is not ("email" or "select"))
             { throw new IpcProtocolException("Invalid renderer form control fields or limits."); }
+            if (control.FormTargetName is { } controlTargetName && (!controlTargetName.All(char.IsAscii)
+                || controlTargetName.Any(char.IsWhiteSpace)))
+            { throw new IpcProtocolException("Invalid renderer submitter target metadata."); }
             optionCount += control.Options.Length;
             if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected && !option.Disabled)?.Value
                 && !(control.Options.All(option => !option.Selected || option.Disabled) && control.Value.Length == 0))

@@ -20,11 +20,13 @@ arrays with a 1 MiB combined UTF-8 JSON budget, 8192-character strings, valid
 form indices, supported kinds, nondecreasing `BeforeLink` positions and
 viewport-contained rectangles (never for hidden inputs). A form either has an
 absolute http/https/file/data action or an empty action with a nonempty error.
-Required form `OpenInNewTab`/nullable `TargetError`/`NoValidate`/`NoValidate` and submitter nullable
-`FormTargetOpenInNewTab`/`FormTargetError` carry only current/new-tab choice or
-bounded diagnostics. Null overrides inherit, false selects current tab, and true
-selects new tab; submitter choice and error are mutually exclusive and restricted
-to submit buttons. Target errors remain separate from other form errors.
+Required form `OpenInNewTab`/nullable `TargetName`/`TargetError`/`NoValidate`
+and submitter nullable `FormTargetOpenInNewTab`/`FormTargetName`/`FormTargetError`
+carry current/new-tab or bounded current-window named-target metadata plus diagnostics.
+Null overrides inherit, false selects current tab, and true selects new tab.
+Named targets must be ASCII and contain no whitespace; submitter target choice
+and error are mutually exclusive and restricted to submit buttons. Target errors
+remain separate from other form errors.
 
 These are internal contracts, not a web standard. See the
 [private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v41).

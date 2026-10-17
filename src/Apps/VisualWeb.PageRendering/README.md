@@ -38,8 +38,8 @@ anchors and non-text anchors without a non-empty rendered block box remain
 unsupported. IPC v37 adds the offset without exposing renderer DOM identity.
 `_blank` opens a new tab; `_self`,
 `_parent`, and `_top` use the current tab, including the first `<base target>`
-fallback. Unsupported named contexts
-fail visibly. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
+fallback. Other ASCII names are preserved as current-window browsing-context
+targets. `BrowserPage.TextTargets` is a separate bounded list of visible shaped
 text fragments with clipped rectangles for browser-owned selection; it exposes no
 DOM identity. The shared IPC contract caps 4096 anchors, 64 rectangles per anchor,
 8192 characters per URL and 1 MiB serialized metadata locally and in workers.
@@ -69,11 +69,12 @@ forms without an action attribute or with an empty value default to the final
 document URL. Invalid/data/javascript base
 URLs fall back to the document URL. Form targets `_self`, `_parent`, and `_top`
 (including first `<base target>` fallback) use the current tab; `_blank` selects a
-new active tab. Selected button/input `formtarget` overrides the form target;
-an empty override selects the current tab. Named/non-keyword targets become
-separate bounded target errors; an invalid submitter affects only its own
-activation, and a valid override can replace an invalid form/base target.
-IPC v39 carries form-level `novalidate` state alongside current/new-tab flags and diagnostics, never raw context names.
+new active tab. Other ASCII names are preserved as current-window browsing
+contexts. Selected button/input `formtarget` overrides the form target; an
+empty override selects the current tab. Invalid non-ASCII or whitespace-bearing
+targets become separate bounded target errors; an invalid submitter affects only
+its own activation, and a valid override can replace an invalid form/base target.
+IPC v39 carries form-level `novalidate` state alongside bounded target metadata and diagnostics.
 Text/search/email/tel/url/password inputs and textarea may carry a nonempty
 `Dirname` companion name, bounded to 8192 UTF-16 code units and the combined
 1 MiB form metadata budget. The shell emits `ltr` immediately after a successful

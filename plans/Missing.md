@@ -58,8 +58,9 @@ broader page interaction is still missing:
   text-bearing legacy `<a name>` targets,
   and empty-fragment top scrolling are supported. `_blank` opens an active tab in the source window through the
   existing broker policy; `_self`, `_parent`, and `_top` use the current tab,
-  and the first `<base target>` supplies fallback for links. Named browsing
-  contexts remain unsupported and fail visibly. Hyperlink URLs resolve against
+  and the first `<base target>` supplies fallback for links. Other ASCII target
+  names are scoped to the current window and reuse a matching named tab or create
+  one when absent. Hyperlink URLs resolve against
   the first `<base href>` (invalid/data/javascript bases fall back to the final
   response URL); form actions and linked stylesheets use the same resolution.
   Successful document commits and resize repaints clear frame-local anchor focus;
@@ -149,11 +150,11 @@ broader page interaction is still missing:
   Focused submit and reset controls activate on Enter or Space; Space on a focused
   inert button has no submission/navigation effect.
   Form `target` and first `<base target>` fallback support `_blank` as a new active
-  tab; `_self`, `_parent`, and `_top` retain current-tab behavior. A selected
-  button/input submitter's `formtarget` overrides that fallback. Invalid/named
-  overrides affect only that submitter and fail before value serialization or
-  request/tab startup. Named/other non-keyword contexts remain missing and visibly
-  rejected. None bypass destination or origin restrictions; new-tab destination
+  tab; `_self`, `_parent`, and `_top` retain current-tab behavior. Other ASCII
+  names target current-window named tabs, reusing when present or creating when
+  absent. A selected button/input submitter's `formtarget` overrides that fallback.
+  Invalid non-ASCII or whitespace-bearing overrides affect only that submitter
+  and fail before value serialization or request/tab startup. None bypass destination or origin restrictions; new-tab destination
   checks run before tab creation, with shared HSTS applied before downgrade checks.
   Visible text/search/email/tel/url/password/date/time/datetime-local/month/week/number/color/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection. Pointer clicks in single-line text fields and textareas place the

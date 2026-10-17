@@ -236,8 +236,8 @@ window for pointer or focused-Enter activation; source-document scheme and HTTPS
 downgrade checks still apply to the navigation. `_self`, `_parent`, and `_top`
 resolve to the current tab because nested browsing contexts are absent. The first
 `<base target>` supplies the fallback for links without their own target, for
-these same keywords. Named browsing contexts are rejected visibly rather than
-silently navigated in the current tab. The first `<base href>` resolves hyperlink
+these same keywords. Other ASCII target names are scoped to the current window:
+the browser reuses a matching named tab or creates one when absent. The first `<base href>` resolves hyperlink
 URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
 response URL. Form actions and browser-discovered linked stylesheets use the same
 first-base resolution and fallback. `tabindex`, DOM focus APIs, downloads, image/area
@@ -454,7 +454,8 @@ checks before any form values are serialized. `_self`, `_parent`, and `_top`
 (including the first `<base target>` fallback) use the current tab; `_blank`
 opens a new active tab in the source window. The selected button or input submitter's
 `formtarget` overrides the form target, including an empty override selecting the current tab.
-Named and other non-keyword contexts remain visibly rejected. Target errors are separate
+Other ASCII names target current-window named tabs, reusing when present or creating when absent.
+Non-ASCII or whitespace-bearing targets remain visibly rejected. Target errors are separate
 from other form errors: an invalid submitter affects only its own activation, and a
 supported submitter override can replace an unsupported form/base target. Target checks
 precede validation and value serialization; destination policy checks precede new-tab

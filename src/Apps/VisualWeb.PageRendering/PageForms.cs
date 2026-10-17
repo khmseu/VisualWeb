@@ -30,7 +30,7 @@ internal static class PageForms
         var formIndex = new Dictionary<DomElement, int>();
         var errors = new List<string?>();
         var actions = new List<string>();
-        var targets = new List<(bool OpenInNewTab, string? Error)>();
+        var targets = new List<(bool OpenInNewTab, string? TargetName, string? Error)>();
         var noValidate = new List<bool>();
         var controls = new List<PageFormControl>();
         var elements = document.Descendants().OfType<DomElement>().ToList();
@@ -104,6 +104,7 @@ internal static class PageForms
             string? submitterAction = null;
             string? submitterActionError = null;
             bool? submitterTarget = null;
+            string? submitterTargetName = null;
             string? submitterTargetError = null;
             if (kind is "submit" or "button")
             {
@@ -112,7 +113,11 @@ internal static class PageForms
                 {
                     var targetResult = Target(target, "formtarget");
                     submitterTargetError = targetResult.Error;
-                    if (targetResult.Error is null) { submitterTarget = targetResult.OpenInNewTab; }
+                    if (targetResult.Error is null)
+                    {
+                        submitterTarget = targetResult.TargetName is null ? targetResult.OpenInNewTab : null;
+                        submitterTargetName = targetResult.TargetName;
+                    }
                 }
                 foreach (var name in SubmitterOverrides)
                 {
@@ -177,8 +182,8 @@ internal static class PageForms
             }
             controls.Add(CreateControl(element, index, kind, controlName, value, label, pattern, text, minLength,
                 lastLink, rect, minimum, maximum, step, stepAny, options, placeholder, submitterAction,
-                submitterActionError, submitterTarget, submitterTargetError, textareaWrapColumns, textareaWrapHard,
-                selectRows) with
+                submitterActionError, submitterTarget, submitterTargetName, submitterTargetError,
+                textareaWrapColumns, textareaWrapHard, selectRows) with
             { Dirname = dirname });
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
@@ -193,6 +198,7 @@ internal static class PageForms
         var forms = actions.Select((action, i) => new PageForm(errors[i] is null ? action : "", errors[i])
         {
             OpenInNewTab = targets[i].OpenInNewTab,
+            TargetName = targets[i].TargetName,
             TargetError = targets[i].Error,
             NoValidate = noValidate[i],
         }).ToArray();
@@ -228,7 +234,8 @@ internal static class PageForms
     private static PageFormControl CreateControl(DomElement element, int formIndex, string kind, string name,
         string value, string label, string? pattern, bool text, int minLength, int beforeLink, PageLinkRect? rect,
         double? minimum, double? maximum, double? step, bool stepAny, PageFormOption[] options, string placeholder,
-        string? submitterAction, string? submitterActionError, bool? submitterTarget, string? submitterTargetError,
+        string? submitterAction, string? submitterActionError, bool? submitterTarget, string? submitterTargetName,
+        string? submitterTargetError,
         int textareaWrapColumns, bool textareaWrapHard, int selectRows) =>
         new(formIndex, kind, name, value, label, pattern,
             element.GetAttribute("disabled") is not null || IsDisabledByFieldset(element),
@@ -245,6 +252,7 @@ internal static class PageForms
             FormAction = submitterAction,
             FormActionError = submitterActionError,
             FormTargetOpenInNewTab = submitterTarget,
+            FormTargetName = submitterTargetName,
             FormTargetError = submitterTargetError,
             TextareaWrapColumns = textareaWrapColumns,
             TextareaWrapHard = textareaWrapHard && textareaWrapColumns > 0,
@@ -428,13 +436,15 @@ internal static class PageForms
             || target.Equals("_parent", StringComparison.OrdinalIgnoreCase)
             || target.Equals("_top", StringComparison.OrdinalIgnoreCase));
 
-    private static (bool OpenInNewTab, string? Error) Target(string? target, string attribute)
+    private static (bool OpenInNewTab, string? TargetName, string? Error) Target(string? target, string attribute)
     {
         target = target?.Trim(AsciiWhitespace);
-        if (string.IsNullOrEmpty(target) || IsCurrentTarget(target)) { return (false, null); }
+        if (string.IsNullOrEmpty(target) || IsCurrentTarget(target)) { return (false, null, null); }
         if (target.All(character => character <= 0x7f) && target.Equals("_blank", StringComparison.OrdinalIgnoreCase))
-        { return (true, null); }
-        return (false, $"Unsupported form {attribute}: only _blank and current-tab keywords are implemented; named contexts are unsupported.");
+        { return (true, null, null); }
+        if (target.All(character => character <= 0x7f) && target.IndexOfAny(AsciiWhitespace) < 0)
+        { return (false, target, null); }
+        return (false, null, $"Unsupported form {attribute}: only ASCII targets are implemented in this subset.");
     }
 
     private static string? Kind(DomElement element) => element.LocalName switch

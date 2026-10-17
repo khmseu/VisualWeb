@@ -1033,7 +1033,7 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         var link = owner.Page.LinkTargets[owner.FocusedLink];
         return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
-            activateNewTab: activateNewTab, authorizeRedirects: true);
+            activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
     }
     /// <summary>Enter activates submit/reset controls; text fields perform implicit submission. Checkable controls use Space or pointer activation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission">implicit
@@ -1144,9 +1144,13 @@ public sealed class BrowserController : IDisposable
         var submitterControl = submitter >= 0 ? page.FormControls[submitter] : null;
         if (submitterControl?.FormTargetError is { } submitterTargetError)
         { throw new PageNavigationException(submitterTargetError); }
-        if (submitterControl?.FormTargetOpenInNewTab is null && form.TargetError is { } targetError)
+        if (submitterControl?.FormTargetOpenInNewTab is null && submitterControl?.FormTargetName is null
+            && form.TargetError is { } targetError)
         { throw new PageNavigationException(targetError); }
-        var openInNewTab = submitterControl?.FormTargetOpenInNewTab ?? form.OpenInNewTab;
+        var openInNewTab = submitterControl?.FormTargetName is not null
+            ? false
+            : submitterControl?.FormTargetOpenInNewTab ?? form.OpenInNewTab;
+        var targetName = submitterControl?.FormTargetName ?? form.TargetName;
         if (submitterControl?.FormActionError is { } actionError) { throw new PageNavigationException(actionError); }
         var action = BrowserUrl.Parse(submitterControl?.FormAction ?? form.Action);
         if (document.ContentSecurityPolicyFields.Count > 0
@@ -1185,7 +1189,7 @@ public sealed class BrowserController : IDisposable
         var limit = Session.Options.MaxAddressCharacters;
         var query = SerializeForm(page, owner, formIndex, submitter, normalizedEmailValues, limit);
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
-            sameOriginRedirectOrigin, openInNewTab);
+            sameOriginRedirectOrigin, openInNewTab, targetName: targetName);
     }
     private static string SerializeForm(BrowserPage page, Content owner, int formIndex, int submitter,
         IReadOnlyDictionary<int, string> normalizedEmailValues, int limit) =>
@@ -1351,7 +1355,7 @@ public sealed class BrowserController : IDisposable
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true,
-        bool authorizeRedirects = false)
+        bool authorizeRedirects = false, string? targetName = null)
     {
         var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
@@ -1359,7 +1363,10 @@ public sealed class BrowserController : IDisposable
         var url = BrowserUrl.Parse(destination);
         if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
-        if (!openInNewTab && sameOriginRedirectOrigin is null && TryNavigateFragment(id, url)) { return true; }
+        if (!openInNewTab && targetName is null && sameOriginRedirectOrigin is null && TryNavigateFragment(id, url))
+        {
+            return true;
+        }
         if (url.Protocol == "file:")
         { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
         if (url.Protocol == "data:")
@@ -1377,10 +1384,29 @@ public sealed class BrowserController : IDisposable
             sameOriginRedirectOrigin = content[id].Source.AuthorizeNavigationTarget(url, preventHttpsDowngrade);
         }
         var target = id;
+        var createdTarget = false;
+        var sourceWindow = Session.Windows.Single(candidate => candidate.Tabs.Any(tab => tab.Id == id));
         if (openInNewTab)
         {
-            var window = Session.Windows.Single(candidate => candidate.Tabs.Any(tab => tab.Id == id));
-            target = CreateTab(window.Id, activateNewTab).Id;
+            target = CreateTab(sourceWindow.Id, activateNewTab).Id;
+            createdTarget = true;
+        }
+        else if (targetName is not null)
+        {
+            var existing = sourceWindow.Tabs.FirstOrDefault(candidate =>
+                string.Equals(candidate.BrowsingContextName, targetName, StringComparison.Ordinal));
+            if (existing is null)
+            {
+                var named = CreateTab(sourceWindow.Id, activateNewTab);
+                named.BrowsingContextName = targetName;
+                target = named.Id;
+                createdTarget = true;
+            }
+            else
+            {
+                target = existing.Id;
+                if (activateNewTab) { Session.Activate(sourceWindow.Id, target); }
+            }
         }
         try
         {
@@ -1389,7 +1415,7 @@ public sealed class BrowserController : IDisposable
         }
         catch
         {
-            if (target != id)
+            if (createdTarget)
             {
                 CloseTab(target);
                 Changed?.Invoke(id);
@@ -1476,7 +1502,7 @@ public sealed class BrowserController : IDisposable
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
-                activateNewTab: activateNewTab, authorizeRedirects: true);
+                activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
         }
         return false;
     }

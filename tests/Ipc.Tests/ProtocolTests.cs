@@ -421,19 +421,25 @@ public sealed class ProtocolTests
     {
         var formJson = JsonSerializer.Serialize(FormFrame.Forms![0]);
         Assert.Contains("\"OpenInNewTab\":false", formJson, StringComparison.Ordinal);
+        Assert.Contains("\"TargetName\":null", formJson, StringComparison.Ordinal);
         Assert.Contains("\"TargetError\":null", formJson, StringComparison.Ordinal);
         Assert.Contains("\"NoValidate\":false", formJson, StringComparison.Ordinal);
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
             formJson.Replace("\"OpenInNewTab\":false,", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
+            formJson.Replace(",\"TargetName\":null", "", StringComparison.Ordinal)));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
             formJson.Replace(",\"TargetError\":null", "", StringComparison.Ordinal)));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageForm>(
             formJson.Replace(",\"NoValidate\":false", "", StringComparison.Ordinal)));
         var controlJson = JsonSerializer.Serialize(FormFrame.FormControls![0]);
         Assert.Contains("\"FormTargetOpenInNewTab\":null", controlJson, StringComparison.Ordinal);
+        Assert.Contains("\"FormTargetName\":null", controlJson, StringComparison.Ordinal);
         Assert.Contains("\"FormTargetError\":null", controlJson, StringComparison.Ordinal);
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
             controlJson.Replace(",\"FormTargetOpenInNewTab\":null", "", StringComparison.Ordinal)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
+            controlJson.Replace(",\"FormTargetName\":null", "", StringComparison.Ordinal)));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(
             controlJson.Replace(",\"FormTargetError\":null", "", StringComparison.Ordinal)));
     }
@@ -443,25 +449,28 @@ public sealed class ProtocolTests
     {
         var frame = FormFrame with
         {
-            Forms = [new("https://example.com/search", null) { OpenInNewTab = true, NoValidate = true },
-                new("https://example.com/search", null) { TargetError = "Unsupported form target." }],
-            FormControls =
+            Forms =
             [
-                FormFrame.FormControls![3] with { Form = 0, FormTargetOpenInNewTab = true },
-                FormFrame.FormControls![3] with { Form = 0, FormTargetOpenInNewTab = false },
-                FormFrame.FormControls![3] with { Form = 0, FormTargetError = "Unsupported formtarget." },
-            ]
+                new("https://example.com/search", null) { OpenInNewTab = true, NoValidate = true },
+                new("https://example.com/search", null) { TargetName = "named" }
+            ],
+            FormControls = [FormFrame.FormControls![2] with { Form = 0, FormTargetOpenInNewTab = true }]
         };
         RendererProtocol.Validate(frame, 16);
+        RendererProtocol.Validate(frame with
+        { FormControls = [FormFrame.FormControls![2] with { Form = 0, FormTargetOpenInNewTab = false }] }, 16);
+        RendererProtocol.Validate(frame with
+        { FormControls = [FormFrame.FormControls![2] with { Form = 0, FormTargetName = "named" }] }, 16);
         var parsed = JsonSerializer.Deserialize<RendererMessage>(JsonSerializer.Serialize(frame))!;
         Assert.Equal(frame.Forms, parsed.Forms);
-        Assert.Equal(frame.FormControls.Select(control => (control.FormTargetOpenInNewTab, control.FormTargetError)),
-            parsed.FormControls!.Select(control => (control.FormTargetOpenInNewTab, control.FormTargetError)));
+        Assert.Equal(frame.FormControls.Select(control => (control.FormTargetOpenInNewTab, control.FormTargetName, control.FormTargetError)),
+            parsed.FormControls!.Select(control => (control.FormTargetOpenInNewTab, control.FormTargetName, control.FormTargetError)));
 
         foreach (var form in new[]
         {
             frame.Forms[0] with { TargetError = "" },
-            frame.Forms[0] with { TargetError = "error" },
+            frame.Forms[0] with { TargetName = "name", OpenInNewTab = true },
+            frame.Forms[0] with { TargetName = "name", TargetError = "error" },
             frame.Forms[1] with { TargetError = new string('x', RendererProtocol.MaxTextCharacters + 1) },
         })
         {
@@ -469,9 +478,11 @@ public sealed class ProtocolTests
         }
         foreach (var control in new[]
         {
+            frame.FormControls[0] with { FormTargetName = "name", FormTargetOpenInNewTab = false },
             frame.FormControls[0] with { FormTargetError = "error" },
-            frame.FormControls[2] with { FormTargetError = "" },
-            frame.FormControls[2] with { FormTargetError = new string('x', RendererProtocol.MaxTextCharacters + 1) },
+            FormFrame.FormControls![2] with { Form = 0, FormTargetError = "" },
+            FormFrame.FormControls![2] with { Form = 0, FormTargetError = new string('x', RendererProtocol.MaxTextCharacters + 1) },
+            FormFrame.FormControls![2] with { Form = 0, FormTargetName = "name", FormTargetError = "error" },
             FormFrame.FormControls![0] with { FormTargetOpenInNewTab = false },
             FormFrame.FormControls![0] with { FormTargetError = "error" },
         })
@@ -481,7 +492,7 @@ public sealed class ProtocolTests
         RendererProtocol.Validate(frame with
         {
             Forms = [frame.Forms[1] with { TargetError = new string('x', RendererProtocol.MaxTextCharacters) }],
-            FormControls = [frame.FormControls[2] with { FormTargetError = new string('x', RendererProtocol.MaxTextCharacters) }]
+            FormControls = [FormFrame.FormControls![2] with { Form = 0, FormTargetError = new string('x', RendererProtocol.MaxTextCharacters) }]
         }, 16);
     }
 
@@ -794,6 +805,7 @@ public sealed class ProtocolTests
         var json = JsonSerializer.Serialize(link);
         Assert.Contains("\"Rects\"", json);
         Assert.Contains("\"OpenInNewTab\":false", json);
+        Assert.Contains("\"TargetName\":null", json);
         Assert.DoesNotContain("\"X\":0,\"Y\":0,\"Width\":2,\"Height\":2,\"Url\"", json);
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>("{\"Url\":\"https://example.com/\"}"));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>(

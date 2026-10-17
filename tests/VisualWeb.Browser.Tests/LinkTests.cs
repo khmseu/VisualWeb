@@ -39,6 +39,9 @@ public sealed class LinkTests
         Assert.False(page.LinkTargets[0].OpenInNewTab);
         Assert.True(page.LinkTargets[1].OpenInNewTab);
         Assert.False(page.LinkTargets[2].OpenInNewTab);
+        Assert.Null(page.LinkTargets[0].TargetName);
+        Assert.Null(page.LinkTargets[1].TargetName);
+        Assert.Null(page.LinkTargets[2].TargetName);
         foreach (var rect in page.LinkTargets[0].Rects)
         { Assert.True(page.LinkTargets[0].Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)); }
     }
@@ -377,13 +380,13 @@ public sealed class LinkTests
     }
 
     [Fact]
-    public async Task UnsupportedNamedHyperlinkTargetFailsInsteadOfSilentlyUsingCurrentTab()
+    public async Task NamedHyperlinkTargetsArePreservedAsCurrentWindowContextNames()
     {
         using var renderer = new StaticPageRenderer(FontPath, 100000);
-        var exception = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(Document(
+        var page = await renderer.RenderAsync(Document(
             "<!doctype html><style>*{margin:0}</style><a href='/next' target='other-window'>open</a>"),
-            new(100, 50, 1), Cancellation));
-        Assert.Contains("named hyperlink target", exception.Message, StringComparison.OrdinalIgnoreCase);
+            new(100, 50, 1), Cancellation);
+        Assert.Equal("other-window", Assert.Single(page.LinkTargets).TargetName);
     }
 
     [Theory]

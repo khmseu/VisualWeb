@@ -2410,7 +2410,6 @@ public sealed class FormTests
 
     [Theory]
     [InlineData("<form method=post><input name=q></form>", "method")]
-    [InlineData("<form target=named><input name=q></form>", "target")]
     [InlineData("<form enctype=multipart/form-data><input name=q></form>", "enctype")]
     [InlineData("<form><input name=q required></form>", "required")]
     [InlineData("<form action='http://[bad'><input name=q></form>", "action")]
@@ -3870,9 +3869,8 @@ public sealed class FormTests
     }
 
     [Theory]
-    [InlineData("button", "named")]
-    [InlineData("input", "_unfencedTop")]
     [InlineData("button", "_blank extra")]
+    [InlineData("input", "_bl\u212Ank")]
     public void InvalidSelectedFormTargetFailsBeforeSerializationWithoutPoisoningOtherSubmitters(string tag, string target)
     {
         var bad = tag == "input" ? $"<input type=submit formtarget='{target}' value=Bad>"
@@ -3934,31 +3932,32 @@ public sealed class FormTests
         var page = await renderer.RenderAsync(Document("""
             <base target=_blank><base target=named>
             <form><button formtarget=_self>Self</button><input type=submit formtarget=_BLANK>
-            <button formtarget=named>Bad</button><input type=submit formtarget=_unfencedTop>
+            <button formtarget=named>Named</button><input type=submit formtarget=_unfencedTop>
             <button>Default</button></form>
             <form target=named><button formtarget=_top>Override</button></form>
             <form target=''><button>Current</button></form>
             """), new(200, 400, 1), Cancellation);
         Assert.All(page.Forms, form => Assert.Null(form.Error));
         Assert.True(page.Forms[0].OpenInNewTab);
-        Assert.NotNull(page.Forms[1].TargetError);
+        Assert.Equal("named", page.Forms[1].TargetName);
         Assert.False(page.Forms[2].OpenInNewTab);
+        Assert.Null(page.Forms[0].TargetName);
+        Assert.Null(page.Forms[2].TargetName);
         Assert.Equal(false, page.FormControls[0].FormTargetOpenInNewTab);
         Assert.Equal(true, page.FormControls[1].FormTargetOpenInNewTab);
-        Assert.All(page.FormControls.Skip(2).Take(2), control =>
-        {
-            Assert.Null(control.FormTargetOpenInNewTab);
-            Assert.Contains("formtarget", control.FormTargetError!, StringComparison.Ordinal);
-        });
+        Assert.Equal("named", page.FormControls[2].FormTargetName);
+        Assert.Equal("_unfencedTop", page.FormControls[3].FormTargetName);
+        Assert.Null(page.FormControls[2].FormTargetError);
+        Assert.Null(page.FormControls[3].FormTargetError);
         Assert.Null(page.FormControls[4].FormTargetOpenInNewTab);
+        Assert.Null(page.FormControls[4].FormTargetName);
         Assert.Equal(false, page.FormControls[5].FormTargetOpenInNewTab);
+        Assert.Null(page.FormControls[5].FormTargetName);
     }
 
     [Theory]
-    [InlineData("named")]
-    [InlineData("_unfencedTop")]
     [InlineData("_bl\u212Ank")]
-    public void NamedBaseFormTargetsRemainVisiblyRejected(string target)
+    public void NonAsciiBaseFormTargetsRemainVisiblyRejected(string target)
     {
         using var harness = new Harness($"<base target='{target}'><form><button>Go</button></form>");
         harness.Controller.FocusControl(harness.Tab.Id, 0);
@@ -3966,6 +3965,29 @@ public sealed class FormTests
         Assert.Contains("target", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Single(harness.Source.Requests);
         Assert.Equal(1, harness.RendererCreations);
+    }
+
+    [Fact]
+    public void NamedFormTargetsReuseOrCreateTabsInCurrentWindow()
+    {
+        using var harness = new Harness("<form target=named><input name=q value=word><button>Go</button></form>");
+        var controller = harness.Controller;
+        var window = Assert.Single(controller.Session.Windows);
+        var existing = controller.CreateTab(window.Id);
+        existing.BrowsingContextName = "named";
+        controller.FocusControl(harness.Tab.Id, 1);
+
+        Assert.True(controller.ActivateFocusedLink(harness.Tab.Id));
+        Assert.Equal(existing.Id, window.ActiveTabId);
+        Assert.Equal("https://example.com/final/index.html?q=word", harness.Source.Requests[^1].Url.Href);
+
+        using var second = new Harness("<form target=fresh><input name=q value=word><button>Go</button></form>");
+        var secondController = second.Controller;
+        var secondWindow = Assert.Single(secondController.Session.Windows);
+        secondController.FocusControl(second.Tab.Id, 1);
+        Assert.True(secondController.ActivateFocusedLink(second.Tab.Id));
+        Assert.Equal(2, secondWindow.Tabs.Count);
+        Assert.Equal("fresh", secondWindow.ActiveTab!.BrowsingContextName);
     }
 
     [Theory]

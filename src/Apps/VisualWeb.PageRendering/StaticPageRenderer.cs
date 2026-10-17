@@ -21,10 +21,11 @@ public sealed class StaticPageRenderer : IPageRenderer
     private readonly PaintFontRegistry paint;
     private readonly PageRenderOptions options;
     private sealed record DocumentState(LoadedPage Source, HtmlParseResult Parsed, int Scripts);
-    private sealed class LinkTargetData(string url, bool openInNewTab, double documentY)
+    private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName, double documentY)
     {
         public string Url { get; } = url;
         public bool OpenInNewTab { get; } = openInNewTab;
+        public string? TargetName { get; } = targetName;
         public double DocumentY { get; set; } = documentY;
         public List<PageLinkRect> Rects { get; } = [];
         public bool IsBlockBoxAnchor { get; set; }
@@ -127,7 +128,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         List<PageLinkTarget> links = [];
         if (layout.Root is { } root) { Visit(root); }
         links = linkData.Select(target => new PageLinkTarget(target.Rects.AsReadOnly(), target.Url,
-            target.OpenInNewTab, target.DocumentY)).ToList();
+            target.OpenInNewTab, target.TargetName, target.DocumentY)).ToList();
         try
         {
             RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight);
@@ -150,8 +151,8 @@ public sealed class StaticPageRenderer : IPageRenderer
             urlBytes += System.Text.Encoding.UTF8.GetByteCount(destination);
             if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
             { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
-            var target = new LinkTargetData(destination,
-                IsBlankTarget(anchor.GetAttribute("target"), baseTarget), documentY);
+            var (openInNewTab, targetName) = ResolveTarget(anchor.GetAttribute("target"), baseTarget);
+            var target = new LinkTargetData(destination, openInNewTab, targetName, documentY);
             anchors.Add(anchor, target);
             linkData.Add(target);
             return target;
@@ -307,18 +308,19 @@ public sealed class StaticPageRenderer : IPageRenderer
         return LinkedStylesheets.BaseHrefUrl(document, documentUrl, cancellationToken);
     }
 
-    private static bool IsBlankTarget(string? target, string? baseTarget)
+    private static (bool OpenInNewTab, string? TargetName) ResolveTarget(string? target, string? baseTarget)
     {
         var name = (target ?? baseTarget)?.Trim(AsciiWhitespace);
-        if (string.IsNullOrEmpty(name)) { return false; }
+        if (string.IsNullOrEmpty(name)) { return (false, null); }
         if (name.All(character => character <= 0x7f))
         {
-            if (name.Equals("_blank", StringComparison.OrdinalIgnoreCase)) { return true; }
+            if (name.Equals("_blank", StringComparison.OrdinalIgnoreCase)) { return (true, null); }
             if (name.Equals("_self", StringComparison.OrdinalIgnoreCase)
                 || name.Equals("_parent", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("_top", StringComparison.OrdinalIgnoreCase)) { return false; }
+                || name.Equals("_top", StringComparison.OrdinalIgnoreCase)) { return (false, null); }
+            if (name.IndexOfAny(AsciiWhitespace) < 0) { return (false, name); }
         }
-        throw new PageNavigationException("Unsupported named hyperlink target.");
+        throw new PageNavigationException("Unsupported hyperlink target.");
     }
 
     private static IReadOnlyList<PageFragmentTarget> CollectFragmentTargets(LayoutResult layout, double scrollHeight,
