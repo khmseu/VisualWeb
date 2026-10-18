@@ -65,7 +65,7 @@ public sealed class ResourceLoader : IDisposable
     /// <see cref="ResourceError.BlockedPort"/> before any transport or cookie work. Callers may opt in to
     /// <paramref name="preventHttpsDowngrade"/> to reject an HTTP initial URL or HTTPS-to-HTTP redirect before sending it.
     /// Set <paramref name="isNavigationRequest"/> only for top-level navigation to send the bounded
-    /// Upgrade-Insecure-Requests header on each HTTP hop (spec ID upgrade-insecure-requests;
+    /// Upgrade-Insecure-Requests header on each HTTP(S) hop (spec ID upgrade-insecure-requests;
     /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>).</remarks>
     public async Task<ResourceResponse> LoadAsync(BrowserUrl url, bool includeCookies = false,
         CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
@@ -90,7 +90,7 @@ public sealed class ResourceLoader : IDisposable
     /// <paramref name="authorizeDestination"/> for each destination. A rewrite must return an HTTP(S) URL; a false
     /// authorization result throws <see cref="ResourceLoadException"/> with <see cref="ResourceError.NavigationDenied"/>
     /// before credentials, cookies or transport are used for that destination. Set
-    /// <paramref name="isNavigationRequest"/> to send the bounded Upgrade-Insecure-Requests header on HTTP hops
+    /// <paramref name="isNavigationRequest"/> to send the bounded Upgrade-Insecure-Requests header on HTTP(S) hops
     /// (spec ID upgrade-insecure-requests;
     /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>).
     /// These callbacks are not script-visible policy surfaces and do not implement CORS, CSP, referrers or response tainting.</remarks>
@@ -299,7 +299,7 @@ public sealed class ResourceLoader : IDisposable
             RejectCredentials(url);
             var uri = TransportUri(url);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            if (isNavigationRequest && url.Protocol == "http:"
+            if (isNavigationRequest
                 && !request.Headers.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1"))
             {
                 throw new InvalidOperationException("The HTTP transport rejected the Upgrade-Insecure-Requests header.");

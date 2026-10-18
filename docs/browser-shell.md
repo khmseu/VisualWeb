@@ -579,10 +579,11 @@ non-overridden `'unsafe-inline'`, when an applicable source list is present.
 falling back through `style-src` to `default-src`. `style-src-attr`
 independently governs style attributes with the same fallback; matching hashes
 require `'unsafe-hashes'`. Nonces never apply to style attributes.
-HTTP main-document navigation requests send
-`Upgrade-Insecure-Requests: 1` on each HTTP hop, including redirects; HTTPS
-hops and subresources do not carry this header. This request signal does not by
-itself upgrade a URL or authorize a destination.
+HTTP and HTTPS main-document navigation requests send
+`Upgrade-Insecure-Requests: 1` on each request hop, including redirects. HTTPS
+navigation sends it on all hosts without consulting a preload list; subresources
+do not carry the header. This request signal does not by itself upgrade a URL or
+authorize a destination.
 
 The valueless `upgrade-insecure-requests` directive (source ID
 `upgrade-insecure-requests`) rewrites HTTP linked/imported stylesheet URLs to

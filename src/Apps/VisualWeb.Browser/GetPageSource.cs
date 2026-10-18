@@ -75,7 +75,7 @@ public interface IPageSource : IDisposable
 /// development shell also applies it to same-origin page-initiated HTTP links and GET form submissions, including
 /// redirects; cross-origin link navigation is not upgraded (forms are the exception). Explicit address-bar navigation
 /// does not inherit the page's URL-upgrade policy. HTTP main-document requests independently carry
-/// <c>Upgrade-Insecure-Requests: 1</c> on HTTP hops only; this signal does not upgrade URLs or authorize requests.
+/// <c>Upgrade-Insecure-Requests: 1</c> on HTTP(S) hops, without host-specific preload classification; this signal does not upgrade URLs or authorize requests.
 /// This is not a complete Fetch/CORS implementation or general request authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {

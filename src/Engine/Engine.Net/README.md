@@ -27,11 +27,12 @@ callers can apply policies such as CSP3 source-path matching.
 
 Top-level navigation callers can opt into `isNavigationRequest: true` on
 `LoadAsync`, `LoadSameOriginAsync`, or `LoadAuthorizedNavigationAsync` to send
-`Upgrade-Insecure-Requests: 1` on HTTP request hops, including redirects. It is
-omitted from HTTPS hops and ordinary loads by default; the browser opts in only
-for main-document navigation, never its stylesheet/subresource requests. The
-header is a request signal, not URL rewriting, authorization or complete UIR
-policy. Official source: `upgrade-insecure-requests`.
+`Upgrade-Insecure-Requests: 1` on HTTP and HTTPS request hops, including
+redirects. HTTPS navigation always signals support without classifying hosts
+against a preload database. Ordinary loads omit the header by default; the
+browser opts in only for main-document navigation, never its stylesheet or
+other subresource requests. The header is a request signal, not URL rewriting,
+authorization or complete UIR policy. Official source: `upgrade-insecure-requests`.
 
 All three entry points block Fetch bad ports (the 83-port official table) for HTTP(S)
 URLs and every redirect target before transport or cookie work, throwing

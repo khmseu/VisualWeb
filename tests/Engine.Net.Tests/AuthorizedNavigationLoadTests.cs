@@ -33,7 +33,7 @@ public sealed class AuthorizedNavigationLoadTests
     }
 
     [Fact]
-    public async Task InsecureNavigationRequestsSendUpgradeHeaderOnHttpHopsOnly()
+    public async Task NavigationRequestsSendUpgradeHeaderOnHttpAndHttpsHops()
     {
         var requests = new List<(string Url, string? UpgradeHeader)>();
         using var loader = new ResourceLoader(handler: new Handler(request =>
@@ -56,13 +56,13 @@ public sealed class AuthorizedNavigationLoadTests
 
         Assert.Equal([
             ("http://source.example/start", "1"),
-            ("https://source.example/secure", null),
+            ("https://source.example/secure", "1"),
             ("http://source.example/insecure", "1")
         ], requests);
     }
 
     [Fact]
-    public async Task NonNavigationHttpLoadsDoNotSendUpgradeHeader()
+    public async Task NonNavigationHttpAndHttpsLoadsDoNotSendUpgradeHeader()
     {
         using var loader = new ResourceLoader(handler: new Handler(request =>
         {
@@ -71,6 +71,7 @@ public sealed class AuthorizedNavigationLoadTests
         }));
 
         await loader.LoadAsync(BrowserUrl.Parse("http://source.example/resource"), cancellationToken: Token);
+        await loader.LoadAsync(BrowserUrl.Parse("https://source.example/secure-resource"), cancellationToken: Token);
     }
 
     [Fact]

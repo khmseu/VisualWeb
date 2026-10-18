@@ -93,7 +93,7 @@ public sealed class HstsNavigationTests
     }
 
     [Fact]
-    public async Task MainDocumentHttpNavigationSignalsUpgradeSupportButStylesheetsDoNot()
+    public async Task MainDocumentNavigationSignalsUpgradeSupportButStylesheetsDoNot()
     {
         var requests = new List<(string Url, string? UpgradeHeader)>();
         using var source = new GetPageSource(new Handler(request =>
@@ -117,9 +117,13 @@ public sealed class HstsNavigationTests
 
         await source.LoadAsync(BrowserUrl.Parse("http://example.test/"), Token);
 
+        await source.LoadAsync(BrowserUrl.Parse("https://example.test/secure"), Token);
+
         Assert.Equal([
             ("http://example.test/", "1"),
-            ("http://example.test/site.css", null)
+            ("http://example.test/site.css", null),
+            ("https://example.test/secure", "1"),
+            ("https://example.test/site.css", null)
         ], requests);
     }
 

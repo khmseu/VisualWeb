@@ -99,12 +99,14 @@ API.
 Browser page-source navigation opts into the bounded
 `Upgrade-Insecure-Requests: 1` signal (spec ID `upgrade-insecure-requests`,
 [request upgrading](https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request)).
-It is sent on HTTP main-document request hops, including HTTP redirects, but not
-on HTTPS hops or stylesheet/subresource requests. Standalone `ResourceLoader`
+It is sent on HTTP main-document request hops and on all HTTPS main-document
+request hops, including redirects, but not on stylesheet/subresource requests.
+Always sending on HTTPS avoids requiring a host-specific HSTS preload database;
+it includes hosts that may already be preloaded. Standalone `ResourceLoader`
 callers must explicitly set `isNavigationRequest: true`; ordinary loads default
 to no header. This signal does not itself rewrite URLs or provide request
-authorization, and does not implement HTTPS preloadability or a complete
-Upgrade-Insecure-Requests policy.
+authorization, and does not implement the broader Upgrade-Insecure-Requests
+policy.
 
 ## Schemes and redirects
 
