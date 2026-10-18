@@ -390,8 +390,9 @@ Escape, Tab and outside clicks dismiss without reverting toggles. Pointer toggle
 Reset restores both initial selections and the initial cursor; retained repaints preserve them.
 Committed text applies the same bounded, expiring prefix search as single selects to the independent cursor,
 skipping disabled options and cycling repeated single-character matches without changing selections.
-Empty/all-disabled option lists cannot be toggled. Shift/range selection, Ctrl+A selection and platform-native
-select behavior remain unsupported. These interactions do not dispatch
+Ctrl+A selects every enabled option without moving the independent cursor; empty
+or all-disabled option lists remain unchanged. Shift/range selection and
+platform-native select behavior remain unsupported. These interactions do not dispatch
 DOM keyboard, input or change events. Multiple selects with an explicit `size` from 2 through 12 instead render
 as browser-owned multiple-select listboxes and never open the popup; an absent, invalid, zero or one `size` keeps
 the popup (the HTML default of four listbox rows for multiple selects is not implemented) and a `size` above 12 is a

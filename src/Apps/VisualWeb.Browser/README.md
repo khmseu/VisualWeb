@@ -38,8 +38,9 @@ limits. Unsupported kinds, empty names and RTL/auto/bdi/bdo scopes fail visibly;
 no bidi or DOM events are implemented. Multiple selects use browser-owned popups and an independent enabled-option
 cursor: unmodified Up/Down/Home/End/PageUp/PageDown move without changing selection; Space/Enter opens,
 Space toggles while keeping an open popup, and Enter/Escape dismiss without reverting toggles.
-Selection is submitted in option order and reset restores initial selections/cursor. Type-ahead,
-Shift/range selection and Ctrl+A remain unsupported; no DOM input events
+Selection is submitted in option order and reset restores initial selections/cursor. Type-ahead moves
+the independent cursor without changing selection; Ctrl+A selects all enabled options without moving it.
+Shift/range selection remains unsupported; no DOM input events
 are generated. Single- and multiple-select `size` 2..12 listboxes keep a row-bounded, shell-owned first visible option
 for wheel scrolling (no page scroll over the listbox), offset pointer targets and keyboard auto-visibility.
 Multiple listboxes never open a popup: clicks toggle enabled rows, keys move an outlined cursor, Space toggles it

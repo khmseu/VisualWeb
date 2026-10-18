@@ -570,6 +570,24 @@ public sealed class BrowserController : IDisposable
         return true;
     }
 
+    /// <summary>Selects every enabled option in the focused multiple-select control.</summary>
+    public bool SelectAllFocusedMultipleOptions(TabId id)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false, Multiple: true } control)
+        { return false; }
+        var selected = MultipleSelectedOptions(owner, owner.FocusedControl);
+        var changed = false;
+        for (var index = 0; index < control.Options.Length; index++)
+        {
+            if (!control.Options[index].Disabled) { changed |= selected.Add(index); }
+        }
+        if (changed) { Changed?.Invoke(id); }
+        return true;
+    }
+
     /// <summary>Gets browser-owned enabled select options in document order.</summary>
     public IReadOnlyList<int> SelectedOptionIndices(TabId id, int index)
     {

@@ -119,8 +119,9 @@ broader page interaction is still missing:
   selection/cursor/offset. Absent/invalid/0/1 `size` keeps the popup (no HTML default of four rows); `size` above
   12 is a visible form error. Multiple-select committed-text prefix search moves the independent cursor without changing selections,
   skips disabled options, cycles repeated single-character matches, keeps popup/listbox rows visible and
-  shares the single-select scalar/deadline bounds. Shift/range selection, Ctrl+A,
-  platform-native behavior and DOM keyboard/input/change events remain unsupported. Optgroups flatten
+  shares the single-select scalar/deadline bounds. Ctrl+A selects every enabled option without moving the
+  independent cursor; empty/all-disabled lists remain unchanged. Shift/range selection, platform-native behavior
+  and DOM keyboard/input/change events remain unsupported. Optgroups flatten
   into the option list, prefix group labels, and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values, `required`,
