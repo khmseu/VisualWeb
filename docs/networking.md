@@ -164,10 +164,14 @@ HTTP(S), local file and data URLs, with redirects to any HTTP(S) origin. The
 browser's `GetPageSource` top-level navigation keeps using it without a
 same-origin restriction; the bad-port policy above still applies. Its brokered
 linked and imported stylesheet subresources use the same tab loader and session
-HSTS store, with cookies off. HTTP(S) stylesheets are additionally restricted
-to the final document's fixed origin across every redirect; this deliberate compatibility
-restriction is not CORS, browser-wide SOP, general mixed-content policy or
-request authorization (see the [shell guide](browser-shell.md)).
+HSTS store, with cookies off. Same-origin HTTP(S) sheets retain fixed-origin
+redirect checks. Cross-origin HTTP(S) sheets use `LoadCorsAsync`: it sends the
+document's serialized Origin, accepts only one matching
+`Access-Control-Allow-Origin` value or `*` on the final response, and pins
+redirects to the effective initial stylesheet origin. This credentialless
+subset is stricter than Fetch on redirects and does not provide browser-wide
+SOP, general mixed-content policy or general request authorization (see the
+[shell guide](browser-shell.md)).
 
 `LoadSameOriginAsync(url, requestOrigin, includeCookies, cancellationToken,
 preventHttpsDowngrade)` is a separate GET entry point for callers that choose a
@@ -235,20 +239,29 @@ broader conformance data and persistence decisions.
 **Do not expose this loader directly to hostile page scripts or use it as an
 authorization boundary.** It is an unfiltered browser-side loader, not the Fetch
 API. It can access local files and arbitrary network endpoints. The browser
-applies `LoadSameOriginAsync` only to HTTP(S) linked and imported stylesheets; top-level
-navigation remains unrestricted, and other request classes do not have
-browser-wide origin authorization. Apart from that narrow stylesheet restriction
-and bad-port blocking above, there is no CORS, CSP, general mixed-content policy,
-referrer/origin policy, cache, storage partitioning, sandbox or private-network policy yet.
+applies same-origin redirect checks to same-origin HTTP(S) linked and imported
+stylesheets. Cross-origin HTTP(S) linked/imported stylesheets use the bounded
+`LoadCorsAsync` subset: it sends the document's serialized `Origin`, never sends
+cookies or credentials, requires one final `Access-Control-Allow-Origin` value
+equal to the document origin or `*`, and rejects redirects that leave the
+initial effective stylesheet origin before following them. Browser CSP
+destination authorization, HSTS upgrades, bad-port checks and HTTPS downgrade
+protection also apply. This is stricter than Fetch in its redirect restriction
+and does not implement preflight, credentialed CORS, response-header exposure,
+general resource authorization or script-visible Fetch. Top-level navigation
+remains unrestricted, and other request classes have no browser-wide origin
+authorization. Apart from these narrow stylesheet rules and bad-port blocking
+above, there is no general CSP, mixed-content policy, referrer policy, cache,
+storage partitioning, sandbox or private-network policy yet.
 The session HSTS subset above protects learned DNS hosts, not first visits or
 general request authorization.
 Cookie opt-in does not authorize a request. The future shell/broker must mediate
 access before renderer integration.
 
 General HTTP methods/request bodies, streaming responses, auth challenges,
-full Fetch redirect/credential modes, persistent cookies and HTTP caching are
-deferred. HTTPS uses the platform's existing trust store; custom certificate
-validation is not added.
+full Fetch redirect/credential modes, CORS preflight and credentialed CORS,
+persistent cookies and HTTP caching are deferred. HTTPS uses the platform's
+existing trust store; custom certificate validation is not added.
 
 ## Validation
 
@@ -265,7 +278,8 @@ local files, cookie scoping/deletion/rejection, ownership, cancellation and
 deadlines during both headers and body. Same-origin tests cover normalized
 default-port/case/IDNA/IPv4/IPv6 matches, scheme/host/port, opaque and non-HTTP
 denials with zero handler calls, all five redirect statuses denied cross-origin
-before a second request, exact multi-hop cookies, credentials, limits,
+before a second request, credentialless CORS Origin and response checks,
+same-origin redirect pinning for CORS loads, exact multi-hop cookies, credentials, limits,
 cancellation/deadlines and the unrestricted default. Bad-port tests compare an
 exhaustive 0-65535 HTTP and HTTPS sweep with an independently pinned copy of the
 official table, block every entry through both entry points with zero handler

@@ -76,6 +76,10 @@ public enum ResourceError
     /// <summary>A browser-owned navigation authorizer denied an HTTP(S) destination before the request was sent.</summary>
     NavigationDenied,
 
+    /// <summary>A bounded credentialless Fetch <see href="https://fetch.spec.whatwg.org/#cors-check">CORS check</see>
+    /// or its fixed-origin redirect policy was denied.</summary>
+    CorsDenied,
+
     /// <summary>An HTTP(S) URL targeted a Fetch <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see>;
     /// the request was blocked before transport or cookie work.</summary>
     BlockedPort,

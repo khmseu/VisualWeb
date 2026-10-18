@@ -6,8 +6,10 @@ deadline. Cancellation propagates; typed errors distinguish resource failures.
 
 Responses contain bytes, status, final URL, headers, parsed MIME and diagnostics.
 Cookies are host-only, in-memory per loader and require `includeCookies: true`.
-Unsupported cookie policies are rejected with diagnostics. No CORS, browser-wide
-origin policy, SameSite, persistence or script-visible Fetch API is implemented.
+Unsupported cookie policies are rejected with diagnostics. `LoadCorsAsync`
+provides a bounded credentialless CORS subset with fixed-origin redirect checks;
+full Fetch CORS, browser-wide origin policy, SameSite, persistence and the
+script-visible Fetch API are not implemented.
 
 `LoadAsync` is trusted, unrestricted navigation. The opt-in `LoadSameOriginAsync`
 accepts only HTTP(S) URLs same origin with a fixed HTTP(S) tuple `SecurityOrigin`,

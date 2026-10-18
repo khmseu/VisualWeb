@@ -53,14 +53,18 @@ public interface IPageSource : IDisposable
 /// per css-syntax <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">fallback encoding</see>;
 /// unknown labels fail visibly. Unconditional leading CSS <c>@import</c> rules in embedded and fetched stylesheets are
 /// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions. Any stylesheet
-/// failure fails the whole navigation. Conditional/layer imports, <c>url()</c> resources, fonts, images and CORS are not
-/// fetched. HTTP(S) stylesheet requests are restricted to the final document's fixed origin, including redirects; this
-/// deliberate restriction is not CORS or general request authorization. A bounded final-response Content Security Policy
+/// failure fails the whole navigation. Conditional/layer imports, <c>url()</c> resources, fonts and images are not
+/// fetched. Same-origin HTTP(S) stylesheet requests retain fixed-origin redirect checks. Cross-origin HTTP(S) sheets
+/// use a credentialless CORS subset (spec: fetch;
+/// <see href="https://fetch.spec.whatwg.org/#cors-check">CORS check</see>): the final response must allow the document
+/// origin or <c>*</c>, and redirects must remain same-origin with the effective initial stylesheet URL. A bounded
+/// final-response Content Security Policy
 /// additionally rejects inline script/style content, applies style-src-elem/style-src/default-src to linked/imported
 /// stylesheet destinations before requests and redirects, and upgrades insecure stylesheet URLs when the response policy
 /// includes <c>upgrade-insecure-requests</c> (spec ID upgrade-insecure-requests;
 /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>). That directive
-/// is not applied to top-level navigation.</remarks>
+/// is not applied to top-level navigation. This is not a complete Fetch/CORS implementation or general request
+/// authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -201,7 +205,8 @@ public sealed class GetPageSource : IPageSource
             }
         }
         diagnostics.Add($"Stylesheets: {sheets.Count} browser-fetched text/css sources including unconditional CSS @import; "
-            + "conditional imports/layers, url() resources, fonts, images and CORS are unsupported.");
+            + "cross-origin sheets use credentialless CORS with same-origin redirect restrictions; conditional imports/layers, "
+            + "url() resources, fonts and images are unsupported.");
         return sheets.ToArray();
     }
 
@@ -222,19 +227,29 @@ public sealed class GetPageSource : IPageSource
                 && effectiveUrl.Protocol == "https:"
                 && (documentUrl.Origin.IsSameOrigin(url.Origin)
                     || documentUrl.Origin.IsSameOrigin(effectiveUrl.Origin));
+        var corsRequired = url.Protocol is "http:" or "https:" && !sameOriginAllowed;
         ResourceResponse response;
         try
         {
             response = url.Protocol is "http:" or "https:"
                 ? policy is null
-                    ? await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
-                        .ConfigureAwait(false)
-                    : await loader.LoadAuthorizedNavigationAsync(url,
-                        (destination, redirectCount) =>
-                            sameOriginAllowed && effectiveUrl.Origin.IsSameOrigin(destination.Origin)
-                            && policy.AllowsStyle(destination, documentUrl.Origin, redirectCount),
-                        includeCookies: false, cancellationToken, preventHttpsDowngrade: secureDocument,
-                        rewriteDestination: policy.UpgradeStyleUrl).ConfigureAwait(false)
+                    ? corsRequired
+                        ? await loader.LoadCorsAsync(url, documentUrl.Origin, cancellationToken: cancellationToken,
+                            preventHttpsDowngrade: secureDocument).ConfigureAwait(false)
+                        : await loader.LoadSameOriginAsync(url, documentUrl.Origin, includeCookies: false, cancellationToken)
+                            .ConfigureAwait(false)
+                    : corsRequired
+                        ? await loader.LoadCorsAsync(url, documentUrl.Origin,
+                            (destination, redirectCount) =>
+                                policy.AllowsStyle(destination, documentUrl.Origin, redirectCount),
+                            cancellationToken, preventHttpsDowngrade: secureDocument,
+                            rewriteDestination: policy.UpgradeStyleUrl).ConfigureAwait(false)
+                        : await loader.LoadAuthorizedNavigationAsync(url,
+                            (destination, redirectCount) =>
+                                sameOriginAllowed && effectiveUrl.Origin.IsSameOrigin(destination.Origin)
+                                && policy.AllowsStyle(destination, documentUrl.Origin, redirectCount),
+                            includeCookies: false, cancellationToken, preventHttpsDowngrade: secureDocument,
+                            rewriteDestination: policy.UpgradeStyleUrl).ConfigureAwait(false)
                 : await loader.LoadAsync(url, includeCookies: false, cancellationToken,
                     preventHttpsDowngrade: secureDocument).ConfigureAwait(false);
         }

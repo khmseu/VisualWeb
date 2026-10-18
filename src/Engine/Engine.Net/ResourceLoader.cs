@@ -9,7 +9,8 @@ namespace VisualWeb.Engine.Net;
 /// and <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
 /// HTTP(S) <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad ports</see> are blocked for every request.
 /// <see cref="LoadSameOriginAsync"/> is an opt-in same-origin restricted mode;
-/// <see cref="LoadAuthorizedNavigationAsync"/> applies a browser-owned destination authorizer. CORS, other origin policy,
+/// <see cref="LoadAuthorizedNavigationAsync"/> applies a browser-owned destination authorizer.
+/// <see cref="LoadCorsAsync"/> implements only a bounded credentialless CORS subset; other origin policies,
 /// SameSite, caching and script-visible Fetch are not implemented.
 /// Cookies require explicit opt-in and are isolated per loader. Session HSTS requires an explicitly supplied
 /// <see cref="HstsPolicyStore"/> (spec: rfc6797;
@@ -75,7 +76,7 @@ public sealed class ResourceLoader : IDisposable
         }
 
         BadPortPolicy.ThrowIfBlocked(url);
-        return await LoadCoreAsync(url, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
+        return await LoadCoreAsync(url, null, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
     }
 
     /// <summary>Browser-owned HTTP(S) navigation whose effective initial and redirect destinations require authorization.</summary>
@@ -122,7 +123,7 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceAuthorized(url, authorizeDestination, redirectCount: 0);
-        return await LoadCoreAsync(url, null, authorizeDestination, includeCookies, preventHttpsDowngrade,
+        return await LoadCoreAsync(url, null, null, authorizeDestination, includeCookies, preventHttpsDowngrade,
             rewriteDestination, cancellationToken);
     }
 
@@ -158,12 +159,50 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
-        return await LoadCoreAsync(url, requestOrigin, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
+        return await LoadCoreAsync(url, requestOrigin, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
+    }
+
+    /// <summary>Loads an HTTP(S) resource with a bounded credentialless CORS policy.</summary>
+    /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#cors-check">CORS check</see>,
+    /// <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>, and
+    /// <see href="https://fetch.spec.whatwg.org/#origin-header">Origin header</see>.
+    /// Sends the fixed tuple <paramref name="requestOrigin"/> in the Origin header and requires exactly one
+    /// <c>Access-Control-Allow-Origin</c> response value matching it or <c>*</c>. Credentials and cookies are never sent.
+    /// Redirect destinations must remain same-origin with the effective initial URL after HSTS and optional rewriting;
+    /// the final response must still pass the CORS check. This deliberate bounded subset is not a complete Fetch
+    /// implementation, does not implement preflight, and is not general request authorization.</remarks>
+    /// <param name="authorizeDestination">Optional browser-owned authorization applied to the initial URL and each redirect.</param>
+    /// <param name="rewriteDestination">Optional browser-owned rewrite applied after HSTS and before destination checks.</param>
+    public async Task<ResourceResponse> LoadCorsAsync(BrowserUrl url, SecurityOrigin requestOrigin,
+        Func<BrowserUrl, int, bool>? authorizeDestination = null, CancellationToken cancellationToken = default,
+        bool preventHttpsDowngrade = false, Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(requestOrigin);
+        if (requestOrigin.IsOpaque || requestOrigin.Scheme is not ("http" or "https"))
+        {
+            throw new ResourceLoadException(ResourceError.CorsDenied,
+                "CORS loads require an HTTP(S) tuple request origin.");
+        }
+        if (url.Protocol is not ("http:" or "https:"))
+        {
+            throw new ResourceLoadException(ResourceError.CorsDenied,
+                "CORS loads support only HTTP(S) resources.");
+        }
+
+        url = hstsPolicyStore?.Upgrade(url) ?? url;
+        url = RewriteDestination(url, rewriteDestination);
+        if (preventHttpsDowngrade && url.Protocol == "http:") { throw InsecureTransport(); }
+        BadPortPolicy.ThrowIfBlocked(url);
+        if (authorizeDestination is not null) { EnforceAuthorized(url, authorizeDestination, redirectCount: 0); }
+        return await LoadCoreAsync(url, null, requestOrigin, authorizeDestination, false,
+            preventHttpsDowngrade, rewriteDestination, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin,
-        Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken)
+        SecurityOrigin? corsRequestOrigin, Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies,
+        bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -174,8 +213,8 @@ public sealed class ResourceLoader : IDisposable
             {
                 "data:" => DataUrlProcessor.Load(url, options.MaxResponseBytes, deadline.Token),
                 "file:" => await LoadFileAsync(url, deadline.Token),
-                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, authorizeDestination, includeCookies,
-                    preventHttpsDowngrade, rewriteDestination, deadline.Token),
+                "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, corsRequestOrigin,
+                    authorizeDestination, includeCookies, preventHttpsDowngrade, rewriteDestination, deadline.Token),
                 _ => throw new ResourceLoadException(ResourceError.UnsupportedScheme, "Unsupported resource URL scheme.")
             };
         }
@@ -209,16 +248,22 @@ public sealed class ResourceLoader : IDisposable
     }
 
     private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin,
-        Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies, bool preventHttpsDowngrade,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token)
+        SecurityOrigin? corsRequestOrigin, Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies,
+        bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token)
     {
         var url = initial;
+        var corsRedirectOrigin = corsRequestOrigin is null ? null : initial.Origin;
         var diagnostics = new List<string>();
         for (var redirects = 0; ; redirects++)
         {
             RejectCredentials(url);
             var uri = TransportUri(url);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (corsRequestOrigin is not null
+                && !request.Headers.TryAddWithoutValidation("Origin", corsRequestOrigin.Serialize()))
+            {
+                throw new InvalidOperationException("The HTTP transport rejected a validated CORS Origin header.");
+            }
             if (includeCookies && cookies.Header(uri) is { Length: > 0 } cookie)
             {
                 request.Headers.Add("Cookie", cookie);
@@ -275,6 +320,11 @@ public sealed class ResourceLoader : IDisposable
                 {
                     EnforceSameOrigin(next, requestOrigin);
                 }
+                if (corsRedirectOrigin is not null && !corsRedirectOrigin.IsSameOrigin(next.Origin))
+                {
+                    throw new ResourceLoadException(ResourceError.CorsDenied,
+                        "CORS stylesheet redirect changed the effective stylesheet origin.");
+                }
                 if (authorizeDestination is not null)
                 {
                     EnforceAuthorized(next, authorizeDestination, redirects + 1);
@@ -282,6 +332,11 @@ public sealed class ResourceLoader : IDisposable
 
                 url = next;
                 continue;
+            }
+
+            if (corsRequestOrigin is not null)
+            {
+                EnforceCorsResponse(response, corsRequestOrigin);
             }
 
             var headers = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
@@ -327,6 +382,25 @@ public sealed class ResourceLoader : IDisposable
             return new(url, status, redirects > 0, headers, mime, body, diagnostics);
         }
     }
+
+    private static void EnforceCorsResponse(HttpResponseMessage response, SecurityOrigin requestOrigin)
+    {
+        if (!response.Headers.TryGetValues("Access-Control-Allow-Origin", out var values))
+        {
+            throw CorsDenied();
+        }
+
+        var allowedOrigins = values.ToArray();
+        if (allowedOrigins.Length != 1
+            || allowedOrigins[0] != "*"
+                && !string.Equals(allowedOrigins[0], requestOrigin.Serialize(), StringComparison.Ordinal))
+        {
+            throw CorsDenied();
+        }
+    }
+
+    private static ResourceLoadException CorsDenied() => new(ResourceError.CorsDenied,
+        "CORS response did not allow the fixed request origin.");
 
     private static BrowserUrl RewriteDestination(BrowserUrl url, Func<BrowserUrl, BrowserUrl>? rewriteDestination)
     {

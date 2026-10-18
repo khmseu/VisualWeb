@@ -118,25 +118,30 @@ public sealed class StylesheetTests
     }
 
     [Fact]
-    public async Task CrossOriginCssImportFailsBeforeRequest()
+    public async Task CrossOriginCssImportUsesCredentiallessCors()
     {
         var requests = new List<string>();
         using var source = new GetPageSource(new Handler(request =>
         {
             requests.Add(request.RequestUri!.AbsoluteUri);
-            return request.RequestUri.AbsolutePath switch
+            return request.RequestUri.AbsoluteUri switch
             {
-                "/page" => Text("<!doctype html><link rel=stylesheet href=main.css>", "text/html"),
-                "/main.css" => Text("@import 'https://cdn.example/foreign.css';", "text/css"),
+                "https://example.test/page" => Text("<!doctype html><link rel=stylesheet href=main.css>", "text/html"),
+                "https://example.test/main.css" => Text("@import 'https://cdn.example/foreign.css';", "text/css"),
+                "https://cdn.example/foreign.css" => CorsText("p{color:red}", "text/css", "https://example.test"),
                 _ => throw new InvalidOperationException("A cross-origin CSS import was requested.")
             };
         }));
 
-        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
-            source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation));
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
 
-        Assert.Contains("failed to load", error.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(["https://example.test/page", "https://example.test/main.css"], requests);
+        Assert.Equal([
+            "https://example.test/page",
+            "https://example.test/main.css",
+            "https://cdn.example/foreign.css"
+        ], requests);
+        Assert.Equal(["@import 'https://cdn.example/foreign.css';", "p{color:red}"],
+            page.Stylesheets.Select(stylesheet => stylesheet.Css));
     }
 
     [Theory]
@@ -237,38 +242,95 @@ public sealed class StylesheetTests
     }
 
     [Fact]
-    public async Task CrossOriginBaseCannotCauseStylesheetRequestBeforeSameOriginCheck()
+    public async Task CrossOriginBaseStylesheetRequiresCorsBeforePublication()
     {
         var requests = new List<string>();
         using var source = new GetPageSource(new Handler(request =>
         {
             requests.Add(request.RequestUri!.AbsoluteUri);
-            return Text("<!doctype html><base href='https://cdn.example/assets/'>"
-                + "<link rel=stylesheet href=site.css>", "text/html");
+            return request.RequestUri!.Host switch
+            {
+                "secure.example" => Text("<!doctype html><base href='https://cdn.example/assets/'>"
+                    + "<link rel=stylesheet href=site.css>", "text/html"),
+                _ => Text("body{margin:0}", "text/css")
+            };
         }));
 
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/page"), Cancellation));
 
-        Assert.Contains("not same origin", error.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(["https://secure.example/page"], requests);
+        Assert.Contains("CORS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/page", "https://cdn.example/assets/site.css"], requests);
     }
 
     [Fact]
-    public async Task CrossOriginStylesheetIsBlockedBeforeItsRequest()
+    public async Task CrossOriginStylesheetWithoutAllowOriginFailsAfterCredentiallessRequest()
     {
         var requests = new List<string>();
         using var source = new GetPageSource(new Handler(request =>
         {
             requests.Add(request.RequestUri!.AbsoluteUri);
+            if (request.RequestUri!.Host == "cdn.example")
+            {
+                Assert.Equal("https://secure.example", request.Headers.GetValues("Origin").Single());
+                Assert.False(request.Headers.Contains("Cookie"));
+                return Text("body{color:red}", "text/css");
+            }
             return Text("<!doctype html><link rel=stylesheet href='https://cdn.example/style.css'>", "text/html");
         }));
 
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
 
-        Assert.Contains("not same origin", error.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(["https://secure.example/"], requests);
+        Assert.Contains("CORS", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/", "https://cdn.example/style.css"], requests);
+    }
+
+    [Theory]
+    [InlineData("https://secure.example")]
+    [InlineData("*")]
+    public async Task CrossOriginStylesheetLoadsWhenFinalResponseAllowsDocumentOrigin(string allowedOrigin)
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            if (request.RequestUri!.Host == "cdn.example")
+            {
+                Assert.Equal("https://secure.example", request.Headers.GetValues("Origin").Single());
+                Assert.False(request.Headers.Contains("Cookie"));
+                return CorsText("body{color:red}", "text/css", allowedOrigin);
+            }
+            return Text("<!doctype html><link rel=stylesheet href='https://cdn.example/style.css'>", "text/html");
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation);
+
+        Assert.Equal(["https://secure.example/", "https://cdn.example/style.css"], requests);
+        Assert.Equal("body{color:red}", Assert.Single(page.Stylesheets).Css);
+    }
+
+    [Fact]
+    public async Task CrossOriginStylesheetCannotRedirectToAnotherOrigin()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri!.AbsoluteUri switch
+            {
+                "https://secure.example/" =>
+                    Text("<!doctype html><link rel=stylesheet href='https://cdn.example/style.css'>", "text/html"),
+                "https://cdn.example/style.css" => Redirect("https://attacker.example/style.css"),
+                _ => throw new InvalidOperationException("A cross-origin stylesheet redirect was followed.")
+            };
+        }));
+
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
+            source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
+
+        Assert.Contains("redirect changed", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(["https://secure.example/", "https://cdn.example/style.css"], requests);
     }
 
     [Fact]
@@ -549,7 +611,7 @@ public sealed class StylesheetTests
         var error = await Assert.ThrowsAsync<PageNavigationException>(() =>
             source.LoadAsync(BrowserUrl.Parse("https://secure.example/"), Cancellation));
 
-        Assert.Contains("same origin", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("secure transport", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(["https://secure.example/"], requests);
     }
 
@@ -817,6 +879,13 @@ public sealed class StylesheetTests
     }
 
     private static HttpResponseMessage Text(string body, string contentType) => Bytes(Encoding.UTF8.GetBytes(body), contentType);
+
+    private static HttpResponseMessage CorsText(string body, string contentType, string allowedOrigin)
+    {
+        var response = Text(body, contentType);
+        response.Headers.TryAddWithoutValidation("Access-Control-Allow-Origin", allowedOrigin);
+        return response;
+    }
 
     private static HttpResponseMessage Bytes(byte[] body, string contentType)
     {
