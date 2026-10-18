@@ -179,8 +179,50 @@ This is not complete Web IDL Event/EventTarget conformance. Node facades retain
 their minimal null-root prototypes rather than becoming EventTarget instances.
 Legacy initEvent, timeStamp, CustomEvent/specialized events, automatic
 load/input events, `on*` handlers, default actions, Window,
-AbortSignal and a persistent event loop are deferred. All hosts/listeners are
-disposed after initial page execution; retained resize runs no events.
+AbortSignal and a persistent event loop are deferred. Opted-in pages retain
+their document host/listeners only for the browser-owned link-click dispatch
+below; retained resize/scroll runs no events.
+
+## Retained link-click dispatch (pass 5)
+
+Opted-in renderers keep the post-readiness `V8ScriptHost` and its listeners with
+the same renderer-local retained document (local renderer or worker main thread;
+never across IPC). Primary pointer link activation — press and release on the
+same anchor in the shell — first asks that renderer to dispatch a trusted
+`click` Event at the actual anchor element, then performs browser-owned link
+activation only if the event was not canceled. This references DOM
+[dispatch](https://dom.spec.whatwg.org/#concept-event-dispatch) and HTML
+[links created by a and area elements](https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements)
+(cached `dom`/`html` references, checked 2026-10-04).
+
+`V8ScriptHost.DispatchTrustedClick(element, token)` requires a lifecycle host
+whose initial batch completed and an element connected to its bound document.
+It builds a plain `Event('click', {bubbles: true, cancelable: true, composed: true})`
+through the private captured EventBindings path (isTrusted true; no
+replaceable globals, no new CLR objects or callbacks visible to page code), so
+capture/target/bubble listeners on the anchor, ancestors and document run with
+normal phase/cancellation rules. One dispatch is one Run: the same 2s
+default deadline, DOM callback, listener invocation/depth and microtask budgets
+apply, and microtasks drain at a single checkpoint after the whole dispatch
+(not between listeners). It returns false when `preventDefault()` canceled it.
+
+PageRendering identifies the clicked link by the latest successful render's
+link index plus its expected URL; a mismatch or disconnected anchor reports an
+explicit error without dispatching or invalidating. Each document allows at
+most `StaticPageRenderer.MaxLinkClicksPerDocument` (1024) dispatches. Listener
+errors, quota/deadline failures, and the click bound invalidate the document's
+host: the browser keeps the previous frame and does not navigate, and later
+clicks/retained repaints of that document fail until explicit reload. After a
+successful dispatch the browser repaints the retained DOM (title/style changes
+appear) without script reexecution, then navigates unless canceled.
+
+Hosts are disposed when a candidate is replaced or fails, the previous committed
+document is replaced by navigation promotion, and on renderer/tab disposal or
+worker exit (a worker crash loses the document; the next click reports it).
+Static mode creates no host and link activation is unchanged. Limitations: no
+MouseEvent/PointerEvent fields, `on*` handlers, keyboard/Enter, middle-click,
+modifier or new-tab activation events, form/control default actions, general
+input dispatch or HTML event loop/task scheduling.
 
 ## Finite document readiness (phase 11h)
 
@@ -220,10 +262,11 @@ reset counters. Failures at a stage/checkpoint prevent subsequent stages and
 invalidate the host; a failure before completion publishes no candidate and
 preserves the committed page. Event listeners that attempt to enqueue beyond
 the microtask quota report a resource-limit failure, not a masked listener error.
-All final DOM/title/style changes feed paint; successful resize retains only
-DOM, never listeners/jobs, and does not repeat readiness events.
+All final DOM/title/style changes feed paint; successful resize retains the
+DOM (and, for link clicks only, the idle host/listeners), never pending jobs,
+and does not repeat readiness events.
 
-Even an opted-in page with zero eligible sources creates/disposes a host and
+Even an opted-in page with zero eligible sources creates a host and
 completes this lifecycle; static mode still creates no V8 host. Navigation/reload
 uses a fresh host/readiness state. This is intentionally **not full HTML
 scheduling**: DOMContentLoaded is normally a queued global task, readiness
@@ -927,8 +970,9 @@ script still run from the snapshot. This is deliberately **not parser-blocking
 HTML script preparation/scheduling**. Global lexical state persists between the
 batch's scripts, but not between navigations or tabs.
 
-After execution and the finite phase-11h readiness events/checkpoints, the host
-is disposed. Stylesheets are collected from the
+After execution and the finite phase-11h readiness events/checkpoints, the idle
+host stays with that renderer-local document for link-click dispatch (see
+below); it runs nothing else. Stylesheets are collected from the
 mutated DOM, and style/layout/display lists/pixels are computed afresh. Live
 title changes become the page/tab/window title; a script may change an embedded
 style's `textContent` before stylesheet collection. All existing CSS/layout/paint

@@ -552,7 +552,8 @@ public sealed class DevelopmentShell : IDisposable
             if (activate)
             {
                 Controller.ClearSelectedText(releasedTab.Id);
-                Controller.ActivateLink(releasedTab.Id, released.X, pageY, pendingViewport);
+                // Primary press/release on the same anchor: opted-in pages first receive a trusted click event.
+                Controller.ActivateLink(releasedTab.Id, released.X, pageY, pendingViewport, dispatchClickEvent: true);
             }
         }
         view.SelectingText = false;

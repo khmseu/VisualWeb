@@ -11,6 +11,43 @@ namespace VisualWeb.Browser.Tests;
 public sealed class ShellTests
 {
     [Fact]
+    public void OptedInPrimaryPointerLinkDispatchesClickBeforeDefaultNavigation()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, executeInlineScripts: true,
+            pageTransportFactory: () => new NavigationHandler(request =>
+            {
+                var url = request.RequestUri!.AbsoluteUri;
+                requests.Enqueue(url);
+                return Html("<!doctype html><title>Start</title><style>*{margin:0}</style>"
+                    + "<a href='/next'>open</a><script>document.addEventListener('click',e=>{document.title='Clicked';e.preventDefault()})</script>");
+            }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        var link = Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
+        var x = (float)(link.X + link.Width / 2);
+        var y = (float)(ShellChrome.Height + link.Y + link.Height / 2);
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        Wait(() => !tab.IsLoading && tab.Title == "Clicked");
+
+        Assert.Equal(["https://source.example/page"], requests);
+        Assert.Equal("https://source.example/page", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
+    [Fact]
     public void CrossOriginLinkAndRedirectWaitForShellConfirmation()
     {
         var requests = new ConcurrentQueue<string>();

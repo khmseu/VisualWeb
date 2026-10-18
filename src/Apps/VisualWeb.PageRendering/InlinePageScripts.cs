@@ -61,11 +61,17 @@ public static class InlinePageScripts
         return sources.AsReadOnly();
     }
 
-    internal static int Execute(DomDocument document, CancellationToken cancellationToken)
+    /// <summary>Run the initial batch and return the caller-owned document host that retains its listeners.</summary>
+    /// <remarks>The host is creating-thread-affine; it is disposed here on failure and by the renderer otherwise.</remarks>
+    internal static (V8ScriptHost Host, int Scripts) Execute(DomDocument document, CancellationToken cancellationToken)
     {
         var sources = Collect(document, cancellationToken);
-        using var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true, enableDocumentLifecycle: true);
-        host.ExecuteInitialDocumentBatch(sources, cancellationToken);
-        return sources.Count;
+        var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true, enableDocumentLifecycle: true);
+        try
+        {
+            host.ExecuteInitialDocumentBatch(sources, cancellationToken);
+            return (host, sources.Count);
+        }
+        catch { host.Dispose(); throw; }
     }
 }

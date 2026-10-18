@@ -18,6 +18,9 @@ with live DOM bindings before style/layout/paint. Default rendering remains
 script-free. Publication pins every successful parsed DOM for scroll/resize; at most one
 unpublished candidate is retained alongside it. Navigation/reload uses a fresh
 host; lost DOM requires explicit reload rather than repeating execution.
+Opted-in documents keep their renderer-local host/listeners for
+`DispatchLinkClick` (validated link index/URL, 1024 clicks per document); failures
+invalidate the host, and replacement/disposal releases it.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
 

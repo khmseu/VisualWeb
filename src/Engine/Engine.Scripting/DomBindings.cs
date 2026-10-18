@@ -229,6 +229,18 @@ internal sealed class DomBindings : IDisposable
             if (node is DomElement element) { yield return element; }
         }
     }
+    /// <summary>Private wrapper identity for a trusted host dispatch target; never exposed to page code.</summary>
+    internal string TargetIdentity(DomElement element)
+    {
+        CheckTarget(element);
+        return Identity(element);
+    }
+    internal void CheckTarget(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        if (element.OwnerDocument != document || !element.IsConnected)
+        { throw new ArgumentException("Dispatch target must be a connected element of the bound document.", nameof(element)); }
+    }
     private string Identity(DomNode? node)
     {
         if (node is null) { Budget(""); return ""; }
@@ -1003,6 +1015,7 @@ internal sealed class DomBindings : IDisposable
                 return wrap(call('create-instruction',0,convertedData,-1,-1,convertedTarget));
             }});
             define(globalThis, 'document', { value: document, enumerable: true });
+            return value => wrap(value);
         })
         """;
 }

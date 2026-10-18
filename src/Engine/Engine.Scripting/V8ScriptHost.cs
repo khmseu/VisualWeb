@@ -32,6 +32,7 @@ public sealed class V8ScriptHost : IDisposable
     private readonly DomBindings? dom;
     private readonly ScriptObject? microtasks;
     private readonly ScriptObject? events;
+    private readonly ScriptObject? wrapNode;
     private readonly bool documentLifecycle;
     private bool initialDocumentExecuted;
     private bool poisoned;
@@ -93,11 +94,12 @@ public sealed class V8ScriptHost : IDisposable
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 using var installDom = (ScriptObject)engine.Evaluate(DomBindings.Bootstrap);
                 using var installClasses = (ScriptObject)engine.Evaluate(ClassTokenBindings.Bootstrap);
-                installDom.InvokeAsFunction(events, documentLifecycle, installClasses);
+                wrapNode = installDom.InvokeAsFunction(events, documentLifecycle, installClasses) as ScriptObject
+                    ?? throw new InvalidOperationException("DOM bootstrap did not return its private wrapper lookup.");
             }
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }
         }
-        catch { dom?.Dispose(); engine.Dispose(); throw; }
+        catch { wrapNode?.Dispose(); dom?.Dispose(); engine.Dispose(); throw; }
     }
 
     public ScriptValue Evaluate(string source, CancellationToken cancellationToken = default)
@@ -132,6 +134,38 @@ public sealed class V8ScriptHost : IDisposable
         if (!documentLifecycle) { throw new InvalidOperationException("Document lifecycle was not enabled for this host."); }
         if (initialDocumentExecuted) { throw new InvalidOperationException("Initial document lifecycle has already executed."); }
         ExecuteBatch(sources, true, cancellationToken);
+    }
+
+    /// <summary>Dispatch one trusted, bubbling, cancelable <c>click</c> Event at a connected bound-document element.</summary>
+    /// <remarks>Specs: dom, html;
+    /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see>,
+    /// <see href="https://dom.spec.whatwg.org/#dom-event-preventdefault">preventDefault</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
+    /// Browser-owned link activation hook only: a plain Event (not MouseEvent/PointerEvent), finite event,
+    /// microtask and DOM budgets under one task deadline, and a microtask checkpoint after dispatch rather than
+    /// after each listener. Returns false when a listener canceled the event. Any failure invalidates the host.</remarks>
+    public bool DispatchTrustedClick(DomElement target, CancellationToken cancellationToken = default)
+    {
+        CheckUsable();
+        ArgumentNullException.ThrowIfNull(target);
+        if (!documentLifecycle || !initialDocumentExecuted)
+        { throw new InvalidOperationException("Trusted clicks require a completed initial document lifecycle."); }
+        dom!.CheckTarget(target);
+        try
+        {
+            return Run(() =>
+            {
+                using var receiver = wrapNode!.InvokeAsFunction(dom.TargetIdentity(target)) as ScriptObject
+                    ?? throw new InvalidOperationException("Private DOM wrapper lookup failed.");
+                var status = events!.InvokeAsFunction("click", receiver);
+                CheckEvents("checkpoint");
+                CheckMicrotasks("checkpoint");
+                if (status is not int code || code is not (0 or 3))
+                { throw new InvalidOperationException("Private click dispatch returned an invalid status."); }
+                return code == 0;
+            }, cancellationToken);
+        }
+        catch { poisoned = true; throw; }
     }
 
     private void ExecuteBatch(IReadOnlyList<string> sources, bool completeDocument, CancellationToken cancellationToken)
@@ -324,7 +358,11 @@ public sealed class V8ScriptHost : IDisposable
             try
             {
                 try { events?.Dispose(); }
-                finally { microtasks?.Dispose(); }
+                finally
+                {
+                    try { microtasks?.Dispose(); }
+                    finally { wrapNode?.Dispose(); }
+                }
             }
             finally { evaluate.Dispose(); }
         }

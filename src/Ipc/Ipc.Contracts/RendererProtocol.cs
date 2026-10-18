@@ -488,6 +488,10 @@ public sealed record RendererMessage
     public Guid CommittedDocumentId { get; init; }
     public bool ExecuteInlineScripts { get; init; }
     public bool ReuseDocument { get; init; }
+    /// <summary>Click requests only: rendered link-target index of the committed document; <see cref="Url"/> carries its destination.</summary>
+    public int LinkIndex { get; init; }
+    /// <summary>Click-result replies only: whether a page listener canceled the trusted click.</summary>
+    public bool? DefaultPrevented { get; init; }
     public PageLinkTarget[]? LinkTargets { get; init; }
     public PageFragmentTarget[]? FragmentTargets { get; init; }
     public PageStylesheet[]? Stylesheets { get; init; }
@@ -502,8 +506,10 @@ public static class RendererProtocol
     private const string RenderKind = "render";
     private const string FrameKind = "frame";
     private const string ErrorKind = "error";
+    private const string ClickKind = "click";
+    private const string ClickResultKind = "click-result";
 
-    public const int Version = 41;
+    public const int Version = 42;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -549,9 +555,12 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Base URL overrides belong only to render requests."); }
         if ((message.Kind != RenderKind && message.ScrollY != 0) || (message.Kind != FrameKind && message.ScrollHeight != 0))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
-        if (message.Kind != RenderKind && (message.DocumentId != Guid.Empty || message.CommittedDocumentId != Guid.Empty
-            || message.ExecuteInlineScripts || message.ReuseDocument))
-        { throw new IpcProtocolException("Document policy fields belong only to render requests."); }
+        if ((message.Kind is not (RenderKind or ClickKind) && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
+            || (message.Kind != RenderKind && (message.CommittedDocumentId != Guid.Empty || message.ReuseDocument)))
+        { throw new IpcProtocolException("Document policy fields belong only to render or click requests."); }
+        if ((message.Kind != ClickKind && message.LinkIndex != 0)
+            || (message.Kind == ClickResultKind ? message.DefaultPrevented is null : message.DefaultPrevented is not null))
+        { throw new IpcProtocolException("Click fields belong only to click requests and click-result replies respectively."); }
         if (message.Kind == HelloKind)
         {
             if (message.Id != 0 || payloadLength != 0 || message.SandboxProfile is { Length: > MaxTextCharacters })
@@ -597,6 +606,25 @@ public static class RendererProtocol
                 ValidateFragmentTargets(message.FragmentTargets, message.ScrollHeight);
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
                 ValidateTextTargets(message.TextTargets, message.Width, message.Height);
+                break;
+            case ClickKind:
+                if (payloadLength != 0 || message.DocumentId == Guid.Empty || !message.ExecuteInlineScripts
+                    || message.LinkIndex is < 0 or >= MaxLinkTargets
+                    || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters
+                    || message.Html is not null || message.Diagnostics is not null || message.StatusCode != 0
+                    || message.Width != 0 || message.Height != 0 || message.Scale != 0
+                    || message.PixelWidth != 0 || message.PixelHeight != 0 || message.Stride != 0
+                    || message.Title is not null || message.Status is not null || message.Error is not null
+                    || message.SandboxProfile is not null)
+                { throw new IpcProtocolException("Invalid renderer click request fields or limits."); }
+                break;
+            case ClickResultKind:
+                if (payloadLength != 0 || message.Url is not null || message.Html is not null || message.Diagnostics is not null
+                    || message.StatusCode != 0 || message.Width != 0 || message.Height != 0 || message.Scale != 0
+                    || message.PixelWidth != 0 || message.PixelHeight != 0 || message.Stride != 0
+                    || message.Title is not null || message.Status is not null || message.Error is not null
+                    || message.SandboxProfile is not null)
+                { throw new IpcProtocolException("Invalid renderer click-result reply."); }
                 break;
             case ErrorKind:
                 if (payloadLength != 0 || string.IsNullOrEmpty(message.Error) || message.Error.Length > MaxTextCharacters)

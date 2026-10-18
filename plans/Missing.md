@@ -222,10 +222,15 @@ broader page interaction is still missing:
   DOM/scripts across local/process repaints.
   A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
   Horizontal/nested scrolling and general CSS overflow remain missing.
-- The shell does not dispatch pointer/keyboard input to pages or synthesize page
-  focus. It implements only the documented bounded link, form, and control
-  interactions; DOM event delivery/default actions for ordinary shell input remain
-  unavailable to scripts.
+- The shell does not dispatch general pointer/keyboard input to pages or synthesize
+  page focus. It implements only the documented bounded link, form, and control
+  interactions. The one exception (pass 5): for `--enable-inline-scripts` pages, a
+  primary-pointer link click dispatches a trusted bubbling, cancelable plain `click`
+  Event at the anchor in the retained renderer-local host before browser-owned link
+  activation, and `preventDefault()` suppresses that navigation (dom: event dispatch;
+  html: links created by a and area elements). MouseEvent/PointerEvent, keyboard and
+  modifier/new-tab activation events, form/control default actions and all other
+  DOM event delivery for ordinary shell input remain unavailable to scripts.
 - No downloads, persistent browser sessions, or complete history behavior. History
   stores URLs, per-entry scroll positions and internal same-document grouping:
   Back/Forward between user-created fragment entries retains the active document
@@ -313,9 +318,13 @@ However:
 
 - Page scripting is disabled by default.
 - Enabled scripts are post-parse inline classics only.
-- There is no persistent HTML event loop or script host after initial execution.
+- There is no persistent HTML event loop. Opted-in documents now retain their
+  renderer-local host/listeners after initial execution, but only for bounded
+  trusted link-click dispatch (1024 clicks per document; failures invalidate the
+  host until reload); no timers, tasks or other callbacks run later.
 - Modules, external scripts, timers, workers, script-visible networking/storage, and full Window/Web IDL behavior remain deferred.
-- Synthetic events and finite lifecycle/microtask processing exist, but not normal ongoing page interaction.
+- Synthetic events, finite lifecycle/microtask processing and the narrow link-click
+  dispatch exist, but not general ongoing page interaction.
 - WebAssembly is explicitly disabled in the current host.
 - Clone cancellation coverage distinguishes pre-canceled calls (which do not
   invalidate an unused host) from cancellation during a still-running script after

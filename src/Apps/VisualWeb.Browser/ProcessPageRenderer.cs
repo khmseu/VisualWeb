@@ -138,7 +138,61 @@ public sealed class ProcessPageRenderer : IPageRenderer
         };
         RendererProtocol.Validate(request, 0);
         var expected = RendererProtocol.Dimensions(viewport.Width, viewport.Height, viewport.Scale);
-        using var deadline = reuseDocument
+        return await ExchangeAsync(request, drain: reuseDocument, cancellationToken, packet =>
+        {
+            if (packet.Message.Kind != "frame" || packet.Message.PixelWidth != expected.Width || packet.Message.PixelHeight != expected.Height
+                || packet.Message.Width != viewport.Width || packet.Message.Height != viewport.Height || packet.Message.Scale != viewport.Scale)
+            {
+                throw new IpcProtocolException("Renderer frame does not match the requested physical viewport.");
+            }
+            if (packet.Message.ScrollHeight < viewport.Height)
+            { throw new IpcProtocolException("Renderer scroll height is smaller than its CSS viewport."); }
+            var frame = RasterFrame.CopyFrom(packet.Pixels,
+                new(packet.Message.PixelWidth, packet.Message.PixelHeight), packet.Message.Stride);
+            return new BrowserPage(frame, packet.Message.Title!, packet.Message.Status!)
+            {
+                ScrollHeight = packet.Message.ScrollHeight,
+                LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
+                FragmentTargets = Array.AsReadOnly(packet.Message.FragmentTargets!),
+                Forms = Array.AsReadOnly(packet.Message.Forms!),
+                FormControls = Array.AsReadOnly(packet.Message.FormControls!),
+                TextTargets = Array.AsReadOnly(packet.Message.TextTargets!)
+            };
+        }).ConfigureAwait(false);
+    }
+    public bool DispatchesLinkClicks => executeInlineScripts;
+    /// <summary>Send a data-only click request for the committed document; the worker dispatches on its owning thread.</summary>
+    /// <remarks>Like retained repaints, a sent click drains under the exchange deadline so worker DOM/listener state
+    /// stays aligned; a deadline or communication failure terminates the worker and with it the page host.</remarks>
+    public async Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (!executeInlineScripts) { throw new PageNavigationException("Page click events require the inline-script opt-in."); }
+            if (documentId == Guid.Empty || documentId != committedDocumentId)
+            { throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly."); }
+        }
+        var request = new RendererMessage
+        {
+            Kind = "click",
+            Id = 1,
+            DocumentId = documentId,
+            ExecuteInlineScripts = true,
+            LinkIndex = linkIndex,
+            Url = url
+        };
+        try { RendererProtocol.Validate(request, 0); }
+        catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+        return await ExchangeAsync(request, drain: true, cancellationToken, packet => packet.Message.Kind == "click-result"
+            ? packet.Message.DefaultPrevented is false
+            : throw new IpcProtocolException("Renderer click reply has the wrong kind.")).ConfigureAwait(false);
+    }
+    private async Task<T> ExchangeAsync<T>(RendererMessage request, bool drain, CancellationToken cancellationToken,
+        Func<RendererPacket, T> accept)
+    {
+        using var deadline = drain
             ? CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)
             : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetime.Token);
         deadline.CancelAfter(timeout);
@@ -163,7 +217,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             using var cancellationAbort = requireSandbox && OperatingSystem.IsWindows()
                 ? deadline.Token.Register(() => current?.Abort())
                 : default;
-            lock (sync) { request = request with { CommittedDocumentId = committedDocumentId }; }
+            if (request.Kind == "render") { lock (sync) { request = request with { CommittedDocumentId = committedDocumentId }; } }
             if (started)
             {
                 var hello = await Receive(current, deadline.Token).ConfigureAwait(false);
@@ -177,26 +231,10 @@ public sealed class ProcessPageRenderer : IPageRenderer
             var packet = await Receive(current, deadline.Token).ConfigureAwait(false);
             if (packet.Message.Id != request.Id) { throw new IpcProtocolException("Renderer reply identity does not match its request."); }
             if (packet.Message.Kind == "error") { throw new PageNavigationException(packet.Message.Error!); }
-            if (packet.Message.Kind != "frame" || packet.Message.PixelWidth != expected.Width || packet.Message.PixelHeight != expected.Height
-                || packet.Message.Width != viewport.Width || packet.Message.Height != viewport.Height || packet.Message.Scale != viewport.Scale)
-            {
-                throw new IpcProtocolException("Renderer frame does not match the requested physical viewport.");
-            }
-            if (packet.Message.ScrollHeight < viewport.Height)
-            { throw new IpcProtocolException("Renderer scroll height is smaller than its CSS viewport."); }
-            var frame = RasterFrame.CopyFrom(packet.Pixels,
-                new(packet.Message.PixelWidth, packet.Message.PixelHeight), packet.Message.Stride);
+            var result = accept(packet);
             // Drain superseded exchanges under the deadline so retained DOM survives and replies stay aligned.
             cancellationToken.ThrowIfCancellationRequested();
-            return new(frame, packet.Message.Title!, packet.Message.Status!)
-            {
-                ScrollHeight = packet.Message.ScrollHeight,
-                LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
-                FragmentTargets = Array.AsReadOnly(packet.Message.FragmentTargets!),
-                Forms = Array.AsReadOnly(packet.Message.Forms!),
-                FormControls = Array.AsReadOnly(packet.Message.FormControls!),
-                TextTargets = Array.AsReadOnly(packet.Message.TextTargets!)
-            };
+            return result;
         }
         catch (OperationCanceledException)
         {

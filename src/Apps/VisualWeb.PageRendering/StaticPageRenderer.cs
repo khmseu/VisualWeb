@@ -20,7 +20,27 @@ public sealed class StaticPageRenderer : IPageRenderer
     private readonly FontSet text = new();
     private readonly PaintFontRegistry paint;
     private readonly PageRenderOptions options;
-    private sealed record DocumentState(LoadedPage Source, HtmlParseResult Parsed, int Scripts);
+    /// <summary>One retained document; opted-in documents also own a creating-thread-affine V8 host and listeners.</summary>
+    private sealed class DocumentState(LoadedPage source, HtmlParseResult parsed, int scripts, V8ScriptHost? host)
+    {
+        public LoadedPage Source { get; } = source;
+        public HtmlParseResult Parsed { get; } = parsed;
+        public int Scripts { get; } = scripts;
+        public V8ScriptHost? Host { get; private set; } = host;
+        /// <summary>Anchor elements and destinations of the latest successful render, in link-target order.</summary>
+        public IReadOnlyList<(DomElement Anchor, string Url)> Links { get; set; } = [];
+        public int Clicks { get; set; }
+        public string? Failure { get; private set; }
+        public void Fail(string message) { Failure ??= message; Release(); }
+        public void Release()
+        {
+            var retained = Host;
+            Host = null;
+            retained?.Dispose();
+        }
+    }
+    /// <summary>Strict bound on trusted link clicks dispatched into one retained document host.</summary>
+    public const int MaxLinkClicksPerDocument = 1024;
     private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName, double documentY)
     {
         public string Url { get; } = url;
@@ -58,7 +78,12 @@ public sealed class StaticPageRenderer : IPageRenderer
     public void CommitDocument(Guid documentId)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (candidate?.Source.DocumentId == documentId) { committed = candidate; candidate = null; }
+        if (candidate?.Source.DocumentId == documentId)
+        {
+            var previous = committed;
+            committed = candidate; candidate = null;
+            previous?.Release();
+        }
         else if (committed?.Source.DocumentId != documentId) { throw new PageNavigationException("Document is not retained."); }
     }
     public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken, bool reuseDocument = false)
@@ -77,32 +102,73 @@ public sealed class StaticPageRenderer : IPageRenderer
                 || state.Source.BaseUrl?.Href != page.BaseUrl?.Href
                 || !state.Source.Stylesheets.SequenceEqual(page.Stylesheets))
             { throw new PageNavigationException("Retained document identity does not match its source."); }
+            if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
         }
         else
         {
             var fresh = HtmlParser.Parse(page.Html, options.Html, cancellationToken);
-            var scripts = executeInlineScripts ? InlinePageScripts.Execute(fresh.Document, cancellationToken) : 0;
-            state = new(page, fresh, scripts);
+            var (host, scripts) = executeInlineScripts ? InlinePageScripts.Execute(fresh.Document, cancellationToken) : (null, 0);
+            state = new(page, fresh, scripts, host);
         }
+        try { return Publish(state, page, viewport, cancellationToken, reuseDocument); }
+        catch { if (!reuseDocument && !ReferenceEquals(candidate, state)) { state.Release(); } throw; }
+    }
+    public bool DispatchesLinkClicks => executeInlineScripts;
+    public Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
+        Task.FromResult(DispatchLinkClick(documentId, linkIndex, url, cancellationToken));
+    /// <summary>Dispatch a trusted link click into the committed document's retained host on the creating thread.</summary>
+    /// <remarks>Specs: dom, html;
+    /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
+    /// The index and destination must match the latest successful render. Returns false when canceled. Failures
+    /// and the per-document click bound invalidate the host and make later retained repaints fail explicitly.</remarks>
+    public bool DispatchLinkClick(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentNullException.ThrowIfNull(url);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!executeInlineScripts) { throw new PageNavigationException("Page click events require the inline-script opt-in."); }
+        var state = committed?.Source.DocumentId == documentId ? committed
+            : throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly.");
+        if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
+        var host = state.Host ?? throw new PageNavigationException("Retained page script host is unavailable; reload explicitly.");
+        if (linkIndex < 0 || linkIndex >= state.Links.Count || state.Links[linkIndex].Url != url
+            || !state.Links[linkIndex].Anchor.IsConnected || state.Links[linkIndex].Anchor.OwnerDocument != state.Parsed.Document)
+        { throw new PageNavigationException("Clicked link no longer matches the retained document; no event was dispatched."); }
+        if (state.Clicks >= MaxLinkClicksPerDocument)
+        {
+            const string limit = "Per-document link click event limit exceeded; page script host invalidated. Reload explicitly.";
+            state.Fail(limit);
+            throw new ScriptLimitException(limit);
+        }
+        state.Clicks++;
+        try { return host.DispatchTrustedClick(state.Links[linkIndex].Anchor, cancellationToken); }
+        catch (Exception exception)
+        {
+            state.Fail("Page script host invalidated by a failed link click; reload explicitly. " + exception.Message);
+            throw;
+        }
+    }
+    private BrowserPage Publish(DocumentState state, LoadedPage page, PageViewport viewport, CancellationToken cancellationToken,
+        bool reuseDocument)
+    {
         var parsed = state.Parsed;
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url,
             state.Source.Stylesheets, state.Source.BaseUrl);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
-        var (links, controlGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
+        var (links, anchors, controlGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
             Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken, page.BaseUrl);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, links.Count,
             rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!reuseDocument) { candidate = state; }
         if (executeInlineScripts)
         {
-            status += $" Post-parse inline scripts: {state.Scripts}; no HTML scheduling/event loop.";
+            status += $" Post-parse inline scripts: {state.Scripts}; link-click listeners retained; no HTML scheduling/event loop.";
         }
-        return new(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
+        var result = new BrowserPage(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
         {
             ScrollHeight = rendered.ScrollHeight,
             LinkTargets = links,
@@ -111,8 +177,19 @@ public sealed class StaticPageRenderer : IPageRenderer
             FormControls = controls,
             TextTargets = textTargets
         };
+        cancellationToken.ThrowIfCancellationRequested();
+        // Publication is the final non-throwing step: link identities and candidate ownership change together.
+        state.Links = anchors.Zip(links, (anchor, link) => (anchor, link.Url)).ToArray();
+        if (!reuseDocument)
+        {
+            var replaced = candidate;
+            candidate = state;
+            replaced?.Release();
+        }
+        return result;
     }
-    private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
+    private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyList<DomElement> Anchors,
+        IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
         IReadOnlyList<PageTextTarget> TextTargets)
         CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY,
             CancellationToken cancellationToken, BrowserUrl? baseUrlOverride)
@@ -122,6 +199,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         var linkData = new List<LinkTargetData>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var anchors = new Dictionary<DomElement, LinkTargetData>();
+        var anchorOrder = new List<DomElement>();
         var textTargets = new List<PageTextTarget>();
         long urlBytes = 0;
         long textBytes = 0;
@@ -135,7 +213,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             RendererProtocol.ValidateTextTargets(textTargets, layout.ViewportWidth, layout.ViewportHeight);
         }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
-        return (links.AsReadOnly(), controls, textTargets.AsReadOnly());
+        return (links.AsReadOnly(), anchorOrder.AsReadOnly(), controls, textTargets.AsReadOnly());
 
         LinkTargetData GetLinkTarget(DomElement anchor, string href, double documentY)
         {
@@ -154,6 +232,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             var (openInNewTab, targetName) = ResolveTarget(anchor.GetAttribute("target"), baseTarget);
             var target = new LinkTargetData(destination, openInNewTab, targetName, documentY);
             anchors.Add(anchor, target);
+            anchorOrder.Add(anchor);
             linkData.Add(target);
             return target;
         }
@@ -628,6 +707,15 @@ public sealed class StaticPageRenderer : IPageRenderer
     public void Dispose()
     {
         if (disposed) { return; }
-        paint.Dispose(); font.Dispose(); committed = null; candidate = null; disposed = true;
+        disposed = true;
+        var retained = committed;
+        var pending = candidate;
+        committed = null; candidate = null;
+        try
+        {
+            try { pending?.Release(); }
+            finally { retained?.Release(); }
+        }
+        finally { paint.Dispose(); font.Dispose(); }
     }
 }

@@ -571,7 +571,7 @@ or address-bar navigation.
 without `default-src` fallback. A blocked base falls back to the final document
 URL consistently for browser stylesheet/import discovery and renderer link/form
 resolution. The browser sends only this bounded base-URL snapshot to renderer
-workers (IPC v41); later script mutations to `<base href>` do not change the
+workers (IPC v42); later script mutations to `<base href>` do not change the
 snapshot in this subset.
 Inline script and style elements need a matching nonce or content hash, or
 non-overridden `'unsafe-inline'`, when an applicable source list is present.
@@ -760,7 +760,7 @@ but inserted script elements never execute.
 Phase 11f enables finite native Promise/queueMicrotask checkpoints between
 classic scripts and before paint, sharing task deadlines and DOM/queue budgets.
 Callback failure rejects navigation; retained resize never reruns jobs.
-There is no persistent script host or HTML event loop.
+There is no HTML event loop; only the link-click host retention below persists.
 Phase 11g also enables bounded synchronous synthetic Event/EventTarget dispatch
 and Node/document capture/target/bubble listeners. Caught listener failures
 still reject navigation. No automatic input/load events or `on*` handlers run.
@@ -809,6 +809,15 @@ Phase 11v allows lifecycle scripts to deep-clone style elements and insert
 them into the live tree; detached clones have no style effect until insertion.
 Cloned script elements remain inert and the finite initial script snapshot is
 unchanged.
+Pass 5 retains each opted-in document's renderer-local host/listeners. A
+primary-pointer link activation (press/release on the same anchor) first
+dispatches a trusted bubbling, cancelable `click` Event at that anchor in the
+local renderer or worker (IPC v42 `click`/`click-result` carry only document ID,
+link index, URL and a canceled flag), repaints the retained DOM, and follows the
+link only if not canceled. Click failures/the 1024-click per-document bound
+invalidate the host, keep the previous frame and require reload. Static mode,
+keyboard/focused, new-tab/modifier activation and non-link input are unchanged;
+see the [scripting guide](scripting.md#retained-link-click-dispatch-pass-5).
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains
 browser-owned in both modes.

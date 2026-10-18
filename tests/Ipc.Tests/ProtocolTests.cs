@@ -48,7 +48,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(41, RendererProtocol.Version);
+        Assert.Equal(42, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 41 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 40 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 40 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 38 }, 0));
@@ -787,7 +789,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(41, RendererProtocol.Version);
+        Assert.Equal(42, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -871,6 +873,64 @@ public sealed class ProtocolTests
         json = json[..start] + "\"LinkTargets\":[{" + fields + "}]}";
         using var wire = Wire(json, new byte[16]);
         await Assert.ThrowsAsync<IpcProtocolException>(() => new RendererChannel(wire, Stream.Null).ReadAsync(Cancellation));
+    }
+    private static RendererMessage Click => new()
+    {
+        Kind = "click",
+        Id = 2,
+        DocumentId = Request.DocumentId,
+        ExecuteInlineScripts = true,
+        LinkIndex = 3,
+        Url = "https://example.com/next"
+    };
+    [Fact]
+    public async Task LinkClickMessagesAreDataOnlyAndStrictlyScoped()
+    {
+        RendererProtocol.Validate(Click, 0);
+        RendererProtocol.Validate(Click with { LinkIndex = 0 }, 0);
+        RendererProtocol.Validate(Click with { LinkIndex = RendererProtocol.MaxLinkTargets - 1 }, 0);
+        RendererProtocol.Validate(new() { Kind = "click-result", Id = 2, DefaultPrevented = true }, 0);
+        RendererProtocol.Validate(new() { Kind = "click-result", Id = 2, DefaultPrevented = false }, 0);
+        foreach (var invalid in new[]
+        {
+            Click with { Id = 0 },
+            Click with { DocumentId = Guid.Empty },
+            Click with { ExecuteInlineScripts = false },
+            Click with { LinkIndex = -1 },
+            Click with { LinkIndex = RendererProtocol.MaxLinkTargets },
+            Click with { Url = null },
+            Click with { Url = "" },
+            Click with { Url = new string('x', RendererProtocol.MaxTextCharacters + 1) },
+            Click with { Html = "" },
+            Click with { Diagnostics = [] },
+            Click with { Width = 1 },
+            Click with { StatusCode = 200 },
+            Click with { Title = "" },
+            Click with { CommittedDocumentId = Request.DocumentId },
+            Click with { ReuseDocument = true },
+            Click with { DefaultPrevented = true },
+            Click with { Stylesheets = [] },
+            Request with { LinkIndex = 1 },
+            Request with { DefaultPrevented = true },
+            new() { Kind = "click-result", Id = 2, LinkIndex = 1 },
+            new() { Kind = "click-result", Id = 2, DocumentId = Request.DocumentId },
+            new() { Kind = "click-result", Id = 2, Url = "https://example.com" },
+            new() { Kind = "click-result", Id = 0 },
+            new() { Kind = "click-result", Id = 2 },
+            new() { Kind = "hello", DefaultPrevented = true }
+        })
+        { Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(invalid, 0)); }
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Click, 4));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "click-result", Id = 2 }, 4));
+
+        using var wire = new MemoryStream();
+        var writer = new RendererChannel(Stream.Null, wire);
+        await writer.WriteAsync(Click, cancellationToken: Cancellation);
+        await writer.WriteAsync(new() { Kind = "click-result", Id = 2, DefaultPrevented = true }, cancellationToken: Cancellation);
+        wire.Position = 0;
+        var reader = new RendererChannel(wire, Stream.Null);
+        Assert.Equal(Click, (await reader.ReadAsync(Cancellation))!.Message);
+        Assert.True((await reader.ReadAsync(Cancellation))!.Message.DefaultPrevented);
     }
     private static RendererMessage Request => new()
     {

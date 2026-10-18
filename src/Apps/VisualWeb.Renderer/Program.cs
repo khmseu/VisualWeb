@@ -40,14 +40,31 @@ try
         while (channel.ReadAsync().GetAwaiter().GetResult() is { } packet)
         {
             var request = packet.Message;
-            if (request.Kind != "render" || request.Id <= lastId)
+            if (request.Kind is not ("render" or "click") || request.Id <= lastId)
             {
-                throw new IpcProtocolException("Expected a new monotonically identified render request.");
+                throw new IpcProtocolException("Expected a new monotonically identified render or click request.");
             }
             if (scriptPolicy is { } policy && policy != request.ExecuteInlineScripts)
             { throw new IpcProtocolException("Script opt-in policy cannot change within a tab channel."); }
             scriptPolicy = request.ExecuteInlineScripts;
             lastId = request.Id;
+            if (request.Kind == "click")
+            {
+                // Click dispatch runs on this owning thread in the retained scripted document; only a flag returns.
+                try
+                {
+                    if (scriptedRenderer is null || !scriptedRenderer.HasDocument(request.DocumentId))
+                    { throw new PageNavigationException("Retained document was lost; reload explicitly rather than rerunning scripts."); }
+                    scriptedRenderer.CommitDocument(request.DocumentId);
+                    var allowed = scriptedRenderer.DispatchLinkClick(request.DocumentId, request.LinkIndex, request.Url!, CancellationToken.None);
+                    channel.WriteAsync(new() { Kind = "click-result", Id = request.Id, DefaultPrevented = !allowed }).GetAwaiter().GetResult();
+                }
+                catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception))
+                {
+                    channel.WriteAsync(new() { Kind = "error", Id = request.Id, Error = Bounded(exception.Message) }).GetAwaiter().GetResult();
+                }
+                continue;
+            }
             try
             {
                 var active = request.ExecuteInlineScripts

@@ -120,5 +120,15 @@ public interface IPageRenderer : IDisposable
         RenderAsync(page, viewport, cancellationToken);
     /// <summary>Pin a successfully published document; unpublished candidates cannot evict it.</summary>
     void CommitDocument(Guid documentId) { }
+    /// <summary>Whether committed documents retain an opted-in script host that receives trusted link clicks.</summary>
+    bool DispatchesLinkClicks => false;
+    /// <summary>Dispatch a trusted, bubbling, cancelable <c>click</c> Event at a committed document's rendered link anchor.</summary>
+    /// <remarks>Specs: dom, html;
+    /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
+    /// Data only: the link is identified by its rendered index and destination; no DOM or V8 object crosses the
+    /// boundary. Completes with false when a listener canceled the event, suppressing browser-owned activation.</remarks>
+    Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("This renderer does not dispatch page click events.");
     string? TakeFailure() => null;
 }

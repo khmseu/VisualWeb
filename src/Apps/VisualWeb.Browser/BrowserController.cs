@@ -65,6 +65,10 @@ public sealed class BrowserController : IDisposable
         internal bool Resize { get; } = resize;
         internal bool Scroll { get; } = scroll;
         internal double RestoreScrollY { get; } = restoreScrollY;
+        /// <summary>Trusted page click that must complete before the retained repaint and any link activation.</summary>
+        internal Task<bool>? Click { get; init; }
+        internal PageLinkTarget? ClickLink { get; init; }
+        internal bool ClickActivatesNewTab { get; init; }
         internal LoadedPage? Document { get; set; }
         internal Task<BrowserPage>? Render { get; set; }
         internal PageViewport? Viewport { get; set; }
@@ -1693,8 +1697,10 @@ public sealed class BrowserController : IDisposable
         return fragment < 0 ? url.Href : url.Href[..fragment];
     }
 
+    /// <param name="dispatchClickEvent">Primary pointer link activation: for opted-in script renderers, first dispatch a
+    /// trusted page <c>click</c> event whose cancellation suppresses browser-owned link activation.</param>
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null,
-        bool forceNewTab = false, bool activateNewTab = true)
+        bool forceNewTab = false, bool activateNewTab = true, bool dispatchClickEvent = false)
     {
         Check();
         var owner = content[id];
@@ -1720,10 +1726,35 @@ public sealed class BrowserController : IDisposable
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
+            if (dispatchClickEvent && !forceNewTab && owner.Renderer.DispatchesLinkClicks && owner.Document is { } clicked)
+            { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab); }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
                 activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
         }
         return false;
+    }
+    /// <summary>Dispatch a trusted click into the committed document, then repaint it and activate the link unless canceled.</summary>
+    /// <remarks>Specs: dom, html;
+    /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
+    /// The click supersedes pending work; its retained repaint publishes like a resize before navigation starts.</remarks>
+    private bool StartLinkClick(TabId id, Content owner, LoadedPage document, PageViewport viewport, int index,
+        PageLinkTarget link, bool activateNewTab)
+    {
+        Limit();
+        Cancel(id);
+        var tab = Session.Tab(id);
+        var cancellation = new CancellationTokenSource();
+        Task<bool> click;
+        try { click = owner.Renderer.DispatchLinkClickAsync(document.DocumentId, index, link.Url, cancellation.Token); }
+        catch (Exception exception) when (IsPageFailure(exception) || exception is OperationCanceledException)
+        { click = Task.FromException<bool>(exception); }
+        catch { cancellation.Dispose(); throw; }
+        operations.Add(new(id, checked(++tab.Generation), Task.FromResult(document), cancellation, null, false, resize: true)
+        { Viewport = viewport, Click = click, ClickLink = link, ClickActivatesNewTab = activateNewTab });
+        tab.Status = "Dispatching page click event.";
+        Changed?.Invoke(id);
+        return true;
     }
     public void SetAddress(TabId id, string value)
     {
@@ -1833,16 +1864,22 @@ public sealed class BrowserController : IDisposable
     private void Advance(Operation operation, Func<PageViewport?> viewport)
     {
         var current = Session.Contains(operation.Tab) && Session.Tab(operation.Tab).Generation == operation.Generation;
-        if (!operation.Load.IsCompleted || operation.Render is { IsCompleted: false }) { return; }
+        if (!operation.Load.IsCompleted || operation.Click is { IsCompleted: false }
+            || operation.Render is { IsCompleted: false }) { return; }
         var finished = true;
+        PageLinkTarget? follow = null;
         try
         {
             var document = operation.Load.GetAwaiter().GetResult();
             if (!current)
             {
+                // A superseded click already ran; a failed host is reported by the next retained repaint or click.
+                if (operation.Click is { IsFaulted: true } staleClick) { _ = staleClick.Exception; }
                 if (operation.Render is { } stale) { _ = stale.GetAwaiter().GetResult(); }
                 return;
             }
+            // Event errors/limits throw here, before any repaint can publish partially mutated DOM.
+            var clickAllowed = operation.Click?.GetAwaiter().GetResult() ?? false;
             if (operation.Render is null)
             {
                 var size = operation.Viewport ?? viewport();
@@ -1897,7 +1934,8 @@ public sealed class BrowserController : IDisposable
                 && owner.Page is { } old && SameControls(old, rendered);
             owner.Document = document; owner.Page = rendered;
             // Retained scrolls preserve target ordering; other repaints may not preserve frame-local groups.
-            if (!operation.Scroll) { owner.FocusedLink = -1; }
+            if (!operation.Scroll && !(operation.Click is not null && owner.FocusedLink < rendered.LinkTargets.Count))
+            { owner.FocusedLink = -1; }
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
@@ -1905,7 +1943,14 @@ public sealed class BrowserController : IDisposable
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
             owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
             tab.Origin = document.Origin;
-            if (operation.Resize)
+            if (operation.Click is not null)
+            {
+                // The click superseded any pending load; the committed document remains current.
+                tab.AddressText = document.Url.Href; tab.Title = rendered.Title; tab.Status = rendered.Status;
+                tab.Error = null; tab.IsLoading = false;
+                if (clickAllowed) { follow = operation.ClickLink; }
+            }
+            else if (operation.Resize)
             {
                 if (owner.ResizeFailed) { tab.Error = null; }
                 if (tab.Error is null) { tab.Status = rendered.Status; }
@@ -1935,10 +1980,12 @@ public sealed class BrowserController : IDisposable
                 {
                     var owner = content[operation.Tab];
                     owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
-                    if (!operation.Scroll)
+                    // A failed click keeps the last published frame; its host is invalidated and repaints fail explicitly.
+                    if (!operation.Scroll && operation.Click is null)
                     { owner.Page = null; owner.Viewport = operation.Viewport; owner.ResizeFailed = true; }
                 }
-                Report(operation.Tab, (operation.Scroll ? "Scroll rendering failed: " : operation.Resize ? "Resize rendering failed: " : "") + exception.Message);
+                Report(operation.Tab, (operation.Click is not null ? "Page click event failed: "
+                    : operation.Scroll ? "Scroll rendering failed: " : operation.Resize ? "Resize rendering failed: " : "") + exception.Message);
             }
         }
         finally
@@ -1949,6 +1996,13 @@ public sealed class BrowserController : IDisposable
                 operation.ReleaseCandidate();
             }
         }
+        if (follow is null) { return; }
+        try
+        {
+            NavigateLink(operation.Tab, follow.Url, openInNewTab: follow.OpenInNewTab,
+                activateNewTab: operation.ClickActivatesNewTab, authorizeRedirects: true, targetName: follow.TargetName);
+        }
+        catch (Exception exception) when (IsPageFailure(exception)) { Report(operation.Tab, exception.Message); }
     }
     private static bool SameControls(BrowserPage old, BrowserPage rendered) =>
         old.Forms.SequenceEqual(rendered.Forms) && old.FormControls.Count == rendered.FormControls.Count

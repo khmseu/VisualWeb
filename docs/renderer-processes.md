@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v41
+## Private stream protocol v42
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound                                                        |                                                     Value |
 | ------------------------------------------------------------ | --------------------------------------------------------: |
-| Protocol version                                             |           41, explicitly present; v1 through v40 rejected |
+| Protocol version                                             |           42, explicitly present; v1 through v41 rejected |
 | Metadata bytes                                               |                                                    32 MiB |
 | JSON nesting                                                 |                                                        16 |
 | Decoded HTML UTF-16 characters                               |                                                      4 Mi |
@@ -148,8 +148,14 @@ final response URL used to resolve relative `@import` rules. Request `Url`,
 `BaseUrl`, and decoded CSS remain data only; no response headers or fetch capability
 cross IPC. Version 41 adds an optional serialized absolute render-request
 `BaseUrl` override for CSP-approved document base resolution; it is data only
-and carries no CSP policy or fetch capability. Missing required fields and old
-versions fail closed.
+and carries no CSP policy or fetch capability. Version 42 adds the request kind
+`click` (document GUID, explicit script opt-in, link index below 4096 and the
+expected destination URL, no HTML/pixels/viewport) and its empty reply
+`click-result` with a required `DefaultPrevented` flag; `LinkIndex` and
+`DefaultPrevented` are rejected on every other kind. The worker dispatches into
+its own retained renderer-local host and returns only the canceled flag, so no
+DOM/V8 handle or navigation capability crosses IPC. Missing required fields and
+old versions fail closed.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require
@@ -171,7 +177,8 @@ candidate cannot evict the committed DOM. These fields are rejected on replies
 and handshakes. A reply is `frame` (title/status/CSS viewport/scale/pixel dimensions/stride/pixels/scroll height and bounded link/form/text targets) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
 worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
-the [finite scripting policy](scripting.md); general DOM input/events, event loops
+the [finite scripting policy](scripting.md); apart from the v42 link `click`
+dispatch, general DOM input/events, event loops
 and display-list IPC remain deferred. The browser separately brokers bounded link,
 form and fragment-selection behavior.
 
