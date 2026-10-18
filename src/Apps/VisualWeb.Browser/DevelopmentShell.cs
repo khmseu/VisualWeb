@@ -164,6 +164,7 @@ public sealed class DevelopmentShell : IDisposable
     }
     private NavigationPrompt? PendingPrompt(BrowserWindow window) =>
         window.Tabs.Select(tab => navigationPrompts.GetValueOrDefault(tab.Id)).FirstOrDefault(prompt => prompt is not null);
+    internal bool HasPendingNavigationConfirmation(TabId tab) => navigationPrompts.ContainsKey(tab);
     private void ResolveNavigationPrompt(TabId tab, bool allow)
     {
         if (!navigationPrompts.Remove(tab, out var prompt)) { return; }
