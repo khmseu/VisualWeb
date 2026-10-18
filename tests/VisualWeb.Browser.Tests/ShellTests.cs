@@ -1933,6 +1933,50 @@ public sealed class ShellTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShiftClickMissKeepsExistingCoarseSelection(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}div{height:140px}</style><p>first</p><div></div><p>second</p>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var first = shell.Controller.Page(tab.Id)!.TextTargets[0].Rect;
+        Click(first);
+        Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
+
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.A, 0,
+            (ushort)SDL.Keymod.Shift, true, false));
+        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, 40, (float)(ShellChrome.Height + 90)));
+        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, 40, (float)(ShellChrome.Height + 90)));
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.A, 0, 0, false, false));
+
+        Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
+        Assert.Single(tab.History.Entries);
+        Assert.Null(tab.Error);
+
+        void Click(PageLinkRect rect)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        }
+
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
     [Fact]
     public void UnsupportedFormSubmissionIsReportedInTheTabWithoutNavigation()
     {

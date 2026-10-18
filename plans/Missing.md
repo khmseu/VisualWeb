@@ -189,7 +189,8 @@ broader page interaction is still missing:
   while a drag beginning over a visible link selects coarse text fragments
   instead of activating it. Drags beginning in ordinary text can include anchor
   fragments. Shift+primary click extends an existing coarse selection to a visible
-  text fragment, including link text without navigating. Shift+Left/Right moves
+  text fragment, including link text without navigating; Shift+click misses keep
+  existing selection unchanged. Shift+Left/Right moves
   the active endpoint by one paint-order fragment, Shift+Up/Down moves to the nearest
   fragment on an adjacent visual line, and Shift+Home/End extends to that line's
   boundary. Selection resets on successful

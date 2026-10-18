@@ -374,7 +374,11 @@ public sealed class DevelopmentShell : IDisposable
         var pageY = pointer.Y - ShellChrome.Height;
         var page = Controller.Page(pageTab.Id);
         var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true) == true;
-        if (view.ShiftModifier && !overControl && Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
+        if (view.ShiftModifier && !overControl)
+        {
+            if (Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
+            if (Controller.SelectedTextRects(pageTab.Id).Count > 0) { return; }
+        }
         Controller.ClearSelectedText(pageTab.Id);
         var linkIndex = -1;
         if (page is not null)

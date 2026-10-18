@@ -115,7 +115,8 @@ to whole visible shaped fragments (not character offsets). A primary click on a 
 navigates on release only if the pointer remains over the same anchor; dragging
 at least four logical pixels from link text selects fragments instead. Drags beginning in ordinary text can also include anchor fragments.
 Shift+primary click extends an existing selection to a visible text fragment,
-including text inside a link without navigating. Shift+Left/Right moves the active
+including text inside a link without navigating; a Shift+click miss keeps the
+existing selection unchanged. Shift+Left/Right moves the active
 selection endpoint by one paint-order fragment; Shift+Up/Down chooses the nearest
 fragment on the adjacent visual line; Shift+Home/End selects to the current visual
 line boundary. These shortcuts are inactive while a form control owns focus. Selection is cleared on successful
