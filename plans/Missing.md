@@ -362,3 +362,7 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 *Status cross-checked against the implementation and subsystem guides on
 2026-10-18. These checks are not full conformance, security, CI-matrix or
 real-desktop validation.
+
+## End goal
+
+The browser should be able to handle the GitHub website.
