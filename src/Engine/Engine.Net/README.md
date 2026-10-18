@@ -47,6 +47,6 @@ Use only from trusted browser-side callers. HttpClient is a transport, not
 complete Fetch. See the [networking guide](../../../docs/networking.md) for
 ownership, limits, file handling, supported cookie subset and validation.
 
-Official sources: https://fetch.spec.whatwg.org/ (ID `fetch`) and
-https://www.rfc-editor.org/rfc/rfc6797.html (ID `rfc6797`).
+Official sources: <https://fetch.spec.whatwg.org/> (ID `fetch`) and
+<https://www.rfc-editor.org/rfc/rfc6797.html> (ID `rfc6797`).
 See the [standards workflow](../../../docs/standards.md).
