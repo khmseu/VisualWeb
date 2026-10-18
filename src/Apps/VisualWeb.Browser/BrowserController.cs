@@ -1156,8 +1156,13 @@ public sealed class BrowserController : IDisposable
         var targetName = submitterControl?.FormTargetName ?? form.TargetName;
         if (submitterControl?.FormActionError is { } actionError) { throw new PageNavigationException(actionError); }
         var action = BrowserUrl.Parse(submitterControl?.FormAction ?? form.Action);
-        if (document.ContentSecurityPolicyFields.Count > 0
-            && !ContentSecurityPolicy.Parse(document.ContentSecurityPolicyFields, []).AllowsFormAction(action, document.Origin))
+        var policy = document.ContentSecurityPolicyFields.Count > 0
+            ? ContentSecurityPolicy.Parse(document.ContentSecurityPolicyFields, [])
+            : null;
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = pageNavigationAuthorizer is not null
+            && policy?.UpgradesInsecureRequests == true ? policy.UpgradeFormSubmissionUrl : null;
+        if (rewriteDestination is not null) { action = rewriteDestination(action); }
+        if (policy is not null && !policy.AllowsFormAction(action, document.Origin))
         {
             throw new PageNavigationException(
                 $"Content-Security-Policy form-action blocked form submission to {action.Href}.");
@@ -1194,7 +1199,8 @@ public sealed class BrowserController : IDisposable
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
             sameOriginRedirectOrigin: pageNavigationAuthorizer is null ? sameOriginRedirectOrigin : null,
             openInNewTab: openInNewTab, authorizeRedirects: pageNavigationAuthorizer is not null,
-            targetName: targetName, preserveAddressWhileLoading: pageNavigationAuthorizer is not null);
+            targetName: targetName, preserveAddressWhileLoading: pageNavigationAuthorizer is not null,
+            rewriteDestination: rewriteDestination);
     }
     private static string SerializeForm(BrowserPage page, Content owner, int formIndex, int submitter,
         IReadOnlyDictionary<int, string> normalizedEmailValues, int limit) =>
@@ -1360,7 +1366,8 @@ public sealed class BrowserController : IDisposable
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true,
-        bool authorizeRedirects = false, string? targetName = null, bool preserveAddressWhileLoading = false)
+        bool authorizeRedirects = false, string? targetName = null, bool preserveAddressWhileLoading = false,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
     {
         var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
@@ -1419,7 +1426,8 @@ public sealed class BrowserController : IDisposable
                 authorizeRedirects: authorizeRedirects,
                 preserveAddressWhileLoading: preserveAddressWhileLoading
                     || authorizeRedirects && pageNavigationAuthorizer is not null,
-                authorizationSourceOrigin: authorizeRedirects ? sourceDocument?.Origin : null);
+                authorizationSourceOrigin: authorizeRedirects ? sourceDocument?.Origin : null,
+                rewriteDestination: rewriteDestination);
         }
         catch
         {
@@ -1556,7 +1564,8 @@ public sealed class BrowserController : IDisposable
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false,
-        bool preserveAddressWhileLoading = false, SecurityOrigin? authorizationSourceOrigin = null)
+        bool preserveAddressWhileLoading = false, SecurityOrigin? authorizationSourceOrigin = null,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
     {
         Limit();
         Cancel(tab.Id);
@@ -1571,10 +1580,12 @@ public sealed class BrowserController : IDisposable
                 ? LoadPageInitiatedAsync(tab.Id, url,
                     authorizationSourceOrigin ?? throw new PageNavigationException(
                         "Page-initiated navigation requires a committed source origin."),
-                    cancellation.Token, preventHttpsDowngrade)
+                    cancellation.Token, preventHttpsDowngrade, rewriteDestination)
                 : authorizeRedirects
-                    ? content[tab.Id].Source.LoadAuthorizedNavigationAsync(url, cancellation.Token, preventHttpsDowngrade)
-                : content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade, sameOriginRedirectOrigin);
+                    ? content[tab.Id].Source.LoadAuthorizedNavigationAsync(url, cancellation.Token,
+                        preventHttpsDowngrade)
+                    : content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade,
+                        sameOriginRedirectOrigin);
         }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace,
@@ -1585,7 +1596,8 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(tab.Id);
     }
     private async Task<LoadedPage> LoadPageInitiatedAsync(TabId tabId, BrowserUrl url, SecurityOrigin sourceOrigin,
-        CancellationToken cancellationToken, bool preventHttpsDowngrade)
+        CancellationToken cancellationToken, bool preventHttpsDowngrade,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination)
     {
         var owner = content[tabId];
         var previousOrigin = sourceOrigin;
@@ -1598,7 +1610,7 @@ public sealed class BrowserController : IDisposable
         }
 
         return await owner.Source.LoadAuthorizedNavigationAsync(url, Authorize, cancellationToken,
-            preventHttpsDowngrade).ConfigureAwait(false);
+            preventHttpsDowngrade, rewriteDestination).ConfigureAwait(false);
     }
     /// <summary>Observe completed loading/rendering without awaiting on the UI thread.</summary>
     public void Pump(Func<TabId, PageViewport?> viewport)

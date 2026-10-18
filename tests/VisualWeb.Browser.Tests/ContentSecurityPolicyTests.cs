@@ -207,14 +207,30 @@ public sealed class ContentSecurityPolicyTests
             ["upgrade-insecure-requests; style-src 'self'"], []);
         var insecure = BrowserUrl.Parse("http://example.test:8080/site.css?theme=dark#section");
         var secure = BrowserUrl.Parse("https://example.test:8080/site.css?theme=dark#section");
+        var defaultPort = BrowserUrl.Parse("http://example.test:80/site.css");
         var data = BrowserUrl.Parse("data:text/css,p%7Bcolor%3Ared%7D");
 
         Assert.True(policy.UpgradesInsecureRequests);
         Assert.Equal(secure.Href, policy.UpgradeStyleUrl(insecure).Href);
+        Assert.Equal("https://example.test/site.css", policy.UpgradeStyleUrl(defaultPort).Href);
         Assert.Same(secure, policy.UpgradeStyleUrl(secure));
         Assert.Same(data, policy.UpgradeStyleUrl(data));
         Assert.True(policy.AllowsStyle(secure, BrowserUrl.Parse("http://example.test:8080/").Origin));
         Assert.False(ContentSecurityPolicy.Parse(["style-src 'self'"], []).UpgradesInsecureRequests);
+    }
+
+    [Fact]
+    public void UpgradeInsecureRequestsRewritesFormActionsAndRedirectTargets()
+    {
+        var policy = ContentSecurityPolicy.Parse(["upgrade-insecure-requests"], []);
+        var defaultPort = BrowserUrl.Parse("http://forms.test:80/submit?query=value#result");
+        var nonDefaultPort = BrowserUrl.Parse("http://forms.test:8080/submit");
+
+        Assert.Equal("https://forms.test/submit?query=value#result",
+            policy.UpgradeFormSubmissionUrl(defaultPort).Href);
+        Assert.Equal("https://forms.test:8080/submit", policy.UpgradeFormSubmissionUrl(nonDefaultPort).Href);
+        Assert.Same(nonDefaultPort,
+            ContentSecurityPolicy.Parse([], []).UpgradeFormSubmissionUrl(nonDefaultPort));
     }
 
     [Fact]

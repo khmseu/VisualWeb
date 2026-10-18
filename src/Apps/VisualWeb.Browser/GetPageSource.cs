@@ -43,6 +43,11 @@ public interface IPageSource : IDisposable
         Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
         CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
         throw new PageNavigationException("The configured page source does not enforce asynchronous per-hop navigation authorization.");
+    Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
+        CancellationToken cancellationToken, bool preventHttpsDowngrade,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination) =>
+        throw new PageNavigationException("The configured page source does not enforce asynchronous per-hop navigation authorization and destination rewriting.");
 }
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>
@@ -66,9 +71,9 @@ public interface IPageSource : IDisposable
 /// additionally rejects inline script/style content, applies style-src-elem/style-src/default-src to linked/imported
 /// stylesheet destinations before requests and redirects, and upgrades insecure stylesheet URLs when the response policy
 /// includes <c>upgrade-insecure-requests</c> (spec ID upgrade-insecure-requests;
-/// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>). That directive
-/// is not applied to top-level navigation. This is not a complete Fetch/CORS implementation or general request
-/// authorization.</remarks>
+/// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>). The
+/// development shell also applies it to GET form submissions and their redirects; other top-level navigation is not
+/// upgraded. This is not a complete Fetch/CORS implementation or general request authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -113,9 +118,16 @@ public sealed class GetPageSource : IPageSource
     public async Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url,
         Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
         CancellationToken cancellationToken, bool preventHttpsDowngrade)
+        => await LoadAuthorizedNavigationAsync(url, authorizeDestination, cancellationToken, preventHttpsDowngrade,
+            rewriteDestination: null).ConfigureAwait(false);
+    public async Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
+        CancellationToken cancellationToken, bool preventHttpsDowngrade,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination)
     {
         var response = await loader.LoadAuthorizedNavigationAsync(url, authorizeDestination,
-            cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
+            cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade,
+            rewriteDestination: rewriteDestination).ConfigureAwait(false);
         return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
     }
     private async Task<LoadedPage> CreateLoadedPageAsync(ResourceResponse response, CancellationToken cancellationToken)
@@ -148,7 +160,7 @@ public sealed class GetPageSource : IPageSource
             diagnostics.Add("Content-Security-Policy: bounded response policy enforced for inline and external style content.");
             if (policy.UpgradesInsecureRequests)
             {
-                diagnostics.Add("Content-Security-Policy upgrade-insecure-requests applies to browser-brokered stylesheet requests only; page navigation is unchanged.");
+                diagnostics.Add("Content-Security-Policy upgrade-insecure-requests applies to browser-brokered stylesheet requests and shell-managed GET form submissions; other page navigation is unchanged.");
             }
             if (policy.HasBaseUri)
             {

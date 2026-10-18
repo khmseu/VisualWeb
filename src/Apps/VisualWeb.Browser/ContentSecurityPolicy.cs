@@ -17,7 +17,8 @@ namespace VisualWeb.Browser;
 /// <see href="https://www.w3.org/TR/CSP3/#directive-form-action">form-action</see>,
 /// <see href="https://www.w3.org/TR/CSP3/#directive-base-uri">base-uri</see>; upgrade-insecure-requests
 /// follows <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>
-/// for browser-brokered stylesheets only (local source ID <c>upgrade-insecure-requests</c>).
+/// for browser-brokered stylesheets and shell-managed GET form submissions (local source ID
+/// <c>upgrade-insecure-requests</c>); other navigation requests are not upgraded.
 /// Supports default-src, script-src, script-src-elem, style-src, style-src-elem, style-src-attr, form-action,
 /// and base-uri with 'none', 'self', '*', exact HTTP(S) origins, HTTP(S) wildcard subdomain hosts,
 /// data:/http:/https: resource scheme sources (including HTTP-to-HTTPS upgrades), the valueless
@@ -72,6 +73,8 @@ internal sealed class ContentSecurityPolicy
     internal bool AllowsBaseUri(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.BaseUriDirective(), resource, documentOrigin));
     internal BrowserUrl UpgradeStyleUrl(BrowserUrl url) =>
+        UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
+    internal BrowserUrl UpgradeFormSubmissionUrl(BrowserUrl url) =>
         UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
 
     private static bool AllowsInlineNonce(SourceList? sources, string? nonce) => AllowsAllInline(sources)
@@ -258,7 +261,7 @@ internal sealed class ContentSecurityPolicy
     {
         var credentials = url.Username.Length == 0 && url.Password.Length == 0 ? ""
             : url.Username + (url.Password.Length == 0 ? "" : ":" + url.Password) + "@";
-        var port = url.Port.Length == 0 ? "" : ":" + url.Port;
+        var port = url.Port.Length == 0 || url.Port == "80" ? "" : ":" + url.Port;
         var fragmentAt = url.Href.IndexOf('#');
         var queryAt = url.Href.IndexOf('?');
         var search = url.Search.Length != 0 ? url.Search

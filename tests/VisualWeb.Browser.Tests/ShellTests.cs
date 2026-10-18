@@ -230,6 +230,87 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void UpgradeInsecureRequestsUpgradesGetFormActionAndRedirectBeforeConfirmation()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            if (url == "https://source.example/page")
+            {
+                var response = Html("<!doctype html><style>*{margin:0}input{display:block;height:20px}</style>"
+                    + "<form action='http://outside.example/send'><input name=secret value=private><input type=submit></form>");
+                response.Headers.Add("Content-Security-Policy",
+                    "upgrade-insecure-requests; form-action https://outside.example");
+                return response;
+            }
+            return url switch
+            {
+                "https://outside.example/send?secret=private" => Redirect("http://third.example/final"),
+                "https://third.example/final" => Html("<!doctype html><title>Final</title>"),
+                _ => throw new InvalidOperationException("An insecure form request escaped UIR.")
+            };
+        }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        shell.Controller.FocusPage(tab.Id);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+        Assert.True(shell.Controller.ActivateFocusedLink(tab.Id));
+        shell.Tick();
+
+        Assert.Equal("https://source.example/page", tab.AddressText);
+        Assert.Equal(["https://source.example/page"], requests);
+        ApproveUntilRequestCount(2);
+        WaitForRequestCount(2);
+        Assert.Equal("https://outside.example/send?secret=private", requests.ToArray()[1]);
+        shell.Tick();
+        Assert.Equal("https://source.example/page", tab.AddressText);
+        ApproveUntilRequestCount(3);
+        Wait(() => !tab.IsLoading);
+
+        Assert.Equal([
+            "https://source.example/page",
+            "https://outside.example/send?secret=private",
+            "https://third.example/final"
+        ], requests);
+        Assert.Equal("https://third.example/final", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void ApproveUntilRequestCount(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (requests.Count < count && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                shell.Tick();
+                Thread.Sleep(5);
+            }
+            Assert.True(requests.Count >= count);
+        }
+        void WaitForRequestCount(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (requests.Count < count && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                Thread.Sleep(5);
+            }
+            Assert.True(requests.Count >= count);
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), tab.Error);
+        }
+    }
+
+    [Fact]
     public void SpaceTogglesFocusedCheckboxAndUpdatesItsShellOverlay()
     {
         using var system = new Windows();
