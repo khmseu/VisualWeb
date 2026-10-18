@@ -3,8 +3,8 @@
 Runnable development-only browser executable. Draws SDL
 address/tab chrome, navigates GET HTML into the static engine, and manages
 history, tabs and multiple windows.
-Visible textual HTML anchors and anchors with non-empty rendered block boxes
-activate through the current tab's GET navigation on primary left click or
+Visible textual HTML anchors and anchors whose measurable rendered block geometry
+comes from the anchor itself or rendered descendants activate through the current tab's GET navigation on primary left click or
 Tab/Shift+Tab/Enter, open in a new active tab on middle click, and open in a
 background tab on Ctrl+primary click, using renderer-owned clipped CSS rectangle
 groups. Empty inline anchors and non-text anchors without a measurable block box

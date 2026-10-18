@@ -165,6 +165,38 @@ public sealed class StaticPageRenderer : IPageRenderer
             target.Rects.Add(rect);
         }
 
+        void SetBlockRectangle(LinkTargetData target, PageLinkRect rect, double documentY)
+        {
+            target.DocumentY = Math.Min(target.DocumentY, documentY);
+            target.IsBlockBoxAnchor = true;
+            if (target.BlockRectangle is null)
+            {
+                AddLinkRectangle(target, rect);
+                target.BlockRectangle = rect;
+                return;
+            }
+
+            var mergedLeft = Math.Min(target.BlockRectangle.X, rect.X);
+            var mergedTop = Math.Min(target.BlockRectangle.Y, rect.Y);
+            var mergedRight = Math.Max(target.BlockRectangle.X + target.BlockRectangle.Width, rect.X + rect.Width);
+            var mergedBottom = Math.Max(target.BlockRectangle.Y + target.BlockRectangle.Height, rect.Y + rect.Height);
+            var merged = new PageLinkRect(mergedLeft, mergedTop, mergedRight - mergedLeft, mergedBottom - mergedTop);
+            var index = target.Rects.IndexOf(target.BlockRectangle);
+            if (index >= 0) { target.Rects[index] = merged; }
+            else { AddLinkRectangle(target, merged); }
+            target.BlockRectangle = merged;
+        }
+
+        static DomElement? FindAnchor(DomNode? node)
+        {
+            for (; node is not null; node = node.ParentNode)
+            {
+                if (node is DomElement { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } anchor) { return anchor; }
+            }
+
+            return null;
+        }
+
         void Visit(LayoutBox box)
         {
             foreach (var item in box.Flow)
@@ -172,23 +204,18 @@ public sealed class StaticPageRenderer : IPageRenderer
                 cancellationToken.ThrowIfCancellationRequested();
                 if (item is LayoutBlockItem block)
                 {
-                    if (block.Box.Element is { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } anchor
-                        && anchor.GetAttribute("href") is { } href
-                        && block.Box.BorderBox.Width > 0 && block.Box.BorderBox.Height > 0)
+                    if (block.Box.BorderBox.Width > 0 && block.Box.BorderBox.Height > 0
+                        && FindAnchor(block.Box.Element) is { } anchor
+                        && anchor.GetAttribute("href") is { } href)
                     {
                         var border = block.Box.BorderBox;
                         var target = GetLinkTarget(anchor, href, border.Y);
-                        target.IsBlockBoxAnchor = true;
                         var left = Math.Clamp(border.X, 0, layout.ViewportWidth);
                         var right = Math.Clamp(border.X + border.Width, 0, layout.ViewportWidth);
                         var top = Math.Clamp(border.Y - scrollY, 0, layout.ViewportHeight);
                         var bottom = Math.Clamp(border.Y + border.Height - scrollY, 0, layout.ViewportHeight);
-                        if (right > left && bottom > top)
-                        {
-                            var rect = new PageLinkRect(left, top, right - left, bottom - top);
-                            AddLinkRectangle(target, rect);
-                            target.BlockRectangle = rect;
-                        }
+                        if (right > left && bottom > top && !target.Rects.Except(target.BlockRectangle is null ? [] : [target.BlockRectangle]).Any())
+                        { SetBlockRectangle(target, new(left, top, right - left, bottom - top), border.Y); }
                     }
                     if (block.Box.Element.LocalName is "input" or "button" or "select")
                     {
@@ -210,12 +237,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                     foreach (var fragment in line.Line.Fragments)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        DomElement? anchor = null;
-                        for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
-                        {
-                            if (node is DomElement { LocalName: "a", NamespaceUri: DomElement.HtmlNamespace } element)
-                            { anchor = element; break; }
-                        }
+                        var anchor = FindAnchor(fragment.Source.ParentNode);
                         LinkTargetData? target = null;
                         if (anchor?.GetAttribute("href") is { } href)
                         {

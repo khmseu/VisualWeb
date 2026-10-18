@@ -190,9 +190,10 @@ before publication without rerunning scripts.
 
 Both rendering modes collect visible rectangles from shaped text fragments,
 using the nearest HTML `a` ancestor with `href`, after optional script mutations.
-An anchor without shaped text is also a target when it has a non-empty rendered
-block box; its clipped border box supplies the hit area. Empty inline anchors,
-non-text anchors without a measurable block box, and non-link text have no targets.
+Anchors without shaped text are also targets when that anchor (or one of its
+rendered descendant boxes) provides non-empty measurable block geometry; the
+clipped border-box union supplies the hit area. Empty inline anchors, non-text
+anchors without measurable block geometry, and non-link text have no targets.
 Text rectangles use the run's width and line's height, clipped to the CSS viewport
 after the clamped scroll translation. Retained resize/scroll recomputes targets
 without rerunning scripts. Each anchor groups its visible rectangles in renderer

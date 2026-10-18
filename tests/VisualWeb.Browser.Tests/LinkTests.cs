@@ -429,27 +429,31 @@ public sealed class LinkTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task EmptyBlockAnchorsAreLinkTargetsButUnrenderedAnchorsAreNot(bool process)
+    public async Task BlockOrNestedBlockAnchorsAreLinkTargetsButUnrenderedAnchorsAreNot(bool process)
     {
         using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
             : new StaticPageRenderer(FontPath, 100000);
         var page = await renderer.RenderAsync(Document("""
             <!doctype html><style>
             *{margin:0}a.block{display:block;width:20px;height:18px}a.hidden{display:none}
+            .nested-box{display:block;width:14px;height:12px}
             </style>
             <a href="/empty-inline"></a>
             <a class="block" href="/empty-block"></a>
+            <a class="block" href="/nested-block"><span class="nested-box"></span></a>
             <a class="block hidden" href="/hidden-block"></a>
             <a href="/text">text</a>
             """), new(100, 50, 1), Cancellation);
 
-        Assert.Equal(["https://example.com/empty-block", "https://example.com/text"],
+        Assert.Equal(["https://example.com/empty-block", "https://example.com/nested-block", "https://example.com/text"],
             page.LinkTargets.Select(target => target.Url));
-        var emptyBlock = page.LinkTargets[0];
-        var rect = Assert.Single(emptyBlock.Rects);
-        Assert.Equal(20, rect.Width);
-        Assert.Equal(18, rect.Height);
-        Assert.NotEmpty(page.LinkTargets[1].Rects);
+        var emptyBlockRect = Assert.Single(page.LinkTargets[0].Rects);
+        Assert.Equal(20, emptyBlockRect.Width);
+        Assert.Equal(18, emptyBlockRect.Height);
+        var nestedRect = Assert.Single(page.LinkTargets[1].Rects);
+        Assert.True(nestedRect.Width >= 14);
+        Assert.True(nestedRect.Height >= 12);
+        Assert.NotEmpty(page.LinkTargets[2].Rects);
     }
 
     [Theory]
@@ -483,6 +487,40 @@ public sealed class LinkTests
         }
 
         Assert.Equal("https://other.example/visit", source.Requests[1].Url.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NestedBlockAnchorSupportsPointerAndKeyboardActivation(bool keyboard)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document("""
+            <!doctype html><style>*{margin:0}a{display:block}.box{display:block;width:18px;height:16px}</style>
+            <a href="https://other.example/nested"><span class="box"></span></a>
+            """));
+        controller.Pump(_ => viewport);
+
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+        var rect = Assert.Single(link.Rects);
+        Assert.True(rect.Width >= 18);
+        Assert.True(rect.Height >= 16);
+        if (keyboard)
+        {
+            controller.FocusPage(tab.Id);
+            Assert.Equal(0, controller.MoveLinkFocus(tab.Id));
+            Assert.True(controller.ActivateFocusedLink(tab.Id, viewport));
+        }
+        else
+        {
+            Assert.True(controller.ActivateLink(tab.Id, rect.X + 1, rect.Y + 1, viewport));
+        }
+
+        Assert.Equal("https://other.example/nested", source.Requests[1].Url.Href);
     }
 
     [Theory]

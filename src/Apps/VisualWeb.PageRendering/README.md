@@ -27,8 +27,9 @@ bounded root extent (at least the viewport height). Scroll changes raster
 translation only, not layout viewport geometry or frame size.
 `BrowserPage.LinkTargets` is a nonpositional read-only list, empty by default.
 Rendering gathers nearest-anchor ancestry from shaped text fragments in paint
-order, using run widths and line heights, and also reports non-empty rendered
-block boxes for anchors without shaped text. Text rectangles and block boxes are
+order, using run widths and line heights, and also reports non-empty measurable
+rendered block geometry for anchors without shaped text, including geometry
+contributed by rendered descendants. Text rectangles and block boxes are
 translated/clipped to visible CSS viewport space. URLs resolve against the final
 source URL before returning data-only IPC-contract targets. Each anchor is one
 target containing its visible rectangles and bounded document-space top offset;

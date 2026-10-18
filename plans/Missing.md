@@ -38,8 +38,8 @@ Evidence: `networking trust boundary`, `isolation architecture`, and `Linux conf
 The shell supports bounded textual link activation and vertical document scrolling, including Ctrl+Home/End outside editable controls;
 broader page interaction is still missing:
 
-- Textual `<a href>` links and empty/non-text anchors with a non-empty rendered
-  block box support primary left-click (release must remain over the same anchor)
+- Textual `<a href>` links and empty/non-text anchors with non-empty measurable
+  block geometry (from the anchor itself or rendered descendants) support primary left-click (release must remain over the same anchor)
   and Tab/Shift+Tab/Enter navigation in shell, local and actual
   renderer-process paths; middle-click opens
   the visible link in a new active tab and Ctrl+primary-click opens it in a
@@ -66,7 +66,7 @@ broader page interaction is still missing:
   Successful document commits and resize repaints clear frame-local anchor focus;
   retained scroll repaints preserve the focused anchor. Failed navigation preserves it. Hovering visible link rectangles draws a
   shell-owned outline without changing renderer pixels. Empty inline anchors and
-  non-text anchors without a measurable rendered block box remain unsupported.
+  non-text anchors without measurable rendered block geometry remain unsupported.
   General hit-testing and DOM focus/events remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
