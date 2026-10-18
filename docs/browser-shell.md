@@ -582,12 +582,13 @@ require `'unsafe-hashes'`. Nonces never apply to style attributes.
 The valueless `upgrade-insecure-requests` directive (source ID
 `upgrade-insecure-requests`) rewrites HTTP linked/imported stylesheet URLs to
 HTTPS before CSP, fixed-origin and bad-port checks, including each redirect.
-The development shell also upgrades HTTP GET form actions and redirect
-destinations before the `form-action`, page-navigation authorization, downgrade
-and bad-port checks; an explicit HTTP port 80 maps to HTTPS's default port 443,
-while other explicit ports and URL components are preserved. This prevents the
-form query from being sent over HTTP. Ordinary link and address-bar navigations
-and other request types are not upgraded by this subset.
+The development shell also upgrades HTTP GET form actions and ordinary
+page-initiated HTTP link targets, including redirects, before their applicable
+`form-action`, page-navigation authorization, downgrade and bad-port checks; an
+explicit HTTP port 80 maps to HTTPS's default port 443, while other explicit
+ports and URL components are preserved. This prevents form queries and link
+requests from being sent over HTTP. Explicit address-bar navigations and other
+request types are not upgraded by this subset.
 `script-src-elem` governs script checks with fallback through `script-src` to
 `default-src`; external script loading itself remains deferred. The policy
 checks linked stylesheets and CSS imports against the effective

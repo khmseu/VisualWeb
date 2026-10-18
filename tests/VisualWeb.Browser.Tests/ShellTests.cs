@@ -80,6 +80,57 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url switch
+            {
+                "https://source.example/page" => HtmlWithPolicy(
+                    "<!doctype html><a href='http://source.example:80/first?query=1#section'>open</a>"),
+                "https://source.example/first?query=1" or "http://source.example:80/first?query=1" =>
+                    Redirect("http://source.example:80/redirect?next=2"),
+                "https://source.example/redirect?next=2" or "http://source.example:80/redirect?next=2" =>
+                    Html("<!doctype html><title>Final</title>"),
+                _ => throw new InvalidOperationException($"Unexpected request: {url}")
+            };
+        }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
+        shell.Controller.FocusPage(tab.Id);
+        shell.Controller.FocusLink(tab.Id, 0);
+
+        Assert.True(shell.Controller.ActivateFocusedLink(tab.Id));
+        Wait(() => !tab.IsLoading && tab.History.Current?.Href == "https://source.example/redirect?next=2#section");
+
+        Assert.Equal([
+            "https://source.example/page",
+            "https://source.example/first?query=1",
+            "https://source.example/redirect?next=2"
+        ], requests);
+        Assert.Null(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText} | {string.Join(", ", requests)}");
+        }
+        HttpResponseMessage HtmlWithPolicy(string html)
+        {
+            var response = Html(html);
+            response.Headers.Add("Content-Security-Policy", "upgrade-insecure-requests");
+            return response;
+        }
+    }
+
+    [Fact]
     public void CancelingCrossOriginNavigationPreventsItsRequest()
     {
         var requests = new ConcurrentQueue<string>();

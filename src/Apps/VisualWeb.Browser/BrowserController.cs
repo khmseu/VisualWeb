@@ -1579,6 +1579,13 @@ public sealed class BrowserController : IDisposable
         {
             throw new PageNavigationException("Page-initiated network navigation is blocked from local file documents; use the address bar.");
         }
+        if (rewriteDestination is null && pageNavigationAuthorizer is not null
+            && sourceDocument is { ContentSecurityPolicyFields.Count: > 0 })
+        {
+            var policy = ContentSecurityPolicy.Parse(sourceDocument.ContentSecurityPolicyFields, []);
+            if (policy.UpgradesInsecureRequests) { rewriteDestination = policy.UpgradeNavigationUrl; }
+        }
+        if (rewriteDestination is not null) { url = rewriteDestination(url); }
         if (authorizeRedirects)
         {
             _ = content[id].Source.AuthorizeNavigationTarget(url, preventHttpsDowngrade);
