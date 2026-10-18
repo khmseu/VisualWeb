@@ -220,6 +220,21 @@ public sealed class ContentSecurityPolicyTests
     }
 
     [Fact]
+    public void UpgradeInsecureRequestsRewritesOnlySameOriginLinkNavigations()
+    {
+        var policy = ContentSecurityPolicy.Parse(["upgrade-insecure-requests"], []);
+        var sourceOrigin = BrowserUrl.Parse("http://source.test/page").Origin;
+        var sameOrigin = BrowserUrl.Parse("http://source.test:80/next?query=1#section");
+        var crossOrigin = BrowserUrl.Parse("http://outside.test/next");
+
+        Assert.Equal("https://source.test/next?query=1#section",
+            policy.UpgradeLinkNavigationUrl(sameOrigin, sourceOrigin).Href);
+        Assert.Same(crossOrigin, policy.UpgradeLinkNavigationUrl(crossOrigin, sourceOrigin));
+        Assert.Same(crossOrigin,
+            ContentSecurityPolicy.Parse([], []).UpgradeLinkNavigationUrl(crossOrigin, sourceOrigin));
+    }
+
+    [Fact]
     public void UpgradeInsecureRequestsRewritesFormActionsAndRedirectTargets()
     {
         var policy = ContentSecurityPolicy.Parse(["upgrade-insecure-requests"], []);

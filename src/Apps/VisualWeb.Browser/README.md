@@ -58,10 +58,11 @@ Response `form-action` CSP source lists are also checked before bounded GET
 form values are serialized; this does not restrict links or address-bar
 navigation and does not use `default-src` as a fallback.
 When the response also includes `upgrade-insecure-requests`, shell-managed GET
-form actions and ordinary page-initiated HTTP links, including redirects, are
-upgraded before applicable policy, authorization and transport checks; explicit
-HTTP port 80 maps to HTTPS's default port 443. Explicit address-bar navigation
-is not upgraded.
+form actions and same-origin page-initiated HTTP links, including redirects,
+are upgraded before applicable policy, authorization and transport checks;
+explicit HTTP port 80 maps to HTTPS's default port 443. Cross-origin link
+navigation is not upgraded (forms are the exception). Explicit address-bar
+navigation does not inherit the page's upgrade policy.
 The bounded response `base-uri` subset checks the first usable `<base href>`
 without `default-src` fallback. A blocked base uses the final document URL for
 browser stylesheet/import discovery and renderer link/form resolution; the

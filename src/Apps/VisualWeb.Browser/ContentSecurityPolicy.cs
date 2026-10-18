@@ -72,10 +72,13 @@ internal sealed class ContentSecurityPolicy
         policies.All(policy => Allows(policy.FormActionDirective(), resource, documentOrigin));
     internal bool AllowsBaseUri(BrowserUrl resource, SecurityOrigin documentOrigin) =>
         policies.All(policy => Allows(policy.BaseUriDirective(), resource, documentOrigin));
-    internal BrowserUrl UpgradeNavigationUrl(BrowserUrl url) =>
+    internal BrowserUrl UpgradeLinkNavigationUrl(BrowserUrl url, SecurityOrigin sourceOrigin) =>
+        UpgradesInsecureRequests && url.Protocol == "http:" && sourceOrigin.IsSameOrigin(url.Origin)
+            ? UpgradeHttpUrl(url) : url;
+    internal BrowserUrl UpgradeStyleUrl(BrowserUrl url) =>
         UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
-    internal BrowserUrl UpgradeStyleUrl(BrowserUrl url) => UpgradeNavigationUrl(url);
-    internal BrowserUrl UpgradeFormSubmissionUrl(BrowserUrl url) => UpgradeNavigationUrl(url);
+    internal BrowserUrl UpgradeFormSubmissionUrl(BrowserUrl url) =>
+        UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
 
     private static bool AllowsInlineNonce(SourceList? sources, string? nonce) => AllowsAllInline(sources)
         || nonce is { Length: > 0 } && sources!.Nonces.Contains(nonce, StringComparer.Ordinal);

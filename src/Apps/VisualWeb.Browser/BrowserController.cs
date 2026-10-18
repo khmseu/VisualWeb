@@ -1583,7 +1583,11 @@ public sealed class BrowserController : IDisposable
             && sourceDocument is { ContentSecurityPolicyFields.Count: > 0 })
         {
             var policy = ContentSecurityPolicy.Parse(sourceDocument.ContentSecurityPolicyFields, []);
-            if (policy.UpgradesInsecureRequests) { rewriteDestination = policy.UpgradeNavigationUrl; }
+            if (policy.UpgradesInsecureRequests)
+            {
+                rewriteDestination = destination =>
+                    policy.UpgradeLinkNavigationUrl(destination, sourceDocument.Origin);
+            }
         }
         if (rewriteDestination is not null) { url = rewriteDestination(url); }
         if (authorizeRedirects)

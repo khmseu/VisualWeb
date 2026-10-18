@@ -72,9 +72,10 @@ public interface IPageSource : IDisposable
 /// stylesheet destinations before requests and redirects, and upgrades insecure stylesheet URLs when the response policy
 /// includes <c>upgrade-insecure-requests</c> (spec ID upgrade-insecure-requests;
 /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>). The
-/// development shell also applies it to page-initiated HTTP links and GET form submissions, including redirects;
-/// explicit address-bar navigation is not upgraded. This is not a complete Fetch/CORS implementation or general
-/// request authorization.</remarks>
+/// development shell also applies it to same-origin page-initiated HTTP links and GET form submissions, including
+/// redirects; cross-origin link navigation is not upgraded (forms are the exception). Explicit address-bar navigation
+/// does not inherit the page's upgrade policy. This is not a complete Fetch/CORS implementation or general request
+/// authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;

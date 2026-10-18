@@ -90,7 +90,7 @@ public sealed class ShellTests
             requests.Enqueue(url);
             return url switch
             {
-                "https://source.example/page" => HtmlWithPolicy(
+                "http://source.example/page" => HtmlWithPolicy(
                     "<!doctype html><a href='http://source.example:80/first?query=1#section'>open</a>"),
                 "https://source.example/first?query=1" or "http://source.example:80/first?query=1" =>
                     Redirect("http://source.example:80/redirect?next=2"),
@@ -99,7 +99,8 @@ public sealed class ShellTests
                 _ => throw new InvalidOperationException($"Unexpected request: {url}")
             };
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = shell.OpenWindow("http://source.example/page");
+        var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
         Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
@@ -107,15 +108,29 @@ public sealed class ShellTests
         shell.Controller.FocusLink(tab.Id, 0);
 
         Assert.True(shell.Controller.ActivateFocusedLink(tab.Id));
+        Assert.Equal(["http://source.example/page"], requests);
+        ApproveUntilRequestCount(2);
         Wait(() => !tab.IsLoading && tab.History.Current?.Href == "https://source.example/redirect?next=2#section");
 
         Assert.Equal([
-            "https://source.example/page",
+            "http://source.example/page",
             "https://source.example/first?query=1",
             "https://source.example/redirect?next=2"
         ], requests);
         Assert.Null(tab.Error);
 
+        void ApproveUntilRequestCount(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (requests.Count < count && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                shell.Tick();
+                Thread.Sleep(5);
+            }
+            Assert.True(requests.Count >= count);
+        }
         void Wait(Func<bool> condition)
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);
