@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using VisualWeb.Core.Encoding;
@@ -203,6 +204,38 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
+    /// <summary>Selects the visible same-line word containing the shaped cluster under the pointer.</summary>
+    public bool SelectTextWord(TabId id, double x, double y, PageViewport? displayedViewport = null)
+    {
+        Check();
+        var owner = content[id];
+        if (!double.IsFinite(x) || !double.IsFinite(y))
+        { throw new PageNavigationException("Text selection coordinates must be finite."); }
+        if (owner.Page is not { } page || owner.Viewport is not { } viewport || !MatchesViewport(owner, displayedViewport)
+            || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height) { return false; }
+        var index = HitText(page, x, y);
+        if (index < 0) { return false; }
+
+        var first = index;
+        var last = index;
+        var lineY = page.TextTargets[index].Rect.Y;
+        if (IsWordCluster(page.TextTargets[index].Text))
+        {
+            while (first > 0 && Math.Abs(page.TextTargets[first - 1].Rect.Y - lineY) <= 0.5
+                && IsWordCluster(page.TextTargets[first - 1].Text)) { first--; }
+            while (last + 1 < page.TextTargets.Count && Math.Abs(page.TextTargets[last + 1].Rect.Y - lineY) <= 0.5
+                && IsWordCluster(page.TextTargets[last + 1].Text)) { last++; }
+        }
+
+        owner.PageFocused = true;
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.TextSelectionStart = first;
+        owner.TextSelectionEnd = last;
+        owner.SelectingText = false;
+        Changed?.Invoke(id);
+        return true;
+    }
     /// <summary>Extends a pointer selection to a visible shaped text cluster.</summary>
     public bool ExtendTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
     {
@@ -393,6 +426,18 @@ public sealed class BrowserController : IDisposable
             if (page.TextTargets[index].Rect.Contains(x, y)) { return index; }
         }
         return -1;
+    }
+    private static bool IsWordCluster(string text)
+    {
+        if (text.Length == 0) { return false; }
+        foreach (var rune in text.EnumerateRunes())
+        {
+            var category = Rune.GetUnicodeCategory(rune);
+            if (!Rune.IsLetterOrDigit(rune)
+                && category is not (UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark
+                    or UnicodeCategory.EnclosingMark or UnicodeCategory.ConnectorPunctuation)) { return false; }
+        }
+        return true;
     }
     private static void ClearTextSelection(Content owner)
     {

@@ -47,7 +47,17 @@ public sealed record WindowScaleChanged(WindowId Window, float Scale) : WindowEv
 public sealed record FocusChanged(WindowId Window, bool Focused) : WindowEvent(Window);
 /// <summary>Coordinates are window-local logical units, not framebuffer pixels.</summary>
 public sealed record PointerMoved(WindowId Window, float X, float Y) : WindowEvent(Window);
-public sealed record PointerButtonChanged(WindowId Window, byte Button, bool Pressed, float X, float Y) : WindowEvent(Window);
+/// <summary>A pointer-button transition with the platform-reported consecutive click count.</summary>
+/// <remarks>The default count of one is suitable for synthetic single-click events.
+/// Reference: <see href="https://wiki.libsdl.org/SDL3/SDL_MouseButtonEvent">SDL_MouseButtonEvent</see>.</remarks>
+public sealed record PointerButtonChanged(WindowId Window, byte Button, bool Pressed, float X, float Y) : WindowEvent(Window)
+{
+    /// <summary>Platform-reported consecutive click count; one for a single click.</summary>
+    public byte ClickCount { get; init; } = 1;
+
+    public PointerButtonChanged(WindowId Window, byte Button, bool Pressed, float X, float Y, byte ClickCount)
+        : this(Window, Button, Pressed, X, Y) => this.ClickCount = ClickCount;
+}
 /// <summary>Wheel amounts, not pointer coordinates: positive X scrolls right and positive Y scrolls down.</summary>
 /// <remarks>Reference: sdl-events; <see href="https://wiki.libsdl.org/SDL3/SDL_MouseWheelEvent">SDL wheel event</see>.
 /// Native direction is normalized; pointer location is supplied separately by movement/button events.</remarks>

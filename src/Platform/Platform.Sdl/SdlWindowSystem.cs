@@ -186,7 +186,7 @@ public sealed class SdlWindowSystem : IWindowSystem
             SDL.EventType.MouseMotion => new PointerMoved(new(native.Motion.WindowID), native.Motion.X, native.Motion.Y),
             SDL.EventType.MouseButtonDown or SDL.EventType.MouseButtonUp => new PointerButtonChanged(
                 new(native.Button.WindowID), native.Button.Button, type == SDL.EventType.MouseButtonDown,
-                native.Button.X, native.Button.Y),
+                native.Button.X, native.Button.Y, native.Button.Clicks),
             SDL.EventType.MouseWheel => new PointerScrolled(new(native.Wheel.WindowID),
                 native.Wheel.X * (native.Wheel.Direction == SDL.MouseWheelDirection.Flipped ? -1 : 1),
                 native.Wheel.Y * (native.Wheel.Direction == SDL.MouseWheelDirection.Flipped ? 1 : -1)),

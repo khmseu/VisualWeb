@@ -191,7 +191,10 @@ broader page interaction is still missing:
   DOM events and broader form behavior remain missing.
 - A bounded browser-owned selection supports mouse drag across visible non-link
   HarfBuzz text clusters, Ctrl+A to select all visible clusters, Ctrl+C to copy,
-  and Escape to clear the selection. Each exact LTR shaping cluster is a selection
+  and Escape to clear the selection. SDL-reported double-clicks on visible
+  non-link text select the same-line run of letters, numbers, combining marks
+  and supported connector punctuation containing the hit cluster; whitespace
+  and punctuation remain single-cluster selections. Each exact LTR shaping cluster is a selection
   unit, so ordinary supported characters are individually selectable while
   multi-character ligatures and combining clusters remain indivisible; no
   estimated intra-cluster caret positions are used. Primary clicks on anchors

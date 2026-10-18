@@ -449,7 +449,6 @@ public sealed class DevelopmentShell : IDisposable
             if (Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
             if (Controller.SelectedTextRects(pageTab.Id).Count > 0) { return; }
         }
-        Controller.ClearSelectedText(pageTab.Id);
         var linkIndex = -1;
         if (page is not null)
         {
@@ -458,6 +457,9 @@ public sealed class DevelopmentShell : IDisposable
                 if (page.LinkTargets[index].Contains(pointer.X, pageY)) { linkIndex = index; }
             }
         }
+        if (pointer.ClickCount >= 2 && !overControl && linkIndex < 0
+            && Controller.SelectTextWord(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
+        Controller.ClearSelectedText(pageTab.Id);
         if (linkIndex >= 0)
         {
             view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);

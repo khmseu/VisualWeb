@@ -20,7 +20,8 @@ memory or expose native handles. Frame dimensions must match physical window
 dimensions; query them again after resize/scale events.
 
 Implemented input: close, expose, physical resize, display scale, focus,
-pointer movement/buttons/wheel, key transitions and committed UTF-8 text.
+pointer movement/buttons (including SDL click counts)/wheel, key transitions
+and committed UTF-8 text.
 IME composition/preedit, clipboard, touch and accessibility are future work.
 Text-input activation can fail when the compositor lacks its required protocol;
 this is reported rather than silently disabling input.

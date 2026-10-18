@@ -45,6 +45,10 @@ ratio, while DisplayScale describes preferred UI scaling.
 PointerScrolled X/Y are wheel amounts, not pointer coordinates. Positive X means
 right and positive Y means down. SDL's away/toward Y polarity and flipped direction
 are normalized; pointer position comes from separate movement/button events.
+PointerButtonChanged carries SDL's consecutive click count (one for a single
+click), allowing consumers to recognize multi-click gestures without
+reconstructing platform timing. Synthetic single-click events can omit the
+optional count and use its default value of one.
 
 Present accepts opaque BGRA32, an explicit byte stride, and dimensions matching
 PixelSize. It checks bounds/overflow, copies synchronously, converts into the

@@ -2104,6 +2104,69 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void DoubleClickSelectsVisibleSameLineWordByShapingCluster(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><p>office a\u0301bc word42! end</p><p>start</p>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var targets = shell.Controller.Page(tab.Id)!.TextTargets;
+        var ligature = Assert.Single(targets, target => target.Text == "ffi");
+        DoubleClick(ligature.Rect);
+        Assert.Equal("office", shell.Controller.SelectedText(tab.Id));
+
+        var combiningCluster = Assert.Single(targets, target => target.Text == "a\u0301");
+        DoubleClick(combiningCluster.Rect);
+        Assert.Equal("a\u0301bc", shell.Controller.SelectedText(tab.Id));
+
+        var digit = Assert.Single(targets, target => target.Text == "4");
+        DoubleClick(digit.Rect);
+        Assert.Equal("word42", shell.Controller.SelectedText(tab.Id));
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.C, 0,
+            (ushort)SDL.Keymod.Ctrl, true, false));
+        Assert.Equal("word42", system.Items[0].ClipboardText);
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.LCtrl, 0, 0, false, false));
+
+        var punctuation = Assert.Single(targets, target => target.Text == "!");
+        DoubleClick(punctuation.Rect);
+        Assert.Equal("!", shell.Controller.SelectedText(tab.Id));
+
+        var firstParagraphLast = targets.Last(target => target.Text == "d");
+        DoubleClick(firstParagraphLast.Rect);
+        Assert.Equal("end", shell.Controller.SelectedText(tab.Id));
+
+        var secondParagraph = targets.Last(target => target.Text == "s");
+        DoubleClick(secondParagraph.Rect);
+        Assert.Equal("start", shell.Controller.SelectedText(tab.Id));
+
+        void DoubleClick(PageLinkRect rect)
+        {
+            Click(rect, 1);
+            Click(rect, 2);
+        }
+        void Click(PageLinkRect rect, byte clickCount)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y, clickCount));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y, clickCount));
+        }
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ShiftArrowExtendsTextSelectionByShapingCluster(bool multiprocess)
     {
         using var system = new Windows();
