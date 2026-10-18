@@ -2126,6 +2126,39 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void NonLinkPrimaryClickClearsFocusedPageTarget(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}div{height:160px}</style><a href='#one'>first</a><div></div>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        shell.Controller.FocusLink(tab.Id, 0);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(tab.Id));
+
+        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, 50, (float)(ShellChrome.Height + 120)));
+
+        Assert.True(shell.Controller.PageHasFocus(tab.Id));
+        Assert.Equal(-1, shell.Controller.FocusedLinkIndex(tab.Id));
+        Assert.Equal(-1, shell.Controller.FocusedControlIndex(tab.Id));
+        Assert.Single(tab.History.Entries);
+        Assert.Null(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void UnsupportedLinkClickReportsVisibleErrorWithoutReplacingPage(bool multiprocess)
     {
         using var system = new Windows();

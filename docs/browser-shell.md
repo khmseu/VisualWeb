@@ -213,6 +213,8 @@ scales the raster, not pointer coordinates. Chrome,
 other buttons, releases and misses do not navigate. A frame whose viewport/scale
 does not match the current window (for example, during asynchronous resize)
 cannot activate links.
+Primary clicks that miss links, controls, and selectable text keep page keyboard
+ownership but clear focused link/control targets.
 
 Activation uses the current tab's ordinary `Navigate` transaction and shared
 session HSTS loader. Cross-document page-initiated destinations are limited

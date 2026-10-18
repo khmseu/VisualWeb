@@ -67,7 +67,8 @@ broader page interaction is still missing:
   retained scroll repaints preserve the focused anchor. Failed navigation preserves it. Hovering visible link rectangles draws a
   shell-owned outline without changing renderer pixels. Empty inline anchors and
   non-text anchors without measurable rendered block geometry remain unsupported.
-  General hit-testing and DOM focus/events remain missing.
+  Primary non-link/control/non-text page clicks now clear focused page targets,
+  but general hit-testing and DOM focus/events remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
   text/search/email/tel/url/password/date/time/datetime-local/month/week/number/range/color/checkbox/radio/hidden/submit/reset,

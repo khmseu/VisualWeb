@@ -402,7 +402,12 @@ public sealed class DevelopmentShell : IDisposable
         { view.DraggingRangeControl = focusedControl; }
         if (activated && focusedControl >= 0 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "select"
             && !(dismissingSelect && dismissedControl == focusedControl)) { OpenSelectPopup(view, pageTab, focusedControl); }
-        if (!activated) { view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport); }
+        if (!activated)
+        {
+            view.SelectingText = Controller.StartTextSelection(pageTab.Id, pointer.X, pageY, pageViewport);
+            if (!view.SelectingText && Controller.FocusedControlIndex(pageTab.Id) < 0)
+            { Controller.FocusPagePosition(pageTab.Id, -1); }
+        }
     }
     private void SetPointerControlCaret(TabId tabId, double pointerX, double pageY, bool activated)
     {
