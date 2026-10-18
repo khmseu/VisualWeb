@@ -70,7 +70,7 @@ public sealed record PageStylesheet(
     public string BaseUrl { get; init; } = Url;
 }
 
-/// <summary>One bounded visible text fragment and its clipped viewport rectangle for browser-owned selection.</summary>
+/// <summary>One bounded visible shaped text cluster and its clipped viewport rectangle for browser-owned selection.</summary>
 public sealed record PageTextTarget(
     [property: JsonRequired] string Text,
     [property: JsonRequired] PageLinkRect Rect);

@@ -171,7 +171,7 @@ public sealed class BrowserController : IDisposable
         if (target.Rects.Count != 0) { return; }
         Scroll(id, target.DocumentY - owner.ScrollY);
     }
-    /// <summary>Begins a browser-owned selection on the visible shaped text fragment under the pointer.</summary>
+    /// <summary>Begins a browser-owned selection on the visible shaped text cluster under the pointer.</summary>
     public bool StartTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
     {
         Check();
@@ -203,7 +203,7 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
-    /// <summary>Extends a pointer selection to a visible shaped text fragment.</summary>
+    /// <summary>Extends a pointer selection to a visible shaped text cluster.</summary>
     public bool ExtendTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
     {
         Check();
@@ -233,7 +233,7 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
-    /// <summary>Extends the existing coarse selection to the visible text fragment under a Shift-click.</summary>
+    /// <summary>Extends the existing selection to the visible text cluster under a Shift-click.</summary>
     public bool ExtendSelectedText(TabId id, double x, double y, PageViewport? displayedViewport = null)
     {
         Check();
@@ -254,7 +254,7 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
-    /// <summary>Moves the active endpoint of an existing coarse selection by one paint-order fragment.</summary>
+    /// <summary>Moves the active endpoint of an existing selection by one paint-order text cluster.</summary>
     public bool ExtendSelectedTextByKey(TabId id, bool forward)
     {
         Check();
@@ -357,7 +357,7 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
-    /// <summary>Selected fragment text in paint order, with line breaks between visibly distinct lines.</summary>
+    /// <summary>Selected shaped-cluster text in paint order, with line breaks between visibly distinct lines.</summary>
     public string SelectedText(TabId id)
     {
         Check();

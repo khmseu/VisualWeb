@@ -11,6 +11,9 @@ groups. Empty inline anchors and non-text anchors without a measurable block box
 remain unsupported. Keyboard
 traversal visits chrome before visible anchors;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
+Page text selection uses bounded visible HarfBuzz clusters, with individual
+stops for ordinary supported LTR characters and no estimated positions inside
+multi-character ligatures or combining clusters.
 The `_blank` target keyword opens an active tab in the source window. Same-document
 fragment links and their Back/Forward traversal update URL-only history and scroll
 to bounded rendered element IDs or text-bearing legacy `<a name>` anchors without a new load. Other ASCII

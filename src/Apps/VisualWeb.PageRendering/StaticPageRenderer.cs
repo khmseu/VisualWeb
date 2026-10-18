@@ -187,6 +187,51 @@ public sealed class StaticPageRenderer : IPageRenderer
             target.BlockRectangle = merged;
         }
 
+        void AddTextTargets(ShapedRun run, double fragmentX, double top, double bottom)
+        {
+            var clusters = run.Glyphs.GroupBy(glyph => glyph.Cluster).OrderBy(group => group.Key).ToArray();
+            if (clusters.Length == 0)
+            {
+                if (run.Text.Length > 0 && run.Width > 0)
+                { throw new PageNavigationException("Shaped text has no selection clusters."); }
+                return;
+            }
+            if (clusters[0].Key != 0)
+            { throw new PageNavigationException("Shaped text selection clusters do not start at the beginning of the run."); }
+
+            var expectedStart = 0;
+            var clusterX = fragmentX;
+            for (var index = 0; index < clusters.Length; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var cluster = clusters[index];
+                var start = cluster.Key;
+                var end = index + 1 < clusters.Length ? clusters[index + 1].Key : run.Text.Length;
+                if (start != expectedStart || end <= start || end > run.Text.Length)
+                { throw new PageNavigationException("Shaped text selection clusters are not a contiguous UTF-16 partition."); }
+
+                var clusterWidth = cluster.Sum(glyph => glyph.Advance);
+                if (!double.IsFinite(clusterWidth) || clusterWidth < 0)
+                { throw new PageNavigationException("Shaped text selection cluster has invalid width."); }
+                var left = Math.Clamp(clusterX, 0, layout.ViewportWidth);
+                var right = Math.Clamp(clusterX + clusterWidth, 0, layout.ViewportWidth);
+                if (clusterWidth > 0 && right > left && bottom > top)
+                {
+                    var text = run.Text[start..end];
+                    if (textTargets.Count >= RendererProtocol.MaxTextTargets)
+                    { throw new PageNavigationException("Renderer text target count limit exceeded."); }
+                    textBytes += System.Text.Encoding.UTF8.GetByteCount(text);
+                    if (textBytes > RendererProtocol.MaxTextMetadataBytes)
+                    { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
+                    textTargets.Add(new(text, new(left, top, right - left, bottom - top)));
+                }
+                clusterX += clusterWidth;
+                expectedStart = end;
+            }
+            if (expectedStart != run.Text.Length)
+            { throw new PageNavigationException("Shaped text selection clusters do not cover the run."); }
+        }
+
         static DomElement? FindAnchor(DomNode? node)
         {
             for (; node is not null; node = node.ParentNode)
@@ -261,13 +306,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                         var bottom = Math.Clamp(line.Line.Bounds.Y + line.Line.Bounds.Height - scrollY, 0, layout.ViewportHeight);
                         if (right <= left || bottom <= top) { continue; }
                         var rect = new PageLinkRect(left, top, right - left, bottom - top);
-                        var text = fragment.Run.Text;
-                        if (textTargets.Count >= RendererProtocol.MaxTextTargets)
-                        { throw new PageNavigationException("Renderer text target count limit exceeded."); }
-                        textBytes += System.Text.Encoding.UTF8.GetByteCount(text);
-                        if (textBytes > RendererProtocol.MaxTextMetadataBytes)
-                        { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
-                        textTargets.Add(new(text, rect));
+                        AddTextTargets(fragment.Run, fragment.X, top, bottom);
                         if (target is null) { continue; }
                         AddLinkRectangle(target, rect);
                         lineAnchors[anchor!] = lineAnchors.TryGetValue(anchor!, out var firstX) ? Math.Min(firstX, fragment.X) : fragment.X;

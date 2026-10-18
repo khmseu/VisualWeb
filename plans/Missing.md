@@ -190,18 +190,19 @@ broader page interaction is still missing:
   visibly (including controls omitted from layout). Bidi, direction switching,
   DOM events and broader form behavior remain missing.
 - A bounded browser-owned selection supports mouse drag across visible non-link
-  shaped text fragments, Ctrl+A to select all visible fragments, Ctrl+C to copy,
-  and Escape to clear the selection.
-  Selection is fragment-
-  level (not character-level); primary clicks on anchors navigate on release,
-  while a drag beginning over a visible link selects coarse text fragments
-  instead of activating it. Drags beginning in ordinary text can include anchor
-  fragments. Shift+primary click extends an existing coarse selection to a visible
-  text fragment, including link text without navigating; Shift+click misses keep
-  existing selection unchanged. Shift+Left/Right moves
-  the active endpoint by one paint-order fragment, Shift+Up/Down moves to the nearest
-  fragment on an adjacent visual line, and Shift+Home/End extends to that line's
-  boundary. Selection resets on successful
+  HarfBuzz text clusters, Ctrl+A to select all visible clusters, Ctrl+C to copy,
+  and Escape to clear the selection. Each exact LTR shaping cluster is a selection
+  unit, so ordinary supported characters are individually selectable while
+  multi-character ligatures and combining clusters remain indivisible; no
+  estimated intra-cluster caret positions are used. Primary clicks on anchors
+  navigate on release, while a drag beginning over a visible link selects
+  clusters instead of activating it. Drags beginning in ordinary text can include
+  anchor clusters. Shift+primary click extends an existing cluster selection to a
+  visible cluster, including link text without navigating; Shift+click misses keep
+  the existing selection unchanged. Shift+Left/Right moves the active endpoint by
+  one paint-order cluster, Shift+Up/Down moves to the nearest cluster on an
+  adjacent visual line, and Shift+Home/End extends to that line's boundary.
+  Selection resets on successful
   document/scroll/resize publication and on page clicks before new control/link
   interaction.
   Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
@@ -317,8 +318,8 @@ Remaining areas include:
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
   editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea
-  fields or the selected address bar; character-level page
-  selection and clipboard selection ranges remain missing.
+  fields or the selected address bar; caret stops inside multi-character shaping
+  clusters and clipboard selection ranges remain missing.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
 Evidence: `text/layout exclusions`, `platform input limitations`, and `standards-growth roadmap`.

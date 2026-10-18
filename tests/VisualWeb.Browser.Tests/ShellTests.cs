@@ -1931,7 +1931,7 @@ public sealed class ShellTests
         var page = shell.Controller.Page(tab.Id)!;
         var initialUrl = tab.History.Current!.Href;
         var first = page.TextTargets[0].Rect;
-        var last = page.TextTargets[^1].Rect;
+        var last = page.TextTargets.Last(target => Math.Abs(target.Rect.Y - first.Y) <= 0.5).Rect;
         var startX = first.X + first.Width / 2;
         var endX = last.X + last.Width / 2;
         var y = ShellChrome.Height + first.Y + first.Height / 2;
@@ -2051,7 +2051,60 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ShiftArrowExtendsCoarseTextSelection(bool multiprocess)
+    public void PointerAndKeyboardSelectionUseExactHarfBuzzClusters(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><p>office</p><p>a\u0301bc</p>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var page = shell.Controller.Page(tab.Id)!;
+        Assert.Equal(new[] { "o", "ffi", "c", "e", "a\u0301", "b", "c" },
+            page.TextTargets.Select(target => target.Text));
+        var ligature = Assert.Single(page.TextTargets, target => target.Text == "ffi");
+        Click(ligature.Rect);
+        Assert.Equal("ffi", shell.Controller.SelectedText(tab.Id));
+
+        Key(SDL.Scancode.Right);
+        Assert.Equal("ffic", shell.Controller.SelectedText(tab.Id));
+        Key(SDL.Scancode.Left);
+        Assert.Equal("ffi", shell.Controller.SelectedText(tab.Id));
+        shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.LShift, 0, 0, false, false));
+
+        var ordinaryCharacter = Assert.Single(page.TextTargets, target => target.Text == "o");
+        Click(ordinaryCharacter.Rect);
+        Assert.Equal("o", shell.Controller.SelectedText(tab.Id));
+
+        var combiningCluster = Assert.Single(page.TextTargets, target => target.Text == "a\u0301");
+        Click(combiningCluster.Rect);
+        Assert.Equal("a\u0301", shell.Controller.SelectedText(tab.Id));
+
+        void Click(PageLinkRect rect)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        }
+        void Key(SDL.Scancode scan) =>
+            shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)scan, 0,
+                (ushort)SDL.Keymod.Shift, true, false));
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShiftArrowExtendsTextSelectionByShapingCluster(bool multiprocess)
     {
         using var system = new Windows();
         var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
@@ -2061,21 +2114,30 @@ public sealed class ShellTests
             "<!doctype html><style>*{margin:0}</style><p>first</p><p>second</p>"));
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
 
-        var first = shell.Controller.Page(tab.Id)!.TextTargets[0].Rect;
-        var x = (float)(first.X + first.Width / 2);
-        var y = (float)(ShellChrome.Height + first.Y + first.Height / 2);
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        var page = shell.Controller.Page(tab.Id)!;
+        var first = page.TextTargets[0].Rect;
+        var last = page.TextTargets.Last(target => Math.Abs(target.Rect.Y - first.Y) <= 0.5).Rect;
+        Drag(first, last);
         Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
 
         shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.Right, 0,
             (ushort)SDL.Keymod.Shift, true, false));
 
-        Assert.Equal("first\nsecond", shell.Controller.SelectedText(tab.Id));
+        Assert.Equal("first\ns", shell.Controller.SelectedText(tab.Id));
         shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.Left, 0,
             (ushort)SDL.Keymod.Shift, true, false));
         Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
 
+        void Drag(PageLinkRect start, PageLinkRect end)
+        {
+            var x1 = (float)(start.X + start.Width / 2);
+            var y1 = (float)(ShellChrome.Height + start.Y + start.Height / 2);
+            var x2 = (float)(end.X + end.Width / 2);
+            var y2 = (float)(ShellChrome.Height + end.Y + end.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x1, y1));
+            shell.Dispatch(new PointerMoved(system.Items[0].Id, x2, y2));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x2, y2));
+        }
         void Wait(Func<bool> ready)
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);
@@ -2098,11 +2160,10 @@ public sealed class ShellTests
             "<!doctype html><style>*{margin:0}</style><p>first</p><input type=checkbox><p>second</p>"));
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
 
-        var first = shell.Controller.Page(tab.Id)!.TextTargets[0].Rect;
-        var x = (float)(first.X + first.Width / 2);
-        var y = (float)(ShellChrome.Height + first.Y + first.Height / 2);
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        var page = shell.Controller.Page(tab.Id)!;
+        var first = page.TextTargets[0].Rect;
+        var last = page.TextTargets.Last(target => Math.Abs(target.Rect.Y - first.Y) <= 0.5).Rect;
+        Drag(first, last);
         Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
         Assert.True(shell.Controller.FocusControl(tab.Id, 0));
 
@@ -2112,6 +2173,16 @@ public sealed class ShellTests
         Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
         Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
 
+        void Drag(PageLinkRect start, PageLinkRect end)
+        {
+            var x1 = (float)(start.X + start.Width / 2);
+            var y1 = (float)(ShellChrome.Height + start.Y + start.Height / 2);
+            var x2 = (float)(end.X + end.Width / 2);
+            var y2 = (float)(ShellChrome.Height + end.Y + end.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x1, y1));
+            shell.Dispatch(new PointerMoved(system.Items[0].Id, x2, y2));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x2, y2));
+        }
         void Wait(Func<bool> ready)
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);
@@ -2131,19 +2202,25 @@ public sealed class ShellTests
         using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
         var tab = shell.OpenWindow().ActiveTab!;
         shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
-            "<!doctype html><style>*{margin:0}</style><p>first <a href='#next'>second</a></p><p id=next>third</p>"));
+            "<!doctype html><style>*{margin:0}</style><p>first second</p><p>third</p>"));
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
 
-        var first = shell.Controller.Page(tab.Id)!.TextTargets[0].Rect;
-        var x = (float)(first.X + first.Width / 2);
-        var y = (float)(ShellChrome.Height + first.Y + first.Height / 2);
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        var page = shell.Controller.Page(tab.Id)!;
+        var secondC = Assert.Single(page.TextTargets, target => target.Text == "c");
+        Click(secondC.Rect);
+        Assert.Equal("c", shell.Controller.SelectedText(tab.Id));
         Key(SDL.Scancode.End);
-        Assert.Equal("first second", shell.Controller.SelectedText(tab.Id));
+        Assert.Equal("cond", shell.Controller.SelectedText(tab.Id));
         Key(SDL.Scancode.Home);
-        Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
+        Assert.Equal("first sec", shell.Controller.SelectedText(tab.Id));
 
+        void Click(PageLinkRect rect)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        }
         void Key(SDL.Scancode scan)
         {
             shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)scan, 0,
@@ -2171,17 +2248,22 @@ public sealed class ShellTests
             "<!doctype html><style>*{margin:0}</style><p>first line</p><p>second line</p>"));
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
 
-        var first = shell.Controller.Page(tab.Id)!.TextTargets[0].Rect;
-        var x = (float)(first.X + first.Width / 2);
-        var y = (float)(ShellChrome.Height + first.Y + first.Height / 2);
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
-        shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        var page = shell.Controller.Page(tab.Id)!;
+        var firstI = page.TextTargets.First(target => target.Text == "i");
+        Click(firstI.Rect);
+        Assert.Equal("i", shell.Controller.SelectedText(tab.Id));
         Key(SDL.Scancode.Down);
-        Assert.Equal("first line\nsecond", shell.Controller.SelectedText(tab.Id));
+        Assert.Contains('\n', shell.Controller.SelectedText(tab.Id));
         Key(SDL.Scancode.Up);
-        Assert.DoesNotContain("second", shell.Controller.SelectedText(tab.Id));
-        Assert.StartsWith("first", shell.Controller.SelectedText(tab.Id));
+        Assert.DoesNotContain('\n', shell.Controller.SelectedText(tab.Id));
 
+        void Click(PageLinkRect rect)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+        }
         void Key(SDL.Scancode scan) =>
             shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)scan, 0,
                 (ushort)SDL.Keymod.Shift, true, false));
@@ -2197,7 +2279,7 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ShiftClickExtendsCoarseSelectionInsteadOfActivatingLink(bool multiprocess)
+    public void ShiftClickExtendsClusterSelectionInsteadOfActivatingLink(bool multiprocess)
     {
         using var system = new Windows();
         var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
@@ -2210,8 +2292,10 @@ public sealed class ShellTests
 
         var page = shell.Controller.Page(tab.Id)!;
         var first = page.TextTargets[0].Rect;
-        var second = Assert.Single(page.LinkTargets).Rects[0];
-        Click(first);
+        var firstLineEnd = page.TextTargets.Last(target => Math.Abs(target.Rect.Y - first.Y) <= 0.5).Rect;
+        var linkRect = Assert.Single(page.LinkTargets).Rects[0];
+        var second = page.TextTargets.Last(target => Math.Abs(target.Rect.Y - linkRect.Y) <= 0.5).Rect;
+        Drag(first, firstLineEnd);
         Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
 
         shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.A, 0,
@@ -2223,6 +2307,16 @@ public sealed class ShellTests
         Assert.Single(tab.History.Entries);
         Assert.Null(tab.Error);
 
+        void Drag(PageLinkRect start, PageLinkRect end)
+        {
+            var x1 = (float)(start.X + start.Width / 2);
+            var y1 = (float)(ShellChrome.Height + start.Y + start.Height / 2);
+            var x2 = (float)(end.X + end.Width / 2);
+            var y2 = (float)(ShellChrome.Height + end.Y + end.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x1, y1));
+            shell.Dispatch(new PointerMoved(system.Items[0].Id, x2, y2));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x2, y2));
+        }
         void Click(PageLinkRect rect)
         {
             var x = (float)(rect.X + rect.Width / 2);
@@ -2243,7 +2337,7 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ShiftClickMissKeepsExistingCoarseSelection(bool multiprocess)
+    public void ShiftClickMissKeepsExistingClusterSelection(bool multiprocess)
     {
         using var system = new Windows();
         var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
@@ -2253,8 +2347,10 @@ public sealed class ShellTests
             "<!doctype html><style>*{margin:0}div{height:140px}</style><p>first</p><div></div><p>second</p>"));
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
 
-        var first = shell.Controller.Page(tab.Id)!.TextTargets[0].Rect;
-        Click(first);
+        var page = shell.Controller.Page(tab.Id)!;
+        var first = page.TextTargets[0].Rect;
+        var last = page.TextTargets.Last(target => Math.Abs(target.Rect.Y - first.Y) <= 0.5).Rect;
+        Drag(first, last);
         Assert.Equal("first", shell.Controller.SelectedText(tab.Id));
 
         shell.Dispatch(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.A, 0,
@@ -2267,12 +2363,15 @@ public sealed class ShellTests
         Assert.Single(tab.History.Entries);
         Assert.Null(tab.Error);
 
-        void Click(PageLinkRect rect)
+        void Drag(PageLinkRect start, PageLinkRect end)
         {
-            var x = (float)(rect.X + rect.Width / 2);
-            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
-            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y));
-            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y));
+            var x1 = (float)(start.X + start.Width / 2);
+            var y1 = (float)(ShellChrome.Height + start.Y + start.Height / 2);
+            var x2 = (float)(end.X + end.Width / 2);
+            var y2 = (float)(ShellChrome.Height + end.Y + end.Height / 2);
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x1, y1));
+            shell.Dispatch(new PointerMoved(system.Items[0].Id, x2, y2));
+            shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x2, y2));
         }
 
         void Wait(Func<bool> ready)
