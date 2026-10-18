@@ -592,9 +592,33 @@ public sealed class BrowserController : IDisposable
         var candidate = cursor + direction;
         while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
         { candidate += direction; }
+        return UpdateFocusedMultipleSelectRange(id, owner, control, controlIndex, cursor, anchor, candidate);
+    }
+
+    /// <summary>Extends the focused multiple-select range to its first or last enabled option.</summary>
+    public bool ExtendFocusedMultipleSelectRangeToEndpoint(TabId id, bool last)
+    {
+        Check();
+        var owner = content[id];
+        if (!owner.PageFocused || owner.Page is not { } page || owner.FocusedControl < 0
+            || page.FormControls[owner.FocusedControl] is not { Kind: "select", Disabled: false, Multiple: true } control)
+        { return false; }
+        var controlIndex = owner.FocusedControl;
+        var cursor = ActiveSelectOption(owner, controlIndex);
+        if (cursor < 0) { return true; }
+        var candidate = last ? control.Options.Length - 1 : 0;
+        var direction = last ? -1 : 1;
+        while (candidate >= 0 && candidate < control.Options.Length && control.Options[candidate].Disabled)
+        { candidate += direction; }
+        var anchor = owner.MultipleSelectRangeAnchors.GetValueOrDefault(controlIndex, cursor);
+        return UpdateFocusedMultipleSelectRange(id, owner, control, controlIndex, cursor, anchor, candidate);
+    }
+
+    private bool UpdateFocusedMultipleSelectRange(TabId id, Content owner, PageFormControl control,
+        int controlIndex, int cursor, int anchor, int candidate)
+    {
         owner.MultipleSelectRangeAnchors[controlIndex] = anchor;
         if (candidate < 0 || candidate >= control.Options.Length) { return true; }
-
         var range = new HashSet<int>();
         for (var option = Math.Min(anchor, candidate); option <= Math.Max(anchor, candidate); option++)
         {

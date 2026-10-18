@@ -783,6 +783,9 @@ public sealed class DevelopmentShell : IDisposable
             if (shift && !control && !alt && code is (SDL.Scancode.Up or SDL.Scancode.Down)
                 && Controller.FocusedControlIndex(tab.Id) < 0
                 && Controller.ExtendSelectedTextVertically(tab.Id, code == SDL.Scancode.Down)) { return; }
+            if (shift && !control && !alt && code is (SDL.Scancode.Home or SDL.Scancode.End)
+                && Controller.ExtendFocusedMultipleSelectRangeToEndpoint(tab.Id, code == SDL.Scancode.End))
+            { KeepPopupSelectionVisible(view, tab.Id); return; }
             if (shift && !control && !alt && code is (SDL.Scancode.Up or SDL.Scancode.Down)
                 && Controller.ExtendFocusedMultipleSelectRange(tab.Id, code == SDL.Scancode.Up ? -1 : 1))
             { KeepPopupSelectionVisible(view, tab.Id); return; }

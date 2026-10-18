@@ -394,7 +394,8 @@ Ctrl+A selects every enabled option without moving the independent cursor; empty
 or all-disabled option lists remain unchanged. Shift+Up/Down extends or contracts
 a range of enabled options from the cursor where Shift selection began, replacing
 selections outside that range; releasing Shift or moving the cursor unmodified
-starts the next range at the current cursor. Other Shift/range selection and
+starts the next range at the current cursor. Shift+Home/End extends to the first
+or last enabled option using the same range anchor. Other Shift/range selection and
 platform-native select behavior remain unsupported. These interactions do not dispatch
 DOM keyboard, input or change events. Multiple selects with an explicit `size` from 2 through 12 instead render
 as browser-owned multiple-select listboxes and never open the popup; an absent, invalid, zero or one `size` keeps

@@ -122,8 +122,9 @@ broader page interaction is still missing:
   shares the single-select scalar/deadline bounds. Ctrl+A selects every enabled option without moving the
   independent cursor; empty/all-disabled lists remain unchanged. Shift+Up/Down extends/contracts the
   enabled-option range from the cursor where Shift selection began, replacing selections outside that range;
-  releasing Shift or unmodified cursor movement resets the anchor. Other Shift/range selection,
-  platform-native behavior and DOM keyboard/input/change events remain unsupported. Optgroups flatten
+  releasing Shift or unmodified cursor movement resets the anchor. Shift+Home/End extends to the first/last
+  enabled option with the same anchor. Other Shift/range selection, platform-native behavior and DOM
+  keyboard/input/change events remain unsupported. Optgroups flatten
   into the option list, prefix group labels, and propagate disabled group state.
   Date inputs use strict `YYYY-MM-DD` Gregorian values for years 0001–9999,
   sanitize invalid initial values to empty, and validate nonempty values, `required`,
