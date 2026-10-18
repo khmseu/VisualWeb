@@ -888,13 +888,33 @@ public sealed class BrowserController : IDisposable
         var owner = content[tab];
         return EditingFormControl(tab) && Field(owner, owner.FocusedControl).SelectAll;
     }
+    /// <summary>UTF-16 selection range of the focused editable field, or an empty range at its caret.</summary>
+    public (int Start, int End) FormControlSelectionRange(TabId tab)
+    {
+        Check();
+        var owner = content[tab];
+        if (!EditingFormControl(tab)) { throw new PageNavigationException("No editable form field is focused."); }
+        var editor = Field(owner, owner.FocusedControl);
+        return (editor.SelectionStart, editor.SelectionEnd);
+    }
+    /// <summary>Selected text in the focused editable field.</summary>
+    public string FormControlSelectedText(TabId tab)
+    {
+        Check();
+        var owner = content[tab];
+        return EditingFormControl(tab) ? Field(owner, owner.FocusedControl).SelectedText : "";
+    }
     /// <summary>Selects all text in the focused editable text field.</summary>
     public void SelectAllFormControl(TabId tab)
     {
         Check();
         if (!EditingFormControl(tab)) { throw new PageNavigationException("No editable form field is focused."); }
         var owner = content[tab];
-        Field(owner, owner.FocusedControl).SelectAll = true;
+        var index = owner.FocusedControl;
+        var editor = Field(owner, index);
+        editor.SelectAll = true;
+        if (owner.Page!.FormControls[index].Kind == "textarea")
+        { EnsureTextareaCaretVisible(owner, index, editor); }
         Changed?.Invoke(tab);
     }
     /// <summary>Inserts committed text at the caret, truncating to maxlength like user input and bounding total length.</summary>
@@ -916,7 +936,7 @@ public sealed class BrowserController : IDisposable
         }
         else if (text.Any(char.IsControl)) { throw new PageNavigationException("Control characters are not accepted in form fields."); }
         var editor = Field(owner, index);
-        var existingLength = editor.SelectAll ? 0 : editor.Text.Length;
+        var existingLength = editor.Text.Length - editor.SelectionLength;
         if (control.MaxLength >= 0)
         {
             var room = Math.Max(0, control.MaxLength - existingLength);
@@ -933,7 +953,7 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return editor.Text;
     }
-    public string EditFormControl(TabId id, FormEdit edit)
+    public string EditFormControl(TabId id, FormEdit edit, bool extendSelection = false)
     {
         Check();
         if (!EditingFormControl(id)) { throw new PageNavigationException("No editable form field is focused."); }
@@ -945,19 +965,19 @@ public sealed class BrowserController : IDisposable
                 editor.Backspace(); owner.TextareaLines.Remove(owner.FocusedControl); owner.Dirty.Add(owner.FocusedControl); break;
             case FormEdit.Delete:
                 editor.Delete(); owner.TextareaLines.Remove(owner.FocusedControl); owner.Dirty.Add(owner.FocusedControl); break;
-            case FormEdit.Left: editor.Left(); break;
-            case FormEdit.Right: editor.Right(); break;
+            case FormEdit.Left: editor.Left(extendSelection); break;
+            case FormEdit.Right: editor.Right(extendSelection); break;
             case FormEdit.Up when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
-                editor.Up(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text)); break;
+                editor.Up(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text), extendSelection); break;
             case FormEdit.Down when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
                 var visualLines = CurrentTextareaLines(owner, owner.FocusedControl, editor.Text);
-                editor.Down(visualLines); break;
+                editor.Down(visualLines, extendSelection); break;
             case FormEdit.Home when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
-                editor.HomeLine(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text)); break;
+                editor.HomeLine(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text), extendSelection); break;
             case FormEdit.End when owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea":
-                editor.EndLine(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text)); break;
-            case FormEdit.Home: editor.Home(); break;
-            case FormEdit.End: editor.End(); break;
+                editor.EndLine(CurrentTextareaLines(owner, owner.FocusedControl, editor.Text), extendSelection); break;
+            case FormEdit.Home: editor.Home(extendSelection); break;
+            case FormEdit.End: editor.End(extendSelection); break;
             default: throw new ArgumentOutOfRangeException(nameof(edit));
         }
         if (owner.Page!.FormControls[owner.FocusedControl].Kind == "textarea")

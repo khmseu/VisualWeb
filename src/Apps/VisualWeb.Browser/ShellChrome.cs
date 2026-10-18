@@ -245,6 +245,11 @@ public sealed class ShellChrome : IDisposable
         {
             Fill(address, editor is { SelectAll: true } ? new(176, 213, 249) : white);
             var value = editor is null ? tab?.AddressText ?? "" : editor.Text.Insert(editor.Caret, "|");
+            if (editor is { HasSelection: true, SelectionLength: > 0 } selectedAddress)
+            {
+                DrawEditorSelection(value, selectedAddress.SelectionStart, selectedAddress.SelectionEnd,
+                    selectedAddress.Caret, address.X + 4, address.Y + 7, address.Width - 8, tail: true);
+            }
             Label(value, address.X + 4, 83, address.Width - 8, ink, tail: true);
             targets.Add(new(address, ChromeAction.Address));
         }
@@ -351,15 +356,47 @@ public sealed class ShellChrome : IDisposable
                     {
                         var line = lines[firstLine + row];
                         var lineText = displayValue[line.Start..line.End];
-                        if (caret >= 0 && AddressEditor.FindVisualLine(lines, caret) == firstLine + row)
-                        { lineText = lineText.Insert(Math.Clamp(caret - line.Start, 0, lineText.Length), "|"); }
-                        Label(lineText, box.X + 4, box.Y + 15 + row * 15, box.Width - 8,
+                        var lineCaret = caret >= 0 && AddressEditor.FindVisualLine(lines, caret) == firstLine + row
+                            ? Math.Clamp(caret - line.Start, 0, lineText.Length) : -1;
+                        var renderedLine = lineCaret >= 0 ? lineText.Insert(lineCaret, "|") : lineText;
+                        var selectedStart = forms.SelectionStart;
+                        var selectedEnd = forms.SelectionEnd;
+                        if (selectedStart >= 0 && selectedEnd > selectedStart)
+                        {
+                            var clippedStart = Math.Max(selectedStart, line.Start);
+                            var clippedEnd = Math.Min(selectedEnd, line.End);
+                            if (clippedEnd > clippedStart)
+                            {
+                                DrawEditorSelection(renderedLine, clippedStart - line.Start, clippedEnd - line.Start,
+                                    lineCaret, box.X + 4, box.Y + 3 + row * 15, box.Width - 8, tail: false);
+                            }
+                        }
+                        Label(renderedLine, box.X + 4, box.Y + 15 + row * 15, box.Width - 8,
                             control.Disabled ? gray : textareaValue.Length == 0 && control.Placeholder.Length > 0 ? new(128, 128, 128) : ink);
                     }
                 }
                 else
                 {
-                    Label(text, box.X + 4, box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5), box.Width - 8,
+                    var baseline = box.Y + Math.Min(box.Height - 3, box.Height / 2 + 5);
+                    var selectionStart = forms.SelectionStart;
+                    var selectionEnd = forms.SelectionEnd;
+                    if (index == forms.Focused && selectionStart >= 0 && selectionEnd > selectionStart
+                        && control.Kind is not ("color" or "select" or "submit" or "button" or "reset" or "inert")
+                        && !showingPlaceholder)
+                    {
+                        var displayStart = selectionStart;
+                        var displayEnd = selectionEnd;
+                        var displayCaret = index == forms.Focused && !forms.SelectAll ? forms.Caret : -1;
+                        if (control.Kind == "password")
+                        {
+                            displayStart = ScalarCount(value.AsSpan(0, selectionStart));
+                            displayEnd = ScalarCount(value.AsSpan(0, selectionEnd));
+                            displayCaret = displayCaret < 0 ? -1 : ScalarCount(value.AsSpan(0, displayCaret));
+                        }
+                        DrawEditorSelection(text, displayStart, displayEnd, displayCaret,
+                            box.X + 4, baseline - 13, box.Width - 8, tail: true);
+                    }
+                    Label(text, box.X + 4, baseline, box.Width - 8,
                         control.Disabled ? gray : showingPlaceholder ? new(128, 128, 128) : ink,
                         tail: index == forms.Focused || control.Kind is "button" or "reset" or "inert");
                 }
@@ -613,6 +650,50 @@ public sealed class ShellChrome : IDisposable
             }
             commands.Add(new DrawGlyphRun(run.FontIdentity, run.FontSize, color, glyphs));
         }
+        void DrawEditorSelection(string rendered, int start, int end, int caret, double x, double top,
+            double available, bool tail)
+        {
+            if (caret >= 0)
+            {
+                if (caret <= start) { start++; }
+                if (caret < end) { end++; }
+            }
+            DrawTextSelection(rendered, start, end, x, top, available, tail);
+        }
+        void DrawTextSelection(string value, int start, int end, double x, double top, double available, bool tail)
+        {
+            if (end <= start || available <= 0) { return; }
+            var safe = new string(value.Take(512).Select(character => character is >= ' ' and <= '~' ? character : '?').ToArray());
+            var displayStart = 0;
+            if (tail && value.Length > 512)
+            {
+                safe = new string(value.TakeLast(512).Select(character => character is >= ' ' and <= '~' ? character : '?').ToArray());
+                displayStart = value.Length - 512;
+            }
+            var maximum = Math.Min(safe.Length, Math.Max(0, (int)(available / 7)));
+            if (tail) { displayStart += safe.Length - maximum; safe = safe[^maximum..]; }
+            else { safe = safe[..maximum]; }
+            var run = font.Shape(safe, 13);
+            while (safe.Length > 0 && run.Width > available)
+            {
+                if (tail) { safe = safe[1..]; displayStart++; }
+                else { safe = safe[..^1]; }
+                run = font.Shape(safe, 13);
+            }
+            var clusters = run.Glyphs.GroupBy(glyph => glyph.Cluster).OrderBy(group => group.Key).ToArray();
+            var penX = 0.0;
+            for (var index = 0; index < clusters.Length; index++)
+            {
+                var clusterStart = clusters[index].Key;
+                var clusterEnd = index + 1 < clusters.Length ? clusters[index + 1].Key : safe.Length;
+                var clusterWidth = clusters[index].Sum(glyph => glyph.Advance);
+                var absoluteStart = displayStart + clusterStart;
+                var absoluteEnd = displayStart + clusterEnd;
+                if (absoluteStart < end && absoluteEnd > start && clusterWidth > 0)
+                { Fill(new(x + penX, top, clusterWidth, 15), new(176, 213, 249)); }
+                penX += clusterWidth;
+            }
+        }
     }
     public static ChromeTarget? Hit(IReadOnlyList<ChromeTarget> targets, double x, double y) =>
         targets.LastOrDefault(target => x >= target.Bounds.X && y >= target.Bounds.Y
@@ -626,4 +707,5 @@ public sealed record ShellFormState(IReadOnlyList<string> Values, int Focused, i
     IReadOnlyList<bool>? Checked = null, IReadOnlyList<int>? SelectIndices = null,
     IReadOnlyList<IReadOnlySet<int>>? SelectSets = null,
     int OpenSelect = -1, int SelectPopupFirstOption = 0, int SelectPopupHoverOption = -1,
-    IReadOnlyList<int>? ListboxFirstOptions = null, IReadOnlyList<int>? ListboxCursorOptions = null);
+    IReadOnlyList<int>? ListboxFirstOptions = null, IReadOnlyList<int>? ListboxCursorOptions = null,
+    int SelectionStart = -1, int SelectionEnd = -1);

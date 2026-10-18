@@ -16,6 +16,10 @@ stops for ordinary supported LTR characters and no estimated positions inside
 multi-character ligatures or combining clusters. SDL-reported double-clicks on
 non-link text select the same-line Unicode word containing those clusters;
 triple-clicks select the visible visual line.
+The address bar and supported text-like form fields, including textareas,
+support scalar-safe Shift+Arrow/Home/End range selection. Textarea vertical
+selection follows measured visual lines; selected text is highlighted and
+Ctrl+C copies it, while typing, paste, Backspace and Delete replace the range.
 The `_blank` target keyword opens an active tab in the source window. Same-document
 fragment links and their Back/Forward traversal update URL-only history and scroll
 to bounded rendered element IDs or text-bearing legacy `<a name>` anchors without a new load. Other ASCII

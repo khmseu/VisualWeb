@@ -3212,6 +3212,100 @@ public sealed class ShellTests
         Assert.True(shell.PresentedFrames > count);
         Assert.NotEqual((byte)255, system.Items[0].Pixels![120 * system.Items[0].Size.Width * 4]);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShiftSelectionsCopyAndReplaceTextAcrossShellEditors(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><input name=q value=hello>" +
+            "<textarea name=t>alpha\nbeta\nomega</textarea></form>"));
+        Wait();
+
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+        Key(SDL.Scancode.Left, SDL.Keymod.Shift);
+        Key(SDL.Scancode.Left, SDL.Keymod.Shift);
+        Assert.Equal((3, 5), shell.Controller.FormControlSelectionRange(tab.Id));
+        Assert.Equal("lo", shell.Controller.FormControlSelectedText(tab.Id));
+        shell.Tick();
+        Assert.True(HasSelectionColor(shell.Controller.Page(tab.Id)!.FormControls[0].Rect!));
+
+        Key(SDL.Scancode.C, SDL.Keymod.Ctrl);
+        Assert.Equal("lo", native.GetClipboardText());
+        native.SetClipboardText("X");
+        Key(SDL.Scancode.V, SDL.Keymod.Ctrl);
+        Assert.Equal("helX", shell.Controller.FormControlValue(tab.Id, 0));
+        Assert.Equal("", shell.Controller.FormControlSelectedText(tab.Id));
+
+        Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+        Key(SDL.Scancode.Home, SDL.Keymod.Shift);
+        Assert.Equal((11, 16), shell.Controller.FormControlSelectionRange(tab.Id));
+        Key(SDL.Scancode.Up, SDL.Keymod.Shift);
+        Assert.Equal((6, 16), shell.Controller.FormControlSelectionRange(tab.Id));
+        Assert.Equal("beta\nomega", shell.Controller.FormControlSelectedText(tab.Id));
+        shell.Tick();
+        Assert.True(HasSelectionColor(shell.Controller.Page(tab.Id)!.FormControls[1].Rect!));
+        Key(SDL.Scancode.C, SDL.Keymod.Ctrl);
+        Assert.Equal("beta\nomega", native.GetClipboardText());
+        native.SetClipboardText("X");
+        Key(SDL.Scancode.V, SDL.Keymod.Ctrl);
+        Assert.Equal("alpha\nX", shell.Controller.FormControlValue(tab.Id, 1));
+
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        shell.Dispatch(new TextEntered(native.Id, "abcdef"));
+        Key(SDL.Scancode.Left, SDL.Keymod.Shift);
+        Key(SDL.Scancode.Left, SDL.Keymod.Shift);
+        shell.Tick();
+        Assert.True(HasAddressSelectionColor());
+        Key(SDL.Scancode.C, SDL.Keymod.Ctrl);
+        Assert.Equal("ef", native.GetClipboardText());
+        native.SetClipboardText("XY");
+        Key(SDL.Scancode.V, SDL.Keymod.Ctrl);
+        Assert.Equal("abcdXY", tab.AddressText);
+
+        void Key(SDL.Scancode code, SDL.Keymod modifiers = 0) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, (ushort)modifiers, true, false));
+        bool HasSelectionColor(PageLinkRect rect)
+        {
+            return ScanSelectionColor((int)Math.Floor(rect.X), (int)Math.Floor(ShellChrome.Height + rect.Y),
+                (int)Math.Ceiling(rect.X + rect.Width), (int)Math.Ceiling(ShellChrome.Height + rect.Y + rect.Height));
+        }
+        bool HasAddressSelectionColor() =>
+            ScanSelectionColor(196, 69, native.PixelSize.Width, 87);
+        bool ScanSelectionColor(int left, int top, int right, int bottom)
+        {
+            var pixels = native.Pixels ?? throw new InvalidOperationException("Shell pixels were not presented.");
+            left = Math.Max(0, left);
+            right = Math.Min(native.PixelSize.Width, right);
+            top = Math.Max(0, top);
+            bottom = Math.Min(native.PixelSize.Height, bottom);
+            for (var y = top; y < bottom; y++)
+            {
+                for (var x = left; x < right; x++)
+                {
+                    var offset = (y * native.PixelSize.Width + x) * 4;
+                    if (pixels[offset] == 249 && pixels[offset + 1] == 213
+                        && pixels[offset + 2] == 176 && pixels[offset + 3] == 255) { return true; }
+                }
+            }
+            return false;
+        }
+        void Wait()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(1.25)]
@@ -3323,6 +3417,33 @@ public sealed class ShellTests
             Assert.False(tab.IsLoading);
             Assert.Null(tab.Error);
         }
+    }
+
+    [Fact]
+    public void AddressEditorRangeOperationsPreserveScalarBoundaries()
+    {
+        var editor = new AddressEditor();
+        editor.Reset("a💩b");
+        editor.Left();
+        editor.Left(extendSelection: true);
+        Assert.Equal((1, 3), (editor.SelectionStart, editor.SelectionEnd));
+        Assert.Equal("💩", editor.SelectedText);
+
+        editor.Right();
+        Assert.Equal(3, editor.Caret);
+        Assert.False(editor.HasSelection);
+        editor.Left();
+        editor.Right(extendSelection: true);
+        Assert.Equal("axb", editor.Insert("x", 16));
+        Assert.Equal("axb", editor.Text);
+
+        editor.Reset("abc");
+        editor.Home();
+        editor.Right(extendSelection: true);
+        Assert.Equal("bc", editor.Delete());
+        editor.Right(extendSelection: true);
+        Assert.Equal("b", editor.SelectedText);
+        Assert.Equal("c", editor.Backspace());
     }
 
     [Fact]

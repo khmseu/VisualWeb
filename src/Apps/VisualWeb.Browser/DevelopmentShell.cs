@@ -722,6 +722,23 @@ public sealed class DevelopmentShell : IDisposable
             }
             return;
         }
+        if (control && !alt && !key.Repeat && code == SDL.Scancode.C)
+        {
+            if (view.Editing)
+            {
+                if (view.Editor.SelectedText is { Length: > 0 } addressText)
+                { view.Native.SetClipboardText(addressText); }
+                return;
+            }
+            if (Controller.EditingFormControl(tab.Id))
+            {
+                if (Controller.FormControlSelectedText(tab.Id) is { Length: > 0 } fieldText)
+                { view.Native.SetClipboardText(fieldText); }
+                return;
+            }
+            if (Controller.SelectedText(tab.Id) is { Length: > 0 } pageText)
+            { view.Native.SetClipboardText(pageText); return; }
+        }
         if (!view.Editing)
         {
             if (control && !alt && !shift && code is SDL.Scancode.Home or SDL.Scancode.End
@@ -752,8 +769,6 @@ public sealed class DevelopmentShell : IDisposable
                 }
                 return;
             }
-            if (control && !alt && !key.Repeat && code == SDL.Scancode.C && Controller.SelectedText(tab.Id) is { Length: > 0 } selected)
-            { view.Native.SetClipboardText(selected); return; }
             if (shift && !control && !alt && code is (SDL.Scancode.Left or SDL.Scancode.Right)
                 && Controller.FocusedControlIndex(tab.Id) < 0
                 && Controller.ExtendSelectedTextByKey(tab.Id, code == SDL.Scancode.Right)) { return; }
@@ -798,7 +813,7 @@ public sealed class DevelopmentShell : IDisposable
                 _ => (FormEdit?)null,
             } is { } edit)
             {
-                Controller.EditFormControl(tab.Id, edit);
+                Controller.EditFormControl(tab.Id, edit, extendSelection: shift);
                 return;
             }
             if (!control && !alt && Controller.EditingFormControl(tab.Id) && code is SDL.Scancode.Pageup or SDL.Scancode.Pagedown)
@@ -853,10 +868,10 @@ public sealed class DevelopmentShell : IDisposable
                 break;
             case SDL.Scancode.Backspace: Controller.SetAddress(tab.Id, view.Editor.Backspace()); break;
             case SDL.Scancode.Delete: Controller.SetAddress(tab.Id, view.Editor.Delete()); break;
-            case SDL.Scancode.Left: view.Editor.Left(); break;
-            case SDL.Scancode.Right: view.Editor.Right(); break;
-            case SDL.Scancode.Home: view.Editor.Home(); break;
-            case SDL.Scancode.End: view.Editor.End(); break;
+            case SDL.Scancode.Left: view.Editor.Left(shift); break;
+            case SDL.Scancode.Right: view.Editor.Right(shift); break;
+            case SDL.Scancode.Home: view.Editor.Home(shift); break;
+            case SDL.Scancode.End: view.Editor.End(shift); break;
         }
         view.Dirty = true;
     }
@@ -986,10 +1001,12 @@ public sealed class DevelopmentShell : IDisposable
         var listboxCursorOptions = Enumerable.Range(0, page.FormControls.Count).Select(index =>
             page.FormControls[index] is { Kind: "select", Multiple: true, SelectRows: > 1 }
                 ? Controller.ActiveSelectOptionIndex(id, index) : -1).ToArray();
+        var selection = focused >= 0 && Controller.EditingFormControl(id)
+            ? Controller.FormControlSelectionRange(id) : (-1, -1);
         return new(values, focused, focused >= 0 ? Controller.FormControlCaret(id) : -1,
             focused >= 0 && Controller.FormControlSelectAll(id), firstLines, visualLines, checkedStates, selectIndices,
             selectSets, view.OpenSelectControl, view.SelectPopupFirstOption, view.SelectPopupHoverOption, listboxFirstOptions,
-            listboxCursorOptions);
+            listboxCursorOptions, selection.Item1, selection.Item2);
     }
     private bool ToggleFocusedSelectPopup(BrowserWindow window, View view, TabId id, bool toggleOption = false)
     {

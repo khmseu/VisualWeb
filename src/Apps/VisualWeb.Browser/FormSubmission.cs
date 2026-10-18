@@ -4,7 +4,7 @@ using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.Browser;
 
-/// <summary>Caret edits for the focused browser-owned text field.</summary>
+/// <summary>Caret movement, range extension and deletion for the focused browser-owned text field.</summary>
 public enum FormEdit { Backspace, Delete, Left, Right, Up, Down, Home, End }
 
 /// <summary>Bounded GET form submission helpers: entry list, urlencoded serializer and action URL mutation.</summary>

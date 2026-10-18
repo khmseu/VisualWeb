@@ -168,8 +168,11 @@ broader page interaction is still missing:
   Visible text/search/email/tel/url/password/date/time/datetime-local/month/week/number/color/checkbox/radio/textarea/select controls support pointer focus without starting page text
   selection. Pointer clicks in single-line text fields and textareas place the
   caret at a shell-font glyph boundary; page-font hit-testing remains absent.
-  Editable text-like fields and textareas support Ctrl+A select-all, edit
-  replacement, and Ctrl+V clipboard paste. Single-select
+  Editable text-like fields, textareas and the address bar support scalar-safe
+  Shift+Arrow/Home/End range selection, shell-owned highlighting, Ctrl+C copy,
+  and replacement by committed text, paste, Backspace or Delete. Textarea
+  vertical extension follows measured visual lines; Ctrl+A select-all remains
+  supported. Single-select
   popup option selection is browser-owned, bounded to 12 displayed rows, and wheel-scrollable.
   Clipboard support remains bounded to selection copy and paste into focused
   editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea
@@ -321,10 +324,10 @@ Remaining areas include:
 
 - RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
 - IME composition/preedit and accessibility integration. Clipboard support is
-  bounded to Ctrl+C copying browser-owned selection and Ctrl+V pasting into
+  bounded to browser-owned page-text copying and pasting or range copying in
   editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea
-  fields or the selected address bar; caret stops inside multi-character shaping
-  clusters and clipboard selection ranges remain missing.
+  fields and the address bar. Page-text caret stops inside multi-character
+  shaping clusters remain unsupported.
 - Storage APIs, service workers, canvas, audio/video, WebGL/WebGPU, and the wider browser API surface.
 
 Evidence: `text/layout exclusions`, `platform input limitations`, and `standards-growth roadmap`.
