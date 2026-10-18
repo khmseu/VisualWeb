@@ -81,6 +81,7 @@ public sealed class BrowserController : IDisposable
     private readonly List<Operation> operations = [];
     private readonly Func<IPageSource> sourceFactory;
     private readonly Func<IPageRenderer> rendererFactory;
+    private readonly Func<TabId, BrowserUrl, CancellationToken, ValueTask<bool>>? pageNavigationAuthorizer;
     private readonly int thread = Environment.CurrentManagedThreadId;
     private bool disposed;
     public BrowserSession Session { get; }
@@ -90,12 +91,14 @@ public sealed class BrowserController : IDisposable
     public event Action<TabId, string>? Failed;
 
     public BrowserController(Func<IPageSource> sourceFactory, Func<IPageRenderer> rendererFactory, BrowserOptions? options = null,
-        bool isolateOrigins = false)
+        bool isolateOrigins = false,
+        Func<TabId, BrowserUrl, CancellationToken, ValueTask<bool>>? pageNavigationAuthorizer = null)
     {
         IsolatesOrigins = isolateOrigins;
         ArgumentNullException.ThrowIfNull(sourceFactory);
         ArgumentNullException.ThrowIfNull(rendererFactory);
         this.sourceFactory = sourceFactory; this.rendererFactory = rendererFactory;
+        this.pageNavigationAuthorizer = pageNavigationAuthorizer;
         Session = new(options);
     }
     public BrowserTab CreateTab(BrowserWindowId window, bool activate = true)
@@ -1189,7 +1192,9 @@ public sealed class BrowserController : IDisposable
         var limit = Session.Options.MaxAddressCharacters;
         var query = SerializeForm(page, owner, formIndex, submitter, normalizedEmailValues, limit);
         return NavigateLink(id, FormSubmission.ApplyQuery(action, query, limit).Href, preventHttpsDowngrade,
-            sameOriginRedirectOrigin, openInNewTab, targetName: targetName);
+            sameOriginRedirectOrigin: pageNavigationAuthorizer is null ? sameOriginRedirectOrigin : null,
+            openInNewTab: openInNewTab, authorizeRedirects: pageNavigationAuthorizer is not null,
+            targetName: targetName, preserveAddressWhileLoading: pageNavigationAuthorizer is not null);
     }
     private static string SerializeForm(BrowserPage page, Content owner, int formIndex, int submitter,
         IReadOnlyDictionary<int, string> normalizedEmailValues, int limit) =>
@@ -1355,7 +1360,7 @@ public sealed class BrowserController : IDisposable
             || (viewport.Width == visible.Width && viewport.Height == visible.Height && viewport.Scale == visible.Scale));
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true,
-        bool authorizeRedirects = false, string? targetName = null)
+        bool authorizeRedirects = false, string? targetName = null, bool preserveAddressWhileLoading = false)
     {
         var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
@@ -1411,7 +1416,10 @@ public sealed class BrowserController : IDisposable
         try
         {
             Start(Session.Tab(target), url, null, false, preventHttpsDowngrade, sameOriginRedirectOrigin,
-                authorizeRedirects: authorizeRedirects);
+                authorizeRedirects: authorizeRedirects,
+                preserveAddressWhileLoading: preserveAddressWhileLoading
+                    || authorizeRedirects && pageNavigationAuthorizer is not null,
+                authorizationSourceOrigin: authorizeRedirects ? sourceDocument?.Origin : null);
         }
         catch
         {
@@ -1547,7 +1555,8 @@ public sealed class BrowserController : IDisposable
         Start(tab, tab.History.Current ?? throw new InvalidOperationException("No committed page to reload."), null, true);
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
-        SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false)
+        SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false,
+        bool preserveAddressWhileLoading = false, SecurityOrigin? authorizationSourceOrigin = null)
     {
         Limit();
         Cancel(tab.Id);
@@ -1558,15 +1567,38 @@ public sealed class BrowserController : IDisposable
         Task<LoadedPage> task;
         try
         {
-            task = authorizeRedirects
-                ? content[tab.Id].Source.LoadAuthorizedNavigationAsync(url, cancellation.Token, preventHttpsDowngrade)
+            task = authorizeRedirects && pageNavigationAuthorizer is not null
+                ? LoadPageInitiatedAsync(tab.Id, url,
+                    authorizationSourceOrigin ?? throw new PageNavigationException(
+                        "Page-initiated navigation requires a committed source origin."),
+                    cancellation.Token, preventHttpsDowngrade)
+                : authorizeRedirects
+                    ? content[tab.Id].Source.LoadAuthorizedNavigationAsync(url, cancellation.Token, preventHttpsDowngrade)
                 : content[tab.Id].Source.LoadAsync(url, cancellation.Token, preventHttpsDowngrade, sameOriginRedirectOrigin);
         }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace,
             restoreScrollY: restoreScrollY));
-        tab.AddressText = url.Href; tab.Error = null; tab.IsLoading = true; tab.Status = "Loading " + url.Href;
+        if (!preserveAddressWhileLoading) { tab.AddressText = url.Href; }
+        tab.Error = null; tab.IsLoading = true;
+        tab.Status = preserveAddressWhileLoading ? "Waiting for page navigation approval." : "Loading " + url.Href;
         Changed?.Invoke(tab.Id);
+    }
+    private async Task<LoadedPage> LoadPageInitiatedAsync(TabId tabId, BrowserUrl url, SecurityOrigin sourceOrigin,
+        CancellationToken cancellationToken, bool preventHttpsDowngrade)
+    {
+        var owner = content[tabId];
+        var previousOrigin = sourceOrigin;
+        async ValueTask<bool> Authorize(BrowserUrl destination, int _, CancellationToken token)
+        {
+            if (previousOrigin.IsSameOrigin(destination.Origin)) { return true; }
+            if (!await pageNavigationAuthorizer!(tabId, destination, token).ConfigureAwait(false)) { return false; }
+            previousOrigin = destination.Origin;
+            return true;
+        }
+
+        return await owner.Source.LoadAuthorizedNavigationAsync(url, Authorize, cancellationToken,
+            preventHttpsDowngrade).ConfigureAwait(false);
     }
     /// <summary>Observe completed loading/rendering without awaiting on the UI thread.</summary>
     public void Pump(Func<TabId, PageViewport?> viewport)

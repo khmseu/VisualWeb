@@ -39,6 +39,10 @@ public interface IPageSource : IDisposable
     Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url, CancellationToken cancellationToken,
         bool preventHttpsDowngrade) =>
         throw new PageNavigationException("The configured page source does not enforce per-hop navigation authorization.");
+    Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
+        CancellationToken cancellationToken, bool preventHttpsDowngrade) =>
+        throw new PageNavigationException("The configured page source does not enforce asynchronous per-hop navigation authorization.");
 }
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>
@@ -103,6 +107,14 @@ public sealed class GetPageSource : IPageSource
         bool preventHttpsDowngrade)
     {
         var response = await loader.LoadAuthorizedNavigationAsync(url, static _ => true,
+            cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
+        return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
+    }
+    public async Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
+        CancellationToken cancellationToken, bool preventHttpsDowngrade)
+    {
+        var response = await loader.LoadAuthorizedNavigationAsync(url, authorizeDestination,
             cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
         return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
     }

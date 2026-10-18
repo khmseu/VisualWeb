@@ -248,11 +248,17 @@ initial effective stylesheet origin before following them. Browser CSP
 destination authorization, HSTS upgrades, bad-port checks and HTTPS downgrade
 protection also apply. This is stricter than Fetch in its redirect restriction
 and does not implement preflight, credentialed CORS, response-header exposure,
-general resource authorization or script-visible Fetch. Top-level navigation
-remains unrestricted, and other request classes have no browser-wide origin
-authorization. Apart from these narrow stylesheet rules and bad-port blocking
-above, there is no general CSP, mixed-content policy, referrer policy, cache,
-storage partitioning, sandbox or private-network policy yet.
+general resource authorization or script-visible Fetch. The development shell
+also requires confirmation before a page-initiated link/form request reaches a
+different origin and before every redirect hop that changes origin relative
+to the preceding request. The prompt runs before transport and shows only the
+destination origin; address-bar navigation remains unrestricted. This is not
+general request authorization, and low-level `BrowserController` instances do
+not enable it unless configured with an authorizer. Other request classes have
+no browser-wide origin authorization. Apart from these narrow rules and
+bad-port blocking above, there is no general CSP, mixed-content policy,
+referrer policy, cache, storage partitioning, sandbox or private-network policy
+yet.
 The session HSTS subset above protects learned DNS hosts, not first visits or
 general request authorization.
 Cookie opt-in does not authorize a request. The future shell/broker must mediate

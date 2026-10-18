@@ -69,6 +69,39 @@ public sealed class AuthorizedNavigationLoadTests
     }
 
     [Fact]
+    public async Task AsyncAuthorizerCanPauseARedirectBeforeTransport()
+    {
+        var requests = new List<string>();
+        var redirectReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var allowRedirect = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return requests.Count == 1 ? Redirect("https://outside.example/final") : Text("ok");
+        }));
+
+        var load = loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("https://source.example/start"),
+            async (destination, count, cancellationToken) =>
+            {
+                if (count == 1)
+                {
+                    Assert.Equal("https://outside.example/final", destination.Href);
+                    redirectReached.TrySetResult();
+                    await allowRedirect.Task.WaitAsync(cancellationToken);
+                }
+                return true;
+            }, cancellationToken: Token);
+
+        await redirectReached.Task.WaitAsync(Token);
+        Assert.Equal(["https://source.example/start"], requests);
+        allowRedirect.TrySetResult();
+        var response = await load;
+
+        Assert.Equal(["https://source.example/start", "https://outside.example/final"], requests);
+        Assert.Equal("ok", Encoding.UTF8.GetString(response.Body.Span));
+    }
+
+    [Fact]
     public async Task InitialDenialPreventsTransport()
     {
         var calls = 0;

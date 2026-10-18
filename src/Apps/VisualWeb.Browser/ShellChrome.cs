@@ -9,7 +9,7 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, SelectOption, SelectListboxOption }
+public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, SelectOption, SelectListboxOption, AllowNavigation, CancelNavigation }
 public sealed record ChromeTarget(LayoutRect Bounds, ChromeAction Action, TabId? Tab = null, int ControlIndex = -1, int OptionIndex = -1);
 public sealed record ShellFrame(byte[] Pixels, PixelSize Size, int Stride, IReadOnlyList<ChromeTarget> Targets);
 internal sealed record SelectPopupLayout(LayoutRect Bounds, int FirstOption, int VisibleOptions, double RowHeight);
@@ -201,7 +201,8 @@ public sealed class ShellChrome : IDisposable
     [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This bounded composition method must keep chrome, form overlays, selection, scrolling, and pixel ownership in one ordered render pass.")]
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
-        IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0, int hoveredLink = -1)
+        IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0, int hoveredLink = -1,
+        string? navigationConfirmationOrigin = null, TabId? navigationConfirmationTab = null)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -247,8 +248,27 @@ public sealed class ShellChrome : IDisposable
             Label(value, address.X + 4, 83, address.Width - 8, ink, tail: true);
             targets.Add(new(address, ChromeAction.Address));
         }
-        Label(tab?.Status ?? "No active tab", 8, 111, width - 16,
-            tab?.Error is null ? ink : new(170, 0, 0));
+        if (navigationConfirmationOrigin is { } confirmationOrigin)
+        {
+            Fill(new(0, 92, width, 28), new(255, 238, 205));
+            if (width >= 340)
+            {
+                Label("Allow page navigation to " + confirmationOrigin + "?", 8, 111, width - 164, ink, tail: true);
+                Button("Allow", new(width - 154, 94, 68, 24), ChromeAction.AllowNavigation,
+                    targetTab: navigationConfirmationTab);
+                Button("Cancel", new(width - 80, 94, 72, 24), ChromeAction.CancelNavigation,
+                    targetTab: navigationConfirmationTab);
+            }
+            else
+            {
+                Label("Allow " + confirmationOrigin + "? Enter=Yes Esc=No", 8, 111, width - 16, ink, tail: true);
+            }
+        }
+        else
+        {
+            Label(tab?.Status ?? "No active tab", 8, 111, width - 16,
+                tab?.Error is null ? ink : new(170, 0, 0));
+        }
         if (focusedChrome is not null && targets.FirstOrDefault(target =>
             target.Action == focusedChrome.Action && target.Tab == focusedChrome.Tab) is { } selected)
         {
@@ -564,11 +584,11 @@ public sealed class ShellChrome : IDisposable
             var offset = y * chrome.Stride + x * 4;
             pixels[offset] = red; pixels[offset + 1] = green; pixels[offset + 2] = blue; pixels[offset + 3] = 255;
         }
-        void Button(string label, LayoutRect rect, ChromeAction action, bool enabled = true)
+        void Button(string label, LayoutRect rect, ChromeAction action, bool enabled = true, TabId? targetTab = null)
         {
             Fill(rect, enabled ? white : new(209, 214, 220));
             Label(label, rect.X + 5, rect.Y + 21, rect.Width - 10, enabled ? ink : new(115, 120, 128));
-            if (enabled) { targets.Add(new(rect, action)); }
+            if (enabled) { targets.Add(new(rect, action, targetTab)); }
         }
         void Label(string value, double x, double baseline, double available, CssColor color, bool tail = false)
         {

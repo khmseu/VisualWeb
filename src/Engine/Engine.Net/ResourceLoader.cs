@@ -109,6 +109,23 @@ public sealed class ResourceLoader : IDisposable
         CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
     {
+        ArgumentNullException.ThrowIfNull(authorizeDestination);
+        return await LoadAuthorizedNavigationAsync(url,
+            (destination, redirectCount, _) => ValueTask.FromResult(authorizeDestination(destination, redirectCount)),
+            includeCookies, cancellationToken, preventHttpsDowngrade, rewriteDestination).ConfigureAwait(false);
+    }
+
+    /// <summary>Browser-owned authorized GET with asynchronous approval before each destination request.</summary>
+    /// <remarks>Spec: fetch; <see href="https://fetch.spec.whatwg.org/#http-redirect-fetch">HTTP redirects</see>.
+    /// HSTS, rewrites, downgrade and bad-port checks run before this callback. A false result denies the effective
+    /// destination before its request is sent. Cancellation and the loader deadline apply while authorization is pending.
+    /// This browser-owned policy hook is not a script-visible Fetch API.</remarks>
+    /// <param name="authorizeDestination">Asynchronously authorizes the effective URL and redirect count before transport.</param>
+    public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination, bool includeCookies = false,
+        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+    {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(authorizeDestination);
@@ -122,7 +139,6 @@ public sealed class ResourceLoader : IDisposable
         if (preventHttpsDowngrade && url.Protocol == "http:") { throw InsecureTransport(); }
 
         BadPortPolicy.ThrowIfBlocked(url);
-        EnforceAuthorized(url, authorizeDestination, redirectCount: 0);
         return await LoadCoreAsync(url, null, null, authorizeDestination, includeCookies, preventHttpsDowngrade,
             rewriteDestination, cancellationToken);
     }
@@ -195,13 +211,15 @@ public sealed class ResourceLoader : IDisposable
         url = RewriteDestination(url, rewriteDestination);
         if (preventHttpsDowngrade && url.Protocol == "http:") { throw InsecureTransport(); }
         BadPortPolicy.ThrowIfBlocked(url);
-        if (authorizeDestination is not null) { EnforceAuthorized(url, authorizeDestination, redirectCount: 0); }
-        return await LoadCoreAsync(url, null, requestOrigin, authorizeDestination, false,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>>? asyncAuthorizer = authorizeDestination is null ? null
+            : (destination, redirectCount, _) => ValueTask.FromResult(authorizeDestination(destination, redirectCount));
+        return await LoadCoreAsync(url, null, requestOrigin, asyncAuthorizer, false,
             preventHttpsDowngrade, rewriteDestination, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin,
-        SecurityOrigin? corsRequestOrigin, Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies,
+        SecurityOrigin? corsRequestOrigin,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>>? authorizeDestination, bool includeCookies,
         bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -237,10 +255,11 @@ public sealed class ResourceLoader : IDisposable
         }
     }
 
-    private static void EnforceAuthorized(BrowserUrl url, Func<BrowserUrl, int, bool> authorizeDestination,
-        int redirectCount)
+    private static async ValueTask EnforceAuthorizedAsync(BrowserUrl url,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination,
+        int redirectCount, CancellationToken cancellationToken)
     {
-        if (!authorizeDestination(url, redirectCount))
+        if (!await authorizeDestination(url, redirectCount, cancellationToken).ConfigureAwait(false))
         {
             throw new ResourceLoadException(ResourceError.NavigationDenied,
                 "Browser-owned navigation authorization denied the destination.");
@@ -248,7 +267,8 @@ public sealed class ResourceLoader : IDisposable
     }
 
     private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin,
-        SecurityOrigin? corsRequestOrigin, Func<BrowserUrl, int, bool>? authorizeDestination, bool includeCookies,
+        SecurityOrigin? corsRequestOrigin,
+        Func<BrowserUrl, int, CancellationToken, ValueTask<bool>>? authorizeDestination, bool includeCookies,
         bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token)
     {
         var url = initial;
@@ -256,6 +276,10 @@ public sealed class ResourceLoader : IDisposable
         var diagnostics = new List<string>();
         for (var redirects = 0; ; redirects++)
         {
+            if (redirects == 0 && authorizeDestination is not null)
+            {
+                await EnforceAuthorizedAsync(url, authorizeDestination, redirectCount: 0, token).ConfigureAwait(false);
+            }
             RejectCredentials(url);
             var uri = TransportUri(url);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -327,7 +351,7 @@ public sealed class ResourceLoader : IDisposable
                 }
                 if (authorizeDestination is not null)
                 {
-                    EnforceAuthorized(next, authorizeDestination, redirects + 1);
+                    await EnforceAuthorizedAsync(next, authorizeDestination, redirects + 1, token).ConfigureAwait(false);
                 }
 
                 url = next;

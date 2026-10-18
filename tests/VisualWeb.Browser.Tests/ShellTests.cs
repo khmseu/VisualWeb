@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using SDL3;
@@ -9,6 +10,225 @@ namespace VisualWeb.Browser.Tests;
 
 public sealed class ShellTests
 {
+    [Fact]
+    public void CrossOriginLinkAndRedirectWaitForShellConfirmation()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url switch
+            {
+                "https://source.example/page" => Html("<!doctype html><style>*{margin:0}</style>"
+                    + "<a href='https://outside.example/start?token=private'>open</a>"),
+                "https://outside.example/start?token=private" => Redirect("https://source.example/return"),
+                "https://source.example/return" => Redirect("https://third.example/final"),
+                _ => Html("<!doctype html><title>Final</title>")
+            };
+        }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        var link = Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
+        var x = (float)(link.X + link.Width / 2);
+        var y = (float)(ShellChrome.Height + link.Y + link.Height / 2);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        shell.Tick();
+
+        Assert.Equal(["https://source.example/page"], requests);
+        Assert.Equal("https://source.example/page", tab.AddressText);
+        ApproveUntilRequestCount(2);
+        Wait(() => requests.Count == 2);
+        shell.Tick();
+        Assert.Equal(["https://source.example/page", "https://outside.example/start?token=private"], requests);
+        ApproveUntilRequestCount(3);
+        Assert.Equal("https://source.example/page", tab.AddressText);
+        ApproveUntilRequestCount(4);
+        Wait(() => !tab.IsLoading);
+
+        Assert.Equal([
+            "https://source.example/page",
+            "https://outside.example/start?token=private",
+            "https://source.example/return",
+            "https://third.example/final"
+        ], requests);
+        Assert.Equal("https://third.example/final", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void ApproveUntilRequestCount(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (requests.Count < count && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                shell.Tick();
+                Thread.Sleep(5);
+            }
+            Assert.True(requests.Count >= count);
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), tab.Error);
+        }
+    }
+
+    [Fact]
+    public void CancelingCrossOriginNavigationPreventsItsRequest()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url == "https://source.example/page"
+                ? Html("<!doctype html><style>*{margin:0}</style>"
+                    + "<a href='https://outside.example/secret'>open</a>")
+                : Html("<!doctype html><title>External</title>");
+        }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        var link = Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
+        var x = (float)(link.X + link.Width / 2);
+        var y = (float)(ShellChrome.Height + link.Y + link.Height / 2);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        shell.Tick();
+
+        Assert.Equal(["https://source.example/page"], requests);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+        shell.Tick();
+        Wait(() => !tab.IsLoading);
+
+        Assert.Equal(["https://source.example/page"], requests);
+        Assert.Equal("https://source.example/page", tab.History.Current!.Href);
+        Assert.NotNull(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), tab.Error);
+        }
+    }
+
+    [Fact]
+    public void CrossOriginLinkOpenedInNewTabUsesTheSourceDocumentForConfirmation()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url == "https://source.example/page"
+                ? Html("<!doctype html><style>*{margin:0}</style>"
+                    + "<a target=_blank href='https://outside.example/page?private=yes'>open</a>")
+                : Html("<!doctype html><title>External</title>");
+        }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var native = system.Items[0];
+        var sourceTab = window.ActiveTab!;
+        Wait(() => !sourceTab.IsLoading && shell.Controller.Page(sourceTab.Id) is not null);
+        var link = Assert.Single(shell.Controller.Page(sourceTab.Id)!.LinkTargets);
+        var x = (float)(link.X + link.Width / 2);
+        var y = (float)(ShellChrome.Height + link.Y + link.Height / 2);
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, x, y));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, x, y));
+        shell.Tick();
+
+        var destinationTab = window.ActiveTab ?? throw new InvalidOperationException("The target tab was not activated.");
+        Assert.NotEqual(sourceTab.Id, destinationTab.Id);
+        Assert.Empty(destinationTab.AddressText);
+        Assert.Equal(["https://source.example/page"], requests);
+        ApproveUntilRequestCount(2);
+        Wait(() => !destinationTab.IsLoading);
+
+        Assert.Equal("https://outside.example/page?private=yes", destinationTab.History.Current!.Href);
+        Assert.Null(destinationTab.Error);
+        Assert.Equal(["https://source.example/page", "https://outside.example/page?private=yes"], requests);
+
+        void ApproveUntilRequestCount(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (requests.Count < count && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                shell.Tick();
+                Thread.Sleep(5);
+            }
+            Assert.True(requests.Count >= count);
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition());
+        }
+    }
+
+    [Fact]
+    public void CrossOriginFormWaitsForConfirmationWithoutRevealingQueryInAddressBar()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url == "https://source.example/page"
+                ? Html("<!doctype html><style>*{margin:0}input{display:block;height:20px}</style>"
+                    + "<form action='https://outside.example/send'><input name=secret value=private><input type=submit></form>")
+                : Html("<!doctype html><title>Sent</title>");
+        }));
+        var window = shell.OpenWindow("https://source.example/page");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        shell.Controller.FocusPage(tab.Id);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 1));
+        Assert.True(shell.Controller.ActivateFocusedLink(tab.Id));
+        shell.Tick();
+
+        Assert.Equal("https://source.example/page", tab.AddressText);
+        Assert.Equal(["https://source.example/page"], requests);
+        ApproveUntilRequestCount(2);
+        Wait(() => !tab.IsLoading);
+
+        Assert.Equal("https://outside.example/send?secret=private", requests.ToArray()[1]);
+        Assert.Equal("https://outside.example/send?secret=private", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void ApproveUntilRequestCount(int count)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (requests.Count < count && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                shell.Tick();
+                Thread.Sleep(5);
+            }
+            Assert.True(requests.Count >= count);
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), tab.Error);
+        }
+    }
+
     [Fact]
     public void SpaceTogglesFocusedCheckboxAndUpdatesItsShellOverlay()
     {
@@ -661,6 +881,9 @@ public sealed class ShellTests
         Assert.Equal(2, window.Tabs.Count);
         Assert.Equal(sourceTab.Id, window.ActiveTabId);
         var backgroundTab = Assert.Single(window.Tabs, tab => tab.Id != sourceTab.Id);
+        Assert.Empty(requests);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        shell.Tick();
         Wait(backgroundTab);
         Assert.Equal("https://example.com/target", backgroundTab.History.Current!.Href);
         Assert.Equal(sourceUrl, sourceTab.History.Current!.Href);
@@ -709,6 +932,9 @@ public sealed class ShellTests
         Assert.Equal(2, window.Tabs.Count);
         Assert.NotEqual(sourceTab.Id, window.ActiveTabId);
         var destinationTab = window.ActiveTab!;
+        Assert.Empty(requests);
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        shell.Tick();
         Wait(destinationTab);
         Assert.Equal("https://example.com/target", destinationTab.History.Current!.Href);
         Assert.Equal(sourceUrl, sourceTab.History.Current!.Href);
@@ -2922,4 +3148,17 @@ public sealed class ShellTests
         }
         public void Dispose() { Disposed = true; EventReceived = null; }
     }
+    private sealed class NavigationHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) => Task.FromResult(respond(request));
+    }
+    private static HttpResponseMessage Html(string html) => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent(html, System.Text.Encoding.UTF8, "text/html")
+    };
+    private static HttpResponseMessage Redirect(string location) => new(HttpStatusCode.Found)
+    {
+        Headers = { Location = new Uri(location) }
+    };
 }

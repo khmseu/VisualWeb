@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using SDL3;
+using VisualWeb.Core.Url;
 using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
@@ -66,9 +68,12 @@ public sealed class DevelopmentShell : IDisposable
         internal double? PointerY { get; set; }
         internal ChromeTarget? KeyboardTarget { get; set; }
     }
+    private sealed record NavigationPrompt(TabId Tab, string Origin, TaskCompletionSource<bool> Completion);
     private readonly IWindowSystem system;
     private readonly ShellChrome chrome;
     private readonly Dictionary<BrowserWindowId, View> views = [];
+    private readonly ConcurrentQueue<NavigationPrompt> navigationPromptQueue = new();
+    private readonly Dictionary<TabId, NavigationPrompt> navigationPrompts = [];
     private readonly bool hidden;
     private readonly bool textInput;
     private readonly bool requireSandbox;
@@ -103,7 +108,7 @@ public sealed class DevelopmentShell : IDisposable
             ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts)
             : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts), settings,
             // Every multiprocess mode (confined or explicitly unsandboxed) rotates renderers per origin; there is no opt-out.
-            isolateOrigins: multiprocess);
+            isolateOrigins: multiprocess, pageNavigationAuthorizer: ConfirmPageNavigationAsync);
         Controller.Changed += id =>
         {
             foreach (var (key, view) in views)
@@ -120,6 +125,57 @@ public sealed class DevelopmentShell : IDisposable
         };
         Controller.Failed += (id, error) => Console.Error.WriteLine($"Tab {id.Value}: {error}");
         system.QuitRequested += Quit;
+    }
+    private async ValueTask<bool> ConfirmPageNavigationAsync(TabId tab, BrowserUrl destination,
+        CancellationToken cancellationToken)
+    {
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        navigationPromptQueue.Enqueue(new(tab, destination.Origin.Serialize(), completion));
+        return await completion.Task.ConfigureAwait(false);
+    }
+    private void DrainNavigationPrompts()
+    {
+        foreach (var (tab, prompt) in navigationPrompts.ToArray())
+        {
+            var exists = Controller.Session.Windows.Any(window => window.Tabs.Any(candidate => candidate.Id == tab));
+            if (!exists || prompt.Completion.Task.IsCompleted)
+            {
+                navigationPrompts.Remove(tab);
+                MarkPromptWindowDirty(tab);
+            }
+        }
+        while (navigationPromptQueue.TryDequeue(out var prompt))
+        {
+            if (prompt.Completion.Task.IsCompleted) { continue; }
+            if (!Controller.Session.Windows.Any(window => window.Tabs.Any(tab => tab.Id == prompt.Tab)))
+            {
+                prompt.Completion.TrySetCanceled();
+                continue;
+            }
+            if (!navigationPrompts.TryAdd(prompt.Tab, prompt))
+            {
+                Console.Error.WriteLine($"Tab {prompt.Tab.Value}: overlapping navigation confirmations were denied.");
+                prompt.Completion.TrySetResult(false);
+                continue;
+            }
+            MarkPromptWindowDirty(prompt.Tab);
+        }
+    }
+    private NavigationPrompt? PendingPrompt(BrowserWindow window) =>
+        window.Tabs.Select(tab => navigationPrompts.GetValueOrDefault(tab.Id)).FirstOrDefault(prompt => prompt is not null);
+    private void ResolveNavigationPrompt(TabId tab, bool allow)
+    {
+        if (!navigationPrompts.Remove(tab, out var prompt)) { return; }
+        prompt.Completion.TrySetResult(allow);
+        MarkPromptWindowDirty(tab);
+    }
+    private void MarkPromptWindowDirty(TabId tab)
+    {
+        foreach (var window in Controller.Session.Windows.Where(window => window.Tabs.Any(candidate => candidate.Id == tab)))
+        {
+            if (views.TryGetValue(window.Id, out var view)) { view.Dirty = true; }
+        }
     }
     public BrowserWindow OpenWindow(string? url = null, bool empty = false)
     {
@@ -169,6 +225,7 @@ public sealed class DevelopmentShell : IDisposable
             }
             return ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity);
         });
+        DrainNavigationPrompts();
         foreach (var (id, view) in views.ToArray())
         {
             var size = view.Native.PixelSize;
@@ -217,13 +274,15 @@ public sealed class DevelopmentShell : IDisposable
             UpdateHoveredLink(view, window);
             SyncTextInput(view, window);
             if (!view.Dirty) { continue; }
+            var prompt = PendingPrompt(window);
             var frame = chrome.Render(window, window.ActiveTabId is { } active ? Controller.Page(active) : null,
                 size, density, view.Editing ? view.Editor : null,
                 window.ActiveTabId is { } focused && Controller.PageHasFocus(focused)
                     ? Controller.FocusedLinkIndex(focused) : -1,
                 window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
                 Forms(window, view), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
-                window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0, view.HoveredLink);
+                window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0, view.HoveredLink,
+                prompt?.Origin, prompt?.Tab);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -270,6 +329,7 @@ public sealed class DevelopmentShell : IDisposable
     }
     private void HandleMiddlePointerPress(BrowserWindow window, View view, PointerButtonChanged middle)
     {
+        if (PendingPrompt(window) is not null) { return; }
         view.PointerX = middle.X;
         view.PointerY = middle.Y;
         if (window.ActiveTab is { } middleTab
@@ -314,6 +374,16 @@ public sealed class DevelopmentShell : IDisposable
         view.SelectingText = false;
         view.DraggingScrollbar = false;
         view.DraggingRangeControl = -1;
+        if (PendingPrompt(window) is { } prompt)
+        {
+            var decision = ShellChrome.Hit(view.Targets, pointer.X, pointer.Y);
+            if (decision?.Tab == prompt.Tab
+                && decision.Action is ChromeAction.AllowNavigation or ChromeAction.CancelNavigation)
+            {
+                ResolveNavigationPrompt(prompt.Tab, decision.Action == ChromeAction.AllowNavigation);
+            }
+            return;
+        }
         if (view.ControlModifier)
         {
             if (view.OpenSelectControl >= 0) { CloseSelectPopup(view); }
@@ -445,6 +515,15 @@ public sealed class DevelopmentShell : IDisposable
     {
         view.DraggingScrollbar = false;
         view.DraggingRangeControl = -1;
+        var window = Controller.Session.Windows.FirstOrDefault(candidate =>
+            candidate.Tabs.Any(tab => tab.Id == releasedTab.Id));
+        if (window is not null && PendingPrompt(window) is not null)
+        {
+            view.PendingLinkActivation = false;
+            view.PendingLinkDragged = false;
+            view.PendingLinkTab = null;
+            return;
+        }
         if (view.PendingLinkActivation)
         {
             var pendingLinkIndex = view.PendingLinkIndex;
@@ -506,6 +585,7 @@ public sealed class DevelopmentShell : IDisposable
     }
     private void HandlePointerWheel(BrowserWindow window, View view, BrowserTab active, PointerScrolled wheel)
     {
+        if (PendingPrompt(window) is not null) { return; }
         if (!float.IsFinite(wheel.X) || !float.IsFinite(wheel.Y))
         { Controller.Report(active.Id, "Wheel delta must be finite."); return; }
         if (view.OpenSelectControl >= 0 && view.PointerX is { } menuX && view.PointerY is { } menuY
@@ -531,6 +611,7 @@ public sealed class DevelopmentShell : IDisposable
     }
     private void HandleTextEntered(BrowserWindow window, View view, TextEntered text)
     {
+        if (PendingPrompt(window) is not null) { return; }
         if (view.Editing && window.ActiveTab is { } tab)
         {
             Controller.SetAddress(tab.Id, view.Editor.Insert(text.Text, Controller.Session.Options.MaxAddressCharacters));
@@ -580,6 +661,14 @@ public sealed class DevelopmentShell : IDisposable
         var alt = (modifiers & SDL.Keymod.Alt) != 0;
         var shift = (modifiers & SDL.Keymod.Shift) != 0;
         var code = (SDL.Scancode)key.ScanCode;
+        if (PendingPrompt(window) is { } prompt)
+        {
+            if (!key.Repeat && !control && !alt && code == SDL.Scancode.Return)
+            { ResolveNavigationPrompt(prompt.Tab, allow: true); }
+            else if (!key.Repeat && !control && !alt && code == SDL.Scancode.Escape)
+            { ResolveNavigationPrompt(prompt.Tab, allow: false); }
+            return;
+        }
         if (control && !key.Repeat)
         {
             switch (code)
@@ -812,6 +901,11 @@ public sealed class DevelopmentShell : IDisposable
     }
     private void Action(BrowserWindow window, View view, ChromeAction action, TabId? target = null)
     {
+        if (action is ChromeAction.AllowNavigation or ChromeAction.CancelNavigation && target is { } promptTab)
+        {
+            ResolveNavigationPrompt(promptTab, action == ChromeAction.AllowNavigation);
+            return;
+        }
         var tab = window.ActiveTab;
         if (action == ChromeAction.Address) { Edit(view, window, true); return; }
         Edit(view, window, false);
