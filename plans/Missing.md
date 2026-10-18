@@ -194,8 +194,10 @@ broader page interaction is still missing:
   and Escape to clear the selection. SDL-reported double-clicks on visible
   non-link text select the same-line run of letters, numbers, combining marks
   and supported connector punctuation containing the hit cluster; whitespace
-  and punctuation remain single-cluster selections. Each exact LTR shaping cluster is a selection
-  unit, so ordinary supported characters are individually selectable while
+  and punctuation remain single-cluster selections. SDL-reported triple-clicks
+  select the visible shaped clusters on the hit cluster's visual line, including
+  whitespace and punctuation, without crossing lines. Each exact LTR shaping
+  cluster is a selection unit, so ordinary supported characters are individually selectable while
   multi-character ligatures and combining clusters remain indivisible; no
   estimated intra-cluster caret positions are used. Primary clicks on anchors
   navigate on release, while a drag beginning over a visible link selects

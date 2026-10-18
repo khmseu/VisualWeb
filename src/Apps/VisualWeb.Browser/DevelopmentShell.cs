@@ -457,6 +457,8 @@ public sealed class DevelopmentShell : IDisposable
                 if (page.LinkTargets[index].Contains(pointer.X, pageY)) { linkIndex = index; }
             }
         }
+        if (pointer.ClickCount >= 3 && !overControl && linkIndex < 0
+            && Controller.SelectTextVisualLine(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
         if (pointer.ClickCount >= 2 && !overControl && linkIndex < 0
             && Controller.SelectTextWord(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
         Controller.ClearSelectedText(pageTab.Id);

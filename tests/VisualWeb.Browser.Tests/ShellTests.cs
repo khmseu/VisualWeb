@@ -2167,6 +2167,48 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void TripleClickSelectsVisibleVisualLine(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><p>first word!</p><p>next line</p>"));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        var targets = shell.Controller.Page(tab.Id)!.TextTargets;
+        var firstLine = Assert.Single(targets, target => target.Text == "fi");
+        var nextLine = targets.First(target => target.Text == "n");
+        Assert.True(firstLine.Rect.Y < nextLine.Rect.Y);
+        TripleClick(firstLine.Rect);
+        Assert.Equal("first word!", shell.Controller.SelectedText(tab.Id));
+
+        TripleClick(nextLine.Rect);
+        Assert.Equal("next line", shell.Controller.SelectedText(tab.Id));
+
+        void TripleClick(PageLinkRect rect)
+        {
+            var x = (float)(rect.X + rect.Width / 2);
+            var y = (float)(ShellChrome.Height + rect.Y + rect.Height / 2);
+            for (byte clickCount = 1; clickCount <= 3; clickCount++)
+            {
+                shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, true, x, y, clickCount));
+                shell.Dispatch(new PointerButtonChanged(system.Items[0].Id, 1, false, x, y, clickCount));
+            }
+        }
+        void Wait(Func<bool> ready)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!ready() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(ready());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ShiftArrowExtendsTextSelectionByShapingCluster(bool multiprocess)
     {
         using var system = new Windows();
