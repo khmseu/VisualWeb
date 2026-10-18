@@ -1399,6 +1399,52 @@ public sealed class ShellTests
             shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, modifiers, true, false));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void ShiftArrowReplacesMultipleSelectWithEnabledRange(bool multiprocess, bool listbox)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var size = listbox ? " size=3" : "";
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0}</style><form><select multiple" + size + ">" +
+            "<option selected>Zero</option><option>One</option><option disabled>Blocked</option>" +
+            "<option>Three</option><option selected>Four</option></select></form>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.True(shell.Controller.FocusControl(tab.Id, 0));
+
+        if (!listbox) { Key(SDL.Scancode.Return); }
+        Key(SDL.Scancode.Down, (ushort)SDL.Keymod.Shift);
+        Assert.Equal(1, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([0, 1], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Down, (ushort)SDL.Keymod.Shift);
+        Assert.Equal(3, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([0, 1, 3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Up, (ushort)SDL.Keymod.Shift);
+        Assert.Equal(1, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([0, 1], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+
+        Key(SDL.Scancode.Down);
+        Assert.Equal(3, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([0, 1], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+        Key(SDL.Scancode.Up, (ushort)SDL.Keymod.Shift);
+        Assert.Equal(1, shell.Controller.ActiveSelectOptionIndex(tab.Id, 0));
+        Assert.Equal([1, 3], shell.Controller.SelectedOptionIndices(tab.Id, 0));
+
+        void Key(SDL.Scancode code, ushort modifiers = 0) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)code, 0, modifiers, true, false));
+    }
+
     [Fact]
     public void MultipleSelectPopupPageKeysKeepCursorVisibleWithoutSelecting()
     {

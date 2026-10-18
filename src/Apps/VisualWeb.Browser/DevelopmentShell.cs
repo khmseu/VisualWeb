@@ -313,7 +313,10 @@ public sealed class DevelopmentShell : IDisposable
                     break;
                 case KeyChanged key:
                     view.ControlModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Ctrl) != 0;
-                    view.ShiftModifier = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Shift) != 0;
+                    var shift = (((SDL.Keymod)key.Modifiers) & SDL.Keymod.Shift) != 0;
+                    if (view.ShiftModifier && !shift && window.ActiveTab is { } shiftReleasedTab)
+                    { Controller.ClearMultipleSelectRangeAnchors(shiftReleasedTab.Id); }
+                    view.ShiftModifier = shift;
                     if (key.Pressed) { Key(window, view, key); }
                     break;
                 case TextEntered text: HandleTextEntered(window, view, text); break;
@@ -780,6 +783,9 @@ public sealed class DevelopmentShell : IDisposable
             if (shift && !control && !alt && code is (SDL.Scancode.Up or SDL.Scancode.Down)
                 && Controller.FocusedControlIndex(tab.Id) < 0
                 && Controller.ExtendSelectedTextVertically(tab.Id, code == SDL.Scancode.Down)) { return; }
+            if (shift && !control && !alt && code is (SDL.Scancode.Up or SDL.Scancode.Down)
+                && Controller.ExtendFocusedMultipleSelectRange(tab.Id, code == SDL.Scancode.Up ? -1 : 1))
+            { KeepPopupSelectionVisible(view, tab.Id); return; }
             if (!control && !alt && code is SDL.Scancode.Left or SDL.Scancode.Down
                 && Controller.AdjustFocusedRange(tab.Id, -1)) { return; }
             if (!control && !alt && code is SDL.Scancode.Right or SDL.Scancode.Up
