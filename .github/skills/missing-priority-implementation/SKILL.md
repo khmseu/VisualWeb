@@ -63,7 +63,7 @@ moving to another priority.
    contains unrelated pre-existing modifications, stage only your hunks
    (e.g. `git add -p`) or, if that is not feasible, stop and ask the user how to
    handle the overlapping changes before committing.
-8. See if there are any current CI failures on Github. If so, try to fix them.
+8. See if there are any current CI failures on Github. If so, try to fix them, even if they are not related to the stuff you just worked on.
 9. If no pass count is given, perform exactly one pass and stop after its
    commit. If the user requested multiple passes, repeat from step 1 against the
    updated tracker, making each pass a separately tested, separately committed
