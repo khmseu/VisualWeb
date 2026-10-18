@@ -74,8 +74,9 @@ public interface IPageSource : IDisposable
 /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>). The
 /// development shell also applies it to same-origin page-initiated HTTP links and GET form submissions, including
 /// redirects; cross-origin link navigation is not upgraded (forms are the exception). Explicit address-bar navigation
-/// does not inherit the page's upgrade policy. This is not a complete Fetch/CORS implementation or general request
-/// authorization.</remarks>
+/// does not inherit the page's URL-upgrade policy. HTTP main-document requests independently carry
+/// <c>Upgrade-Insecure-Requests: 1</c> on HTTP hops only; this signal does not upgrade URLs or authorize requests.
+/// This is not a complete Fetch/CORS implementation or general request authorization.</remarks>
 public sealed class GetPageSource : IPageSource
 {
     private readonly Engine.Net.ResourceLoader loader;
@@ -105,16 +106,17 @@ public sealed class GetPageSource : IPageSource
     {
         var response = sameOriginRedirectOrigin is null
             ? await loader.LoadAsync(url, cancellationToken: cancellationToken,
-                preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false)
+                preventHttpsDowngrade: preventHttpsDowngrade, isNavigationRequest: true).ConfigureAwait(false)
             : await loader.LoadSameOriginAsync(url, sameOriginRedirectOrigin, cancellationToken: cancellationToken,
-                preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
+                preventHttpsDowngrade: preventHttpsDowngrade, isNavigationRequest: true).ConfigureAwait(false);
         return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
     }
     public async Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url, CancellationToken cancellationToken,
         bool preventHttpsDowngrade)
     {
         var response = await loader.LoadAuthorizedNavigationAsync(url, static _ => true,
-            cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade).ConfigureAwait(false);
+            cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade,
+            isNavigationRequest: true).ConfigureAwait(false);
         return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
     }
     public async Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url,
@@ -129,7 +131,7 @@ public sealed class GetPageSource : IPageSource
     {
         var response = await loader.LoadAuthorizedNavigationAsync(url, authorizeDestination,
             cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade,
-            rewriteDestination: rewriteDestination).ConfigureAwait(false);
+            rewriteDestination: rewriteDestination, isNavigationRequest: true).ConfigureAwait(false);
         return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
     }
     private async Task<LoadedPage> CreateLoadedPageAsync(ResourceResponse response, CancellationToken cancellationToken)

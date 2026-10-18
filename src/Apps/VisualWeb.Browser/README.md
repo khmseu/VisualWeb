@@ -57,6 +57,10 @@ text without a calendar picker; time fields validate bounded HTML time strings a
 Response `form-action` CSP source lists are also checked before bounded GET
 form values are serialized; this does not restrict links or address-bar
 navigation and does not use `default-src` as a fallback.
+Every HTTP top-level navigation request also sends
+`Upgrade-Insecure-Requests: 1`, including HTTP redirect hops. This header is not
+sent for HTTPS hops or subresources, and does not itself upgrade a URL.
+
 When the response also includes `upgrade-insecure-requests`, shell-managed GET
 form actions and same-origin page-initiated HTTP links, including redirects,
 are upgraded before applicable policy, authorization and transport checks;

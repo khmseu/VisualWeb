@@ -33,6 +33,47 @@ public sealed class AuthorizedNavigationLoadTests
     }
 
     [Fact]
+    public async Task InsecureNavigationRequestsSendUpgradeHeaderOnHttpHopsOnly()
+    {
+        var requests = new List<(string Url, string? UpgradeHeader)>();
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            var upgradeHeader = request.Headers.TryGetValues("Upgrade-Insecure-Requests", out var values)
+                ? Assert.Single(values)
+                : null;
+            requests.Add((url, upgradeHeader));
+            return requests.Count switch
+            {
+                1 => Redirect("https://source.example/secure"),
+                2 => Redirect("http://source.example/insecure"),
+                _ => Text("ok")
+            };
+        }));
+
+        await loader.LoadAuthorizedNavigationAsync(BrowserUrl.Parse("http://source.example/start"),
+            static _ => true, cancellationToken: Token, isNavigationRequest: true);
+
+        Assert.Equal([
+            ("http://source.example/start", "1"),
+            ("https://source.example/secure", null),
+            ("http://source.example/insecure", "1")
+        ], requests);
+    }
+
+    [Fact]
+    public async Task NonNavigationHttpLoadsDoNotSendUpgradeHeader()
+    {
+        using var loader = new ResourceLoader(handler: new Handler(request =>
+        {
+            Assert.False(request.Headers.Contains("Upgrade-Insecure-Requests"));
+            return Text("ok");
+        }));
+
+        await loader.LoadAsync(BrowserUrl.Parse("http://source.example/resource"), cancellationToken: Token);
+    }
+
+    [Fact]
     public async Task AuthorizerReceivesZeroForInitialUrlAndIncrementedRedirectCounts()
     {
         var authorized = new List<(string Url, int RedirectCount)>();

@@ -63,9 +63,13 @@ public sealed class ResourceLoader : IDisposable
     /// <remarks>Spec: fetch; HTTP(S) URLs and redirect targets on a
     /// <see href="https://fetch.spec.whatwg.org/#bad-port">bad port</see> throw <see cref="ResourceLoadException"/> with
     /// <see cref="ResourceError.BlockedPort"/> before any transport or cookie work. Callers may opt in to
-    /// <paramref name="preventHttpsDowngrade"/> to reject an HTTP initial URL or HTTPS-to-HTTP redirect before sending it.</remarks>
+    /// <paramref name="preventHttpsDowngrade"/> to reject an HTTP initial URL or HTTPS-to-HTTP redirect before sending it.
+    /// Set <paramref name="isNavigationRequest"/> only for top-level navigation to send the bounded
+    /// Upgrade-Insecure-Requests header on each HTTP hop (spec ID upgrade-insecure-requests;
+    /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>).</remarks>
     public async Task<ResourceResponse> LoadAsync(BrowserUrl url, bool includeCookies = false,
-        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false)
+        CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
+        bool isNavigationRequest = false)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
@@ -76,7 +80,8 @@ public sealed class ResourceLoader : IDisposable
         }
 
         BadPortPolicy.ThrowIfBlocked(url);
-        return await LoadCoreAsync(url, null, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
+        return await LoadCoreAsync(url, null, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken,
+            isNavigationRequest);
     }
 
     /// <summary>Browser-owned HTTP(S) navigation whose effective initial and redirect destinations require authorization.</summary>
@@ -84,18 +89,21 @@ public sealed class ResourceLoader : IDisposable
     /// HSTS and optional <paramref name="rewriteDestination"/> processing run before bad-port checks and
     /// <paramref name="authorizeDestination"/> for each destination. A rewrite must return an HTTP(S) URL; a false
     /// authorization result throws <see cref="ResourceLoadException"/> with <see cref="ResourceError.NavigationDenied"/>
-    /// before credentials, cookies or transport are used for that destination. These callbacks are not script-visible
-    /// policy surfaces and do not implement CORS, CSP, referrers or response tainting.</remarks>
+    /// before credentials, cookies or transport are used for that destination. Set
+    /// <paramref name="isNavigationRequest"/> to send the bounded Upgrade-Insecure-Requests header on HTTP hops
+    /// (spec ID upgrade-insecure-requests;
+    /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>).
+    /// These callbacks are not script-visible policy surfaces and do not implement CORS, CSP, referrers or response tainting.</remarks>
     /// <param name="rewriteDestination">Optional browser-owned rewrite applied after HSTS and before security checks for
     /// the initial destination and every redirect.</param>
     public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
         Func<BrowserUrl, bool> authorizeDestination, bool includeCookies = false,
         CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, bool isNavigationRequest = false)
     {
         ArgumentNullException.ThrowIfNull(authorizeDestination);
         return await LoadAuthorizedNavigationAsync(url, (destination, _) => authorizeDestination(destination),
-            includeCookies, cancellationToken, preventHttpsDowngrade, rewriteDestination).ConfigureAwait(false);
+            includeCookies, cancellationToken, preventHttpsDowngrade, rewriteDestination, isNavigationRequest).ConfigureAwait(false);
     }
 
     /// <summary>Browser-owned authorized GET with the Fetch redirect count supplied to its destination authorizer.</summary>
@@ -107,12 +115,12 @@ public sealed class ResourceLoader : IDisposable
     public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
         Func<BrowserUrl, int, bool> authorizeDestination, bool includeCookies = false,
         CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, bool isNavigationRequest = false)
     {
         ArgumentNullException.ThrowIfNull(authorizeDestination);
         return await LoadAuthorizedNavigationAsync(url,
             (destination, redirectCount, _) => ValueTask.FromResult(authorizeDestination(destination, redirectCount)),
-            includeCookies, cancellationToken, preventHttpsDowngrade, rewriteDestination).ConfigureAwait(false);
+            includeCookies, cancellationToken, preventHttpsDowngrade, rewriteDestination, isNavigationRequest).ConfigureAwait(false);
     }
 
     /// <summary>Browser-owned authorized GET with asynchronous approval before each destination request.</summary>
@@ -124,7 +132,7 @@ public sealed class ResourceLoader : IDisposable
     public async Task<ResourceResponse> LoadAuthorizedNavigationAsync(BrowserUrl url,
         Func<BrowserUrl, int, CancellationToken, ValueTask<bool>> authorizeDestination, bool includeCookies = false,
         CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, bool isNavigationRequest = false)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
@@ -140,7 +148,7 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         return await LoadCoreAsync(url, null, null, authorizeDestination, includeCookies, preventHttpsDowngrade,
-            rewriteDestination, cancellationToken);
+            rewriteDestination, cancellationToken, isNavigationRequest);
     }
 
     /// <summary>Opt-in restricted GET: loads only HTTP(S) URLs same origin with a fixed HTTP(S) tuple request origin.</summary>
@@ -155,12 +163,16 @@ public sealed class ResourceLoader : IDisposable
     /// <paramref name="preventHttpsDowngrade"/> is true, HSTS is applied first, then an HTTP initial URL or
     /// HTTPS-to-HTTP redirect is rejected before transport. No CORS, Origin header, referrer, CSP or response
     /// tainting is implemented; this is not script-visible Fetch or a complete
-    /// browser-wide policy. Denials throw <see cref="ResourceLoadException"/> with
+    /// browser-wide policy. Set <paramref name="isNavigationRequest"/> to send the bounded
+    /// Upgrade-Insecure-Requests header on HTTP hops (spec ID upgrade-insecure-requests;
+    /// <see href="https://www.w3.org/TR/upgrade-insecure-requests/#upgrade-request">request upgrading</see>).
+    /// Denials throw <see cref="ResourceLoadException"/> with
     /// <see cref="ResourceError.SameOriginDenied"/>. As in main fetch, the
     /// <see href="https://fetch.spec.whatwg.org/#block-bad-port">bad-port check</see> precedes the origin check, so a
     /// bad-port URL or redirect target throws <see cref="ResourceError.BlockedPort"/>.</remarks>
     public async Task<ResourceResponse> LoadSameOriginAsync(BrowserUrl url, SecurityOrigin requestOrigin,
-        bool includeCookies = false, CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false)
+        bool includeCookies = false, CancellationToken cancellationToken = default, bool preventHttpsDowngrade = false,
+        bool isNavigationRequest = false)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
@@ -175,7 +187,8 @@ public sealed class ResourceLoader : IDisposable
 
         BadPortPolicy.ThrowIfBlocked(url);
         EnforceSameOrigin(url, requestOrigin);
-        return await LoadCoreAsync(url, requestOrigin, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken);
+        return await LoadCoreAsync(url, requestOrigin, null, null, includeCookies, preventHttpsDowngrade, null, cancellationToken,
+            isNavigationRequest);
     }
 
     /// <summary>Loads an HTTP(S) resource with a bounded credentialless CORS policy.</summary>
@@ -220,7 +233,8 @@ public sealed class ResourceLoader : IDisposable
     private async Task<ResourceResponse> LoadCoreAsync(BrowserUrl url, SecurityOrigin? requestOrigin,
         SecurityOrigin? corsRequestOrigin,
         Func<BrowserUrl, int, CancellationToken, ValueTask<bool>>? authorizeDestination, bool includeCookies,
-        bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken)
+        bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken cancellationToken,
+        bool isNavigationRequest = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -232,7 +246,8 @@ public sealed class ResourceLoader : IDisposable
                 "data:" => DataUrlProcessor.Load(url, options.MaxResponseBytes, deadline.Token),
                 "file:" => await LoadFileAsync(url, deadline.Token),
                 "http:" or "https:" => await LoadHttpAsync(url, requestOrigin, corsRequestOrigin,
-                    authorizeDestination, includeCookies, preventHttpsDowngrade, rewriteDestination, deadline.Token),
+                    authorizeDestination, includeCookies, preventHttpsDowngrade, rewriteDestination, deadline.Token,
+                    isNavigationRequest),
                 _ => throw new ResourceLoadException(ResourceError.UnsupportedScheme, "Unsupported resource URL scheme.")
             };
         }
@@ -269,7 +284,8 @@ public sealed class ResourceLoader : IDisposable
     private async Task<ResourceResponse> LoadHttpAsync(BrowserUrl initial, SecurityOrigin? requestOrigin,
         SecurityOrigin? corsRequestOrigin,
         Func<BrowserUrl, int, CancellationToken, ValueTask<bool>>? authorizeDestination, bool includeCookies,
-        bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token)
+        bool preventHttpsDowngrade, Func<BrowserUrl, BrowserUrl>? rewriteDestination, CancellationToken token,
+        bool isNavigationRequest)
     {
         var url = initial;
         var corsRedirectOrigin = corsRequestOrigin is null ? null : initial.Origin;
@@ -283,6 +299,11 @@ public sealed class ResourceLoader : IDisposable
             RejectCredentials(url);
             var uri = TransportUri(url);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (isNavigationRequest && url.Protocol == "http:"
+                && !request.Headers.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1"))
+            {
+                throw new InvalidOperationException("The HTTP transport rejected the Upgrade-Insecure-Requests header.");
+            }
             if (corsRequestOrigin is not null
                 && !request.Headers.TryAddWithoutValidation("Origin", corsRequestOrigin.Serialize()))
             {

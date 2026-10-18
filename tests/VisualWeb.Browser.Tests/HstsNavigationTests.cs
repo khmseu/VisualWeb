@@ -93,6 +93,37 @@ public sealed class HstsNavigationTests
     }
 
     [Fact]
+    public async Task MainDocumentHttpNavigationSignalsUpgradeSupportButStylesheetsDoNot()
+    {
+        var requests = new List<(string Url, string? UpgradeHeader)>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var url = request.RequestUri!;
+            var upgradeHeader = request.Headers.TryGetValues("Upgrade-Insecure-Requests", out var values)
+                ? Assert.Single(values)
+                : null;
+            requests.Add((url.AbsoluteUri, upgradeHeader));
+            return url.AbsolutePath == "/site.css"
+                ? new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("*{margin:0}", System.Text.Encoding.UTF8, "text/css")
+                }
+                : new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("<!doctype html><link rel=stylesheet href=/site.css><p>page</p>",
+                        System.Text.Encoding.UTF8, "text/html")
+                };
+        }));
+
+        await source.LoadAsync(BrowserUrl.Parse("http://example.test/"), Token);
+
+        Assert.Equal([
+            ("http://example.test/", "1"),
+            ("http://example.test/site.css", null)
+        ], requests);
+    }
+
+    [Fact]
     public async Task InjectedStoreIsSharedAcrossSourcesButCookiesRemainDisabled()
     {
         var store = new HstsPolicyStore();
