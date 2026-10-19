@@ -704,9 +704,10 @@ same-origin/CORS/CSP policy or production request authorization.
 
 The shared VisualWeb.PageRendering StaticPageRenderer collects connected embedded `style` blocks
 and supported linked stylesheets in document (cascade) order, taking style child text. Inline attributes also participate.
-Leading unconditional `@import` rules using a string or `url()` are expanded at
-their cascade positions, including nested imports. Conditional/layer imports,
-late imports, named stylesheet sets, non-CSS types and media other than absent,
+Leading `@import` rules using a string or `url()` are expanded at
+their cascade positions, including nested imports. Optional single media types
+`all`/`screen`/`print` are supported for imports; conditional/layer imports and
+late imports fail explicitly. Named stylesheet sets, non-CSS types and media other than absent,
 `all`, a single `screen`, or a single `print` media type fail explicitly.
 The exact `print` media type is ignored by this screen-only renderer: it neither
 fetches a linked print stylesheet nor applies an embedded print style block or

@@ -8,6 +8,12 @@ internal sealed record CssImportResult(IReadOnlyList<BrowserUrl> Imports, string
 
 internal static class CssImports
 {
+    private enum ImportApplicability
+    {
+        AppliesToScreen,
+        DoesNotApplyToScreen
+    }
+
     public static CssImportResult Parse(string css, BrowserUrl? baseUrl, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(css);
@@ -42,7 +48,13 @@ internal static class CssImports
                 throw new PageNavigationException("CSS @import requires a document or stylesheet URL.");
             }
 
-            var reference = ImportReference(rule.Prelude);
+            var (reference, applicability) = ImportReference(rule.Prelude);
+            if (applicability != ImportApplicability.AppliesToScreen)
+            {
+                ranges.Add((rule.Offset, rule.EndOffset));
+                continue;
+            }
+
             var result = BrowserUrl.ParseResult(reference, baseUrl);
             var url = result.Url ?? throw new PageNavigationException($"Invalid CSS @import URL: {result.Error}");
             if (url.Href.Length > RendererProtocol.MaxTextCharacters)
@@ -75,24 +87,51 @@ internal static class CssImports
         return new(imports.AsReadOnly(), normalized);
     }
 
-    private static string ImportReference(IReadOnlyList<CssToken> prelude)
+    private static (string Reference, ImportApplicability Applicability) ImportReference(IReadOnlyList<CssToken> prelude)
     {
         var tokens = prelude.Where(token => token.Kind != CssTokenKind.Whitespace).ToArray();
-        if (tokens.Length == 1 && tokens[0].Kind is CssTokenKind.String or CssTokenKind.Url)
+        int mediaStart;
+        string reference;
+        if (tokens.Length >= 1 && tokens[0].Kind is CssTokenKind.String or CssTokenKind.Url)
         {
-            return tokens[0].Value;
+            reference = tokens[0].Value;
+            mediaStart = 1;
         }
-        if (tokens.Length == 3 && tokens[0].Kind == CssTokenKind.Function
+        else if (tokens.Length >= 3 && tokens[0].Kind == CssTokenKind.Function
             && tokens[0].Value.Equals("url", StringComparison.OrdinalIgnoreCase)
             && tokens[1].Kind == CssTokenKind.String && tokens[2].Kind == CssTokenKind.CloseParen)
         {
-            return tokens[1].Value;
+            reference = tokens[1].Value;
+            mediaStart = 3;
         }
-        if (tokens.Length > 1 && tokens[0].Kind is CssTokenKind.String or CssTokenKind.Url
-            || tokens.Length > 3 && tokens[0].Kind == CssTokenKind.Function
+        else
+        {
+            throw new PageNavigationException("CSS @import requires a valid string or url() value.");
+        }
+
+        if (mediaStart == tokens.Length)
+        {
+            return (reference, ImportApplicability.AppliesToScreen);
+        }
+
+        if (tokens.Length == mediaStart + 1 && tokens[mediaStart].Kind == CssTokenKind.Ident)
+        {
+            var mediaType = tokens[mediaStart].Value.ToLowerInvariant();
+            if (mediaType is "all" or "screen")
+            {
+                return (reference, ImportApplicability.AppliesToScreen);
+            }
+            if (mediaType == "print")
+            {
+                return (reference, ImportApplicability.DoesNotApplyToScreen);
+            }
+        }
+
+        if (tokens[0].Kind is CssTokenKind.String or CssTokenKind.Url
+            || tokens[0].Kind == CssTokenKind.Function
                 && tokens[0].Value.Equals("url", StringComparison.OrdinalIgnoreCase))
         {
-            throw new PageNavigationException("Conditional and cascade-layer CSS @import rules are unsupported.");
+            throw new PageNavigationException("CSS @import supports only optional single media types all, screen, or print.");
         }
         throw new PageNavigationException("CSS @import requires a valid string or url() value.");
     }

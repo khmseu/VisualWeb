@@ -8,9 +8,10 @@ final response base URL and decoded CSS) validated by the shared IPC contract.
 `DiscoverStylesheets` gives the
 browser the supported classic `link rel=stylesheet` URLs (resolved against the first
 `<base href>`, with the final document URL as fallback) from the same parser options;
-recursive unconditional leading `@import` rules are discovered for embedded and
-linked sources and `CollectStyles` expands them at their cascade positions in document
-order. The exact `print` media type is ignored in this screen-only renderer; other
+leading `@import` rules are discovered for embedded and linked sources and
+`CollectStyles` expands them at their cascade positions in document order.
+Optional single media types (`all`, `screen`, `print`) are supported for imports;
+the exact `print` media type is ignored in this screen-only renderer. Other
 unsupported media queries, conditions, layers and late imports fail explicitly.
 The renderer throws for
 unsupported link semantics or sources (for example, script-changed ones) whose text

@@ -61,10 +61,11 @@ public interface IPageSource : IDisposable
 /// before the document is published. This screen-only renderer ignores sheets whose media is exactly <c>print</c>;
 /// unsupported media queries fail visibly. Each fetched sheet must be an ok text/css response (or a MIME-less file from a file document) decoded
 /// per css-syntax <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">fallback encoding</see>;
-/// unknown labels fail visibly. Unconditional leading CSS <c>@import</c> rules in embedded and fetched stylesheets are
-/// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions. Any stylesheet
-/// failure fails the whole navigation. Conditional/layer imports, <c>url()</c> resources, fonts and images are not
-/// fetched. Same-origin HTTP(S) stylesheet requests retain fixed-origin redirect checks. Cross-origin HTTP(S) sheets
+/// unknown labels fail visibly. Leading CSS <c>@import</c> rules in embedded and fetched stylesheets are
+/// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions.
+/// Optional single media types <c>all</c>/<c>screen</c> apply; <c>print</c> is ignored for this screen-only renderer;
+/// other conditional/layer forms fail visibly. Any stylesheet failure fails the whole navigation. <c>url()</c>
+/// resources, fonts and images are not fetched. Same-origin HTTP(S) stylesheet requests retain fixed-origin redirect checks. Cross-origin HTTP(S) sheets
 /// use a credentialless CORS subset (spec: fetch;
 /// <see href="https://fetch.spec.whatwg.org/#cors-check">CORS check</see>): the final response must allow the document
 /// origin or <c>*</c>, and redirects must remain same-origin with the effective initial stylesheet URL. A bounded

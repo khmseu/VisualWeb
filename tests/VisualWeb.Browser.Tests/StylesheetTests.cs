@@ -187,9 +187,9 @@ public sealed class StylesheetTests
     }
 
     [Theory]
-    [InlineData("@import 'conditional.css' screen;")]
     [InlineData("@import 'layered.css' layer(theme);")]
     [InlineData("@import 'conditional.css' supports(display: grid);")]
+    [InlineData("@import 'conditional.css' screen and (min-width: 1px);")]
     [InlineData("p{color:red}@import 'late.css';")]
     public async Task UnsupportedCssImportConditionsAndOrderingFailBeforeSubresourceRequests(string css)
     {
@@ -205,6 +205,49 @@ public sealed class StylesheetTests
 
         Assert.Contains("CSS @import", error.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Single(requests);
+    }
+
+    [Fact]
+    public async Task SingleMediaTypeCssImportsUseScreenPolicy()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Add(url);
+            return url switch
+            {
+                "https://example.test/page" => Text("""
+                    <!doctype html><style>
+                    @import 'all.css' all;
+                    @import 'screen.css' screen;
+                    @import 'print.css' print;
+                    body{margin:0}
+                    </style>
+                    """, "text/html"),
+                "https://example.test/all.css" => Text("body{background-color:red}", "text/css"),
+                "https://example.test/screen.css" => Text("body{background-color:blue}", "text/css"),
+                _ => throw new InvalidOperationException($"Unexpected stylesheet request: {url}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        var document = HtmlParser.Parse(page.Html, cancellationToken: Cancellation).Document;
+        var styles = StaticPageRenderer.CollectStyles(document, null, Cancellation, page.Url, page.Stylesheets);
+
+        Assert.Equal([
+            "https://example.test/page",
+            "https://example.test/all.css",
+            "https://example.test/screen.css"
+        ], requests);
+        Assert.Equal([
+            "https://example.test/all.css",
+            "https://example.test/screen.css"
+        ], page.Stylesheets.Select(sheet => sheet.Url));
+        var texts = styles.Select(style => style.Text).ToArray();
+        Assert.Equal("body{background-color:red}", texts[0]);
+        Assert.Equal("body{background-color:blue}", texts[1]);
+        Assert.Contains("body{margin:0}", texts[2], StringComparison.Ordinal);
     }
 
     [Fact]

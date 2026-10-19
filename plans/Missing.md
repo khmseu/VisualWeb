@@ -263,10 +263,12 @@ the browser (never the renderer) fetches supported `link rel=stylesheet` sheets
 (media absent/`all`/single `screen` type, with exact single `print` media ignored;
 type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
 with the tab loader and shared session HSTS store, cookies off, resolved against the
-first `<base href>` (falling back to the final response URL). Recursive unconditional
-leading `@import` rules using a string or `url()` are fetched from embedded and
+first `<base href>` (falling back to the final response URL). Recursive leading
+`@import` rules using a string or `url()` are fetched from embedded and
 linked sheets, with relative imports resolved against the containing sheet's final
-response URL and expanded at their cascade positions. Linked and imported sheets
+response URL and expanded at their cascade positions. Optional single import media
+types (`all`, `screen`, `print`) are supported; `print` imports are ignored by the
+screen-only renderer. Linked and imported sheets
 share a 32-unique-URL cap, 256 Ki character/1 MiB body per sheet and 1 MiB IPC
 budget. Same-origin HTTP(S) sheets are restricted to the final document origin
 across redirects. Cross-origin HTTP(S) sheets use credentialless CORS: the
