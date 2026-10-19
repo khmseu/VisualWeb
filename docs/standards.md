@@ -34,6 +34,7 @@ entry (it still uses conditional requests where possible).
 | `rfc6797`                                                                                                       | Bounded, memory-only DNS-host HSTS learning/upgrades shared within a browser shell session |
 | `http-cookies`, `dotnet-cookie-container`, `dotnet-http-handler`                                                | Basic session cookies and HTTP transport, not full browser cookie policy                   |
 | `html`, `dom`                                                                                                   | HTML parser, DOM, navigation, event loop                                                   |
+| `pointerevents4`                                                                                                | Bounded trusted link `click`/`auxclick` event naming; pointer metadata remains unsupported |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values`                                                          | CSS parsing and computed styles                                                            |
 | `css-color`, `css-sizing`, `css-backgrounds`                                                                    | Initial computed colors, dimensions and physical borders                                   |
 | `css2-visual`, `css2-sizing`                                                                                    | Initial block/inline formatting and geometry constraints                                   |

@@ -362,6 +362,16 @@
       "lastModified": "2026-10-04T09:19:03+00:00"
     },
     {
+      "id": "pointerevents4",
+      "title": "Pointer Events Level 4",
+      "url": "https://www.w3.org/TR/pointerevents4/",
+      "file": "pointerevents4.html",
+      "fetchedAt": "2026-10-19T02:44:31.4221612+00:00",
+      "checkedAt": "2026-10-19T02:44:31.4221612+00:00",
+      "eTag": null,
+      "lastModified": "2026-10-08T14:41:58+00:00"
+    },
+    {
       "id": "css-syntax",
       "title": "CSS Syntax Level 3",
       "url": "https://drafts.csswg.org/css-syntax-3/",

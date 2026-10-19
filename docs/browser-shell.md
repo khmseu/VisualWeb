@@ -809,19 +809,20 @@ Phase 11v allows lifecycle scripts to deep-clone style elements and insert
 them into the live tree; detached clones have no style effect until insertion.
 Cloned script elements remain inert and the finite initial script snapshot is
 unchanged.
-Pass 5 retains each opted-in document's renderer-local host/listeners. A
-primary-pointer link activation (press/release on the same anchor) first
-dispatches a trusted bubbling, cancelable `click` Event at that anchor in the
-local renderer or worker (IPC v42 `click`/`click-result` carry only document ID,
-link index, URL and a canceled flag), repaints the retained DOM, and follows the
-link only if not canceled. Click failures/the 1024-click per-document bound
-invalidate the host, keep the previous frame and require reload. Static mode,
-middle-click and other new-tab pointer defaults and non-link input are unchanged.
-Pass 6
-extends dispatch to focused-link Enter, Shift+Enter and Ctrl+Enter activation;
+Pass 5 retains each opted-in document's renderer-local host/listeners. Primary
+pointer activation (press/release on the same anchor) dispatches a trusted
+bubbling, cancelable `click` Event at that anchor, repaints the retained DOM and
+follows the link only if not canceled. IPC v42 introduced `click`/`click-result`;
+v43 adds a required bounded `LinkEventType` (`click` or `auxclick`) on requests.
+Only document ID, link index, destination URL, event type and a canceled flag cross
+the worker boundary. Failures and the shared 1024 link-event-per-document bound
+invalidate the host, keep the previous frame and require reload. Static mode is
+unchanged. Pass 6 extends dispatch to focused-link Enter, Shift+Enter and Ctrl+Enter;
 these remain click events (no keyboard events are synthesized), and cancellation
-suppresses the matching navigation/tab default. Pass 7 adds the same cancelable
-click dispatch before opted-in Ctrl+primary background-tab activation. See the
+suppresses the matching navigation/tab default. Pass 7 adds click dispatch before
+opted-in Ctrl+primary background-tab activation. Pass 8 adds opted-in middle-pointer
+`auxclick` before the active-new-tab default; cancellation prevents tab creation.
+Both types use plain Events without PointerEvent metadata. See the
 [scripting guide](scripting.md#focused-link-click-dispatch-pass-6).
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains

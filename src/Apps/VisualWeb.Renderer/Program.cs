@@ -56,7 +56,14 @@ try
                     if (scriptedRenderer is null || !scriptedRenderer.HasDocument(request.DocumentId))
                     { throw new PageNavigationException("Retained document was lost; reload explicitly rather than rerunning scripts."); }
                     scriptedRenderer.CommitDocument(request.DocumentId);
-                    var allowed = scriptedRenderer.DispatchLinkClick(request.DocumentId, request.LinkIndex, request.Url!, CancellationToken.None);
+                    var eventType = request.LinkEventType switch
+                    {
+                        "click" => PageLinkEventType.Click,
+                        "auxclick" => PageLinkEventType.AuxClick,
+                        _ => throw new IpcProtocolException("Invalid renderer link event type.")
+                    };
+                    var allowed = scriptedRenderer.DispatchLinkEvent(request.DocumentId, request.LinkIndex, request.Url!,
+                        eventType, CancellationToken.None);
                     channel.WriteAsync(new() { Kind = "click-result", Id = request.Id, DefaultPrevented = !allowed }).GetAwaiter().GetResult();
                 }
                 catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception))

@@ -208,19 +208,21 @@ apply, and microtasks drain at a single checkpoint after the whole dispatch
 
 PageRendering identifies the clicked link by the latest successful render's
 link index plus its expected URL; a mismatch or disconnected anchor reports an
-explicit error without dispatching or invalidating. Each document allows at
-most `StaticPageRenderer.MaxLinkClicksPerDocument` (1024) dispatches. Listener
-errors, quota/deadline failures, and the click bound invalidate the document's
-host: the browser keeps the previous frame and does not navigate, and later
-clicks/retained repaints of that document fail until explicit reload. After a
-successful dispatch the browser repaints the retained DOM (title/style changes
-appear) without script reexecution, then navigates unless canceled.
+explicit error without dispatching or invalidating. Each document allows at most `StaticPageRenderer.MaxLinkEventsPerDocument`
+(1024 combined click and auxclick events). Listener errors, quota/deadline
+failures, and the event bound invalidate the document's host: the browser keeps
+the previous frame and does not navigate, and later link-event dispatches/retained
+repaints of that document fail until explicit reload. After a successful dispatch
+the browser repaints the retained DOM (title/style changes appear) without script
+reexecution, then follows the browser-owned activation unless canceled.
 
 Hosts are disposed when a candidate is replaced or fails, the previous committed
 document is replaced by navigation promotion, and on renderer/tab disposal or
 worker exit (a worker crash loses the document; the next click reports it).
-Static mode creates no host and link activation is unchanged. Limitations: no
-MouseEvent/PointerEvent fields, `on*` handlers, middle-click activation events,
+Static mode creates no host and link activation is unchanged. Opted-in middle
+activation dispatches a trusted bubbling, cancelable plain `auxclick` Event before
+its active-new-tab default; this is a bounded hook, not PointerEvent conformance.
+Limitations: no MouseEvent/PointerEvent fields or pointer metadata, `on*` handlers,
 form/control default actions, general input dispatch or HTML event loop/task
 scheduling.
 
@@ -240,6 +242,17 @@ On opted-in pages, Ctrl+primary link activation dispatches the same retained
 trusted `click` Event before its existing forced background-tab default.
 `preventDefault()` prevents that tab from being created. No modifier fields or
 separate keyboard/pointer event are exposed; static-mode behavior is unchanged.
+
+## Middle-pointer auxclick dispatch (pass 8)
+
+On opted-in pages, middle-pointer activation dispatches a trusted bubbling,
+cancelable plain `auxclick` Event at the retained link before its active-new-tab
+default. `preventDefault()` suppresses tab creation. It follows the same renderer
+ownership, repaint, event/microtask budgets and shared 1024-event document bound
+as `click`, and is sent as a bounded event-type value over IPC v43. Pointer Events
+requires these events to be PointerEvents; this subset deliberately provides no
+PointerEvent class or pointer metadata. Static mode and existing middle-click
+activation are unchanged.
 
 ## Finite document readiness (phase 11h)
 

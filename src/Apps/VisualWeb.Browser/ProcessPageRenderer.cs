@@ -162,15 +162,25 @@ public sealed class ProcessPageRenderer : IPageRenderer
     }
     public bool DispatchesLinkClicks => executeInlineScripts;
     /// <summary>Send a data-only click request for the committed document; the worker dispatches on its owning thread.</summary>
-    /// <remarks>Like retained repaints, a sent click drains under the exchange deadline so worker DOM/listener state
+    public Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
+        DispatchLinkEventAsync(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
+    /// <summary>Send a data-only typed link event request; the worker dispatches on its owning thread.</summary>
+    /// <remarks>Like retained repaints, the request drains under the exchange deadline so worker DOM/listener state
     /// stays aligned; a deadline or communication failure terminates the worker and with it the page host.</remarks>
-    public async Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken)
+    public async Task<bool> DispatchLinkEventAsync(Guid documentId, int linkIndex, string url, PageLinkEventType eventType,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(url);
+        var linkEventType = eventType switch
+        {
+            PageLinkEventType.Click => "click",
+            PageLinkEventType.AuxClick => "auxclick",
+            _ => throw new ArgumentOutOfRangeException(nameof(eventType))
+        };
         lock (sync)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
-            if (!executeInlineScripts) { throw new PageNavigationException("Page click events require the inline-script opt-in."); }
+            if (!executeInlineScripts) { throw new PageNavigationException("Page link events require the inline-script opt-in."); }
             if (documentId == Guid.Empty || documentId != committedDocumentId)
             { throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly."); }
         }
@@ -181,6 +191,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             DocumentId = documentId,
             ExecuteInlineScripts = true,
             LinkIndex = linkIndex,
+            LinkEventType = linkEventType,
             Url = url
         };
         try { RendererProtocol.Validate(request, 0); }

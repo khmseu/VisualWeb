@@ -8,11 +8,12 @@ comes from the anchor itself or rendered descendants activate through the curren
 Tab/Shift+Tab/Enter, open in a new active tab on middle click, and open in a
 background tab on Ctrl+primary click, using renderer-owned clipped CSS rectangle
 groups. Empty inline anchors and non-text anchors without a measurable block box
-remain unsupported. On opted-in pages, focused-link Enter/Shift+Enter/Ctrl+Enter
-also dispatches the retained trusted click event before the existing navigation
-or tab-opening default; `preventDefault()` cancels it. Ctrl+primary activation
-uses the same click dispatch before opening a background tab. These paths do not
-synthesize DOM keyboard or modifier events. Keyboard traversal visits chrome
+remain unsupported. On opted-in pages, primary and middle-pointer activation
+first dispatch trusted `click` and `auxclick` Events respectively; focused-link
+Enter/Shift+Enter/Ctrl+Enter and Ctrl+primary activation dispatch trusted `click`
+events. `preventDefault()` cancels the corresponding navigation or tab-opening
+default. These are plain Events, not PointerEvents, and do not synthesize DOM
+keyboard or modifier events. Keyboard traversal visits chrome
 before visible anchors;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
 Page text selection uses bounded visible HarfBuzz clusters, with individual

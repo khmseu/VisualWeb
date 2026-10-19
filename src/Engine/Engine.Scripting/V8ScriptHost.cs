@@ -144,7 +144,16 @@ public sealed class V8ScriptHost : IDisposable
     /// Browser-owned link activation hook only: a plain Event (not MouseEvent/PointerEvent), finite event,
     /// microtask and DOM budgets under one task deadline, and a microtask checkpoint after dispatch rather than
     /// after each listener. Returns false when a listener canceled the event. Any failure invalidates the host.</remarks>
-    public bool DispatchTrustedClick(DomElement target, CancellationToken cancellationToken = default)
+    public bool DispatchTrustedClick(DomElement target, CancellationToken cancellationToken = default) =>
+        DispatchTrustedLinkEvent(target, "click", cancellationToken);
+
+    /// <summary>Dispatch one trusted, bubbling, cancelable plain <c>auxclick</c> Event at a bound-document element.</summary>
+    /// <remarks>Spec: pointerevents4; <see href="https://www.w3.org/TR/pointerevents4/#click-auxclick-and-contextmenu">click and auxclick events</see>.
+    /// This bounded hook does not implement PointerEvent or pointer metadata.</remarks>
+    public bool DispatchTrustedAuxClick(DomElement target, CancellationToken cancellationToken = default) =>
+        DispatchTrustedLinkEvent(target, "auxclick", cancellationToken);
+
+    private bool DispatchTrustedLinkEvent(DomElement target, string eventType, CancellationToken cancellationToken)
     {
         CheckUsable();
         ArgumentNullException.ThrowIfNull(target);
@@ -157,11 +166,11 @@ public sealed class V8ScriptHost : IDisposable
             {
                 using var receiver = wrapNode!.InvokeAsFunction(dom.TargetIdentity(target)) as ScriptObject
                     ?? throw new InvalidOperationException("Private DOM wrapper lookup failed.");
-                var status = events!.InvokeAsFunction("click", receiver);
+                var status = events!.InvokeAsFunction(eventType, receiver);
                 CheckEvents("checkpoint");
                 CheckMicrotasks("checkpoint");
                 if (status is not int code || code is not (0 or 3))
-                { throw new InvalidOperationException("Private click dispatch returned an invalid status."); }
+                { throw new InvalidOperationException("Private link event dispatch returned an invalid status."); }
                 return code == 0;
             }, cancellationToken);
         }

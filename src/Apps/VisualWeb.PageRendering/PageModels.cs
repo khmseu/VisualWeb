@@ -112,6 +112,11 @@ public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
     }
 }
 
+/// <summary>The finite trusted link event dispatched before a browser-owned link activation default.</summary>
+/// <remarks>Spec: pointerevents4; <see href="https://www.w3.org/TR/pointerevents4/#click-auxclick-and-contextmenu">click and auxclick events</see>.
+/// Only <c>Click</c> and <c>AuxClick</c> are supported; neither event includes pointer metadata in this subset.</remarks>
+public enum PageLinkEventType { Click, AuxClick }
+
 public interface IPageRenderer : IDisposable
 {
     Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken);
@@ -120,15 +125,21 @@ public interface IPageRenderer : IDisposable
         RenderAsync(page, viewport, cancellationToken);
     /// <summary>Pin a successfully published document; unpublished candidates cannot evict it.</summary>
     void CommitDocument(Guid documentId) { }
-    /// <summary>Whether committed documents retain an opted-in script host that receives trusted link clicks.</summary>
+    /// <summary>Whether committed documents retain an opted-in script host that receives trusted link events.</summary>
     bool DispatchesLinkClicks => false;
-    /// <summary>Dispatch a trusted, bubbling, cancelable <c>click</c> Event at a committed document's rendered link anchor.</summary>
-    /// <remarks>Specs: dom, html;
+    /// <summary>Dispatch a trusted, bubbling, cancelable click or auxclick Event at a committed rendered link anchor.</summary>
+    /// <remarks>Specs: dom, pointerevents4;
     /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
-    /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
+    /// <see href="https://www.w3.org/TR/pointerevents4/#click-auxclick-and-contextmenu">click and auxclick</see>.
     /// Data only: the link is identified by its rendered index and destination; no DOM or V8 object crosses the
-    /// boundary. Completes with false when a listener canceled the event, suppressing browser-owned activation.</remarks>
+    /// boundary. Completes with false when a listener canceled the event, suppressing browser-owned activation.
+    /// Both are plain Event objects, not the PointerEvent required by the full specification.</remarks>
     Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("This renderer does not dispatch page click events.");
+        DispatchLinkEventAsync(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
+    /// <summary>Dispatch one of the bounded trusted link event types into a committed retained document.</summary>
+    /// <remarks>Spec: pointerevents4; <see href="https://www.w3.org/TR/pointerevents4/#click-auxclick-and-contextmenu">click and auxclick</see>.</remarks>
+    Task<bool> DispatchLinkEventAsync(Guid documentId, int linkIndex, string url, PageLinkEventType eventType,
+        CancellationToken cancellationToken) =>
+        throw new NotSupportedException("This renderer does not dispatch page link events.");
     string? TakeFailure() => null;
 }
