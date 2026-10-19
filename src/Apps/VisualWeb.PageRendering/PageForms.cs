@@ -24,7 +24,8 @@ internal static class PageForms
     [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the bounded form-subset collector; its ordered checks preserve visible unsupported-semantics diagnostics and shared quotas.")]
     [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form-control and attribute literals document the supported subset at the collection boundary.")]
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
-        BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry, int linkCount,
+        BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry,
+        IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> labelGeometry, int linkCount,
         double width, double height, CancellationToken cancellationToken, BrowserUrl? baseUrlOverride = null)
     {
         var formIndex = new Dictionary<DomElement, int>();
@@ -33,6 +34,7 @@ internal static class PageForms
         var targets = new List<(bool OpenInNewTab, string? TargetName, string? Error)>();
         var noValidate = new List<bool>();
         var controls = new List<PageFormControl>();
+        var controlIndexes = new Dictionary<DomElement, int>();
         var elements = document.Descendants().OfType<DomElement>().ToList();
         var baseTarget = BaseTarget(elements, cancellationToken);
         var baseUrl = baseUrlOverride ?? BaseUrl(elements, url, cancellationToken);
@@ -185,6 +187,7 @@ internal static class PageForms
                 submitterActionError, submitterTarget, submitterTargetName, submitterTargetError,
                 textareaWrapColumns, textareaWrapHard, selectRows) with
             { Dirname = dirname });
+            controlIndexes.Add(element, controls.Count - 1);
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {
                 for (var previous = controls.Count - 2; previous >= 0; previous--)
@@ -194,6 +197,22 @@ internal static class PageForms
                     { controls[previous] = controls[previous] with { Checked = false }; }
                 }
             }
+        }
+        var labelRectCount = 0;
+        foreach (var labelElement in elements)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (labelElement.LocalName != "label" || !labelGeometry.TryGetValue(labelElement, out var labelRects)) { continue; }
+            var target = AssociatedLabelControl(labelElement, firstElementById);
+            if (target is null || !controlIndexes.TryGetValue(target, out var targetIndex)) { continue; }
+            var control = controls[targetIndex];
+            if (control.Disabled || control.Kind is "hidden" or "inert" || control.Rect is null) { continue; }
+            var mergedRects = control.LabelRects.Concat(labelRects).ToArray();
+            if (mergedRects.Length > RendererProtocol.MaxFormLabelRectsPerControl
+                || (long)labelRectCount + labelRects.Count > RendererProtocol.MaxFormLabelRects)
+            { throw new PageNavigationException("Renderer associated-label rectangle count limit exceeded."); }
+            labelRectCount += labelRects.Count;
+            controls[targetIndex] = control with { LabelRects = mergedRects };
         }
         var forms = actions.Select((action, i) => new PageForm(errors[i] is null ? action : "", errors[i])
         {
@@ -212,6 +231,23 @@ internal static class PageForms
             if (index >= 0) { errors[index] ??= $"Unsupported form semantics: {what}."; }
         }
     }
+
+    private static DomElement? AssociatedLabelControl(DomElement label, IReadOnlyDictionary<string, DomElement> firstElementById)
+    {
+        if (label.GetAttribute("for") is { } id)
+        {
+            return firstElementById.TryGetValue(id, out var explicitTarget) && IsLabelable(explicitTarget)
+                ? explicitTarget : null;
+        }
+        return label.Descendants().OfType<DomElement>().FirstOrDefault(IsLabelable);
+    }
+
+    private static bool IsLabelable(DomElement element) => element.LocalName switch
+    {
+        "button" or "meter" or "output" or "progress" or "select" or "textarea" => true,
+        "input" => DomFormControls.InputType(element) != "hidden",
+        _ => false,
+    };
 
     private static (PageFormOption[] Options, int SelectedOption, bool Multiple, int SelectRows) SelectState(
         DomElement element, string kind, ref int optionCount)

@@ -48,7 +48,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(43, RendererProtocol.Version);
+        Assert.Equal(44, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 41 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 40 }, 0));
@@ -138,6 +140,35 @@ public sealed class ProtocolTests
     public void EmailAddressListValidationMatchesMultipleMode(string value, bool multiple, bool valid)
     {
         Assert.Equal(valid, FormEmail.IsValid(value, multiple));
+    }
+
+    [Fact]
+    public void AssociatedLabelMetadataIsRequiredAndValidatedOnTheWire()
+    {
+        var json = JsonNode.Parse(JsonSerializer.Serialize(FormFrame.FormControls![0]))!.AsObject();
+        Assert.True(json.ContainsKey(nameof(PageFormControl.LabelRects)));
+        json.Remove(nameof(PageFormControl.LabelRects));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(json.ToJsonString()));
+
+        var frame = FormFrame with
+        {
+            FormControls = [FormFrame.FormControls[0] with { LabelRects = [new(0, 0, 1, 1)] }]
+        };
+        RendererProtocol.Validate(frame, 16);
+        var roundTrip = JsonSerializer.Deserialize<RendererMessage>(JsonSerializer.Serialize(frame))!;
+        RendererProtocol.Validate(roundTrip, 16);
+        Assert.Equal(new PageLinkRect(0, 0, 1, 1), Assert.Single(roundTrip.FormControls![0].LabelRects));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        {
+            FormControls = [frame.FormControls![0] with { LabelRects = [new(1, 1, 2, 2)] }]
+        }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        {
+            FormControls = [frame.FormControls![0] with
+            {
+                LabelRects = Enumerable.Repeat(new PageLinkRect(0, 0, 1, 1), RendererProtocol.MaxFormLabelRectsPerControl + 1).ToArray()
+            }]
+        }, 16));
     }
 
     [Fact]
@@ -393,8 +424,8 @@ public sealed class ProtocolTests
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", TextTargets = [] }, 0));
         var json = JsonSerializer.Serialize(FormFrame);
         var parsed = JsonSerializer.Deserialize<RendererMessage>(json)!;
-        Assert.Equal(FormFrame.FormControls!.Select(control => control with { Options = Array.Empty<PageFormOption>() }),
-            parsed.FormControls!.Select(control => control with { Options = Array.Empty<PageFormOption>() }));
+        Assert.Equal(FormFrame.FormControls!.Select(control => control with { Options = Array.Empty<PageFormOption>(), LabelRects = Array.Empty<PageLinkRect>() }),
+            parsed.FormControls!.Select(control => control with { Options = Array.Empty<PageFormOption>(), LabelRects = Array.Empty<PageLinkRect>() }));
         Assert.Equal(FormFrame.FormControls!.SelectMany(control => control.Options),
             parsed.FormControls!.SelectMany(control => control.Options));
         Assert.Equal(FormFrame.Forms!, parsed.Forms!);
@@ -789,7 +820,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(43, RendererProtocol.Version);
+        Assert.Equal(44, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

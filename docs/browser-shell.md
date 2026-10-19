@@ -513,7 +513,11 @@ Supported controls with a `form` attribute use the first element in tree order
 with the exact matching `id` when that element is a `<form>`; otherwise they
 have no owner and do not fall back to an ancestor. Controls without `form` use
 their nearest ancestor form. Associated controls are submitted in document
-tree order, including controls before or outside the form element. A fieldset's `form=` owner does not transfer its descendant controls; each control keeps its own owner. Descendants
+tree order, including controls before or outside the form element. Visible,
+enabled supported controls can also be focused or activated through visible text
+in an explicit `<label for>` or the first supported labelable descendant of an implicit label. Nested interactive descendants remain independently clickable;
+label activation emits no DOM form events. Label hit regions are bounded to 64
+rectangles per control and 4096 per frame. A fieldset's `form=` owner does not transfer its descendant controls; each control keeps its own owner. Descendants
 of disabled fieldsets are disabled except controls inside each fieldset's first
 `legend` child; the inherited state prevents focus, validation and successful
 submission, and nested fieldsets apply independently.

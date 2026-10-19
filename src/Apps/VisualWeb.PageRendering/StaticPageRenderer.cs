@@ -175,9 +175,9 @@ public sealed class StaticPageRenderer : IPageRenderer
             state.Source.Stylesheets, state.Source.BaseUrl);
         var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
             viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
-        var (links, anchors, controlGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
+        var (links, anchors, controlGeometry, labelGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
             Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken, page.BaseUrl);
-        var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, links.Count,
+        var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, labelGeometry, links.Count,
             rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
@@ -208,6 +208,7 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     private static (IReadOnlyList<PageLinkTarget> Links, IReadOnlyList<DomElement> Anchors,
         IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
+        IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> Labels,
         IReadOnlyList<PageTextTarget> TextTargets)
         CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY,
             CancellationToken cancellationToken, BrowserUrl? baseUrlOverride)
@@ -216,6 +217,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         var baseUrl = baseUrlOverride ?? FindBaseUrl(document, url, cancellationToken);
         var linkData = new List<LinkTargetData>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
+        var labelRectangles = new Dictionary<DomElement, List<PageLinkRect>>();
+        var labelRectCount = 0;
         var anchors = new Dictionary<DomElement, LinkTargetData>();
         var anchorOrder = new List<DomElement>();
         var textTargets = new List<PageTextTarget>();
@@ -231,7 +234,9 @@ public sealed class StaticPageRenderer : IPageRenderer
             RendererProtocol.ValidateTextTargets(textTargets, layout.ViewportWidth, layout.ViewportHeight);
         }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
-        return (links.AsReadOnly(), anchorOrder.AsReadOnly(), controls, textTargets.AsReadOnly());
+        return (links.AsReadOnly(), anchorOrder.AsReadOnly(), controls,
+            labelRectangles.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<PageLinkRect>)pair.Value.ToArray()),
+            textTargets.AsReadOnly());
 
         LinkTargetData GetLinkTarget(DomElement anchor, string href, double documentY)
         {
@@ -260,6 +265,33 @@ public sealed class StaticPageRenderer : IPageRenderer
             if (target.Rects.Count >= RendererProtocol.MaxLinkRects)
             { throw new PageNavigationException("Renderer per-anchor rectangle limit exceeded."); }
             target.Rects.Add(rect);
+        }
+
+        void AddLabelRectangle(DomElement label, PageLinkRect rect)
+        {
+            if (!labelRectangles.TryGetValue(label, out var rects))
+            {
+                if (labelRectangles.Count >= RendererProtocol.MaxFormLabelTargets)
+                { throw new PageNavigationException("Renderer associated-label target count limit exceeded."); }
+                rects = [];
+                labelRectangles.Add(label, rects);
+            }
+            if (rects.Count > 0)
+            {
+                var previous = rects[^1];
+                if (Math.Abs(previous.Y - rect.Y) <= 0.5 && Math.Abs(previous.Height - rect.Height) <= 0.5
+                    && rect.X <= previous.X + previous.Width + 0.5 && rect.X + rect.Width >= previous.X - 0.5)
+                {
+                    var left = Math.Min(previous.X, rect.X);
+                    var right = Math.Max(previous.X + previous.Width, rect.X + rect.Width);
+                    rects[^1] = new(left, previous.Y, right - left, previous.Height);
+                    return;
+                }
+            }
+            if (rects.Count >= RendererProtocol.MaxFormLabelRectsPerControl
+                || ++labelRectCount > RendererProtocol.MaxFormLabelRects)
+            { throw new PageNavigationException("Renderer associated-label rectangle count limit exceeded."); }
+            rects.Add(rect);
         }
 
         void SetBlockRectangle(LinkTargetData target, PageLinkRect rect, double documentY)
@@ -339,6 +371,17 @@ public sealed class StaticPageRenderer : IPageRenderer
             return null;
         }
 
+        static DomElement? FindLabel(DomNode? node)
+        {
+            for (; node is not null; node = node.ParentNode)
+            {
+                if (node is not DomElement { NamespaceUri: DomElement.HtmlNamespace } element) { continue; }
+                if (element.LocalName == "label") { return element; }
+                if (element.LocalName is "a" or "button" or "input" or "select" or "textarea") { return null; }
+            }
+            return null;
+        }
+
         void Visit(LayoutBox box)
         {
             foreach (var item in box.Flow)
@@ -404,6 +447,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                         if (right <= left || bottom <= top) { continue; }
                         var rect = new PageLinkRect(left, top, right - left, bottom - top);
                         AddTextTargets(fragment.Run, fragment.X, top, bottom);
+                        if (FindLabel(fragment.Source.ParentNode) is { } label) { AddLabelRectangle(label, rect); }
                         if (target is null) { continue; }
                         AddLinkRectangle(target, rect);
                         lineAnchors[anchor!] = lineAnchors.TryGetValue(anchor!, out var firstX) ? Math.Min(firstX, fragment.X) : fragment.X;
