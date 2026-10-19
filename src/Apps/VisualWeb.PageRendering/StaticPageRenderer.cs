@@ -611,6 +611,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             cancellationToken.ThrowIfCancellationRequested();
             if (element.LocalName != "style") { continue; }
             var css = InlineCss(element);
+            if (!LinkedStylesheets.AppliesToScreen(element.GetAttribute("media"))) { continue; }
             imports.AddRange(CssImports.Parse(css, baseUrl, cancellationToken).Imports.Select(url => url.Href));
         }
         return imports.AsReadOnly();
@@ -715,7 +716,9 @@ public sealed class StaticPageRenderer : IPageRenderer
                 continue;
             }
             if (element.LocalName != "style") { continue; }
-            Expand(InlineCss(element), baseUrl, "Embedded", []);
+            var inlineCss = InlineCss(element);
+            if (!LinkedStylesheets.AppliesToScreen(element.GetAttribute("media"))) { continue; }
+            Expand(inlineCss, baseUrl, "Embedded", []);
         }
         return sources.AsReadOnly();
 
@@ -754,7 +757,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         if (!LinkedStylesheets.SupportsMedia(element.GetAttribute("media")))
         {
-            throw new PageNavigationException("Embedded stylesheet media must be absent, 'all', or the single 'screen' media type.");
+            throw new PageNavigationException("Embedded stylesheet media must be absent, 'all', the single 'screen' media type, or the single 'print' media type.");
         }
         if (element.GetAttribute("title") is { Length: > 0 })
         {

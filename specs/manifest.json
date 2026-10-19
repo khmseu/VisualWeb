@@ -382,6 +382,16 @@
       "lastModified": "2026-10-02T23:14:53+00:00"
     },
     {
+      "id": "css-mediaqueries-5",
+      "title": "CSS Media Queries Level 5",
+      "url": "https://www.w3.org/TR/mediaqueries-5/",
+      "file": "css-mediaqueries-5.html",
+      "fetchedAt": "2026-10-19T05:14:47.0723566+00:00",
+      "checkedAt": "2026-10-19T05:14:47.0723566+00:00",
+      "eTag": null,
+      "lastModified": "2026-02-17T19:43:05+00:00"
+    },
+    {
       "id": "css-cascade",
       "title": "CSS Cascading and Inheritance Level 5",
       "url": "https://drafts.csswg.org/css-cascade-5/",

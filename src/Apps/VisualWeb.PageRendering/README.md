@@ -10,7 +10,9 @@ browser the supported classic `link rel=stylesheet` URLs (resolved against the f
 `<base href>`, with the final document URL as fallback) from the same parser options;
 recursive unconditional leading `@import` rules are discovered for embedded and
 linked sources and `CollectStyles` expands them at their cascade positions in document
-order. Conditions, layers and late imports fail explicitly. The renderer throws for
+order. The exact `print` media type is ignored in this screen-only renderer; other
+unsupported media queries, conditions, layers and late imports fail explicitly.
+The renderer throws for
 unsupported link semantics or sources (for example, script-changed ones) whose text
 was not provided.
 Phase 11d adds explicit `executeInlineScripts: true` post-parse inline classics

@@ -37,6 +37,7 @@ entry (it still uses conditional requests where possible).
 | `pointerevents4`                                                                                                | Bounded trusted link `click`/`auxclick` event naming; pointer metadata remains unsupported |
 | `css-syntax`, `selectors`, `css-cascade`, `css-values`                                                          | CSS parsing and computed styles                                                            |
 | `css-color`, `css-sizing`, `css-backgrounds`                                                                    | Initial computed colors, dimensions and physical borders                                   |
+| `css-mediaqueries-5`                                                                                            | Exact `print` media-type exclusion in the screen-only linked stylesheet subset             |
 | `css2-visual`, `css2-sizing`                                                                                    | Initial block/inline formatting and geometry constraints                                   |
 | `harfbuzz-shaping`, `harfbuzz-font`                                                                             | Native shaping and font APIs                                                               |
 | `css2-paint`, `skia-canvas`                                                                                     | Normal-flow display order and native CPU canvas API                                        |

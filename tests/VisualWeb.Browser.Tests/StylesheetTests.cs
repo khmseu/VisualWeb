@@ -415,6 +415,53 @@ public sealed class StylesheetTests
     }
 
     [Fact]
+    public async Task PrintOnlyStylesheetsAreIgnoredWithoutFetchingThemOrTheirImports()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Add(url);
+            return url switch
+            {
+                "https://example.test/page" => Text("""
+                    <!doctype html><style media=" PRINT ">@import 'print-import.css';body{color:red}</style>
+                    <link rel=stylesheet media=" print " href=print.css>
+                    <link rel=stylesheet media=" SCREEN " href=screen.css>
+                    """, "text/html"),
+                "https://example.test/screen.css" => Text("body{color:blue}", "text/css"),
+                _ => throw new InvalidOperationException($"Unexpected stylesheet request: {url}")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        var document = HtmlParser.Parse(page.Html, cancellationToken: Cancellation).Document;
+
+        Assert.Equal(["https://example.test/page", "https://example.test/screen.css"], requests);
+        Assert.Equal(["https://example.test/screen.css"], StaticPageRenderer.DiscoverStylesheets(document,
+            page.Url, Cancellation));
+        Assert.Empty(StaticPageRenderer.DiscoverInlineStylesheetImports(page.Html, page.Url, Cancellation));
+        Assert.Equal(["body{color:blue}"], StaticPageRenderer.CollectStyles(document, null,
+            Cancellation, page.Url, page.Stylesheets).Select(style => style.Text));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LocalAndProcessRenderersIgnorePrintOnlyStyles(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+
+        var pixel = await Pixel(renderer,
+            "<style media=' PRINT '>@import 'print.css';body{margin:0;background-color:red}</style>"
+            + "<link rel=stylesheet media=print href=print.css>");
+
+        Assert.Equal([255, 255, 255, 255], pixel);
+    }
+
+    [Fact]
     public void InlineAndLinkedSourcesKeepDocumentOrder()
     {
         var document = HtmlParser.Parse("""
@@ -502,7 +549,6 @@ public sealed class StylesheetTests
     [InlineData("<link rel='alternate stylesheet' title=x href=s.css>")]
     [InlineData("<link rel=stylesheet title=named href=s.css>")]
     [InlineData("<link rel=stylesheet disabled href=s.css>")]
-    [InlineData("<link rel=stylesheet media=print href=s.css>")]
     [InlineData("<link rel=stylesheet media='screen and (min-width: 1px)' href=s.css>")]
     [InlineData("<link rel=stylesheet media='' href=s.css>")]
     [InlineData("<link rel=stylesheet type=text/plain href=s.css>")]

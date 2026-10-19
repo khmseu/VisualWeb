@@ -707,7 +707,10 @@ and supported linked stylesheets in document (cascade) order, taking style child
 Leading unconditional `@import` rules using a string or `url()` are expanded at
 their cascade positions, including nested imports. Conditional/layer imports,
 late imports, named stylesheet sets, non-CSS types and media other than absent,
-`all` or a single `screen` media type fail explicitly.
+`all`, a single `screen`, or a single `print` media type fail explicitly.
+The exact `print` media type is ignored by this screen-only renderer: it neither
+fetches a linked print stylesheet nor applies an embedded print style block or
+its imports. Compound media queries remain unsupported and fail visibly.
 
 Bounded linked and imported stylesheets are brokered by the browser, never by renderers.
 `GetPageSource` parses the decoded document with the renderer's exact parser

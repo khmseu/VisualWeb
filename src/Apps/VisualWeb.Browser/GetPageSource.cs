@@ -55,10 +55,11 @@ public interface IPageSource : IDisposable
 /// <see href="https://encoding.spec.whatwg.org/#decode">BOM-first decode</see>; html,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#encoding-sniffing-algorithm">encoding sniffing</see> subset
 /// via <see cref="HtmlEncodingSniffer"/>. Unlike the spec, an unknown Content-Type charset fails visibly unless a BOM decides.
-/// Supported classic <c>link rel=stylesheet</c> subresources (spec: html;
+/// Supported classic <c>link rel=stylesheet</c> subresources (specs: html, css-mediaqueries-5;
 /// <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type "stylesheet"</see>) are
 /// discovered from the pre-script parse and fetched here with the same tab loader and session HSTS store, without cookies,
-/// before the document is published. Each must be an ok text/css response (or a MIME-less file from a file document) decoded
+/// before the document is published. This screen-only renderer ignores sheets whose media is exactly <c>print</c>;
+/// unsupported media queries fail visibly. Each fetched sheet must be an ok text/css response (or a MIME-less file from a file document) decoded
 /// per css-syntax <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">fallback encoding</see>;
 /// unknown labels fail visibly. Unconditional leading CSS <c>@import</c> rules in embedded and fetched stylesheets are
 /// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions. Any stylesheet

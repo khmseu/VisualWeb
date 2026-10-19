@@ -260,7 +260,8 @@ Evidence: `page limitations`, `input dispatch`, and `history implementation`.
 
 Besides the main HTML resource, bounded classic linked stylesheets and CSS imports are loaded:
 the browser (never the renderer) fetches supported `link rel=stylesheet` sheets
-(media absent/`all`/single `screen` type, type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
+(media absent/`all`/single `screen` type, with exact single `print` media ignored;
+type absent/`text/css`, no title/alternate/disabled/CORS/integrity)
 with the tab loader and shared session HSTS store, cookies off, resolved against the
 first `<base href>` (falling back to the final response URL). Recursive unconditional
 leading `@import` rules using a string or `url()` are fetched from embedded and
@@ -275,7 +276,8 @@ This intentionally narrow policy is not full Fetch CORS. Any stylesheet failure
 fails the navigation. Missing pieces include:
 
 - Conditional/layer/late CSS imports, `url()` resources, external scripts, images,
-  fonts, media, and frame resources; media-conditional/alternate/titled linked sheets,
+  fonts, media, and frame resources; media queries beyond the exact supported
+  screen/all/print handling, alternate/titled linked sheets,
   full CORS/SOP and
   general mixed-content policy for subresources. CSP `upgrade-insecure-requests`
   upgrades brokered linked/imported stylesheet requests and redirects; shell

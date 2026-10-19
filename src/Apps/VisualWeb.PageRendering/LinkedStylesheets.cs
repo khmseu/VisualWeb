@@ -7,9 +7,11 @@ namespace VisualWeb.PageRendering;
 /// <summary>Shared browser/renderer policy for the supported classic <c>link rel=stylesheet</c> subset.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet">link type
 /// "stylesheet"</see> and <see href="https://html.spec.whatwg.org/multipage/semantics.html#the-link-element">the link
-/// element</see>. Only persistent text/css sheets matching <c>all</c> or the single <c>screen</c> media type are
-/// supported: alternate/titled/disabled sheets, other media queries, other types, CORS (<c>crossorigin</c>), integrity,
-/// referrer policy and the obsolete
+/// element</see>, and css-mediaqueries-5;
+/// <see href="https://www.w3.org/TR/mediaqueries-5/#media-types">media types</see>. Only persistent text/css sheets
+/// matching <c>all</c> or the single <c>screen</c> media type are collected. The exact <c>print</c> media type is
+/// recognized as non-applicable to this screen-only renderer and ignored. Alternate/titled/disabled sheets, other
+/// media queries, other types, CORS (<c>crossorigin</c>), integrity, referrer policy and the obsolete
 /// <c>charset</c> attribute throw instead of being ignored. Links without a nonempty href create no resource, as in
 /// the spec. URLs resolve against the document base URL, falling back to the final response URL.</remarks>
 internal static class LinkedStylesheets
@@ -67,6 +69,11 @@ internal static class LinkedStylesheets
 
     public static bool SupportsMedia(string? media) => media is null
         || media.Trim(AsciiWhitespace).Equals("all", StringComparison.OrdinalIgnoreCase)
+        || media.Trim(AsciiWhitespace).Equals("screen", StringComparison.OrdinalIgnoreCase)
+        || media.Trim(AsciiWhitespace).Equals("print", StringComparison.OrdinalIgnoreCase);
+
+    public static bool AppliesToScreen(string? media) => media is null
+        || media.Trim(AsciiWhitespace).Equals("all", StringComparison.OrdinalIgnoreCase)
         || media.Trim(AsciiWhitespace).Equals("screen", StringComparison.OrdinalIgnoreCase);
 
     public static string StripCharsetRule(string css)
@@ -90,9 +97,10 @@ internal static class LinkedStylesheets
         if (UnsupportedAttributes.FirstOrDefault(name => element.GetAttribute(name) is not null) is { } unsupported)
         { throw new PageNavigationException($"Linked stylesheet attribute '{unsupported}' is unsupported."); }
         if (!SupportsMedia(element.GetAttribute("media")))
-        { throw new PageNavigationException("Linked stylesheet media must be absent, 'all', or the single 'screen' media type."); }
+        { throw new PageNavigationException("Linked stylesheet media must be absent, 'all', the single 'screen' media type, or the single 'print' media type."); }
         if (element.GetAttribute("type") is { Length: > 0 } type && !type.Equals("text/css", StringComparison.OrdinalIgnoreCase))
         { throw new PageNavigationException("Linked stylesheet types other than text/css are unsupported."); }
+        if (!AppliesToScreen(element.GetAttribute("media"))) { return null; }
         if (element.GetAttribute("href") is not { Length: > 0 } href) { return null; }
         if (documentUrl is null) { throw new PageNavigationException("Linked stylesheets require the document URL."); }
         if (href.Length > RendererProtocol.MaxTextCharacters) { throw new PageNavigationException("Linked stylesheet URL limit exceeded."); }
