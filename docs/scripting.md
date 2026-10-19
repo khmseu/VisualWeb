@@ -220,9 +220,9 @@ Hosts are disposed when a candidate is replaced or fails, the previous committed
 document is replaced by navigation promotion, and on renderer/tab disposal or
 worker exit (a worker crash loses the document; the next click reports it).
 Static mode creates no host and link activation is unchanged. Limitations: no
-MouseEvent/PointerEvent fields, `on*` handlers, middle-click or modified-pointer
-activation events, form/control default actions, general input dispatch or HTML
-event loop/task scheduling.
+MouseEvent/PointerEvent fields, `on*` handlers, middle-click activation events,
+form/control default actions, general input dispatch or HTML event loop/task
+scheduling.
 
 ## Focused-link click dispatch (pass 6)
 
@@ -233,6 +233,13 @@ activation. The event is still a click (no keyboard event is synthesized), and
 background-new-tab default action. Existing target handling and the click,
 listener, DOM and deadline bounds remain in force; static-mode behavior is
 unchanged.
+
+## Ctrl-primary link dispatch (pass 7)
+
+On opted-in pages, Ctrl+primary link activation dispatches the same retained
+trusted `click` Event before its existing forced background-tab default.
+`preventDefault()` prevents that tab from being created. No modifier fields or
+separate keyboard/pointer event are exposed; static-mode behavior is unchanged.
 
 ## Finite document readiness (phase 11h)
 

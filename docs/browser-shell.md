@@ -816,10 +816,12 @@ local renderer or worker (IPC v42 `click`/`click-result` carry only document ID,
 link index, URL and a canceled flag), repaints the retained DOM, and follows the
 link only if not canceled. Click failures/the 1024-click per-document bound
 invalidate the host, keep the previous frame and require reload. Static mode,
-new-tab/modifier pointer activation and non-link input are unchanged. Pass 6
+middle-click and other new-tab pointer defaults and non-link input are unchanged.
+Pass 6
 extends dispatch to focused-link Enter, Shift+Enter and Ctrl+Enter activation;
 these remain click events (no keyboard events are synthesized), and cancellation
-suppresses the matching navigation/tab default. See the
+suppresses the matching navigation/tab default. Pass 7 adds the same cancelable
+click dispatch before opted-in Ctrl+primary background-tab activation. See the
 [scripting guide](scripting.md#focused-link-click-dispatch-pass-6).
 Engine.Content's new RenderParsed entry point keeps this collection policy
 outside the engine pipeline and avoids parsing twice. GET/MIME/decoding remains

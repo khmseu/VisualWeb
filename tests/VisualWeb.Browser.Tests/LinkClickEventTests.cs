@@ -125,6 +125,46 @@ public sealed class LinkClickEventTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
+    public void CtrlPrimaryLinkActivationDispatchesCancelableClickBeforeBackgroundTab(bool process, bool cancelDefault)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => Renderer(process, true));
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        controller.Navigate(tab.Id, "https://example.com/start");
+        source.Requests[0].Completion.SetResult(Document($$"""
+            <!doctype html><title>Start</title><style>*{margin:0}</style>
+            <a href="/next">go</a>
+            <script>document.addEventListener('click',e=>{document.title='Clicked';if({{(cancelDefault ? "true" : "false")}})e.preventDefault()})</script>
+            """));
+        PumpUntil(controller, () => !tab.IsLoading && controller.Page(tab.Id) is not null);
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, Viewport,
+            forceNewTab: true, activateNewTab: false, dispatchClickEvent: true));
+
+        if (cancelDefault)
+        {
+            PumpUntil(controller, () => tab.Title == "Clicked");
+            Assert.Single(source.Requests);
+            Assert.Single(window.Tabs);
+        }
+        else
+        {
+            PumpUntil(controller, () => source.Requests.Count == 2);
+            var background = Assert.Single(window.Tabs, candidate => candidate.Id != tab.Id);
+            Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+            Assert.True(background.IsLoading);
+        }
+        Assert.Equal(tab.Id, window.ActiveTabId);
+        Assert.Null(tab.Error);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void StaticModeAndNonPrimaryActivationKeepImmediateNavigation(bool process, bool scripts)
     {
         var source = new ControllerTests.Source();

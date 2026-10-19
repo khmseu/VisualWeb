@@ -78,8 +78,9 @@ broader page interaction is still missing:
   Primary non-link/control/non-text page clicks now clear focused page targets.
   On explicitly opted-in pages, focused-link Enter, Shift+Enter and Ctrl+Enter
   also dispatch the retained trusted click event before their existing current,
-  active-new-tab or background-new-tab default action; `preventDefault()` cancels
-  that action. Static mode and unmodified page keyboard events remain unchanged.
+  active-new-tab or background-new-tab default action; Ctrl+primary pointer
+  activation dispatches it before opening the background tab. `preventDefault()`
+  cancels those defaults. Static mode and unmodified page keyboard events remain unchanged.
   General hit-testing, DOM focus/keyboard events and other page input remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
@@ -228,13 +229,14 @@ broader page interaction is still missing:
   Horizontal/nested scrolling and general CSS overflow remain missing.
 - The shell does not dispatch general pointer/keyboard input to pages or synthesize
   page focus. It implements only the documented bounded link, form, and control
-  interactions. The one exception (pass 5): for `--enable-inline-scripts` pages, a
-  primary-pointer link click dispatches a trusted bubbling, cancelable plain `click`
-  Event at the anchor in the retained renderer-local host before browser-owned link
-  activation, and `preventDefault()` suppresses that navigation (dom: event dispatch;
-  html: links created by a and area elements). MouseEvent/PointerEvent, keyboard and
-  modifier/new-tab activation events, form/control default actions and all other
-  DOM event delivery for ordinary shell input remain unavailable to scripts.
+  interactions. For `--enable-inline-scripts` pages, primary-pointer, Ctrl+primary
+  and focused-link keyboard activation dispatch a trusted bubbling, cancelable
+  plain `click` Event at the anchor in the retained renderer-local host before
+  browser-owned link activation. `preventDefault()` suppresses the corresponding
+  navigation/tab default (dom: event dispatch; html: links created by a and area
+  elements). No MouseEvent/PointerEvent fields, modifier or keyboard events,
+  middle-click/auxclick, form/control default actions or other DOM event delivery
+  for ordinary shell input are exposed to scripts.
 - No downloads, persistent browser sessions, or complete history behavior. History
   stores URLs, per-entry scroll positions and internal same-document grouping:
   Back/Forward between user-created fragment entries retains the active document

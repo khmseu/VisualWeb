@@ -1729,7 +1729,7 @@ public sealed class BrowserController : IDisposable
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
-            if (dispatchClickEvent && !forceNewTab && owner.Renderer.DispatchesLinkClicks && owner.Document is { } clicked)
+            if (dispatchClickEvent && owner.Renderer.DispatchesLinkClicks && owner.Document is { } clicked)
             { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab, forceNewTab); }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
                 activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);

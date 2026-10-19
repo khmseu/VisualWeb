@@ -401,7 +401,7 @@ public sealed class DevelopmentShell : IDisposable
                 Controller.FocusPage(modifiedLinkTab.Id);
                 Controller.ClearSelectedText(modifiedLinkTab.Id);
                 Controller.ActivateLink(modifiedLinkTab.Id, pointer.X, pointer.Y - ShellChrome.Height,
-                    modifiedLinkViewport, forceNewTab: true, activateNewTab: false);
+                    modifiedLinkViewport, forceNewTab: true, activateNewTab: false, dispatchClickEvent: true);
             }
             return;
         }
