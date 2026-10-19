@@ -9,6 +9,10 @@ using Xunit;
 
 namespace VisualWeb.Browser.Tests;
 
+[CollectionDefinition(nameof(RendererProcessCollection), DisableParallelization = true)]
+public sealed class RendererProcessCollection;
+
+[Collection(nameof(RendererProcessCollection))]
 public sealed class ProcessTests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -223,6 +227,7 @@ public sealed class ProcessTests
         await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
         var oldPid = renderer.ProcessId;
         var otherPid = other.ProcessId;
+        using var oldWorker = Process.GetProcessById(oldPid!.Value);
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
         if (cancel) { cancellation.CancelAfter(TimeSpan.FromMilliseconds(500)); }
         var rendering = renderer.RenderAsync(Blue with { Html = "cpu" }, new(20, 10, 1), cancellation.Token);
@@ -236,11 +241,18 @@ public sealed class ProcessTests
             Assert.Contains("deadline", failure.Message);
         }
         Assert.Null(renderer.ProcessId);
+        Assert.True(oldWorker.HasExited);
         Assert.Equal(new byte[] { 255, 0, 0, 255 },
             (await other.RenderAsync(Blue, new(20, 10, 1), Cancellation)).Frame.Pixels.Span[..4].ToArray());
         Assert.Equal(otherPid, other.ProcessId);
-        await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        var recovered = await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, recovered.Frame.Pixels.Span[..4].ToArray());
+        Assert.NotNull(renderer.ProcessId);
         Assert.NotEqual(oldPid, renderer.ProcessId);
+        var recoveredPid = renderer.ProcessId;
+        var again = await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
+        Assert.Equal(recoveredPid, renderer.ProcessId);
+        Assert.Equal(recovered.Frame.Pixels.ToArray(), again.Frame.Pixels.ToArray());
     }
     [Fact]
     public void WindowsClosingCpuPressuredTabDoesNotPublishFailureOrStopAnotherRenderer()

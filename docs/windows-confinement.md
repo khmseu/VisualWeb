@@ -96,7 +96,12 @@ on Windows, including a private stdin roundtrip to distinct stdout/stderr pipes
 and checks that the parent endpoints are non-inheritable. Platform tests verify
 the 64-bit native startup structure sizes and standard-handle offsets used on
 x64 and arm64. The native Windows x64/arm64 workflow runs the full solution test
-suite. `WindowsSandboxSmoke` probes actual host-file/environment,
+suite and repeats both CPU-pressure recovery cases five times without retrying
+failures. Process integration tests use a nonparallel xUnit collection so unrelated
+browser tests cannot compete with their cold worker staging/startup. The five-second
+renderer deadline and 500 ms cancellation remain unchanged; recovery checks actual
+worker exit, replacement pixels and reuse, and the unaffected peer's identity.
+`WindowsSandboxSmoke` probes actual host-file/environment,
 process-creation, loopback-network and storage-write denials. The native platform
 smoke separately validates actual SDL windows, events, pixels, fonts and
 lifecycle. On native Windows x64 and arm64 runners, the Windows confinement

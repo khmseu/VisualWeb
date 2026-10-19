@@ -179,6 +179,11 @@ public sealed class ShellTests
             while (requests.Count < count && DateTime.UtcNow < deadline)
             {
                 shell.Tick();
+                if (!shell.HasPendingNavigationConfirmation(tab.Id))
+                {
+                    Thread.Sleep(5);
+                    continue;
+                }
                 shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
                 shell.Tick();
                 Thread.Sleep(5);
