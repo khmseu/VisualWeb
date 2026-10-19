@@ -276,7 +276,8 @@ leave a disposed connection available to later polling or renderer diagnostics.
 Cleanup errors still surface; this is not a retry or weaker launch fallback.
 
 The Linux workflow includes native ARM64 rendering, confinement and resource
-checks; successful native ARM64 confinement evidence remains unobserved here.
+checks. The native ARM64 job has passed its full-suite, confinement and resource
+checks on commit `bc22600` ([CI run](https://github.com/khmseu/VisualWeb/actions/runs/39194869543)).
 Origin/CORS/CSP and site isolation, full web
 standards and production-safe hostile browsing remain unfinished. Windows
 confinement is documented separately in [windows-confinement.md](windows-confinement.md).
@@ -366,8 +367,9 @@ startup. Prerequisite or enforcement failures fail the job; no fallback,
 emulation, namespace-policy relaxation or successful-skip path is introduced.
 See the [hosted ARM Ubuntu image](https://github.com/actions/partner-runner-images/blob/main/images/arm-ubuntu-24-image.md).
 
-This change was validated locally on native Linux x64 only. No successful
-native ARM64 smoke/test run has been observed here. ARM64 .NET/JIT, V8, native
-font/paint startup, syscall enforcement and kernel memory/task/CPU exhaustion
-remain a target-evidence gap until that native CI job or equivalent hardware
-passes. Do not describe ARM64 support as fully validated.
+The native Linux ARM64 CI job passed on commit `bc22600`, including the full
+solution tests, native .NET/V8/font/paint startup, syscall enforcement and
+kernel memory/task/CPU exhaustion checks ([CI run](https://github.com/khmseu/VisualWeb/actions/runs/39194869543)).
+This validates the documented CI profile on the hosted native runner. It does
+not certify arbitrary ARM64 Linux distributions, interactive desktop behavior,
+or production-safe browsing.

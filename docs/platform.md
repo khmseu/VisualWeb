@@ -100,14 +100,14 @@ is an explicit tool, separate from ordinary tests.
 
 The Linux workflow is configured for native x64 and arm64 runners, including
 the full test suite and native font, shaping, painting, platform and browser
-smoke checks. Both Linux architectures now require the same systemd/cgroup
+smoke checks. Both Linux architectures require the same systemd/cgroup
 prerequisites and run confinement-denial/resource-exhaustion smokes and confined
-browser integration tests. ARM64 implementation is not yet backed by an observed
-native confinement run here; see the [Linux confinement guide](linux-confinement.md).
-The separately configured Windows x64/arm64 workflow runs the full solution test
-suite and exercises native platform, browser and Windows confinement paths.
-These workflows provide target-specific validation; their existence does not
-certify unobserved runs or high-DPI desktop behavior.
+browser integration tests. The native Linux x64/arm64 workflow passed on commit
+`bc22600` ([CI run](https://github.com/khmseu/VisualWeb/actions/runs/39194869543)).
+The separately configured Windows x64/arm64 workflow also passed the full
+solution tests and native platform, browser and Windows confinement checks on
+that commit ([CI run](https://github.com/khmseu/VisualWeb/actions/runs/39194869712)).
+These are target-specific CI results, not validation of high-DPI desktop behavior.
 
 Linux x64 has also been validated here with dummy and X11 (including text-input
 activation), headless Weston 13 Wayland (surfaces/events/lifecycle, **text-input
