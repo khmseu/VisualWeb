@@ -70,6 +70,57 @@ public sealed class LinkClickEventTests
     }
 
     [Theory]
+    [InlineData(false, false, true, true)]
+    [InlineData(true, false, true, true)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, true, true, false)]
+    [InlineData(true, true, true, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, true, false, false)]
+    public void FocusedLinkActivationDispatchesCancelableClickAndPreservesTabModifiers(
+        bool process, bool forceNewTab, bool activateNewTab, bool cancelDefault)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => Renderer(process, true));
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        controller.Navigate(tab.Id, "https://example.com/start");
+        var html = $$"""
+            <!doctype html><title>Start</title><style>*{margin:0}</style>
+            <a href="/next" target="_self">go</a>
+            <script>document.addEventListener('click',e=>{document.title='Clicked';{{(cancelDefault ? "e.preventDefault();" : "")}}})</script>
+            """;
+        source.Requests[0].Completion.SetResult(Document(html));
+        PumpUntil(controller, () => !tab.IsLoading && controller.Page(tab.Id) is not null);
+        controller.FocusPage(tab.Id);
+        controller.FocusLink(tab.Id, 0);
+
+        Assert.True(controller.ActivateFocusedLink(tab.Id, Viewport, forceNewTab, activateNewTab));
+
+        if (cancelDefault)
+        {
+            PumpUntil(controller, () => tab.Title == "Clicked");
+            Assert.Single(source.Requests);
+            Assert.Single(window.Tabs);
+            Assert.Equal(tab.Id, window.ActiveTabId);
+            return;
+        }
+
+        PumpUntil(controller, () => source.Requests.Count == 2);
+        if (!forceNewTab)
+        {
+            Assert.Single(window.Tabs);
+            Assert.Equal(tab.Id, window.ActiveTabId);
+            Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+            return;
+        }
+
+        var opened = Assert.Single(window.Tabs, candidate => candidate.Id != tab.Id);
+        Assert.Equal(activateNewTab ? opened.Id : tab.Id, window.ActiveTabId);
+        Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]

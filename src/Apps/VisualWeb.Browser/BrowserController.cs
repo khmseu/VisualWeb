@@ -69,6 +69,7 @@ public sealed class BrowserController : IDisposable
         internal Task<bool>? Click { get; init; }
         internal PageLinkTarget? ClickLink { get; init; }
         internal bool ClickActivatesNewTab { get; init; }
+        internal bool ClickForceNewTab { get; init; }
         internal LoadedPage? Document { get; set; }
         internal Task<BrowserPage>? Render { get; set; }
         internal PageViewport? Viewport { get; set; }
@@ -1230,6 +1231,8 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedControl >= 0) { return ActivateControl(id, owner, owner.FocusedControl); }
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         var link = owner.Page.LinkTargets[owner.FocusedLink];
+        if (owner.Renderer.DispatchesLinkClicks && owner.Document is { } document && owner.Viewport is { } viewport)
+        { return StartLinkClick(id, owner, document, viewport, owner.FocusedLink, link, activateNewTab, forceNewTab); }
         return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
             activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
     }
@@ -1727,7 +1730,7 @@ public sealed class BrowserController : IDisposable
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
             if (dispatchClickEvent && !forceNewTab && owner.Renderer.DispatchesLinkClicks && owner.Document is { } clicked)
-            { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab); }
+            { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab, forceNewTab); }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
                 activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
         }
@@ -1739,7 +1742,7 @@ public sealed class BrowserController : IDisposable
     /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
     /// The click supersedes pending work; its retained repaint publishes like a resize before navigation starts.</remarks>
     private bool StartLinkClick(TabId id, Content owner, LoadedPage document, PageViewport viewport, int index,
-        PageLinkTarget link, bool activateNewTab)
+        PageLinkTarget link, bool activateNewTab, bool forceNewTab)
     {
         Limit();
         Cancel(id);
@@ -1751,7 +1754,7 @@ public sealed class BrowserController : IDisposable
         { click = Task.FromException<bool>(exception); }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(id, checked(++tab.Generation), Task.FromResult(document), cancellation, null, false, resize: true)
-        { Viewport = viewport, Click = click, ClickLink = link, ClickActivatesNewTab = activateNewTab });
+        { Viewport = viewport, Click = click, ClickLink = link, ClickActivatesNewTab = activateNewTab, ClickForceNewTab = forceNewTab });
         tab.Status = "Dispatching page click event.";
         Changed?.Invoke(id);
         return true;
@@ -1999,8 +2002,9 @@ public sealed class BrowserController : IDisposable
         if (follow is null) { return; }
         try
         {
-            NavigateLink(operation.Tab, follow.Url, openInNewTab: follow.OpenInNewTab,
-                activateNewTab: operation.ClickActivatesNewTab, authorizeRedirects: true, targetName: follow.TargetName);
+            NavigateLink(operation.Tab, follow.Url, openInNewTab: operation.ClickForceNewTab || follow.OpenInNewTab,
+                activateNewTab: operation.ClickActivatesNewTab, authorizeRedirects: true,
+                targetName: operation.ClickForceNewTab ? null : follow.TargetName);
         }
         catch (Exception exception) when (IsPageFailure(exception)) { Report(operation.Tab, exception.Message); }
     }
