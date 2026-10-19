@@ -57,7 +57,10 @@ dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value; select
 controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallback geometry. Controls
 expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, and finite number/range bounds and step metadata, merged
-traversal position before a link group and clipped visible border box.
+traversal position before a link group and clipped visible border box. Bounded
+data-only label-text rectangles associate explicit `for` labels or the first
+supported labelable descendant with visible enabled controls; DOM identities do
+not cross IPC.
 Unsupported semantics (POST/dialog, multipart/text-plain,
 non-UTF-8 `accept-charset`, unsupported `form=`
 owners on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern,

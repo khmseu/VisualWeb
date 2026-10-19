@@ -1721,12 +1721,16 @@ public sealed class BrowserController : IDisposable
         for (var index = owner.Page.FormControls.Count - 1; index >= 0; index--)
         {
             var control = owner.Page.FormControls[index];
-            if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true) { continue; }
+            if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true && !control.LabelRects.Any(rect => rect.Contains(x, y))) { continue; }
             if (forceNewTab || control.Disabled) { return false; }
             if (owner.PageFocused) { FocusControl(id, index); }
             if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
-            if (control.Kind == "range") { SetRangeFromPointer(id, index, x); return true; }
+            if (control.Kind == "range")
+            {
+                if (control.Rect?.Contains(x, y) == true) { SetRangeFromPointer(id, index, x); }
+                return true;
+            }
             return control.Kind is "text" or "search" or "email" or "tel" or "url" or "password" or "date" or "time" or "datetime-local" or "month" or "week" or "number" or "textarea" or "select";
         }
         for (var index = owner.Page.LinkTargets.Count - 1; index >= 0; index--)

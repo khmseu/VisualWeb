@@ -133,6 +133,11 @@ public sealed record PageFormControl(
     public PageFormOption[] Options { get; init; } = [];
     [JsonRequired]
     public bool Multiple { get; init; }
+    /// <summary>Visible label-text rectangles that activate this supported control.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/forms.html#the-label-element">label element</see>.
+    /// Bounded browser hit regions only; renderer-local DOM identities do not cross IPC.</remarks>
+    [JsonRequired]
+    public PageLinkRect[] LabelRects { get; init; } = [];
     [JsonRequired]
     public string Placeholder { get; init; } = "";
     /// <summary>Nonempty companion entry name for supported LTR text/search/email/tel/url/password inputs and textarea; null means absent.</summary>
@@ -513,7 +518,7 @@ public static class RendererProtocol
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 43;
+    public const int Version = 44;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -529,6 +534,9 @@ public static class RendererProtocol
     public const int MaxLinkMetadataBytes = 1024 * 1024;
     public const int MaxForms = 256;
     public const int MaxFormControls = 1024;
+    public const int MaxFormLabelTargets = 4096;
+    public const int MaxFormLabelRects = 4096;
+    public const int MaxFormLabelRectsPerControl = 64;
     public const int MaxSelectOptions = 1024;
     /// <summary>Budget for the UTF-8 JSON serialization of forms plus controls.</summary>
     public const int MaxFormMetadataBytes = 1024 * 1024;
@@ -734,6 +742,7 @@ public static class RendererProtocol
         var lastLink = 0;
         var patternCount = 0;
         var optionCount = 0;
+        var labelRectCount = 0;
         foreach (var control in controls)
         {
             if (control is null || control.Form < -1 || control.Form >= forms.Count
@@ -809,6 +818,20 @@ public static class RendererProtocol
             if (control.FormTargetName is { } controlTargetName && (!controlTargetName.All(char.IsAscii)
                 || controlTargetName.Any(char.IsWhiteSpace)))
             { throw new IpcProtocolException("Invalid renderer submitter target metadata."); }
+            if (control.LabelRects is null || control.LabelRects.Length > MaxFormLabelRectsPerControl
+                || (control.Disabled || control.Kind is "hidden" or "inert" || control.Rect is null) && control.LabelRects.Length != 0)
+            { throw new IpcProtocolException("Invalid renderer associated-label rectangle count."); }
+            labelRectCount += control.LabelRects.Length;
+            if (labelRectCount > MaxFormLabelRects)
+            { throw new IpcProtocolException("Renderer associated-label rectangle count limit exceeded."); }
+            foreach (var labelRect in control.LabelRects)
+            {
+                if (labelRect is null || !double.IsFinite(labelRect.X) || !double.IsFinite(labelRect.Y)
+                    || !double.IsFinite(labelRect.Width) || !double.IsFinite(labelRect.Height)
+                    || labelRect.X < 0 || labelRect.Y < 0 || labelRect.Width <= 0 || labelRect.Height <= 0
+                    || labelRect.X + labelRect.Width > width || labelRect.Y + labelRect.Height > height)
+                { throw new IpcProtocolException("Invalid renderer associated-label rectangle."); }
+            }
             optionCount += control.Options.Length;
             if (control.Kind == "select" && control.Value != control.Options.FirstOrDefault(option => option.Selected && !option.Disabled)?.Value
                 && !(control.Options.All(option => !option.Selected || option.Disabled) && control.Value.Length == 0))

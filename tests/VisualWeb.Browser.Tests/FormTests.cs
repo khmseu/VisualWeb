@@ -19,6 +19,72 @@ public sealed class FormTests
         : new StaticPageRenderer(FontPath, 100000);
 
     [Theory]
+    [InlineData("<label for=agree>Agree</label><input id=agree type=checkbox name=agree>")]
+    [InlineData("<label style=display:block>Agree <input type=checkbox name=agree></label>")]
+    public void ClickingLabelActivatesItsAssociatedCheckbox(string markup)
+    {
+        using var harness = new Harness("<form>" + markup + "</form>");
+        var id = harness.Tab.Id;
+        harness.Controller.FocusPage(id);
+        var text = Assert.Single(harness.Controller.Page(id)!.TextTargets, target => target.Text == "A");
+
+        Assert.True(harness.Controller.ActivateLink(id, text.Rect.X + 0.1, text.Rect.Y + 0.1, harness.Viewport));
+        Assert.True(harness.Controller.FormControlChecked(id, 0));
+    }
+
+    [Fact]
+    public void ClickingAssociatedLabelFocusesTextControl()
+    {
+        using var harness = new Harness("<label for=query>Query</label><input id=query name=q>");
+        var id = harness.Tab.Id;
+        harness.Controller.FocusPage(id);
+        var text = Assert.Single(harness.Controller.Page(id)!.TextTargets, target => target.Text == "Q");
+
+        Assert.True(harness.Controller.ActivateLink(id, text.Rect.X + 0.1, text.Rect.Y + 0.1, harness.Viewport));
+        Assert.Equal(0, harness.Controller.FocusedControlIndex(id));
+    }
+
+    [Fact]
+    public void ClickingRangeLabelFocusesWithoutChangingItsValue()
+    {
+        using var harness = new Harness("<label for=level>Level</label><input id=level type=range min=1 max=5 value=2>");
+        var id = harness.Tab.Id;
+        harness.Controller.FocusPage(id);
+        var text = Assert.Single(harness.Controller.Page(id)!.TextTargets, target => target.Text == "L");
+
+        Assert.True(harness.Controller.ActivateLink(id, text.Rect.X + 0.1, text.Rect.Y + 0.1, harness.Viewport));
+        Assert.Equal(0, harness.Controller.FocusedControlIndex(id));
+        Assert.Equal("2", harness.Controller.FormControlValue(id, 0));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AssociatedLabelGeometryCrossesBothRenderers(bool process)
+    {
+        using var renderer = Renderer(process);
+        var page = await renderer.RenderAsync(Document("<label for=query>Query</label><input id=query name=q>"),
+            new(200, 400, 1), Cancellation);
+
+        Assert.Single(Assert.Single(page.FormControls).LabelRects);
+    }
+
+    [Fact]
+    public void LinkInsideLabelDoesNotActivateAssociatedControl()
+    {
+        using var harness = new Harness("<label for=query>Search <a href='/help'>Help</a></label><input id=query name=q>");
+        var id = harness.Tab.Id;
+        harness.Controller.FocusPage(id);
+        var text = Assert.Single(harness.Controller.Page(id)!.TextTargets, target => target.Text == "H");
+        var requestCount = harness.Source.Requests.Count;
+
+        Assert.True(harness.Controller.ActivateLink(id, text.Rect.X + 0.1, text.Rect.Y + 0.1, harness.Viewport));
+        Assert.Equal(requestCount + 1, harness.Source.Requests.Count);
+        Assert.Equal("https://example.com/help", harness.Source.Requests[^1].Url.Href);
+        Assert.Equal(-1, harness.Controller.FocusedControlIndex(id));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task DirnameMetadataCrossesBothRenderers(bool process)

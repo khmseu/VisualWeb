@@ -94,6 +94,10 @@ broader page interaction is still missing:
   submit current/new-tab GET urlencoded queries via IPC v39 data-only metadata and the ordinary
   navigation transaction; supported controls use finite inline-block layout with
   bounded fallback dimensions and unsupported form semantics fail visibly.
+  Visible enabled supported controls also activate through visible text in an
+  explicit `<label for>` or the first supported labelable descendant; nested
+  interactive descendants remain independent and no DOM form events are sent.
+  Label hit metadata is bounded to 64 rectangles per control and 4096 per frame.
   Reset controls are shell-owned: pointer activation or Enter on the focused
   reset control restores all controls owned by its form to their initial values
   and checked states, clears their edited/dirty/check state, preserves focus,

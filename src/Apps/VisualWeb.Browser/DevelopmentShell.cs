@@ -448,7 +448,8 @@ public sealed class DevelopmentShell : IDisposable
         Controller.FocusPage(pageTab.Id);
         var pageY = pointer.Y - ShellChrome.Height;
         var page = Controller.Page(pageTab.Id);
-        var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true) == true;
+        var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true
+            || control.LabelRects.Any(rect => rect.Contains(pointer.X, pageY))) == true;
         if (view.ShiftModifier && !overControl)
         {
             if (Controller.ExtendSelectedText(pageTab.Id, pointer.X, pageY, pageViewport)) { return; }
@@ -481,7 +482,9 @@ public sealed class DevelopmentShell : IDisposable
         var activated = Controller.ActivateLink(pageTab.Id, pointer.X, pageY, pageViewport);
         SetPointerControlCaret(pageTab.Id, pointer.X, pageY, activated);
         var focusedControl = Controller.FocusedControlIndex(pageTab.Id);
-        if (activated && focusedControl >= 0 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "range")
+        if (activated && focusedControl >= 0
+            && Controller.Page(pageTab.Id)?.FormControls[focusedControl] is { Kind: "range", Rect: { } rangeRect }
+            && rangeRect.Contains(pointer.X, pageY))
         { view.DraggingRangeControl = focusedControl; }
         if (activated && focusedControl >= 0 && Controller.Page(pageTab.Id)?.FormControls[focusedControl].Kind == "select"
             && !(dismissingSelect && dismissedControl == focusedControl)) { OpenSelectPopup(view, pageTab, focusedControl); }
