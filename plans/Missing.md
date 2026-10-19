@@ -51,7 +51,9 @@ broader page interaction is still missing:
   and Tab/Shift+Tab/Enter navigation in shell, local and actual
   renderer-process paths; middle-click opens
   the visible link in a new active tab and Ctrl+primary-click opens it in a
-  background tab, regardless of its target. Shift+Enter opens the focused link
+  background tab, regardless of its target. On opted-in pages, middle-click
+  first dispatches trusted cancelable `auxclick`; cancellation suppresses the
+  active-new-tab default. Shift+Enter opens the focused link
   in a new active tab; Ctrl+Enter opens it in a background tab. Enabled drawn
   chrome controls precede rendered links in traversal; focusing an offscreen
   anchor scrolls it into view. Ctrl+L retains address editing. Focus is per-tab,
@@ -80,7 +82,10 @@ broader page interaction is still missing:
   also dispatch the retained trusted click event before their existing current,
   active-new-tab or background-new-tab default action; Ctrl+primary pointer
   activation dispatches it before opening the background tab. `preventDefault()`
-  cancels those defaults. Static mode and unmodified page keyboard events remain unchanged.
+  cancels those defaults. Opted-in middle-click also dispatches trusted bubbling,
+  cancelable `auxclick` before its active-new-tab default; static mode and
+  unmodified page keyboard events remain unchanged. These are plain Events, not
+  PointerEvents with pointer metadata.
   General hit-testing, DOM focus/keyboard events and other page input remain missing.
   See [shell controls](../docs/browser-shell.md#controls).
 - A bounded simple-forms subset supports shell-owned `input`
@@ -230,13 +235,13 @@ broader page interaction is still missing:
 - The shell does not dispatch general pointer/keyboard input to pages or synthesize
   page focus. It implements only the documented bounded link, form, and control
   interactions. For `--enable-inline-scripts` pages, primary-pointer, Ctrl+primary
-  and focused-link keyboard activation dispatch a trusted bubbling, cancelable
-  plain `click` Event at the anchor in the retained renderer-local host before
-  browser-owned link activation. `preventDefault()` suppresses the corresponding
-  navigation/tab default (dom: event dispatch; html: links created by a and area
-  elements). No MouseEvent/PointerEvent fields, modifier or keyboard events,
-  middle-click/auxclick, form/control default actions or other DOM event delivery
-  for ordinary shell input are exposed to scripts.
+  and focused-link keyboard activation dispatch trusted bubbling, cancelable plain
+  `click` Events before browser-owned link activation. Middle-click dispatches a
+  plain `auxclick` Event before its active-new-tab default. `preventDefault()`
+  suppresses those defaults (dom: event dispatch; html: links created by a and area
+  elements; pointerevents4: click/auxclick). They are not PointerEvents and expose
+  no pointer metadata; modifier/keyboard events, form/control defaults and other
+  DOM event delivery remain unavailable to scripts.
 - No downloads, persistent browser sessions, or complete history behavior. History
   stores URLs, per-entry scroll positions and internal same-document grouping:
   Back/Forward between user-created fragment entries retains the active document
@@ -326,7 +331,7 @@ However:
 - Enabled scripts are post-parse inline classics only.
 - There is no persistent HTML event loop. Opted-in documents now retain their
   renderer-local host/listeners after initial execution, but only for bounded
-  trusted link-click dispatch (1024 clicks per document; failures invalidate the
+  trusted link-event dispatch (1024 click/auxclick events combined per document; failures invalidate the
   host until reload); no timers, tasks or other callbacks run later.
 - Modules, external scripts, timers, workers, script-visible networking/storage, and full Window/Web IDL behavior remain deferred.
 - Synthetic events, finite lifecycle/microtask processing and the narrow link-click

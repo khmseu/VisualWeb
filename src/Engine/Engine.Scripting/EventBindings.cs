@@ -5,8 +5,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see>,
 /// <see href="https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke">listener invocation</see>.
 /// Listener errors deliberately fail the execution task instead of HTML report-and-continue.
-/// The private <c>click</c> operation creates a trusted, bubbling, cancelable, composed plain Event for
-/// browser-owned link activation; it is not a MouseEvent/PointerEvent or general input synthesis.</remarks>
+/// The private <c>click</c>/<c>auxclick</c> operations create trusted, bubbling, cancelable, composed plain Events
+/// for browser-owned link activation; they are not PointerEvents or general input synthesis.</remarks>
 internal static class EventBindings
 {
     internal const string Bootstrap = """
@@ -222,9 +222,9 @@ internal static class EventBindings
                     readiness = operation; lifecycleEvent('readystatechange', false); return failure;
                 }
                 if (operation === 'dom-content-loaded') {lifecycleEvent('DOMContentLoaded', true); return failure;}
-                if (operation === 'click') {
+                if (operation === 'click' || operation === 'auxclick') {
                     const init = create(null); init.bubbles = init.cancelable = init.composed = true;
-                    const allowed = apply(dispatch, receiver, new Event('click', init), true);
+                    const allowed = apply(dispatch, receiver, new Event(operation, init), true);
                     return failure ? failure : allowed ? 0 : 3;
                 }
                 if (operation === 'begin') {invoked = depth = failure = 0; active = true; return 0;}

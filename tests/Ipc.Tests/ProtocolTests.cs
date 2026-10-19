@@ -48,7 +48,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(42, RendererProtocol.Version);
+        Assert.Equal(43, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 41 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 40 }, 0));
@@ -789,7 +789,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(42, RendererProtocol.Version);
+        Assert.Equal(43, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -881,6 +881,7 @@ public sealed class ProtocolTests
         DocumentId = Request.DocumentId,
         ExecuteInlineScripts = true,
         LinkIndex = 3,
+        LinkEventType = "click",
         Url = "https://example.com/next"
     };
     [Fact]
@@ -889,6 +890,8 @@ public sealed class ProtocolTests
         RendererProtocol.Validate(Click, 0);
         RendererProtocol.Validate(Click with { LinkIndex = 0 }, 0);
         RendererProtocol.Validate(Click with { LinkIndex = RendererProtocol.MaxLinkTargets - 1 }, 0);
+        var auxClick = Click with { LinkEventType = "auxclick" };
+        RendererProtocol.Validate(auxClick, 0);
         RendererProtocol.Validate(new() { Kind = "click-result", Id = 2, DefaultPrevented = true }, 0);
         RendererProtocol.Validate(new() { Kind = "click-result", Id = 2, DefaultPrevented = false }, 0);
         foreach (var invalid in new[]
@@ -898,6 +901,9 @@ public sealed class ProtocolTests
             Click with { ExecuteInlineScripts = false },
             Click with { LinkIndex = -1 },
             Click with { LinkIndex = RendererProtocol.MaxLinkTargets },
+            Click with { LinkEventType = null },
+            Click with { LinkEventType = "contextmenu" },
+            Request with { LinkEventType = "auxclick" },
             Click with { Url = null },
             Click with { Url = "" },
             Click with { Url = new string('x', RendererProtocol.MaxTextCharacters + 1) },
@@ -926,10 +932,12 @@ public sealed class ProtocolTests
         using var wire = new MemoryStream();
         var writer = new RendererChannel(Stream.Null, wire);
         await writer.WriteAsync(Click, cancellationToken: Cancellation);
+        await writer.WriteAsync(auxClick, cancellationToken: Cancellation);
         await writer.WriteAsync(new() { Kind = "click-result", Id = 2, DefaultPrevented = true }, cancellationToken: Cancellation);
         wire.Position = 0;
         var reader = new RendererChannel(wire, Stream.Null);
         Assert.Equal(Click, (await reader.ReadAsync(Cancellation))!.Message);
+        Assert.Equal(auxClick, (await reader.ReadAsync(Cancellation))!.Message);
         Assert.True((await reader.ReadAsync(Cancellation))!.Message.DefaultPrevented);
     }
     private static RendererMessage Request => new()

@@ -1224,6 +1224,42 @@ public sealed class ShellTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OptedInMiddleClickDispatchesCancelableAuxClick(bool process)
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, executeInlineScripts: true,
+            rendererPath: process ? RendererPath : null);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var html = "<!doctype html><title>Start</title><style>*{margin:0}</style>"
+            + "<a href='https://example.com/target'>open target</a>"
+            + "<script>document.addEventListener('auxclick',e=>{document.title=e.type+':'+e.isTrusted; e.preventDefault()})</script>";
+        var sourceUrl = "data:text/html," + Uri.EscapeDataString(html);
+        shell.Controller.Navigate(tab.Id, sourceUrl);
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+        var link = Assert.Single(shell.Controller.Page(tab.Id)!.LinkTargets);
+
+        shell.Dispatch(new PointerButtonChanged(native.Id, 2, true,
+            (float)(link.X + link.Width / 2), (float)(ShellChrome.Height + link.Y + link.Height / 2)));
+        Wait(() => !tab.IsLoading && tab.Title == "auxclick:true");
+
+        Assert.Single(window.Tabs);
+        Assert.Equal(tab.Id, window.ActiveTabId);
+        Assert.Equal(sourceUrl, tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
     [Fact]
     public void ArrowKeysMoveWithinRadioGroupAndSpaceSelectsFocusedRadio()
     {

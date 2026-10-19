@@ -27,7 +27,7 @@ public sealed class DevelopmentShell : IDisposable
         <p>Ctrl M moves the active tab to another window.</p>
         <p>Alt Left and Alt Right navigate history. F5 reloads.</p>
         <p>Wheel, Arrow Up and Down, Page Up and Page Down, Home and End scroll outside editing fields. The page scrollbar can be clicked or dragged.</p>
-        <p>Basic links, GET forms and visible text selection are available; general page events remain deferred.</p>
+        <p>Basic links, GET forms and visible text selection are available; pages with scripts enabled dispatch link events.</p>
         </body></html>
         """;
     public static string HomeUrl => "data:text/html;charset=utf-8," + Uri.EscapeDataString(HomeHtml);
@@ -363,7 +363,8 @@ public sealed class DevelopmentShell : IDisposable
         {
             Controller.FocusPage(linkTab.Id);
             Controller.ClearSelectedText(linkTab.Id);
-            Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height, linkViewport, forceNewTab: true);
+            Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height, linkViewport,
+                forceNewTab: true, dispatchClickEvent: true, linkEventType: PageLinkEventType.AuxClick);
         }
     }
     private void HandlePrimaryPointerPress(BrowserWindow window, View view, PointerButtonChanged pointer)

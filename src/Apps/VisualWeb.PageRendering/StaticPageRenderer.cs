@@ -29,7 +29,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         public V8ScriptHost? Host { get; private set; } = host;
         /// <summary>Anchor elements and destinations of the latest successful render, in link-target order.</summary>
         public IReadOnlyList<(DomElement Anchor, string Url)> Links { get; set; } = [];
-        public int Clicks { get; set; }
+        public int LinkEvents { get; set; }
         public string? Failure { get; private set; }
         public void Fail(string message) { Failure ??= message; Release(); }
         public void Release()
@@ -39,8 +39,9 @@ public sealed class StaticPageRenderer : IPageRenderer
             retained?.Dispose();
         }
     }
-    /// <summary>Strict bound on trusted link clicks dispatched into one retained document host.</summary>
-    public const int MaxLinkClicksPerDocument = 1024;
+    /// <summary>Strict bound on trusted click and auxclick events dispatched into one retained document host.</summary>
+    public const int MaxLinkEventsPerDocument = 1024;
+    public const int MaxLinkClicksPerDocument = MaxLinkEventsPerDocument;
     private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName, double documentY)
     {
         public string Url { get; } = url;
@@ -115,19 +116,28 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     public bool DispatchesLinkClicks => executeInlineScripts;
     public Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
-        Task.FromResult(DispatchLinkClick(documentId, linkIndex, url, cancellationToken));
+        DispatchLinkEventAsync(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
+    public Task<bool> DispatchLinkEventAsync(Guid documentId, int linkIndex, string url, PageLinkEventType eventType,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(DispatchLinkEvent(documentId, linkIndex, url, eventType, cancellationToken));
     /// <summary>Dispatch a trusted link click into the committed document's retained host on the creating thread.</summary>
-    /// <remarks>Specs: dom, html;
+    public bool DispatchLinkClick(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
+        DispatchLinkEvent(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
+    /// <summary>Dispatch a typed trusted link event into the committed document's retained host on the creating thread.</summary>
+    /// <remarks>Specs: dom, pointerevents4;
     /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
-    /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
+    /// <see href="https://www.w3.org/TR/pointerevents4/#click-auxclick-and-contextmenu">click and auxclick</see>.
     /// The index and destination must match the latest successful render. Returns false when canceled. Failures
-    /// and the per-document click bound invalidate the host and make later retained repaints fail explicitly.</remarks>
-    public bool DispatchLinkClick(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken)
+    /// and the shared per-document link event bound invalidate the host and make later retained repaints fail explicitly.</remarks>
+    public bool DispatchLinkEvent(Guid documentId, int linkIndex, string url, PageLinkEventType eventType,
+        CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(url);
         cancellationToken.ThrowIfCancellationRequested();
-        if (!executeInlineScripts) { throw new PageNavigationException("Page click events require the inline-script opt-in."); }
+        if (eventType is not (PageLinkEventType.Click or PageLinkEventType.AuxClick))
+        { throw new ArgumentOutOfRangeException(nameof(eventType)); }
+        if (!executeInlineScripts) { throw new PageNavigationException("Page link events require the inline-script opt-in."); }
         var state = committed?.Source.DocumentId == documentId ? committed
             : throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly.");
         if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
@@ -135,17 +145,25 @@ public sealed class StaticPageRenderer : IPageRenderer
         if (linkIndex < 0 || linkIndex >= state.Links.Count || state.Links[linkIndex].Url != url
             || !state.Links[linkIndex].Anchor.IsConnected || state.Links[linkIndex].Anchor.OwnerDocument != state.Parsed.Document)
         { throw new PageNavigationException("Clicked link no longer matches the retained document; no event was dispatched."); }
-        if (state.Clicks >= MaxLinkClicksPerDocument)
+        if (state.LinkEvents >= MaxLinkEventsPerDocument)
         {
-            const string limit = "Per-document link click event limit exceeded; page script host invalidated. Reload explicitly.";
+            const string limit = "Per-document link event limit exceeded; page script host invalidated. Reload explicitly.";
             state.Fail(limit);
             throw new ScriptLimitException(limit);
         }
-        state.Clicks++;
-        try { return host.DispatchTrustedClick(state.Links[linkIndex].Anchor, cancellationToken); }
+        state.LinkEvents++;
+        try
+        {
+            return eventType switch
+            {
+                PageLinkEventType.Click => host.DispatchTrustedClick(state.Links[linkIndex].Anchor, cancellationToken),
+                PageLinkEventType.AuxClick => host.DispatchTrustedAuxClick(state.Links[linkIndex].Anchor, cancellationToken),
+                _ => throw new ArgumentOutOfRangeException(nameof(eventType))
+            };
+        }
         catch (Exception exception)
         {
-            state.Fail("Page script host invalidated by a failed link click; reload explicitly. " + exception.Message);
+            state.Fail("Page script host invalidated by a failed link event; reload explicitly. " + exception.Message);
             throw;
         }
     }

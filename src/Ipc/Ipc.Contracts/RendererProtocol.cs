@@ -490,6 +490,8 @@ public sealed record RendererMessage
     public bool ReuseDocument { get; init; }
     /// <summary>Click requests only: rendered link-target index of the committed document; <see cref="Url"/> carries its destination.</summary>
     public int LinkIndex { get; init; }
+    /// <summary>Click requests only: the bounded trusted link event name, either <c>click</c> or <c>auxclick</c>.</summary>
+    public string? LinkEventType { get; init; }
     /// <summary>Click-result replies only: whether a page listener canceled the trusted click.</summary>
     public bool? DefaultPrevented { get; init; }
     public PageLinkTarget[]? LinkTargets { get; init; }
@@ -508,8 +510,10 @@ public static class RendererProtocol
     private const string ErrorKind = "error";
     private const string ClickKind = "click";
     private const string ClickResultKind = "click-result";
+    private const string ClickEventType = "click";
+    private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 42;
+    public const int Version = 43;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -558,7 +562,8 @@ public static class RendererProtocol
         if ((message.Kind is not (RenderKind or ClickKind) && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
             || (message.Kind != RenderKind && (message.CommittedDocumentId != Guid.Empty || message.ReuseDocument)))
         { throw new IpcProtocolException("Document policy fields belong only to render or click requests."); }
-        if ((message.Kind != ClickKind && message.LinkIndex != 0)
+        if ((message.Kind != ClickKind && (message.LinkIndex != 0 || message.LinkEventType is not null))
+            || (message.Kind == ClickKind && message.LinkEventType is not (ClickEventType or AuxClickEventType))
             || (message.Kind == ClickResultKind ? message.DefaultPrevented is null : message.DefaultPrevented is not null))
         { throw new IpcProtocolException("Click fields belong only to click requests and click-result replies respectively."); }
         if (message.Kind == HelloKind)

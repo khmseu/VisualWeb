@@ -165,6 +165,46 @@ public sealed class LinkClickEventTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
+    public void MiddleLinkActivationDispatchesCancelableAuxClick(bool process, bool cancelDefault)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => Renderer(process, true));
+        var window = controller.Session.CreateWindow();
+        var tab = controller.CreateTab(window.Id);
+        controller.Navigate(tab.Id, "https://example.com/start");
+        source.Requests[0].Completion.SetResult(Document($$"""
+            <!doctype html><title>Start</title><style>*{margin:0}</style>
+            <a href="/next" target="_self">go</a>
+            <script>document.addEventListener('auxclick',e=>{
+                document.title=e.type+':'+e.isTrusted+':'+e.bubbles+':'+e.cancelable+':'+(e instanceof Event);
+                if({{(cancelDefault ? "true" : "false")}})e.preventDefault();
+            })</script>
+            """));
+        PumpUntil(controller, () => !tab.IsLoading && controller.Page(tab.Id) is not null);
+        var link = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, Viewport,
+            forceNewTab: true, dispatchClickEvent: true, linkEventType: PageLinkEventType.AuxClick));
+
+        if (cancelDefault) { PumpUntil(controller, () => tab.Title.StartsWith("auxclick:", StringComparison.Ordinal)); }
+        else { PumpUntil(controller, () => source.Requests.Count == 2); }
+        Assert.Null(tab.Error);
+        Assert.Equal("auxclick:true:true:true:true", tab.Title);
+        Assert.Equal(cancelDefault ? 1 : 2, source.Requests.Count);
+        Assert.Equal(cancelDefault ? 1 : 2, window.Tabs.Count);
+        if (!cancelDefault)
+        {
+            var opened = Assert.Single(window.Tabs, candidate => candidate.Id != tab.Id);
+            Assert.Equal(opened.Id, window.ActiveTabId);
+            Assert.Equal("https://example.com/next", source.Requests[1].Url.Href);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
     public void StaticModeAndNonPrimaryActivationKeepImmediateNavigation(bool process, bool scripts)
     {
         var source = new ControllerTests.Source();
@@ -239,9 +279,13 @@ public sealed class LinkClickEventTests
         Assert.Throws<PageNavigationException>(() => renderer.DispatchLinkClick(page.DocumentId, 1, url, Cancellation));
         Assert.Throws<PageNavigationException>(() => renderer.DispatchLinkClick(page.DocumentId, 0, url + "x", Cancellation));
         Assert.Throws<PageNavigationException>(() => renderer.DispatchLinkClick(Guid.NewGuid(), 0, url, Cancellation));
-        for (var count = 0; count < StaticPageRenderer.MaxLinkClicksPerDocument; count++)
+        Assert.Throws<ArgumentOutOfRangeException>(() => renderer.DispatchLinkEvent(page.DocumentId, 0, url,
+            (PageLinkEventType)2, Cancellation));
+        Assert.True(renderer.DispatchLinkEvent(page.DocumentId, 0, url, PageLinkEventType.AuxClick, Cancellation));
+        for (var count = 1; count < StaticPageRenderer.MaxLinkEventsPerDocument; count++)
         { Assert.True(renderer.DispatchLinkClick(page.DocumentId, 0, url, Cancellation)); }
-        Assert.Throws<ScriptLimitException>(() => renderer.DispatchLinkClick(page.DocumentId, 0, url, Cancellation));
+        Assert.Throws<ScriptLimitException>(() => renderer.DispatchLinkEvent(page.DocumentId, 0, url,
+            PageLinkEventType.AuxClick, Cancellation));
         Assert.Throws<PageNavigationException>(() => renderer.DispatchLinkClick(page.DocumentId, 0, url, Cancellation));
         Assert.Contains("limit", Assert.Throws<PageNavigationException>(() =>
             renderer.Render(page, Viewport, Cancellation, reuseDocument: true)).Message, StringComparison.Ordinal);

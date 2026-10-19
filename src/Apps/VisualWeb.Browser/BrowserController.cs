@@ -70,6 +70,7 @@ public sealed class BrowserController : IDisposable
         internal PageLinkTarget? ClickLink { get; init; }
         internal bool ClickActivatesNewTab { get; init; }
         internal bool ClickForceNewTab { get; init; }
+        internal PageLinkEventType ClickEventType { get; init; } = PageLinkEventType.Click;
         internal LoadedPage? Document { get; set; }
         internal Task<BrowserPage>? Render { get; set; }
         internal PageViewport? Viewport { get; set; }
@@ -1232,7 +1233,7 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         var link = owner.Page.LinkTargets[owner.FocusedLink];
         if (owner.Renderer.DispatchesLinkClicks && owner.Document is { } document && owner.Viewport is { } viewport)
-        { return StartLinkClick(id, owner, document, viewport, owner.FocusedLink, link, activateNewTab, forceNewTab); }
+        { return StartLinkClick(id, owner, document, viewport, owner.FocusedLink, link, activateNewTab, forceNewTab, PageLinkEventType.Click); }
         return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
             activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
     }
@@ -1700,12 +1701,16 @@ public sealed class BrowserController : IDisposable
         return fragment < 0 ? url.Href : url.Href[..fragment];
     }
 
-    /// <param name="dispatchClickEvent">Primary pointer link activation: for opted-in script renderers, first dispatch a
-    /// trusted page <c>click</c> event whose cancellation suppresses browser-owned link activation.</param>
+    /// <param name="dispatchClickEvent">When true, opted-in script renderers first dispatch a trusted link event whose
+    /// cancellation suppresses browser-owned activation.</param>
+    /// <param name="linkEventType">The trusted event type to dispatch when <paramref name="dispatchClickEvent"/> is true.</param>
     public bool ActivateLink(TabId id, double x, double y, PageViewport? displayedViewport = null,
-        bool forceNewTab = false, bool activateNewTab = true, bool dispatchClickEvent = false)
+        bool forceNewTab = false, bool activateNewTab = true, bool dispatchClickEvent = false,
+        PageLinkEventType linkEventType = PageLinkEventType.Click)
     {
         Check();
+        if (linkEventType is not (PageLinkEventType.Click or PageLinkEventType.AuxClick))
+        { throw new ArgumentOutOfRangeException(nameof(linkEventType)); }
         var owner = content[id];
         if (!double.IsFinite(x) || !double.IsFinite(y))
         { throw new PageNavigationException("Link coordinates must be finite."); }
@@ -1730,7 +1735,7 @@ public sealed class BrowserController : IDisposable
             if (!link.Contains(x, y)) { continue; }
             if (owner.PageFocused) { FocusLink(id, index); }
             if (dispatchClickEvent && owner.Renderer.DispatchesLinkClicks && owner.Document is { } clicked)
-            { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab, forceNewTab); }
+            { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab, forceNewTab, linkEventType); }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
                 activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
         }
@@ -1742,20 +1747,27 @@ public sealed class BrowserController : IDisposable
     /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
     /// The click supersedes pending work; its retained repaint publishes like a resize before navigation starts.</remarks>
     private bool StartLinkClick(TabId id, Content owner, LoadedPage document, PageViewport viewport, int index,
-        PageLinkTarget link, bool activateNewTab, bool forceNewTab)
+        PageLinkTarget link, bool activateNewTab, bool forceNewTab, PageLinkEventType eventType)
     {
         Limit();
         Cancel(id);
         var tab = Session.Tab(id);
         var cancellation = new CancellationTokenSource();
         Task<bool> click;
-        try { click = owner.Renderer.DispatchLinkClickAsync(document.DocumentId, index, link.Url, cancellation.Token); }
+        try { click = owner.Renderer.DispatchLinkEventAsync(document.DocumentId, index, link.Url, eventType, cancellation.Token); }
         catch (Exception exception) when (IsPageFailure(exception) || exception is OperationCanceledException)
         { click = Task.FromException<bool>(exception); }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(id, checked(++tab.Generation), Task.FromResult(document), cancellation, null, false, resize: true)
-        { Viewport = viewport, Click = click, ClickLink = link, ClickActivatesNewTab = activateNewTab, ClickForceNewTab = forceNewTab });
-        tab.Status = "Dispatching page click event.";
+        {
+            Viewport = viewport,
+            Click = click,
+            ClickLink = link,
+            ClickActivatesNewTab = activateNewTab,
+            ClickForceNewTab = forceNewTab,
+            ClickEventType = eventType
+        });
+        tab.Status = $"Dispatching page {eventType.ToString().ToLowerInvariant()} event.";
         Changed?.Invoke(id);
         return true;
     }
@@ -1987,7 +1999,8 @@ public sealed class BrowserController : IDisposable
                     if (!operation.Scroll && operation.Click is null)
                     { owner.Page = null; owner.Viewport = operation.Viewport; owner.ResizeFailed = true; }
                 }
-                Report(operation.Tab, (operation.Click is not null ? "Page click event failed: "
+                Report(operation.Tab, (operation.Click is not null
+                    ? $"Page {operation.ClickEventType.ToString().ToLowerInvariant()} event failed: "
                     : operation.Scroll ? "Scroll rendering failed: " : operation.Resize ? "Resize rendering failed: " : "") + exception.Message);
             }
         }
