@@ -1,9 +1,10 @@
+.vs/
+*.orig
+*.suo
+*.user
 **/bin/
 **/obj/
 **/TestResults/
-.vs/
-*.user
-*.suo
-specs/cache/
+/Sessions/
 specs/*.lock
-*.orig
+specs/cache/
