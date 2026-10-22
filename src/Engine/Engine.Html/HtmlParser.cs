@@ -4,15 +4,23 @@ using VisualWeb.Engine.Dom;
 namespace VisualWeb.Engine.Html;
 
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
-/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>.
-/// No tables, templates, foreign content beyond the basic form tree subset, frames, fragment parsing, scripting,
-/// active-formatting reconstruction or adoption agency algorithm are implemented.</remarks>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
+/// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intbody">in table body</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
+/// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>.
+/// Basic table sections, rows and cells are supported; foster parenting, captions, columns, templates, foreign content,
+/// frames, fragment parsing, scripting, active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
         new Builder(input, options ?? new(), cancellationToken).Run();
 
-    private enum Mode { Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text, AfterBody, AfterAfterBody }
+    private enum Mode
+    {
+        Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text,
+        InTable, InTableText, InTableBody, InRow, InCell, AfterBody, AfterAfterBody
+    }
 
     private sealed class Builder
     {
@@ -95,6 +103,14 @@ public static class HtmlParser
                 if (token is HtmlTag tag && UnsupportedTags.Contains(tag.Name))
                 {
                     throw Unsupported($"Tree construction for <{tag.Name}> is not implemented.");
+                }
+
+                if (token is HtmlTag tableTag && TableTags.Contains(tableTag.Name)
+                    && !IsTableMode(mode)
+                    && !(tableTag.Name == "table"
+                        && mode is Mode.Initial or Mode.BeforeHtml or Mode.BeforeHead or Mode.InHead or Mode.AfterHead or Mode.InBody))
+                {
+                    throw Unsupported($"Table tag <{tableTag.Name}> is outside the supported table tree-building subset.");
                 }
 
                 switch (mode)
@@ -281,6 +297,21 @@ public static class HtmlParser
                     case Mode.InBody:
                         BodyToken(token);
                         return;
+                    case Mode.InTable:
+                        TableToken(token);
+                        return;
+                    case Mode.InTableText:
+                        TableTextToken(token);
+                        return;
+                    case Mode.InTableBody:
+                        TableBodyToken(token);
+                        return;
+                    case Mode.InRow:
+                        TableRowToken(token);
+                        return;
+                    case Mode.InCell:
+                        TableCellToken(token);
+                        return;
                 }
             }
         }
@@ -369,6 +400,11 @@ public static class HtmlParser
                     case "select":
                         if (InScope("select")) { throw Unsupported("Nested select elements are not implemented."); }
                         Insert(tag);
+                        return;
+                    case "table":
+                        CloseParagraph();
+                        Insert(tag);
+                        mode = Mode.InTable;
                         return;
                     case "option":
                         throw Unsupported("Option elements outside the supported select subset are not implemented.");
@@ -475,6 +511,285 @@ public static class HtmlParser
 
             Error("unexpected-end-tag");
         }
+
+        private void TableToken(HtmlToken token)
+        {
+            if (token is HtmlCharacters characters)
+            {
+                originalMode = mode;
+                mode = Mode.InTableText;
+                Process(characters);
+                return;
+            }
+
+            if (Miscellaneous(token, Current)) { return; }
+            if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
+            if (token is HtmlEndOfFile) { BodyToken(token); return; }
+
+            if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in table."); }
+            if (!tag.IsEndTag)
+            {
+                switch (tag.Name)
+                {
+                    case "table":
+                        throw Unsupported("Nested table recovery requires resetting the insertion mode.");
+                    case "tbody" or "tfoot" or "thead":
+                        ClearStackToTableContext();
+                        Insert(tag);
+                        mode = Mode.InTableBody;
+                        return;
+                    case "tr" or "td" or "th":
+                        ClearStackToTableContext();
+                        Insert(Synthetic("tbody"));
+                        mode = Mode.InTableBody;
+                        Process(tag);
+                        return;
+                    case "caption" or "col" or "colgroup":
+                        throw Unsupported($"Tree construction for <{tag.Name}> in a table is not implemented.");
+                    default:
+                        throw Unsupported("Foster parenting for table content is not implemented.");
+                }
+            }
+
+            if (tag.Name == "table")
+            {
+                if (!InTableScope("table")) { Error("unexpected-table-end-tag"); return; }
+                CloseAt(open.FindLastIndex(element => element.LocalName == "table"));
+                mode = Mode.InBody;
+                return;
+            }
+
+            if (tag.Name is "body" or "caption" or "col" or "colgroup" or "html"
+                or "tbody" or "td" or "tfoot" or "th" or "thead" or "tr")
+            {
+                Error("unexpected-table-end-tag");
+                return;
+            }
+
+            throw Unsupported("Foster parenting for table content is not implemented.");
+        }
+
+        private void TableTextToken(HtmlToken token)
+        {
+            if (token is HtmlCharacters characters)
+            {
+                var data = characters.Data;
+                if (data.Contains('\0'))
+                {
+                    Error("null-in-table-text");
+                    data = data.Replace("\0", "", StringComparison.Ordinal);
+                }
+
+                if (data.Length == 0) { return; }
+                if (!data.All(HtmlTokenizer.Whitespace))
+                {
+                    throw Unsupported("Non-whitespace table text requires foster parenting.");
+                }
+
+                Text(data);
+                return;
+            }
+
+            mode = originalMode;
+            Process(token);
+        }
+
+        private void TableBodyToken(HtmlToken token)
+        {
+            if (token is HtmlTag { IsEndTag: false, Name: "tr" } row)
+            {
+                ClearStackToTableBodyContext();
+                Insert(row);
+                mode = Mode.InRow;
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "td" or "th" } cell)
+            {
+                Error("cell-start-without-row");
+                ClearStackToTableBodyContext();
+                Insert(Synthetic("tr"));
+                mode = Mode.InRow;
+                Process(cell);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "tbody" or "tfoot" or "thead" } sectionEnd)
+            {
+                if (!InTableScope(sectionEnd.Name)) { Error("unexpected-table-section-end-tag"); return; }
+                ClearStackToTableBodyContext();
+                CloseAt(open.Count - 1);
+                mode = Mode.InTable;
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "table" } tableEnd)
+            {
+                var sectionIndex = open.FindLastIndex(element => element.LocalName is "tbody" or "tfoot" or "thead");
+                if (sectionIndex < 0 || !InTableScope(open[sectionIndex].LocalName))
+                {
+                    Error("unexpected-table-end-tag");
+                    return;
+                }
+
+                ClearStackToTableBodyContext();
+                CloseAt(open.Count - 1);
+                mode = Mode.InTable;
+                Process(tableEnd);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "caption" or "col" or "colgroup" or "tbody" or "tfoot" or "thead" })
+            {
+                Error("unexpected-table-section-start-tag");
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "body" or "caption" or "col" or "colgroup" or "html" or "td" or "th" or "tr" })
+            {
+                Error("unexpected-table-end-tag");
+                return;
+            }
+
+            TableToken(token);
+        }
+
+        private void TableRowToken(HtmlToken token)
+        {
+            if (token is HtmlTag { IsEndTag: false, Name: "td" or "th" } cell)
+            {
+                ClearStackToTableRowContext();
+                Insert(cell);
+                mode = Mode.InCell;
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "tr" })
+            {
+                if (!InTableScope("tr")) { Error("unexpected-row-end-tag"); return; }
+                ClearStackToTableRowContext();
+                CloseAt(open.Count - 1);
+                mode = Mode.InTableBody;
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "caption" or "col" or "colgroup" or "tbody" or "tfoot" or "thead" or "tr" })
+            {
+                Error("unexpected-table-start-tag-in-row");
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "table" } tableEnd)
+            {
+                if (!InTableScope("tr")) { Error("unexpected-table-end-tag"); return; }
+                ClearStackToTableRowContext();
+                CloseAt(open.Count - 1);
+                mode = Mode.InTableBody;
+                Process(tableEnd);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "tbody" or "tfoot" or "thead" } sectionEnd)
+            {
+                if (!InTableScope(sectionEnd.Name)) { Error("unexpected-table-section-end-tag"); return; }
+                if (!InTableScope("tr")) { Error("unexpected-row-end-tag"); return; }
+                ClearStackToTableRowContext();
+                CloseAt(open.Count - 1);
+                mode = Mode.InTableBody;
+                Process(sectionEnd);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "body" or "caption" or "col" or "colgroup" or "html" or "td" or "th" })
+            {
+                Error("unexpected-table-end-tag");
+                return;
+            }
+
+            TableToken(token);
+        }
+
+        private void TableCellToken(HtmlToken token)
+        {
+            if (token is HtmlTag { IsEndTag: true, Name: "td" or "th" } cellEnd)
+            {
+                if (!InTableScope(cellEnd.Name)) { Error("unexpected-cell-end-tag"); return; }
+                CloseTableCell(cellEnd.Name);
+                return;
+            }
+
+            if (token is HtmlTag start && !start.IsEndTag
+                && TableStructuralTags.Contains(start.Name))
+            {
+                CloseTableCell();
+                Process(token);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "table" or "tbody" or "tfoot" or "thead" or "tr" } tableEnd)
+            {
+                if (!InTableScope(tableEnd.Name)) { Error("unexpected-table-end-tag"); return; }
+                CloseTableCell();
+                Process(tableEnd);
+                return;
+            }
+
+            BodyToken(token);
+        }
+
+        private void CloseTableCell(string? expectedName = null)
+        {
+            var cellIndex = open.FindLastIndex(element => element.LocalName is "td" or "th");
+            if (cellIndex < 0 || expectedName is not null && open[cellIndex].LocalName != expectedName)
+            {
+                Error("unexpected-cell-end-tag");
+                return;
+            }
+
+            GenerateImpliedEndTags();
+            if (Current is not DomElement current || current.LocalName != open[cellIndex].LocalName)
+            {
+                Error("cell-closed-with-open-descendants");
+            }
+
+            CloseAt(cellIndex);
+            mode = Mode.InRow;
+        }
+
+        private void GenerateImpliedEndTags()
+        {
+            while (open.Count > 0 && ImpliedEndTags.Contains(open[^1].LocalName))
+            {
+                open.RemoveAt(open.Count - 1);
+            }
+        }
+
+        private bool InTableScope(string name)
+        {
+            for (var index = open.Count - 1; index >= 0; index--)
+            {
+                var current = open[index].LocalName;
+                if (current == name) { return true; }
+                if (current is "table" or "template" or "html") { return false; }
+            }
+
+            return false;
+        }
+
+        private void ClearStackToTableContext() => ClearStackToContext(["table", "template", "html"]);
+        private void ClearStackToTableBodyContext() => ClearStackToContext(["tbody", "tfoot", "thead", "template", "html"]);
+        private void ClearStackToTableRowContext() => ClearStackToContext(["tr", "template", "html"]);
+
+        private void ClearStackToContext(string[] context)
+        {
+            while (open.Count > 0 && !context.Contains(open[^1].LocalName, StringComparer.Ordinal))
+            {
+                open.RemoveAt(open.Count - 1);
+            }
+        }
+
+        private static bool IsTableMode(Mode value) =>
+            value is Mode.InTable or Mode.InTableText or Mode.InTableBody or Mode.InRow or Mode.InCell;
 
         private void SelectToken(HtmlToken token, int selectIndex)
         {
@@ -679,9 +994,18 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th", "template",
+        "caption", "colgroup", "col", "template",
         "svg", "math", "frameset", "frame", "noscript",
         "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
+    };
+    private static readonly HashSet<string> TableTags = new(StringComparer.Ordinal)
+    {
+        "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th"
+    };
+    private static readonly HashSet<string> TableStructuralTags = new(TableTags, StringComparer.Ordinal);
+    private static readonly HashSet<string> ImpliedEndTags = new(StringComparer.Ordinal)
+    {
+        "dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc"
     };
     private static readonly HashSet<string> VoidTags = new(StringComparer.Ordinal)
     {
@@ -703,7 +1027,7 @@ public static class HtmlParser
         "fieldset", "figcaption", "figure", "footer", "header", "hgroup", "main", "menu", "nav", "ol",
         "search", "section", "summary", "ul", "h1", "h2", "h3", "h4", "h5", "h6", "pre", "listing"
     };
-    private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags)
+    private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(TableTags)
         .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script",
             "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "option"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)

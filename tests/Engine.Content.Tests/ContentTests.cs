@@ -84,7 +84,7 @@ public sealed class ContentTests
         Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => OfflinePageRenderer.Render("<!doctype html><div></div>",
             [new(Css + " @import 'https://example.com/x'")], new EmptyShaper(), fonts, 20, 20,
             new() { IncludeUserAgentStyle = false }, Cancellation));
-        Assert.Throws<VisualWeb.Engine.Html.UnsupportedHtmlException>(() => OfflinePageRenderer.Render("<table></table>",
+        Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => OfflinePageRenderer.Render("<table></table>",
             [new(Css)], new EmptyShaper(), fonts, 20, 20, cancellationToken: Cancellation));
     }
 

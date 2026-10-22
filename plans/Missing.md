@@ -308,9 +308,13 @@ Evidence: `stylesheet collection`, `script classification`, `HTML loading policy
 
 ### 4. General HTML and DOM compatibility
 
-The tokenizer is considerably more complete than the tree builder. Remaining parser work includes:
+The tokenizer is considerably more complete than the tree builder. A bounded
+static table subset now builds table sections, rows and cells, including implied
+`tbody`/`tr` wrappers and scoped closure. Foster parenting, table captions and
+column construction remain explicitly unsupported. Other remaining parser work
+includes:
 
-- Tables, templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
+- Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 - Broader legacy doctype handling.
@@ -321,7 +325,8 @@ the browser-shell form state is a separate bounded shell-owned subset.
 
 These are compatibility blockers: unsupported constructs can reject a page.
 
-Evidence: `HTML tree-building scope`.
+Evidence: `HTML tree-building scope`; focused tests cover the simple table subset,
+but broader table conformance fixtures remain outside the supported scope.
 
 ### 5. General CSS, layout, and painting
 

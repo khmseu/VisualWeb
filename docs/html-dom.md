@@ -76,6 +76,10 @@ after-after-body modes. Supported behavior includes:
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
 - A bounded `select` subset containing direct `option` and `optgroup` children, with text only inside options.
+- Basic static table construction for `table`, `tbody`/`thead`/`tfoot`, `tr`,
+  `td` and `th`, including implied `tbody`/`tr`, scoped closure, whitespace and
+  comments. Cell contents use the existing in-body subset. This tree-building
+  support does not add table layout; `Engine.Layout` still rejects table frames.
 
 Simple `form` elements use the form element pointer: `<form>` closes an open
 `p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
@@ -87,7 +91,10 @@ void element and `button` an ordinary element, so control text never renders
 as raw markup. The parser therefore guarantees that a form owner is the
 nearest ancestor `form`.
 
-The following throw explicitly: tables and table parts, templates, SVG/MathML,
+Table foster parenting (including non-whitespace table text), captions and
+column-group/column construction throw explicitly; unsupported table tags also
+throw outside the table contexts covered above. The following additionally
+throw explicitly: templates, SVG/MathML,
 unsupported select contents (including optgroups outside selects and non-option optgroup children), textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
 applet/marquee/object-specific algorithms. Legacy public/system doctype mode
 selection (except `about:legacy-compat`) also throws. Fragment parsing is not
@@ -235,10 +242,11 @@ XML infoset-coercion tests have a different output contract and are excluded;
 the pendingSpecChanges file is empty.
 
 Tree tests compare the **121** complete cases in comments01, entities01,
-entities02 and inbody01 without filtering. Broader table/template/foreign/
-fragment/adoption corpora are outside this subset. Additional tests verify
-mutations, unsupported failures, cancellation and exact limits. This is finite
-evidence, not a claim to implement all of HTML or DOM.
+entities02 and inbody01 without filtering. Focused tests cover the implemented
+simple table subset; broader table/template/foreign/fragment/adoption corpora
+are outside it. Additional tests verify mutations, unsupported failures,
+cancellation and exact limits. This is finite evidence, not a claim to
+implement all of HTML or DOM.
 
 ```sh
 dotnet test tests/Engine.Dom.Tests/Engine.Dom.Tests.csproj

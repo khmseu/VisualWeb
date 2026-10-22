@@ -102,6 +102,53 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void SimpleTablesBuildSectionsRowsAndCells()
+    {
+        var result = Parse("<!doctype html><table id=t>\n<!--inside--><tr id=first><td>A<td>B</tr></tbody>\n"
+            + "<tbody id=explicit><tr><th>C</th><td><p>D</p></td></tr></tbody></table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        Assert.Equal("t", table.GetAttribute("id"));
+        Assert.Contains(table.ChildNodes, node => node is DomComment comment && comment.Data == "inside");
+        Assert.Contains(table.ChildNodes, node => node is DomText text && text.Data == "\n");
+        var sections = table.ChildNodes.OfType<DomElement>().ToArray();
+        Assert.Equal(["tbody", "tbody"], sections.Select(section => section.LocalName));
+        Assert.Null(sections[0].GetAttribute("id"));
+        Assert.Equal("explicit", sections[1].GetAttribute("id"));
+
+        var firstRow = Assert.IsType<DomElement>(sections[0].FirstChild);
+        Assert.Equal("first", firstRow.GetAttribute("id"));
+        Assert.Equal(["td", "td"], firstRow.ChildNodes.OfType<DomElement>().Select(cell => cell.LocalName));
+        Assert.Equal(["A", "B"], firstRow.ChildNodes.OfType<DomElement>().Select(cell => cell.TextContent));
+        var secondRow = Assert.IsType<DomElement>(sections[1].FirstChild);
+        Assert.Equal(["th", "td"], secondRow.ChildNodes.OfType<DomElement>().Select(cell => cell.LocalName));
+        Assert.Equal("D", secondRow.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void TableCellsImplyRowsAndTableEndClosesOpenContainers()
+    {
+        var result = Parse("<!doctype html><table><tbody><td>x</table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var section = Assert.IsType<DomElement>(table.FirstChild);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        var cell = Assert.IsType<DomElement>(row.FirstChild);
+        Assert.Equal("tbody", section.LocalName);
+        Assert.Equal("tr", row.LocalName);
+        Assert.Equal("td", cell.LocalName);
+        Assert.Equal("x", cell.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "cell-start-without-row");
+        Assert.DoesNotContain(result.Errors, error => error.Code == "unclosed-elements-at-eof");
+    }
+
+    [Theory]
+    [InlineData("<table>text<tr><td>x</td></tr></table>")]
+    [InlineData("<table><caption>caption</caption></table>")]
+    [InlineData("<table><colgroup><col></colgroup></table>")]
+    public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
+        Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Fact]
     public void UnclosedSelectReportsASelectSpecificParseError()
     {
         var result = Parse("<!doctype html><select><option>x");
@@ -109,7 +156,6 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<table><tr><td>x")]
     [InlineData("<template>x")]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
