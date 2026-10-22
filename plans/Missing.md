@@ -309,10 +309,10 @@ Evidence: `stylesheet collection`, `script classification`, `HTML loading policy
 ### 4. General HTML and DOM compatibility
 
 The tokenizer is considerably more complete than the tree builder. A bounded
-static table subset now builds table sections, rows and cells, including implied
-`tbody`/`tr` wrappers and scoped closure. Foster parenting, table captions and
-column construction remain explicitly unsupported. Other remaining parser work
-includes:
+static table subset now builds `colgroup`/`col`, table sections, rows and cells,
+including implied `colgroup`/`tbody`/`tr` wrappers and scoped closure. Foster
+parenting and table captions remain explicitly unsupported. Other remaining
+parser work includes:
 
 - Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.

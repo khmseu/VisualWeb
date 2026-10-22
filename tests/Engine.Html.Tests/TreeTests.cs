@@ -141,10 +141,26 @@ public sealed class TreeTests
         Assert.DoesNotContain(result.Errors, error => error.Code == "unclosed-elements-at-eof");
     }
 
+    [Fact]
+    public void TableColumnGroupsAndColumnsBuildWithImpliedGroups()
+    {
+        var result = Parse("<!doctype html><table><colgroup id=explicit>\n<col span=2>\n</colgroup>"
+            + "<col id=single><tbody><tr><td>x</td></tr></tbody></table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var groups = table.ChildNodes.OfType<DomElement>().Where(element => element.LocalName == "colgroup").ToArray();
+        Assert.Equal(2, groups.Length);
+        Assert.Equal("explicit", groups[0].GetAttribute("id"));
+        Assert.Equal("2", Assert.IsType<DomElement>(groups[0].ChildNodes.OfType<DomElement>().Single()).GetAttribute("span"));
+        Assert.Null(groups[1].GetAttribute("id"));
+        Assert.Equal("single", Assert.IsType<DomElement>(groups[1].ChildNodes.OfType<DomElement>().Single()).GetAttribute("id"));
+        Assert.Contains(groups[0].ChildNodes, node => node is DomText text && text.Data == "\n");
+        Assert.Empty(result.Errors);
+    }
+
     [Theory]
     [InlineData("<table>text<tr><td>x</td></tr></table>")]
     [InlineData("<table><caption>caption</caption></table>")]
-    [InlineData("<table><colgroup><col></colgroup></table>")]
+    [InlineData("<table><colgroup>text</colgroup></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 

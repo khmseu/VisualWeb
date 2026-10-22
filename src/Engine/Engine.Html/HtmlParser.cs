@@ -6,10 +6,11 @@ namespace VisualWeb.Engine.Html;
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
 /// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incolgroup">in column group</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intbody">in table body</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>.
-/// Basic table sections, rows and cells are supported; foster parenting, captions, columns, templates, foreign content,
+/// Basic table sections, rows, cells and column groups are supported; foster parenting, captions, templates, foreign content,
 /// frames, fragment parsing, scripting, active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
@@ -19,7 +20,7 @@ public static class HtmlParser
     private enum Mode
     {
         Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text,
-        InTable, InTableText, InTableBody, InRow, InCell, AfterBody, AfterAfterBody
+        InTable, InTableText, InColumnGroup, InTableBody, InRow, InCell, AfterBody, AfterAfterBody
     }
 
     private sealed class Builder
@@ -303,6 +304,9 @@ public static class HtmlParser
                     case Mode.InTableText:
                         TableTextToken(token);
                         return;
+                    case Mode.InColumnGroup:
+                        ColumnGroupToken(token);
+                        return;
                     case Mode.InTableBody:
                         TableBodyToken(token);
                         return;
@@ -538,13 +542,24 @@ public static class HtmlParser
                         Insert(tag);
                         mode = Mode.InTableBody;
                         return;
+                    case "colgroup":
+                        ClearStackToTableContext();
+                        Insert(tag);
+                        mode = Mode.InColumnGroup;
+                        return;
+                    case "col":
+                        ClearStackToTableContext();
+                        Insert(Synthetic("colgroup"));
+                        mode = Mode.InColumnGroup;
+                        Process(tag);
+                        return;
                     case "tr" or "td" or "th":
                         ClearStackToTableContext();
                         Insert(Synthetic("tbody"));
                         mode = Mode.InTableBody;
                         Process(tag);
                         return;
-                    case "caption" or "col" or "colgroup":
+                    case "caption":
                         throw Unsupported($"Tree construction for <{tag.Name}> in a table is not implemented.");
                     default:
                         throw Unsupported("Foster parenting for table content is not implemented.");
@@ -591,6 +606,66 @@ public static class HtmlParser
             }
 
             mode = originalMode;
+            Process(token);
+        }
+
+        private void ColumnGroupToken(HtmlToken token)
+        {
+            if (token is HtmlCharacters characters)
+            {
+                if (characters.Data.All(HtmlTokenizer.Whitespace))
+                {
+                    Text(characters.Data);
+                    return;
+                }
+
+                if (Current is not DomElement { LocalName: "colgroup" })
+                {
+                    Error("unexpected-column-group-content");
+                    return;
+                }
+
+                open.RemoveAt(open.Count - 1);
+                mode = Mode.InTable;
+                Process(token);
+                return;
+            }
+
+            if (Miscellaneous(token, Current)) { return; }
+            if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
+            if (token is HtmlEndOfFile) { BodyToken(token); return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "html" }) { BodyToken(token); return; }
+            if (token is HtmlTag { IsEndTag: false, Name: "col" } column)
+            {
+                Insert(column, push: false);
+                return;
+            }
+            if (token is HtmlTag { IsEndTag: true, Name: "colgroup" })
+            {
+                if (Current is not DomElement { LocalName: "colgroup" })
+                {
+                    Error("unexpected-colgroup-end-tag");
+                    return;
+                }
+
+                open.RemoveAt(open.Count - 1);
+                mode = Mode.InTable;
+                return;
+            }
+            if (token is HtmlTag { IsEndTag: true, Name: "col" })
+            {
+                Error("unexpected-col-end-tag");
+                return;
+            }
+
+            if (Current is not DomElement { LocalName: "colgroup" })
+            {
+                Error("unexpected-column-group-content");
+                return;
+            }
+
+            open.RemoveAt(open.Count - 1);
+            mode = Mode.InTable;
             Process(token);
         }
 
@@ -789,7 +864,7 @@ public static class HtmlParser
         }
 
         private static bool IsTableMode(Mode value) =>
-            value is Mode.InTable or Mode.InTableText or Mode.InTableBody or Mode.InRow or Mode.InCell;
+            value is Mode.InTable or Mode.InTableText or Mode.InColumnGroup or Mode.InTableBody or Mode.InRow or Mode.InCell;
 
         private void SelectToken(HtmlToken token, int selectIndex)
         {
@@ -994,7 +1069,7 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "caption", "colgroup", "col", "template",
+        "caption", "template",
         "svg", "math", "frameset", "frame", "noscript",
         "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
     };

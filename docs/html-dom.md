@@ -76,10 +76,11 @@ after-after-body modes. Supported behavior includes:
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
 - A bounded `select` subset containing direct `option` and `optgroup` children, with text only inside options.
-- Basic static table construction for `table`, `tbody`/`thead`/`tfoot`, `tr`,
-  `td` and `th`, including implied `tbody`/`tr`, scoped closure, whitespace and
-  comments. Cell contents use the existing in-body subset. This tree-building
-  support does not add table layout; `Engine.Layout` still rejects table frames.
+- Basic static table construction for `table`, `colgroup`/`col`,
+  `tbody`/`thead`/`tfoot`, `tr`, `td` and `th`, including implied
+  `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
+  contents use the existing in-body subset. This tree-building support does
+  not add table layout; `Engine.Layout` still rejects table frames.
 
 Simple `form` elements use the form element pointer: `<form>` closes an open
 `p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
@@ -91,10 +92,9 @@ void element and `button` an ordinary element, so control text never renders
 as raw markup. The parser therefore guarantees that a form owner is the
 nearest ancestor `form`.
 
-Table foster parenting (including non-whitespace table text), captions and
-column-group/column construction throw explicitly; unsupported table tags also
-throw outside the table contexts covered above. The following additionally
-throw explicitly: templates, SVG/MathML,
+Table foster parenting (including non-whitespace table text) and captions throw
+explicitly; unsupported table tags also throw outside the table contexts covered
+above. The following additionally throw explicitly: templates, SVG/MathML,
 unsupported select contents (including optgroups outside selects and non-option optgroup children), textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
 applet/marquee/object-specific algorithms. Legacy public/system doctype mode
 selection (except `about:legacy-compat`) also throws. Fragment parsing is not

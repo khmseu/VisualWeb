@@ -7,8 +7,8 @@ references are embedded [pinned data](Data/README.md).
 
 Tree construction supplies implicit html/head/body, head metadata/text elements,
 ordinary body elements, lists, paragraphs, headings, void elements, bounded
-select/optgroup parsing, a simple table section/row/cell subset and documented
-recovery rules. Table foster parenting, captions and columns remain unsupported.
+select/optgroup parsing, a simple table column-group/section/row/cell subset and
+documented recovery rules. Table foster parenting and captions remain unsupported.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.
