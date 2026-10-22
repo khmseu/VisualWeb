@@ -9,9 +9,10 @@ namespace VisualWeb.PageRendering;
 /// "stylesheet"</see> and <see href="https://html.spec.whatwg.org/multipage/semantics.html#the-link-element">the link
 /// element</see>, and css-mediaqueries-5;
 /// <see href="https://www.w3.org/TR/mediaqueries-5/#media-types">media types</see>. Only persistent text/css sheets
-/// matching <c>all</c> or the single <c>screen</c> media type are collected. The exact <c>print</c> media type is
-/// recognized as non-applicable to this screen-only renderer and ignored. Alternate/titled/disabled sheets, other
-/// media queries, other types, CORS (<c>crossorigin</c>), integrity, referrer policy and the obsolete
+/// matching <c>all</c>/<c>screen</c> media types are collected. Exact <c>print</c> media types are recognized as
+/// non-applicable to this screen-only renderer and ignored. Comma-separated media lists are supported only when every
+/// entry is an exact media type in the supported subset; conditional media queries are unsupported. Alternate/titled/
+/// disabled sheets, other types, CORS (<c>crossorigin</c>), integrity, referrer policy and the obsolete
 /// <c>charset</c> attribute throw instead of being ignored. Links without a nonempty href create no resource, as in
 /// the spec. URLs resolve against the document base URL, falling back to the final response URL.</remarks>
 internal static class LinkedStylesheets
@@ -67,14 +68,19 @@ internal static class LinkedStylesheets
         return null;
     }
 
-    public static bool SupportsMedia(string? media) => media is null
-        || media.Trim(AsciiWhitespace).Equals("all", StringComparison.OrdinalIgnoreCase)
-        || media.Trim(AsciiWhitespace).Equals("screen", StringComparison.OrdinalIgnoreCase)
-        || media.Trim(AsciiWhitespace).Equals("print", StringComparison.OrdinalIgnoreCase);
+    public static bool SupportsMedia(string? media) => ParseMediaList(media) is not null;
 
-    public static bool AppliesToScreen(string? media) => media is null
-        || media.Trim(AsciiWhitespace).Equals("all", StringComparison.OrdinalIgnoreCase)
-        || media.Trim(AsciiWhitespace).Equals("screen", StringComparison.OrdinalIgnoreCase);
+    public static bool AppliesToScreen(string? media)
+    {
+        var mediaTypes = ParseMediaList(media);
+        if (mediaTypes is null)
+        {
+            return false;
+        }
+
+        return mediaTypes.Contains("all", StringComparer.OrdinalIgnoreCase)
+            || mediaTypes.Contains("screen", StringComparer.OrdinalIgnoreCase);
+    }
 
     public static string StripCharsetRule(string css)
     {
@@ -97,7 +103,9 @@ internal static class LinkedStylesheets
         if (UnsupportedAttributes.FirstOrDefault(name => element.GetAttribute(name) is not null) is { } unsupported)
         { throw new PageNavigationException($"Linked stylesheet attribute '{unsupported}' is unsupported."); }
         if (!SupportsMedia(element.GetAttribute("media")))
-        { throw new PageNavigationException("Linked stylesheet media must be absent, 'all', the single 'screen' media type, or the single 'print' media type."); }
+        {
+            throw new PageNavigationException("Linked stylesheet media must be absent or a comma-separated list containing only exact 'all', 'screen', or 'print' media types.");
+        }
         if (element.GetAttribute("type") is { Length: > 0 } type && !type.Equals("text/css", StringComparison.OrdinalIgnoreCase))
         { throw new PageNavigationException("Linked stylesheet types other than text/css are unsupported."); }
         if (!AppliesToScreen(element.GetAttribute("media"))) { return null; }
@@ -118,5 +126,40 @@ internal static class LinkedStylesheets
                 : $"Linked stylesheet scheme {url.Protocol} is unsupported.");
         }
         return url.Href;
+    }
+
+    private static IReadOnlyList<string>? ParseMediaList(string? media)
+    {
+        if (media is null)
+        {
+            return ["all"];
+        }
+
+        var entries = media.Split(',', StringSplitOptions.TrimEntries);
+        if (entries.Length == 0)
+        {
+            return null;
+        }
+
+        var values = new List<string>(entries.Length);
+        foreach (var entry in entries)
+        {
+            var token = entry.Trim(AsciiWhitespace);
+            if (token.Length == 0)
+            {
+                return null;
+            }
+
+            if (!token.Equals("all", StringComparison.OrdinalIgnoreCase)
+                && !token.Equals("screen", StringComparison.OrdinalIgnoreCase)
+                && !token.Equals("print", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            values.Add(token);
+        }
+
+        return values.AsReadOnly();
     }
 }

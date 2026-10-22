@@ -114,25 +114,61 @@ internal static class CssImports
             return (reference, ImportApplicability.AppliesToScreen);
         }
 
-        if (tokens.Length == mediaStart + 1 && tokens[mediaStart].Kind == CssTokenKind.Ident)
+        if (mediaStart == tokens.Length)
         {
-            var mediaType = tokens[mediaStart].Value.ToLowerInvariant();
-            if (mediaType is "all" or "screen")
-            {
-                return (reference, ImportApplicability.AppliesToScreen);
-            }
-            if (mediaType == "print")
-            {
-                return (reference, ImportApplicability.DoesNotApplyToScreen);
-            }
+            return (reference, ImportApplicability.AppliesToScreen);
         }
 
-        if (tokens[0].Kind is CssTokenKind.String or CssTokenKind.Url
-            || tokens[0].Kind == CssTokenKind.Function
-                && tokens[0].Value.Equals("url", StringComparison.OrdinalIgnoreCase))
+        var mediaApplicability = ParseMediaTypes(tokens, mediaStart);
+        if (mediaApplicability is not null)
         {
-            throw new PageNavigationException("CSS @import supports only optional single media types all, screen, or print.");
+            return (reference, mediaApplicability.Value);
         }
-        throw new PageNavigationException("CSS @import requires a valid string or url() value.");
+
+        throw new PageNavigationException("CSS @import supports optional media lists containing only exact all, screen, or print media types.");
+    }
+
+    private static ImportApplicability? ParseMediaTypes(IReadOnlyList<CssToken> tokens, int start)
+    {
+        var appliesToScreen = false;
+        var expectMediaType = true;
+        for (var index = start; index < tokens.Count; index++)
+        {
+            var token = tokens[index];
+            if (expectMediaType)
+            {
+                if (token.Kind != CssTokenKind.Ident)
+                {
+                    return null;
+                }
+
+                if (token.Value.Equals("all", StringComparison.OrdinalIgnoreCase)
+                    || token.Value.Equals("screen", StringComparison.OrdinalIgnoreCase))
+                {
+                    appliesToScreen = true;
+                }
+                else if (!token.Value.Equals("print", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                expectMediaType = false;
+                continue;
+            }
+
+            if (token.Kind != CssTokenKind.Comma)
+            {
+                return null;
+            }
+
+            expectMediaType = true;
+        }
+
+        if (expectMediaType)
+        {
+            return null;
+        }
+
+        return appliesToScreen ? ImportApplicability.AppliesToScreen : ImportApplicability.DoesNotApplyToScreen;
     }
 }

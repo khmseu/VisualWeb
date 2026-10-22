@@ -63,8 +63,9 @@ public interface IPageSource : IDisposable
 /// per css-syntax <see href="https://www.w3.org/TR/css-syntax-3/#determine-the-fallback-encoding">fallback encoding</see>;
 /// unknown labels fail visibly. Leading CSS <c>@import</c> rules in embedded and fetched stylesheets are
 /// brokered recursively under the same count/character/wire bounds and inserted at their cascade positions.
-/// Optional single media types <c>all</c>/<c>screen</c> apply; <c>print</c> is ignored for this screen-only renderer;
-/// other conditional/layer forms fail visibly. Any stylesheet failure fails the whole navigation. <c>url()</c>
+/// Optional comma-separated media lists containing exact <c>all</c>/<c>screen</c>/<c>print</c> media types are
+/// supported; lists excluding both <c>all</c> and <c>screen</c> are ignored for this screen-only renderer. Other
+/// conditional/layer forms fail visibly. Any stylesheet failure fails the whole navigation. <c>url()</c>
 /// resources, fonts and images are not fetched. Same-origin HTTP(S) stylesheet requests retain fixed-origin redirect checks. Cross-origin HTTP(S) sheets
 /// use a credentialless CORS subset (spec: fetch;
 /// <see href="https://fetch.spec.whatwg.org/#cors-check">CORS check</see>): the final response must allow the document

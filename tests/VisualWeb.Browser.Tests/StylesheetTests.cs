@@ -190,6 +190,7 @@ public sealed class StylesheetTests
     [InlineData("@import 'layered.css' layer(theme);")]
     [InlineData("@import 'conditional.css' supports(display: grid);")]
     [InlineData("@import 'conditional.css' screen and (min-width: 1px);")]
+    [InlineData("@import 'conditional.css' print, screen and (min-width: 1px);")]
     [InlineData("p{color:red}@import 'late.css';")]
     public async Task UnsupportedCssImportConditionsAndOrderingFailBeforeSubresourceRequests(string css)
     {
@@ -208,7 +209,7 @@ public sealed class StylesheetTests
     }
 
     [Fact]
-    public async Task SingleMediaTypeCssImportsUseScreenPolicy()
+    public async Task MediaListCssImportsUseScreenPolicy()
     {
         var requests = new List<string>();
         using var source = new GetPageSource(new Handler(request =>
@@ -221,12 +222,15 @@ public sealed class StylesheetTests
                     <!doctype html><style>
                     @import 'all.css' all;
                     @import 'screen.css' screen;
+                    @import 'screen-list.css' print, screen;
                     @import 'print.css' print;
+                    @import 'print-list.css' print, print;
                     body{margin:0}
                     </style>
                     """, "text/html"),
                 "https://example.test/all.css" => Text("body{background-color:red}", "text/css"),
                 "https://example.test/screen.css" => Text("body{background-color:blue}", "text/css"),
+                "https://example.test/screen-list.css" => Text("body{color:black}", "text/css"),
                 _ => throw new InvalidOperationException($"Unexpected stylesheet request: {url}")
             };
         }));
@@ -238,16 +242,19 @@ public sealed class StylesheetTests
         Assert.Equal([
             "https://example.test/page",
             "https://example.test/all.css",
-            "https://example.test/screen.css"
+            "https://example.test/screen.css",
+            "https://example.test/screen-list.css"
         ], requests);
         Assert.Equal([
             "https://example.test/all.css",
-            "https://example.test/screen.css"
+            "https://example.test/screen.css",
+            "https://example.test/screen-list.css"
         ], page.Stylesheets.Select(sheet => sheet.Url));
         var texts = styles.Select(style => style.Text).ToArray();
         Assert.Equal("body{background-color:red}", texts[0]);
         Assert.Equal("body{background-color:blue}", texts[1]);
-        Assert.Contains("body{margin:0}", texts[2], StringComparison.Ordinal);
+        Assert.Equal("body{color:black}", texts[2]);
+        Assert.Contains("body{margin:0}", texts[3], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -449,6 +456,20 @@ public sealed class StylesheetTests
         var document = HtmlParser.Parse("""
             <!doctype html><style media=" SCREEN ">body{color:red}</style>
             <link rel=stylesheet media=screen href=screen.css>
+            """, cancellationToken: Cancellation).Document;
+        var url = BrowserUrl.Parse("https://example.test/page");
+
+        Assert.Equal(["https://example.test/screen.css"], StaticPageRenderer.DiscoverStylesheets(document, url, Cancellation));
+        Assert.Equal(["body{color:red}", "body{color:blue}"], StaticPageRenderer.CollectStyles(document, null,
+            Cancellation, url, [new("https://example.test/screen.css", "body{color:blue}")]).Select(source => source.Text));
+    }
+
+    [Fact]
+    public void ScreenMediaListsIncludeEmbeddedAndLinkedStylesheets()
+    {
+        var document = HtmlParser.Parse("""
+            <!doctype html><style media=" print , SCREEN ">body{color:red}</style>
+            <link rel=stylesheet media="print,screen" href=screen.css>
             """, cancellationToken: Cancellation).Document;
         var url = BrowserUrl.Parse("https://example.test/page");
 

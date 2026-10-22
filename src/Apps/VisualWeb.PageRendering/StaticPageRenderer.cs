@@ -599,8 +599,9 @@ public sealed class StaticPageRenderer : IPageRenderer
         LinkedStylesheets.Discover(document, documentUrl, cancellationToken, baseUrlOverride);
     /// <summary>Import URLs referenced by supported embedded stylesheets, resolved against the document base URL.</summary>
     /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">import rules</see>.
-    /// Leading imports are supported with optional single media types all/screen/print; print imports are ignored in the
-    /// screen-only renderer. Other conditions and cascade layers fail visibly.</remarks>
+    /// Leading imports are supported with optional media lists containing exact all/screen/print media types; imports
+    /// whose list excludes all and screen are ignored in the screen-only renderer. Other conditions and cascade layers
+    /// fail visibly.</remarks>
     public static IReadOnlyList<string> DiscoverInlineStylesheetImports(string html, BrowserUrl documentUrl,
         CancellationToken cancellationToken = default, BrowserUrl? baseUrlOverride = null)
     {
@@ -680,8 +681,9 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     /// <summary>Import URLs in one stylesheet, resolved against its final response URL.</summary>
     /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#at-import">import rules</see>.
-    /// Leading imports are supported with optional single media types all/screen/print; print imports are ignored in the
-    /// screen-only renderer. Other conditions and cascade layers fail visibly.</remarks>
+    /// Leading imports are supported with optional media lists containing exact all/screen/print media types; imports
+    /// whose list excludes all and screen are ignored in the screen-only renderer. Other conditions and cascade layers
+    /// fail visibly.</remarks>
     public static IReadOnlyList<string> DiscoverStylesheetImports(string css, BrowserUrl stylesheetUrl,
         CancellationToken cancellationToken = default) =>
         CssImports.Parse(LinkedStylesheets.StripCharsetRule(css), stylesheetUrl, cancellationToken)
@@ -759,7 +761,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         if (!LinkedStylesheets.SupportsMedia(element.GetAttribute("media")))
         {
-            throw new PageNavigationException("Embedded stylesheet media must be absent, 'all', the single 'screen' media type, or the single 'print' media type.");
+            throw new PageNavigationException("Embedded stylesheet media must be absent or a comma-separated list containing only exact 'all', 'screen', or 'print' media types.");
         }
         if (element.GetAttribute("title") is { Length: > 0 })
         {

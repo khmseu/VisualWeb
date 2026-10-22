@@ -10,8 +10,9 @@ browser the supported classic `link rel=stylesheet` URLs (resolved against the f
 `<base href>`, with the final document URL as fallback) from the same parser options;
 leading `@import` rules are discovered for embedded and linked sources and
 `CollectStyles` expands them at their cascade positions in document order.
-Optional single media types (`all`, `screen`, `print`) are supported for imports;
-the exact `print` media type is ignored in this screen-only renderer. Other
+Optional media lists containing exact `all`, `screen`, and `print` media types are
+supported for imports and stylesheet/link media attributes; lists that omit `all`
+and `screen` are ignored in this screen-only renderer. Other
 unsupported media queries, conditions, layers and late imports fail explicitly.
 The renderer throws for
 unsupported link semantics or sources (for example, script-changed ones) whose text
