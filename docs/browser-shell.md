@@ -183,8 +183,10 @@ while editing the address, and is ignored over chrome when the last logical
 pointer position is known. Wheel events themselves carry no pointer coordinates.
 Page Up/Down move one viewport; Home/End select the document top/bottom outside
 address editing, and Ctrl+Home/End do the same outside address editing and all
-focused form controls. Horizontal scrolling, painted scrollbars and general DOM input/default
-actions are not implemented.
+focused form controls. A browser-owned vertical scrollbar supports click-to-
+position and drag scrolling. Horizontal scrolling, general CSS overflow and
+nested scrolling remain unsupported; this does not dispatch general DOM input
+or default-action events.
 
 Each tab's controller content owns its scroll position, including across tab
 moves. Positions clamp to the rendered root document border-box bottom minus
@@ -899,16 +901,28 @@ Render-stage objects are not shared between tabs or retained as a history cache.
 tab-local, while immutable configured font file paths and the chrome renderer
 are shell-level resources.
 
-Pages support bounded textual anchor hit-testing and primary-click navigation,
-but no general DOM input, controls or selection.
-Basic vertical document scrolling is available; general/nested CSS overflow is
-not. Bounded classic linked stylesheets load as described above; there are no
-downloads, storage, images or media.
-Post-parse inline scripting remains explicit opt-in, not a full event loop. Native page crashes
-can terminate the entire shell in single-process mode; multiprocess mode
-contains worker failures to their tab. Browser-native chrome/platform crashes
-remain shell failures. Production origin/CORS/CSP/confinement policy remains
-**unfinished phase 10/future work**, not inferred from process separation.
+Page interaction is a bounded shell-owned subset. Textual links support the
+pointer, keyboard traversal, focus and target behavior described above. Simple
+GET forms and the listed controls use browser-owned focus, editing and
+submission; they do not receive DOM form or input events. Visible shaped text
+supports bounded drag/double/triple-click selection, keyboard extension and
+clipboard copy; editable address and supported text fields also support
+bounded selection and replacement. Vertical document scrolling is available
+through wheel/keyboard input and the browser-owned scrollbar. These features
+do not provide general DOM focus, pointer, keyboard or input dispatch: only
+the explicitly documented trusted link `click`/`auxclick` dispatch is available
+on opted-in pages.
+
+General CSS overflow, horizontal/nested scrolling, downloads, persistent
+sessions, complete browser history, page storage, images and media remain
+unsupported. Post-parse inline scripting remains explicit opt-in, not a full
+event loop. Native page crashes can terminate the entire shell in single-
+process mode; multiprocess mode contains worker failures to their tab.
+Browser-native chrome/platform crashes remain shell failures. Supported
+renderer confinement and bounded origin/CSP/CORS measures do not establish
+production-safe browsing: general request authorization and full web security
+policies remain unfinished. Do not infer those guarantees from process
+separation; see the [remaining-work tracker](../plans/Missing.md).
 
 ## Validation
 

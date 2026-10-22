@@ -254,6 +254,12 @@ broader page interaction is still missing:
 
 This is a substantial gap even for a modest usable browser.
 
+The development-shell guide's limits summary and scrolling overview now reflect
+the implemented bounded link, form, selection and vertical-scroll behavior.
+General DOM input events, downloads, persistent sessions, complete history and
+horizontal/nested overflow remain missing; this documentation correction adds
+no runtime behavior.
+
 Evidence: `page limitations`, `input dispatch`, and `history implementation`.
 
 ### 3. Loading complete web pages
