@@ -83,7 +83,11 @@ after-after-body modes. Supported behavior includes:
   reprocess table tokens; a nested table start in table mode closes the current
   in-scope table and reprocesses the token, while nested tables in cells remain
   cell descendants and restore cell mode when closed. Nested tables inside
-  captions remain unsupported.
+  captions remain unsupported. In-table form starts follow the form-pointer
+  exception: the form is inserted at the current table-mode location, then
+  popped from the open-element stack; repeated starts are ignored while the
+  pointer is set. In-table form end tags use in-body handling and cannot pop
+  the already-popped form from the stack.
   In-table `script`/`style` start tags use the existing script-data/raw-text
   modes and return to the originating table insertion mode; script content
   remains inert. A `type=hidden` input is inserted as a void table child with

@@ -320,9 +320,12 @@ to their original table insertion mode; script content remains inert.
 diagnostic; other input types remain unsupported in table content.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and
-restore cell insertion mode when closed. Nested tables inside captions and
-other tokens that require table foster parenting remain explicitly unsupported;
-tree construction still does not implement table layout. Other remaining
+restore cell insertion mode when closed. In-table form starts follow the
+form-pointer exception and pop the inserted form from the open-element stack;
+repeated starts are ignored while the pointer is set. In-table form end tags
+use in-body handling. Nested tables inside captions and other tokens that
+require table foster parenting remain explicitly unsupported; tree construction
+still does not implement table layout. Other remaining
 parser work includes:
 
 - Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.

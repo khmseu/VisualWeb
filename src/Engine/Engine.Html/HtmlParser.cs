@@ -15,8 +15,8 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
 /// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
-/// nested table starts and nested tables in cells are supported; other foster-parenting cases, nested
-/// tables in captions, templates, foreign content, frames, fragment parsing, scripting,
+/// nested table starts, nested tables in cells and the in-table form-pointer exception are supported;
+/// other foster-parenting cases, nested tables in captions, templates, foreign content, frames, fragment parsing, scripting,
 /// active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
@@ -594,6 +594,12 @@ public static class HtmlParser
                         Error("hidden-input-in-table");
                         Insert(tag, push: false);
                         return;
+                    case "form":
+                        Error("form-start-in-table");
+                        if (formPointer is not null) { return; }
+                        formPointer = Insert(tag);
+                        open.RemoveAt(open.Count - 1);
+                        return;
                     case "style":
                         StartText(tag, HtmlTextMode.Rawtext);
                         return;
@@ -603,6 +609,12 @@ public static class HtmlParser
                     default:
                         throw Unsupported("Foster parenting for table content is not implemented.");
                 }
+            }
+
+            if (tag.Name == "form")
+            {
+                BodyToken(tag);
+                return;
             }
 
             if (tag.Name == "table")

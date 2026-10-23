@@ -9,8 +9,9 @@ Tree construction supplies implicit html/head/body, head metadata/text elements,
 ordinary body elements, lists, paragraphs, headings, void elements, bounded
 select/optgroup parsing, a simple table caption/column-group/section/row/cell
 subset, inert in-table `script`/`style` text, table `type=hidden` inputs and
-text-only table foster parenting, and bounded nested-table recovery. Other
-tokens requiring table foster parenting remain unsupported.
+text-only table foster parenting, bounded nested-table recovery and the
+in-table form-pointer exception. Other tokens requiring table foster parenting
+remain unsupported.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.

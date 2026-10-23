@@ -215,6 +215,22 @@ public sealed class TreeTests
         Assert.Equal(2, result.Errors.Count(error => error.Code == "hidden-input-in-table"));
     }
 
+    [Theory]
+    [InlineData("", "table")]
+    [InlineData("<tbody>", "tbody")]
+    [InlineData("<tbody><tr>", "tr")]
+    public void FormStartsInTableModesUseTheFormPointerException(string context, string expectedParent)
+    {
+        var result = Parse($"<!doctype html><table>{context}<form id=first>"
+            + "<form id=ignored></form><td>cell</td></table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var form = Assert.Single(Descendants(table), element => element.LocalName == "form");
+        Assert.Equal("first", form.GetAttribute("id"));
+        Assert.Equal(expectedParent, Assert.IsType<DomElement>(form.ParentNode).LocalName);
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "form-start-in-table"));
+        Assert.Single(result.Errors, error => error.Code == "unexpected-form-end-tag");
+    }
+
     [Fact]
     public void NestedTableStartClosesAndReprocessesTheCurrentTable()
     {
