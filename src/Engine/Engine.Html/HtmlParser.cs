@@ -572,6 +572,12 @@ public static class HtmlParser
                         mode = Mode.InTableBody;
                         Process(tag);
                         return;
+                    case "style":
+                        StartText(tag, HtmlTextMode.Rawtext);
+                        return;
+                    case "script":
+                        StartText(tag, HtmlTextMode.ScriptData);
+                        return;
                     default:
                         throw Unsupported("Foster parenting for table content is not implemented.");
                 }

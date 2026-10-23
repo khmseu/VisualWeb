@@ -171,6 +171,30 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void TableScriptAndStyleUseInertRawTextHandling()
+    {
+        var result = Parse("<!doctype html><table><style>td > span { color: red; }</style>"
+            + "<script>if (a < b) value = '<td>';</script><tbody><tr>"
+            + "<script>const row = '<tr>';</script><td>cell</td></tr>"
+            + "<style>td { color: blue; }</style></tbody></table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var tableStyle = Assert.Single(table.ChildNodes.OfType<DomElement>(), element => element.LocalName == "style");
+        var tableScript = Assert.Single(table.ChildNodes.OfType<DomElement>(), element => element.LocalName == "script");
+        Assert.Equal("td > span { color: red; }", tableStyle.TextContent);
+        Assert.Equal("if (a < b) value = '<td>';", tableScript.TextContent);
+
+        var section = Assert.IsType<DomElement>(table.ChildNodes.OfType<DomElement>()
+            .Single(element => element.LocalName == "tbody"));
+        var row = Assert.IsType<DomElement>(section.ChildNodes.OfType<DomElement>()
+            .Single(element => element.LocalName == "tr"));
+        var rowScript = Assert.Single(row.ChildNodes.OfType<DomElement>(), element => element.LocalName == "script");
+        var sectionStyle = Assert.Single(section.ChildNodes.OfType<DomElement>(), element => element.LocalName == "style");
+        Assert.Equal("const row = '<tr>';", rowScript.TextContent);
+        Assert.Equal("td { color: blue; }", sectionStyle.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void TableTokensCloseCaptionAndAreReprocessed()
     {
         var result = Parse("<!doctype html><table><caption>Title<tr><td>cell</td></tr></table><p>after</p>");

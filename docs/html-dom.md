@@ -81,6 +81,9 @@ after-after-body modes. Supported behavior includes:
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
   and caption contents use the existing in-body subset. Captions close and
   reprocess table tokens; nested tables inside captions remain unsupported.
+  In-table `script`/`style` start tags use the existing script-data/raw-text
+  modes and return to the originating table insertion mode; script content
+  remains inert.
   Contiguous non-whitespace table-character runs (including their adjacent
   whitespace) are foster-parented before the nearest table; whitespace-only
   runs stay in the table. This tree-building support does not add table layout;
