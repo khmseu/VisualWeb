@@ -157,10 +157,34 @@ public sealed class TreeTests
         Assert.Empty(result.Errors);
     }
 
+    [Fact]
+    public void TableCaptionsBuildWithInBodyContentAndReturnToTableMode()
+    {
+        var result = Parse("<!doctype html><table><caption id=caption>Title <strong>text</strong><p>detail</p></caption>"
+            + "<tbody><tr><td>cell</td></tr></tbody></table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var children = table.ChildNodes.OfType<DomElement>().ToArray();
+        Assert.Equal(["caption", "tbody"], children.Select(element => element.LocalName));
+        Assert.Equal("caption", children[0].GetAttribute("id"));
+        Assert.Equal("Title textdetail", children[0].TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void TableTokensCloseCaptionAndAreReprocessed()
+    {
+        var result = Parse("<!doctype html><table><caption>Title<tr><td>cell</td></tr></table><p>after</p>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        Assert.Equal(["caption", "tbody"], table.ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("Title", table.FirstChild!.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "caption-closed-by-table-token");
+        Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
+    }
+
     [Theory]
     [InlineData("<table>text<tr><td>x</td></tr></table>")]
-    [InlineData("<table><caption>caption</caption></table>")]
     [InlineData("<table><colgroup>text</colgroup></table>")]
+    [InlineData("<table><caption>x<table></table></caption></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 

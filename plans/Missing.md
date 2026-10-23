@@ -310,9 +310,11 @@ Evidence: `stylesheet collection`, `script classification`, `HTML loading policy
 
 The tokenizer is considerably more complete than the tree builder. A bounded
 static table subset now builds `colgroup`/`col`, table sections, rows and cells,
-including implied `colgroup`/`tbody`/`tr` wrappers and scoped closure. Foster
-parenting and table captions remain explicitly unsupported. Other remaining
-parser work includes:
+including implied `colgroup`/`tbody`/`tr` wrappers and scoped closure. Captions
+use the existing in-body content subset and reprocess table tokens that close
+them. Foster parenting, including non-whitespace table text, remains explicitly
+unsupported; tree construction still does not implement table layout. Other
+remaining parser work includes:
 
 - Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
@@ -326,7 +328,8 @@ the browser-shell form state is a separate bounded shell-owned subset.
 These are compatibility blockers: unsupported constructs can reject a page.
 
 Evidence: `HTML tree-building scope`; focused tests cover the simple table subset,
-but broader table conformance fixtures remain outside the supported scope.
+including captions; broader table conformance fixtures remain outside the
+supported scope.
 
 ### 5. General CSS, layout, and painting
 

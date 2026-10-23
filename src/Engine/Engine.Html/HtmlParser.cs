@@ -6,11 +6,12 @@ namespace VisualWeb.Engine.Html;
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
 /// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incaption">in caption</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incolgroup">in column group</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intbody">in table body</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>.
-/// Basic table sections, rows, cells and column groups are supported; foster parenting, captions, templates, foreign content,
+/// Basic captions, table sections, rows, cells and column groups are supported; foster parenting, templates, foreign content,
 /// frames, fragment parsing, scripting, active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
@@ -20,7 +21,7 @@ public static class HtmlParser
     private enum Mode
     {
         Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text,
-        InTable, InTableText, InColumnGroup, InTableBody, InRow, InCell, AfterBody, AfterAfterBody
+        InTable, InTableText, InCaption, InColumnGroup, InTableBody, InRow, InCell, AfterBody, AfterAfterBody
     }
 
     private sealed class Builder
@@ -304,6 +305,9 @@ public static class HtmlParser
                     case Mode.InTableText:
                         TableTextToken(token);
                         return;
+                    case Mode.InCaption:
+                        CaptionToken(token);
+                        return;
                     case Mode.InColumnGroup:
                         ColumnGroupToken(token);
                         return;
@@ -542,6 +546,11 @@ public static class HtmlParser
                         Insert(tag);
                         mode = Mode.InTableBody;
                         return;
+                    case "caption":
+                        ClearStackToTableContext();
+                        Insert(tag);
+                        mode = Mode.InCaption;
+                        return;
                     case "colgroup":
                         ClearStackToTableContext();
                         Insert(tag);
@@ -559,8 +568,6 @@ public static class HtmlParser
                         mode = Mode.InTableBody;
                         Process(tag);
                         return;
-                    case "caption":
-                        throw Unsupported($"Tree construction for <{tag.Name}> in a table is not implemented.");
                     default:
                         throw Unsupported("Foster parenting for table content is not implemented.");
                 }
@@ -582,6 +589,53 @@ public static class HtmlParser
             }
 
             throw Unsupported("Foster parenting for table content is not implemented.");
+        }
+
+        private void CaptionToken(HtmlToken token)
+        {
+            if (token is HtmlTag { IsEndTag: true, Name: "caption" })
+            {
+                CloseCaption();
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "table" }
+                || token is HtmlTag { IsEndTag: false, Name: "caption" or "col" or "colgroup" or "tbody" or "td" or "tfoot" or "th" or "thead" or "tr" })
+            {
+                if (!InTableScope("caption")) { Error("unexpected-caption-tag"); return; }
+                Error("caption-closed-by-table-token");
+                if (!CloseCaption()) { return; }
+                Process(token);
+                return;
+            }
+
+            if (token is HtmlTag { IsEndTag: false, Name: "table" })
+            {
+                throw Unsupported("Nested tables inside captions are not implemented.");
+            }
+
+            if (token is HtmlTag { IsEndTag: true, Name: "body" or "col" or "colgroup" or "html" or "tbody" or "td" or "tfoot" or "th" or "thead" or "tr" })
+            {
+                Error("unexpected-caption-end-tag");
+                return;
+            }
+
+            BodyToken(token);
+        }
+
+        private bool CloseCaption()
+        {
+            var captionIndex = open.FindLastIndex(element => element.LocalName == "caption");
+            if (captionIndex < 0 || !InTableScope("caption"))
+            {
+                Error("unexpected-caption-end-tag");
+                return false;
+            }
+
+            GenerateImpliedEndTags();
+            CloseAt(captionIndex);
+            mode = Mode.InTable;
+            return true;
         }
 
         private void TableTextToken(HtmlToken token)
@@ -864,7 +918,7 @@ public static class HtmlParser
         }
 
         private static bool IsTableMode(Mode value) =>
-            value is Mode.InTable or Mode.InTableText or Mode.InColumnGroup or Mode.InTableBody or Mode.InRow or Mode.InCell;
+            value is Mode.InTable or Mode.InTableText or Mode.InCaption or Mode.InColumnGroup or Mode.InTableBody or Mode.InRow or Mode.InCell;
 
         private void SelectToken(HtmlToken token, int selectIndex)
         {
@@ -1069,7 +1123,7 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "caption", "template",
+        "template",
         "svg", "math", "frameset", "frame", "noscript",
         "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
     };
