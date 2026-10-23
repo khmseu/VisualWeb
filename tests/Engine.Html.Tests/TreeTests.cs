@@ -216,6 +216,33 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void NestedTableStartClosesAndReprocessesTheCurrentTable()
+    {
+        var result = Parse("<!doctype html><div id=host><table id=first><table id=second>"
+            + "<tbody><tr><td>cell</td></tr></tbody></table></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var tables = host.ChildNodes.OfType<DomElement>().ToArray();
+        Assert.Equal(["first", "second"], tables.Select(table => table.GetAttribute("id")));
+        Assert.Empty(tables[0].ChildNodes);
+        Assert.Equal("cell", tables[1].TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "nested-table-start-tag");
+    }
+
+    [Fact]
+    public void NestedTableInCellRestoresCellInsertionModeWhenClosed()
+    {
+        var result = Parse("<!doctype html><table id=outer><tbody><tr><td id=outer-cell>before"
+            + "<table id=inner><tbody><tr><td>inside</td></tr></tbody></table>"
+            + "after</td></tr></tbody></table>");
+        var tables = Descendants(result.Document).Where(element => element.LocalName == "table").ToArray();
+        var outerCell = Assert.Single(Descendants(tables[0]), element => element.GetAttribute("id") == "outer-cell");
+        var innerTable = Assert.Single(outerCell.ChildNodes.OfType<DomElement>(), element => element.LocalName == "table");
+        Assert.Equal("inner", innerTable.GetAttribute("id"));
+        Assert.Equal("beforeinsideafter", outerCell.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void TableTokensCloseCaptionAndAreReprocessed()
     {
         var result = Parse("<!doctype html><table><caption>Title<tr><td>cell</td></tr></table><p>after</p>");

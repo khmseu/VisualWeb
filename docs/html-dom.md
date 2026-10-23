@@ -80,7 +80,10 @@ after-after-body modes. Supported behavior includes:
   `tbody`/`thead`/`tfoot`, `tr`, `td` and `th`, including implied
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
   and caption contents use the existing in-body subset. Captions close and
-  reprocess table tokens; nested tables inside captions remain unsupported.
+  reprocess table tokens; a nested table start in table mode closes the current
+  in-scope table and reprocesses the token, while nested tables in cells remain
+  cell descendants and restore cell mode when closed. Nested tables inside
+  captions remain unsupported.
   In-table `script`/`style` start tags use the existing script-data/raw-text
   modes and return to the originating table insertion mode; script content
   remains inert. A `type=hidden` input is inserted as a void table child with

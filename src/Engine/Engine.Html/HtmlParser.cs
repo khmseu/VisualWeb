@@ -12,9 +12,11 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incolgroup">in column group</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intbody">in table body</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
-/// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>.
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
+/// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
 /// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
-/// other foster-parenting cases, templates, foreign content, frames, fragment parsing, scripting,
+/// nested table starts and nested tables in cells are supported; other foster-parenting cases, nested
+/// tables in captions, templates, foreign content, frames, fragment parsing, scripting,
 /// active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
@@ -544,7 +546,17 @@ public static class HtmlParser
                 switch (tag.Name)
                 {
                     case "table":
-                        throw Unsupported("Nested table recovery requires resetting the insertion mode.");
+                        if (!InTableScope("table"))
+                        {
+                            Error("unexpected-table-start-tag");
+                            return;
+                        }
+
+                        Error("nested-table-start-tag");
+                        CloseAt(open.FindLastIndex(element => element.LocalName == "table"));
+                        ResetInsertionModeAppropriately();
+                        Process(tag);
+                        return;
                     case "tbody" or "tfoot" or "thead":
                         ClearStackToTableContext();
                         Insert(tag);
@@ -597,7 +609,7 @@ public static class HtmlParser
             {
                 if (!InTableScope("table")) { Error("unexpected-table-end-tag"); return; }
                 CloseAt(open.FindLastIndex(element => element.LocalName == "table"));
-                mode = Mode.InBody;
+                ResetInsertionModeAppropriately();
                 return;
             }
 
@@ -899,7 +911,7 @@ public static class HtmlParser
             }
 
             if (token is HtmlTag start && !start.IsEndTag
-                && TableStructuralTags.Contains(start.Name))
+                && CellClosingTableTags.Contains(start.Name))
             {
                 CloseTableCell();
                 Process(token);
@@ -966,6 +978,47 @@ public static class HtmlParser
             {
                 open.RemoveAt(open.Count - 1);
             }
+        }
+
+        private void ResetInsertionModeAppropriately()
+        {
+            for (var index = open.Count - 1; index >= 0; index--)
+            {
+                switch (open[index].LocalName)
+                {
+                    case "td" or "th" when index > 0:
+                        mode = Mode.InCell;
+                        return;
+                    case "tr":
+                        mode = Mode.InRow;
+                        return;
+                    case "tbody" or "thead" or "tfoot":
+                        mode = Mode.InTableBody;
+                        return;
+                    case "caption":
+                        mode = Mode.InCaption;
+                        return;
+                    case "colgroup":
+                        mode = Mode.InColumnGroup;
+                        return;
+                    case "table":
+                        mode = Mode.InTable;
+                        return;
+                    case "body":
+                        mode = Mode.InBody;
+                        return;
+                    case "template":
+                        throw Unsupported("Template insertion mode reset is not implemented.");
+                }
+
+                if (index == 0)
+                {
+                    mode = Mode.InBody;
+                    return;
+                }
+            }
+
+            mode = Mode.InBody;
         }
 
         private static bool IsTableMode(Mode value) =>
@@ -1195,7 +1248,10 @@ public static class HtmlParser
     {
         "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th"
     };
-    private static readonly HashSet<string> TableStructuralTags = new(TableTags, StringComparer.Ordinal);
+    private static readonly HashSet<string> CellClosingTableTags = new(StringComparer.Ordinal)
+    {
+        "caption", "col", "colgroup", "tbody", "td", "tfoot", "th", "thead", "tr"
+    };
     private static readonly HashSet<string> ImpliedEndTags = new(StringComparer.Ordinal)
     {
         "dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc"

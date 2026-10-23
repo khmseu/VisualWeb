@@ -318,7 +318,10 @@ In-table `script`/`style` start tags use script-data/raw-text parsing and return
 to their original table insertion mode; script content remains inert.
 `type=hidden` inputs are inserted as void table children with a parse-error
 diagnostic; other input types remain unsupported in table content.
-Other tokens that require table foster parenting remain explicitly unsupported;
+In table mode, a nested table start closes the current in-scope table and
+reprocesses the token; nested tables inside cells remain cell descendants and
+restore cell insertion mode when closed. Nested tables inside captions and
+other tokens that require table foster parenting remain explicitly unsupported;
 tree construction still does not implement table layout. Other remaining
 parser work includes:
 
