@@ -109,10 +109,12 @@ bounded snapshot.
 four-argument constructor and deconstruction remain supported, but `Url` and
 `Origin` are get-only: replace a URL by constructing a new document, not by `with`.
 The browser publishes this origin as `BrowserTab.Origin` only with a committed
-document. This is identity, not inherited or sandbox origin selection,
-same-origin enforcement, CORS or CSP. IPC remains
-unchanged; worker reconstruction has a local identity, not a transmitted browser
-opaque principal.
+document. The browser may construct a page-initiated `about:blank` with its
+creator's committed origin; browser-UI blank pages remain fresh opaque origins.
+Sandbox selection and other inherited-origin contexts remain unsupported. This
+identity is not same-origin enforcement, CORS or CSP. IPC remains unchanged;
+worker reconstruction has a local identity, not a transmitted browser opaque
+principal.
 
 No networking (linked stylesheet text is supplied by the browser), window backend or browser chrome dependencies. Unsupported page
 features fail explicitly. See the [shell guide](../../../docs/browser-shell.md)

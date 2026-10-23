@@ -115,6 +115,24 @@ public sealed class SecurityOriginTests
         Assert.NotEqual(O("https://example.com"), O("blob:http://example.com/id"));
     }
 
+    [Theory]
+    [InlineData("about:blank")]
+    [InlineData("about:blank?query#fragment")]
+    public void AboutBlankMatchAllowsQueryAndFragment(string input)
+    {
+        Assert.True(BrowserUrl.Parse(input).IsAboutBlank);
+    }
+
+    [Theory]
+    [InlineData("about:blankx")]
+    [InlineData("about:srcdoc")]
+    [InlineData("about://blank")]
+    [InlineData("https://example.com/blank")]
+    public void OtherUrlsDoNotMatchAboutBlank(string input)
+    {
+        Assert.False(BrowserUrl.Parse(input).IsAboutBlank);
+    }
+
     [Fact]
     public void FileOriginsAreNeverSameEvenForTheSameUrl()
     {

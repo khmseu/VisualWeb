@@ -33,6 +33,7 @@ public sealed class NavigationHistory
 {
     private readonly List<BrowserUrl> entries = [];
     private readonly List<long> documentIds = [];
+    private readonly List<SecurityOrigin> origins = [];
     private readonly List<double> scrollPositions = [];
     private readonly int maximum;
     private long nextDocumentId;
@@ -50,20 +51,27 @@ public sealed class NavigationHistory
     public void Commit(BrowserUrl url, int? traversalIndex = null, bool replace = false)
     {
         ArgumentNullException.ThrowIfNull(url);
+        Commit(url, url.Origin, traversalIndex, replace);
+    }
+    internal void Commit(BrowserUrl url, SecurityOrigin origin, int? traversalIndex = null, bool replace = false)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(origin);
         if (traversalIndex is { } target)
         {
             if (target < 0 || target >= entries.Count) { throw new ArgumentOutOfRangeException(nameof(traversalIndex)); }
             entries[target] = url;
+            origins[target] = origin;
             Index = target;
         }
-        else if (replace && Index >= 0) { entries[Index] = url; }
-        else { Append(url, checked(++nextDocumentId)); }
+        else if (replace && Index >= 0) { entries[Index] = url; origins[Index] = origin; }
+        else { Append(url, origin, checked(++nextDocumentId)); }
     }
     internal void CommitSameDocument(BrowserUrl url)
     {
         ArgumentNullException.ThrowIfNull(url);
         if (Index < 0) { throw new InvalidOperationException("Cannot add a same-document entry before the first document."); }
-        Append(url, documentIds[Index]);
+        Append(url, origins[Index], documentIds[Index]);
     }
     internal bool IsSameDocumentAsCurrent(int index)
     {
@@ -75,27 +83,35 @@ public sealed class NavigationHistory
         if (index < 0 || index >= scrollPositions.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
         return scrollPositions[index];
     }
+    internal SecurityOrigin OriginAt(int index)
+    {
+        if (index < 0 || index >= origins.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return origins[index];
+    }
     internal void SetCurrentScrollPosition(double position)
     {
         if (!double.IsFinite(position) || position < 0) { throw new ArgumentOutOfRangeException(nameof(position)); }
         if (Index >= 0) { scrollPositions[Index] = position; }
     }
-    private void Append(BrowserUrl url, long documentId)
+    private void Append(BrowserUrl url, SecurityOrigin origin, long documentId)
     {
         var forwardCount = entries.Count - Index - 1;
         if (forwardCount > 0)
         {
             entries.RemoveRange(Index + 1, forwardCount);
             documentIds.RemoveRange(Index + 1, forwardCount);
+            origins.RemoveRange(Index + 1, forwardCount);
             scrollPositions.RemoveRange(Index + 1, forwardCount);
         }
         entries.Add(url);
         documentIds.Add(documentId);
+        origins.Add(origin);
         scrollPositions.Add(0);
         if (entries.Count > maximum)
         {
             entries.RemoveAt(0);
             documentIds.RemoveAt(0);
+            origins.RemoveAt(0);
             scrollPositions.RemoveAt(0);
         }
         Index = entries.Count - 1;

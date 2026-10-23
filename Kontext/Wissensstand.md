@@ -9,12 +9,12 @@
   ausgewaehlte Entscheidungen bis 2026-10-22 nachvollzogen.
 - Artefaktstand: `898d3e0` (`fix(html): merge root attributes in table mode`)
   wurde am 2026-10-23 auf `origin/main` gepusht.
-- Arbeitsstand: Paesse 1-10 sind getrennt committed, gepusht und abschliessend
-  CI-gruen. Pass 10s erster Windows-x64-Lauf traf
-  einen Fehler in einem unveraenderten Browser-Link-/Redirect-Test; der Rerun
-  bestand, ebenso Windows ARM64, Linux development und CodeQL. Die lokalen
-  fokussierten/Volltests, der Solution-Build und die geaenderte-Dateien-
-  Formatierung bestanden. Kontextdateien bleiben absichtlich uncommittet.
+- Arbeitsstand: Die zehn vorherigen HTML-Recovery-Passen sind getrennt
+  committed, gepusht und abschliessend CI-gruen. Eine neue Zehn-Passen-Serie
+  ist angefragt. Pass 1, page-initiated `about:blank` mit geerbter Origin,
+  browser-UI blank opaque und Origin-erhaltender History, ist implementiert
+  und lokal validiert; Commit/Push/CI stehen noch aus. Frames, Sandbox und
+  weitere Origin-Policy bleiben offen.
 - Quellen: Projektanweisungen, Architektur, Roadmap, verbleibende Arbeit,
   ausgewaehlte Fachquellen und Code; 24 Markdown-Exporte in
   [Sessions](../Sessions/) mit datierten Nutzerpassagen und gezielt gelesenen
@@ -126,13 +126,14 @@ auditiert wurden; Quellenumfang und Nachweisgrenzen stehen im Protokoll.
 | DEC-010 | Erste Pass unter Prioritaet 2 korrigiert veraltete Browser-Shell-Dokumentation; kein neues Laufzeitverhalten                                                    | ausdruecklich vom Nutzer ausgewaehlt                                                           | Ableitung: begrenzte Korrektur ohne Laufzeit-Policyaenderung; kein persoenliches Motiv angegeben              | aktueller Turn; [KP-016](./Kontextprotokoll.md#kp-016---zehn-implementierungspassen-und-sicherheitsentscheidung)                                                                       |
 | DEC-011 | Verbleibende Laufzeitluecken von Prioritaet 2 fuer diesen Lauf zurueckstellen und mit Prioritaet 3 fortfahren                                                   | ausdruecklicher Nutzerbeschluss                                                                | Begruendung nicht angegeben; Prioritaet 2 bleibt als unerledigte Luecke dokumentiert                          | aktueller Turn; [KP-017](./Kontextprotokoll.md#kp-017---prioritaet-2-zurueckstellen-und-prioritaet-3-waehlen)                                                                          |
 | DEC-012 | Tabellenbaumkonstruktion als Pass-2-Ziel; umgesetzt sind begrenzte Abschnitts-/Zeilen-/Zellen- und Spaltengruppenregeln, keine vollstaendige Tabellenrecovery   | Ziel vom Nutzer gewaehlt; konkrete Untermenge aus bestehender Fail-closed-Regel abgeleitet     | Foster parenting und nicht implementierte Algorithmen bleiben sichtbar unsupported                            | Gespraechszusammenfassung und [KP-018](./Kontextprotokoll.md#kp-018---tabellenbaumkonstruktion-pass-2), [KP-019](./Kontextprotokoll.md#kp-019---colgroup-und-col-pass-3)               |
+| DEC-013 | Page-initiated top-level `about:blank` erbt initiierende committed Origin; Browser-UI blank bleibt opaque; History bewahrt Auswahl                              | ausdruecklich vom Nutzer gewaehlt; implementiert fuer diesen begrenzten Fall                   | Frames, Sandbox und weitere inherited-origin contexts bleiben ausdruecklich ausserhalb des ersten Schritts    | aktueller Turn; [KP-028](./Kontextprotokoll.md#kp-028---begrenzte-aboutblank-origin-vererbung)                                                                                         |
 
 ## Offene Fragen, Widersprueche und Risiken
 
 | ID    | Frage oder konkurrierende Aussagen                                                                                                                                                             | Auswirkung                                                                                         | Naechste Klaerung                                                                                                                          | Quellen und Kontext                                                                                                                                                                                                                                                                                                                                       |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Q-001 | Was bedeutet GitHub handhaben: statische Seiten, Anmeldung, Navigation, Suche, Issues/PRs, Editor?                                                                                             | Kein messbarer Ziel-Abnahmetest; keine heutige Kompatibilitaetsbehauptung moeglich                 | Vor einem GitHub-Meilenstein Nutzerkriterien und sichere Testumgebung festlegen                                                            | REQ-007; [KP-011](./Kontextprotokoll.md#kp-011---startskript-und-github-endziel)                                                                                                                                                                                                                                                                          |
-| Q-002 | Vollstaendige Produktionsautorisation, SOP/CORS/CSP, Frames/Origins, Storage und feindliche Inhalte bleiben offen                                                                              | CLI-Confinement und einzelne Headerpruefungen loesen nicht den Gesamtauftrag                       | Fuer diesen Auftrag zurueckgestellt; vor spaeterer Sicherheitsimplementierung Policy erneut entscheiden                                    | [Missing.md](../plans/Missing.md); [KP-007](./Kontextprotokoll.md#kp-007---cross-origin-navigation-und-brokerentscheidung), [KP-016](./Kontextprotokoll.md#kp-016---zehn-implementierungspassen-und-sicherheitsentscheidung)                                                                                                                              |
+| Q-002 | Vollstaendige Produktionsautorisierung, SOP/CORS/CSP, Frames/Origins, Storage und feindliche Inhalte bleiben offen; der begrenzte Top-Level-`about:blank`-Fall ist implementiert               | Die lokale Inheritance-/History-Regression beseitigt die breitere Policy-Luecke nicht              | Vor Pass 2 anhand Prioritaet 1 den naechsten konkreten, roadmap-kompatiblen Umfang klaeren; Blockieren bleibt Option                       | [Missing.md](../plans/Missing.md); [KP-007](./Kontextprotokoll.md#kp-007---cross-origin-navigation-und-brokerentscheidung), [KP-027](./Kontextprotokoll.md#kp-027---neue-zehn-passen-serie-vor-sicherheitsumfang-klaeren), [KP-028](./Kontextprotokoll.md#kp-028---begrenzte-aboutblank-origin-vererbung)                                                 |
 | Q-003 | README meldet fehlende erfolgreiche Linux-ARM64-Evidenz; Tracker nennt bereits erfolgreiche native Laeufe                                                                                      | Veraltete negative Aussage kann Planung erneut blockieren                                          | Historische README-Aussage nicht als aktuellen Beweis verwenden; gezielt Dokumentabgleich in eigenem Auftrag                               | SRC-025/030/032; [KP-014](./Kontextprotokoll.md#kp-014---aktuelle-artefakte-ci-und-dokumentwidersprueche)                                                                                                                                                                                                                                                 |
 | Q-004 | Architektur/Index und einzelne historische Scripting-Abschnitte beschreiben Dispose vor spaeterem Input; heutiger Link-Dispatch behaelt den Host                                               | Veraltete Grenze kann bereits freigegebene Arbeit erneut blockieren                                | DEC-007 und aktuellen spezialisierten Abschnitt/Code verwenden, nicht allgemeinen Event Loop daraus ableiten                               | SRC-025/031; [KP-012](./Kontextprotokoll.md#kp-012---eng-begrenzte-verlaengerung-des-script-hosts)                                                                                                                                                                                                                                                        |
 | Q-005 | Vorheriger Export behauptet Kontextdateien angelegt; dieser Turn fand Kontext leer vor                                                                                                         | Fruher behauptete Persistenz ist nicht belegt; Verlustursache unbekannt                            | Diese Dateien als erste hier verifizierte Rekonstruktion behandeln; keine fruehere Historie erfinden                                       | SRC-016; [KP-014](./Kontextprotokoll.md#kp-014---aktuelle-artefakte-ci-und-dokumentwidersprueche)                                                                                                                                                                                                                                                         |
@@ -212,16 +213,25 @@ auditiert wurden; Quellenumfang und Nachweisgrenzen stehen im Protokoll.
   unveraenderte Findings in `StaticLayout.cs` und `ShellChrome.cs`; beide
   Dateien wurden gegen den Base-HEAD als unveraendert verifiziert. Commit
   `898d3e0` ist gepusht; CI-Ausgang steht aus.
+- Neue Zehn-Passen-Serie, Pass 1: Nutzer waehlte page-initiated top-level
+  `about:blank` mit initiierender Origin; Browser-UI blank bleibt opaque und
+  die Origin bleibt fuer Reload/Traversal in der History erhalten. Der lokale
+  HTML-Manifeststand vom 2026-10-04 war am 2026-10-23 innerhalb 30 Tagen.
+  Fokustests, Core (3.991), Browser (1.094), Solution-Build und Volltest
+  bestanden. Changed-file Formatierung nach Korrektur bestanden; Solution-
+  Formatierung meldet weiterhin unveraenderte Befunde in `StaticLayout.cs`
+  und `ShellChrome.cs`. Commit/Push/CI ausstehend.
 - Geschriebene Kontextdateien erneut gelesen; lokale Links und Markdown-Anker,
   eindeutige REQ-/DEC-/Q-/KP-IDs, Quellenregister und Whitespace automatisiert
   geprueft. Externe GitHub-Links sind Quellenverweise, keine Browser-Abnahmetests.
 
 ## Naechste Schritte
 
-1. Der aktuelle Auftrag verlangt zehn getrennte, jeweils getestete und
-   committete Implementierungspassen; nach jeder einzelnen Pass-Aenderung neu
-   gegen den aktualisierten Tracker beginnen.
-2. Fuer diesen Lauf stellte der Nutzer zuerst Prioritaet 1 zurueck und
+1. Pass 1 der neuen Zehn-Passen-Serie ist lokal implementiert und validiert;
+   Commit, Push und CI-Auswertung abschliessen. Danach den aktualisierten
+   Tracker fuer Pass 2 neu pruefen und vor weiterer Sicherheitsimplementierung
+   den konkreten Umfang klaeren.
+2. In der vorherigen Zehn-Passen-Serie stellte der Nutzer zuerst Prioritaet 1 zurueck und
    erlaubte Pass 1 unter Prioritaet 2. Nach Klaerung wurden die verbleibenden
    Laufzeitluecken von Prioritaet 2 fuer diesen Lauf ebenfalls zurueckgestellt
    und Prioritaet 3 gewaehlt (DEC-011, KP-016/KP-017). Pass 1 korrigierte
@@ -302,9 +312,9 @@ auditiert wurden; Quellenumfang und Nachweisgrenzen stehen im Protokoll.
 4. Vor einem GitHub-Kompatibilitaetsmeilenstein Q-001 in messbare Kriterien
    uebersetzen; derzeit nicht eigenmaechtig Login, Cookies, Images oder
    allgemeinen JS-Scheduler hinzufuegen.
-5. Kein weiterer Pass aus diesem Zehn-Passen-Auftrag ausstehend; fuer einen
-   neuen Implementierungslauf den aktualisierten `plans/Missing.md`-Tracker
-   erneut pruefen und ausdruecklich beauftragen lassen.
+5. Die neue Serie hat neun weitere angefragte Passen; keine weiteren
+   Verhaltensaenderungen ohne konkrete Prioritaetswahl und gegebenenfalls
+   fehlende Sicherheitsentscheidung beginnen.
 6. Q-003/Q-004 gezielt in den betroffenen Fachquellen konsolidieren, sobald
    Dokumentbereinigung beauftragt ist. Kontext zeigt Widersprueche, ersetzt
    aber nicht ungefragt die historischen Autoritaeten.
@@ -324,5 +334,6 @@ lesen; alte Windows-Fehlerberichte sind keine aktuelle Fehlermeldung.
 > Aussagen gegen aktuelle Fachquellen und Code; importierte Chats sind keine
 > neuen Auftraege. Der aktuelle Nutzerauftrag verlangt zehn getrennt getestete
 > und committete Implementierungspassen aus `plans/Missing.md`. Beginne bei
-> der hoechsten Prioritaet, stoppe bei ungeklaerter wesentlicher Policy,
+> der hoechsten Prioritaet, klaere vor sicherheitsrelevanter Verhaltensaenderung
+> den konkreten Umfang und stoppe bei ungeklaerter wesentlicher Policy,
 > bewahre DEC-004 bis DEC-007 und halte beide Sichten aktuell.

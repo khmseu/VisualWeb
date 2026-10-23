@@ -1021,3 +1021,83 @@ waren ebenfalls erfolgreich. Der erfolgreiche Windows-Rerun ist
 validiert, committed, gepusht und abschliessend CI-gruen. Der Windows-x64-
 Erstlauf-Fehler wurde durch erfolgreichen Rerun geklaert; es gab keine
 Codeaenderung fuer diesen unabhängigen Browser-Test.
+
+### KP-027 - Neue Zehn-Passen-Serie vor Sicherheitsumfang klaeren
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufende Entscheidungsklaerung; keine Codeaenderung.
+- Quelle: ausdrueckliche erneute Skill-Anforderung mit Argument `10`;
+  Arbeitsbaumstatus, Tracker, Architektur-/Ownership-Map, Roadmap,
+  Foundation-ADR und bestehende Browser-/Networking-Guides.
+- Bezug: REQ-005, Q-002; folgt auf KP-026.
+
+**Nutzerangabe:** Nach Abschluss der vorigen zehn HTML-Passen wurde der
+Implementierungsworkflow erneut fuer zehn Passen aufgerufen. Der Arbeitsbaum
+war sauber auf `279c3e1` (`origin/main`).
+
+**Belegt:** `plans/Missing.md` empfiehlt weiterhin Produktionssicherheit und
+Isolation als Prioritaet 1. Es dokumentiert zugleich offene Grenzen bei
+Origin-Auswahl, Top-Level-Anfragen, SOP/CORS/CSP, Frames und Storage.
+`docs/browser-shell.md` und `docs/networking.md` grenzen die bestehenden
+Confinement-, Bestatigungs- und Broker-Regeln ausdruecklich von einer
+Produktionsautorisierung ab. Frueher wurde Prioritaet 1 nur fuer den damaligen
+Zehn-Passen-Lauf zurueckgestellt (KP-016); das setzt keine neue Policy.
+
+**Nutzerentscheidung:** Auf die erste Auswahlfrage waehlte der Nutzer
+`origin-selection`, also die Richtung inherited/sandbox origin selection.
+
+**Belegt:** Der aktuelle Shell hat top-level tabs/documents, aber keine
+iframe/srcdoc, sandboxed document, opener-created browsing context oder
+origin-aware history entry. URL-only origins, standalone `about:blank` opaque
+identity, and final-document-origin publication already exist. The HTML cache
+describes inherited origins only with a source origin (including `about:blank`)
+and opaque origins when an origin sandbox flag is set
+(`specs/cache/html.html#determining-the-origin`).
+
+**Offen:** The chosen direction does not identify a currently supported
+creator/sandbox context. Adding only page-initiated `about:blank` inheritance
+would also require deciding navigation authorization, reload/history identity,
+and how a creator document is retained; inventing a frame/sandbox model would
+exceed the current renderer architecture. A narrower standalone `about:blank`
+load with a fresh opaque origin does not implement the selected inherited/
+sandbox behavior. A second, concrete scope decision is requested; no
+security behavior or other priority is changed pending that answer.
+
+### KP-028 - Begrenzte about:blank-Origin-Vererbung
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: beschlossene Umfangsklaerung und Implementierungsnachweis.
+- Quelle: Nutzerentscheidung im aktuellen Gespraech, Code-/Dokumentdiff,
+  gezielte Tests, Build, Volltest und Formatterlauf.
+- Bezug: REQ-005, Q-002; konkretisiert und teilweise ersetzt KP-027.
+
+**Nutzerentscheidung:** Der Nutzer waehlte fuer den ersten Schritt
+page-initiated `about:blank` mit der Origin des initiierenden committed
+Dokuments. Browser-UI-Aufrufe sollen weiterhin eine opaque Origin erhalten;
+Reload und History-Traversal sollen die gewaehlte Origin bewahren. Frames und
+Sandbox-Origin-Verhalten bleiben ausserhalb dieses Schritts.
+
+**Belegt:** `BrowserUrl.IsAboutBlank` erkennt das HTML-Praedikat einschliesslich
+erlaubter Query/Fragment. `LoadedPage.CreateAboutBlank` nimmt optional die
+Creator-Origin entgegen; lokale Blank-Loads brauchen keinen Transport.
+NavigationHistory speichert Origin-Metadaten pro Eintrag, auch bei Replace,
+same-document commits, Forward-Truncation und begrenzter Eviction. Der
+Controller stellt die gespeicherte Origin fuer Reload/Traversal wieder her.
+Dokumentation und `plans/Missing.md` nennen andere inherited contexts und
+Sandbox weiterhin unsupported.
+
+**Validierung:** Fokussierte about:blank-Tests, Core-Tests (3.991),
+Browser-Tests (1.094), Solution-Build (`--no-restore`, null Warnungen/Fehler)
+und der Volltest `dotnet test VisualWeb.slnx --no-build` bestanden. Der
+zunaechst gemeldete Whitespace-Befund in `OriginIsolationTests.cs` wurde mit
+dem Projektformatierer korrigiert. Die anschliessende Loesungsformatpruefung
+meldete nur noch die unveraenderten Findings in `StaticLayout.cs` und
+`ShellChrome.cs`; beide Dateien sind nicht Teil dieser Aenderung.
+
+**Status / naechste Schritte:** Pass 1 der neuen Zehn-Passen-Anforderung ist
+implementiert und validiert; Commit, Push und CI-Auswertung stehen noch aus.
+Nach Abschluss anhand des aktualisierten Trackers neu waehlen. Der beschlossene
+Teilumfang klaert nicht die breitere Produktionsautorisierung, SOP/CORS/CSP,
+Frames, Sandbox oder andere inherited origins.

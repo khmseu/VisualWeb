@@ -1567,13 +1567,13 @@ public sealed class BrowserController : IDisposable
     private bool NavigateLink(TabId id, string destination, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, bool openInNewTab = false, bool activateNewTab = true,
         bool authorizeRedirects = false, string? targetName = null, bool preserveAddressWhileLoading = false,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, SecurityOrigin? aboutBlankOrigin = null)
     {
         var sourceDocument = content[id].Document;
         preventHttpsDowngrade = preventHttpsDowngrade
             || (sourceDocument?.Url.Protocol is "https:" or "data:");
         var url = BrowserUrl.Parse(destination);
-        if (url.Protocol is not ("http:" or "https:" or "file:" or "data:"))
+        if (url.Protocol is not ("http:" or "https:" or "file:" or "data:") && !url.IsAboutBlank)
         { throw new PageNavigationException("Unsupported link URL scheme: " + url.Protocol); }
         if (!openInNewTab && targetName is null && sameOriginRedirectOrigin is null && TryNavigateFragment(id, url))
         {
@@ -1637,7 +1637,7 @@ public sealed class BrowserController : IDisposable
                 authorizeRedirects: authorizeRedirects,
                 preserveAddressWhileLoading: preserveAddressWhileLoading
                     || authorizeRedirects && pageNavigationAuthorizer is not null,
-                authorizationSourceOrigin: authorizeRedirects ? sourceDocument?.Origin : null,
+                authorizationSourceOrigin: sourceDocument?.Origin,
                 rewriteDestination: rewriteDestination);
         }
         catch
@@ -1798,7 +1798,9 @@ public sealed class BrowserController : IDisposable
         if (!tab.History.CanGoBack) { throw new InvalidOperationException("No back history entry."); }
         var index = tab.History.Index - 1;
         if (TryTraverseSameDocument(id, index)) { return; }
-        Start(tab, tab.History.Entries[index], index, false, restoreScrollY: tab.History.ScrollPositionAt(index));
+        var destination = tab.History.Entries[index];
+        Start(tab, destination, index, false, restoreScrollY: tab.History.ScrollPositionAt(index),
+            aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
     }
     public void Forward(TabId id)
     {
@@ -1807,18 +1809,22 @@ public sealed class BrowserController : IDisposable
         if (!tab.History.CanGoForward) { throw new InvalidOperationException("No forward history entry."); }
         var index = tab.History.Index + 1;
         if (TryTraverseSameDocument(id, index)) { return; }
-        Start(tab, tab.History.Entries[index], index, false, restoreScrollY: tab.History.ScrollPositionAt(index));
+        var destination = tab.History.Entries[index];
+        Start(tab, destination, index, false, restoreScrollY: tab.History.ScrollPositionAt(index),
+            aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
     }
     public void Reload(TabId id)
     {
         Check();
         var tab = Session.Tab(id);
-        Start(tab, tab.History.Current ?? throw new InvalidOperationException("No committed page to reload."), null, true);
+        var current = tab.History.Current ?? throw new InvalidOperationException("No committed page to reload.");
+        Start(tab, current, null, true,
+            aboutBlankOrigin: current.IsAboutBlank ? tab.History.OriginAt(tab.History.Index) : null);
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false,
         bool preserveAddressWhileLoading = false, SecurityOrigin? authorizationSourceOrigin = null,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, SecurityOrigin? aboutBlankOrigin = null)
     {
         Limit();
         Cancel(tab.Id);
@@ -1829,7 +1835,10 @@ public sealed class BrowserController : IDisposable
         Task<LoadedPage> task;
         try
         {
-            task = authorizeRedirects && pageNavigationAuthorizer is not null
+            var selectedAboutBlankOrigin = aboutBlankOrigin ?? authorizationSourceOrigin;
+            task = url.IsAboutBlank && selectedAboutBlankOrigin is not null
+                ? Task.FromResult(LoadedPage.CreateAboutBlank(url, selectedAboutBlankOrigin))
+                : authorizeRedirects && pageNavigationAuthorizer is not null
                 ? LoadPageInitiatedAsync(tab.Id, url,
                     authorizationSourceOrigin ?? throw new PageNavigationException(
                         "Page-initiated navigation requires a committed source origin."),
@@ -1852,6 +1861,11 @@ public sealed class BrowserController : IDisposable
         CancellationToken cancellationToken, bool preventHttpsDowngrade,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination)
     {
+        if (url.IsAboutBlank)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return LoadedPage.CreateAboutBlank(url, sourceOrigin);
+        }
         var owner = content[tabId];
         var previousOrigin = sourceOrigin;
         async ValueTask<bool> Authorize(BrowserUrl destination, int _, CancellationToken token)
@@ -1939,7 +1953,7 @@ public sealed class BrowserController : IDisposable
             var tab = Session.Tab(operation.Tab);
             // Throwing steps precede publication so a rejected commit leaves renderer, document, origin and history intact.
             operation.Renderer!.CommitDocument(document.DocumentId);
-            if (!operation.Resize) { tab.History.Commit(document.Url, operation.Traversal, operation.Replace); }
+            if (!operation.Resize) { tab.History.Commit(document.Url, document.Origin, operation.Traversal, operation.Replace); }
             var previous = owner.Renderer;
             if (operation.Candidate is { } candidate)
             {

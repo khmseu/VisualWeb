@@ -32,8 +32,12 @@ origin. The app-layer `LoadedPage` now associates each new document with the fin
 response URL's tuple origin or a fresh opaque identity, independent of opaque URL
 snapshot reuse. Retained repaint and metadata record copies preserve that
 document identity. The browser shell publishes it as the tab's read-only
-committed origin only with a successfully rendered document. Sandbox/inherited
-origin selection, `document.domain` and enforcement remain deferred.
+committed origin only with a successfully rendered document. The browser also
+supports page-initiated `about:blank`: it inherits the initiating committed
+origin, and that selection is retained across reload and history traversal.
+Browser-UI `about:blank` loads receive fresh opaque origins. This bounded
+behavior does not add nested browsing contexts or sandbox flags; other
+inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 No mutable DOM URL API or URLSearchParams is implemented.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.

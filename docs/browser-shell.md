@@ -671,10 +671,13 @@ render, a load/render failure or a rejected commit leaves the previous origin
 new data/file document publishes a new opaque identity; tuple navigations
 update to the final URL's origin. A renderer crash keeps the committed origin
 until a fresh load succeeds. The origin is never derived from the worker. This
-is identity only: it does not authorize requests, and same-origin/CORS/CSP,
-inherited/sandbox origin selection, site isolation and production navigation
-policy remain unimplemented; explicitly selected development navigation is
-unchanged.
+is identity only: it does not authorize requests. Page-initiated URLs matching
+`about:blank` inherit the initiating committed origin; browser-UI `about:blank`
+loads get a fresh opaque origin. The selected origin is stored with the bounded
+history entry and retained across reload/traversal. Sandbox-origin selection,
+other inherited contexts, same-origin/CORS/CSP enforcement, site isolation and
+production navigation policy remain unimplemented; explicitly selected
+development navigation is unchanged.
 
 **Origin-isolated navigation renderers.** `BrowserController` accepts an
 optional `isolateOrigins` policy (`IsolatesOrigins`); low-level/test controllers
@@ -687,9 +690,10 @@ final `LoadedPage.Origin` is compared with the committed document origin via
 - the first document uses the tab's pristine renderer; once any content has
   been sent to it (even a canceled or failed render) it is no longer pristine;
 - same-origin tuple navigations, reloads and traversals reuse the committed
-  renderer; every new opaque document (data:, about:blank, file:, reload of
-  those) and every cross-origin document gets a new factory renderer before
-  any content is sent;
+  renderer; new opaque documents (including browser-UI `about:blank`, data:,
+  file: and reloads of those) and cross-origin documents get a new factory
+  renderer before content is sent. Page-initiated `about:blank` inherits its
+  creator's origin and is same-origin with that document;
 - the candidate is owned by the pending operation. The old renderer, document,
   title, origin, history and pixels stay published until the candidate's
   `RenderAsync`, `CommitDocument` and the history commit all succeed; then the
@@ -701,8 +705,9 @@ final `LoadedPage.Origin` is compared with the committed document origin via
   `TakeFailure` is polled, so crash recovery restarts that renderer.
 
 This is strict per-origin top-level navigation rotation only: there is no site
-computation, cross-site frame isolation, inherited origin selection, browser-wide
-same-origin/CORS/CSP policy or production request authorization.
+computation, cross-site frame isolation, sandbox or other inherited-origin
+selection, browser-wide same-origin/CORS/CSP policy or production request
+authorization.
 
 The shared VisualWeb.PageRendering StaticPageRenderer collects connected embedded `style` blocks
 and supported linked stylesheets in document (cascade) order, taking style child text. Inline attributes also participate.

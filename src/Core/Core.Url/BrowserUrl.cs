@@ -8,7 +8,9 @@ namespace VisualWeb.Core.Url;
 /// Parsing is delegated to the managed MIT-licensed Dubzer.WhatwgUrl implementation.
 /// SerializedOrigin is for display/serialization, not an opaque-origin security identity; use <see cref="Origin"/>.
 /// Origin is computed once per snapshot, so an opaque origin keeps its identity across reads of the same instance
-/// but a re-parse yields a different one. See <see href="https://url.spec.whatwg.org/#concept-url-origin">origin of a URL</see>.</remarks>
+/// but a re-parse yields a different one. See <see href="https://url.spec.whatwg.org/#concept-url-origin">origin of a URL</see>.
+/// <see cref="IsAboutBlank"/> matches the HTML Standard URL predicate; it does not select a document's inherited or
+/// sandboxed origin.</remarks>
 public sealed class BrowserUrl
 {
     public string Href { get; }
@@ -23,6 +25,11 @@ public sealed class BrowserUrl
     public string Hash { get; }
     public string SerializedOrigin { get; }
     public SecurityOrigin Origin { get; }
+    /// <summary>Whether this URL matches the HTML Standard's <c>about:blank</c> predicate.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#matches-about:blank"/>.
+    /// Query and fragment are allowed; the path must be exactly <c>blank</c>, with no host or credentials.</remarks>
+    public bool IsAboutBlank => Protocol == "about:" && Pathname == "blank"
+        && Username.Length == 0 && Password.Length == 0 && Host.Length == 0;
 
     private BrowserUrl(DomUrl url)
     {

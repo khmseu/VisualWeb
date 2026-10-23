@@ -5,6 +5,7 @@ using System.Text;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Html;
 using VisualWeb.Engine.Paint;
+using VisualWeb.Ipc.Contracts;
 using Xunit;
 
 namespace VisualWeb.Browser.Tests;
@@ -23,7 +24,8 @@ public sealed class OriginIsolationTests
         internal Func<FakeRenderer>? NextRenderer { get; set; }
         internal Exception? FactoryFailure { get; set; }
         internal BrowserController Controller { get; }
-        internal Harness(bool isolate = true, BrowserOptions? options = null) =>
+        internal Harness(bool isolate = true, BrowserOptions? options = null,
+            Func<TabId, BrowserUrl, CancellationToken, ValueTask<bool>>? authorizer = null) =>
             Controller = new(() => { var source = new ControllerTests.Source(); Sources.Add(source); return source; }, () =>
             {
                 if (FactoryFailure is { } failure) { throw failure; }
@@ -31,7 +33,7 @@ public sealed class OriginIsolationTests
                 renderer.Index = Renderers.Count;
                 Renderers.Add(renderer);
                 return renderer;
-            }, options, isolate);
+            }, options, isolate, authorizer);
         internal BrowserTab Tab(BrowserWindowId? window = null) => Controller.CreateTab(window ?? Controller.Session.CreateWindow().Id);
         internal LoadedPage Complete(BrowserTab tab, string requested, string final, string html = "<!doctype html>")
         {
@@ -55,6 +57,7 @@ public sealed class OriginIsolationTests
         internal bool Async { get; set; }
         internal bool Fail { get; set; }
         internal bool RejectCommit { get; set; }
+        internal Func<PageViewport, BrowserPage>? PageFactory { get; set; }
         internal string? Failure { get; set; }
         internal int Disposals { get; private set; }
         internal List<LoadedPage> Pages { get; } = [];
@@ -79,7 +82,7 @@ public sealed class OriginIsolationTests
             Tokens.Add(cancellationToken);
             if (Async) { var pending = new TaskCompletionSource<BrowserPage>(); Pending.Add(pending); return pending.Task; }
             if (Fail) { return Task.FromException<BrowserPage>(new UnsupportedHtmlException("Unsupported candidate page.")); }
-            return Task.FromResult(Blank(viewport, "Renderer " + Index));
+            return Task.FromResult(PageFactory?.Invoke(viewport) ?? Blank(viewport, "Renderer " + Index));
         }
         public void CommitDocument(Guid documentId)
         {
@@ -156,6 +159,56 @@ public sealed class OriginIsolationTests
         Assert.Same(host.Origin, tab.Origin);
         Assert.False(scheme.Origin.IsSameOrigin(port.Origin));
         Assert.Equal(7, tab.History.Entries.Count);
+    }
+
+    [Fact]
+    public void PageInitiatedAboutBlankInheritsOriginAcrossReloadAndHistory()
+    {
+        using var harness = new Harness(authorizer: (_, _, _) => ValueTask.FromResult(false));
+        harness.NextRenderer = () => new FakeRenderer
+        {
+            PageFactory = viewport => Blank(viewport, "Origin")
+                with
+            { LinkTargets = [new PageLinkTarget(0, 0, 10, 10, "about:blank?source=page")] }
+        };
+        var tab = harness.Tab();
+        var creator = harness.Complete(tab, "https://creator.example/", "https://creator.example/");
+        var creatorRenderer = Assert.Single(harness.Renderers);
+
+        Assert.True(harness.Controller.ActivateLink(tab.Id, 1, 1, Viewport));
+        harness.Controller.Pump(_ => Viewport);
+
+        var inheritedOrigin = tab.Origin;
+        Assert.Same(creator.Origin, inheritedOrigin);
+        Assert.Equal("about:blank?source=page", tab.History.Current!.Href);
+        Assert.Single(harness.Renderers);
+        Assert.Equal(2, creatorRenderer.Pages.Count);
+
+        harness.Controller.Reload(tab.Id);
+        harness.Controller.Pump(_ => Viewport);
+        Assert.Same(inheritedOrigin, tab.Origin);
+        Assert.Equal(2, tab.History.Entries.Count);
+
+        harness.Complete(tab, "https://other.example/", "https://other.example/");
+        Assert.NotSame(inheritedOrigin, tab.Origin);
+        harness.Controller.Back(tab.Id);
+        harness.Controller.Pump(_ => Viewport);
+        Assert.Equal(1, tab.History.Index);
+        Assert.Same(inheritedOrigin, tab.Origin);
+        Assert.Equal(3, harness.Renderers.Count);
+
+        harness.Controller.Forward(tab.Id);
+        var forward = harness.SourceOf(tab).Requests[^1];
+        forward.Completion.SetResult(new LoadedPage(BrowserUrl.Parse("https://other.example/"), "<p>other</p>", 200, []));
+        harness.Controller.Pump(_ => Viewport);
+        Assert.Equal(2, tab.History.Index);
+        Assert.Equal("https://other.example", tab.Origin!.Serialize());
+
+        harness.Controller.Navigate(tab.Id, "about:blank");
+        var uiBlank = harness.Finish(tab, "about:blank");
+        Assert.True(tab.Origin!.IsOpaque);
+        Assert.False(tab.Origin.IsSameOrigin(inheritedOrigin));
+        Assert.False(uiBlank.Origin.IsSameOrigin(inheritedOrigin));
     }
 
     [Fact]

@@ -12,18 +12,38 @@ public sealed class PageNavigationException(string message) : Exception(message)
 /// Each construction represents a new document: tuple origins come from the final URL, while opaque
 /// origins are fresh even when that URL instance is reused. Record copies retain the same document
 /// identity and origin. URL replacement requires a new document, preventing a copied URL from leaving
-/// a stale origin. This is identity only, not inherited/sandbox origin selection or policy enforcement.
-/// Renderer reconstruction creates a worker-local origin; no browser principal is sent over IPC.</remarks>
+/// a stale origin. The explicit about:blank factory can select the initiating document's origin for the
+/// supported top-level page-navigation case. This is identity only, not sandbox selection or policy
+/// enforcement. Renderer reconstruction creates a worker-local origin; no browser principal is sent over IPC.</remarks>
 public sealed record LoadedPage
 {
     public LoadedPage(BrowserUrl Url, string Html, int StatusCode, IReadOnlyList<string> Diagnostics)
+        : this(Url, Html, StatusCode, Diagnostics, originOverride: null)
+    {
+    }
+
+    private LoadedPage(BrowserUrl Url, string Html, int StatusCode, IReadOnlyList<string> Diagnostics,
+        SecurityOrigin? originOverride)
     {
         ArgumentNullException.ThrowIfNull(Url);
         this.Url = Url;
         this.Html = Html;
         this.StatusCode = StatusCode;
         this.Diagnostics = Diagnostics;
-        Origin = Url.Origin.IsOpaque ? SecurityOrigin.CreateOpaque() : Url.Origin;
+        Origin = originOverride ?? (Url.Origin.IsOpaque ? SecurityOrigin.CreateOpaque() : Url.Origin);
+    }
+
+    /// <summary>Creates a blank document with either its inherited creator origin or a fresh opaque origin.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/browsers.html#determining-the-origin"/>.
+    /// This explicit factory is limited to <c>about:blank</c>. Callers must supply the committed creator origin
+    /// only for supported page-initiated creation; browser-UI navigation passes no creator and remains opaque.
+    /// This does not implement sandbox flags or nested browsing contexts.</remarks>
+    public static LoadedPage CreateAboutBlank(BrowserUrl url, SecurityOrigin? creatorOrigin = null)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        if (!url.IsAboutBlank) { throw new ArgumentException("The URL must match about:blank.", nameof(url)); }
+        return new(url, "<!doctype html><html><head></head><body></body></html>", 200, Array.Empty<string>(),
+            creatorOrigin ?? SecurityOrigin.CreateOpaque());
     }
 
     public BrowserUrl Url { get; }

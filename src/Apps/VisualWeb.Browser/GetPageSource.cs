@@ -107,6 +107,11 @@ public sealed class GetPageSource : IPageSource
     public async Task<LoadedPage> LoadAsync(BrowserUrl url, CancellationToken cancellationToken, bool preventHttpsDowngrade,
         SecurityOrigin? sameOriginRedirectOrigin)
     {
+        if (url.IsAboutBlank)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return LoadedPage.CreateAboutBlank(url);
+        }
         var response = sameOriginRedirectOrigin is null
             ? await loader.LoadAsync(url, cancellationToken: cancellationToken,
                 preventHttpsDowngrade: preventHttpsDowngrade, isNavigationRequest: true).ConfigureAwait(false)
@@ -117,6 +122,11 @@ public sealed class GetPageSource : IPageSource
     public async Task<LoadedPage> LoadAuthorizedNavigationAsync(BrowserUrl url, CancellationToken cancellationToken,
         bool preventHttpsDowngrade)
     {
+        if (url.IsAboutBlank)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return LoadedPage.CreateAboutBlank(url);
+        }
         var response = await loader.LoadAuthorizedNavigationAsync(url, static _ => true,
             cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade,
             isNavigationRequest: true).ConfigureAwait(false);
@@ -132,6 +142,17 @@ public sealed class GetPageSource : IPageSource
         CancellationToken cancellationToken, bool preventHttpsDowngrade,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination)
     {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(authorizeDestination);
+        if (url.IsAboutBlank)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!await authorizeDestination(url, 0, cancellationToken).ConfigureAwait(false))
+            {
+                throw new PageNavigationException("Page-initiated navigation was denied.");
+            }
+            return LoadedPage.CreateAboutBlank(url);
+        }
         var response = await loader.LoadAuthorizedNavigationAsync(url, authorizeDestination,
             cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade,
             rewriteDestination: rewriteDestination, isNavigationRequest: true).ConfigureAwait(false);

@@ -97,6 +97,24 @@ public sealed class NavigationTests
     }
 
     [Fact]
+    public async Task AboutBlankLoadsLocallyWithFreshOpaqueOrigins()
+    {
+        using var source = new GetPageSource(new Handler(_ => throw new InvalidOperationException("Unexpected transport request.")));
+        var url = BrowserUrl.Parse("about:blank?local#fragment");
+
+        var first = await source.LoadAsync(url, Cancellation);
+        var second = await source.LoadAuthorizedNavigationAsync(url, (_, _, _) => ValueTask.FromResult(true),
+            Cancellation, preventHttpsDowngrade: false);
+
+        Assert.Equal(url, first.Url);
+        Assert.Equal(url, second.Url);
+        Assert.Equal(200, first.StatusCode);
+        Assert.Contains("<body></body>", first.Html, StringComparison.Ordinal);
+        Assert.True(first.Origin.IsOpaque);
+        Assert.False(first.Origin.IsSameOrigin(second.Origin));
+    }
+
+    [Fact]
     public async Task HttpNavigationUsesHeaderEncodingAndBomPrecedenceWithoutCookies()
     {
         using var source = new GetPageSource(new Handler(request =>
