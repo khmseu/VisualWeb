@@ -181,9 +181,41 @@ public sealed class TreeTests
         Assert.Equal("after", result.Document.Body!.LastChild!.TextContent);
     }
 
+    [Fact]
+    public void NonWhitespaceTableTextIsFosterParentedWithAdjacentTextMerging()
+    {
+        var result = Parse("<!doctype html><div id=host>before<table> \ntext \n<tbody><tr><td>cell</td></tr>"
+            + "</tbody></table></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before \ntext \n", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName));
+        Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
+    }
+
+    [Fact]
+    public void FosteredTableTextRunsSeparatedByTagsMergeBeforeTable()
+    {
+        var result = Parse("<!doctype html><div id=host>A<table>B<tr>C</tr>D</table></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        Assert.Equal("ABCD", Assert.IsType<DomText>(host.FirstChild).Data);
+        Assert.Equal("table", Assert.IsType<DomElement>(host.LastChild).LocalName);
+        Assert.Equal(3, result.Errors.Count(error => error.Code == "non-whitespace-table-text"));
+    }
+
+    [Fact]
+    public void NonWhitespaceColumnGroupTextFallsBackToTableTextFosterParenting()
+    {
+        var result = Parse("<!doctype html><div id=host><table><colgroup>text</colgroup></table></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        Assert.Equal("text", Assert.IsType<DomText>(host.FirstChild).Data);
+        Assert.Equal("table", Assert.IsType<DomElement>(host.LastChild).LocalName);
+        Assert.Contains(result.Errors, error => error.Code == "non-whitespace-column-group-content");
+        Assert.Contains(result.Errors, error => error.Code == "non-whitespace-table-text");
+    }
+
     [Theory]
-    [InlineData("<table>text<tr><td>x</td></tr></table>")]
-    [InlineData("<table><colgroup>text</colgroup></table>")]
+    [InlineData("<table><div>unsupported</div></table>")]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));

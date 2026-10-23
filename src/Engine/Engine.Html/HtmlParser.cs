@@ -6,13 +6,16 @@ namespace VisualWeb.Engine.Html;
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
 /// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intabletext">in table text</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incaption">in caption</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#foster-parent">foster parenting</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incolgroup">in column group</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intbody">in table body</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>.
-/// Basic captions, table sections, rows, cells and column groups are supported; foster parenting, templates, foreign content,
-/// frames, fragment parsing, scripting, active-formatting reconstruction and adoption agency are not implemented.</remarks>
+/// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
+/// other foster-parenting cases, templates, foreign content, frames, fragment parsing, scripting,
+/// active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
@@ -39,6 +42,7 @@ public static class HtmlParser
         private DomElement? formPointer;
         private DomText? bufferedText;
         private readonly StringBuilder textBuffer = new();
+        private readonly StringBuilder tableTextBuffer = new();
 
         public Builder(string input, HtmlParserOptions options, CancellationToken cancellationToken)
         {
@@ -649,18 +653,48 @@ public static class HtmlParser
                     data = data.Replace("\0", "", StringComparison.Ordinal);
                 }
 
-                if (data.Length == 0) { return; }
-                if (!data.All(HtmlTokenizer.Whitespace))
-                {
-                    throw Unsupported("Non-whitespace table text requires foster parenting.");
-                }
+                tableTextBuffer.Append(data);
+                return;
+            }
 
+            FlushTableText();
+            mode = originalMode;
+            Process(token);
+        }
+
+        private void FlushTableText()
+        {
+            if (tableTextBuffer.Length == 0) { return; }
+            var data = tableTextBuffer.ToString();
+            tableTextBuffer.Clear();
+            if (data.All(HtmlTokenizer.Whitespace))
+            {
                 Text(data);
                 return;
             }
 
-            mode = originalMode;
-            Process(token);
+            Error("non-whitespace-table-text");
+            FosterTableText(data);
+        }
+
+        private void FosterTableText(string data)
+        {
+            var tableIndex = open.FindLastIndex(element => element.LocalName == "table");
+            if (tableIndex < 0 || open[tableIndex].ParentNode is not { } parent || parent is DomDocument)
+            {
+                throw Unsupported("The foster-parent insertion location for this table is not implemented.");
+            }
+
+            var table = open[tableIndex];
+            FlushText();
+            if (table.PreviousSibling is DomText preceding)
+            {
+                preceding.Data += data;
+                return;
+            }
+
+            CountNode();
+            parent.InsertBefore(document.CreateTextNode(data), table);
         }
 
         private void ColumnGroupToken(HtmlToken token)
@@ -679,6 +713,7 @@ public static class HtmlParser
                     return;
                 }
 
+                Error("non-whitespace-column-group-content");
                 open.RemoveAt(open.Count - 1);
                 mode = Mode.InTable;
                 Process(token);

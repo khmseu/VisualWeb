@@ -81,8 +81,10 @@ after-after-body modes. Supported behavior includes:
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
   and caption contents use the existing in-body subset. Captions close and
   reprocess table tokens; nested tables inside captions remain unsupported.
-  This tree-building support does not add table layout; `Engine.Layout` still
-  rejects table frames.
+  Contiguous non-whitespace table-character runs (including their adjacent
+  whitespace) are foster-parented before the nearest table; whitespace-only
+  runs stay in the table. This tree-building support does not add table layout;
+  `Engine.Layout` still rejects table frames.
 
 Simple `form` elements use the form element pointer: `<form>` closes an open
 `p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
@@ -94,9 +96,9 @@ void element and `button` an ordinary element, so control text never renders
 as raw markup. The parser therefore guarantees that a form owner is the
 nearest ancestor `form`.
 
-Table foster parenting (including non-whitespace table text) throws explicitly;
-unsupported table tags also throw outside the table contexts covered above. The
-following additionally throw explicitly: templates, SVG/MathML,
+Other tokens that require table foster parenting throw explicitly, as do
+unsupported table tags outside the contexts covered above. The following
+additionally throw explicitly: templates, SVG/MathML,
 unsupported select contents (including optgroups outside selects and non-option optgroup children), textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
 applet/marquee/object-specific algorithms. Legacy public/system doctype mode
 selection (except `about:legacy-compat`) also throws. Fragment parsing is not
