@@ -510,3 +510,514 @@ Pruefung fuer lokale Links/Markdown-Anker, Whitespace, eindeutige IDs und
 vollstaendiges Quellenregister bestanden. Drei Dateinamen mit `#` mussten
 im Linkziel als `%23` kodiert werden; nach Korrektur bestanden die Linkchecks.
 Keine Codeaenderungen oder neuen .NET-Testlaeufe.
+
+### KP-016 - Zehn Implementierungspassen und Sicherheitsentscheidung
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin (UTC+02:00).
+- Ereignisdatum: 2026-10-23, aktueller Turn.
+- Erfassungsart: laufend dokumentiert.
+- Quelle: ausdruecklicher Nutzerauftrag in diesem Turn; gelesene
+  Projektanweisungen, `plans/Missing.md`, `Kontext/Wissensstand.md`,
+  `docs/README.md`, `docs/architecture/overview.md`, `docs/project-map.md`,
+  `plans/browser-foundation-plan.md` und `docs/adr/0001-browser-foundation.md`.
+- Bezug: REQ-005, Q-002, DEC-004 bis DEC-007.
+
+**Nutzerangabe:** Der Nutzer startete `/missing-priority-implementation`
+mit Argument `10`, also zehn getrennt zu bearbeitende Passen, jeweils mit
+Test, Tracker-Update, Commit und Push.
+
+**Belegt:** Der Worktree war sauber auf `main`; lokales HEAD und
+`origin/main` standen bei `a22c929`. Der Tracker empfiehlt Security als
+Prioritaet 1. Er nennt weiterhin nicht abgeschlossene Produktionsautorisierung,
+SOP/CORS/CSP, Frames/Origins und Storage. Q-002 und der Wissensstand halten
+fest, dass ein neuer groesserer Sicherheitsumfang eine echte Policy-Entscheidung
+benoetigt. Bestehende Beschluesse DEC-004 bis DEC-007 umfassen nur eng
+begrenzte Browsernavigation, Stylesheet-CORS, bestaetigte page-initiated
+Cross-Origin-Navigation und Link-Event-Hostlebensdauer; sie legen keine
+allgemeine Produktionsautorisierung fest.
+
+**Nutzerentscheidung:** Auf die Frage nach der Sicherheitsprioritaet antwortete
+der Nutzer `defer_priority_1`. Das wird fuer diesen Zehn-Passen-Lauf als
+ausdrueckliche Freigabe verstanden, Prioritaet 1 zurueckzustellen und mit
+Prioritaet 2 fortzufahren. Eine Begruendung wurde nicht angegeben; die offene
+allgemeine Sicherheitsfrage Q-002 und bestehende DEC-004 bis DEC-007 bleiben
+unveraendert.
+
+Der Nutzer waehlt als erste Pass die Korrektur des veralteten Browser-Shell-
+Guides, damit dieser Links, Controls, Auswahl, Scrollen und Limits mit dem
+aktuellen Stand beschreibt. Das ist ein Dokumentationsinkrement ohne
+Laufzeitverhalten.
+
+**Belegt:** In `docs/browser-shell.md` widersprechen die Limit-Abschnitte den
+Kontroll-/Linkabschnitten: sie verneinen Formcontrols und Textauswahl; der
+Scrollabschnitt nennt Scrollbars nicht implementiert. Die aktuelle
+`src/Apps/VisualWeb.Browser/README.md`, `plans/Missing.md`, `ShellTests`,
+`FormTests`, `ScrollTests` und `LinkTests` beschreiben bzw. testen diese
+Funktionen bereits. Das benoetigt keinen neuen Laufzeit- oder Standardsumfang.
+
+**Weitere offene Klaerung:** Prioritaet 2 hat bereits umfangreiche Links,
+Scrolling, Auswahl und einfache GET-Formulare, nennt aber weiter Downloads,
+persistente Sitzungen, vollstaendige History und allgemeine Page-Input-
+Unterstuetzung als fehlend. Die Browser-README beschreibt aktuelle
+Interaktionen; der allgemeine Shell-Guide enthaelt teilweise aeltere Aussagen
+und limitiert die Roadmap insbesondere bei automatischen Input-Events. Vor
+einer Umsetzung muss daher ein konkreter, roadmap-kompatibler Umfang mit dem
+Nutzer gewaehlt werden.
+
+**Status:** Pass 1 bleibt auf die gewaehlte Dokumentationskorrektur begrenzt.
+`docs/browser-shell.md` und `plans/Missing.md` wurden angepasst und der Diff
+geprueft; `git diff --check` bestanden. Kein Laufzeittest wurde ausgefuehrt,
+da keine Codeaenderung oder dokumentationsspezifische Test-Suite betroffen ist.
+Commit `503b280` wurde erstellt und nach `origin/main` gepusht. Linux
+development und Push-on-main CI stehen erfolgreich; Windows confinement
+war zunaechst rot: Windows ARM64 bestand, waehrend Windows x64 bei
+`ProcessTests.WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(cancel: False)`
+einen Renderer-Startup/Render-Deadline-Timeout unter CPU-Druck meldete. Der
+Windows confinement Lauf auf dem Basiscommit `a22c929` war erfolgreich; nach
+Rerun des fehlgeschlagenen Jobs war Windows x64 erfolgreich. Kein Code wurde
+zur Behebung geaendert. Pass 1 ist mit gruener abschliessender CI abgeschlossen.
+
+**Pass 2-Pruefung:** Entsprechend dem Zehn-Passen-Auftrag wurde der
+Projektstatus und die verpflichtenden Uebersichten erneut geprueft. Der
+Tracker priorisiert weiter Interaktion, nennt Downloads, persistente Sitzungen
+und vollstaendige History. Die aktuelle Browser-Implementierung hat nur
+fluechtige `NavigationHistory`; eine Suche in Browser-Code und -Tests fand
+keine Download- oder Session-Persistenz-Schnittstelle. Die Scripting-Regeln
+verbieten automatische Input-/Load-Events im aktuellen Phase-11g-Umfang.
+Welches dieser Verhaltensziele und welche Datenschutz-/Speicher- oder
+Dateizugriffsgrenzen als Pass 2 gelten sollen, ist nicht festgelegt. Keine
+Implementierung begonnen; vor Pass 2 wurde eine weitere Nutzerentscheidung
+angefragt.
+
+### KP-017 - Prioritaet 2 zurueckstellen und Prioritaet 3 waehlen
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin (UTC+02:00).
+- Ereignisdatum: 2026-10-23, aktueller Turn.
+- Erfassungsart: laufend dokumentiert.
+- Quelle: ausdrueckliche Antwort des Nutzers in diesem Turn.
+- Bezug: REQ-005, DEC-011, Q-009.
+
+**Nutzerangabe:** Nach der Klaerung der offenen Scope-Frage zu Prioritaet 2
+waehlte der Nutzer `defer_priority_2` und erlaubte fuer diesen Lauf den
+Wechsel zu Prioritaet 3.
+
+**Abstimmung:** Verbleibende Prioritaet-2-Laufzeitfeatures bleiben offen und
+werden nicht umgesetzt oder als erledigt markiert. Keine Begruendung wurde
+genannt. Das ist ein laufbezogener Reihenfolgebeschluss, keine Spezifikations-
+aenderung fuer spaetere Arbeit.
+
+**Naechster Schritt:** Unter Prioritaet 3 ein konkretes, bereits nicht
+implementiertes Inkrement aus HTML-Recovery, Layout, Fonts oder CSS anhand
+von Quellcode und Tests auswaehlen, bevor der Fachguide und das README
+gelesen und ein etwaiger Standardsbedarf geprueft werden.
+
+**Pass-2-Auswahlpruefung:** `HtmlParser` klassifiziert `table`, `tr`, `td`,
+`th` und zugehoerige Elemente als explizit unsupported; `TreeTests` prueft
+weiterhin, dass einfache Tabellen-Inputs fehlschlagen. Der HTML-Projekt-README
+beschreibt diese Grenzen. CSS dokumentiert Flexbox/Grid als fehlend. Diese
+Kandidaten unterscheiden sich deutlich: Tabellenbaumkonstruktion kann ohne
+entsprechendes Layout noch keine Tabellenansicht liefern; Flexbox vergroessert
+den Layoutumfang und benoetigt seine eigene exakt begrenzte Geometriespezifikation.
+Der Nutzer hat bisher nur die Tracker-Prioritaet freigegeben, nicht diesen
+konkreten Umfang. Diese offene Formulierung wurde durch die spaetere Auswahl
+der Tabellenbaumkonstruktion als Pass-2-Ziel ueberholt; Details der
+Unterstuetzungsgrenze blieben eine umsetzungsbezogene Ableitung.
+
+### KP-018 - Tabellenbaumkonstruktion Pass 2
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin (UTC+02:00).
+- Ereignisdatum: 2026-10-23, Fortsetzung nach dem vorigen Checkpoint.
+- Erfassungsart: laufend dokumentiert.
+- Quelle: vom Nutzer bereitgestellte Gespraechszusammenfassung zur Auswahl
+  `table_tree_construction`; lokale HTML-Standardskopie, Code, Tests und
+  Validierung dieser Fortsetzung.
+- Bezug: DEC-012, Pass 2 des Zehn-Passen-Auftrags.
+
+**Nutzerangabe:** Der Nutzer waehlte Tabellenbaumkonstruktion als naechstes
+Prioritaet-3-Inkrement. Die genaue Algorithmen-Untermenge war damit nicht
+festgelegt.
+
+**Ableitung und Umsetzung:** Unter Beibehaltung der Projektregel, nicht
+implementierte Algorithmen explizit scheitern zu lassen, wurde ein kleiner
+statischer Umfang umgesetzt: table-/section-/row-/cell-Modi,
+implizite `tbody`/`tr`, Zell-/Zeilen-/Abschnittsschluss, Whitespace,
+Kommentare und Zellinhalt aus dem vorhandenen In-body-Subset. Foster
+parenting, Caption-/Spaltenkonstruktion und Tabellenlayout bleiben sichtbar
+unsupported. Die Auswahl des Bereichs ist Nutzerbeschluss; diese konkrete
+Grenzziehung ist eine Ableitung, keine zusaetzliche Nutzerspezifikation.
+
+**Belegte Quellen und Standards:** Die lokale WHATWG-HTML-Kopie aus
+`specs/cache/html.html` war laut `specs/manifest.json` am 2026-10-04 abgerufen
+und am 2026-10-23 weniger als 30 Tage alt. Gelesen wurden die Abschnitte
+`#parsing-main-intable`, `#parsing-main-intabletext`,
+`#parsing-main-intbody`, `#parsing-main-intr` und `#parsing-main-intd`;
+kein Refresh war nach der 30-Tage-Regel erforderlich. Die konkreten Tests
+belegen nur den gewaehlten Teilumfang, keine vollstaendige HTML-Konformitaet.
+
+**Validierung:** `Engine.Html.Tests` (7.218 Tests) und `Engine.Content.Tests`
+(7 Tests) bestanden; Solution-Build ohne Warnungen/Fehler und
+`dotnet test VisualWeb.slnx --no-build` bestanden. Geaenderte C#-Projekte
+bestanden `dotnet format` einzeln. Die loesungsweite Formatpruefung scheiterte
+an unveraenderten Findings in `src/Engine/Engine.Layout/StaticLayout.cs` und
+`src/Apps/VisualWeb.Browser/ShellChrome.cs`; keine dieser Dateien wurde
+geaendert. Der erste loesungsweite Testlauf machte sichtbar, dass der
+Content-Test nach Parserunterstuetzung weiterhin eine HTML-Parser-Ausnahme
+erwartete; dieser gekoppelte Test wurde auf die weiterhin explizite
+`UnsupportedLayoutException` umgestellt, und der erneute volle Testlauf war
+gruen.
+
+**Status / naechste Schritte:** Implementierung und lokale Validierung sind
+abgeschlossen und als Commit `b9e421c` nach `origin/main` gepusht. Die
+Remote-CI ist fuer Linux development
+(https://github.com/khmseu/VisualWeb/actions/runs/39871989779), Windows
+confinement (https://github.com/khmseu/VisualWeb/actions/runs/39871990125)
+und CodeQL (https://github.com/khmseu/VisualWeb/actions/runs/39871989047)
+erfolgreich; Pass 2 ist abgeschlossen. Danach gegen den aktualisierten
+Tracker eine neue actionable Pass-3-Aenderung bestimmen; keine Tabellenansicht
+oder breite Priority-3-Fertigstellung behaupten.
+
+### KP-019 - Colgroup und Col Pass 3
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin (UTC+02:00).
+- Ereignisdatum: 2026-10-23, Fortsetzung nach dem Abschluss von Pass 2.
+- Erfassungsart: laufend dokumentiert.
+- Quelle: aktualisierter `plans/Missing.md`, lokale HTML-Standardskopie,
+  aktuelle Parser-/Testquellen und Validierung dieser Fortsetzung.
+- Bezug: DEC-012, Pass 3 des Zehn-Passen-Auftrags.
+
+**Arbeitsauswahl (Ableitung, kein neuer Nutzerbeschluss):** Nach dem
+tabellenbezogenen Pass 2 zeigte der aktualisierte Tracker weiterhin explizit
+unsupported `colgroup`/`col`. Als kleiner separater HTML-Tree-Builder-Schritt
+wurde ihre Konstruktion ausgewaehlt; das Nutzerziel blieb Tabellenbaum-
+Konstruktion, eine neue Einzelentscheidung wurde nicht eingeholt.
+
+**Umsetzung:** `colgroup` und `col` werden in der In-Column-Group-
+Einsetzungsart abgebildet, direkte `col`-Elemente erzeugen eine implizite
+Spaltengruppe, und die Gruppen schliessen beim passenden Token-Reprocessing.
+Whitespace und Kommentare bleiben im Baum. Foster parenting, Captions und
+Tabellenlayout bleiben unsupported; es wird keine Tabellenansicht behauptet.
+
+**Standardsquelle:** `specs/cache/html.html`, Abschnitte
+`#parsing-main-intable` und `#parsing-main-incolgroup`; laut Manifest am
+2026-10-04 abgerufen und am 2026-10-23 noch innerhalb der 30-Tage-Frist.
+
+**Validierung:** `Engine.Html.Tests` (7.219 Tests), kompletter Solution-Build
+ohne Warnungen/Fehler und `dotnet test VisualWeb.slnx --no-build` bestanden.
+Projektbezogenes Format ist gruen; die globale Formatpruefung meldet dieselben
+unveraenderten Findings in `StaticLayout.cs` und `ShellChrome.cs`. Commit
+`a06ae04` wurde nach `origin/main` gepusht. Die CI ist fuer Linux development
+(https://github.com/khmseu/VisualWeb/actions/runs/39874104917), Windows
+confinement (https://github.com/khmseu/VisualWeb/actions/runs/39874105011)
+und CodeQL (https://github.com/khmseu/VisualWeb/actions/runs/39874104981)
+erfolgreich.
+
+**Status / naechste Schritte:** Pass 3 ist abgeschlossen. Im aktualisierten
+Tracker eine andere unabhaengige, testbare Pass-4-Luecke bestimmen; nicht
+Tabellenlayout oder volle Tabellenkonformitaet ableiten.
+
+### KP-020 - Tabellen-Captions Pass 4
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufend dokumentiert.
+- Quelle: aktualisierter `plans/Missing.md`, `docs/html-dom.md`,
+  `specs/cache/html.html`, Parser-/Testquellen und Validierung dieser Pass.
+- Bezug: REQ-005, DEC-012, Pass 4 des Zehn-Passen-Auftrags; folgt auf KP-019.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Der Nutzer hatte
+Tabellenbaumkonstruktion als Arbeitsfokus ausgewaehlt. Der aktualisierte Tracker
+markierte Captions weiterhin als unsupported. Diese kleine, getrennt testbare
+Caption-Insertion wurde als naechster Schritt innerhalb dieses Fokus gewaehlt;
+das erweitert nicht die Freigabe auf Foster Parenting, Tabellenlayout oder volle
+HTML-Konformitaet. CSS-Media-Queries waren zuvor nur eine moegliche Alternative,
+nicht beschlossen.
+
+**Umsetzung:** `HtmlParser` hat eine In-Caption-Insertion-Mode-Erweiterung.
+Captions verwenden das bestehende In-Body-Subset; schliessende Tabellen-Tokens
+beenden die Caption und werden in Tabellenmodus erneut verarbeitet. Einfache
+verschachtelte Elemente funktionieren, waehrend verschachtelte Tabellen in
+Captions, Foster Parenting und aktive Formatierungsrekonstruktion weiterhin
+explizit unsupported sind. Dokumentation und Missing-Tracker grenzen dies von
+Tabellenlayout ab.
+
+**Standardsquelle:** `specs/cache/html.html`, `#parsing-main-intable` und
+`#parsing-main-incaption`; Manifest-Pruefung am 2026-10-04, am 2026-10-23
+innerhalb der 30-Tage-Frist. Die Offline-Tests bleiben ohne Netzwerkzugriff.
+
+**Validierung:** `Engine.Html.Tests` (7.221 Tests), Solution-Build ohne
+Warnungen/Fehler und `dotnet test VisualWeb.slnx --no-build` bestanden.
+Projektbezogene Formatpruefung bestanden. Die Solution-Formatpruefung meldet
+weiterhin vorhandene Findings in `src/Engine/Engine.Layout/StaticLayout.cs`
+und `src/Apps/VisualWeb.Browser/ShellChrome.cs`; diese Dateien sind in diesem
+Pass unveraendert. Commit `a8deada` wurde nach `origin/main` gepusht. CI ist
+fuer CodeQL
+(https://github.com/khmseu/VisualWeb/actions/runs/39877063714), Linux
+development (https://github.com/khmseu/VisualWeb/actions/runs/39877063320) und
+Windows confinement (https://github.com/khmseu/VisualWeb/actions/runs/39877063319)
+erfolgreich.
+
+**Status / naechste Schritte:** Pass 4 ist abgeschlossen. Pass 5 gegen den
+aktualisierten Tracker bestimmen, ohne Tabellenlayout oder volle Konformitaet
+abzuleiten.
+
+### KP-021 - Text-Foster-Parenting Pass 5
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: abgeschlossen.
+- Quelle: aktualisierter `plans/Missing.md`, `docs/html-dom.md`,
+  `specs/cache/html.html`, Parser-/Testquellen und Validierung dieser Pass.
+- Bezug: REQ-005, DEC-012, Pass 5 des Zehn-Passen-Auftrags; folgt auf KP-020.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Der Tracker benannte
+Foster Parenting inklusive Nicht-Whitespace-Text in Tabellen weiter als Luecke.
+Als abgegrenzter Schritt wurde nur die standardgemaesse Behandlung
+zusammenhaengender Tabellen-Character-Tokens gewaehlt; Foster Parenting von
+Element- oder anderen Tabellen-Tokens bleibt ausserhalb dieses Passes.
+
+**Umsetzung:** `TableTextToken` puffert Character-Tokens bis zum naechsten
+Nicht-Character-Token. Whitespace-only-Laeufe bleiben im Tabellenbaum;
+gemischte/nichtleere Laeufe werden mit angrenzendem Whitespace vor die naechste
+angehaengte Tabelle eingefuegt und mit unmittelbar vorhergehendem Text
+zusammengefuehrt. Nicht-Whitespace-Inhalt in `colgroup` meldet den Parsefehler,
+schliesst die Gruppe und wird nach den Tabellen-Textregeln erneut verarbeitet.
+Andere Foster-Parenting-Algorithmen bleiben explizit unsupported.
+
+**Standardsquelle:** `specs/cache/html.html`,
+`#parsing-main-intabletext` und `#foster-parent`; Manifest-Pruefung am
+2026-10-04, am 2026-10-23 innerhalb der 30-Tage-Frist. Tests bleiben offline.
+
+**Validierung:** `Engine.Html.Tests` (7.223 Tests), Solution-Build ohne
+Warnungen/Fehler und `dotnet test VisualWeb.slnx --no-build` bestanden.
+Projektbezogene Formatpruefung bestanden. Die Solution-Formatpruefung meldet
+weiterhin die vorhandenen Findings in `StaticLayout.cs` und `ShellChrome.cs`;
+diese Dateien sind unveraendert. Commit `d823ba1` wurde nach `origin/main`
+gepusht. CI ist fuer CodeQL
+(https://github.com/khmseu/VisualWeb/actions/runs/39879836031), Linux
+development (https://github.com/khmseu/VisualWeb/actions/runs/39879837214) und
+Windows confinement (https://github.com/khmseu/VisualWeb/actions/runs/39879837211)
+erfolgreich.
+
+**Status / naechste Schritte:** Pass 5 ist abgeschlossen. Pass 6 erneut anhand
+des aktualisierten Trackers waehlen.
+
+### KP-022 - Script- und Style-Tags in Tabellen Pass 6
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufend dokumentiert; Pass 6 abgeschlossen.
+- Quelle: aktualisierter `plans/Missing.md`, `docs/html-dom.md`,
+  `specs/cache/html.html`, Parser-/Testquellen und Validierung dieses Pass.
+- Bezug: REQ-005, DEC-012, Pass 6 des Zehn-Passen-Auftrags; folgt auf KP-021.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Der Tracker benennt
+weiterhin unvollstaendige spezialisierte HTML-Algorithmen und grenzt bei
+Tabellen die nicht implementierte allgemeine Foster-Parenting-Behandlung ab.
+Als kleiner angrenzender Schritt wurden In-Table-Start-Tokens fuer `script`
+und `style` gewaehlt: Der Standard leitet sie in die vorhandene
+Raw-Text-/Script-Data-Behandlung um, ohne allgemeines Foster Parenting oder
+Script-Ausfuehrung freizugeben.
+
+**Umsetzung:** `TableToken` verwendet fuer `style` und `script` die vorhandene
+`StartText`-Routine mit Raw-Text bzw. Script-Data. Der urspruengliche
+Tabellen-Einfuegemodus wird nach dem Ende des Text-Elements wiederhergestellt.
+Tests pruefen die DOM-Position und unveraenderten Textinhalt im Tabellen-,
+Abschnitts- und Zeilenkontext. Andere Foster-Parenting-Faelle bleiben
+explizit unsupported; Script-Inhalt bleibt inert.
+
+**Standardsquelle:** `specs/cache/html.html`, `#parsing-main-intable` und
+`#parsing-main-inhead`; Manifest-Pruefung am 2026-10-04, am 2026-10-23
+innerhalb der 30-Tage-Frist. Tests bleiben offline.
+
+**Validierung:** `Engine.Html.Tests` (7.224 Tests), Solution-Build ohne
+Warnungen/Fehler und `dotnet test VisualWeb.slnx --no-build` bestanden.
+Geaenderte-Dateien-Formatpruefung bestanden. Die Solution-Formatpruefung
+meldet weiterhin Findings in `StaticLayout.cs` und `ShellChrome.cs`; beide
+Dateien sind identisch zu `HEAD` und nicht Teil dieses Passes. Commit
+`255664e` wurde nach `origin/main` gepusht; Linux-, Windows- und Push-CI
+sind erfolgreich: CodeQL
+(https://github.com/khmseu/VisualWeb/actions/runs/39881851199), Linux
+development (https://github.com/khmseu/VisualWeb/actions/runs/39881852620) und
+Windows confinement (https://github.com/khmseu/VisualWeb/actions/runs/39881851209).
+
+**Status / naechste Schritte:** Pass 6 ist abgeschlossen. Pass 7 erneut anhand
+des aktualisierten Trackers waehlen.
+
+### KP-023 - Versteckte Inputs im Tabellenmodus Pass 7
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufend dokumentiert; Pass 7 abgeschlossen.
+- Quelle: aktualisierter `plans/Missing.md`, `docs/html-dom.md`,
+  `specs/cache/html.html`, Parser-/Testquellen und Validierung dieses Pass.
+- Bezug: REQ-005, DEC-012, Pass 7 des Zehn-Passen-Auftrags; folgt auf KP-022.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Der Tracker fuehrt
+weitere fehlende spezialisierte HTML-Algorithmen auf. Der In-Table-Algorithmus
+enthaelt eine kleine Ausnahme ohne allgemeines Foster Parenting: `input`
+mit `type=hidden` wird trotz Parsefehlers als void Element eingefuegt. Andere
+Inputs, die den Alles-andere-/Foster-Parenting-Pfad benoetigen, bleiben
+unsupported.
+
+**Umsetzung:** Fuer `input` im Tabellenmodus wird ausschliesslich ein
+ASCII-case-insensitives `type=hidden` akzeptiert. Der Parser protokolliert
+`hidden-input-in-table` und fuegt das Element ohne Stack-Push in die aktuelle
+Tabellenposition ein. Fehlender, nicht passender oder nicht-ASCII-passender
+Typ bleibt explizit unsupported. Tests decken direkte Tabellen- und
+Zeilenposition, voidness, Originalwert und Diagnose ab.
+
+**Standardsquelle:** `specs/cache/html.html`, `#parsing-main-intable`;
+Manifest-Pruefung am 2026-10-04, am 2026-10-23 innerhalb der 30-Tage-Frist.
+Tests bleiben offline.
+
+**Validierung:** `Engine.Html.Tests` (7.228 Tests), Solution-Build ohne
+Warnungen/Fehler und `dotnet test VisualWeb.slnx --no-build` bestanden.
+Geaenderte-Dateien-Formatpruefung bestanden. Die Solution-Formatpruefung
+meldet weiterhin die unveraenderten Findings in `StaticLayout.cs` und
+`ShellChrome.cs`; beide Dateien sind identisch zu `HEAD` und nicht Teil dieses
+Passes. Commit `5920866` wurde nach `origin/main` gepusht. CodeQL
+(https://github.com/khmseu/VisualWeb/actions/runs/39884466048), Linux
+development (https://github.com/khmseu/VisualWeb/actions/runs/39884466100)
+und Windows confinement
+(https://github.com/khmseu/VisualWeb/actions/runs/39884466055) sind erfolgreich.
+
+**Status / naechste Schritte:** Pass 7 ist abgeschlossen. Pass 8 aus dem
+aktualisierten Tracker waehlen.
+
+### KP-024 - Verschachtelte Tabellen Pass 8
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufend dokumentiert; Pass 8 abgeschlossen.
+- Quelle: `plans/Missing.md`, HTML/DOM-Guide, Engine.Html README, lokaler
+  WHATWG-HTML-Cache, Parser/Testquellen und aktuelle Validierung.
+- Bezug: REQ-005, DEC-012, Q-010 und Pass 8 des Zehn-Passen-Auftrags; folgt
+  auf KP-023.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Der Nutzer hatte fuer
+Prioritaet 3 Tabellenbaumkonstruktion gewaehlt. Nach Pass 7 war nested-table
+recovery die naechste klar begrenzte, sichtbar testbare Luecke im Parser.
+Untersucht wurden die In-Table-Startregel, In-Cell-Startregel und das
+Insertion-Mode-Reset im vorhandenen Standardcache. Der Umfang bleibt auf die
+bereits implementierten Modi begrenzt; Caption-Nesting bleibt wie zuvor
+explizit unsupported.
+
+**Umsetzung:** Ein in-scope nested `table`-Start im Tabellenmodus schliesst
+die aktuelle Tabelle, setzt den Modus aus dem verbleibenden Stack zurueck und
+reprocessiert das Token. Tabellenstart innerhalb einer Zelle folgt dem
+In-Body-Pfad, bleibt Kind der Zelle und stellt nach dem inneren
+Tabellen-Endtag den Zellmodus wieder her. Das In-Cell-Schliess-Set enthaelt
+deshalb kein `table`. Reset-Modi fuer Templates bleiben explizit unsupported.
+Tests decken Geschwistertabellen nach Reprocessing und innere Tabellen in
+Zellen samt anschliessendem Zelltext ab; der bestehende Unsupported-Test fuer
+Caption-Nesting bleibt erhalten.
+
+**Standardsquelle:** `specs/cache/html.html` mit den Abschnitten
+`#parsing-main-intable`, `#parsing-main-incell` und
+`#reset-the-insertion-mode-appropriately`; Manifest-Pruefung am 2026-10-04,
+am 2026-10-23 innerhalb der 30-Tage-Frist. Keine Netzaktualisierung noetig;
+Tests bleiben offline.
+
+**Validierung:** `Engine.Html.Tests` (7.230), `dotnet test VisualWeb.slnx
+--no-build` und Solution-Build ohne Warnungen/Fehler bestanden. Formatpruefung
+der geaenderten C#-Dateien bestanden. Die Solution-Formatpruefung zeigt
+weiterhin die nicht geaenderten Findings in `StaticLayout.cs` und
+`ShellChrome.cs`. Commit `7d030ab` wurde am 2026-10-23 gepusht. CodeQL
+(https://github.com/khmseu/VisualWeb/actions/runs/39886409310) und Linux
+development (https://github.com/khmseu/VisualWeb/actions/runs/39886409413)
+sowie Windows confinement
+(https://github.com/khmseu/VisualWeb/actions/runs/39886409409) sind
+erfolgreich.
+
+**Status / naechste Schritte:** Pass 8 ist implementiert, lokal validiert,
+committed, gepusht und CI-gruen. Pass 9 anhand des aktualisierten Trackers
+waehlen.
+
+### KP-025 - In-Table-Formpointer-Ausnahme Pass 9
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufend dokumentiert; Pass 9 abgeschlossen.
+- Quelle: aktualisierter `plans/Missing.md`, HTML/DOM-Guide, Engine.Html
+  README, `specs/cache/html.html`, Parser/Testquellen und Validierung.
+- Bezug: REQ-005, DEC-012, Q-010 und Pass 9 des Zehn-Passen-Auftrags; folgt
+  auf KP-024.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Prioritaet 3 und
+Tabellenbaumkonstruktion waren bereits vom Nutzer gewaehlt. Der
+In-Table-Algorithmus hat eine spezialisierte Form-Regel, die keine allgemeine
+Foster-Parenting-Implementierung benoetigt und den vorhandenen Form-Pointer
+nutzt. Der bisherige Parser warf bei Form-Start-Tags in Table/Section/Row-
+Modi wegen des nicht implementierten Foster-Parenting-Standardpfads. Der
+Umfang bleibt auf diese konkrete Ausnahme begrenzt.
+
+**Umsetzung:** Jedes Form-Start-Token im Tabellenmodus erzeugt einen
+Parsefehler; wenn der Form-Pointer leer ist, wird das Element an der aktuellen
+Tabellenposition eingefuegt, der Pointer gesetzt und das Element direkt vom
+Open-Element-Stack entfernt. Weitere Starts werden bei gesetztem Pointer
+ignoriert. Form-End-Tokens verwenden die vorhandene In-Body-Behandlung:
+Pointer wird geloescht, das aus dem Stack entfernte Element wird nicht
+geschlossen und ein Unexpected-End-Tag-Diagnostikcode bleibt sichtbar. Tests
+decken Tabellen-, Abschnitts- und Zeilenmodus, die Elternposition, Ignorieren
+weiterer Starts und End-Tag-Diagnose ab.
+
+**Standardsquelle:** `specs/cache/html.html#parsing-main-intable`; Manifest
+`html` zuletzt geprueft am 2026-10-04, am 2026-10-23 innerhalb der
+30-Tage-Frist. Kein Refresh erforderlich; Tests bleiben offline.
+
+**Validierung:** `Engine.Html.Tests` (7.233), Solution-Build ohne
+Warnungen/Fehler, `dotnet test VisualWeb.slnx --no-build` und geaenderte-
+Dateien-Formatpruefung bestanden. Solution-Formatpruefung zeigt weiterhin
+die Findings in `StaticLayout.cs` und `ShellChrome.cs`; beide Dateien sind
+unveraendert gegen den HEAD-Basisstand. Commit `c51811a` wurde gepusht. CodeQL
+(https://github.com/khmseu/VisualWeb/actions/runs/39888443886), Linux
+development (https://github.com/khmseu/VisualWeb/actions/runs/39888444229)
+und Windows confinement
+(https://github.com/khmseu/VisualWeb/actions/runs/39888444402) sind
+erfolgreich.
+
+**Status / naechste Schritte:** Pass 9 ist lokal validiert, committed und
+gepusht und CI-gruen. Pass 10 aus dem aktualisierten Tracker waehlen.
+
+### KP-026 - HTML-Starttags in Tabellenmodi Pass 10
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: laufend dokumentiert; Pass 10 committed, gepusht und mit
+  erfolgreicher abschliessender CI abgeschlossen.
+- Quelle: aktualisierter `plans/Missing.md`, HTML/DOM-Guide, Engine.Html
+  README, lokaler `html`-Standardcache, Parser/Testquellen und Validierung.
+- Bezug: REQ-005, DEC-012, Q-010 und Pass 10 des Zehn-Passen-Auftrags; folgt
+  auf KP-025.
+
+**Auswahl (Ableitung, keine neue Einzelentscheidung):** Nach dem
+Formpointer-Sonderfall war im In-Table-Algorithmus weiterhin das `html`
+Start-Token unsupported, obwohl der In-Body-Zweig fuer dieses Token lediglich
+Root-Attribute merged und keinen Baumknoten einfuegt. Das ist ein kleiner
+table-recovery-Schritt ohne allgemeine Foster-Parenting-Implementierung; er
+liegt innerhalb der bereits gewaehlteten Prioritaet 3.
+
+**Umsetzung:** `html`-Start-Tokens im Table-Modus werden an die
+vorhandene In-Body-Verarbeitung weitergeleitet. Damit bleiben bestehende
+Root-Attributwerte erhalten und bislang fehlende Attribute werden ergaenzt.
+Tests decken Table-, Section- und Row-Modus ab.
+
+**Standardsquelle:** `specs/cache/html.html#parsing-main-intable`; Manifest
+`html` zuletzt geprueft am 2026-10-04, am 2026-10-23 innerhalb der
+30-Tage-Frist. Kein Refresh erforderlich; Tests bleiben offline.
+
+**Validierung:** `Engine.Html.Tests` (7.236), Solution-Build ohne Warnungen/
+Fehler, `dotnet test VisualWeb.slnx --no-build` und geaenderte-Dateien-
+Formatpruefung bestanden. Die Solution-Formatpruefung meldet weiterhin
+unveraenderte Findings in `StaticLayout.cs` und `ShellChrome.cs`, beide gegen
+den Base-HEAD unveraendert. Commit `898d3e0` wurde gepusht. Bei der ersten
+Run-Listen-Abfrage war noch kein CI-Lauf fuer diesen SHA sichtbar. Der erste
+Windows-x64-Lauf scheiterte in einem unveraenderten Browser-Link-/Redirect-Test;
+der angeforderte Rerun bestand. Windows ARM64, Linux development und CodeQL
+waren ebenfalls erfolgreich. Der erfolgreiche Windows-Rerun ist
+[Run 39890303968](https://github.com/khmseu/VisualWeb/actions/runs/39890303968).
+
+**Status / naechste Schritte:** Alle zehn angeforderten Passen sind getrennt
+validiert, committed, gepusht und abschliessend CI-gruen. Der Windows-x64-
+Erstlauf-Fehler wurde durch erfolgreichen Rerun geklaert; es gab keine
+Codeaenderung fuer diesen unabhängigen Browser-Test.
