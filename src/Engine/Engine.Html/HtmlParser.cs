@@ -572,6 +572,16 @@ public static class HtmlParser
                         mode = Mode.InTableBody;
                         Process(tag);
                         return;
+                    case "input":
+                        if (!tag.Attributes.TryGetValue("type", out var inputType)
+                            || !AsciiEqualsIgnoreCase(inputType, "hidden"))
+                        {
+                            throw Unsupported("Non-hidden input tokens in table content require foster parenting.");
+                        }
+
+                        Error("hidden-input-in-table");
+                        Insert(tag, push: false);
+                        return;
                     case "style":
                         StartText(tag, HtmlTextMode.Rawtext);
                         return;
@@ -1145,6 +1155,19 @@ public static class HtmlParser
         {
             if (nodes == options.MaxNodes) { throw new HtmlLimitException("HTML node count limit exceeded."); }
             nodes++;
+        }
+
+        private static bool AsciiEqualsIgnoreCase(string value, string expected)
+        {
+            if (value.Length != expected.Length) { return false; }
+            for (var index = 0; index < value.Length; index++)
+            {
+                var character = value[index];
+                if (character is >= 'A' and <= 'Z') { character = (char)(character + ('a' - 'A')); }
+                if (character != expected[index]) { return false; }
+            }
+
+            return true;
         }
 
         private void Error(string code)

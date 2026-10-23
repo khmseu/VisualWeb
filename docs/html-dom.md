@@ -83,7 +83,9 @@ after-after-body modes. Supported behavior includes:
   reprocess table tokens; nested tables inside captions remain unsupported.
   In-table `script`/`style` start tags use the existing script-data/raw-text
   modes and return to the originating table insertion mode; script content
-  remains inert.
+  remains inert. A `type=hidden` input is inserted as a void table child with
+  a parse-error diagnostic; other input types in table content remain
+  unsupported because they require foster parenting.
   Contiguous non-whitespace table-character runs (including their adjacent
   whitespace) are foster-parented before the nearest table; whitespace-only
   runs stay in the table. This tree-building support does not add table layout;

@@ -316,6 +316,8 @@ them. Non-whitespace table-character runs, including adjacent whitespace, are
 foster-parented before the nearest table; whitespace-only runs remain in place.
 In-table `script`/`style` start tags use script-data/raw-text parsing and return
 to their original table insertion mode; script content remains inert.
+`type=hidden` inputs are inserted as void table children with a parse-error
+diagnostic; other input types remain unsupported in table content.
 Other tokens that require table foster parenting remain explicitly unsupported;
 tree construction still does not implement table layout. Other remaining
 parser work includes:

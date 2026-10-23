@@ -195,6 +195,27 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void HiddenInputsAreInsertedAsVoidTableChildren()
+    {
+        var result = Parse("<!doctype html><table><input type=HIDDEN id=table-input>"
+            + "<tbody><tr><input type=hidden id=row-input><td>cell</td></tr></tbody></table>");
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        var tableInput = Assert.IsType<DomElement>(table.FirstChild);
+        Assert.Equal("input", tableInput.LocalName);
+        Assert.Equal("HIDDEN", tableInput.GetAttribute("type"));
+        Assert.Equal("table-input", tableInput.GetAttribute("id"));
+        Assert.Empty(tableInput.ChildNodes);
+
+        var section = Assert.IsType<DomElement>(table.LastChild);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        var rowInput = Assert.IsType<DomElement>(row.FirstChild);
+        Assert.Equal("input", rowInput.LocalName);
+        Assert.Equal("row-input", rowInput.GetAttribute("id"));
+        Assert.Empty(rowInput.ChildNodes);
+        Assert.Equal(2, result.Errors.Count(error => error.Code == "hidden-input-in-table"));
+    }
+
+    [Fact]
     public void TableTokensCloseCaptionAndAreReprocessed()
     {
         var result = Parse("<!doctype html><table><caption>Title<tr><td>cell</td></tr></table><p>after</p>");
@@ -241,6 +262,9 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<table><div>unsupported</div></table>")]
     [InlineData("<table><caption>x<table></table></caption></table>")]
+    [InlineData("<table><input></table>")]
+    [InlineData("<table><input type=text></table>")]
+    [InlineData("<table><input type=h\u0131dden></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
