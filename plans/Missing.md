@@ -323,9 +323,11 @@ reprocesses the token; nested tables inside cells remain cell descendants and
 restore cell insertion mode when closed. In-table form starts follow the
 form-pointer exception and pop the inserted form from the open-element stack;
 repeated starts are ignored while the pointer is set. In-table form end tags
-use in-body handling. Nested tables inside captions and other tokens that
-require table foster parenting remain explicitly unsupported; tree construction
-still does not implement table layout. Other remaining
+use in-body handling. Duplicate `html` start tokens in table, section and row
+modes merge missing root attributes without inserting a new element. Nested
+tables inside captions and other tokens that require table foster parenting
+remain explicitly unsupported; tree construction still does not implement
+table layout. Other remaining
 parser work includes:
 
 - Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.

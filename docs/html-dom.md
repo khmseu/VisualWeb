@@ -87,7 +87,9 @@ after-after-body modes. Supported behavior includes:
   exception: the form is inserted at the current table-mode location, then
   popped from the open-element stack; repeated starts are ignored while the
   pointer is set. In-table form end tags use in-body handling and cannot pop
-  the already-popped form from the stack.
+  the already-popped form from the stack. An `html` start token in table,
+  section or row mode uses the in-body root-attribute merge without inserting
+  another element.
   In-table `script`/`style` start tags use the existing script-data/raw-text
   modes and return to the originating table insertion mode; script content
   remains inert. A `type=hidden` input is inserted as a void table child with

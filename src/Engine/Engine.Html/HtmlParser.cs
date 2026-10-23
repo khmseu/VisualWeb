@@ -5,7 +5,8 @@ namespace VisualWeb.Engine.Html;
 
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
-/// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
+/// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody">in body</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intabletext">in table text</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incaption">in caption</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#foster-parent">foster parenting</see>,
@@ -15,7 +16,8 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
 /// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
-/// nested table starts, nested tables in cells and the in-table form-pointer exception are supported;
+/// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
+/// merging for in-table <c>html</c> starts are supported;
 /// other foster-parenting cases, nested tables in captions, templates, foreign content, frames, fragment parsing, scripting,
 /// active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
@@ -545,6 +547,9 @@ public static class HtmlParser
             {
                 switch (tag.Name)
                 {
+                    case "html":
+                        BodyToken(tag);
+                        return;
                     case "table":
                         if (!InTableScope("table"))
                         {

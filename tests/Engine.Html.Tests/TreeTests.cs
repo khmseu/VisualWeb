@@ -231,6 +231,22 @@ public sealed class TreeTests
         Assert.Single(result.Errors, error => error.Code == "unexpected-form-end-tag");
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("<tbody>")]
+    [InlineData("<tbody><tr>")]
+    public void HtmlStartInTableModesMergesRootAttributes(string context)
+    {
+        var result = Parse($"<!doctype html><html lang=original><table>{context}"
+            + "<html lang=ignored data-added=merged><td>cell</td></table>");
+        var root = result.Document.DocumentElement!;
+        var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+        Assert.Equal("original", root.GetAttribute("lang"));
+        Assert.Equal("merged", root.GetAttribute("data-added"));
+        Assert.Equal("tbody", Assert.IsType<DomElement>(table.FirstChild).LocalName);
+        Assert.Contains(result.Errors, error => error.Code == "html-start-in-body");
+    }
+
     [Fact]
     public void NestedTableStartClosesAndReprocessesTheCurrentTable()
     {
