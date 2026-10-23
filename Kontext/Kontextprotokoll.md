@@ -1101,3 +1101,27 @@ implementiert und validiert; Commit, Push und CI-Auswertung stehen noch aus.
 Nach Abschluss anhand des aktualisierten Trackers neu waehlen. Der beschlossene
 Teilumfang klaert nicht die breitere Produktionsautorisierung, SOP/CORS/CSP,
 Frames, Sandbox oder andere inherited origins.
+
+### KP-029 - Pass 1 gepusht und CI bestaetigt
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: Commit-, Push- und CI-Nachweis.
+- Quelle: Git-Commit `a4490f9`, `git push`, GitHub Actions fuer diesen Commit.
+- Bezug: KP-028, REQ-005, Q-002.
+
+**Belegt:** `a4490f9` (`feat(browser): inherit origins for page-initiated
+about:blank`) ist auf `main` gepusht. CodeQL/Push-on-main
+([Run 39908662239](https://github.com/khmseu/VisualWeb/actions/runs/39908662239)),
+Windows confinement
+([Run 39908663558](https://github.com/khmseu/VisualWeb/actions/runs/39908663558))
+und Linux development
+([Run 39908663567](https://github.com/khmseu/VisualWeb/actions/runs/39908663567))
+sind erfolgreich.
+
+**Status / naechste Schritte:** Pass 1 ist abgeschlossen. Neun weitere Passen
+sind angefragt; vor Pass 2 bleibt die konkrete naechste Sicherheitsregel
+ungeklaert. Die Auswahl muss zwischen einem begrenzten Top-Level-
+Navigationspolicy-Inkrement, dem Zurueckstellen der Security-Prioritaet fuer
+eine konkrete niedrigere Tracker-Prioritaet und dem Blockieren weiterer Arbeit
+unterscheiden.

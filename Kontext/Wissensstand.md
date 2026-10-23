@@ -7,14 +7,15 @@
 - Dokumentationsdatum: 2026-10-23, Zeitzone Europe/Berlin (UTC+02:00).
 - Rekonstruktionsstand: teilweise; Originalauftrag ab 2026-10-04,
   ausgewaehlte Entscheidungen bis 2026-10-22 nachvollzogen.
-- Artefaktstand: `898d3e0` (`fix(html): merge root attributes in table mode`)
-  wurde am 2026-10-23 auf `origin/main` gepusht.
+- Artefaktstand: `a4490f9` (`feat(browser): inherit origins for
+page-initiated about:blank`) wurde am 2026-10-23 auf `origin/main` gepusht;
+  CodeQL, Linux development und Windows confinement sind erfolgreich.
 - Arbeitsstand: Die zehn vorherigen HTML-Recovery-Passen sind getrennt
   committed, gepusht und abschliessend CI-gruen. Eine neue Zehn-Passen-Serie
   ist angefragt. Pass 1, page-initiated `about:blank` mit geerbter Origin,
   browser-UI blank opaque und Origin-erhaltender History, ist implementiert
-  und lokal validiert; Commit/Push/CI stehen noch aus. Frames, Sandbox und
-  weitere Origin-Policy bleiben offen.
+  und CI-validiert (Commit `a4490f9`). Frames, Sandbox und weitere
+  Origin-Policy bleiben offen.
 - Quellen: Projektanweisungen, Architektur, Roadmap, verbleibende Arbeit,
   ausgewaehlte Fachquellen und Code; 24 Markdown-Exporte in
   [Sessions](../Sessions/) mit datierten Nutzerpassagen und gezielt gelesenen
@@ -220,17 +221,20 @@ auditiert wurden; Quellenumfang und Nachweisgrenzen stehen im Protokoll.
   Fokustests, Core (3.991), Browser (1.094), Solution-Build und Volltest
   bestanden. Changed-file Formatierung nach Korrektur bestanden; Solution-
   Formatierung meldet weiterhin unveraenderte Befunde in `StaticLayout.cs`
-  und `ShellChrome.cs`. Commit/Push/CI ausstehend.
+  und `ShellChrome.cs`. Commit `a4490f9` ist gepusht; CodeQL Run
+  `39908662239`, Windows Run `39908663558` und Linux Run `39908663567` sind
+  erfolgreich.
 - Geschriebene Kontextdateien erneut gelesen; lokale Links und Markdown-Anker,
   eindeutige REQ-/DEC-/Q-/KP-IDs, Quellenregister und Whitespace automatisiert
   geprueft. Externe GitHub-Links sind Quellenverweise, keine Browser-Abnahmetests.
 
 ## Naechste Schritte
 
-1. Pass 1 der neuen Zehn-Passen-Serie ist lokal implementiert und validiert;
-   Commit, Push und CI-Auswertung abschliessen. Danach den aktualisierten
-   Tracker fuer Pass 2 neu pruefen und vor weiterer Sicherheitsimplementierung
-   den konkreten Umfang klaeren.
+1. Pass 1 der neuen Zehn-Passen-Serie ist committed, gepusht und CI-gruen.
+   Vor Pass 2 den konkreten Sicherheitsumfang waehlen: eine begrenzte
+   Top-Level-Navigationspolicy, Security-Prioritaet zurueckstellen und eine
+   konkrete niedrigere Missing-Prioritaet waehlen, oder weitere Arbeit
+   blockieren.
 2. In der vorherigen Zehn-Passen-Serie stellte der Nutzer zuerst Prioritaet 1 zurueck und
    erlaubte Pass 1 unter Prioritaet 2. Nach Klaerung wurden die verbleibenden
    Laufzeitluecken von Prioritaet 2 fuer diesen Lauf ebenfalls zurueckgestellt
@@ -312,9 +316,8 @@ auditiert wurden; Quellenumfang und Nachweisgrenzen stehen im Protokoll.
 4. Vor einem GitHub-Kompatibilitaetsmeilenstein Q-001 in messbare Kriterien
    uebersetzen; derzeit nicht eigenmaechtig Login, Cookies, Images oder
    allgemeinen JS-Scheduler hinzufuegen.
-5. Die neue Serie hat neun weitere angefragte Passen; keine weiteren
-   Verhaltensaenderungen ohne konkrete Prioritaetswahl und gegebenenfalls
-   fehlende Sicherheitsentscheidung beginnen.
+5. Neun weitere Passen sind angefragt, aber die offene Policy Q-002 muss vor
+   einer weiteren sicherheitsrelevanten Verhaltensaenderung entschieden sein.
 6. Q-003/Q-004 gezielt in den betroffenen Fachquellen konsolidieren, sobald
    Dokumentbereinigung beauftragt ist. Kontext zeigt Widersprueche, ersetzt
    aber nicht ungefragt die historischen Autoritaeten.
