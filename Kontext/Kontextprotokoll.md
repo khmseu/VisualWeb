@@ -1125,3 +1125,32 @@ ungeklaert. Die Auswahl muss zwischen einem begrenzten Top-Level-
 Navigationspolicy-Inkrement, dem Zurueckstellen der Security-Prioritaet fuer
 eine konkrete niedrigere Tracker-Prioritaet und dem Blockieren weiterer Arbeit
 unterscheiden.
+
+### KP-030 - Gewaehlte Bestaetigungspolitik bereits implementiert
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin.
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: Nutzerentscheidung und Verifikation vorhandener Umsetzung.
+- Quelle: Antwort `confirmation_policy` auf die Pass-2-Auswahl; Browser-Shell-
+  Code, README und gezielte bestehende Shell-Tests.
+- Bezug: REQ-005, Q-002; folgt auf KP-029.
+
+**Nutzerangabe:** Der Nutzer waehlte explizite Bestaetigung fuer
+cross-origin page navigation.
+
+**Belegt:** Diese Regel existiert bereits in `DevelopmentShell`: die
+Entwicklungsoberflaeche bestaetigt page-initiated Links/Formulare vor dem
+Transport und jeden origin-aendernden Redirect. Same-origin-Uebergaenge
+werden ohne Nachfrage fortgesetzt; die Bestaetigung zeigt nur die Ziel-Origin.
+Abbruch verweigert den Request. Tests decken Link plus mehrstufige
+Cross-Origin-Redirects, Abbruch ohne Request, `_blank`-Tab und Cross-Origin-
+Formularbestaetigung ab (`tests/VisualWeb.Browser.Tests/ShellTests.cs`).
+README und Shell-Guide beschreiben dieses Verhalten. Es bleibt explizite
+Entwicklungsbestaetigung, keine Produktionsautorisierung.
+
+**Status / naechste Schritte:** Die gewaehlte Pass-2-Richtung benoetigt keine
+Codeaenderung, weil sie bereits umgesetzt und getestet ist; es wurde kein
+Pass-2-Code oder leerer Commit erzeugt. Vor einem weiteren Inkrement muss der
+Nutzer eine noch fehlende Sicherheitsregel benennen, Prioritaet 1 fuer einen
+konkreten niedrigeren Tracker-Punkt zurueckstellen oder weitere Arbeit
+blockieren.
