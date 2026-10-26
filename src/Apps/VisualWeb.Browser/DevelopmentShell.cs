@@ -893,7 +893,7 @@ public sealed class DevelopmentShell : IDisposable
             case SDL.Scancode.Return:
                 var address = view.Editor.Text;
                 Edit(view, window, false);
-                Controller.Navigate(tab.Id, address);
+                Controller.NavigateFromAddressBar(tab.Id, address);
                 break;
             case SDL.Scancode.Escape:
                 Controller.SetAddress(tab.Id, tab.History.Current?.Href ?? "");

@@ -263,12 +263,14 @@ destination authorization, HSTS upgrades, bad-port checks and HTTPS downgrade
 protection also apply. This is stricter than Fetch in its redirect restriction
 and does not implement preflight, credentialed CORS, response-header exposure,
 general resource authorization or script-visible Fetch. The development shell
-also requires confirmation before a page-initiated link/form request reaches a
-different origin and before every redirect hop that changes origin relative
-to the preceding request. The prompt runs before transport and shows only the
-destination origin; address-bar navigation remains unrestricted. This is not
-general request authorization, and low-level `BrowserController` instances do
-not enable it unless configured with an authorizer. Other request classes have
+also requires confirmation before a page-initiated link/form request or typed
+HTTP(S) address-bar navigation reaches a different origin from the committed
+document, and before every redirect hop that changes origin relative to the
+preceding request. The prompt runs before transport and shows only the
+destination origin; initial loads and non-HTTP(S) address-bar navigation are
+unchanged. This is not general request authorization, and low-level
+`BrowserController` instances do not enable it unless configured with an
+authorizer. Other request classes have
 no browser-wide origin authorization. Apart from these narrow rules and
 bad-port blocking above, there is no general CSP, mixed-content policy,
 referrer policy, cache, storage partitioning, sandbox or private-network policy

@@ -1852,6 +1852,24 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         Start(tab, BrowserUrl.Parse(address), null, false);
     }
+    /// <summary>Navigates an address-bar submission, confirming cross-origin hops when a committed page exists.</summary>
+    public void NavigateFromAddressBar(TabId id, string address)
+    {
+        Check();
+        ArgumentNullException.ThrowIfNull(address);
+        var tab = Session.Tab(id);
+        if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
+        var url = BrowserUrl.Parse(address);
+        if (pageNavigationAuthorizer is not null
+            && content[id].Document is { } sourceDocument
+            && url.Protocol is "http:" or "https:")
+        {
+            Start(tab, url, null, false, authorizeRedirects: true,
+                preserveAddressWhileLoading: true, authorizationSourceOrigin: sourceDocument.Origin);
+            return;
+        }
+        Start(tab, url, null, false);
+    }
     public void Back(TabId id)
     {
         Check();
@@ -1915,7 +1933,7 @@ public sealed class BrowserController : IDisposable
             restoreScrollY: restoreScrollY));
         if (!preserveAddressWhileLoading) { tab.AddressText = url.Href; }
         tab.Error = null; tab.IsLoading = true;
-        tab.Status = preserveAddressWhileLoading ? "Waiting for page navigation approval." : "Loading " + url.Href;
+        tab.Status = preserveAddressWhileLoading ? "Checking navigation authorization." : "Loading " + url.Href;
         Changed?.Invoke(tab.Id);
     }
     private async Task<LoadedPage> LoadPageInitiatedAsync(TabId tabId, BrowserUrl url, SecurityOrigin sourceOrigin,

@@ -275,16 +275,19 @@ cancellation remain deferred. This is a bounded subset of HTML
 [following hyperlinks](https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks)
 (cached standard ID `html`), not a full DOM event/default-action implementation.
 
-Before the development shell sends a page-initiated link or form request to an
-origin different from the source document, it displays a confirmation. Each
-redirect that changes origin relative to the preceding request requires a
-separate confirmation, even when redirecting to an origin seen earlier in the
-same navigation. Same-origin hops do not prompt. The chrome shows only the
-destination origin and accepts Allow/Cancel, Enter, or Escape. While waiting,
-the address bar retains its prior value and GET form query values are neither
-shown in chrome nor sent. Explicit address-bar navigation remains unrestricted;
-this prompt is not general request authorization or a production security
-boundary.
+Before the development shell sends a page-initiated link/form request or a
+typed HTTP(S) address-bar request to an origin different from the committed
+document, it displays a confirmation. Each redirect that changes origin
+relative to the preceding request requires a separate confirmation, even when
+redirecting to an origin seen earlier in the same navigation. Same-origin hops
+do not prompt. The chrome shows only the destination origin and accepts
+Allow/Cancel, Enter, or Escape. For page-initiated requests, the address bar
+retains its prior value and GET form query values are neither shown in chrome
+nor sent while waiting; an address-bar submission retains the typed destination.
+This applies only in the development shell when a committed document exists.
+Initial loads, non-HTTP(S) address-bar navigation, and low-level controller
+calls without an injected authorizer remain unchanged. The prompt is not general
+request authorization or a production security boundary.
 
 ## Simple GET forms
 

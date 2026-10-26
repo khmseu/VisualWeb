@@ -98,10 +98,13 @@ crashes are contained in multiprocess mode. The CLI requires
 unsupported targets/configurations fail closed before display/content startup.
 Neither mode is production-safe browsing.
 
-The development shell asks before page-initiated links or forms reach another
-origin and before each origin-changing redirect. The confirmation shows only
-the destination origin and blocks transport until Allow/Cancel, Enter, or
-Escape; address-bar navigation remains unrestricted.
+The development shell asks before page-initiated links/forms or typed HTTP(S)
+address-bar navigation reach another origin from the committed document, and
+before each origin-changing redirect. The confirmation shows only the
+destination origin and blocks transport until Allow/Cancel, Enter, or Escape.
+Same-origin hops do not prompt. Initial loads, non-HTTP(S) address-bar
+navigation, and low-level controller calls without an injected authorizer
+remain unchanged. This is not production request authorization.
 
 Every shell session owns one bounded in-memory HSTS store shared across all
 tab-local GET loaders/windows, in local and multiprocess modes. Independent

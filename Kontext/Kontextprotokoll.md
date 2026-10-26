@@ -1235,3 +1235,85 @@ meldet weiterhin unveraenderte, nicht-passbezogene Befunde in
 implementiert und testgruen, aber noch nicht committed/gepusht. Danach den
 naechsten hoechstprioren offenen Tracker-Schritt waehlen; allgemeine
 Overflow-Semantik, horizontales Scrollen und DOM scroll events bleiben offen.
+
+### KP-033 - Neue Zehn-Passen-Serie und offene Security-Policy
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdruecklicher Nutzerauftrag, Artefakt-/CI-Abgleich und
+  Aktualisierung des Arbeitsstands.
+- Quelle: aktueller Nutzerturn `/missing-priority-implementation 10`,
+  `plans/Missing.md`, Git-Status/Commit und GitHub Actions.
+- Bezug: REQ-005, Q-002, KP-032; folgt auf KP-032.
+
+**Nutzerangabe:** Der Nutzer hat erneut zehn Missing-Prioritaets-Passen
+angefordert.
+
+**Belegt:** Der zuvor gewaehlte nested-wheel-Pass wurde als Commit `8aaf65c`
+auf `main` gepusht. Die zugehoerigen Workflows CodeQL, Linux development und
+Windows confinement sind erfolgreich (GitHub Actions Run IDs
+`40271027798`, `40271028243`, `40271028239`). Damit ist die Statusaussage in
+KP-032, der Pass sei noch nicht committed/gepusht, ueberholt; dieser Eintrag
+korrigiert sie transparent. Das Worktree enthaelt eine nicht-committete
+Markdown-Formatierungsaenderung in `Kontext/Wissensstand.md`, die bereits vor
+diesem Auftrag vorhanden war und nicht Teil eines neuen Codepasses ist.
+
+**Ableitung / offen:** `plans/Missing.md` priorisiert weiterhin Security an
+erster Stelle. Q-002 haelt die konkrete noch fehlende Produktions-/Navigations-
+Policy offen. Die fruehere Auswahl, Security fuer den vorigen Lauf
+zurueckzustellen, wird nicht als Freigabe fuer einen weiteren Sicherheits-
+Verhaltenswechsel interpretiert. Daher ist vor Implementierung eine neue
+konkrete Entscheidung erforderlich. Dieser Auftrag hat noch keinen neuen
+Implementierungspass begonnen.
+
+**Status / naechste Schritte:** Nutzerentscheidung fuer das naechste
+Security-Verhalten abwarten; die Optionen sollen insbesondere die Erweiterung
+der Cross-Origin-Bestaetigung auf Adressleisten-Navigation, eine restriktive
+Same-Origin-Adressleistenpolitik, Zurueckstellung der Security-Prioritaet mit
+konkreter niedrigerer Tracker-Wahl oder das Blockieren weiterer Aktionen
+unterscheidbar machen. Keine der Optionen ist ohne Antwort beschlossen.
+
+### KP-034 - Cross-Origin-Bestaetigung fuer Adressleisten-Navigation
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerentscheidung; Implementierung in Arbeit.
+- Quelle: Nutzerantwort `confirm-address-bar-cross-origin` und aktueller
+  Browser-Shell-/Controller-Diff.
+- Bezug: REQ-005, DEC-006, DEC-016, Q-002; folgt auf KP-033.
+
+**Nutzerangabe:** Der Nutzer waehlte, die bestehende Cross-Origin-
+Bestaetigung auf getippte Adressleisten-Navigation auszudehnen.
+
+**Beschlossener Umfang (DEC-016):** Bei einem bestehenden committed Dokument
+werden getippte HTTP(S)-Navigationen ueber denselben origin-only-
+Bestaetigungspfad wie Page-Navigation geleitet. Initiale Ziel-Origin und alle
+origin-aendernden Redirects werden vor dem jeweiligen Transport bestaetigt.
+Initial-Loads, nicht-HTTP(S)-Adressleisten-Navigation und direkte
+Controller-Aufrufe ohne Authorizer bleiben unveraendert. Die bestehende
+Entwicklungsbestaetigung ist keine Produktionsautorisierung. Diese Auswahl
+praezisiert DEC-006 und ersetzt teilweise dessen fruehere Aussage, dass
+Adressleisten-Navigation uneingeschraenkt bleibt.
+
+**Belegt:** `BrowserController.NavigateFromAddressBar` und die
+Development-Shell-Return-Verarbeitung wurden angepasst. Drei fokussierte
+Shell-Regressionstests bestanden: direkte Cross-Origin-Adresse mit Zustimmung,
+Same-Origin-Einstieg mit Cross-Origin-Redirect sowie Abbruch ohne
+Zielanforderung. Der gesamte `VisualWeb.Browser.Tests`-Lauf (1.098 Tests),
+`dotnet build VisualWeb.slnx --no-restore` und
+`dotnet test VisualWeb.slnx --no-build` bestanden.
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+meldet nur die bereits bekannten nicht-passbezogenen Findings in
+`src/Engine/Engine.Layout/StaticLayout.cs` und
+`src/Apps/VisualWeb.Browser/ShellChrome.cs`.
+
+**Offen:** Q-002 bleibt fuer die breitere Produktionssicherheits-, SOP/CORS/
+CSP-, Frame/Origin- und Storage-Policy bestehen. Das Worktree enthaelt
+weiterhin die aus KP-033 bekannte nicht-committete Markdown-Aenderung in
+`Kontext/Wissensstand.md`; vor dem Commit muss sie von den neuen, gezielt
+zugeordneten Inhalten getrennt oder als passende Kontextdokumentation sauber
+integriert werden.
+
+**Status / naechste Schritte:** Pass 1 dieser neuen Zehn-Passen-Anforderung
+ist lokal implementiert und validiert; Tracker und direkte Guides sind
+aktualisiert. Commit, Push und CI stehen aus.
