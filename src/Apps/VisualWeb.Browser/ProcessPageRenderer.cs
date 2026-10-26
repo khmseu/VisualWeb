@@ -134,7 +134,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
             Width = viewport.Width,
             Height = viewport.Height,
             Scale = viewport.Scale,
-            ScrollY = viewport.ScrollY
+            ScrollY = viewport.ScrollY,
+            ScrollOffsets = viewport.ScrollOffsets.ToArray()
         };
         RendererProtocol.Validate(request, 0);
         var expected = RendererProtocol.Dimensions(viewport.Width, viewport.Height, viewport.Scale);
@@ -156,7 +157,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 FragmentTargets = Array.AsReadOnly(packet.Message.FragmentTargets!),
                 Forms = Array.AsReadOnly(packet.Message.Forms!),
                 FormControls = Array.AsReadOnly(packet.Message.FormControls!),
-                TextTargets = Array.AsReadOnly(packet.Message.TextTargets!)
+                TextTargets = Array.AsReadOnly(packet.Message.TextTargets!),
+                ScrollContainers = Array.AsReadOnly(packet.Message.ScrollContainers ?? Array.Empty<PageScrollContainer>())
             };
         }).ConfigureAwait(false);
     }

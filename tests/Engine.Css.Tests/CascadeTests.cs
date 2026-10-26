@@ -205,6 +205,16 @@ public sealed class CascadeTests
     }
 
     [Fact]
+    public void OverflowAxisLonghandsAreParsedAndComputed()
+    {
+        var doc = Document("<div id=box></div>");
+        var result = Compute(doc, new CssStyleSource("#box{overflow-x:hidden;overflow-y:auto}"));
+        var style = result.Styles[doc.GetElementById("box")!];
+        Assert.Equal(new CssKeyword("hidden"), style["overflow-x"]);
+        Assert.Equal(new CssKeyword("auto"), style["overflow-y"]);
+    }
+
+    [Fact]
     public void ComputedSnapshotsDoNotChangeAfterDomMutation()
     {
         var doc = Document();

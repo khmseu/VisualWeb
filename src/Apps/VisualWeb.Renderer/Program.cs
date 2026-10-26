@@ -85,7 +85,11 @@ try
                     BaseUrl = request.BaseUrl is null ? null : BrowserUrl.Parse(request.BaseUrl)
                 };
                 var rendered = active.Render(page,
-                    new(request.Width, request.Height, request.Scale) { ScrollY = request.ScrollY },
+                    new(request.Width, request.Height, request.Scale)
+                    {
+                        ScrollY = request.ScrollY,
+                        ScrollOffsets = request.ScrollOffsets ?? Array.Empty<PageScrollOffset>()
+                    },
                     CancellationToken.None, request.ReuseDocument);
                 var frame = rendered.Frame;
                 channel.WriteAsync(new()
@@ -105,7 +109,8 @@ try
                     FragmentTargets = rendered.FragmentTargets.ToArray(),
                     Forms = rendered.Forms.ToArray(),
                     FormControls = rendered.FormControls.ToArray(),
-                    TextTargets = rendered.TextTargets.ToArray()
+                    TextTargets = rendered.TextTargets.ToArray(),
+                    ScrollContainers = rendered.ScrollContainers.ToArray()
                 }, frame.Pixels).GetAwaiter().GetResult();
             }
             catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception) || exception is UrlParseException)

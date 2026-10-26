@@ -32,6 +32,8 @@ internal static class CssProperties
         var result = new Dictionary<string, CssProperty>(StringComparer.Ordinal)
         {
             ["display"] = new(new CssKeyword("inline"), false),
+            ["overflow-x"] = new(new CssKeyword("visible"), false),
+            ["overflow-y"] = new(new CssKeyword("visible"), false),
             ["color"] = new(new CssColor(0, 0, 0), true),
             ["background-color"] = new(new CssColor(0, 0, 0, 0), false),
             ["font-family"] = new(new CssFontFamilies(Array.AsReadOnly(new[] { "serif" })), true),
@@ -155,6 +157,7 @@ internal static class CssProperties
         var token = tokens[0];
         var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
         if (name == "display") { return Keyword(keyword, "none", "block", "inline", "inline-block"); }
+        if (name is "overflow-x" or "overflow-y") { return Keyword(keyword, "visible", "hidden", "auto"); }
         if (name == "box-sizing") { return Keyword(keyword, "content-box", "border-box"); }
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }

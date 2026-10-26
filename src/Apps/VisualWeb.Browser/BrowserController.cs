@@ -41,6 +41,7 @@ public sealed class BrowserController : IDisposable
         internal Dictionary<int, AddressEditor> Fields { get; } = [];
         internal Dictionary<int, int> TextareaFirstLines { get; } = [];
         internal Dictionary<int, IReadOnlyList<TextareaVisualLine>> TextareaLines { get; } = [];
+        internal Dictionary<int, double> NestedScrollOffsets { get; } = [];
         internal HashSet<int> Dirty { get; } = [];
         internal Dictionary<int, bool> CheckedStates { get; } = [];
         internal Dictionary<int, int> SelectedOptions { get; } = [];
@@ -124,6 +125,9 @@ public sealed class BrowserController : IDisposable
     }
     public BrowserPage? Page(TabId tab) { Check(); return content[tab].Page; }
     public double ScrollY(TabId tab) { Check(); return content[tab].ScrollY; }
+    private static PageScrollOffset[] SnapshotScrollOffsets(Content owner) =>
+        owner.NestedScrollOffsets.OrderBy(pair => pair.Key)
+            .Select(pair => new PageScrollOffset(pair.Key, pair.Value)).ToArray();
     public bool PageHasFocus(TabId tab) { Check(); return content[tab].PageFocused; }
     public int FocusedLinkIndex(TabId tab) { Check(); return content[tab].FocusedLink; }
     public void FocusPage(TabId id, bool focused = true)
@@ -1249,6 +1253,63 @@ public sealed class BrowserController : IDisposable
         Changed?.Invoke(id);
         return true;
     }
+    /// <summary>Applies wheel delta to nested page scroll containers under a viewport point and returns unconsumed delta.</summary>
+    public double ScrollOverflowAt(TabId id, double x, double y, double delta)
+    {
+        Check();
+        if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(delta))
+        { throw new PageNavigationException("Overflow scroll coordinates and delta must be finite."); }
+        var owner = content[id];
+        if (delta == 0 || owner.Page is not { } page || owner.Viewport is not { } viewport
+            || x < 0 || y < 0 || x >= viewport.Width || y >= viewport.Height)
+        {
+            return delta;
+        }
+        var chain = page.ScrollContainers
+            .Where(container => container.Rect.Width > 0 && container.Rect.Height > 0 && container.Rect.Contains(x, y))
+            .OrderByDescending(container => container.Index)
+            .ToArray();
+        if (chain.Length == 0) { return delta; }
+        var remaining = delta;
+        var changed = false;
+        foreach (var container in chain)
+        {
+            var current = owner.NestedScrollOffsets.GetValueOrDefault(container.Index, container.Offset);
+            var next = current;
+            if (remaining > 0)
+            {
+                var room = Math.Max(0, container.MaxOffset - current);
+                var consumed = Math.Min(remaining, room);
+                if (consumed <= 0) { continue; }
+                next = current + consumed;
+                remaining -= consumed;
+            }
+            else
+            {
+                var room = Math.Max(0, current);
+                var consumed = Math.Min(-remaining, room);
+                if (consumed <= 0) { continue; }
+                next = current - consumed;
+                remaining += consumed;
+            }
+
+            if (next == current) { continue; }
+            owner.NestedScrollOffsets[container.Index] = next;
+            changed = true;
+            if (remaining == 0) { break; }
+        }
+        if (!changed || owner.Document is null) { return remaining; }
+        Limit();
+        Cancel(id);
+        var operation = new Operation(id, checked(++Session.Tab(id).Generation), Task.FromResult(owner.Document),
+            new(), null, false, resize: true, scroll: true)
+        {
+            Viewport = viewport with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) }
+        };
+        operations.Add(operation);
+        Advance(operation, () => viewport with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) });
+        return remaining;
+    }
     private static void SelectRadio(Content owner, int selected)
     {
         var controls = owner.Page!.FormControls;
@@ -1918,7 +1979,8 @@ public sealed class BrowserController : IDisposable
                 var size = operation.Viewport ?? viewport();
                 if (size is null) { finished = false; return; }
                 operation.Document = document;
-                operation.Viewport = operation.Resize ? size : size.Value with { ScrollY = operation.RestoreScrollY };
+                var requested = operation.Resize ? size.Value : size.Value with { ScrollY = operation.RestoreScrollY };
+                operation.Viewport = requested with { ScrollOffsets = SnapshotScrollOffsets(content[operation.Tab]) };
                 var renderer = operation.Renderer = Select(content[operation.Tab], operation, document);
                 operation.Render = operation.Resize
                     ? renderer.RenderRetainedAsync(document, operation.Viewport.Value, operation.Cancellation.Token)
@@ -1930,7 +1992,11 @@ public sealed class BrowserController : IDisposable
             {
                 var latest = viewport();
                 if (latest is null) { finished = false; return; }
-                var geometry = latest.Value with { ScrollY = operation.RestoreScrollY };
+                var geometry = latest.Value with
+                {
+                    ScrollY = operation.RestoreScrollY,
+                    ScrollOffsets = operation.Viewport?.ScrollOffsets ?? Array.Empty<PageScrollOffset>()
+                };
                 if (geometry != operation.Viewport)
                 {
                     operation.Viewport = geometry;
@@ -1966,6 +2032,11 @@ public sealed class BrowserController : IDisposable
             var sameControls = operation.Resize && owner.Document?.DocumentId == document.DocumentId
                 && owner.Page is { } old && SameControls(old, rendered);
             owner.Document = document; owner.Page = rendered;
+            owner.NestedScrollOffsets.Clear();
+            foreach (var container in rendered.ScrollContainers)
+            {
+                owner.NestedScrollOffsets[container.Index] = container.Offset;
+            }
             // Retained scrolls preserve target ordering; other repaints may not preserve frame-local groups.
             if (!operation.Scroll && !(operation.Click is not null && owner.FocusedLink < rendered.LinkTargets.Count))
             { owner.FocusedLink = -1; }
@@ -1974,7 +2045,7 @@ public sealed class BrowserController : IDisposable
             if (!sameControls)
             { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.MultipleSelectRangeAnchors.Clear(); owner.ListboxFirstOptions.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
-            owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY };
+            owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) };
             tab.Origin = document.Origin;
             if (operation.Click is not null)
             {
@@ -2072,7 +2143,7 @@ public sealed class BrowserController : IDisposable
         var owner = content[id];
         var tab = Session.Tab(id);
         if (tab.IsLoading || owner.Document is null) { return; }
-        viewport = viewport with { ScrollY = owner.ScrollY };
+        viewport = viewport with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) };
         var pending = operations.FirstOrDefault(op => op.Tab == id && op.Generation == tab.Generation);
         if (pending?.Viewport == viewport) { return; }
         if (owner.Viewport == viewport)
@@ -2104,7 +2175,7 @@ public sealed class BrowserController : IDisposable
         Limit();
         Cancel(id);
         owner.ScrollY = offset;
-        viewport = viewport with { ScrollY = offset };
+        viewport = viewport with { ScrollY = offset, ScrollOffsets = SnapshotScrollOffsets(owner) };
         var operation = new Operation(id, checked(++tab.Generation), Task.FromResult(owner.Document),
             new(), null, false, resize: true, scroll: true)
         { Viewport = viewport };

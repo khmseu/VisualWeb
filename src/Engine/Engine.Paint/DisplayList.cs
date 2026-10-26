@@ -28,6 +28,8 @@ public sealed record PaintOptions
 
 public abstract record PaintCommand;
 public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCommand;
+public sealed record PushScrollClip(LayoutRect Clip, double OffsetY) : PaintCommand;
+public sealed record PopScrollClip : PaintCommand;
 public readonly record struct PaintGlyph(ushort Id, double X, double Y);
 public sealed record DrawGlyphRun : PaintCommand
 {
@@ -98,8 +100,11 @@ public sealed class DisplayList
 /// <see href="https://www.w3.org/TR/css-backgrounds-3/#special-backgrounds">canvas backgrounds</see>.</remarks>
 public static class DisplayListBuilder
 {
+    public readonly record struct ScrollClipState(LayoutRect Clip, double OffsetY);
+
     public static DisplayList Build(LayoutResult layout, CssStyleResult styles, PaintOptions? options = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyDictionary<LayoutBox, ScrollClipState>? scrollClips = null)
     {
         ArgumentNullException.ThrowIfNull(layout);
         ArgumentNullException.ThrowIfNull(styles);
@@ -136,7 +141,16 @@ public static class DisplayListBuilder
                     Add(new FillRectangle(box.BorderBox, background));
                 }
                 Border(box);
-                foreach (var child in box.Children) { Background(child, depth + 1); }
+                if (scrollClips is not null && scrollClips.TryGetValue(box, out var clip))
+                {
+                    Add(new PushScrollClip(clip.Clip, clip.OffsetY));
+                    foreach (var child in box.Children) { Background(child, depth + 1); }
+                    Add(new PopScrollClip());
+                }
+                else
+                {
+                    foreach (var child in box.Children) { Background(child, depth + 1); }
+                }
             }
         }
         return new(layout.ViewportWidth, layout.ViewportHeight, commands, limits);
@@ -189,6 +203,10 @@ public static class DisplayListBuilder
         void Text(LayoutBox box, int depth)
         {
             Check(depth);
+            if (scrollClips is not null && scrollClips.TryGetValue(box, out var clip))
+            {
+                Add(new PushScrollClip(clip.Clip, clip.OffsetY));
+            }
             if (box.Flow.Count != box.Children.Count + box.Lines.Count)
             {
                 throw new InvalidOperationException("Layout flow is missing or inconsistent.");
@@ -230,6 +248,10 @@ public static class DisplayListBuilder
                 else { throw new InvalidOperationException("Unknown layout flow item."); }
             }
             if (children.Count != 0 || lines.Count != 0) { throw new InvalidOperationException("Layout flow omits a block or line."); }
+            if (scrollClips is not null && scrollClips.TryGetValue(box, out _))
+            {
+                Add(new PopScrollClip());
+            }
         }
     }
 }

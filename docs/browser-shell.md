@@ -184,9 +184,13 @@ pointer position is known. Wheel events themselves carry no pointer coordinates.
 Page Up/Down move one viewport; Home/End select the document top/bottom outside
 address editing, and Ctrl+Home/End do the same outside address editing and all
 focused form controls. A browser-owned vertical scrollbar supports click-to-
-position and drag scrolling. Horizontal scrolling, general CSS overflow and
-nested scrolling remain unsupported; this does not dispatch general DOM input
-or default-action events.
+position and drag scrolling. Bounded nested vertical wheel scrolling is also
+supported for definite-height block containers styled with
+`overflow-x:hidden` and `overflow-y:auto`: wheel input first consumes that
+container's remaining vertical range, then chains unconsumed delta to document
+scroll. Horizontal scrolling, general CSS overflow semantics and DOM scroll
+events remain unsupported; this does not dispatch general DOM input or
+default-action events.
 
 Each tab's controller content owns its scroll position, including across tab
 moves. Positions clamp to the rendered root document border-box bottom minus
@@ -201,7 +205,7 @@ script mutations), with no fetch, parse or script reexecution. Scroll translatio
 is applied only during rasterization under the same viewport clip; CSS viewport
 width/height, layout coordinates and opaque BGRA frame dimensions are unchanged.
 Root extent and vertical paint coordinates are limited to 10,000,000 CSS pixels;
-this is document scrolling, not general CSS overflow or nested scrolling.
+this remains a bounded scrolling subset, not general CSS overflow semantics.
 Newer scroll/resize requests cancel older publications. In-flight retained
 process exchanges drain under their existing deadline to keep the DOM/channel
 alive; stale frames cannot publish. New-document candidates still commit
@@ -378,7 +382,9 @@ shell-owned first visible option row: wheel input over an enabled listbox scroll
 clamped exactly to `0..options-rows` and consumed at the bounds without scrolling the page; pointer row targets map
 through the offset; keyboard/type-ahead selection scrolls the minimum rows needed to keep the selected enabled option
 visible; disabled options stay nonselectable. The offset survives retained repaints/scrolls and resets with the form
-or a non-retained document. CSS overflow, nested scrolling and DOM scroll events remain unsupported. Multiple selects preserve bounded initially selected options and use the same browser-owned popup for
+or a non-retained document. Bounded nested vertical wheel scrolling is supported for definite-height blocks with
+`overflow-x:hidden` and `overflow-y:auto`; general CSS overflow semantics and DOM scroll events remain unsupported.
+Multiple selects preserve bounded initially selected options and use the same browser-owned popup for
 pointer toggles: selected rows are highlighted, an enabled toggle keeps the popup open, and the closed
 control shows the selected count. Enabled selections submit in option order and reset restores their
 initial state. Multiple-select keyboard interaction is browser-owned: an independent enabled-option cursor
@@ -918,7 +924,8 @@ do not provide general DOM focus, pointer, keyboard or input dispatch: only
 the explicitly documented trusted link `click`/`auxclick` dispatch is available
 on opted-in pages.
 
-General CSS overflow, horizontal/nested scrolling, downloads, persistent
+General CSS overflow semantics beyond the documented nested-wheel subset,
+horizontal scrolling, downloads, persistent
 sessions, complete browser history, page storage, images and media remain
 unsupported. Post-parse inline scripting remains explicit opt-in, not a full
 event loop. Native page crashes can terminate the entire shell in single-

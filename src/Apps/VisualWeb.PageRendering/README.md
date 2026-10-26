@@ -33,6 +33,13 @@ to the browser client, not this synchronous native policy.
 constructor/deconstruction are unchanged. `BrowserPage.ScrollHeight` reports the
 bounded root extent (at least the viewport height). Scroll changes raster
 translation only, not layout viewport geometry or frame size.
+`PageViewport.ScrollOffsets` carries bounded per-container vertical offsets for
+the supported nested overflow subset. Rendering resolves definite-height block
+containers with computed `overflow-x:hidden` and `overflow-y:auto`, applies
+their clip/translation stacks during paint, and reports viewport-projected
+`BrowserPage.ScrollContainers` metadata (`index`, `parentIndex`, `clip`,
+`offset`, `maxOffset`) for browser-owned wheel consumption and edge chaining.
+This is not general CSS overflow behavior or DOM scroll-event delivery.
 `BrowserPage.LinkTargets` is a nonpositional read-only list, empty by default.
 Rendering gathers nearest-anchor ancestry from shaped text fragments in paint
 order, using run widths and line heights, and also reports non-empty measurable

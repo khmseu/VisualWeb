@@ -1154,3 +1154,84 @@ Pass-2-Code oder leerer Commit erzeugt. Vor einem weiteren Inkrement muss der
 Nutzer eine noch fehlende Sicherheitsregel benennen, Prioritaet 1 fuer einen
 konkreten niedrigeren Tracker-Punkt zurueckstellen oder weitere Arbeit
 blockieren.
+
+### KP-031 - Verschachteltes vertikales Scrollen
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin (UTC+02:00).
+- Ereignisdatum: 2026-10-23 laut aktueller Gespraechszusammenfassung.
+- Erfassungsart: rekonstruierte Nutzerentscheidung; Originalantwort im
+  erhaltenen Verlauf nicht verfuegbar.
+- Quelle: Zusammenfassung des aktuellen Gespraechs nach KP-030; erneute
+  Pruefung von `plans/Missing.md`, Browser-/Layout-/Paint-Guides und Code.
+- Bezug: REQ-005, REQ-010, DEC-015; folgt auf KP-030.
+
+**Nutzerangabe (rekonstruiert):** Die restliche Security-Prioritaet wird fuer
+diesen Lauf zurueckgestellt. Als naechstes Inkrement waehlte der Nutzer
+vertikales verschachteltes Mausrad-Scrollen mit Edge-Chaining.
+
+**Belegt:** `plans/Missing.md`, Browser-Shell- und Engine-Guides beschreiben
+derzeit nur Dokument-Scrollen; Layout, Paint und IPC enthalten noch keine
+allgemeine nested-overflow-Implementierung. Der aktuelle CSS-Overflow-
+Standard wurde als `css-overflow` registriert und am 2026-10-23 lokal
+aktualisiert. Gelesen wurden insbesondere CSS Overflow Module Level 3
+§3.1 (`#overflow-control`) zu Achsen, Shorthand und Werten sowie
+`#scrollable-overflow`, `#scroll-container` und `#scrollport`. Die CSS
+Overscroll Behavior Module Level 1 wurde als `css-overscroll` registriert und
+am selben Datum lokal aktualisiert; §3 (`#scroll-chaining-and-boundary-default-actions`)
+definiert die Weitergabe an Vorfahren typischerweise an einer Scroll-Grenze,
+weist aber ausdruecklich darauf hin, dass diese Working Draft nicht festlegt,
+ob/wie eine UA Scroll-Chaining implementiert. Die lokale Cache-Aktualisierung
+lief erfolgreich; Tests bleiben davon getrennt und offline.
+
+**Offen:** Die author-facing CSS-Syntax fuer dieses Inkrement ist nicht
+entschieden. Eine enge Option ist nur das Paar
+`overflow-x:hidden`/`overflow-y:auto` auf hoehenbegrenzten Blockcontainern;
+eine weitere Option umfasst passende `overflow`-Shorthand-Faelle und braucht
+mehr Validierung fuer nicht unterstuetzte horizontale Scrollfaelle. Vor
+Implementierung wird diese Auswirkung dem Nutzer zur Wahl gestellt.
+
+**Status / naechste Schritte:** Scope-Wahl ist aus der Gespraechszusammenfassung
+uebernommen, nicht als exaktes Zitat. Noch kein Laufzeitcode geaendert.
+Manifest-Eintraege und Cache sind aktualisiert. Q-011 vor der kleinsten
+offline-testbaren Implementierung mit Tests und Dokumentation klaeren.
+
+### KP-032 - Nested-Wheel-Scrollen Umsetzung und Validierung
+
+- Dokumentiert am: 2026-10-23, Europe/Berlin (UTC+02:00).
+- Ereignisdatum: 2026-10-23.
+- Erfassungsart: Implementierung, Tests und Dokumentationsabgleich.
+- Quelle: Arbeitsbaum-Diff, Build-/Testausgaben, aktualisierte Tracker- und
+  Guide-Dateien in diesem Turn.
+- Bezug: REQ-005, REQ-010, DEC-015, Q-011; folgt auf KP-031.
+
+**Nutzerangabe/Entscheidung:** Fuer diesen Pass wurde die enge CSS-Variante
+gewaehlt (`paired_longhands`): nur `overflow-x:hidden` plus `overflow-y:auto`
+auf definite-height Blockcontainern.
+
+**Belegt:** Der Pass ist jetzt durchgaengig verdrahtet:
+
+- CSS: `overflow-x`/`overflow-y` sind als Properties registriert/parsbar.
+- Rendering/Paint: verschachtelte Clip-/Translate-Stacks ueber
+  `PushScrollClip`/`PopScrollClip` und per-Container-Offsetzustand.
+- IPC: Version 45 mit `ScrollOffsets` (Request) und `ScrollContainers`
+  (Frame-Metadaten) inklusive Bounds-Validierung.
+- Browser/Shell: Wheel verarbeitet zuerst verschachtelte Container und gibt
+  Restdelta an Dokumentscroll weiter (Edge-Chaining).
+- Tests: neue CSS- und Browser-Tests fuer die gewaehlte Teilmenge; IPC-Tests
+  auf Protokollversion aktualisiert.
+- Dokumentation/Tracker: `plans/Missing.md`, Browser-Shell-Guide und
+  PageRendering-README beschreiben den begrenzten Umfang und verbleibende
+  Luecken.
+
+**Validierung:** Erfolgreich: `dotnet build VisualWeb.slnx --no-restore`,
+gezielte Tests (`Engine.Css.Tests`, `Engine.Paint.Tests`, `Ipc.Tests`,
+`VisualWeb.Browser.Tests`) und `dotnet test VisualWeb.slnx --no-build`.
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+meldet weiterhin unveraenderte, nicht-passbezogene Befunde in
+`src/Engine/Engine.Layout/StaticLayout.cs` und
+`src/Apps/VisualWeb.Browser/ShellChrome.cs`.
+
+**Status / naechste Schritte:** Der ausgewaehlte nested-wheel-Teilumfang ist
+implementiert und testgruen, aber noch nicht committed/gepusht. Danach den
+naechsten hoechstprioren offenen Tracker-Schritt waehlen; allgemeine
+Overflow-Semantik, horizontales Scrollen und DOM scroll events bleiben offen.

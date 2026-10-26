@@ -52,6 +52,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         public bool IsBlockBoxAnchor { get; set; }
         public PageLinkRect? BlockRectangle { get; set; }
     }
+    private sealed record ScrollContainerState(int Index, int ParentIndex, LayoutBox Box, double Offset, double MaxOffset);
     private static readonly HtmlParserOptions DocumentHtmlOptions = new();
     private static readonly char[] AsciiWhitespace = ['\t', '\n', '\f', '\r', ' '];
     private readonly bool executeInlineScripts;
@@ -173,12 +174,36 @@ public sealed class StaticPageRenderer : IPageRenderer
         var parsed = state.Parsed;
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url,
             state.Source.Stylesheets, state.Source.BaseUrl);
-        var rendered = OfflinePageRenderer.RenderParsed(parsed, sources, text, paint,
-            viewport.Width, viewport.Height, options with { Scale = viewport.Scale, ScrollY = viewport.ScrollY }, cancellationToken);
-        var (links, anchors, controlGeometry, labelGeometry, textTargets) = CollectLinks(parsed.Document, rendered.Layout, page.Url,
-            Math.Min(viewport.ScrollY, rendered.ScrollHeight - viewport.Height), cancellationToken, page.BaseUrl);
+        var styles = CssStyleEngine.Compute(parsed.Document, sources, options.IncludeUserAgentStyle, options.Css, cancellationToken);
+        if (styles.Diagnostics.Count > 0)
+        {
+            throw new UnsupportedLayoutException("Resolve CSS diagnostics before rendering: "
+                + string.Join(" ", styles.Diagnostics.Take(5).Select(diagnostic => diagnostic.Code + ": " + diagnostic.Message)));
+        }
+        var layout = StaticLayout.Layout(parsed.Document, styles, text, viewport.Width, viewport.Height, options.Layout, cancellationToken);
+        var bottom = layout.Root is { } root ? root.BorderBox.Y + root.BorderBox.Height : 0;
+        var scrollHeight = Math.Max(viewport.Height, bottom);
+        if (!double.IsFinite(bottom) || bottom < 0 || scrollHeight > PaintOptions.MaxDocumentHeight)
+        { throw new PaintLimitException("Document scroll height exceeds the CSS-pixel bound."); }
+        var clampedRootScroll = Math.Min(viewport.ScrollY, scrollHeight - viewport.Height);
+        var scrollContainers = ResolveScrollContainers(layout, styles, viewport, cancellationToken);
+        var scrollClipMap = new Dictionary<LayoutBox, DisplayListBuilder.ScrollClipState>(
+            scrollContainers.Count,
+            (IEqualityComparer<LayoutBox>)ReferenceEqualityComparer.Instance);
+        foreach (var container in scrollContainers)
+        {
+            scrollClipMap.Add(
+                container.Box,
+                new DisplayListBuilder.ScrollClipState(container.Box.PaddingBox, container.Offset));
+        }
+        var display = DisplayListBuilder.Build(layout, styles, options.Paint, cancellationToken, scrollClipMap);
+        var frame = CpuRasterizer.Render(display, paint, viewport.Scale, options: options.Paint,
+            cancellationToken: cancellationToken, scrollY: clampedRootScroll);
+        var (links, anchors, controlGeometry, labelGeometry, textTargets) = CollectLinks(parsed.Document, layout, page.Url,
+            clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers);
+        var nestedScrollContainers = CollectScrollContainers(layout.Root, scrollContainers, viewport.Width, viewport.Height, clampedRootScroll);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, labelGeometry, links.Count,
-            rendered.Layout.ViewportWidth, rendered.Layout.ViewportHeight, cancellationToken, page.BaseUrl);
+            layout.ViewportWidth, layout.ViewportHeight, cancellationToken, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
@@ -186,14 +211,15 @@ public sealed class StaticPageRenderer : IPageRenderer
         {
             status += $" Post-parse inline scripts: {state.Scripts}; link-click listeners retained; no HTML scheduling/event loop.";
         }
-        var result = new BrowserPage(rendered.Frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
+        var result = new BrowserPage(frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
         {
-            ScrollHeight = rendered.ScrollHeight,
+            ScrollHeight = scrollHeight,
             LinkTargets = links,
-            FragmentTargets = CollectFragmentTargets(rendered.Layout, rendered.ScrollHeight, cancellationToken),
+            FragmentTargets = CollectFragmentTargets(layout, scrollHeight, cancellationToken),
             Forms = forms,
             FormControls = controls,
-            TextTargets = textTargets
+            TextTargets = textTargets,
+            ScrollContainers = nestedScrollContainers
         };
         cancellationToken.ThrowIfCancellationRequested();
         // Publication is the final non-throwing step: link identities and candidate ownership change together.
@@ -211,10 +237,17 @@ public sealed class StaticPageRenderer : IPageRenderer
         IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> Labels,
         IReadOnlyList<PageTextTarget> TextTargets)
         CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY,
-            CancellationToken cancellationToken, BrowserUrl? baseUrlOverride)
+            CancellationToken cancellationToken, BrowserUrl? baseUrlOverride, IReadOnlyList<ScrollContainerState> scrollContainers)
     {
         var baseTarget = FindBaseTarget(document, cancellationToken);
         var baseUrl = baseUrlOverride ?? FindBaseUrl(document, url, cancellationToken);
+        var scrollByBox = new Dictionary<LayoutBox, ScrollContainerState>(
+            scrollContainers.Count,
+            (IEqualityComparer<LayoutBox>)ReferenceEqualityComparer.Instance);
+        foreach (var container in scrollContainers)
+        {
+            scrollByBox.Add(container.Box, container);
+        }
         var linkData = new List<LinkTargetData>();
         var controls = new Dictionary<DomElement, (PageLinkRect, int)>();
         var labelRectangles = new Dictionary<DomElement, List<PageLinkRect>>();
@@ -225,7 +258,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         long urlBytes = 0;
         long textBytes = 0;
         List<PageLinkTarget> links = [];
-        if (layout.Root is { } root) { Visit(root); }
+        if (layout.Root is { } root) { Visit(root, 0, []); }
         links = linkData.Select(target => new PageLinkTarget(target.Rects.AsReadOnly(), target.Url,
             target.OpenInNewTab, target.TargetName, target.DocumentY)).ToList();
         try
@@ -316,51 +349,6 @@ public sealed class StaticPageRenderer : IPageRenderer
             target.BlockRectangle = merged;
         }
 
-        void AddTextTargets(ShapedRun run, double fragmentX, double top, double bottom)
-        {
-            var clusters = run.Glyphs.GroupBy(glyph => glyph.Cluster).OrderBy(group => group.Key).ToArray();
-            if (clusters.Length == 0)
-            {
-                if (run.Text.Length > 0 && run.Width > 0)
-                { throw new PageNavigationException("Shaped text has no selection clusters."); }
-                return;
-            }
-            if (clusters[0].Key != 0)
-            { throw new PageNavigationException("Shaped text selection clusters do not start at the beginning of the run."); }
-
-            var expectedStart = 0;
-            var clusterX = fragmentX;
-            for (var index = 0; index < clusters.Length; index++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var cluster = clusters[index];
-                var start = cluster.Key;
-                var end = index + 1 < clusters.Length ? clusters[index + 1].Key : run.Text.Length;
-                if (start != expectedStart || end <= start || end > run.Text.Length)
-                { throw new PageNavigationException("Shaped text selection clusters are not a contiguous UTF-16 partition."); }
-
-                var clusterWidth = cluster.Sum(glyph => glyph.Advance);
-                if (!double.IsFinite(clusterWidth) || clusterWidth < 0)
-                { throw new PageNavigationException("Shaped text selection cluster has invalid width."); }
-                var left = Math.Clamp(clusterX, 0, layout.ViewportWidth);
-                var right = Math.Clamp(clusterX + clusterWidth, 0, layout.ViewportWidth);
-                if (clusterWidth > 0 && right > left && bottom > top)
-                {
-                    var text = run.Text[start..end];
-                    if (textTargets.Count >= RendererProtocol.MaxTextTargets)
-                    { throw new PageNavigationException("Renderer text target count limit exceeded."); }
-                    textBytes += System.Text.Encoding.UTF8.GetByteCount(text);
-                    if (textBytes > RendererProtocol.MaxTextMetadataBytes)
-                    { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
-                    textTargets.Add(new(text, new(left, top, right - left, bottom - top)));
-                }
-                clusterX += clusterWidth;
-                expectedStart = end;
-            }
-            if (expectedStart != run.Text.Length)
-            { throw new PageNavigationException("Shaped text selection clusters do not cover the run."); }
-        }
-
         static DomElement? FindAnchor(DomNode? node)
         {
             for (; node is not null; node = node.ParentNode)
@@ -382,8 +370,59 @@ public sealed class StaticPageRenderer : IPageRenderer
             return null;
         }
 
-        void Visit(LayoutBox box)
+        bool TryProjectRect(LayoutRect rect, double nestedShift, IReadOnlyList<PageLinkRect> clips, out PageLinkRect projected)
         {
+            var left = rect.X;
+            var right = rect.X + rect.Width;
+            var top = rect.Y - scrollY - nestedShift;
+            var bottom = rect.Y + rect.Height - scrollY - nestedShift;
+            left = Math.Clamp(left, 0, layout.ViewportWidth);
+            right = Math.Clamp(right, 0, layout.ViewportWidth);
+            top = Math.Clamp(top, 0, layout.ViewportHeight);
+            bottom = Math.Clamp(bottom, 0, layout.ViewportHeight);
+            foreach (var clip in clips)
+            {
+                left = Math.Max(left, clip.X);
+                right = Math.Min(right, clip.X + clip.Width);
+                top = Math.Max(top, clip.Y);
+                bottom = Math.Min(bottom, clip.Y + clip.Height);
+                if (right <= left || bottom <= top)
+                {
+                    projected = new PageLinkRect(0, 0, 0, 0);
+                    return false;
+                }
+            }
+
+            if (right <= left || bottom <= top)
+            {
+                projected = new PageLinkRect(0, 0, 0, 0);
+                return false;
+            }
+
+            projected = new(left, top, right - left, bottom - top);
+            return true;
+        }
+
+        PageLinkRect ToViewportClip(LayoutRect rect, double nestedShift)
+        {
+            var left = Math.Clamp(rect.X, 0, layout.ViewportWidth);
+            var right = Math.Clamp(rect.X + rect.Width, 0, layout.ViewportWidth);
+            var top = Math.Clamp(rect.Y - scrollY - nestedShift, 0, layout.ViewportHeight);
+            var bottom = Math.Clamp(rect.Y + rect.Height - scrollY - nestedShift, 0, layout.ViewportHeight);
+            return new(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
+        }
+
+        void Visit(LayoutBox box, double nestedShift, IReadOnlyList<PageLinkRect> inheritedClips)
+        {
+            var clips = inheritedClips;
+            if (scrollByBox.TryGetValue(box, out var scrollState))
+            {
+                var clip = ToViewportClip(scrollState.Box.PaddingBox, nestedShift);
+                if (clip.Width == 0 || clip.Height == 0) { return; }
+                clips = inheritedClips.Concat([clip]).ToArray();
+                nestedShift += scrollState.Offset;
+            }
+
             foreach (var item in box.Flow)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -395,24 +434,16 @@ public sealed class StaticPageRenderer : IPageRenderer
                     {
                         var border = block.Box.BorderBox;
                         var target = GetLinkTarget(anchor, href, border.Y);
-                        var left = Math.Clamp(border.X, 0, layout.ViewportWidth);
-                        var right = Math.Clamp(border.X + border.Width, 0, layout.ViewportWidth);
-                        var top = Math.Clamp(border.Y - scrollY, 0, layout.ViewportHeight);
-                        var bottom = Math.Clamp(border.Y + border.Height - scrollY, 0, layout.ViewportHeight);
-                        if (right > left && bottom > top && !target.Rects.Except(target.BlockRectangle is null ? [] : [target.BlockRectangle]).Any())
-                        { SetBlockRectangle(target, new(left, top, right - left, bottom - top), border.Y); }
+                        if (TryProjectRect(border, nestedShift, clips, out var rect)
+                            && !target.Rects.Except(target.BlockRectangle is null ? [] : [target.BlockRectangle]).Any())
+                        { SetBlockRectangle(target, rect, border.Y); }
                     }
                     if (block.Box.Element.LocalName is "input" or "button" or "select")
                     {
-                        var border = block.Box.BorderBox;
-                        var left = Math.Clamp(border.X, 0, layout.ViewportWidth);
-                        var right = Math.Clamp(border.X + border.Width, 0, layout.ViewportWidth);
-                        var top = Math.Clamp(border.Y - scrollY, 0, layout.ViewportHeight);
-                        var bottom = Math.Clamp(border.Y + border.Height - scrollY, 0, layout.ViewportHeight);
-                        if (right > left && bottom > top)
-                        { controls[block.Box.Element] = (new(left, top, right - left, bottom - top), linkData.Count); }
+                        if (TryProjectRect(block.Box.BorderBox, nestedShift, clips, out var rect))
+                        { controls[block.Box.Element] = (rect, linkData.Count); }
                     }
-                    Visit(block.Box);
+                    Visit(block.Box, nestedShift, clips);
                 }
                 else if (item is LayoutLineItem line)
                 {
@@ -440,13 +471,13 @@ public sealed class StaticPageRenderer : IPageRenderer
                                 target.DocumentY = line.Line.Bounds.Y;
                             }
                         }
-                        var left = Math.Clamp(fragment.X, 0, layout.ViewportWidth);
-                        var right = Math.Clamp(fragment.X + fragment.Run.Width, 0, layout.ViewportWidth);
-                        var top = Math.Clamp(line.Line.Bounds.Y - scrollY, 0, layout.ViewportHeight);
-                        var bottom = Math.Clamp(line.Line.Bounds.Y + line.Line.Bounds.Height - scrollY, 0, layout.ViewportHeight);
-                        if (right <= left || bottom <= top) { continue; }
-                        var rect = new PageLinkRect(left, top, right - left, bottom - top);
-                        AddTextTargets(fragment.Run, fragment.X, top, bottom);
+                        if (!TryProjectRect(new(fragment.X, line.Line.Bounds.Y, fragment.Run.Width, line.Line.Bounds.Height),
+                            nestedShift, clips, out var rect))
+                        {
+                            continue;
+                        }
+
+                        AddTextTargets(fragment.Run, fragment.X, line.Line.Bounds.Y, line.Line.Bounds.Height, nestedShift, clips);
                         if (FindLabel(fragment.Source.ParentNode) is { } label) { AddLabelRectangle(label, rect); }
                         if (target is null) { continue; }
                         AddLinkRectangle(target, rect);
@@ -455,20 +486,60 @@ public sealed class StaticPageRenderer : IPageRenderer
                     foreach (var widget in line.Line.Widgets)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        var bounds = widget.Bounds;
-                        var left = Math.Clamp(bounds.X, 0, layout.ViewportWidth);
-                        var right = Math.Clamp(bounds.X + bounds.Width, 0, layout.ViewportWidth);
-                        var top = Math.Clamp(bounds.Y - scrollY, 0, layout.ViewportHeight);
-                        var bottom = Math.Clamp(bounds.Y + bounds.Height - scrollY, 0, layout.ViewportHeight);
-                        if (right > left && bottom > top)
+                        if (TryProjectRect(widget.Bounds, nestedShift, clips, out var rect))
                         {
                             var beforeLink = linksBeforeLine + lineNewAnchors.Count(anchor =>
-                                lineAnchors.TryGetValue(anchor, out var anchorX) && anchorX < bounds.X);
-                            controls[widget.Element] = (new(left, top, right - left, bottom - top), beforeLink);
+                                lineAnchors.TryGetValue(anchor, out var anchorX) && anchorX < widget.Bounds.X);
+                            controls[widget.Element] = (rect, beforeLink);
                         }
                     }
                 }
             }
+        }
+
+        void AddTextTargets(ShapedRun run, double fragmentX, double lineY, double lineHeight, double nestedShift,
+            IReadOnlyList<PageLinkRect> clips)
+        {
+            var clusters = run.Glyphs.GroupBy(glyph => glyph.Cluster).OrderBy(group => group.Key).ToArray();
+            if (clusters.Length == 0)
+            {
+                if (run.Text.Length > 0 && run.Width > 0)
+                { throw new PageNavigationException("Shaped text has no selection clusters."); }
+                return;
+            }
+            if (clusters[0].Key != 0)
+            { throw new PageNavigationException("Shaped text selection clusters do not start at the beginning of the run."); }
+
+            var expectedStart = 0;
+            var clusterX = fragmentX;
+            for (var index = 0; index < clusters.Length; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var cluster = clusters[index];
+                var start = cluster.Key;
+                var end = index + 1 < clusters.Length ? clusters[index + 1].Key : run.Text.Length;
+                if (start != expectedStart || end <= start || end > run.Text.Length)
+                { throw new PageNavigationException("Shaped text selection clusters are not a contiguous UTF-16 partition."); }
+
+                var clusterWidth = cluster.Sum(glyph => glyph.Advance);
+                if (!double.IsFinite(clusterWidth) || clusterWidth < 0)
+                { throw new PageNavigationException("Shaped text selection cluster has invalid width."); }
+                if (clusterWidth > 0
+                    && TryProjectRect(new(clusterX, lineY, clusterWidth, lineHeight), nestedShift, clips, out var rect))
+                {
+                    var text = run.Text[start..end];
+                    if (textTargets.Count >= RendererProtocol.MaxTextTargets)
+                    { throw new PageNavigationException("Renderer text target count limit exceeded."); }
+                    textBytes += System.Text.Encoding.UTF8.GetByteCount(text);
+                    if (textBytes > RendererProtocol.MaxTextMetadataBytes)
+                    { throw new PageNavigationException("Renderer text target byte limit exceeded."); }
+                    textTargets.Add(new(text, rect));
+                }
+                clusterX += clusterWidth;
+                expectedStart = end;
+            }
+            if (expectedStart != run.Text.Length)
+            { throw new PageNavigationException("Shaped text selection clusters do not cover the run."); }
         }
     }
     private static string? FindBaseTarget(DomDocument document, CancellationToken cancellationToken)
@@ -496,6 +567,94 @@ public sealed class StaticPageRenderer : IPageRenderer
             return parsed;
         }
         return fallback;
+    }
+
+    private static IReadOnlyList<ScrollContainerState> ResolveScrollContainers(LayoutResult layout, CssStyleResult styles,
+        PageViewport viewport, CancellationToken cancellationToken)
+    {
+        if (layout.Root is null) { return []; }
+        var requested = viewport.ScrollOffsets.ToDictionary(offset => offset.Index, offset => offset.Offset);
+        var states = new List<ScrollContainerState>();
+        Visit(layout.Root, -1);
+        return states;
+
+        void Visit(LayoutBox box, int parentIndex)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var currentParent = parentIndex;
+            if (styles.Styles.TryGetValue(box.Element, out var style)
+                && style["overflow-x"] is CssKeyword { Value: "hidden" }
+                && style["overflow-y"] is CssKeyword { Value: "auto" }
+                && style["height"] is CssLength
+                && box.Content.Height > 0)
+            {
+                var overflowBottom = ContentBottom(box);
+                var maxOffset = Math.Max(0, overflowBottom - (box.Content.Y + box.Content.Height));
+                var index = states.Count;
+                var offset = Math.Clamp(requested.GetValueOrDefault(index), 0, maxOffset);
+                states.Add(new(index, parentIndex, box, offset, maxOffset));
+                currentParent = index;
+            }
+
+            foreach (var child in box.Flow.OfType<LayoutBlockItem>())
+            {
+                Visit(child.Box, currentParent);
+            }
+        }
+
+        static double ContentBottom(LayoutBox box)
+        {
+            var max = box.Content.Y + box.Content.Height;
+            foreach (var item in box.Flow)
+            {
+                if (item is LayoutBlockItem block)
+                {
+                    max = Math.Max(max, ContentBottom(block.Box));
+                    max = Math.Max(max, block.Box.BorderBox.Y + block.Box.BorderBox.Height);
+                }
+                else if (item is LayoutLineItem line)
+                {
+                    max = Math.Max(max, line.Line.Bounds.Y + line.Line.Bounds.Height);
+                }
+            }
+            return max;
+        }
+    }
+
+    private static IReadOnlyList<PageScrollContainer> CollectScrollContainers(LayoutBox? root,
+        IReadOnlyList<ScrollContainerState> states, double viewportWidth, double viewportHeight, double scrollY)
+    {
+        if (root is null || states.Count == 0) { return Array.Empty<PageScrollContainer>(); }
+        var byBox = new Dictionary<LayoutBox, ScrollContainerState>(
+            states.Count,
+            (IEqualityComparer<LayoutBox>)ReferenceEqualityComparer.Instance);
+        foreach (var state in states)
+        {
+            byBox.Add(state.Box, state);
+        }
+        var result = new List<PageScrollContainer>(states.Count);
+        Visit(root, 0);
+        RendererProtocol.ValidateScrollContainers(result, viewportWidth, viewportHeight);
+        return result.AsReadOnly();
+
+        void Visit(LayoutBox box, double nestedShift)
+        {
+            if (byBox.TryGetValue(box, out var state))
+            {
+                var left = Math.Clamp(box.PaddingBox.X, 0, viewportWidth);
+                var right = Math.Clamp(box.PaddingBox.X + box.PaddingBox.Width, 0, viewportWidth);
+                var top = Math.Clamp(box.PaddingBox.Y - scrollY - nestedShift, 0, viewportHeight);
+                var bottom = Math.Clamp(box.PaddingBox.Y + box.PaddingBox.Height - scrollY - nestedShift, 0, viewportHeight);
+                result.Add(new(state.Index, state.ParentIndex, new(left, top,
+                    Math.Max(0, right - left), Math.Max(0, bottom - top)), state.Offset, state.MaxOffset));
+                nestedShift += state.Offset;
+            }
+
+            foreach (var child in box.Flow.OfType<LayoutBlockItem>())
+            {
+                Visit(child.Box, nestedShift);
+            }
+        }
     }
 
     /// <summary>Returns the valid URL selected by the first parsed base element with an href.</summary>

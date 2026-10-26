@@ -48,7 +48,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(44, RendererProtocol.Version);
+        Assert.Equal(45, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
@@ -820,7 +820,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(44, RendererProtocol.Version);
+        Assert.Equal(45, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];

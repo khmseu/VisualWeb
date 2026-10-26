@@ -75,6 +75,19 @@ public sealed record PageTextTarget(
     [property: JsonRequired] string Text,
     [property: JsonRequired] PageLinkRect Rect);
 
+/// <summary>One visible vertical scroll container snapshot for browser-owned wheel routing.</summary>
+public sealed record PageScrollContainer(
+    [property: JsonRequired] int Index,
+    [property: JsonRequired] int ParentIndex,
+    [property: JsonRequired] PageLinkRect Rect,
+    [property: JsonRequired] double Offset,
+    [property: JsonRequired] double MaxOffset);
+
+/// <summary>Render-request nested vertical scroll offsets keyed by container index.</summary>
+public sealed record PageScrollOffset(
+    [property: JsonRequired] int Index,
+    [property: JsonRequired] double Offset);
+
 /// <summary>One parsed form owner: an absolute GET action, or a visible unsupported-semantics diagnostic.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#form-submission-algorithm">form
 /// submission algorithm</see>, <see href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#attr-fs-novalidate">novalidate</see>,
@@ -505,6 +518,8 @@ public sealed record RendererMessage
     public PageForm[]? Forms { get; init; }
     public PageFormControl[]? FormControls { get; init; }
     public PageTextTarget[]? TextTargets { get; init; }
+    public PageScrollContainer[]? ScrollContainers { get; init; }
+    public PageScrollOffset[]? ScrollOffsets { get; init; }
 }
 
 public static class RendererProtocol
@@ -518,7 +533,7 @@ public static class RendererProtocol
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 44;
+    public const int Version = 45;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -543,6 +558,8 @@ public static class RendererProtocol
     public const int MaxTextTargets = 32_768;
     /// <summary>Budget for serialized text-selection target data, separate from frame pixels and form metadata.</summary>
     public const int MaxTextMetadataBytes = 1024 * 1024;
+    public const int MaxScrollContainers = 4096;
+    public const int MaxScrollOffsets = 4096;
     public const int MaxStylesheets = 32;
     public const int MaxStylesheetCharacters = 256 * 1024;
     /// <summary>Budget for the UTF-8 JSON serialization of the whole linked stylesheet collection.</summary>
@@ -561,10 +578,14 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Form metadata belongs only to frame replies."); }
         if (message.Kind != FrameKind && message.TextTargets is not null)
         { throw new IpcProtocolException("Text targets belong only to frame replies."); }
+        if (message.Kind != FrameKind && message.ScrollContainers is not null)
+        { throw new IpcProtocolException("Scroll containers belong only to frame replies."); }
         if (message.Kind != RenderKind && message.Stylesheets is not null)
         { throw new IpcProtocolException("Linked stylesheets belong only to render requests."); }
         if (message.Kind != RenderKind && message.BaseUrl is not null)
         { throw new IpcProtocolException("Base URL overrides belong only to render requests."); }
+        if (message.Kind != RenderKind && message.ScrollOffsets is not null)
+        { throw new IpcProtocolException("Nested scroll offsets belong only to render requests."); }
         if ((message.Kind != RenderKind && message.ScrollY != 0) || (message.Kind != FrameKind && message.ScrollHeight != 0))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
         if ((message.Kind is not (RenderKind or ClickKind) && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
@@ -597,6 +618,7 @@ public static class RendererProtocol
                 if (message.BaseUrl is { } baseUrl && BrowserUrl.ParseResult(baseUrl).Url?.Href != baseUrl)
                 { throw new IpcProtocolException("Base URL override must be serialized and absolute."); }
                 ValidateStylesheets(message.Stylesheets);
+                ValidateScrollOffsets(message.ScrollOffsets);
                 Dimensions(message.Width, message.Height, message.Scale);
                 if (!double.IsFinite(message.ScrollY) || message.ScrollY < 0 || message.ScrollY > 1e9)
                 { throw new IpcProtocolException("Invalid renderer scroll offset."); }
@@ -619,6 +641,7 @@ public static class RendererProtocol
                 ValidateFragmentTargets(message.FragmentTargets, message.ScrollHeight);
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
                 ValidateTextTargets(message.TextTargets, message.Width, message.Height);
+                ValidateScrollContainers(message.ScrollContainers, message.Width, message.Height);
                 break;
             case ClickKind:
                 if (payloadLength != 0 || message.DocumentId == Guid.Empty || !message.ExecuteInlineScripts
@@ -887,6 +910,42 @@ public static class RendererProtocol
         }
         if (JsonSerializer.SerializeToUtf8Bytes(targets).Length > MaxTextMetadataBytes)
         { throw new IpcProtocolException("Renderer text target metadata byte limit exceeded."); }
+    }
+    /// <summary>Checks frame-visible nested vertical scroll containers and metadata budgets.</summary>
+    public static void ValidateScrollContainers(IReadOnlyList<PageScrollContainer>? containers, double width, double height)
+    {
+        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0
+            || containers is { Count: > MaxScrollContainers })
+        { throw new IpcProtocolException("Invalid renderer scroll-container viewport or count."); }
+        if (containers is null) { return; }
+        var seen = new HashSet<int>();
+        foreach (var container in containers)
+        {
+            var rect = container?.Rect;
+            if (container is null || container.Index < 0 || !seen.Add(container.Index)
+                || container.ParentIndex < -1 || container.ParentIndex >= container.Index
+                || !double.IsFinite(container.Offset) || !double.IsFinite(container.MaxOffset)
+                || container.Offset < 0 || container.MaxOffset < 0 || container.Offset > container.MaxOffset
+                || rect is null || !double.IsFinite(rect.X) || !double.IsFinite(rect.Y)
+                || !double.IsFinite(rect.Width) || !double.IsFinite(rect.Height)
+                || rect.X < 0 || rect.Y < 0 || rect.Width < 0 || rect.Height < 0
+                || rect.X + rect.Width > width || rect.Y + rect.Height > height)
+            { throw new IpcProtocolException("Invalid renderer scroll-container fields or rectangle."); }
+        }
+    }
+    /// <summary>Checks nested vertical scroll-offset requests by container index.</summary>
+    public static void ValidateScrollOffsets(IReadOnlyList<PageScrollOffset>? offsets)
+    {
+        if (offsets is { Count: > MaxScrollOffsets })
+        { throw new IpcProtocolException("Invalid nested scroll-offset collection or count."); }
+        if (offsets is null) { return; }
+        var seen = new HashSet<int>();
+        foreach (var offset in offsets)
+        {
+            if (offset is null || offset.Index < 0 || !seen.Add(offset.Index)
+                || !double.IsFinite(offset.Offset) || offset.Offset < 0 || offset.Offset > MaxScrollHeight)
+            { throw new IpcProtocolException("Invalid nested scroll offset fields."); }
+        }
     }
     /// <summary>Checks count, per-sheet characters, unique serialized absolute URLs and the UTF-8 JSON wire budget.</summary>
     public static void ValidateStylesheets(IReadOnlyList<PageStylesheet>? stylesheets)

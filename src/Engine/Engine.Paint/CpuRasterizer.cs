@@ -126,6 +126,7 @@ public static class CpuRasterizer
         var deviceScale = Float(scale);
         var viewport = new SKRect(0, 0, Float(list.Width), Float(list.Height));
         long glyphCount = 0;
+        var scrollClipDepth = 0;
         if (list.Commands.Count > limits.MaxCommands) { throw new PaintLimitException("Raster command limit exceeded."); }
         // Validate every command/resource before allocating a framebuffer or drawing partial output.
         foreach (var command in list.Commands)
@@ -136,6 +137,17 @@ public static class CpuRasterizer
                 case FillRectangle fill:
                     ArgumentNullException.ThrowIfNull(fill.Color);
                     Rect(fill.Bounds);
+                    break;
+                case PushScrollClip push:
+                    Rect(push.Clip);
+                    Vertical(push.OffsetY);
+                    if (++scrollClipDepth > limits.MaxDepth)
+                    { throw new PaintLimitException("Raster scroll-clip depth limit exceeded."); }
+                    break;
+                case PopScrollClip:
+                    if (scrollClipDepth == 0)
+                    { throw new UnsupportedPaintException("Scroll-clip stack underflow."); }
+                    scrollClipDepth--;
                     break;
                 case DrawGlyphRun run:
                     var typeface = fonts.Resolve(run.FontIdentity);
@@ -153,6 +165,7 @@ public static class CpuRasterizer
                 default: throw new UnsupportedPaintException("Unsupported paint command.");
             }
         }
+        if (scrollClipDepth != 0) { throw new UnsupportedPaintException("Scroll-clip stack is unbalanced."); }
         var info = new SKImageInfo(size.Width, size.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
         using var bitmap = new SKBitmap(info);
         if (bitmap.GetPixels() == IntPtr.Zero) { throw new PaintLimitException("Skia could not allocate the raster framebuffer."); }
@@ -161,6 +174,7 @@ public static class CpuRasterizer
         canvas.Scale(deviceScale);
         canvas.ClipRect(viewport);
         canvas.Translate(0, -Float(scrollY));
+        scrollClipDepth = 0;
         using var paint = new SKPaint { IsAntialias = false, Style = SKPaintStyle.Fill };
         foreach (var command in list.Commands)
         {
@@ -187,7 +201,22 @@ public static class CpuRasterizer
                 paint.IsAntialias = true;
                 canvas.DrawText(blob, 0, 0, paint);
             }
+            else if (command is PushScrollClip push)
+            {
+                if (++scrollClipDepth > limits.MaxDepth)
+                { throw new PaintLimitException("Raster scroll-clip depth limit exceeded."); }
+                canvas.Save();
+                canvas.ClipRect(Rect(push.Clip));
+                canvas.Translate(0, -Float(push.OffsetY));
+            }
+            else if (command is PopScrollClip)
+            {
+                if (scrollClipDepth == 0) { throw new UnsupportedPaintException("Scroll-clip stack underflow."); }
+                canvas.Restore();
+                scrollClipDepth--;
+            }
         }
+        if (scrollClipDepth != 0) { throw new UnsupportedPaintException("Scroll-clip stack is unbalanced."); }
         canvas.Flush();
         cancellationToken.ThrowIfCancellationRequested();
         var pixels = new byte[checked(stride * size.Height)];

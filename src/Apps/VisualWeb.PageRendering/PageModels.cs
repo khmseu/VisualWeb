@@ -107,6 +107,7 @@ public sealed record LoadedPage
 public readonly record struct PageViewport(double Width, double Height, double Scale)
 {
     public double ScrollY { get; init; }
+    public IReadOnlyList<PageScrollOffset> ScrollOffsets { get; init; } = Array.Empty<PageScrollOffset>();
 }
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 {
@@ -119,6 +120,8 @@ public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
     public IReadOnlyList<PageFormControl> FormControls { get; init; } = Array.Empty<PageFormControl>();
     /// <summary>Visible shaped text clusters in paint order, with browser-only selection geometry.</summary>
     public IReadOnlyList<PageTextTarget> TextTargets { get; init; } = Array.Empty<PageTextTarget>();
+    /// <summary>Visible vertical nested scroll containers for browser-owned wheel routing.</summary>
+    public IReadOnlyList<PageScrollContainer> ScrollContainers { get; init; } = Array.Empty<PageScrollContainer>();
     private readonly double scrollHeight;
     public double ScrollHeight
     {

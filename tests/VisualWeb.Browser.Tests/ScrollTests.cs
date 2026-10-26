@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
+using VisualWeb.Ipc.Contracts;
 using Xunit;
 
 namespace VisualWeb.Browser.Tests;
@@ -334,6 +335,34 @@ public sealed class ScrollTests
         Assert.Single(source.Requests); Assert.Single(tab.History.Entries);
     }
 
+    [Fact]
+    public void NestedOverflowWheelConsumesContainerThenChainsRemainingToDocument()
+    {
+        var source = new ControllerTests.Source();
+        var renderer = new PendingRenderer();
+        using var controller = new BrowserController(() => source, () => renderer);
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(20, 20, 1);
+
+        controller.Navigate(tab.Id, "https://example.com/");
+        source.Requests[0].Completion.SetResult(Document());
+        controller.Pump(_ => viewport);
+        renderer.Complete(0, scrollContainers: [new(0, -1, new(0, 0, 20, 10), 0, 20)]);
+        controller.Pump(_ => viewport);
+
+        var remaining = controller.ScrollOverflowAt(tab.Id, 5, 5, 30);
+        Assert.Equal(10, remaining);
+        Assert.Equal(0, controller.ScrollY(tab.Id));
+        Assert.Contains(renderer.Viewports[1].ScrollOffsets, offset => offset.Index == 0 && offset.Offset == 20);
+        renderer.Complete(1, scrollContainers: [new(0, -1, new(0, 0, 20, 10), 20, 20)]);
+        controller.Pump(_ => viewport);
+
+        controller.Scroll(tab.Id, remaining);
+        renderer.Complete(2, scrollContainers: [new(0, -1, new(0, 0, 20, 10), 20, 20)]);
+        controller.Pump(_ => viewport);
+        Assert.True(controller.ScrollY(tab.Id) > 0);
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(double.NaN)]
@@ -362,13 +391,16 @@ public sealed class ScrollTests
             Viewports.Add(viewport); Tokens.Add(cancellationToken); Tasks.Add(new());
             return Tasks[^1].Task;
         }
-        internal void Complete(int index, double height = 80)
+        internal void Complete(int index, double height = 80, IReadOnlyList<PageScrollContainer>? scrollContainers = null)
         {
             using var fonts = new PaintFontRegistry();
             var viewport = Viewports[index];
             Tasks[index].SetResult(new(CpuRasterizer.Render(new(viewport.Width, viewport.Height, []), fonts,
                 viewport.Scale, cancellationToken: Cancellation), viewport.ScrollY.ToString(System.Globalization.CultureInfo.InvariantCulture), "Ready")
-            { ScrollHeight = height });
+            {
+                ScrollHeight = height,
+                ScrollContainers = scrollContainers ?? Array.Empty<PageScrollContainer>()
+            });
         }
         public void Dispose() { }
     }

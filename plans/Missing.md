@@ -121,8 +121,10 @@ broader page interaction is still missing:
   comma-separated address lists. Single-select controls with a bounded `size` from 2 through 12 render as
   browser-owned listboxes with pointer selection and existing keyboard selection. A shell-owned, row-bounded
   first visible option supports wheel scrolling over enabled listboxes (consumed at bounds, no page scroll), offset
-  pointer mapping and keyboard auto-visibility; it survives retained repaints and resets with the form. CSS overflow,
-  nested scrolling and DOM scroll events remain unsupported. Multiple selects preserve bounded initially selected options and use the
+  pointer mapping and keyboard auto-visibility; it survives retained repaints and resets with the form. Bounded nested
+  vertical wheel scrolling is now supported for definite-height block containers styled with
+  `overflow-x:hidden` and `overflow-y:auto`; general CSS overflow semantics and DOM scroll events remain unsupported.
+  Multiple selects preserve bounded initially selected options and use the
   browser-owned popup for pointer toggles; selected rows are highlighted, enabled toggles retain the popup,
   and the closed control shows the selected count. Enabled selections submit in option order and reset restores
   their initial state. Multiple-select keyboard interaction now uses an independent enabled-option cursor:
@@ -241,7 +243,10 @@ broader page interaction is still missing:
   Page Up/Down, Home/End and Ctrl+Home/End outside editable fields, retaining
   DOM/scripts across local/process repaints.
   A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
-  Horizontal/nested scrolling and general CSS overflow remain missing.
+  Bounded nested vertical wheel scrolling with edge chaining is implemented for
+  definite-height block containers styled with `overflow-x:hidden` and
+  `overflow-y:auto`; unconsumed wheel delta chains to document scroll. Horizontal
+  scrolling and general CSS overflow semantics remain missing.
 - The shell does not dispatch general pointer/keyboard input to pages or synthesize
   page focus. It implements only the documented bounded link, form, and control
   interactions. For `--enable-inline-scripts` pages, primary-pointer, Ctrl+primary
@@ -261,10 +266,11 @@ broader page interaction is still missing:
 This is a substantial gap even for a modest usable browser.
 
 The development-shell guide's limits summary and scrolling overview now reflect
-the implemented bounded link, form, selection and vertical-scroll behavior.
+the implemented bounded link, form, selection and vertical-scroll behavior,
+including the nested wheel-scrolling subset above.
 General DOM input events, downloads, persistent sessions, complete history and
-horizontal/nested overflow remain missing; this documentation correction adds
-no runtime behavior.
+horizontal overflow plus unsupported CSS overflow features remain missing; this
+documentation correction adds no runtime behavior.
 
 Evidence: `page limitations`, `input dispatch`, and `history implementation`.
 

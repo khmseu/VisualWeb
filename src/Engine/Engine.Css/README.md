@@ -11,8 +11,8 @@ specificity, sharing the original scope and matching budgets.
 Depends on Engine.Dom only; no native, networking or script dependency.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
-`css-values`, `css-box`, `css-display`, `css-fonts`, `css-text`, `css-color`,
-`css-sizing`, `css-backgrounds` and `html`.
+`css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,
+`css-color`, `css-sizing`, `css-backgrounds` and `html`.
 Sources are in the [registry](../../../specs/manifest.json).
 See the [standards workflow](../../../docs/standards.md).
 

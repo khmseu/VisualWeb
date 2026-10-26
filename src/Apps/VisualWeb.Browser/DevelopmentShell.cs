@@ -617,10 +617,26 @@ public sealed class DevelopmentShell : IDisposable
         }
         if (view.PointerY is < ShellChrome.Height) { return; }
         var rows = (int)Math.Clamp(Math.Round(wheel.Y * 3), -300, 300);
-        var overControl = view.PointerX is { } pointerX && view.PointerY is { } pointerY
+        var hasPointer = false;
+        var pointerX = 0.0;
+        var pointerY = 0.0;
+        if (view.PointerX is { } px && view.PointerY is { } py)
+        {
+            hasPointer = true;
+            pointerX = px;
+            pointerY = py;
+        }
+        var overControl = hasPointer
             && (Controller.ScrollTextareaAt(active.Id, pointerX, pointerY - ShellChrome.Height, rows)
                 || Controller.ScrollListboxAt(active.Id, pointerX, pointerY - ShellChrome.Height, rows));
-        if (!overControl) { Controller.Scroll(active.Id, Math.Clamp((double)wheel.Y, -100, 100) * 48); }
+        if (!overControl)
+        {
+            var delta = Math.Clamp((double)wheel.Y, -100, 100) * 48;
+            var remaining = hasPointer
+                ? Controller.ScrollOverflowAt(active.Id, pointerX, pointerY - ShellChrome.Height, delta)
+                : delta;
+            if (remaining != 0) { Controller.Scroll(active.Id, remaining); }
+        }
     }
     private void HandleTextEntered(BrowserWindow window, View view, TextEntered text)
     {
