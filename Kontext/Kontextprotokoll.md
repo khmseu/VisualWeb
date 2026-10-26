@@ -1383,4 +1383,11 @@ ersten Request. Alle 1.100 Browser-Tests, der Solution-Build und die
 vollstaendige Solution-Testsuite bestanden. `dotnet format` meldet
 unveraenderte Findings in `StaticLayout.cs` und `ShellChrome.cs`; sie liegen
 ausserhalb dieses Diffs. `git diff --check` ist sauber. Formatpruefung, Commit,
-Push und CI fuer diesen Pass sind noch ausstehend.
+Push und CI fuer diesen Pass waren zu diesem Zeitpunkt noch ausstehend.
+
+**Nachtrag:** Pass 2 wurde als Commit `0b6ca2d` gepusht. CodeQL
+(<https://github.com/khmseu/VisualWeb/actions/runs/40278866974>), Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/40278867244>)
+und Windows confinement
+(<https://github.com/khmseu/VisualWeb/actions/runs/40278867114>) sind
+erfolgreich.
