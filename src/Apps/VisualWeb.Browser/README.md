@@ -108,8 +108,12 @@ Allow/Cancel, Enter, or Escape. Automatically started shell HTTP(S) loads,
 including launch URLs opened through `OpenWindow`, use the same initial
 confirmation before transport. Origin-changing redirects still prompt
 separately. The built-in new-tab welcome page is a `data:` URL and does not
-prompt. Top-level `file:` loads from the address bar, `OpenWindow(file:)`, and
-file Back/Forward/Reload history actions also require confirmation before
+prompt. Explicit top-level `data:` loads from the address bar,
+`OpenWindow(data:)`, and cross-document Back/Forward/Reload history also
+require confirmation; the prompt identifies a data URL without showing its
+payload. The built-in welcome page remains exempt, including when revisited
+from history. Top-level `file:` loads from the address bar, `OpenWindow(file:)`,
+and file Back/Forward/Reload history actions also require confirmation before
 reading the file; the prompt shows the canonical file URL path without query
 or fragment. Same-document fragment traversal does not reload or prompt, and
 page-initiated file links/forms remain blocked. Other non-HTTP(S) shell

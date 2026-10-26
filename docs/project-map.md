@@ -18,11 +18,14 @@ confirm cross-origin history targets and origin-changing redirects; HTTPS
 documents block HTTP history targets and downgrade redirects. Top-level
 `file:` loads from the address bar, `OpenWindow`, and cross-document file
 history actions require confirmation before file I/O; the prompt shows the
-canonical path without query or fragment. Page-initiated file links/forms
+canonical path without query or fragment. Explicit top-level `data:` loads from
+the address bar, `OpenWindow`, and cross-document history also require
+confirmation, without displaying the payload. The built-in `data:` welcome
+page remains exempt, including in history. Page-initiated file links/forms
 remain blocked, same-document fragment traversal remains local, and direct
-low-level `BrowserController` calls are unchanged. The built-in `data:` new-tab
-welcome page and other non-HTTP(S) shell navigation remain unchanged. This is
-not production request authorization or filesystem isolation.
+low-level `BrowserController` calls are unchanged. Other non-HTTP(S) shell
+navigation remains unchanged. This is not production request authorization or
+filesystem isolation.
 
 | Project                                                               | Responsibility                                                                                                                                                                                                                                                                                           | Planned dependencies / official sources                                                                     |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

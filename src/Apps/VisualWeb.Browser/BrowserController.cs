@@ -1852,7 +1852,7 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         Start(tab, BrowserUrl.Parse(address), null, false);
     }
-    /// <summary>Routes shell navigation through origin confirmation when the shell has configured an authorizer.</summary>
+    /// <summary>Routes shell navigation through its confirmation policy when the shell has configured an authorizer.</summary>
     public void NavigateWithShellConfirmation(TabId id, string address)
     {
         Check();
@@ -1861,7 +1861,7 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         var url = BrowserUrl.Parse(address);
         if (pageNavigationAuthorizer is not null
-            && url.Protocol is "http:" or "https:" or "file:")
+            && url.Protocol is "http:" or "https:" or "file:" or "data:")
         {
             var sourceOrigin = content[id].Document?.Origin;
             Start(tab, url, null, false, authorizeRedirects: true,
@@ -1915,7 +1915,7 @@ public sealed class BrowserController : IDisposable
     {
         var document = content[tab.Id].Document;
         if (useShellConfirmation && pageNavigationAuthorizer is not null
-            && url.Protocol is "http:" or "https:" or "file:")
+            && url.Protocol is "http:" or "https:" or "file:" or "data:")
         {
             Start(tab, url, traversal, replace,
                 preventHttpsDowngrade: document?.Url.Protocol == "https:",
@@ -1982,6 +1982,14 @@ public sealed class BrowserController : IDisposable
             if (!await pageNavigationAuthorizer!(tabId, url, cancellationToken).ConfigureAwait(false))
             {
                 throw new PageNavigationException("Local file navigation was denied.");
+            }
+            return await owner.Source.LoadAsync(url, cancellationToken, preventHttpsDowngrade).ConfigureAwait(false);
+        }
+        if (url.Protocol == "data:")
+        {
+            if (!await pageNavigationAuthorizer!(tabId, url, cancellationToken).ConfigureAwait(false))
+            {
+                throw new PageNavigationException("Data URL navigation was denied.");
             }
             return await owner.Source.LoadAsync(url, cancellationToken, preventHttpsDowngrade).ConfigureAwait(false);
         }

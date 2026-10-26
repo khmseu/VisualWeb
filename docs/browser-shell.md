@@ -290,15 +290,21 @@ Automatically started shell HTTP(S) loads, including a launch URL supplied to
 `OpenWindow`, use the same confirmation path before their first request when
 there is no committed document. Origin-changing redirects continue to require
 separate confirmation. The built-in new-tab welcome page is a `data:` URL and
-does not prompt. Top-level `file:` loads started from the address bar,
-`OpenWindow(file:)`, or file Back/Forward/Reload history actions also wait for
-confirmation before file I/O. The prompt displays the canonical `file:` URL
-path, omitting query and fragment, and allows the user to cancel. Same-document
-fragment traversal does not reload the file or prompt. Page-initiated file
-links/forms remain blocked. Other non-HTTP(S) shell navigation and direct
-low-level `BrowserController.Navigate` calls remain unchanged unless callers
-explicitly use the confirmation-aware shell navigation method. Confirmation
-does not provide filesystem isolation or production request authorization.
+does not prompt. Explicit top-level `data:` loads started from the address bar,
+`OpenWindow(data:)`, or cross-document Back/Forward/Reload history also wait
+for confirmation. The prompt identifies a data URL without displaying its
+payload. Same-document fragment traversal does not reload or prompt.
+Page-initiated `data:` links/forms remain blocked. Top-level `file:` loads
+started from the address bar, `OpenWindow(file:)`, or file Back/Forward/Reload
+history actions also wait for confirmation before file I/O. The prompt displays
+the canonical `file:` URL path, omitting query and fragment, and allows the user
+to cancel. Same-document fragment traversal does not reload the file or prompt.
+Page-initiated file links/forms remain blocked. Other non-HTTP(S) shell
+navigation and direct low-level `BrowserController.Navigate` calls remain
+unchanged unless callers explicitly use the confirmation-aware shell navigation
+method. The built-in welcome page is exempt even when revisited from history.
+Confirmation does not provide filesystem isolation or production request
+authorization.
 
 HTTP(S) Back/Forward/Reload operations use the same confirmation path:
 cross-origin history destinations prompt relative to the currently committed

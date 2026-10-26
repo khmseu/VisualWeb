@@ -129,6 +129,7 @@ public sealed class DevelopmentShell : IDisposable
     private async ValueTask<bool> ConfirmPageNavigationAsync(TabId tab, BrowserUrl destination,
         CancellationToken cancellationToken)
     {
+        if (destination.Href == HomeUrl) { return true; }
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
         navigationPromptQueue.Enqueue(new(tab, NavigationConfirmationMessage(destination), completion));
@@ -136,6 +137,7 @@ public sealed class DevelopmentShell : IDisposable
     }
     private static string NavigationConfirmationMessage(BrowserUrl destination)
     {
+        if (destination.Protocol == "data:") { return "Allow data URL navigation"; }
         if (destination.Protocol != "file:")
         {
             return "Allow page navigation to " + destination.Origin.Serialize();

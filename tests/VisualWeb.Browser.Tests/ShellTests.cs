@@ -272,43 +272,52 @@ public sealed class ShellTests
             var tab = window.ActiveTab!;
             var native = system.Items[0];
 
-            WaitForPrompt();
-            Assert.Equal("Allow local file navigation to " + fileUrl,
-                shell.PendingNavigationConfirmationMessage(tab.Id));
+            WaitForPrompt("Allow local file navigation to " + fileUrl);
             ApproveAndWait(fileUrl);
 
-            Navigate("data:text/html,%3C!doctype%20html%3E%3Ctitle%3Efirst%3C/title%3E");
+            const string firstData = "data:text/html,%3C!doctype%20html%3E%3Ctitle%3Efirst%3C/title%3E";
+            const string secondData = "data:text/html,%3C!doctype%20html%3E%3Ctitle%3Esecond%3C/title%3E";
+            Navigate(firstData);
             Navigate(fileUrl);
-            Navigate("data:text/html,%3C!doctype%20html%3E%3Ctitle%3Esecond%3C/title%3E");
+            Navigate(secondData);
 
             shell.Controller.BackWithShellConfirmation(tab.Id);
-            WaitForPrompt();
-            Assert.Equal("data:text/html,%3C!doctype%20html%3E%3Ctitle%3Esecond%3C/title%3E",
-                tab.History.Current!.Href);
+            WaitForPrompt("Allow local file navigation to " + fileUrl);
+            Assert.Equal(secondData, tab.History.Current!.Href);
             ApproveAndWait(fileUrl);
 
             shell.Controller.BackWithShellConfirmation(tab.Id);
-            Wait(() => !tab.IsLoading && tab.History.Current?.Href
-                == "data:text/html,%3C!doctype%20html%3E%3Ctitle%3Efirst%3C/title%3E");
+            WaitForPrompt("Allow data URL navigation");
+            Assert.Equal(fileUrl, tab.History.Current!.Href);
+            ApproveAndWait(firstData);
+
             shell.Controller.ForwardWithShellConfirmation(tab.Id);
-            WaitForPrompt();
+            WaitForPrompt("Allow local file navigation to " + fileUrl);
             ApproveAndWait(fileUrl);
 
             shell.Controller.ReloadWithShellConfirmation(tab.Id);
-            WaitForPrompt();
+            WaitForPrompt("Allow local file navigation to " + fileUrl);
             ApproveAndWait(fileUrl);
 
             void Navigate(string url)
             {
                 shell.Controller.NavigateWithShellConfirmation(tab.Id, url);
-                if (url == fileUrl) { WaitForPrompt(); ApproveAndWait(fileUrl); }
+                if (url == fileUrl)
+                {
+                    WaitForPrompt("Allow local file navigation to " + fileUrl);
+                    ApproveAndWait(fileUrl);
+                }
+                else if (url.StartsWith("data:", StringComparison.Ordinal))
+                {
+                    WaitForPrompt("Allow data URL navigation");
+                    ApproveAndWait(url);
+                }
                 else { Wait(() => !tab.IsLoading && tab.History.Current?.Href == url); }
             }
-            void WaitForPrompt()
+            void WaitForPrompt(string expectedMessage)
             {
                 Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
-                Assert.Equal("Allow local file navigation to " + fileUrl,
-                    shell.PendingNavigationConfirmationMessage(tab.Id));
+                Assert.Equal(expectedMessage, shell.PendingNavigationConfirmationMessage(tab.Id));
             }
             void ApproveAndWait(string expected)
             {
@@ -325,6 +334,133 @@ public sealed class ShellTests
         finally
         {
             if (File.Exists(path)) { File.Delete(path); }
+        }
+    }
+
+    [Fact]
+    public void ExplicitDataAddressBarNavigationWaitsForConfirmationAndHidesPayload()
+    {
+        const string address = "data:text/html,%3C!doctype%20html%3E%3Ctitle%3EAddress%3C/title%3E";
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var window = shell.OpenWindow(empty: true);
+        var tab = shell.Controller.CreateTab(window.Id);
+        var native = system.Items[0];
+
+        TypeAddress(address);
+        WaitForPrompt();
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        Assert.Null(tab.History.Current);
+        Assert.Null(shell.Controller.Page(tab.Id));
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+        Wait(() => !tab.IsLoading);
+        Assert.Null(tab.History.Current);
+        Assert.Null(shell.Controller.Page(tab.Id));
+        Assert.Contains("Data URL navigation was denied", tab.Error);
+
+        TypeAddress(address);
+        WaitForPrompt();
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait(() => !tab.IsLoading && tab.History.Current?.Href == address
+            && shell.Controller.Page(tab.Id) is not null);
+        Assert.Equal("Address", tab.Title);
+        Assert.Null(tab.Error);
+
+        const string lowLevelAddress = "data:text/html,%3C!doctype%20html%3E%3Ctitle%3ELowLevel%3C/title%3E";
+        shell.Controller.Navigate(tab.Id, lowLevelAddress);
+        Assert.False(shell.HasPendingNavigationConfirmation(tab.Id));
+        Wait(() => !tab.IsLoading && tab.History.Current?.Href == lowLevelAddress
+            && shell.Controller.Page(tab.Id) is not null);
+        Assert.Equal("LowLevel", tab.Title);
+
+        void TypeAddress(string value)
+        {
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.L, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+            shell.Dispatch(new TextEntered(native.Id, value));
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+            shell.Tick();
+        }
+        void WaitForPrompt()
+        {
+            Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
+    [Fact]
+    public void DataLaunchAndCrossDocumentHistoryWaitForConfirmationButWelcomeDoesNot()
+    {
+        const string first = "data:text/html,%3C!doctype%20html%3E%3Ctitle%3EFirst%3C/title%3E";
+        const string second = "data:text/html,%3C!doctype%20html%3E%3Ctitle%3ESecond%3C/title%3E";
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+
+        var welcome = shell.OpenWindow();
+        var welcomeTab = welcome.ActiveTab!;
+        WaitFor(welcomeTab, () => !welcomeTab.IsLoading
+            && welcomeTab.History.Current?.Href == DevelopmentShell.HomeUrl);
+        Assert.False(shell.HasPendingNavigationConfirmation(welcomeTab.Id));
+
+        shell.Controller.NavigateWithShellConfirmation(welcomeTab.Id, first);
+        WaitForPrompt(welcomeTab);
+        Approve(welcomeTab, system.Items[0].Id, first);
+        shell.Controller.BackWithShellConfirmation(welcomeTab.Id);
+        WaitFor(welcomeTab, () => !welcomeTab.IsLoading
+            && welcomeTab.History.Current?.Href == DevelopmentShell.HomeUrl);
+        Assert.False(shell.HasPendingNavigationConfirmation(welcomeTab.Id));
+
+        var launchWindow = shell.OpenWindow(first);
+        var tab = launchWindow.ActiveTab!;
+        var native = system.Items[1].Id;
+        WaitForPrompt(tab);
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        Assert.Null(tab.History.Current);
+        Approve(tab, native, first);
+
+        shell.Controller.NavigateWithShellConfirmation(tab.Id, second);
+        WaitForPrompt(tab);
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        Approve(tab, native, second);
+
+        shell.Controller.BackWithShellConfirmation(tab.Id);
+        WaitForPrompt(tab);
+        Assert.Equal(second, tab.History.Current!.Href);
+        Approve(tab, native, first);
+
+        shell.Controller.ForwardWithShellConfirmation(tab.Id);
+        WaitForPrompt(tab);
+        Approve(tab, native, second);
+
+        shell.Controller.ReloadWithShellConfirmation(tab.Id);
+        WaitForPrompt(tab);
+        Approve(tab, native, second);
+
+        void WaitForPrompt(BrowserTab target)
+        {
+            WaitFor(target, () => shell.HasPendingNavigationConfirmation(target.Id));
+        }
+        void Approve(BrowserTab target, WindowId windowId, string expected)
+        {
+            shell.Dispatch(new KeyChanged(windowId, (int)SDL.Scancode.Return, 0, 0, true, false));
+            WaitFor(target, () => !target.IsLoading && target.History.Current?.Href == expected
+                && shell.Controller.Page(target.Id) is not null);
+        }
+        void WaitFor(BrowserTab target, Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{target.Error} | {target.Status} | {target.AddressText}");
         }
     }
 
@@ -1957,6 +2093,10 @@ public sealed class ShellTests
         shell.Tick();
         Assert.Equal(original, native.Pixels!.Skip(header * page.Frame.Stride));
         Key(SDL.Scancode.Return);
+        WaitForPrompt();
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        Key(SDL.Scancode.Return);
         Wait();
         Assert.Equal(-1, shell.Controller.FocusedLinkIndex(tab.Id));
         var addressBarDocument = shell.Controller.Page(tab.Id)!;
@@ -1980,6 +2120,13 @@ public sealed class ShellTests
             do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
             Assert.False(tab.IsLoading);
             Assert.Null(tab.Error);
+        }
+        void WaitForPrompt()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while (!shell.HasPendingNavigationConfirmation(tab.Id) && DateTime.UtcNow < deadline);
+            Assert.True(shell.HasPendingNavigationConfirmation(tab.Id));
         }
     }
 
@@ -3992,6 +4139,11 @@ public sealed class ShellTests
         shell.Tick();
         Key(SDL.Scancode.Return);
         Assert.False(native.TextInput);
+        Assert.True(shell.HasPendingNavigationConfirmation(tab.Id));
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        Key(SDL.Scancode.Return);
+        WaitForNavigation();
         Assert.Equal(2, tab.History.Entries.Count);
         var at = 120 * native.Size.Width * 4;
         Assert.Equal(new byte[] { 255, 0, 0, 255 }, native.Pixels.AsSpan(at, 4).ToArray());
@@ -4014,6 +4166,13 @@ public sealed class ShellTests
         {
             system.Events.Enqueue(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
             shell.Tick();
+        }
+        void WaitForNavigation()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
         }
     }
     [Fact]
@@ -4389,9 +4548,20 @@ public sealed class ShellTests
         Assert.Equal(destination, tab.AddressText);
 
         shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        WaitForPrompt();
+        Assert.Equal("Allow data URL navigation",
+            shell.PendingNavigationConfirmationMessage(tab.Id));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
         Wait();
         Assert.Equal("Pasted address", tab.Title);
 
+        void WaitForPrompt()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while (!shell.HasPendingNavigationConfirmation(tab.Id) && DateTime.UtcNow < deadline);
+            Assert.True(shell.HasPendingNavigationConfirmation(tab.Id));
+        }
         void Wait()
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);
