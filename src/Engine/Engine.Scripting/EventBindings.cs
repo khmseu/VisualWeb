@@ -6,7 +6,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke">listener invocation</see>.
 /// Listener errors deliberately fail the execution task instead of HTML report-and-continue.
 /// The private <c>click</c>/<c>auxclick</c> operations create trusted, bubbling, cancelable, composed plain Events
-/// for browser-owned link activation; they are not PointerEvents or general input synthesis.</remarks>
+/// for browser-owned link activation; focus/blur use their non-bubbling, non-cancelable, composed flags.
+/// These operations do not construct specialized event interfaces or synthesize general input.</remarks>
 internal static class EventBindings
 {
     internal const string Bootstrap = """
@@ -226,6 +227,11 @@ internal static class EventBindings
                     const init = create(null); init.bubbles = init.cancelable = init.composed = true;
                     const allowed = apply(dispatch, receiver, new Event(operation, init), true);
                     return failure ? failure : allowed ? 0 : 3;
+                }
+                if (operation === 'focus' || operation === 'blur') {
+                    const init = create(null); init.bubbles = init.cancelable = false; init.composed = true;
+                    apply(dispatch, receiver, new Event(operation, init), true);
+                    return failure;
                 }
                 if (operation === 'begin') {invoked = depth = failure = 0; active = true; return 0;}
                 if (operation === 'end') active = false;

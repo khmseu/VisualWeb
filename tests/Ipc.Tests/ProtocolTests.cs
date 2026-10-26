@@ -84,9 +84,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(47, RendererProtocol.Version);
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 46 }, 0));
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 46 }, 0));
+        Assert.Equal(48, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 47 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
@@ -174,7 +174,7 @@ public sealed class ProtocolTests
         Status = "",
         ScrollHeight = 2,
         ScrollWidth = 2,
-        LinkTargets = [new PageLinkTarget(0, 0, 2, 2, "https://example.com/path#part") { TabIndex = 2 }],
+        LinkTargets = [new PageLinkTarget(0, 0, 2, 2, "https://example.com/path#part") { TabIndex = 2, FocusTargetId = 1 }],
         Forms = [],
         FormControls = [],
         TextTargets = [],
@@ -185,9 +185,9 @@ public sealed class ProtocolTests
         Forms = [new("https://example.com/search?old#frag", null), new("", "Unsupported form method: post.")],
         FormControls =
         [
-            new(0, "text", "q", "café", "", null, false, false, true, 2, 10, 0, new(0, 0, 2, 1), false, null, null, null, false),
+            new(0, "text", "q", "café", "", null, false, false, true, 2, 10, 0, new(0, 0, 2, 1), false, null, null, null, false) { FocusTargetId = 2 },
             new(0, "hidden", "h", "v", "", null, false, false, false, -1, -1, 0, null, false, null, null, null, false),
-            new(0, "submit", "go", "", "Submit", null, false, false, false, -1, -1, 1, new(0, 1, 2, 1), false, null, null, null, false),
+            new(0, "submit", "go", "", "Submit", null, false, false, false, -1, -1, 1, new(0, 1, 2, 1), false, null, null, null, false) { FocusTargetId = 3 },
             new(1, "button", "", "", "", null, true, false, false, -1, -1, 1, null, false, null, null, null, false),
             new(-1, "search", "", "", "", null, false, true, false, -1, -1, 1, null, false, null, null, null, false)
         ]
@@ -343,15 +343,15 @@ public sealed class ProtocolTests
         RendererProtocol.Validate(FormFrame, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "url", Pattern = "https://.*", Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "url", Pattern = "https://.*", Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "email", Pattern = ".+", Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "email", Pattern = ".+", Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Placeholder = "Search here", Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Placeholder = "Search here", Rect = null, FocusTargetId = 0 }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
@@ -366,7 +366,7 @@ public sealed class ProtocolTests
             FormControls = [FormFrame.FormControls![0] with
             {
                 Kind = "email", Value = "first@example.com,second@example.org", Multiple = true,
-                MinLength = -1, MaxLength = -1, Pattern = null, Rect = null
+                MinLength = -1, MaxLength = -1, Pattern = null, Rect = null, FocusTargetId = 0
             }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
@@ -379,31 +379,31 @@ public sealed class ProtocolTests
         }, 16));
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "checkbox", Checked = true, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "checkbox", Checked = true, MinLength = -1, MaxLength = -1, Required = false, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "radio", Checked = true, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "radio", Checked = true, MinLength = -1, MaxLength = -1, Required = true, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = -1, Maximum = 10, Step = 0.1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = -1, Maximum = 10, Step = 0.1, MinLength = -1, MaxLength = -1, Required = true, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "date", Value = "2024-02-29", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "date", Value = "2024-02-29", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "time", Value = "23:59:59.999", Step = 60_000, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "time", Value = "23:59:59.999", Step = 60_000, MinLength = -1, MaxLength = -1, Required = true, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "month", Value = "2024-02", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "month", Value = "2024-02", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "week", Value = "2020-W53", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "week", Value = "2020-W53", Step = 1, MinLength = -1, MaxLength = -1, Required = true, Rect = null, FocusTargetId = 0 }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
@@ -427,7 +427,7 @@ public sealed class ProtocolTests
         }, 16));
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "range", Value = "5", Minimum = 0, Maximum = 100, Step = 1, MinLength = -1, MaxLength = -1, Required = false, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "range", Value = "5", Minimum = 0, Maximum = 100, Step = 1, MinLength = -1, MaxLength = -1, Required = false, Rect = null, FocusTargetId = 0 }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
@@ -439,11 +439,11 @@ public sealed class ProtocolTests
         }, 16));
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = 10, Maximum = -1, Step = 1, MinLength = -1, MaxLength = -1, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "number", Minimum = 10, Maximum = -1, Step = 1, MinLength = -1, MaxLength = -1, Rect = null, FocusTargetId = 0 }]
         }, 16);
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "password", Pattern = "[a-z]+", Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "password", Pattern = "[a-z]+", Rect = null, FocusTargetId = 0 }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
@@ -455,7 +455,7 @@ public sealed class ProtocolTests
         }, 16));
         RendererProtocol.Validate(FormFrame with
         {
-            FormControls = [FormFrame.FormControls![0] with { Kind = "number", Step = null, StepAny = true, MinLength = -1, MaxLength = -1, Rect = null }]
+            FormControls = [FormFrame.FormControls![0] with { Kind = "number", Step = null, StepAny = true, MinLength = -1, MaxLength = -1, Rect = null, FocusTargetId = 0 }]
         }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
         {
@@ -708,7 +708,8 @@ public sealed class ProtocolTests
             MaxLength = -1,
             Required = true,
             Options = [new("fast", "Fast", false, false), new("slow", "Slow", false, true)],
-            Rect = null
+            Rect = null,
+            FocusTargetId = 0
         };
         RendererProtocol.Validate(FormFrame with { FormControls = [select] }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
@@ -743,7 +744,8 @@ public sealed class ProtocolTests
     public void ExactFormCountsAndStringLimitsAreAccepted()
     {
         var form = FormFrame.Forms![0];
-        var control = FormFrame.FormControls![0] with { Rect = null, Name = new string('n', 8192), Value = "" };
+        var control = FormFrame.FormControls![0] with
+        { Rect = null, FocusTargetId = 0, Name = new string('n', 8192), Value = "" };
         RendererProtocol.Validate(FormFrame with { Forms = Enumerable.Repeat(form, 256).ToArray() }, 16);
         RendererProtocol.Validate(FormFrame with { FormControls = Enumerable.Repeat(control, 100).ToArray() }, 16);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
@@ -883,7 +885,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(47, RendererProtocol.Version);
+        Assert.Equal(48, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -948,10 +950,12 @@ public sealed class ProtocolTests
     public void ExactLinkCountUrlAndUtf8WireLimitsAreAccepted()
     {
         var link = LinkFrame.LinkTargets![0];
-        RendererProtocol.Validate(LinkFrame with { LinkTargets = Enumerable.Repeat(link, 4096).ToArray() }, 16);
+        RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = Enumerable.Range(1, 4096).Select(id => link with { FocusTargetId = id }).ToArray() }, 16);
         RendererProtocol.Validate(LinkFrame with { LinkTargets = [link with { Url = "data:," + new string('a', 8186) }] }, 16);
-        var links = Enumerable.Repeat(link with { Url = "data:," + new string('a', 8186) }, 126).ToList();
-        links.Add(link with { Url = "data:," });
+        var links = Enumerable.Range(1, 126)
+            .Select(id => link with { FocusTargetId = id, Url = "data:," + new string('a', 8186) }).ToList();
+        links.Add(link with { FocusTargetId = 127, Url = "data:," });
         var remaining = RendererProtocol.MaxLinkMetadataBytes - JsonSerializer.SerializeToUtf8Bytes(links).Length;
         while (remaining < 0)
         {
@@ -960,7 +964,11 @@ public sealed class ProtocolTests
         }
         while (remaining > 8186)
         {
-            links.Add(link with { Url = "data:," });
+            links.Add(link with
+            {
+                FocusTargetId = links.Max(target => target.FocusTargetId) + 1,
+                Url = "data:,"
+            });
             remaining = RendererProtocol.MaxLinkMetadataBytes - JsonSerializer.SerializeToUtf8Bytes(links).Length;
         }
         links[^1] = links[^1] with { Url = "data:," + new string('a', remaining) };
@@ -1062,6 +1070,67 @@ public sealed class ProtocolTests
         Assert.Equal(Click, (await reader.ReadAsync(Cancellation))!.Message);
         Assert.Equal(auxClick, (await reader.ReadAsync(Cancellation))!.Message);
         Assert.True((await reader.ReadAsync(Cancellation))!.Message.DefaultPrevented);
+    }
+    [Fact]
+    public async Task FocusAndStableTargetClickMessagesAreBoundedAndStrictlyScoped()
+    {
+        var focus = new RendererMessage
+        {
+            Kind = "focus",
+            Id = 2,
+            DocumentId = Request.DocumentId,
+            ExecuteInlineScripts = true,
+            FocusTargetId = 7,
+            FocusEventType = "blur"
+        };
+        RendererProtocol.Validate(focus, 0);
+        RendererProtocol.Validate(focus with { FocusTargetId = RendererProtocol.MaxFocusTargetIdsPerDocument }, 0);
+        RendererProtocol.Validate(new() { Kind = "focus-result", Id = 2 }, 0);
+        RendererProtocol.Validate(Click with
+        {
+            FocusTargetId = 7,
+            LinkIndex = 0,
+            Url = null
+        }, 0);
+        foreach (var invalid in new[]
+        {
+            focus with { FocusTargetId = 0 },
+            focus with { FocusTargetId = RendererProtocol.MaxFocusTargetIdsPerDocument + 1 },
+            focus with { FocusEventType = "focusin" },
+            focus with { ExecuteInlineScripts = false },
+            focus with { Url = "https://example.com/" },
+            focus with { LinkIndex = 1 },
+            Click with { FocusTargetId = 7 },
+            Click with { FocusTargetId = 7, LinkIndex = 1, Url = null },
+            Click with { FocusTargetId = -1, LinkIndex = 0, Url = null },
+            new RendererMessage { Kind = "focus-result", Id = 2, FocusTargetId = 1 },
+            new RendererMessage { Kind = "focus-result", Id = 0 }
+        })
+        { Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(invalid, 0)); }
+
+        using var wire = new MemoryStream();
+        var writer = new RendererChannel(Stream.Null, wire);
+        var reply = new RendererMessage { Kind = "focus-result", Id = 2 };
+        await writer.WriteAsync(focus, cancellationToken: Cancellation);
+        await writer.WriteAsync(reply, cancellationToken: Cancellation);
+        wire.Position = 0;
+        var reader = new RendererChannel(wire, Stream.Null);
+        Assert.Equal(focus, (await reader.ReadAsync(Cancellation))!.Message);
+        Assert.Equal(reply, (await reader.ReadAsync(Cancellation))!.Message);
+    }
+
+    [Fact]
+    public void FocusTargetIdentitiesAreUniqueAndMatchVisibleEligibility()
+    {
+        var link = LinkFrame.LinkTargets![0];
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [link, link with { Rects = [new(0, 0, 1, 1)] }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        { FormControls = [FormFrame.FormControls![0] with { FocusTargetId = 1 }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(FormFrame with
+        { FormControls = [FormFrame.FormControls![0] with { Rect = null }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [link with { FocusTargetId = 0 }] }, 16));
     }
     private static RendererMessage Request => new()
     {

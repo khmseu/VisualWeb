@@ -383,7 +383,6 @@ public sealed class DevelopmentShell : IDisposable
             && middle.X >= 0 && middle.X < linkViewport.Width
             && middle.Y < ShellChrome.Height + linkViewport.Height)
         {
-            Controller.FocusPage(linkTab.Id);
             Controller.ClearSelectedText(linkTab.Id);
             Controller.ActivateLink(linkTab.Id, middle.X, middle.Y - ShellChrome.Height, linkViewport,
                 forceNewTab: true, dispatchClickEvent: true, linkEventType: PageLinkEventType.AuxClick);
@@ -421,7 +420,6 @@ public sealed class DevelopmentShell : IDisposable
                 && pointer.X >= 0 && pointer.X < modifiedLinkViewport.Width
                 && pointer.Y < ShellChrome.Height + modifiedLinkViewport.Height)
             {
-                Controller.FocusPage(modifiedLinkTab.Id);
                 Controller.ClearSelectedText(modifiedLinkTab.Id);
                 Controller.ActivateLink(modifiedLinkTab.Id, pointer.X, pointer.Y - ShellChrome.Height,
                     modifiedLinkViewport, forceNewTab: true, activateNewTab: false, dispatchClickEvent: true);
@@ -475,7 +473,6 @@ public sealed class DevelopmentShell : IDisposable
             if (window.ActiveTabId is { } unfocused) { Controller.FocusPage(unfocused, false); }
             return;
         }
-        Controller.FocusPage(pageTab.Id);
         var pageY = pointer.Y - ShellChrome.Height;
         var page = Controller.Page(pageTab.Id);
         var overControl = page?.FormControls.Any(control => control.Rect?.Contains(pointer.X, pageY) == true

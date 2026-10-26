@@ -268,6 +268,7 @@ public sealed class LinkClickEventTests
     {
         using var renderer = new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
         Assert.True(renderer.DispatchesLinkClicks);
+        Assert.True(renderer.DispatchesPageFocusEvents);
         var page = Document("""
             <!doctype html><style>*{margin:0}</style><a href="/next">go</a>
             <script>let count=0;document.addEventListener('click',()=>++count);</script>
@@ -282,10 +283,11 @@ public sealed class LinkClickEventTests
         Assert.Throws<ArgumentOutOfRangeException>(() => renderer.DispatchLinkEvent(page.DocumentId, 0, url,
             (PageLinkEventType)2, Cancellation));
         Assert.True(renderer.DispatchLinkEvent(page.DocumentId, 0, url, PageLinkEventType.AuxClick, Cancellation));
-        for (var count = 1; count < StaticPageRenderer.MaxLinkEventsPerDocument; count++)
+        for (var count = 1; count < StaticPageRenderer.MaxPageEventsPerDocument; count++)
         { Assert.True(renderer.DispatchLinkClick(page.DocumentId, 0, url, Cancellation)); }
-        Assert.Throws<ScriptLimitException>(() => renderer.DispatchLinkEvent(page.DocumentId, 0, url,
-            PageLinkEventType.AuxClick, Cancellation));
+        var focusTargetId = Assert.Single(rendered.LinkTargets).FocusTargetId;
+        Assert.Throws<ScriptLimitException>(() => renderer.DispatchPageFocusEvent(page.DocumentId, focusTargetId,
+            PageFocusEventType.Focus, Cancellation));
         Assert.Throws<PageNavigationException>(() => renderer.DispatchLinkClick(page.DocumentId, 0, url, Cancellation));
         Assert.Contains("limit", Assert.Throws<PageNavigationException>(() =>
             renderer.Render(page, Viewport, Cancellation, reuseDocument: true)).Message, StringComparison.Ordinal);
@@ -298,12 +300,109 @@ public sealed class LinkClickEventTests
     }
 
     [Fact]
+    public void StaticRendererCanDispatchFocusBeforeAnOptedInClickListener()
+    {
+        using var renderer = new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
+        var document = Document("""
+            <!doctype html><title>Start</title><style>*{margin:0}</style><a href="/next">go</a>
+            <script>document.addEventListener('click',()=>{document.title='partial';throw Error('boom')});</script>
+            """);
+        var page = renderer.Render(document, Viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var focusTargetId = Assert.Single(page.LinkTargets).FocusTargetId;
+
+        renderer.DispatchPageFocusEvent(document.DocumentId, focusTargetId, PageFocusEventType.Focus, Cancellation);
+
+        Assert.Equal("Start", renderer.Render(document, Viewport, Cancellation, reuseDocument: true).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FocusTransitionsDispatchOrderedTrustedEventsAndRetainTargetIdentity(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => Renderer(process, true));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://example.com/start");
+        source.Requests[0].Completion.SetResult(Document("""
+            <!doctype html><title>Start</title><style>*{margin:0}</style>
+            <a id=a href="/next">link</a><input id=b>
+            <script>
+            let log=[];
+            const record=(name,e)=>{log.push(e.type+':'+name+':'+e.isTrusted+':'+e.bubbles+':'+e.cancelable+':'+e.composed);document.title=log.join('|')};
+            for(const name of ['a','b']) {
+                const target=document.getElementById(name);
+                target.addEventListener('focus',e=>record(name,e));
+                target.addEventListener('blur',e=>record(name,e));
+            }
+            </script>
+            """));
+        PumpUntil(controller, () => !tab.IsLoading && controller.Page(tab.Id) is not null);
+        var page = controller.Page(tab.Id)!;
+        var linkId = Assert.Single(page.LinkTargets).FocusTargetId;
+        var control = Assert.Single(page.FormControls);
+        var controlId = control.FocusTargetId;
+        Assert.True(linkId > 0);
+        Assert.True(controlId > 0);
+        Assert.NotEqual(linkId, controlId);
+
+        controller.FocusPage(tab.Id);
+        controller.FocusLink(tab.Id, 0);
+        PumpUntil(controller, () => tab.Title.StartsWith("focus:a:", StringComparison.Ordinal));
+        Assert.Equal("focus:a:true:false:false:true", tab.Title);
+
+        Assert.True(controller.FocusControl(tab.Id, 0));
+        PumpUntil(controller, () => tab.Title.Contains("focus:b:", StringComparison.Ordinal));
+        Assert.Equal("focus:a:true:false:false:true|blur:a:true:false:false:true|focus:b:true:false:false:true", tab.Title);
+        Assert.Equal(controlId, Assert.Single(controller.Page(tab.Id)!.FormControls).FocusTargetId);
+
+        controller.FocusPage(tab.Id, false);
+        PumpUntil(controller, () => tab.Title.EndsWith("blur:b:true:false:false:true", StringComparison.Ordinal));
+        controller.FocusPage(tab.Id, true);
+        PumpUntil(controller, () => tab.Title.EndsWith("focus:b:true:false:false:true", StringComparison.Ordinal));
+        controller.FocusPagePosition(tab.Id, -1);
+        PumpUntil(controller, () => tab.Title.EndsWith("blur:b:true:false:false:true", StringComparison.Ordinal));
+        Assert.True(controller.PageHasFocus(tab.Id));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedFocusListenerKeepsThePreviouslyPublishedPage(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => Renderer(process, true));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://example.com/start");
+        source.Requests[0].Completion.SetResult(Document("""
+            <!doctype html><title>Start</title><style>*{margin:0}</style><a href="/next">go</a>
+            <script>
+            document.querySelector('a').addEventListener('focus',()=>{document.title='partial';throw Error('focus failed')});
+            </script>
+            """));
+        PumpUntil(controller, () => !tab.IsLoading && controller.Page(tab.Id) is not null);
+        var committed = controller.Page(tab.Id)!;
+        controller.FocusPage(tab.Id);
+        controller.FocusLink(tab.Id, 0);
+
+        PumpUntil(controller, () => tab.Error is not null);
+
+        Assert.StartsWith("Page focus event failed: ", tab.Error);
+        Assert.Same(committed, controller.Page(tab.Id));
+        Assert.Equal("Start", tab.Title);
+    }
+
+    [Fact]
     public async Task StaticRendererRejectsClicksAndWorkerExitLosesRetainedHost()
     {
         using (var plain = new StaticPageRenderer(FontPath, 100000))
         {
             Assert.False(plain.DispatchesLinkClicks);
+            Assert.False(plain.DispatchesPageFocusEvents);
             Assert.Throws<PageNavigationException>(() => plain.DispatchLinkClick(Guid.NewGuid(), 0, "https://example.com/", Cancellation));
+            Assert.Throws<PageNavigationException>(() => plain.DispatchPageFocusEvent(Guid.NewGuid(), 1,
+                PageFocusEventType.Focus, Cancellation));
         }
         using var renderer = new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true);
         var page = Document(Listeners);

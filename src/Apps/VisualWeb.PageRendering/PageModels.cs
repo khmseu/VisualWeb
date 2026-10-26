@@ -152,6 +152,11 @@ public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 /// Only <c>Click</c> and <c>AuxClick</c> are supported; neither event includes pointer metadata in this subset.</remarks>
 public enum PageLinkEventType { Click, AuxClick }
 
+/// <summary>The bounded trusted focus event delivered for browser-owned focus transitions.</summary>
+/// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.
+/// These are plain Events with DOM focus/blur flags, not FocusEvent instances.</remarks>
+public enum PageFocusEventType { Focus, Blur }
+
 public interface IPageRenderer : IDisposable
 {
     Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken);
@@ -162,6 +167,8 @@ public interface IPageRenderer : IDisposable
     void CommitDocument(Guid documentId) { }
     /// <summary>Whether committed documents retain an opted-in script host that receives trusted link events.</summary>
     bool DispatchesLinkClicks => false;
+    /// <summary>Whether opted-in retained documents receive bounded trusted focus/blur events.</summary>
+    bool DispatchesPageFocusEvents => false;
     /// <summary>Dispatch a trusted, bubbling, cancelable click or auxclick Event at a committed rendered link anchor.</summary>
     /// <remarks>Specs: dom, pointerevents4;
     /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
@@ -176,5 +183,15 @@ public interface IPageRenderer : IDisposable
     Task<bool> DispatchLinkEventAsync(Guid documentId, int linkIndex, string url, PageLinkEventType eventType,
         CancellationToken cancellationToken) =>
         throw new NotSupportedException("This renderer does not dispatch page link events.");
+    /// <summary>Dispatch a trusted link event using its stable renderer-local focus-target identity.</summary>
+    Task<bool> DispatchLinkTargetEventAsync(Guid documentId, int focusTargetId, PageLinkEventType eventType,
+        CancellationToken cancellationToken) =>
+        throw new NotSupportedException("This renderer does not dispatch identified page link events.");
+    /// <summary>Dispatch one trusted focus/blur event at a committed renderer-local focus target.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.
+    /// The target ID is an opaque bounded identity scoped to the retained document; no DOM object crosses IPC.</remarks>
+    Task DispatchPageFocusEventAsync(Guid documentId, int focusTargetId, PageFocusEventType eventType,
+        CancellationToken cancellationToken) =>
+        throw new NotSupportedException("This renderer does not dispatch page focus events.");
     string? TakeFailure() => null;
 }

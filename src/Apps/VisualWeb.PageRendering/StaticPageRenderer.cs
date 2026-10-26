@@ -29,8 +29,21 @@ public sealed class StaticPageRenderer : IPageRenderer
         public V8ScriptHost? Host { get; private set; } = host;
         /// <summary>Anchor elements and destinations of the latest successful render, in link-target order.</summary>
         public IReadOnlyList<(DomElement Anchor, string Url)> Links { get; set; } = [];
-        public int LinkEvents { get; set; }
+        public Dictionary<DomElement, int> FocusTargetIds { get; } =
+            new((IEqualityComparer<DomElement>)ReferenceEqualityComparer.Instance);
+        public Dictionary<int, DomElement> FocusTargets { get; } = [];
+        public int PageEvents { get; set; }
         public string? Failure { get; private set; }
+        public int FocusTargetId(DomElement element)
+        {
+            if (FocusTargetIds.TryGetValue(element, out var id)) { return id; }
+            if (FocusTargetIds.Count >= RendererProtocol.MaxFocusTargetIdsPerDocument)
+            { throw new PageNavigationException("Per-document focus-target identity limit exceeded."); }
+            id = checked(FocusTargetIds.Count + 1);
+            FocusTargetIds.Add(element, id);
+            FocusTargets.Add(id, element);
+            return id;
+        }
         public void Fail(string message) { Failure ??= message; Release(); }
         public void Release()
         {
@@ -39,11 +52,12 @@ public sealed class StaticPageRenderer : IPageRenderer
             retained?.Dispose();
         }
     }
-    /// <summary>Strict bound on trusted click and auxclick events dispatched into one retained document host.</summary>
+    /// <summary>Strict bound on trusted page events dispatched into one retained document host.</summary>
     public const int MaxLinkEventsPerDocument = 1024;
+    public const int MaxPageEventsPerDocument = MaxLinkEventsPerDocument;
     public const int MaxLinkClicksPerDocument = MaxLinkEventsPerDocument;
     private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName,
-        double documentX, double documentY, int? tabIndex)
+        double documentX, double documentY, int? tabIndex, int focusTargetId)
     {
         public string Url { get; } = url;
         public bool OpenInNewTab { get; } = openInNewTab;
@@ -51,6 +65,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         public double DocumentX { get; set; } = documentX;
         public double DocumentY { get; set; } = documentY;
         public int? TabIndex { get; } = tabIndex;
+        public int FocusTargetId { get; } = focusTargetId;
         public List<PageLinkRect> Rects { get; } = [];
         public bool IsBlockBoxAnchor { get; set; }
         public PageLinkRect? BlockRectangle { get; set; }
@@ -119,11 +134,21 @@ public sealed class StaticPageRenderer : IPageRenderer
         catch { if (!reuseDocument && !ReferenceEquals(candidate, state)) { state.Release(); } throw; }
     }
     public bool DispatchesLinkClicks => executeInlineScripts;
+    public bool DispatchesPageFocusEvents => executeInlineScripts;
     public Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
         DispatchLinkEventAsync(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
     public Task<bool> DispatchLinkEventAsync(Guid documentId, int linkIndex, string url, PageLinkEventType eventType,
         CancellationToken cancellationToken) =>
         Task.FromResult(DispatchLinkEvent(documentId, linkIndex, url, eventType, cancellationToken));
+    public Task<bool> DispatchLinkTargetEventAsync(Guid documentId, int focusTargetId, PageLinkEventType eventType,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(DispatchLinkTargetEvent(documentId, focusTargetId, eventType, cancellationToken));
+    public Task DispatchPageFocusEventAsync(Guid documentId, int focusTargetId, PageFocusEventType eventType,
+        CancellationToken cancellationToken)
+    {
+        DispatchPageFocusEvent(documentId, focusTargetId, eventType, cancellationToken);
+        return Task.CompletedTask;
+    }
     /// <summary>Dispatch a trusted link click into the committed document's retained host on the creating thread.</summary>
     public bool DispatchLinkClick(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
         DispatchLinkEvent(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
@@ -149,25 +174,88 @@ public sealed class StaticPageRenderer : IPageRenderer
         if (linkIndex < 0 || linkIndex >= state.Links.Count || state.Links[linkIndex].Url != url
             || !state.Links[linkIndex].Anchor.IsConnected || state.Links[linkIndex].Anchor.OwnerDocument != state.Parsed.Document)
         { throw new PageNavigationException("Clicked link no longer matches the retained document; no event was dispatched."); }
-        if (state.LinkEvents >= MaxLinkEventsPerDocument)
+        return DispatchLinkTargetEvent(state, host, state.Links[linkIndex].Anchor, eventType, cancellationToken);
+    }
+    /// <summary>Dispatch a trusted link event by stable renderer-local focus-target identity.</summary>
+    public bool DispatchLinkTargetEvent(Guid documentId, int focusTargetId, PageLinkEventType eventType,
+        CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (eventType is not (PageLinkEventType.Click or PageLinkEventType.AuxClick))
+        { throw new ArgumentOutOfRangeException(nameof(eventType)); }
+        if (!executeInlineScripts) { throw new PageNavigationException("Page link events require the inline-script opt-in."); }
+        var state = committed?.Source.DocumentId == documentId ? committed
+            : throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly.");
+        if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
+        var host = state.Host ?? throw new PageNavigationException("Retained page script host is unavailable; reload explicitly.");
+        if (focusTargetId is < 1 or > RendererProtocol.MaxFocusTargetIdsPerDocument
+            || !state.FocusTargets.TryGetValue(focusTargetId, out var target)
+            || !state.Links.Any(link => ReferenceEquals(link.Anchor, target)))
+        { throw new PageNavigationException("Clicked target no longer matches a retained rendered link."); }
+        if (!target.IsConnected || target.OwnerDocument != state.Parsed.Document)
+        { throw new PageNavigationException("Clicked link no longer matches the retained document; no event was dispatched."); }
+        return DispatchLinkTargetEvent(state, host, target, eventType, cancellationToken);
+    }
+    private static bool DispatchLinkTargetEvent(DocumentState state, V8ScriptHost host, DomElement target,
+        PageLinkEventType eventType, CancellationToken cancellationToken)
+    {
+        if (state.PageEvents >= MaxPageEventsPerDocument)
         {
-            const string limit = "Per-document link event limit exceeded; page script host invalidated. Reload explicitly.";
+            const string limit = "Per-document trusted page event limit exceeded; page script host invalidated. Reload explicitly.";
             state.Fail(limit);
             throw new ScriptLimitException(limit);
         }
-        state.LinkEvents++;
+        state.PageEvents++;
         try
         {
             return eventType switch
             {
-                PageLinkEventType.Click => host.DispatchTrustedClick(state.Links[linkIndex].Anchor, cancellationToken),
-                PageLinkEventType.AuxClick => host.DispatchTrustedAuxClick(state.Links[linkIndex].Anchor, cancellationToken),
+                PageLinkEventType.Click => host.DispatchTrustedClick(target, cancellationToken),
+                PageLinkEventType.AuxClick => host.DispatchTrustedAuxClick(target, cancellationToken),
                 _ => throw new ArgumentOutOfRangeException(nameof(eventType))
             };
         }
         catch (Exception exception)
         {
             state.Fail("Page script host invalidated by a failed link event; reload explicitly. " + exception.Message);
+            throw;
+        }
+    }
+    /// <summary>Dispatch one trusted focus/blur event by stable identity in the committed retained document.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.
+    /// Focus events are plain Events with focus/blur flags, not FocusEvent instances.</remarks>
+    public void DispatchPageFocusEvent(Guid documentId, int focusTargetId, PageFocusEventType eventType,
+        CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (eventType is not (PageFocusEventType.Focus or PageFocusEventType.Blur))
+        { throw new ArgumentOutOfRangeException(nameof(eventType)); }
+        if (!executeInlineScripts) { throw new PageNavigationException("Page focus events require the inline-script opt-in."); }
+        var state = committed?.Source.DocumentId == documentId ? committed
+            : throw new PageNavigationException("Focused document is not the committed retained document; reload explicitly.");
+        if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
+        var host = state.Host ?? throw new PageNavigationException("Retained page script host is unavailable; reload explicitly.");
+        if (focusTargetId is < 1 or > RendererProtocol.MaxFocusTargetIdsPerDocument
+            || !state.FocusTargets.TryGetValue(focusTargetId, out var target))
+        { throw new PageNavigationException("Focus target no longer belongs to the retained document."); }
+        if (!target.IsConnected || target.OwnerDocument != state.Parsed.Document) { return; }
+        if (state.PageEvents >= MaxPageEventsPerDocument)
+        {
+            const string limit = "Per-document trusted page event limit exceeded; page script host invalidated. Reload explicitly.";
+            state.Fail(limit);
+            throw new ScriptLimitException(limit);
+        }
+        state.PageEvents++;
+        try
+        {
+            host.DispatchTrustedFocusEvent(target, eventType == PageFocusEventType.Focus ? "focus" : "blur",
+                cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            state.Fail("Page script host invalidated by a failed focus event; reload explicitly. " + exception.Message);
             throw;
         }
     }
@@ -207,11 +295,11 @@ public sealed class StaticPageRenderer : IPageRenderer
         var frame = CpuRasterizer.Render(display, paint, viewport.Scale, options: options.Paint,
             cancellationToken: cancellationToken, scrollY: clampedRootScroll, scrollX: clampedRootScrollX);
         var (links, anchors, controlGeometry, labelGeometry, textTargets) = CollectLinks(parsed.Document, layout, page.Url,
-            clampedRootScrollX, clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers);
+            clampedRootScrollX, clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers, state.FocusTargetId);
         var nestedScrollContainers = CollectScrollContainers(layout.Root, scrollContainers, viewport.Width, viewport.Height,
             clampedRootScrollX, clampedRootScroll);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, labelGeometry, links.Count,
-            layout.ViewportWidth, layout.ViewportHeight, cancellationToken, page.BaseUrl);
+            layout.ViewportWidth, layout.ViewportHeight, cancellationToken, state.FocusTargetId, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
@@ -246,7 +334,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> Labels,
         IReadOnlyList<PageTextTarget> TextTargets)
         CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollX, double scrollY,
-            CancellationToken cancellationToken, BrowserUrl? baseUrlOverride, IReadOnlyList<ScrollContainerState> scrollContainers)
+            CancellationToken cancellationToken, BrowserUrl? baseUrlOverride,
+            IReadOnlyList<ScrollContainerState> scrollContainers, Func<DomElement, int> focusTargetId)
     {
         var baseTarget = FindBaseTarget(document, cancellationToken);
         var baseUrl = baseUrlOverride ?? FindBaseUrl(document, url, cancellationToken);
@@ -270,7 +359,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         if (layout.Root is { } root) { Visit(root, 0, []); }
         links = linkData.Select(target => new PageLinkTarget(target.Rects.AsReadOnly(), target.Url,
             target.OpenInNewTab, target.TargetName, target.DocumentY)
-        { DocumentX = target.DocumentX, TabIndex = target.TabIndex }).ToList();
+        { DocumentX = target.DocumentX, TabIndex = target.TabIndex, FocusTargetId = target.FocusTargetId }).ToList();
         try
         {
             RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight);
@@ -302,7 +391,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
             var (openInNewTab, targetName) = ResolveTarget(anchor.GetAttribute("target"), baseTarget);
             var target = new LinkTargetData(destination, openInNewTab, targetName, documentX, documentY,
-                PageTabIndex.Parse(anchor.GetAttribute("tabindex")));
+                PageTabIndex.Parse(anchor.GetAttribute("tabindex")), focusTargetId(anchor));
             anchors.Add(anchor, target);
             anchorOrder.Add(anchor);
             linkData.Add(target);

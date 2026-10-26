@@ -153,6 +153,35 @@ public sealed class V8ScriptHost : IDisposable
     public bool DispatchTrustedAuxClick(DomElement target, CancellationToken cancellationToken = default) =>
         DispatchTrustedLinkEvent(target, "auxclick", cancellationToken);
 
+    /// <summary>Dispatch one trusted, non-bubbling, non-cancelable plain focus or blur Event.</summary>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">event dispatch</see>.
+    /// This bounded hook does not implement FocusEvent, relatedTarget, view, or automatic focus management.</remarks>
+    public void DispatchTrustedFocusEvent(DomElement target, string eventType,
+        CancellationToken cancellationToken = default)
+    {
+        CheckUsable();
+        ArgumentNullException.ThrowIfNull(target);
+        if (eventType is not ("focus" or "blur")) { throw new ArgumentOutOfRangeException(nameof(eventType)); }
+        if (!documentLifecycle || !initialDocumentExecuted)
+        { throw new InvalidOperationException("Trusted focus events require a completed initial document lifecycle."); }
+        dom!.CheckTarget(target);
+        try
+        {
+            Run(() =>
+            {
+                using var receiver = wrapNode!.InvokeAsFunction(dom.TargetIdentity(target)) as ScriptObject
+                    ?? throw new InvalidOperationException("Private DOM wrapper lookup failed.");
+                var status = events!.InvokeAsFunction(eventType, receiver);
+                CheckEvents("checkpoint");
+                CheckMicrotasks("checkpoint");
+                if (status is not int code || code != 0)
+                { throw new InvalidOperationException("Private focus event dispatch returned an invalid status."); }
+                return 0;
+            }, cancellationToken);
+        }
+        catch { poisoned = true; throw; }
+    }
+
     private bool DispatchTrustedLinkEvent(DomElement target, string eventType, CancellationToken cancellationToken)
     {
         CheckUsable();

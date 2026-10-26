@@ -969,10 +969,16 @@ clipboard copy; editable address and supported text fields also support
 bounded selection and replacement. Vertical document scrolling is available
 through wheel/keyboard input and the browser-owned scrollbar; horizontal root
 scrolling is available through horizontal/shift-wheel, Left/Right and its
-browser-owned scrollbar. These features do not provide general DOM focus,
-pointer, keyboard or input dispatch: only
-the explicitly documented trusted link `click`/`auxclick` dispatch is available
-on opted-in pages.
+browser-owned scrollbar. These features do not provide general DOM focus
+management or general pointer, keyboard or input dispatch. On opted-in pages,
+a shell-owned change between existing rendered links or visible enabled
+supported controls dispatches trusted `blur` then `focus` plain Events,
+including pointer focus, sequential Tab/Shift+Tab traversal and transitions
+between page targets and browser chrome. They are non-bubbling, non-cancelable
+and composed; they are not `FocusEvent` instances and do not expose
+`relatedTarget`, `activeElement` or automatic DOM focus management. OS-window
+focus is excluded. Trusted `click`/`auxclick` dispatch remains limited to the
+link activations described above.
 
 General CSS overflow semantics beyond the documented nested-wheel subset,
 horizontal scrolling, downloads, persistent

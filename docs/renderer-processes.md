@@ -75,7 +75,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v44
+## Private stream protocol v48
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -91,7 +91,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound                                                            |                                                     Value |
 | ---------------------------------------------------------------- | --------------------------------------------------------: |
-| Protocol version                                                 |           44, explicitly present; v1 through v43 rejected |
+| Protocol version                                                 |           48, explicitly present; v1 through v47 rejected |
 | Metadata bytes                                                   |                                                    32 MiB |
 | JSON nesting                                                     |                                                        16 |
 | Decoded HTML UTF-16 characters                                   |                                                      4 Mi |
@@ -106,6 +106,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 | Visible rectangles per anchor                                    |                                                        64 |
 | Absolute destination URL                                         |                               8192 UTF-16 characters each |
 | Serialized link metadata                                         |                                    1 MiB UTF-8 JSON total |
+| Unique focus-target identities per frame                         |                                              at most 5120 |
 | Forms / form controls / select options / label targets per frame |                                  256 / 1024 / 1024 / 4096 |
 | Associated-label rectangles per control / frame                  |                                                 64 / 4096 |
 | Form action, control name/value/label and option value/label     |                               8192 UTF-16 characters each |
@@ -152,13 +153,17 @@ cross IPC. Version 41 adds an optional serialized absolute render-request
 and carries no CSP policy or fetch capability. Version 42 added the request kind
 `click`; version 43 added its required `LinkEventType` field, strictly limited to
 `click` or `auxclick`. Version 44 adds bounded visible label-text rectangles to
-form controls, without DOM identifiers or native objects. Both carry the document GUID, explicit script opt-in, link
-index below 4096 and expected destination URL, with no HTML/pixels/viewport. The
-empty `click-result` reply carries a required `DefaultPrevented` flag; `LinkIndex`,
-`LinkEventType` and `DefaultPrevented` are rejected on every other kind. The worker
-dispatches into its own retained renderer-local host and returns only the canceled
-flag, so no DOM/V8 handle or navigation capability crosses IPC. Missing required
-fields and old versions fail closed.
+form controls, without DOM identifiers or native objects. Click requests carry
+the document GUID, explicit script opt-in and either the stable target identity
+or the legacy link index plus expected destination URL; no HTML/pixels/viewport
+cross. The empty `click-result` reply carries a required `DefaultPrevented` flag.
+Version 48 adds required unique bounded `FocusTargetId` values to rendered links
+and eligible controls. It adds a strictly scoped `focus` request with document
+GUID, script opt-in, target identity and `focus`/`blur` event type, plus an empty
+`focus-result`. IDs are opaque renderer-local identities, not DOM IDs or handles.
+The worker dispatches into its retained renderer-local host; no DOM/V8 object or
+navigation capability crosses IPC. Event-only fields are rejected on other
+message kinds, and older versions fail closed.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require
@@ -180,17 +185,18 @@ candidate cannot evict the committed DOM. These fields are rejected on replies
 and handshakes. A reply is `frame` (title/status/CSS viewport/scale/pixel dimensions/stride/pixels/scroll height and bounded link/form/text targets) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
 worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
-the [finite scripting policy](scripting.md); apart from the v42 link `click`
-dispatch, general DOM input/events, event loops
-and display-list IPC remain deferred. The browser separately brokers bounded link,
+the [finite scripting policy](scripting.md); v42+ link events and v48 focus/blur
+dispatch are bounded hooks. General DOM input/events, event loops and display-list
+IPC remain deferred. The browser separately brokers bounded link,
 form and fragment-selection behavior.
 
 Every frame supplies a link array, empty when there are no visible links; requests,
 errors and handshakes cannot carry one. Each target has a required nonempty `Rects`
 array (at most 64 rectangles) and an absolute serialized `Url`. Each rectangle has
-required numeric X/Y/Width/Height. Groups follow first-visible-fragment paint order;
-separate anchors remain separate even when their URLs are identical. There are no
-DOM/native handles, element identifiers or hidden IDs. Group indices are frame-local.
+required numeric X/Y/Width/Height. Each anchor also has a unique positive v48
+`FocusTargetId`. Groups follow first-visible-fragment paint order;
+separate anchors remain separate even when their URLs are identical. There are no DOM/native handles or DOM element identifiers. Group indices are
+frame-local; the v48 focus-target identity is opaque and document-scoped.
 Coordinates are finite and nonnegative, extents are positive and contained in the
 CSS viewport. Missing, duplicate and unknown rectangle fields fail closed.
 The browser verifies the exact requested CSS viewport/scale, not just rounded
@@ -206,11 +212,13 @@ either an absolute serialized `http`/`https`/`file`/`data` action with a null
 error, or an empty action plus a nonempty renderer diagnostic for an
 unsupported form (method/enctype/target/accept-charset/base/control
 cases). A control is `{Form, Kind, Name, Value, Label, Pattern, Disabled, ReadOnly,
-Required, MinLength, MaxLength, BeforeLink, Rect, Checked, Minimum, Maximum, Step,
+Required, MinLength, MaxLength, BeforeLink, Rect, FocusTargetId, Checked, Minimum, Maximum, Step,
 StepAny}` with kind `text`/`search`/`email`/`tel`/`url`/`date`/`time`/`month`/`week`/`number`/`range`/`checkbox`/`radio`/`textarea`/`hidden`/`submit`/`reset`/`button`/`inert`, a form index or -1, a label for submit/reset/inert controls and button text, `Pattern` null when absent, `Checked` true only for a checked checkbox or radio; finite number/range-only `Minimum` and `Maximum` (null for number unless specified; required for range), positive `Step` (default 1, or null when `StepAny`); `StepAny` disables grid validation; range values are serialized finite, clamped and step-aligned. A `date` value, when nonempty, must use bounded `YYYY-MM-DD` Gregorian syntax for years 0001–9999; a `time` value, when nonempty, must use strict `HH:mm`, `HH:mm:ss` or `HH:mm:ss.fraction` syntax (one to three fractional digits, no leap second); a `month` value, when nonempty, must use a positive year with at least four ASCII digits and a month from `01` through `12`; a `week` value, when nonempty, must use a positive year with at least four ASCII digits, `-W`, and a valid ISO week number (including 53 only in 53-week years). A `select` control also carries a required `Options` array of `{Value, Label, Disabled, Selected}` records; only one option can be selected, its value must match the control value, and aggregate option count is bounded. `MinLength` and `MaxLength` -1
 when absent, and `BeforeLink` in `[0, LinkTargets.Count]` giving merged
 tree-order traversal against link groups. Visible controls carry one
 viewport-contained CSS-pixel border box; hidden controls never have one.
+Eligible visible controls carry a unique positive v48 `FocusTargetId`;
+controls without supported visible focus behavior carry zero.
 These are data-only snapshots of parsed/mutated DOM attributes: no element
 handles, no script events and no submission command cross IPC. The browser
 alone edits values, builds the GET URL and navigates through its broker.

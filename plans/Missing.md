@@ -283,16 +283,24 @@ broader page interaction is still missing:
   definite-height block containers styled with `overflow-x:hidden` and
   `overflow-y:auto`; unconsumed wheel delta chains to document scroll. General CSS
   overflow semantics, nested horizontal scrolling and DOM scroll events remain missing.
-- The shell does not dispatch general pointer/keyboard input to pages or synthesize
-  page focus. It implements only the documented bounded link, form, and control
+- The shell does not dispatch general pointer/keyboard input to pages or provide
+  general DOM focus management. Pass 9 adds bounded trusted focus/blur
+  notifications for changes among existing rendered links and visible enabled
+  supported controls on opted-in pages, including pointer focus,
+  Tab/Shift+Tab and page/chrome transitions. Blur precedes focus; OS-window
+  focus and new focusable elements are excluded. These are plain composed Events
+  with no `FocusEvent`, `relatedTarget` or `activeElement`, not general page input.
+  It implements only the documented bounded link, form, and control
   interactions. For `--enable-inline-scripts` pages, primary-pointer, Ctrl+primary
   and focused-link keyboard activation dispatch trusted bubbling, cancelable plain
   `click` Events before browser-owned link activation. Middle-click dispatches a
   plain `auxclick` Event before its active-new-tab default. `preventDefault()`
   suppresses those defaults (dom: event dispatch; html: links created by a and area
   elements; pointerevents4: click/auxclick). They are not PointerEvents and expose
-  no pointer metadata; modifier/keyboard events, form/control defaults and other
-  DOM event delivery remain unavailable to scripts.
+  no pointer metadata. Focus/blur share the per-document 1024 trusted-event bound
+  with click/auxclick; IPC v48 carries unique bounded per-document target IDs,
+  not DOM handles. Modifier/keyboard events, form/control defaults and all other
+  browser-generated DOM event delivery remain unavailable to scripts.
 - No downloads, persistent browser sessions, or complete history behavior. History
   stores URLs, per-entry two-axis scroll positions and internal same-document grouping:
   Back/Forward between user-created fragment entries retains the active document

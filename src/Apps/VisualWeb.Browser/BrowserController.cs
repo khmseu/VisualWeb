@@ -38,6 +38,8 @@ public sealed class BrowserController : IDisposable
         internal int FocusedLink { get; set; } = -1;
         /// <summary>Tree-order index into the page's form controls; mutually exclusive with <see cref="FocusedLink"/>.</summary>
         internal int FocusedControl { get; set; } = -1;
+        /// <summary>Stable renderer-local identity for the selected in-page focus target.</summary>
+        internal int FocusedTargetId { get; set; }
         /// <summary>Browser-owned edited values of the committed document's fields, keyed by control index.</summary>
         internal Dictionary<int, AddressEditor> Fields { get; } = [];
         internal Dictionary<int, int> TextareaFirstLines { get; } = [];
@@ -70,11 +72,17 @@ public sealed class BrowserController : IDisposable
         internal double RestoreScrollY { get; } = restoreScrollY;
         internal double RestoreScrollX { get; } = restoreScrollX;
         /// <summary>Trusted page click that must complete before the retained repaint and any link activation.</summary>
-        internal Task<bool>? Click { get; init; }
-        internal PageLinkTarget? ClickLink { get; init; }
+        internal Task<bool>? Click { get; set; }
+        internal bool ClickDispatchStarted { get; set; }
+        internal PageLinkTarget? ClickLink { get; set; }
+        internal int ClickFocusTargetId { get; init; }
+        internal int ClickLinkIndex { get; init; }
         internal bool ClickActivatesNewTab { get; init; }
         internal bool ClickForceNewTab { get; init; }
         internal PageLinkEventType ClickEventType { get; init; } = PageLinkEventType.Click;
+        internal IReadOnlyList<(int TargetId, PageFocusEventType EventType)>? FocusEvents { get; init; }
+        internal int FocusEventIndex { get; set; }
+        internal Task? FocusEvent { get; set; }
         internal LoadedPage? Document { get; set; }
         internal Task<BrowserPage>? Render { get; set; }
         internal PageViewport? Viewport { get; set; }
@@ -138,7 +146,10 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
+        var previousTarget = ActiveFocusTarget(owner);
         owner.PageFocused = focused && owner.Page is not null;
+        SynchronizeFocusTargetId(owner);
+        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
         if (!owner.PageFocused) { owner.MultipleSelectRangeAnchors.Clear(); }
         Changed?.Invoke(id);
     }
@@ -146,10 +157,17 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
+        FocusLink(id, owner, index, queueTransition: true);
+    }
+    private void FocusLink(TabId id, Content owner, int index, bool queueTransition)
+    {
+        var previousTarget = ActiveFocusTarget(owner);
         var count = owner.Page?.LinkTargets.Count ?? 0;
         owner.PageFocused = owner.Page is not null;
         owner.FocusedLink = count == 0 ? -1 : Math.Clamp(index, -1, count - 1);
         owner.FocusedControl = -1;
+        SynchronizeFocusTargetId(owner);
+        if (queueTransition) { QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner)); }
         owner.MultipleSelectRangeAnchors.Clear();
         Changed?.Invoke(id);
     }
@@ -159,13 +177,16 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
+        var previousTarget = ActiveFocusTarget(owner);
         var targets = Targets(owner.Page);
         var position = Position(owner, targets);
         var count = targets.Count;
         SetPosition(owner, targets, count == 0 ? -1
             : position < 0 ? backwards ? count - 1 : 0
             : (position + (backwards ? count - 1 : 1)) % count);
+        SynchronizeFocusTargetId(owner);
         ScrollFocusedLinkIntoView(id, owner);
+        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
         Changed?.Invoke(id);
         return owner.FocusedLink;
     }
@@ -177,9 +198,12 @@ public sealed class BrowserController : IDisposable
     {
         Check();
         var owner = content[id];
+        var previousTarget = ActiveFocusTarget(owner);
         var targets = Targets(owner.Page);
         SetPosition(owner, targets, targets.Count == 0 ? -1 : Math.Clamp(position, -1, targets.Count - 1));
+        SynchronizeFocusTargetId(owner);
         ScrollFocusedLinkIntoView(id, owner);
+        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
         Changed?.Invoke(id);
     }
     private void ScrollFocusedLinkIntoView(TabId id, Content owner)
@@ -214,8 +238,7 @@ public sealed class BrowserController : IDisposable
             return false;
         }
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.TextSelectionStart = index;
         owner.TextSelectionEnd = index;
         owner.SelectingText = true;
@@ -246,8 +269,7 @@ public sealed class BrowserController : IDisposable
         }
 
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.TextSelectionStart = first;
         owner.TextSelectionEnd = last;
         owner.SelectingText = false;
@@ -272,10 +294,8 @@ public sealed class BrowserController : IDisposable
         while (first > 0 && Math.Abs(page.TextTargets[first - 1].Rect.Y - lineY) <= 0.5) { first--; }
         while (last + 1 < page.TextTargets.Count && Math.Abs(page.TextTargets[last + 1].Rect.Y - lineY) <= 0.5)
         { last++; }
-
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.TextSelectionStart = first;
         owner.TextSelectionEnd = last;
         owner.SelectingText = false;
@@ -326,8 +346,7 @@ public sealed class BrowserController : IDisposable
         if (index < 0) { return false; }
         if (index == owner.TextSelectionEnd) { return true; }
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.TextSelectionEnd = index;
         owner.SelectingText = false;
         Changed?.Invoke(id);
@@ -341,8 +360,7 @@ public sealed class BrowserController : IDisposable
         if (owner.Page is not { } page || owner.TextSelectionStart < 0 || owner.TextSelectionEnd < 0) { return false; }
         var end = Math.Clamp(owner.TextSelectionEnd + (forward ? 1 : -1), 0, page.TextTargets.Count - 1);
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.SelectingText = false;
         if (end != owner.TextSelectionEnd)
         {
@@ -365,8 +383,7 @@ public sealed class BrowserController : IDisposable
                 && (endOfLine ? index > end : index < end)) { end = index; }
         }
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.SelectingText = false;
         if (end != owner.TextSelectionEnd)
         {
@@ -411,8 +428,7 @@ public sealed class BrowserController : IDisposable
             }
         }
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.SelectingText = false;
         if (end != owner.TextSelectionEnd)
         {
@@ -428,8 +444,7 @@ public sealed class BrowserController : IDisposable
         var count = owner.Page?.TextTargets.Count ?? 0;
         if (count == 0) { return false; }
         owner.PageFocused = true;
-        owner.FocusedLink = -1;
-        owner.FocusedControl = -1;
+        ClearFocusedPageTarget(id, owner);
         owner.TextSelectionStart = 0;
         owner.TextSelectionEnd = count - 1;
         owner.SelectingText = false;
@@ -498,10 +513,13 @@ public sealed class BrowserController : IDisposable
         var owner = content[id];
         if (owner.Page is not { } page || index < 0 || index >= page.FormControls.Count || !Focusable(page.FormControls[index]))
         { return false; }
+        var previousTarget = ActiveFocusTarget(owner);
         owner.PageFocused = true;
         owner.FocusedLink = -1;
         owner.MultipleSelectRangeAnchors.Clear();
         owner.FocusedControl = index;
+        SynchronizeFocusTargetId(owner);
+        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
         Changed?.Invoke(id);
         return true;
     }
@@ -1127,6 +1145,67 @@ public sealed class BrowserController : IDisposable
         return result;
     }
     private static bool Focusable(PageFormControl control) => control.Kind != "hidden" && !control.Disabled && control.Rect is not null;
+    private static int ActiveFocusTarget(Content owner) => owner.PageFocused ? owner.FocusedTargetId : 0;
+    private static void SynchronizeFocusTargetId(Content owner)
+    {
+        owner.FocusedTargetId = owner.Page is not { } page ? 0
+            : owner.FocusedControl >= 0 && owner.FocusedControl < page.FormControls.Count
+                ? page.FormControls[owner.FocusedControl].FocusTargetId
+                : owner.FocusedLink >= 0 && owner.FocusedLink < page.LinkTargets.Count
+                    ? page.LinkTargets[owner.FocusedLink].FocusTargetId : 0;
+    }
+    private void QueueFocusTransition(TabId id, Content owner, int previousTarget, int nextTarget)
+    {
+        if (owner.Document is not { } document) { return; }
+        var events = FocusTransitionEvents(owner, previousTarget, nextTarget);
+        if (events.Count == 0) { return; }
+        Limit();
+        operations.Add(new(id, Session.Tab(id).Generation, Task.FromResult(document), new(), null, false, resize: true)
+        {
+            FocusEvents = events,
+            Viewport = owner.Viewport
+        });
+    }
+    private static IReadOnlyList<(int TargetId, PageFocusEventType EventType)> FocusTransitionEvents(
+        Content owner, int previousTarget, int nextTarget)
+    {
+        if (previousTarget == nextTarget || owner.Document is null || owner.Page is null
+            || !owner.Renderer.DispatchesPageFocusEvents) { return []; }
+        List<(int TargetId, PageFocusEventType EventType)> events = [];
+        if (previousTarget > 0) { events.Add((previousTarget, PageFocusEventType.Blur)); }
+        if (nextTarget > 0) { events.Add((nextTarget, PageFocusEventType.Focus)); }
+        return events;
+    }
+    private void ClearFocusedPageTarget(TabId id, Content owner)
+    {
+        var previousTarget = ActiveFocusTarget(owner);
+        owner.FocusedLink = -1;
+        owner.FocusedControl = -1;
+        owner.FocusedTargetId = 0;
+        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
+    }
+    private static void RestoreFocusedTarget(Content owner, BrowserPage page)
+    {
+        if (owner.FocusedTargetId <= 0) { return; }
+        var control = page.FormControls.ToList().FindIndex(item => item.FocusTargetId == owner.FocusedTargetId
+            && Focusable(item));
+        if (control >= 0)
+        {
+            owner.FocusedControl = control;
+            owner.FocusedLink = -1;
+            return;
+        }
+        var link = page.LinkTargets.ToList().FindIndex(item => item.FocusTargetId == owner.FocusedTargetId);
+        if (link >= 0)
+        {
+            owner.FocusedLink = link;
+            owner.FocusedControl = -1;
+            return;
+        }
+        owner.FocusedTargetId = 0;
+        owner.FocusedControl = -1;
+        owner.FocusedLink = -1;
+    }
     private static List<(bool Control, int Index)> Targets(BrowserPage? page)
     {
         var ordered = new List<(bool Control, int Index, int TabIndex, int TreeOrder)>();
@@ -1254,7 +1333,11 @@ public sealed class BrowserController : IDisposable
         if (owner.FocusedLink < 0 || owner.FocusedLink >= owner.Page.LinkTargets.Count) { return false; }
         var link = owner.Page.LinkTargets[owner.FocusedLink];
         if (owner.Renderer.DispatchesLinkClicks && owner.Document is { } document && owner.Viewport is { } viewport)
-        { return StartLinkClick(id, owner, document, viewport, owner.FocusedLink, link, activateNewTab, forceNewTab, PageLinkEventType.Click); }
+        {
+            var target = ActiveFocusTarget(owner);
+            return StartLinkClick(id, document, viewport, owner.FocusedLink, link, activateNewTab,
+                forceNewTab, PageLinkEventType.Click, target, target);
+        }
         return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
             activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
     }
@@ -1317,7 +1400,7 @@ public sealed class BrowserController : IDisposable
         }
         if (!changed || owner.Document is null) { return remaining; }
         Limit();
-        Cancel(id);
+        Cancel(id, preserveFocusEvents: true);
         var operation = new Operation(id, checked(++Session.Tab(id).Generation), Task.FromResult(owner.Document),
             new(), null, false, resize: true, scroll: true)
         {
@@ -1365,8 +1448,11 @@ public sealed class BrowserController : IDisposable
         if (group.Length < 2) { return false; }
         var position = Array.IndexOf(group, current);
         var next = group[(position + direction + group.Length) % group.Length];
+        var previousTarget = ActiveFocusTarget(owner);
         SelectRadio(owner, next);
         owner.FocusedControl = next;
+        SynchronizeFocusTargetId(owner);
+        QueueFocusTransition(id, owner, previousTarget, ActiveFocusTarget(owner));
         Changed?.Invoke(id);
         return true;
     }
@@ -1814,7 +1900,7 @@ public sealed class BrowserController : IDisposable
             var control = owner.Page.FormControls[index];
             if (control.Kind == "hidden" || control.Rect?.Contains(x, y) != true && !control.LabelRects.Any(rect => rect.Contains(x, y))) { continue; }
             if (forceNewTab || control.Disabled) { return false; }
-            if (owner.PageFocused) { FocusControl(id, index); }
+            FocusControl(id, index);
             if (control.Kind is "submit" or "button" or "reset") { return ActivateControl(id, owner, index); }
             if (control.Kind is "checkbox" or "radio") { return ToggleCheckable(id, owner, index, control); }
             if (control.Kind == "range")
@@ -1828,9 +1914,15 @@ public sealed class BrowserController : IDisposable
         {
             var link = owner.Page.LinkTargets[index];
             if (!link.Contains(x, y)) { continue; }
-            if (owner.PageFocused) { FocusLink(id, index); }
-            if (dispatchClickEvent && owner.Renderer.DispatchesLinkClicks && owner.Document is { } clicked)
-            { return StartLinkClick(id, owner, clicked, viewport, index, link, activateNewTab, forceNewTab, linkEventType); }
+            var dispatchClick = dispatchClickEvent && owner.Renderer.DispatchesLinkClicks
+                && owner.Document is { } clicked;
+            var previousFocusTarget = ActiveFocusTarget(owner);
+            FocusLink(id, owner, index, queueTransition: !dispatchClick);
+            if (dispatchClick)
+            {
+                return StartLinkClick(id, owner.Document!, viewport, index, link, activateNewTab, forceNewTab,
+                    linkEventType, previousFocusTarget, ActiveFocusTarget(owner));
+            }
             return NavigateLink(id, link.Url, openInNewTab: forceNewTab || link.OpenInNewTab,
                 activateNewTab: activateNewTab, authorizeRedirects: true, targetName: forceNewTab ? null : link.TargetName);
         }
@@ -1841,26 +1933,24 @@ public sealed class BrowserController : IDisposable
     /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">link activation</see>.
     /// The click supersedes pending work; its retained repaint publishes like a resize before navigation starts.</remarks>
-    private bool StartLinkClick(TabId id, Content owner, LoadedPage document, PageViewport viewport, int index,
-        PageLinkTarget link, bool activateNewTab, bool forceNewTab, PageLinkEventType eventType)
+    private bool StartLinkClick(TabId id, LoadedPage document, PageViewport viewport, int index,
+        PageLinkTarget link, bool activateNewTab, bool forceNewTab, PageLinkEventType eventType,
+        int previousFocusTarget, int nextFocusTarget)
     {
         Limit();
-        Cancel(id);
+        Cancel(id, preserveFocusEvents: true);
         var tab = Session.Tab(id);
         var cancellation = new CancellationTokenSource();
-        Task<bool> click;
-        try { click = owner.Renderer.DispatchLinkEventAsync(document.DocumentId, index, link.Url, eventType, cancellation.Token); }
-        catch (Exception exception) when (IsPageFailure(exception) || exception is OperationCanceledException)
-        { click = Task.FromException<bool>(exception); }
-        catch { cancellation.Dispose(); throw; }
         operations.Add(new(id, checked(++tab.Generation), Task.FromResult(document), cancellation, null, false, resize: true)
         {
             Viewport = viewport,
-            Click = click,
             ClickLink = link,
+            ClickFocusTargetId = link.FocusTargetId,
+            ClickLinkIndex = index,
             ClickActivatesNewTab = activateNewTab,
             ClickForceNewTab = forceNewTab,
-            ClickEventType = eventType
+            ClickEventType = eventType,
+            FocusEvents = FocusTransitionEvents(content[id], previousFocusTarget, nextFocusTarget)
         });
         tab.Status = $"Dispatching page {eventType.ToString().ToLowerInvariant()} event.";
         Changed?.Invoke(id);
@@ -1970,7 +2060,7 @@ public sealed class BrowserController : IDisposable
         Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, SecurityOrigin? aboutBlankOrigin = null)
     {
         Limit();
-        Cancel(tab.Id);
+        Cancel(tab.Id, preserveFocusEvents: true);
         var owner = content[tab.Id];
         owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
         owner.ScrollX = owner.Viewport?.ScrollX ?? 0;
@@ -2052,14 +2142,130 @@ public sealed class BrowserController : IDisposable
         {
             if (owner.Renderer.TakeFailure() is { } failure) { Report(id, failure, finishNavigation: false); }
         }
-        foreach (var operation in operations.ToArray())
+        var pending = operations.ToArray();
+        for (var index = 0; index < pending.Length; index++)
         {
+            var operation = pending[index];
+            if (pending.Take(index).Any(previous => operations.Contains(previous) && previous.Tab == operation.Tab
+                && !previous.Cancellation.IsCancellationRequested))
+            { continue; }
             Advance(operation, () => viewport(operation.Tab));
+        }
+    }
+    private static bool DispatchPendingFocusEvents(Operation operation, IPageRenderer renderer, LoadedPage document)
+    {
+        while (operation.FocusEventIndex < operation.FocusEvents!.Count)
+        {
+            if (operation.FocusEvent is { } pending)
+            {
+                if (!pending.IsCompleted) { return false; }
+                pending.GetAwaiter().GetResult();
+                operation.FocusEvent = null;
+                operation.FocusEventIndex++;
+                continue;
+            }
+            var (targetId, eventType) = operation.FocusEvents[operation.FocusEventIndex];
+            operation.FocusEvent = renderer.DispatchPageFocusEventAsync(document.DocumentId, targetId,
+                eventType, operation.Cancellation.Token);
+            if (!operation.FocusEvent.IsCompleted) { return false; }
+        }
+        return true;
+    }
+    private void AdvanceFocus(Operation operation, Func<PageViewport?> viewport)
+    {
+        var finished = true;
+        try
+        {
+            if (!Session.Contains(operation.Tab) || operation.Cancellation.IsCancellationRequested
+                || content[operation.Tab].Document?.DocumentId != operation.Load.Result.DocumentId)
+            { return; }
+            var owner = content[operation.Tab];
+            var document = operation.Load.Result;
+            if (!DispatchPendingFocusEvents(operation, owner.Renderer, document))
+            { finished = false; return; }
+            if (operation.Render is null)
+            {
+                var size = viewport() ?? owner.Viewport;
+                if (size is null) { finished = false; return; }
+                operation.Viewport = size.Value with
+                {
+                    ScrollX = owner.ScrollX,
+                    ScrollY = owner.ScrollY,
+                    ScrollOffsets = SnapshotScrollOffsets(owner)
+                };
+                operation.Renderer = owner.Renderer;
+                operation.Render = owner.Renderer.RenderRetainedAsync(document, operation.Viewport.Value,
+                    operation.Cancellation.Token);
+                if (!operation.Render.IsCompleted) { finished = false; return; }
+            }
+            var rendered = operation.Render.GetAwaiter().GetResult();
+            var geometry = operation.Viewport!.Value;
+            var clampedX = Math.Clamp(geometry.ScrollX, 0, Math.Max(0, rendered.ScrollWidth - geometry.Width));
+            var clampedY = Math.Clamp(geometry.ScrollY, 0, Math.Max(0, rendered.ScrollHeight - geometry.Height));
+            if (clampedX != geometry.ScrollX || clampedY != geometry.ScrollY)
+            {
+                operation.Viewport = geometry with { ScrollX = clampedX, ScrollY = clampedY };
+                operation.Render = owner.Renderer.RenderRetainedAsync(document, operation.Viewport.Value,
+                    operation.Cancellation.Token);
+                finished = false;
+                return;
+            }
+            owner.Renderer.CommitDocument(document.DocumentId);
+            var sameControls = owner.Page is { } old && SameControls(old, rendered);
+            owner.Page = rendered;
+            owner.ScrollX = clampedX;
+            owner.ScrollY = clampedY;
+            owner.NestedScrollOffsets.Clear();
+            foreach (var container in rendered.ScrollContainers)
+            { owner.NestedScrollOffsets[container.Index] = container.Offset; }
+            if (!sameControls)
+            {
+                owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear();
+                owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.MultipleSelectRangeAnchors.Clear();
+                owner.ListboxFirstOptions.Clear();
+            }
+            RestoreFocusedTarget(owner, rendered);
+            owner.Viewport = geometry with
+            {
+                ScrollX = owner.ScrollX,
+                ScrollY = owner.ScrollY,
+                ScrollOffsets = SnapshotScrollOffsets(owner)
+            };
+            var tab = Session.Tab(operation.Tab);
+            tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
+            tab.History.SetCurrentScrollPosition(owner.ScrollY);
+            tab.Title = rendered.Title;
+            tab.Status = rendered.Status;
+            tab.Error = null;
+            owner.ResizeFailed = false;
+            Changed?.Invoke(operation.Tab);
+        }
+        catch (Exception exception) when (IsPageFailure(exception) || exception is OperationCanceledException)
+        {
+            if (Session.Contains(operation.Tab) && !operation.Cancellation.IsCancellationRequested
+                && content[operation.Tab].Document?.DocumentId == operation.Load.Result.DocumentId)
+            {
+                Report(operation.Tab, "Page focus event failed: " + exception.Message, finishNavigation: false);
+            }
+        }
+        finally
+        {
+            if (finished)
+            {
+                operations.Remove(operation);
+                operation.Cancellation.Dispose();
+                operation.ReleaseCandidate();
+            }
         }
     }
     [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This bounded navigation state machine keeps cancellation, candidate renderer ownership, render publication, and history commit transactional in one audited sequence.")]
     private void Advance(Operation operation, Func<PageViewport?> viewport)
     {
+        if (operation.FocusEvents is not null && operation.ClickFocusTargetId == 0 && operation.ClickLink is null)
+        {
+            AdvanceFocus(operation, viewport);
+            return;
+        }
         var current = Session.Contains(operation.Tab) && Session.Tab(operation.Tab).Generation == operation.Generation;
         if (!operation.Load.IsCompleted || operation.Click is { IsCompleted: false }
             || operation.Render is { IsCompleted: false }) { return; }
@@ -2074,6 +2280,26 @@ public sealed class BrowserController : IDisposable
                 if (operation.Click is { IsFaulted: true } staleClick) { _ = staleClick.Exception; }
                 if (operation.Render is { } stale) { _ = stale.GetAwaiter().GetResult(); }
                 return;
+            }
+            if (operation.FocusEvents is not null
+                && !DispatchPendingFocusEvents(operation, content[operation.Tab].Renderer, document))
+            { finished = false; return; }
+            if (operation.Click is null && (operation.ClickFocusTargetId > 0 || operation.ClickLink is not null))
+            {
+                var clickOwner = content[operation.Tab];
+                var link = operation.ClickFocusTargetId > 0
+                    ? clickOwner.Page?.LinkTargets.FirstOrDefault(target => target.FocusTargetId == operation.ClickFocusTargetId)
+                    : operation.ClickLink;
+                if (link is null)
+                { throw new PageNavigationException("Focused link no longer matches the committed rendered page."); }
+                operation.ClickLink = link;
+                operation.ClickDispatchStarted = true;
+                operation.Click = operation.ClickFocusTargetId > 0
+                    ? clickOwner.Renderer.DispatchLinkTargetEventAsync(document.DocumentId, operation.ClickFocusTargetId,
+                        operation.ClickEventType, operation.Cancellation.Token)
+                    : clickOwner.Renderer.DispatchLinkEventAsync(document.DocumentId, operation.ClickLinkIndex,
+                        link.Url, operation.ClickEventType, operation.Cancellation.Token);
+                if (!operation.Click.IsCompleted) { finished = false; return; }
             }
             // Event errors/limits throw here, before any repaint can publish partially mutated DOM.
             var clickAllowed = operation.Click?.GetAwaiter().GetResult() ?? false;
@@ -2150,7 +2376,9 @@ public sealed class BrowserController : IDisposable
                 Math.Max(0, rendered.ScrollHeight - operation.Viewport.Value.Height));
             tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
             tab.History.SetCurrentScrollPosition(owner.ScrollY);
-            var sameControls = operation.Resize && owner.Document?.DocumentId == document.DocumentId
+            var previousFocusTarget = ActiveFocusTarget(owner);
+            var sameDocument = owner.Document?.DocumentId == document.DocumentId;
+            var sameControls = operation.Resize && sameDocument
                 && owner.Page is { } old && SameControls(old, rendered);
             owner.Document = document; owner.Page = rendered;
             owner.NestedScrollOffsets.Clear();
@@ -2158,14 +2386,17 @@ public sealed class BrowserController : IDisposable
             {
                 owner.NestedScrollOffsets[container.Index] = container.Offset;
             }
-            // Retained scrolls preserve target ordering; other repaints may not preserve frame-local groups.
-            if (!operation.Scroll && !(operation.Click is not null && owner.FocusedLink < rendered.LinkTargets.Count))
-            { owner.FocusedLink = -1; }
+            // Ordinary resize retains the existing shell behavior of clearing frame-local link focus.
+            if (operation.Resize && !operation.Scroll && operation.Click is null && owner.FocusedLink >= 0)
+            { owner.FocusedLink = -1; owner.FocusedTargetId = 0; }
             ClearTextSelection(owner);
             // Controls of a retained (script-free repaint) document keep tree-order identity; anything else resets field state.
             if (!sameControls)
             { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.MultipleSelectRangeAnchors.Clear(); owner.ListboxFirstOptions.Clear(); owner.FocusedControl = -1; }
-            else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
+            else if (owner.FocusedControl >= 0 && (owner.FocusedControl >= rendered.FormControls.Count
+                || !Focusable(rendered.FormControls[owner.FocusedControl]))) { owner.FocusedControl = -1; }
+            if (sameDocument) { RestoreFocusedTarget(owner, rendered); }
+            else { owner.FocusedLink = -1; owner.FocusedControl = -1; owner.FocusedTargetId = 0; }
             owner.Viewport = operation.Viewport.Value with
             {
                 ScrollX = owner.ScrollX,
@@ -2192,6 +2423,8 @@ public sealed class BrowserController : IDisposable
             }
             owner.ResizeFailed = false;
             if (!ReferenceEquals(previous, owner.Renderer)) { previous.Dispose(); }
+            if (sameDocument)
+            { QueueFocusTransition(operation.Tab, owner, previousFocusTarget, ActiveFocusTarget(owner)); }
             Changed?.Invoke(operation.Tab);
         }
         catch (OperationCanceledException)
@@ -2216,11 +2449,14 @@ public sealed class BrowserController : IDisposable
                     owner.ScrollX = owner.Viewport?.ScrollX ?? 0;
                     owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
                     // A failed click keeps the last published frame; its host is invalidated and repaints fail explicitly.
-                    if (!operation.Scroll && operation.Click is null)
+                    var clickDispatchStarted = operation.ClickDispatchStarted || operation.Click is not null;
+                    if (!operation.Scroll && !clickDispatchStarted && operation.FocusEvents is null)
                     { owner.Page = null; owner.Viewport = operation.Viewport; owner.ResizeFailed = true; }
                 }
-                Report(operation.Tab, (operation.Click is not null
+                var isClickFailure = operation.ClickDispatchStarted || operation.Click is not null;
+                Report(operation.Tab, (isClickFailure
                     ? $"Page {operation.ClickEventType.ToString().ToLowerInvariant()} event failed: "
+                    : operation.FocusEvents is not null ? "Page focus event failed: "
                     : operation.Scroll ? "Scroll rendering failed: " : operation.Resize ? "Resize rendering failed: " : "") + exception.Message);
             }
         }
@@ -2284,11 +2520,11 @@ public sealed class BrowserController : IDisposable
         if (pending?.Viewport == viewport) { return; }
         if (owner.Viewport == viewport)
         {
-            if (pending is not null) { Cancel(id); tab.Generation = checked(tab.Generation + 1); }
+            if (pending is not null) { Cancel(id, preserveFocusEvents: true); tab.Generation = checked(tab.Generation + 1); }
             return;
         }
         Limit();
-        Cancel(id);
+        Cancel(id, preserveFocusEvents: true);
         var operation = new Operation(id, checked(++tab.Generation), Task.FromResult(owner.Document),
             new(), null, false, resize: true)
         { Viewport = viewport };
@@ -2360,9 +2596,11 @@ public sealed class BrowserController : IDisposable
     {
         if (operations.Count >= Session.Options.MaxPendingLoads) { throw new BrowserLimitException("Pending load/render limit exceeded; wait for canceled operations to finish."); }
     }
-    private void Cancel(TabId id)
+    private void Cancel(TabId id, bool preserveFocusEvents = false)
     {
-        foreach (var operation in operations.Where(op => op.Tab == id)) { operation.Cancellation.Cancel(); }
+        foreach (var operation in operations.Where(op => op.Tab == id
+            && !(preserveFocusEvents && op.FocusEvents is not null)))
+        { operation.Cancellation.Cancel(); }
     }
     internal static bool IsPageFailure(Exception exception) => StaticPageRenderer.IsRenderFailure(exception)
         || exception is IOException or UnauthorizedAccessException or UrlParseException or WebDecodingException or BrowserLimitException;

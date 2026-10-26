@@ -40,7 +40,7 @@ try
         while (channel.ReadAsync().GetAwaiter().GetResult() is { } packet)
         {
             var request = packet.Message;
-            if (request.Kind is not ("render" or "click") || request.Id <= lastId)
+            if (request.Kind is not ("render" or "click" or "focus") || request.Id <= lastId)
             {
                 throw new IpcProtocolException("Expected a new monotonically identified render or click request.");
             }
@@ -62,9 +62,35 @@ try
                         "auxclick" => PageLinkEventType.AuxClick,
                         _ => throw new IpcProtocolException("Invalid renderer link event type.")
                     };
-                    var allowed = scriptedRenderer.DispatchLinkEvent(request.DocumentId, request.LinkIndex, request.Url!,
-                        eventType, CancellationToken.None);
+                    var allowed = request.FocusTargetId > 0
+                        ? scriptedRenderer.DispatchLinkTargetEvent(request.DocumentId, request.FocusTargetId, eventType,
+                            CancellationToken.None)
+                        : scriptedRenderer.DispatchLinkEvent(request.DocumentId, request.LinkIndex, request.Url!,
+                            eventType, CancellationToken.None);
                     channel.WriteAsync(new() { Kind = "click-result", Id = request.Id, DefaultPrevented = !allowed }).GetAwaiter().GetResult();
+                }
+                catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception))
+                {
+                    channel.WriteAsync(new() { Kind = "error", Id = request.Id, Error = Bounded(exception.Message) }).GetAwaiter().GetResult();
+                }
+                continue;
+            }
+            if (request.Kind == "focus")
+            {
+                try
+                {
+                    if (scriptedRenderer is null || !scriptedRenderer.HasDocument(request.DocumentId))
+                    { throw new PageNavigationException("Retained document was lost; reload explicitly rather than rerunning scripts."); }
+                    scriptedRenderer.CommitDocument(request.DocumentId);
+                    var eventType = request.FocusEventType switch
+                    {
+                        "focus" => PageFocusEventType.Focus,
+                        "blur" => PageFocusEventType.Blur,
+                        _ => throw new IpcProtocolException("Invalid renderer focus event type.")
+                    };
+                    scriptedRenderer.DispatchPageFocusEvent(request.DocumentId, request.FocusTargetId, eventType,
+                        CancellationToken.None);
+                    channel.WriteAsync(new() { Kind = "focus-result", Id = request.Id }).GetAwaiter().GetResult();
                 }
                 catch (Exception exception) when (StaticPageRenderer.IsRenderFailure(exception))
                 {

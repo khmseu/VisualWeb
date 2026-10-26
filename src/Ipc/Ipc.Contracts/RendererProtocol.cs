@@ -22,7 +22,7 @@ public sealed record PageLinkRect(
         x >= X && y >= Y && x < X + Width && y < Y + Height;
 }
 
-/// <summary>One rendered textual anchor with visible rectangles, document-space top offset, absolute destination and bounded target metadata; no element identity.</summary>
+/// <summary>One rendered textual anchor with visible rectangles, document-space offsets, absolute destination and bounded target metadata; no DOM identity.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-target">hyperlink target</see>.
 /// The browser maps <c>_blank</c> to a new tab and <c>_self</c>, <c>_parent</c>, and <c>_top</c> to the current
 /// tab because nested browsing contexts are not implemented; named targets are scoped to tabs in the source window.</remarks>
@@ -34,6 +34,10 @@ public sealed record PageLinkTarget(
     [property: JsonRequired] string? TargetName,
     [property: JsonRequired] double DocumentY)
 {
+    /// <summary>Opaque per-document identity for the renderer-local focus target; zero means unavailable.</summary>
+    [JsonRequired]
+    public int FocusTargetId { get; init; }
+
     /// <summary>Document-space horizontal anchor offset for browser-owned focus scrolling.</summary>
     [JsonRequired]
     public double DocumentX { get; init; }
@@ -151,6 +155,10 @@ public sealed record PageFormControl(
     [property: JsonRequired] double? Step,
     [property: JsonRequired] bool StepAny)
 {
+    /// <summary>Opaque per-document identity for an eligible renderer-local focus target; zero means not focusable.</summary>
+    [JsonRequired]
+    public int FocusTargetId { get; init; }
+
     /// <summary>Parsed <c>tabindex</c> attribute; null means omitted or invalid.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/interaction.html#the-tabindex-attribute">the tabindex attribute</see>.</remarks>
     [JsonRequired]
@@ -526,6 +534,9 @@ public sealed record RendererMessage
     public int LinkIndex { get; init; }
     /// <summary>Click requests only: the bounded trusted link event name, either <c>click</c> or <c>auxclick</c>.</summary>
     public string? LinkEventType { get; init; }
+    /// <summary>Focus requests only: opaque renderer-local target identity and trusted focus/blur event name.</summary>
+    public int FocusTargetId { get; init; }
+    public string? FocusEventType { get; init; }
     /// <summary>Click-result replies only: whether a page listener canceled the trusted click.</summary>
     public bool? DefaultPrevented { get; init; }
     public PageLinkTarget[]? LinkTargets { get; init; }
@@ -546,10 +557,12 @@ public static class RendererProtocol
     private const string ErrorKind = "error";
     private const string ClickKind = "click";
     private const string ClickResultKind = "click-result";
+    private const string FocusKind = "focus";
+    private const string FocusResultKind = "focus-result";
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 47;
+    public const int Version = 48;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -565,6 +578,7 @@ public static class RendererProtocol
     public const int MaxLinkMetadataBytes = 1024 * 1024;
     public const int MaxForms = 256;
     public const int MaxFormControls = 1024;
+    public const int MaxFocusTargetIdsPerDocument = MaxLinkTargets + MaxFormControls;
     public const int MaxFormLabelTargets = 4096;
     public const int MaxFormLabelRects = 4096;
     public const int MaxFormLabelRectsPerControl = 64;
@@ -605,13 +619,21 @@ public static class RendererProtocol
         if ((message.Kind != RenderKind && (message.ScrollY != 0 || message.ScrollX != 0))
             || (message.Kind != FrameKind && (message.ScrollHeight != 0 || message.ScrollWidth != 0)))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
-        if ((message.Kind is not (RenderKind or ClickKind) && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
+        if ((message.Kind is not (RenderKind or ClickKind or FocusKind)
+                && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
             || (message.Kind != RenderKind && (message.CommittedDocumentId != Guid.Empty || message.ReuseDocument)))
         { throw new IpcProtocolException("Document policy fields belong only to render or click requests."); }
         if ((message.Kind != ClickKind && (message.LinkIndex != 0 || message.LinkEventType is not null))
-            || (message.Kind == ClickKind && message.LinkEventType is not (ClickEventType or AuxClickEventType))
+            || (message.Kind == ClickKind && (message.LinkEventType is not (ClickEventType or AuxClickEventType)
+                || message.FocusTargetId is < 0 or > MaxFocusTargetIdsPerDocument
+                || message.FocusTargetId > 0 && (message.LinkIndex != 0 || message.Url is not null)))
+            || (message.Kind is not (ClickKind or FocusKind)
+                && (message.FocusTargetId != 0 || message.FocusEventType is not null))
+            || (message.Kind == ClickKind && message.FocusEventType is not null)
+            || (message.Kind == FocusKind && (message.FocusTargetId is < 1 or > MaxFocusTargetIdsPerDocument
+                || message.FocusEventType is not ("focus" or "blur")))
             || (message.Kind == ClickResultKind ? message.DefaultPrevented is null : message.DefaultPrevented is not null))
-        { throw new IpcProtocolException("Click fields belong only to click requests and click-result replies respectively."); }
+        { throw new IpcProtocolException("Event fields belong only to their matching requests and replies."); }
         if (message.Kind == HelloKind)
         {
             if (message.Id != 0 || payloadLength != 0 || message.SandboxProfile is { Length: > MaxTextCharacters })
@@ -663,19 +685,37 @@ public static class RendererProtocol
                 ValidateLinks(message.LinkTargets, message.Width, message.Height);
                 ValidateFragmentTargets(message.FragmentTargets, message.ScrollHeight);
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
+                ValidateFocusTargetIds(message.LinkTargets!, message.FormControls!);
                 ValidateTextTargets(message.TextTargets, message.Width, message.Height);
                 ValidateScrollContainers(message.ScrollContainers, message.Width, message.Height);
                 break;
             case ClickKind:
                 if (payloadLength != 0 || message.DocumentId == Guid.Empty || !message.ExecuteInlineScripts
-                    || message.LinkIndex is < 0 or >= MaxLinkTargets
-                    || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters
+                    || message.FocusTargetId == 0 && (message.LinkIndex is < 0 or >= MaxLinkTargets
+                        || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters)
                     || message.Html is not null || message.Diagnostics is not null || message.StatusCode != 0
                     || message.Width != 0 || message.Height != 0 || message.Scale != 0
                     || message.PixelWidth != 0 || message.PixelHeight != 0 || message.Stride != 0
                     || message.Title is not null || message.Status is not null || message.Error is not null
                     || message.SandboxProfile is not null)
                 { throw new IpcProtocolException("Invalid renderer click request fields or limits."); }
+                break;
+            case FocusKind:
+                if (payloadLength != 0 || message.DocumentId == Guid.Empty || !message.ExecuteInlineScripts
+                    || message.Url is not null || message.Html is not null || message.Diagnostics is not null
+                    || message.StatusCode != 0 || message.Width != 0 || message.Height != 0 || message.Scale != 0
+                    || message.PixelWidth != 0 || message.PixelHeight != 0 || message.Stride != 0
+                    || message.Title is not null || message.Status is not null || message.Error is not null
+                    || message.SandboxProfile is not null)
+                { throw new IpcProtocolException("Invalid renderer focus request fields or limits."); }
+                break;
+            case FocusResultKind:
+                if (payloadLength != 0 || message.DocumentId != Guid.Empty || message.Url is not null
+                    || message.Html is not null || message.Diagnostics is not null || message.StatusCode != 0
+                    || message.Width != 0 || message.Height != 0 || message.Scale != 0 || message.PixelWidth != 0
+                    || message.PixelHeight != 0 || message.Stride != 0 || message.Title is not null
+                    || message.Status is not null || message.Error is not null || message.SandboxProfile is not null)
+                { throw new IpcProtocolException("Invalid renderer focus-result reply."); }
                 break;
             case ClickResultKind:
                 if (payloadLength != 0 || message.Url is not null || message.Html is not null || message.Diagnostics is not null
@@ -704,6 +744,7 @@ public static class RendererProtocol
         {
             if (link is null || link.Rects is null || link.Rects.Count > MaxLinkRects
                 || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters
+                || link.FocusTargetId < 0 || link.FocusTargetId > MaxFocusTargetIdsPerDocument
                 || link.TargetName is { Length: 0 or > MaxTextCharacters }
                 || link.OpenInNewTab && link.TargetName is not null
                 || !double.IsFinite(link.DocumentX) || link.DocumentX < 0 || link.DocumentX > MaxScrollHeight
@@ -737,6 +778,26 @@ public static class RendererProtocol
         }
         if (JsonSerializer.SerializeToUtf8Bytes(links).Length > MaxLinkMetadataBytes)
         { throw new IpcProtocolException("Renderer link metadata byte limit exceeded."); }
+    }
+    private static void ValidateFocusTargetIds(IReadOnlyList<PageLinkTarget> links, IReadOnlyList<PageFormControl> controls)
+    {
+        var identities = new HashSet<int>();
+        foreach (var link in links)
+        {
+            if (link.FocusTargetId is < 1 or > MaxFocusTargetIdsPerDocument
+                || !identities.Add(link.FocusTargetId))
+            { throw new IpcProtocolException("Renderer focus-target identities must be unique per frame."); }
+        }
+        foreach (var control in controls)
+        {
+            var eligible = control.Kind != "hidden" && !control.Disabled && control.Rect is not null;
+            if (control.FocusTargetId < 0 || control.FocusTargetId > MaxFocusTargetIdsPerDocument
+                || eligible != (control.FocusTargetId > 0)
+                || control.FocusTargetId > 0 && !identities.Add(control.FocusTargetId))
+            { throw new IpcProtocolException("Invalid or duplicate renderer form focus-target identity."); }
+        }
+        if (identities.Count > MaxFocusTargetIdsPerDocument)
+        { throw new IpcProtocolException("Renderer focus-target identity limit exceeded."); }
     }
     public static void ValidateFragmentTargets(IReadOnlyList<PageFragmentTarget>? targets, double scrollHeight)
     {

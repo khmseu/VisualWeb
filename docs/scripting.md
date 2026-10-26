@@ -206,15 +206,24 @@ default deadline, DOM callback, listener invocation/depth and microtask budgets
 apply, and microtasks drain at a single checkpoint after the whole dispatch
 (not between listeners). It returns false when `preventDefault()` canceled it.
 
-PageRendering identifies the clicked link by the latest successful render's
-link index plus its expected URL; a mismatch or disconnected anchor reports an
-explicit error without dispatching or invalidating. Each document allows at most `StaticPageRenderer.MaxLinkEventsPerDocument`
-(1024 combined click and auxclick events). Listener errors, quota/deadline
+PageRendering identifies a clicked link by its stable bounded per-document
+target identity (the legacy direct renderer API still validates index plus URL);
+a mismatch or disconnected anchor reports an explicit error without dispatching
+or invalidating. Each document allows at most `StaticPageRenderer.MaxPageEventsPerDocument`
+(1024 combined click, auxclick, focus and blur events). Listener errors, quota/deadline
 failures, and the event bound invalidate the document's host: the browser keeps
 the previous frame and does not navigate, and later link-event dispatches/retained
 repaints of that document fail until explicit reload. After a successful dispatch
 the browser repaints the retained DOM (title/style changes appear) without script
 reexecution, then follows the browser-owned activation unless canceled.
+
+The shell also dispatches trusted `focus` and `blur` plain Events when its
+existing focus target changes on an opted-in retained document. Blur precedes
+focus; both share the per-document event bound and event-task budgets above.
+They use `bubbles:false`, `cancelable:false`, and `composed:true`. This browser
+hook does not construct `FocusEvent`, set DOM `activeElement`, provide
+`relatedTarget`, or implement automatic focus management; OS-window focus is
+outside its scope.
 
 Hosts are disposed when a candidate is replaced or fails, the previous committed
 document is replaced by navigation promotion, and on renderer/tab disposal or

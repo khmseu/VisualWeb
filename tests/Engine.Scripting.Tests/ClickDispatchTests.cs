@@ -96,4 +96,47 @@ public sealed class ClickDispatchTests
         Assert.Throws<ScriptLimitException>(() => limited.DispatchTrustedClick(nestedAnchor, Cancellation));
         Assert.Throws<InvalidOperationException>(() => limited.Evaluate("1", Cancellation));
     }
+
+    [Fact]
+    public void TrustedFocusAndBlurUseTheirNonBubblingComposedPlainEventFlags()
+    {
+        var (document, anchor) = Document();
+        using var host = Host(document);
+        host.ExecuteInitialDocumentBatch(["""
+            let log=[];
+            const a=document.getElementById('a'), p=document.getElementById('p');
+            document.addEventListener('focus',e=>log.push('doc-capture:'+e.eventPhase),true);
+            document.addEventListener('focus',()=>log.push('doc-bubble'));
+            p.addEventListener('focus',()=>log.push('parent-bubble'));
+            a.addEventListener('blur',e=>log.push('blur:'+e.isTrusted+':'+e.bubbles+':'+e.cancelable+':'+e.composed+':'+(e.target===a)+':'+(typeof FocusEvent==='undefined')));
+            a.addEventListener('focus',e=>{
+                log.push('focus:'+e.isTrusted+':'+e.bubbles+':'+e.cancelable+':'+e.composed+':'+(e.target===a)+':'+(typeof FocusEvent==='undefined'));
+                e.preventDefault();log.push('defaultPrevented:'+e.defaultPrevented);
+            });
+            """], Cancellation);
+
+        host.DispatchTrustedFocusEvent(anchor, "blur", Cancellation);
+        host.DispatchTrustedFocusEvent(anchor, "focus", Cancellation);
+
+        Assert.Equal("blur:true:false:false:true:true:true,doc-capture:1,focus:true:false:false:true:true:true,defaultPrevented:false",
+            host.Evaluate("log.join(',')", Cancellation).Text);
+        Assert.True(host.Evaluate("log.every(x=>!x.includes('bubble'))", Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void TrustedFocusDoesNotInvokeClickListeners()
+    {
+        var (document, anchor) = Document();
+        using var host = Host(document);
+        host.ExecuteInitialDocumentBatch(["""
+            let log=[];
+            document.addEventListener('click',()=>{log.push('click');throw Error('click listener ran')});
+            document.addEventListener('focus',()=>log.push('document'),true);
+            document.getElementById('a').addEventListener('focus',()=>log.push('target'));
+            """], Cancellation);
+
+        host.DispatchTrustedFocusEvent(anchor, "focus", Cancellation);
+
+        Assert.Equal("document,target", host.Evaluate("log.join(',')", Cancellation).Text);
+    }
 }

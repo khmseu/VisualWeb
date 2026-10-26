@@ -17,6 +17,11 @@ keyboard or modifier events. Keyboard traversal visits chrome before
 supported links and visible enabled form controls, honoring the bounded
 `tabindex` ordering documented in the controls guide;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
+On explicitly opted-in pages, changes to those existing page focus targets
+dispatch bounded trusted `blur` then `focus` events, including pointer,
+Tab/Shift+Tab and page/chrome transitions. OS-window focus changes and other
+focusable elements are not exposed; events are plain Events, not `FocusEvent`
+instances, and do not provide `activeElement` or general focus management.
 Root document scrolling supports bounded horizontal and vertical offsets in
 local and process renderers, with retained-document repaints, per-entry history
 restoration and browser-owned scrollbars. Horizontal overflow here is not nested

@@ -23,9 +23,13 @@ script-free. Publication pins every successful parsed DOM for scroll/resize; at 
 unpublished candidate is retained alongside it. Navigation/reload uses a fresh
 host; lost DOM requires explicit reload rather than repeating execution.
 Opted-in documents keep their renderer-local host/listeners for bounded trusted
-`click` and `auxclick` link events (validated link index/URL, 1024 total events per
-document); failures invalidate the host, and replacement/disposal releases it.
-Both event types are plain Events without PointerEvent metadata.
+`click`, `auxclick`, `focus` and `blur` events (at most 1024 combined events per
+document). Browser focus events target existing rendered links and visible
+enabled supported controls; they are plain Events with non-bubbling,
+non-cancelable, composed flags, not `FocusEvent` instances. Stable opaque
+per-document target IDs are data-only and are not DOM identifiers. Failures
+invalidate the host, and replacement/disposal releases it. Link events remain
+plain Events without PointerEvent metadata.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
 
@@ -55,7 +59,9 @@ parsed `tabindex` value; groups follow renderer target order, without exposing e
 anchors have an empty rectangle list until scrolled into view. Empty inline
 anchors and non-text anchors without a non-empty rendered block box remain
 unsupported. IPC v37 adds the vertical offset without exposing renderer DOM identity;
-IPC v47 adds the horizontal offset and bounded root scroll width.
+IPC v47 adds the horizontal offset and bounded root scroll width. IPC v48 adds
+unique bounded focus-target IDs to rendered links and eligible controls and
+strictly scoped focus/blur requests; no DOM handles cross the channel.
 `_blank` opens a new tab; `_self`,
 `_parent`, and `_top` use the current tab, including the first `<base target>`
 fallback. Other ASCII names are preserved as current-window browsing-context

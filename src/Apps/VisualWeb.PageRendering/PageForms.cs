@@ -26,8 +26,10 @@ internal static class PageForms
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
         BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry,
         IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> labelGeometry, int linkCount,
-        double width, double height, CancellationToken cancellationToken, BrowserUrl? baseUrlOverride = null)
+        double width, double height, CancellationToken cancellationToken, Func<DomElement, int> focusTargetId,
+        BrowserUrl? baseUrlOverride = null)
     {
+        ArgumentNullException.ThrowIfNull(focusTargetId);
         var formIndex = new Dictionary<DomElement, int>();
         var errors = new List<string?>();
         var actions = new List<string>();
@@ -182,13 +184,16 @@ internal static class PageForms
                 rect = placed.Rect;
                 lastLink = placed.BeforeLink;
             }
-            controls.Add(CreateControl(element, index, kind, controlName, value, label, pattern, text, minLength,
+            var control = CreateControl(element, index, kind, controlName, value, label, pattern, text, minLength,
                 lastLink, rect, minimum, maximum, step, stepAny, options, placeholder, submitterAction,
                 submitterActionError, submitterTarget, submitterTargetName, submitterTargetError,
-                textareaWrapColumns, textareaWrapHard, selectRows) with
+                textareaWrapColumns, textareaWrapHard, selectRows);
+            controls.Add(control with
             {
                 Dirname = dirname,
                 TabIndex = PageTabIndex.Parse(element.GetAttribute("tabindex")),
+                FocusTargetId = control.Rect is not null && control.Kind != "hidden" && !control.Disabled
+                    ? focusTargetId(element) : 0,
             });
             controlIndexes.Add(element, controls.Count - 1);
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)

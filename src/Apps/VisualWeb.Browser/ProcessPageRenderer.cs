@@ -167,6 +167,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }).ConfigureAwait(false);
     }
     public bool DispatchesLinkClicks => executeInlineScripts;
+    public bool DispatchesPageFocusEvents => executeInlineScripts;
     /// <summary>Send a data-only click request for the committed document; the worker dispatches on its owning thread.</summary>
     public Task<bool> DispatchLinkClickAsync(Guid documentId, int linkIndex, string url, CancellationToken cancellationToken) =>
         DispatchLinkEventAsync(documentId, linkIndex, url, PageLinkEventType.Click, cancellationToken);
@@ -205,6 +206,69 @@ public sealed class ProcessPageRenderer : IPageRenderer
         return await ExchangeAsync(request, drain: true, cancellationToken, packet => packet.Message.Kind == "click-result"
             ? packet.Message.DefaultPrevented is false
             : throw new IpcProtocolException("Renderer click reply has the wrong kind.")).ConfigureAwait(false);
+    }
+    public async Task<bool> DispatchLinkTargetEventAsync(Guid documentId, int focusTargetId,
+        PageLinkEventType eventType, CancellationToken cancellationToken)
+    {
+        var linkEventType = eventType switch
+        {
+            PageLinkEventType.Click => "click",
+            PageLinkEventType.AuxClick => "auxclick",
+            _ => throw new ArgumentOutOfRangeException(nameof(eventType))
+        };
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (!executeInlineScripts) { throw new PageNavigationException("Page link events require the inline-script opt-in."); }
+            if (documentId == Guid.Empty || documentId != committedDocumentId)
+            { throw new PageNavigationException("Clicked document is not the committed retained document; reload explicitly."); }
+        }
+        var request = new RendererMessage
+        {
+            Kind = "click",
+            Id = 1,
+            DocumentId = documentId,
+            ExecuteInlineScripts = true,
+            FocusTargetId = focusTargetId,
+            LinkEventType = linkEventType
+        };
+        try { RendererProtocol.Validate(request, 0); }
+        catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+        return await ExchangeAsync(request, drain: true, cancellationToken, packet => packet.Message.Kind == "click-result"
+            ? packet.Message.DefaultPrevented is false
+            : throw new IpcProtocolException("Renderer click reply has the wrong kind.")).ConfigureAwait(false);
+    }
+    /// <summary>Send a data-only trusted focus/blur request to the worker owning the committed document.</summary>
+    public async Task DispatchPageFocusEventAsync(Guid documentId, int focusTargetId, PageFocusEventType eventType,
+        CancellationToken cancellationToken)
+    {
+        var focusEventType = eventType switch
+        {
+            PageFocusEventType.Focus => "focus",
+            PageFocusEventType.Blur => "blur",
+            _ => throw new ArgumentOutOfRangeException(nameof(eventType))
+        };
+        lock (sync)
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (!executeInlineScripts) { throw new PageNavigationException("Page focus events require the inline-script opt-in."); }
+            if (documentId == Guid.Empty || documentId != committedDocumentId)
+            { throw new PageNavigationException("Focused document is not the committed retained document; reload explicitly."); }
+        }
+        var request = new RendererMessage
+        {
+            Kind = "focus",
+            Id = 1,
+            DocumentId = documentId,
+            ExecuteInlineScripts = true,
+            FocusTargetId = focusTargetId,
+            FocusEventType = focusEventType
+        };
+        try { RendererProtocol.Validate(request, 0); }
+        catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
+        await ExchangeAsync(request, drain: true, cancellationToken, packet => packet.Message.Kind == "focus-result"
+            ? true
+            : throw new IpcProtocolException("Renderer focus reply has the wrong kind.")).ConfigureAwait(false);
     }
     private async Task<T> ExchangeAsync<T>(RendererMessage request, bool drain, CancellationToken cancellationToken,
         Func<RendererPacket, T> accept)
