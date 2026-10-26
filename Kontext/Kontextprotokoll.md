@@ -1317,3 +1317,33 @@ integriert werden.
 **Status / naechste Schritte:** Pass 1 dieser neuen Zehn-Passen-Anforderung
 ist lokal implementiert und validiert; Tracker und direkte Guides sind
 aktualisiert. Commit, Push und CI stehen aus.
+
+### KP-035 - Adressleistenbestaetigung committed und CI-gruen
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Commit-, Worktree- und GitHub-Actions-Abgleich.
+- Quelle: Commit `c39b6d3`, lokales Worktree, `docs/project-map.md` und GitHub
+  Actions Runs `40273905674`, `40273905621`, `40273905697`.
+- Bezug: REQ-005, DEC-016, Q-002; aktualisiert den Arbeitsstatus aus KP-034.
+
+**Belegt:** Commit `c39b6d3` (`feat(browser): confirm typed cross-origin
+address-bar navigation`) wurde nach `origin/main` gepusht. CodeQL
+(`40273905674`), Linux development (`40273905621`) und Windows confinement
+(`40273905697`) sind erfolgreich. Vor dem Push bestanden die fokussierten
+Adressleisten-Regressionstests (3), alle 1.098 Browser-Tests, Solution-Build
+und Solution-Volltests. Die loesungsweite Formatpruefung meldete nur die
+unveraenderten, nicht geaenderten Findings in `StaticLayout.cs` und
+`ShellChrome.cs`.
+
+**Dokumentationskorrektur:** `docs/project-map.md` hatte noch ausgesagt, dass
+Adressleisten-Navigation nicht bestaetigt wird. Diese Zusammenfassung wird an
+DEC-016 angepasst. Ein Commit-Hook formatierte beim Commit zusaetzlich Tabellen
+in `Kontext/Wissensstand.md`; die bereits zuvor vorhandene Markdown-Link-
+Formatierungsaenderung in derselben Datei blieb unstaged und wird bewahrt.
+
+**Offen / naechste Schritte:** Q-002 bleibt fuer die breitere
+Produktionssicherheits-, SOP/CORS/CSP-, Frame/Origin- und Storage-Policy offen.
+Vor der naechsten Umsetzung unter der Security-Prioritaet ist ein weiteres
+konkretes, abgegrenztes Verhalten vom Nutzer zu waehlen; der Auftrag ueber
+zehn Passen bleibt bestehen.

@@ -9,9 +9,11 @@ explicitly development-only, not isolated production browsing.
 CLI multiprocess modes require supported renderer confinement by default;
 unsandboxed development requires explicit trusted-content acknowledgement.
 Low-level renderer/library defaults remain unchanged.
-The development shell confirms cross-origin page link/form requests and each
-origin-changing redirect before transport; explicit address-bar navigation is
-not subject to this prompt.
+The development shell confirms cross-origin page link/form requests and typed
+HTTP(S) address-bar requests from an already committed document, including each
+origin-changing redirect, before transport. Initial loads and non-HTTP(S)
+address-bar navigation remain outside this prompt; it is not production request
+authorization.
 
 | Project                                                               | Responsibility                                                                                                                                                                                                                                                                                           | Planned dependencies / official sources                                                                     |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
