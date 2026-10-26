@@ -1861,7 +1861,7 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         var url = BrowserUrl.Parse(address);
         if (pageNavigationAuthorizer is not null
-            && url.Protocol is "http:" or "https:")
+            && url.Protocol is "http:" or "https:" or "file:")
         {
             var sourceOrigin = content[id].Document?.Origin;
             Start(tab, url, null, false, authorizeRedirects: true,
@@ -1914,7 +1914,8 @@ public sealed class BrowserController : IDisposable
         bool useShellConfirmation, double restoreScrollY = 0, SecurityOrigin? aboutBlankOrigin = null)
     {
         var document = content[tab.Id].Document;
-        if (useShellConfirmation && pageNavigationAuthorizer is not null && url.Protocol is "http:" or "https:")
+        if (useShellConfirmation && pageNavigationAuthorizer is not null
+            && url.Protocol is "http:" or "https:" or "file:")
         {
             Start(tab, url, traversal, replace,
                 preventHttpsDowngrade: document?.Url.Protocol == "https:",
@@ -1976,6 +1977,14 @@ public sealed class BrowserController : IDisposable
             return LoadedPage.CreateAboutBlank(url, sourceOrigin);
         }
         var owner = content[tabId];
+        if (url.Protocol == "file:")
+        {
+            if (!await pageNavigationAuthorizer!(tabId, url, cancellationToken).ConfigureAwait(false))
+            {
+                throw new PageNavigationException("Local file navigation was denied.");
+            }
+            return await owner.Source.LoadAsync(url, cancellationToken, preventHttpsDowngrade).ConfigureAwait(false);
+        }
         var previousOrigin = sourceOrigin;
         async ValueTask<bool> Authorize(BrowserUrl destination, int _, CancellationToken token)
         {

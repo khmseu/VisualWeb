@@ -290,10 +290,15 @@ Automatically started shell HTTP(S) loads, including a launch URL supplied to
 `OpenWindow`, use the same confirmation path before their first request when
 there is no committed document. Origin-changing redirects continue to require
 separate confirmation. The built-in new-tab welcome page is a `data:` URL and
-does not prompt. Other non-HTTP(S) shell navigation and direct low-level
-`BrowserController.Navigate` calls remain unchanged unless callers explicitly
-use the confirmation-aware shell navigation method. The prompt is not general
-request authorization or a production security boundary.
+does not prompt. Top-level `file:` loads started from the address bar,
+`OpenWindow(file:)`, or file Back/Forward/Reload history actions also wait for
+confirmation before file I/O. The prompt displays the canonical `file:` URL
+path, omitting query and fragment, and allows the user to cancel. Same-document
+fragment traversal does not reload the file or prompt. Page-initiated file
+links/forms remain blocked. Other non-HTTP(S) shell navigation and direct
+low-level `BrowserController.Navigate` calls remain unchanged unless callers
+explicitly use the confirmation-aware shell navigation method. Confirmation
+does not provide filesystem isolation or production request authorization.
 
 HTTP(S) Back/Forward/Reload operations use the same confirmation path:
 cross-origin history destinations prompt relative to the currently committed
@@ -303,6 +308,9 @@ is HTTPS, HTTP history targets and HTTPS-to-HTTP redirects are blocked before
 transport. This shell policy does not change low-level controller callers
 using `Back`, `Forward`, or `Reload` directly; the shell uses distinct
 confirmation-aware entry points for its chrome actions.
+File-document reloads and cross-document Back/Forward destinations use the
+same shell confirmation and show the target path before the file is read.
+Same-document fragment history remains an in-document operation.
 
 ## Simple GET forms
 

@@ -202,7 +202,8 @@ public sealed class ShellChrome : IDisposable
     public ShellFrame Render(BrowserWindow window, BrowserPage? page, PixelSize size, double density, AddressEditor? editor = null,
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
         IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0, int hoveredLink = -1,
-        string? navigationConfirmationOrigin = null, TabId? navigationConfirmationTab = null)
+        string? navigationConfirmationOrigin = null, TabId? navigationConfirmationTab = null,
+        string? navigationConfirmationMessage = null)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -253,12 +254,14 @@ public sealed class ShellChrome : IDisposable
             Label(value, address.X + 4, 83, address.Width - 8, ink, tail: true);
             targets.Add(new(address, ChromeAction.Address));
         }
-        if (navigationConfirmationOrigin is { } confirmationOrigin)
+        if (navigationConfirmationMessage is not null || navigationConfirmationOrigin is not null)
         {
+            var confirmationMessage = navigationConfirmationMessage
+                ?? "Allow page navigation to " + navigationConfirmationOrigin;
             Fill(new(0, 92, width, 28), new(255, 238, 205));
             if (width >= 340)
             {
-                Label("Allow page navigation to " + confirmationOrigin + "?", 8, 111, width - 164, ink, tail: true);
+                Label(confirmationMessage + "?", 8, 111, width - 164, ink, tail: true);
                 Button("Allow", new(width - 154, 94, 68, 24), ChromeAction.AllowNavigation,
                     targetTab: navigationConfirmationTab);
                 Button("Cancel", new(width - 80, 94, 72, 24), ChromeAction.CancelNavigation,
@@ -266,7 +269,7 @@ public sealed class ShellChrome : IDisposable
             }
             else
             {
-                Label("Allow " + confirmationOrigin + "? Enter=Yes Esc=No", 8, 111, width - 16, ink, tail: true);
+                Label(confirmationMessage + "? Enter=Yes Esc=No", 8, 111, width - 16, ink, tail: true);
             }
         }
         else

@@ -108,9 +108,13 @@ Allow/Cancel, Enter, or Escape. Automatically started shell HTTP(S) loads,
 including launch URLs opened through `OpenWindow`, use the same initial
 confirmation before transport. Origin-changing redirects still prompt
 separately. The built-in new-tab welcome page is a `data:` URL and does not
-prompt. Other non-HTTP(S) shell navigation and direct
-`BrowserController.Navigate` calls remain unchanged. This is not production
-request authorization.
+prompt. Top-level `file:` loads from the address bar, `OpenWindow(file:)`, and
+file Back/Forward/Reload history actions also require confirmation before
+reading the file; the prompt shows the canonical file URL path without query
+or fragment. Same-document fragment traversal does not reload or prompt, and
+page-initiated file links/forms remain blocked. Other non-HTTP(S) shell
+navigation and direct `BrowserController.Navigate` calls remain unchanged.
+This is not production request authorization or filesystem isolation.
 HTTP(S) Back/Forward/Reload operations also prompt for cross-origin history
 targets and origin-changing redirects. HTTPS documents block HTTP history
 targets and downgrade redirects before transport; same-origin history targets

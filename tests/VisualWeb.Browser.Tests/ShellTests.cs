@@ -199,6 +199,136 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void FileAddressBarNavigationWaitsForConfirmationAndShowsPathWithoutQueryOrFragment()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "visualweb-" + Guid.NewGuid().ToString("N") + ".html");
+        var fileTarget = new Uri(path).AbsoluteUri;
+        var address = fileTarget + "?private=value#section";
+        try
+        {
+            using var system = new Windows();
+            using var shell = new DevelopmentShell(system, FontPath);
+            var window = shell.OpenWindow(empty: true);
+            var tab = shell.Controller.CreateTab(window.Id);
+            var native = system.Items[0];
+
+            TypeAddress(address);
+            Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+
+            Assert.False(File.Exists(path));
+            Assert.Equal("Allow local file navigation to " + fileTarget,
+                shell.PendingNavigationConfirmationMessage(tab.Id));
+            Assert.Null(tab.History.Current);
+
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+            Wait(() => !tab.IsLoading);
+            Assert.Null(shell.Controller.Page(tab.Id));
+            Assert.Null(tab.History.Current);
+            Assert.Contains("denied", tab.Error);
+
+            TypeAddress(address);
+            Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+            Assert.Equal("Allow local file navigation to " + fileTarget,
+                shell.PendingNavigationConfirmationMessage(tab.Id));
+            File.WriteAllText(path, "<!doctype html><title>Local file</title>");
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+            Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+            Assert.Equal("Local file", tab.Title);
+            Assert.NotNull(tab.History.Current);
+            Assert.Null(tab.Error);
+
+            void TypeAddress(string value)
+            {
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.L, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+                shell.Dispatch(new TextEntered(native.Id, value));
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                shell.Tick();
+            }
+            void Wait(Func<bool> condition)
+            {
+                var deadline = DateTime.UtcNow.AddSeconds(30);
+                do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+                Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+            }
+        }
+        finally
+        {
+            if (File.Exists(path)) { File.Delete(path); }
+        }
+    }
+
+    [Fact]
+    public void ShellLaunchAndFileHistoryLoadsRequireConfirmation()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "visualweb-" + Guid.NewGuid().ToString("N") + ".html");
+        var fileUrl = new Uri(path).AbsoluteUri;
+        File.WriteAllText(path, "<!doctype html><title>Local file</title>");
+        try
+        {
+            using var system = new Windows();
+            using var shell = new DevelopmentShell(system, FontPath);
+            var window = shell.OpenWindow(fileUrl);
+            var tab = window.ActiveTab!;
+            var native = system.Items[0];
+
+            WaitForPrompt();
+            Assert.Equal("Allow local file navigation to " + fileUrl,
+                shell.PendingNavigationConfirmationMessage(tab.Id));
+            ApproveAndWait(fileUrl);
+
+            Navigate("data:text/html,%3C!doctype%20html%3E%3Ctitle%3Efirst%3C/title%3E");
+            Navigate(fileUrl);
+            Navigate("data:text/html,%3C!doctype%20html%3E%3Ctitle%3Esecond%3C/title%3E");
+
+            shell.Controller.BackWithShellConfirmation(tab.Id);
+            WaitForPrompt();
+            Assert.Equal("data:text/html,%3C!doctype%20html%3E%3Ctitle%3Esecond%3C/title%3E",
+                tab.History.Current!.Href);
+            ApproveAndWait(fileUrl);
+
+            shell.Controller.BackWithShellConfirmation(tab.Id);
+            Wait(() => !tab.IsLoading && tab.History.Current?.Href
+                == "data:text/html,%3C!doctype%20html%3E%3Ctitle%3Efirst%3C/title%3E");
+            shell.Controller.ForwardWithShellConfirmation(tab.Id);
+            WaitForPrompt();
+            ApproveAndWait(fileUrl);
+
+            shell.Controller.ReloadWithShellConfirmation(tab.Id);
+            WaitForPrompt();
+            ApproveAndWait(fileUrl);
+
+            void Navigate(string url)
+            {
+                shell.Controller.NavigateWithShellConfirmation(tab.Id, url);
+                if (url == fileUrl) { WaitForPrompt(); ApproveAndWait(fileUrl); }
+                else { Wait(() => !tab.IsLoading && tab.History.Current?.Href == url); }
+            }
+            void WaitForPrompt()
+            {
+                Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+                Assert.Equal("Allow local file navigation to " + fileUrl,
+                    shell.PendingNavigationConfirmationMessage(tab.Id));
+            }
+            void ApproveAndWait(string expected)
+            {
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+                Wait(() => !tab.IsLoading && tab.History.Current?.Href == expected);
+            }
+            void Wait(Func<bool> condition)
+            {
+                var deadline = DateTime.UtcNow.AddSeconds(30);
+                do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+                Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+            }
+        }
+        finally
+        {
+            if (File.Exists(path)) { File.Delete(path); }
+        }
+    }
+
+    [Fact]
     public void CrossOriginAddressBarNavigationWaitsForShellConfirmation()
     {
         var requests = new ConcurrentQueue<string>();

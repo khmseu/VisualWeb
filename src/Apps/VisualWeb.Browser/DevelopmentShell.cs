@@ -68,7 +68,7 @@ public sealed class DevelopmentShell : IDisposable
         internal double? PointerY { get; set; }
         internal ChromeTarget? KeyboardTarget { get; set; }
     }
-    private sealed record NavigationPrompt(TabId Tab, string Origin, TaskCompletionSource<bool> Completion);
+    private sealed record NavigationPrompt(TabId Tab, string Message, TaskCompletionSource<bool> Completion);
     private readonly IWindowSystem system;
     private readonly ShellChrome chrome;
     private readonly Dictionary<BrowserWindowId, View> views = [];
@@ -131,8 +131,22 @@ public sealed class DevelopmentShell : IDisposable
     {
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
-        navigationPromptQueue.Enqueue(new(tab, destination.Origin.Serialize(), completion));
+        navigationPromptQueue.Enqueue(new(tab, NavigationConfirmationMessage(destination), completion));
         return await completion.Task.ConfigureAwait(false);
+    }
+    private static string NavigationConfirmationMessage(BrowserUrl destination)
+    {
+        if (destination.Protocol != "file:")
+        {
+            return "Allow page navigation to " + destination.Origin.Serialize();
+        }
+
+        var end = destination.Href.Length;
+        var query = destination.Href.IndexOf('?');
+        var fragment = destination.Href.IndexOf('#');
+        if (query >= 0) { end = Math.Min(end, query); }
+        if (fragment >= 0) { end = Math.Min(end, fragment); }
+        return "Allow local file navigation to " + destination.Href[..end];
     }
     private void DrainNavigationPrompts()
     {
@@ -165,6 +179,8 @@ public sealed class DevelopmentShell : IDisposable
     private NavigationPrompt? PendingPrompt(BrowserWindow window) =>
         window.Tabs.Select(tab => navigationPrompts.GetValueOrDefault(tab.Id)).FirstOrDefault(prompt => prompt is not null);
     internal bool HasPendingNavigationConfirmation(TabId tab) => navigationPrompts.ContainsKey(tab);
+    internal string? PendingNavigationConfirmationMessage(TabId tab) =>
+        navigationPrompts.GetValueOrDefault(tab)?.Message;
     private void ResolveNavigationPrompt(TabId tab, bool allow)
     {
         if (!navigationPrompts.Remove(tab, out var prompt)) { return; }
@@ -283,7 +299,8 @@ public sealed class DevelopmentShell : IDisposable
                 window.ActiveTabId is { } pageFocus && Controller.PageHasFocus(pageFocus) ? null : view.KeyboardTarget,
                 Forms(window, view), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
                 window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0, view.HoveredLink,
-                prompt?.Origin, prompt?.Tab);
+                navigationConfirmationTab: prompt?.Tab,
+                navigationConfirmationMessage: prompt?.Message);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
