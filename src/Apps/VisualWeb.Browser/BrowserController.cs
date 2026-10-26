@@ -1852,7 +1852,7 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         Start(tab, BrowserUrl.Parse(address), null, false);
     }
-    /// <summary>Navigates an address-bar submission, confirming cross-origin hops when a committed page exists.</summary>
+    /// <summary>Confirms cross-origin address-bar hops, or the first HTTP(S) destination before a page is committed.</summary>
     public void NavigateFromAddressBar(TabId id, string address)
     {
         Check();
@@ -1861,11 +1861,11 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         var url = BrowserUrl.Parse(address);
         if (pageNavigationAuthorizer is not null
-            && content[id].Document is { } sourceDocument
             && url.Protocol is "http:" or "https:")
         {
+            var sourceOrigin = content[id].Document?.Origin;
             Start(tab, url, null, false, authorizeRedirects: true,
-                preserveAddressWhileLoading: true, authorizationSourceOrigin: sourceDocument.Origin);
+                preserveAddressWhileLoading: true, authorizationSourceOrigin: sourceOrigin);
             return;
         }
         Start(tab, url, null, false);
@@ -1918,9 +1918,7 @@ public sealed class BrowserController : IDisposable
             task = url.IsAboutBlank && selectedAboutBlankOrigin is not null
                 ? Task.FromResult(LoadedPage.CreateAboutBlank(url, selectedAboutBlankOrigin))
                 : authorizeRedirects && pageNavigationAuthorizer is not null
-                ? LoadPageInitiatedAsync(tab.Id, url,
-                    authorizationSourceOrigin ?? throw new PageNavigationException(
-                        "Page-initiated navigation requires a committed source origin."),
+                ? LoadShellAuthorizedNavigationAsync(tab.Id, url, authorizationSourceOrigin,
                     cancellation.Token, preventHttpsDowngrade, rewriteDestination)
                 : authorizeRedirects
                     ? content[tab.Id].Source.LoadAuthorizedNavigationAsync(url, cancellation.Token,
@@ -1936,12 +1934,17 @@ public sealed class BrowserController : IDisposable
         tab.Status = preserveAddressWhileLoading ? "Checking navigation authorization." : "Loading " + url.Href;
         Changed?.Invoke(tab.Id);
     }
-    private async Task<LoadedPage> LoadPageInitiatedAsync(TabId tabId, BrowserUrl url, SecurityOrigin sourceOrigin,
+    private async Task<LoadedPage> LoadShellAuthorizedNavigationAsync(TabId tabId, BrowserUrl url,
+        SecurityOrigin? sourceOrigin,
         CancellationToken cancellationToken, bool preventHttpsDowngrade,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination)
     {
         if (url.IsAboutBlank)
         {
+            if (sourceOrigin is null)
+            {
+                throw new PageNavigationException("Page-initiated navigation requires a committed source origin.");
+            }
             cancellationToken.ThrowIfCancellationRequested();
             return LoadedPage.CreateAboutBlank(url, sourceOrigin);
         }
@@ -1949,7 +1952,7 @@ public sealed class BrowserController : IDisposable
         var previousOrigin = sourceOrigin;
         async ValueTask<bool> Authorize(BrowserUrl destination, int _, CancellationToken token)
         {
-            if (previousOrigin.IsSameOrigin(destination.Origin)) { return true; }
+            if (previousOrigin?.IsSameOrigin(destination.Origin) is true) { return true; }
             if (!await pageNavigationAuthorizer!(tabId, destination, token).ConfigureAwait(false)) { return false; }
             previousOrigin = destination.Origin;
             return true;

@@ -1347,3 +1347,40 @@ Produktionssicherheits-, SOP/CORS/CSP-, Frame/Origin- und Storage-Policy offen.
 Vor der naechsten Umsetzung unter der Security-Prioritaet ist ein weiteres
 konkretes, abgegrenztes Verhalten vom Nutzer zu waehlen; der Auftrag ueber
 zehn Passen bleibt bestehen.
+
+**Nachtrag:** Die Korrektur in `docs/project-map.md` wurde als Commit
+`41f6e96` gepusht. CodeQL (`40274885609`), Linux development (`40274885456`)
+und Windows confinement (`40274885395`) sind erfolgreich.
+
+### KP-036 - Bestaetigung erster getippter Adressleisten-Navigation
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerentscheidung und Code-/Testpruefung.
+- Quelle: Nutzerantwort `confirm_initial_address_bar`, `plans/Missing.md`,
+  Browser-Shell-Code und fokussierte Tests.
+- Bezug: REQ-005, DEC-016, DEC-017, Q-002; folgt auf KP-035.
+
+**Nutzerangabe:** Der Nutzer waehlte, die vorhandene Origin-Bestaetigung auch
+auf typed HTTP(S) Adressleisten-Requests anzuwenden, wenn noch kein Dokument
+committed ist.
+
+**Beschlossener Umfang (DEC-017):** Ohne committed Dokument gibt es keine
+Source-Origin zum Vergleich; deshalb wird jedes getippte HTTP(S)-Ziel vor dem
+Transport bestaetigt. Nach Zustimmung gilt dessen Origin als Ausgangspunkt
+fuer die bereits vorhandene hop-by-hop Redirect-Bestaetigung. Automatisch
+gestartete Initial-Loads, nicht-HTTP(S)-Adressleisten-Navigation und direkte
+Controller ohne konfigurierten Authorizer bleiben unveraendert. Die Regel
+bleibt eine Development-Shell-Bestaetigung und ist keine
+Produktionsautorisierung.
+
+**Belegt:** `BrowserController` uebergibt bei fehlendem committed Dokument
+keine Source-Origin; der Shell-Authorizer bestaetigt dadurch das erste
+Navigationsziel und die Redirect-Kette bleibt an der genehmigten ersten
+Origin verankert. Zwei fokussierte Shell-Tests bestanden: Freigabe mit
+anschliessender Cross-Origin-Redirect-Bestaetigung sowie Abbruch vor dem
+ersten Request. Alle 1.100 Browser-Tests, der Solution-Build und die
+vollstaendige Solution-Testsuite bestanden. `dotnet format` meldet
+unveraenderte Findings in `StaticLayout.cs` und `ShellChrome.cs`; sie liegen
+ausserhalb dieses Diffs. `git diff --check` ist sauber. Formatpruefung, Commit,
+Push und CI fuer diesen Pass sind noch ausstehend.

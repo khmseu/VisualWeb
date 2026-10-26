@@ -265,9 +265,11 @@ and does not implement preflight, credentialed CORS, response-header exposure,
 general resource authorization or script-visible Fetch. The development shell
 also requires confirmation before a page-initiated link/form request or typed
 HTTP(S) address-bar navigation reaches a different origin from the committed
-document, and before every redirect hop that changes origin relative to the
-preceding request. The prompt runs before transport and shows only the
-destination origin; initial loads and non-HTTP(S) address-bar navigation are
+document. If no document is committed, every typed HTTP(S) address-bar
+destination requires confirmation because no source origin exists. Each
+origin-changing redirect is confirmed relative to the preceding request. The
+prompt runs before transport and shows only the destination origin;
+automatically started initial loads and non-HTTP(S) address-bar navigation are
 unchanged. This is not general request authorization, and low-level
 `BrowserController` instances do not enable it unless configured with an
 authorizer. Other request classes have

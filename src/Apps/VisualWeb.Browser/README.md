@@ -99,12 +99,15 @@ unsupported targets/configurations fail closed before display/content startup.
 Neither mode is production-safe browsing.
 
 The development shell asks before page-initiated links/forms or typed HTTP(S)
-address-bar navigation reach another origin from the committed document, and
-before each origin-changing redirect. The confirmation shows only the
-destination origin and blocks transport until Allow/Cancel, Enter, or Escape.
-Same-origin hops do not prompt. Initial loads, non-HTTP(S) address-bar
-navigation, and low-level controller calls without an injected authorizer
-remain unchanged. This is not production request authorization.
+address-bar navigation reach another origin from the committed document. When
+there is no committed document, each typed HTTP(S) address-bar destination is
+confirmed before transport. Origin-changing redirects are confirmed hop by hop,
+while same-origin hops do not prompt after the initial destination is approved.
+The confirmation shows only the destination origin and blocks transport until
+Allow/Cancel, Enter, or Escape. Automatically started initial loads,
+non-HTTP(S) address-bar navigation, and low-level controller calls without an
+injected authorizer remain unchanged. This is not production request
+authorization.
 
 Every shell session owns one bounded in-memory HSTS store shared across all
 tab-local GET loaders/windows, in local and multiprocess modes. Independent

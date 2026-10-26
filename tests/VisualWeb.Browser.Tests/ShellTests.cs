@@ -338,6 +338,98 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void InitialAddressBarNavigationWaitsForConfirmationAndEachCrossOriginRedirect()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url == "https://first.example/start"
+                ? Redirect("https://outside.example/final")
+                : Html("<!doctype html><title>Destination</title>");
+        }));
+        var window = shell.OpenWindow(empty: true);
+        var tab = shell.Controller.CreateTab(window.Id);
+        var native = system.Items[0];
+
+        TypeAddress("https://first.example/start");
+        Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+
+        Assert.Empty(requests);
+        Assert.Null(shell.Controller.Page(tab.Id));
+        Assert.Null(tab.History.Current);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait(() => requests.Count == 1 && shell.HasPendingNavigationConfirmation(tab.Id));
+
+        Assert.Equal(["https://first.example/start"], requests);
+        Assert.Null(tab.History.Current);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait(() => !tab.IsLoading && tab.History.Current?.Href == "https://outside.example/final");
+
+        Assert.Equal(["https://first.example/start", "https://outside.example/final"], requests);
+        Assert.Equal("https://outside.example/final", tab.History.Current!.Href);
+        Assert.Null(tab.Error);
+
+        void TypeAddress(string address)
+        {
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.L, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+            shell.Dispatch(new TextEntered(native.Id, address));
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+            shell.Tick();
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
+    [Fact]
+    public void CancelingInitialAddressBarConfirmationPreventsItsRequest()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            requests.Enqueue(request.RequestUri!.AbsoluteUri);
+            return Html("<!doctype html><title>Unexpected</title>");
+        }));
+        var window = shell.OpenWindow(empty: true);
+        var tab = shell.Controller.CreateTab(window.Id);
+        var native = system.Items[0];
+
+        TypeAddress("https://first.example/denied");
+        Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+        Wait(() => !tab.IsLoading);
+
+        Assert.Empty(requests);
+        Assert.Null(shell.Controller.Page(tab.Id));
+        Assert.Null(tab.History.Current);
+        Assert.NotNull(tab.Error);
+
+        void TypeAddress(string address)
+        {
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.L, 0, (ushort)SDL.Keymod.Ctrl, true, false));
+            shell.Dispatch(new TextEntered(native.Id, address));
+            shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+            shell.Tick();
+        }
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
+    [Fact]
     public void UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport()
     {
         var requests = new ConcurrentQueue<string>();

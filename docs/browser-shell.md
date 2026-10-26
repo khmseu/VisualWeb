@@ -277,17 +277,19 @@ cancellation remain deferred. This is a bounded subset of HTML
 
 Before the development shell sends a page-initiated link/form request or a
 typed HTTP(S) address-bar request to an origin different from the committed
-document, it displays a confirmation. Each redirect that changes origin
-relative to the preceding request requires a separate confirmation, even when
-redirecting to an origin seen earlier in the same navigation. Same-origin hops
-do not prompt. The chrome shows only the destination origin and accepts
+document, it displays a confirmation. If no document is committed, every typed
+HTTP(S) address-bar request prompts because there is no source origin to compare.
+Each redirect that changes origin relative to the preceding request requires a
+separate confirmation, even when redirecting to an origin seen earlier in the
+same navigation. Same-origin hops do not prompt after the initial destination
+is approved. The chrome shows only the destination origin and accepts
 Allow/Cancel, Enter, or Escape. For page-initiated requests, the address bar
 retains its prior value and GET form query values are neither shown in chrome
 nor sent while waiting; an address-bar submission retains the typed destination.
-This applies only in the development shell when a committed document exists.
-Initial loads, non-HTTP(S) address-bar navigation, and low-level controller
-calls without an injected authorizer remain unchanged. The prompt is not general
-request authorization or a production security boundary.
+Automatically started initial loads, non-HTTP(S) address-bar navigation, and
+low-level controller calls without an injected authorizer remain unchanged.
+The prompt is not general request authorization or a production security
+boundary.
 
 ## Simple GET forms
 
