@@ -1466,7 +1466,7 @@ hop-by-hop bestaetigungspflichtig; HTTPS-Downgrades werden blockiert.
 Low-Level-Controller ohne Shell-Authorizer bleiben unveraendert. Ein Motiv
 fuer die Wahl wurde nicht ueberliefert.
 
-**Belegt, Implementierung in Arbeit:** Separate
+**Belegt, umgesetzt und lokal validiert:** Separate
 `BackWithShellConfirmation`, `ForwardWithShellConfirmation` und
 `ReloadWithShellConfirmation`-Einstiege halten direkte Controller-Aufrufe
 unveraendert; `DevelopmentShell` routet seine Chrome-Aktionen ueber diese
@@ -1489,3 +1489,693 @@ confinement (`40297681328`) sind erfolgreich:
 [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/40297681183),
 [Linux](https://github.com/khmseu/VisualWeb/actions/runs/40297681348),
 [Windows](https://github.com/khmseu/VisualWeb/actions/runs/40297681328).
+
+**CI-Nachlauf zum Kontext-Commit `67272d1`:** Linux development und CodeQL
+bestanden. Windows ARM64 bestand; der erste Windows-x64-Lauf scheiterte an
+einem Timeout in `ScrollTests.CrossDocumentHistoryTraversalRestoresEachEntryScrollPosition(process: true)`.
+Der fehlgeschlagene Windows-x64-Job wurde erneut ausgefuehrt und bestand.
+Dies war ein transienter Testlauf-Fehler im unveraenderten Scrolltest; der
+Feature-Commit `c2bf905` hatte bereits alle drei primaeren Workflows bestanden.
+
+### KP-039 - Top-Level-File-Navigation-Policy
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Codepruefung und damals offene Policy-Frage; spaetere
+  Nutzerentscheidung ist in KP-040 festgehalten.
+- Quelle: `plans/Missing.md` Prioritaet 1; `BrowserController.NavigateWithShellConfirmation`,
+  `StartHistoryNavigation` und `DevelopmentShell.OpenWindow`.
+- Bezug: REQ-005, Q-002, Q-012, KP-038; folgt auf KP-038.
+
+**Belegt:** Die shell-spezifische Bestätigung greift nur fuer HTTP(S).
+Explizite Top-Level-`file:`-Navigation aus der Adressleiste, einem
+`OpenWindow(file:)`-Launch und Datei-History verwendet weiter den normalen
+Load-Pfad. Page-initiated File-Links/-Forms bleiben separat blockiert.
+Eine Origin-Bestaetigung wuerde fuer `file:` keinen ausreichenden Zieltext
+anzeigen; der Datei-Pfad waere fuer eine nutzbare Entscheidung erforderlich.
+
+**Bei der Ersterfassung offen:** Der Nutzer sollte entscheiden, ob Top-Level-
+`file:`-Navigation in der DevelopmentShell vor dem Laden bestaetigt, generell
+blockiert oder als explizite Browser-UI-/Launch-Aktion unveraendert zulaessig
+bleibt. Ein Prompt oder Block beeinflusst absichtliche lokale Tests; eine
+Prompt-Anzeige des Pfads legt lokale Pfad-Information offen. Alternativ kann
+ein anderer konkreter Missing-Punkt gewaehlt werden oder weitere Aktionen
+blockiert werden. Die Entscheidung folgte spaeter in KP-040.
+
+**Status bei Ersterfassung:** Keine Pass-5-Implementierung begonnen;
+Nutzerentscheidung ausstehend.
+
+### KP-040 - Bestaetigung expliziter File-Navigation
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl und Implementierung.
+- Quelle: Nutzerantwort auf die Policy-Auswahl im aktuellen Turn;
+  `BrowserController`, `DevelopmentShell`, `ShellChrome` und
+  `ShellTests.ShellLaunchAndFileHistoryLoadsRequireConfirmation`,
+  `ShellTests.FileAddressBarNavigationWaitsForConfirmationAndShowsPathWithoutQueryOrFragment`.
+- Bezug: REQ-005, DEC-020, Q-012, KP-039; setzt KP-039 fort.
+
+**Nutzerentscheidung (DEC-020):** Der Nutzer waehlte `confirm_file_navigation`.
+Explizite Top-Level-`file:`-Loads aus Adressleiste, `OpenWindow(file:)` und
+Datei-History sollen vor dem Laden bestaetigt werden; der Prompt soll den
+Datei-Pfad anzeigen. Ein Motiv fuer die Wahl wurde nicht mitgeteilt.
+
+**Umsetzung:** Shell-aware Adressleisten- und History-Einstiege routen `file:`
+ueber die bestaetigungsbasierte Ladeoperation. Da der bestehende Engine.Net
+Autorisierungsloader nur HTTP(S) akzeptiert und File-Loads keine Redirects
+haben, erfolgt die Nutzerautorisierung vor dem vorhandenen lokalen
+`IPageSource.LoadAsync`-Pfad. Der Prompt zeigt den kanonischen `file:`-URL-Pfad;
+Query und Fragment werden nicht angezeigt. Page-initiated File-Links/-Forms und
+direkte Low-Level-Controller-Aufrufe bleiben unveraendert. Gleichdokumentige
+Fragment-History laedt die Datei nicht erneut und fragt daher nicht.
+
+**Bisherige Validierung:** Zwei fokussierte Browser-Regressionstests, die
+vollstaendige Browser-Testsuite (1.108 Tests), `dotnet build VisualWeb.slnx`
+(0 Warnungen/Fehler) und `dotnet test VisualWeb.slnx --no-build` bestanden.
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` meldet die zuvor bekannten, nicht geaenderten Import-/
+Whitespace-Findings in `ShellChrome.cs` und `StaticLayout.cs`. `git diff
+--check` ist sauber. Commit `d38b902` wurde nach `origin/main` gepusht;
+CodeQL (`40305487233`), Linux development (`40305487392`) und Windows
+confinement (`40305487415`) sind erfolgreich:
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/40305487233),
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/40305487392),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/40305487415).
+
+### KP-041 - Explizite Data-Navigation-Policy
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Code-/Trackerpruefung und ausdrueckliche Nutzerwahl.
+- Quelle: `plans/Missing.md` Prioritaet 1; `docs/browser-shell.md`;
+  `BrowserController.NavigateWithShellConfirmation`,
+  `DevelopmentShell.OpenWindow`.
+- Bezug: REQ-005, Q-002, Q-013, KP-040; folgt auf KP-040.
+
+**Belegt:** Die shell-aware Adressleisten- und History-Einstiege routen
+HTTP(S) sowie Top-Level-`file:` durch die Shell-Policy; explizite
+Top-Level-`data:`-Navigation bleibt wie andere nicht-HTTP(S)-Navigation
+unveraendert. Die eingebaute New-Tab-Welcome-Page ist ebenfalls eine
+`data:`-URL. Page-initiated `data:`-Links und -Forms sind separat gesperrt.
+
+**Vorschlag (nicht beschlossen):** Naechster Pass waere eine ausdrueckliche
+Policy fuer browsergesteuerte `data:`-Navigation aus Adressleiste,
+`OpenWindow(data:)` und cross-document History. Bei einer Bestaetigung sollte
+der Dialog den Payload nicht anzeigen. Als Alternativen stehen Blockieren,
+Beibehalten des aktuellen Verhaltens mit Auswahl eines anderen konkreten
+Tracker-Inkrements oder das Pausieren weiterer Aktionen bis zur Klaerung
+offen. Der eingebaute Welcome-Aufruf und direkte Low-Level-Controller-Aufrufe
+bleiben bei einer Shell-Policy-Aenderung ausserhalb des Scopes.
+
+**Nutzerentscheidung (DEC-021):** Nutzer waehlt `confirm_top_level_data`.
+Explizite Top-Level-`data:`-Loads aus Adressleiste, `OpenWindow` und
+cross-document History sollen bestaetigt werden. Der Dialog zeigt nicht den
+Payload. Der eingebaute Welcome-Aufruf und direkte Low-Level-Controller-Aufrufe
+bleiben unveraendert; ein Motiv wurde nicht mitgeteilt.
+
+**Status:** Beschlossen; implementiert, lokal vollvalidiert, gepusht und CI-gruen.
+Siehe Q-013 und [KP-042](./Kontextprotokoll.md#kp-042---data-navigation-implementierung-und-ci)
+in [Wissensstand](./Wissensstand.md#offene-fragen-widersprueche-und-risiken).
+
+### KP-042 - Data-Navigation-Implementierung und CI
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Commit-, Test- und Actions-Pruefung.
+- Quelle: Commit `0b21f43`; `plans/Missing.md`; Browser-Navigationstests;
+  Actions CodeQL `40313206574`, Linux development `40313206774`,
+  Windows confinement `40313207096`.
+- Bezug: DEC-021, Q-013, KP-041; Pass 6 der Zehn-Passen-Serie.
+
+**Belegt:** Explizite Top-Level-`data:`-Loads aus Adressleiste,
+`OpenWindow` und cross-document Back/Forward/Reload werden vor dem Laden
+bestaetigt. Der Payload wird nicht angezeigt; der eingebaute Welcome-Aufruf
+und direkte Low-Level-Controller-Aufrufe bleiben unveraendert. Zwei fokussierte
+Regressionstests, alle 1.110 Browser-Tests, `dotnet build VisualWeb.slnx`,
+`dotnet test VisualWeb.slnx --no-build` und die Formatpruefung der geaenderten
+C#-Dateien bestanden. Die Loesungs-Formatpruefung meldet nur unveraenderte
+Findings in `StaticLayout.cs` und `ShellChrome.cs`.
+
+**Belegt:** Commit `0b21f43` ist auf `origin/main`. CodeQL, Linux development
+und Windows x64 bestanden. Der erste Windows-ARM64-Versuch scheiterte im
+CPU-pressure-Cancellation-Test mit `RendererProcessException` wegen
+ueberschrittenem Deadline, obwohl der Test Cancellation erwartete. Der
+fehlgeschlagene ARM64-Job wurde erneut ausgefuehrt und bestand einschliesslich
+des Tests, der vollstaendigen Solution-Tests und der Windows-Smokes. Die
+Ursache des ersten Fehlschlags ist nicht ermittelt; die erfolgreiche
+Wiederholung belegt keinen bestimmten Flake-Mechanismus.
+
+**Status:** Pass 6 abgeschlossen; CI nach erfolgreichem Rerun gruen. Die
+breitere Produktionsautorisierung bleibt offen. Der naechste konkrete
+Dateizugriffsumfang ist als Q-014 offen.
+
+### KP-043 - Vorschlag zur Begrenzung expliziter Datei-Navigation
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Vorschlag auf Grundlage des Trackers und der aktuellen
+  Shell-Dokumentation; Nutzerentscheidung steht aus.
+- Quelle: [Missing.md](../plans/Missing.md#1-production-safe-browsing-and-stronger-isolation),
+  [browser-shell.md](../docs/browser-shell.md), DEC-020 und Q-014.
+- Bezug: DEC-020, KP-040, KP-042; nicht beschlossen.
+
+**Belegt:** Top-Level-`file:`-Navigation aus Adressleiste, `OpenWindow` und
+History wird vor Dateizugriff bestaetigt. Der Prompt zeigt den kanonischen
+Pfad, aber diese Bestaetigung bietet laut Shell-Dokumentation keine
+Dateisystem-Isolation.
+
+**Vorschlag (offen):** Vor weiteren Datei-Sicherheitsarbeiten entscheiden,
+ob bestaetigte Navigation beliebige Dateipfade behalten soll, auf explizit
+freigegebene Wurzeln beschraenkt werden soll oder ganz deaktiviert werden
+soll. Eine Beschraenkung reduziert moeglichen Zugriff, braucht aber eine
+benutzerverstaendliche Wurzelwahl und kann lokale Entwicklungsablaeufe
+einschraenken; Beibehalten bewahrt Nutzbarkeit, ist jedoch keine Isolation;
+Deaktivieren nimmt die lokale Datei-Funktion weg.
+
+**Status bei Dokumentation:** Nutzerwahl stand aus; diese Optionen waren ein
+Vorschlag und keine Aenderung an DEC-020. **Spaeterer Stand:** Q-014 wurde
+durch DEC-022 / KP-044 beantwortet; der Nutzer bestaetigte beliebige
+Dateipfade nach Prompt und verwarf Wurzelbeschraenkung sowie Abschaltung fuer
+diesen Scope.
+
+### KP-044 - Dateizugriffsumfang bestaetigt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl.
+- Quelle: aktuelle Nutzerantwort zu Q-014.
+- Bezug: DEC-020, KP-040, KP-043; DEC-022 bestaetigt die bestehende Policy.
+
+**Nutzerangabe / Entscheidung (DEC-022):** Der Nutzer waehlte
+`keep_confirmed_any_path`: Top-Level-`file:`-Navigation behaelt nach
+ausdruecklicher Bestaetigung den Zugriff auf beliebige Dateipfade. Es werden
+keine erlaubten Wurzeln eingefuehrt und Datei-Navigation wird nicht
+abgeschaltet. Ein Motiv wurde nicht mitgeteilt.
+
+**Folge:** Die bestehende DevelopmentShell-Policy bleibt unveraendert. Sie
+erlaubt lokale Entwicklungsnavigation nach Bestaetigung, bietet aber keine
+Dateisystem-Isolation. Q-014 ist beantwortet; Pass 7 soll ein anderes
+konkretes Inkrement aus der weiterhin hoechsten Prioritaet waehlen.
+
+### KP-045 - Vorschlag zur gleich-originigen Page-Navigation
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Vorschlag vor Nutzerentscheidung; Code- und
+  Shell-Policy-Pruefung.
+- Quelle: [Missing.md](../plans/Missing.md#1-production-safe-browsing-and-stronger-isolation),
+  [browser-shell.md](../docs/browser-shell.md),
+  [BrowserController.cs](../src/Apps/VisualWeb.Browser/BrowserController.cs).
+- Bezug: Q-002, Q-015, DEC-014, KP-030; naechste moegliche Pass-7-Policy.
+
+**Belegt:** Die DevelopmentShell bestaetigt page-initiierte HTTP(S)-Ziele,
+wenn deren Origin nicht mit der aktuell committed Source-Origin uebereinstimmt.
+Gleich-originige Ziele laufen ohne initialen Prompt weiter; Redirects werden
+weiter einzeln bestaetigt, wenn der naechste Hop die Origin wechselt. Direkte
+Low-Level-Controller-Einstiege bleiben ohne Shell-Authorizer.
+
+**Vorschlag (nicht beschlossen):** Als eng begrenzte Ergaenzung koennte die
+DevelopmentShell auch den initialen gleich-originigen page-initiierte
+HTTP(S)-Top-Level-Request bestaetigen, waehrend die aktuelle Redirect-Policy,
+Address-Bar-Verhalten und Low-Level-Aufrufe unveraendert bleiben. Das erhoeht
+die explizite Nutzerkontrolle, erzeugt aber Dialoge auch fuer gewoehnliche
+gleich-originige Links/Formulare. Alternativ bleibt die bestehende
+Cross-Origin-only-Policy bestehen und ein anderes prioritaet-1-Inkrement muss
+ausgewaehlt werden.
+
+**Status bei Dokumentation:** Nutzerentscheidung zu Q-015 stand aus; keine
+Laufzeitaenderung war beschlossen. **Spaeterer Stand:** Der Nutzer bestaetigte
+die bestehende Cross-Origin-only-Policy in DEC-023 / KP-046.
+
+### KP-046 - Cross-Origin-only-Policy bestaetigt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl.
+- Quelle: aktuelle Nutzerantwort zu Q-015.
+- Bezug: DEC-014, Q-002, Q-015, KP-030 und KP-045.
+
+**Nutzerangabe / Entscheidung (DEC-023):** Der Nutzer waehlte
+`keep_cross_origin_only`. Gleich-originige page-initiierte HTTP(S)-Ziele
+behalten das aktuelle Verhalten ohne initialen Prompt. Cross-Origin-Ziele und
+origin-aendernde Redirects behalten die bestehende bestaetigungsbasierte
+Shell-Policy; Adressleisten- und direkte Low-Level-Controller-Aufrufe bleiben
+unveraendert. Ein Motiv wurde nicht mitgeteilt.
+
+**Folge:** Die vorgeschlagene Erweiterung fuer gleich-originige
+Page-Navigation wird nicht umgesetzt. Q-015 ist beantwortet; der naechste
+Pass muss einen anderen konkreten Punkt aus der weiterhin hoechsten
+Sicherheitsprioritaet adressieren.
+
+### KP-047 - Keine weitere fertige Prioritaet-1-Abgrenzung gefunden
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Tracker-, Roadmap- und Implementierungspruefung; Vorschlag
+  zur Entscheidung steht aus.
+- Quelle: [Missing.md](../plans/Missing.md#1-production-safe-browsing-and-stronger-isolation),
+  [browser-foundation-plan.md](../plans/browser-foundation-plan.md),
+  [docs/architecture/overview.md](../docs/architecture/overview.md),
+  [project-map.md](../docs/project-map.md), DEC-022 und DEC-023.
+- Bezug: Q-002, Q-016, DEC-022, DEC-023 und KP-046; Pass-7-Auswahl.
+
+**Belegt:** Die verbleibenden hoeher priorisierten Sicherheitsluecken umfassen
+allgemeine Request-Autorisierung, volle Fetch CORS/CSP, nicht abgedeckte
+Sandbox-/Origin-Kontexte, Storage-Partitionierung und Site-/Frame-Isolation.
+Der genehmigte Roadmap-Text stellt umfassendere Fetch/CSP-Funktionen und
+spaetere Site-Isolation als ausstehend dar. Die bereits abgegrenzten
+DevelopmentShell-Prompts fuer HTTP(S), `file:` und `data:` wurden umgesetzt;
+der Nutzer bestaetigte beliebige `file:`-Pfade nach Prompt und lehnte eine
+Ausdehnung auf gleich-originige HTTP(S)-Page-Navigation ab.
+
+**Ableitung:** Aus den geprueften Quellen ergibt sich derzeit kein weiteres
+kleines, bereits spezifiziertes und roadmap-kompatibles Prioritaet-1-
+Inkrement. Eine neue CSP-/CORS-/Sandbox-Policy ohne konkrete Nutzerabgrenzung
+waere spekulativ; Site-/Frame-Isolation waere ein groesserer, spaeterer
+Architekturschritt.
+
+**Vorschlag (offen):** Fuer Pass 7 entweder eine konkrete begrenzte
+Sicherheitsregel waehlen oder verbleibende Prioritaet 1 fuer diesen Auftrag
+ausdruecklich zurueckstellen und den naechsten Tracker-Punkt unter Prioritaet 2
+nehmen. Die zweite Option erhoeht den Funktionsumfang, laesst aber die
+breiteren Produktions-Sicherheitsluecken offen.
+
+**Status:** Q-016 offen; keine Implementierung oder Prioritaetsverschiebung
+beschlossen.
+
+### KP-048 - Sicherheitsprioritaet zurueckgestellt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl nach Tracker- und Roadmap-Pruefung.
+- Quelle: aktuelle Nutzerantwort zu Q-016.
+- Bezug: Q-002, Q-016, DEC-024 und KP-047; Pass-7-Auswahl.
+
+**Nutzerangabe / Entscheidung (DEC-024):** Der Nutzer waehlte
+`defer_security_move_to_priority2`: die verbleibenden breiten
+Prioritaet-1-Sicherheitsluecken werden fuer diesen Zehn-Passen-Lauf
+zurueckgestellt; der naechste Pass soll nach Prioritaet 2 aus `Missing.md`
+gewaehlt werden. Ein Motiv wurde nicht mitgeteilt.
+
+**Folge:** Diese Auswahl ist eine Arbeitsreihenfolge, keine Aussage, dass
+Prioritaet 1 abgeschlossen, die Anwendung sicher fuer untrusted content oder
+die Sicherheitsluecken akzeptabel seien.
+
+### KP-049 - Begrenzte tabindex-Fokusreihenfolge
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Implementierungsauswahl und Artefaktpruefung fuer Pass 7;
+  kein separat ueberlieferter Nutzerbeschluss zum genauen `tabindex`-Umfang.
+- Quelle: [Missing.md](../plans/Missing.md#2-basic-interaction-with-pages),
+  [browser-shell.md](../docs/browser-shell.md#textual-link-activation),
+  [PageTabIndex.cs](../src/Apps/VisualWeb.PageRendering/PageTabIndex.cs),
+  [BrowserController.cs](../src/Apps/VisualWeb.Browser/BrowserController.cs),
+  [HTML-Manifest](../specs/manifest.json) (`html`, checked 2026-10-04),
+  lokale HTML-Quelle `specs/cache/html.html`, Abschnitt 6.6.3.
+- Bezug: DEC-024, Q-009, Q-017 und Pass 7.
+
+**Belegt:** Der Guide fuehrte `tabindex` als deferred; bestehendes
+Keyboard-Tabbing umfasste bereits gerenderte Links und sichtbare aktivierte
+Formcontrols in Tree Order. Der lokale HTML-Standard beschreibt positive Werte
+vor nichtpositiven Werten und negative Werte ausserhalb der normalen
+sequential-focus scope. Die Manifestpruefung war zum Ereignisdatum 22 Tage
+alt; daher war kein Spec-Cache-Refresh erforderlich.
+
+**Ableitung / Implementierungsauswahl:** Pass 7 begrenzt die Erweiterung auf
+die bestehenden Link-/Form-Fokusziele und fuehrt keine generic rendered targets,
+DOM focus API oder Page-Fokusereignisse ein. Positive signed-32-bit-Integer
+werden aufsteigend vor null/Standardwerten sortiert; Tree-Order-Ties bleiben
+erhalten; negative Werte werden aus der Tab-Reihenfolge entfernt. Fehlende oder
+ungueltige Attribute behalten die bisherige Tree Order. Ein Wert ausserhalb
+des signed-32-bit-Bereichs scheitert sichtbar statt still ignoriert zu werden.
+Diese Grenzen sind eine kleine, explizit dokumentierte Umsetzung des Trackers
+und keine allgemeine Konformitaets- oder Nutzerfreigabe fuer DOM Focus. Die
+unterstuetzten Browserziele werden ueber IPC v46 als Daten transportiert.
+
+**Validierungsstand bei Erfassung:** Fokussierte Shelltests bestanden lokal und
+im Multiprocess-Modus; ein Test deckt positive Gleichstandreihenfolge,
+Zero-/Default-Reihenfolge, negative Auslassung und ungueltige Standardwerte
+ab; ein weiterer bestaetigt sichtbaren Fehler bei Ueberlauf. Alle 187
+`Ipc.Tests`, die Browser-Suite (1.113 Tests) und der Solution-Build (0
+Warnungen/Fehler) bestanden. Auch `dotnet test VisualWeb.slnx --no-build`
+bestand. Die Formatverifikation meldet drei Findings nur in den gegenueber
+HEAD unveraenderten Dateien `StaticLayout.cs` und `ShellChrome.cs`; in den
+Pass-7-Dateien wurden keine Formatfehler gemeldet. `git diff --check` ist
+sauber. Commit `f5bfdd7` (`feat(browser): order supported focus targets by
+tabindex`) ist auf `origin/main` gepusht. Die Workflows `Push on main`,
+`Windows confinement` (x64 und ARM64) und `Linux development` sind erfolgreich:
+[Push](https://github.com/khmseu/VisualWeb/actions/runs/40324104295),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/40324104669),
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/40324104881).
+Die beiden Kontextdateien bleiben ausserhalb des Feature-Commits.
+
+### KP-050 - Naechster Prioritaet-2-Inkrement
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: offene Umfangsklaerung fuer die fortgesetzte Zehn-Passen-Serie.
+- Quelle: aktuelle Session, naechster Turn nach Pass 7; Projekttracker
+  [Missing.md](../plans/Missing.md#2-basic-interaction-with-pages).
+- Bezug: DEC-024, Q-018 und Pass 7.
+
+**Belegt:** Pass 7 ist abgeschlossen und CI-gruen. Prioritaet 2 enthaelt
+mehrere noch fehlende, voneinander unabhaengige Bereiche; darunter horizontale
+Scroll-Unterstuetzung, weitere `tabindex`-Ziele und breitere Funktionen wie
+Downloads oder vollstaendige History. Der Tracker bestimmt nicht den
+Verhaltensumfang dieser Inkremente. Eine gezielte Suche fand keine bestehende
+`ScrollX`-Implementierung; Downloads sind im Shell-Guide als nicht
+implementiert dokumentiert.
+
+**Offen:** Welcher dieser Bereiche soll Pass 8 behandeln, und welcher
+begrenzte Verhaltensumfang ist gemeint? Es wird keine Implementierungsauswahl
+aus dem blossen bisherigen Vorrang fuer Prioritaet 2 abgeleitet. Vor Beginn
+wurde die Nutzerwahl eingeholt; siehe KP-051.
+
+### KP-051 - Horizontales Dokument-Scrollen gewaehlt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl.
+- Quelle: aktuelle Nutzerantwort auf die Pass-8-Umfangsklaerung.
+- Bezug: DEC-025, Q-018 und Prioritaet 2 in `plans/Missing.md`.
+
+**Nutzerangabe / Entscheidung (DEC-025):** Der Nutzer waehlte fuer Pass 8
+bounded horizontal document-level scrolling, ausdruecklich ohne nested overflow
+behavior.
+
+**Zum Zeitpunkt der Auswahl offen; spaeter geklaert:** Konkrete
+Shell-Eingaben, Scrollbar-Darstellung und Offsetverhalten bei Resize/
+Navigation wurden gegen die bestehenden vertikalen Scroll-Konventionen
+geprueft. Die Evidenz reichte fuer die technische Ausgestaltung; Details und
+Implementierungsnachweise stehen in KP-052.
+
+### KP-052 - Horizontales Scrollen implementiert und lokal validiert
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: laufend dokumentierter Artefakt- und Testabgleich.
+- Quellen: aktueller Turn; Commit `1463e6f`; `plans/Missing.md`,
+  Browser-/Paint-/IPC-Implementierung und fokussierte Regressionstests.
+- Bezug: DEC-025, Q-018, KP-050/KP-051 und Pass 8 der Zehn-Passen-Serie.
+
+**Belegt:** Die Shell-Konventionen fuer Scroll-Offsets, Pointer/Wheel-
+Eingaben, Scrollleisten und History erlaubten die technische Ausgestaltung
+ohne weitere wesentliche Nutzerwahl. Gemessen wird eine begrenzte rechte
+Dokumentausdehnung aus unterstuetzten Layout-Geometrien; negative
+Left-Origin-Ausdehnung und nested horizontal overflow bleiben ausserhalb.
+Der Offset wird waehrend Paint angewandt, ohne den Layout-Viewport oder
+Frame-Rahmen zu veraendern. Dokumentbreite, `DocumentX` und `ScrollX` laufen
+durch PageRendering, IPC v47, Renderer und Browser-Controller. Die
+Canvas-Hintergrundflaeche wird bis zur gemessenen Dokumentbreite erweitert.
+History-Eintraege speichern den horizontalen Scrollstand parallel zum
+vertikalen Stand; History-Eviction entfernt beide zusammen. Die Shell bietet
+Horizontal-Scrollbar, horizontales Mausrad, Shift+Vertikalrad und
+Pfeiltasten.
+
+**Validierung:** Die drei fokussierten Regressionstests fuer Scrollbar-
+Zuordnung bei beiden Achsen und History-Eviction bestanden. Der Build von
+`VisualWeb.slnx` bestand mit 0 Warnungen/Fehlern. `dotnet test VisualWeb.slnx
+--no-build` bestand mit 14.207 Tests, darunter 1.124 Browser- und 195
+IPC-Tests. `git diff --check` war sauber. `dotnet format
+VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+scheiterte an drei Diagnosen: Leerraum-/Importformatierung in
+`StaticLayout.cs` und Importreihenfolge in `ShellChrome.cs`; diese Befunde
+waren nicht durch Pass 8 verursacht und wurden nicht als Nebenarbeit
+geaendert.
+
+**Persistenz und CI-Stand:** 24 feature-, test- und
+projektdokumentationsbezogene Dateien wurden als `1463e6f` mit
+Conventional-Commit-Body und Copilot-Co-Author-Trailer committet und nach
+`origin/main` gepusht. Die Kontextdateien blieben bewusst uncommittet. Bei
+dieser Eintragung sind CodeQL (Workflow-Anzeige `Push on main`,
+[40343334327](https://github.com/khmseu/VisualWeb/actions/runs/40343334327))
+und Linux development
+([40343334966](https://github.com/khmseu/VisualWeb/actions/runs/40343334966))
+erfolgreich. Windows confinement (x64 und ARM64)
+([40343335015](https://github.com/khmseu/VisualWeb/actions/runs/40343335015))
+ist ebenfalls erfolgreich. Damit ist die CI-Matrix fuer Pass 8 abgeschlossen.
+Pass 9 ist noch nicht gewaehlt oder begonnen.
+
+### KP-053 - Pass 9 Eventumfang zur Auswahl
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: laufende Kandidatenpruefung; Nutzerentscheidung offen.
+- Quellen: aktueller Nutzerauftrag fuer zehn Passen; `plans/Missing.md`
+  Abschnitt 2; `docs/browser-shell.md` und `docs/scripting.md`; aktuelle
+  Shell-, renderer- und Event-Host-Code-/Testsuche.
+- Bezug: REQ-005, DEC-024, Q-019 und Pass 9.
+
+**Belegt:** Nach Pass 8 ist der naechste noch offene Prioritaet-2-Bereich
+allgemeine Page-Interaktion. Tab/Shift+Tab traversiert bereits Browser-Chrome,
+unterstuetzte Links und sichtbare aktivierte Formcontrols; aktivierte Links
+dispatchen im opt-in Script-Modus begrenzt `click`/`auxclick`. Der Renderer
+dispatcht keine allgemeinen Tastatur-/Mausereignisse und keine DOM-
+Fokusereignisse; allgemeines Hit-Testing bleibt ebenfalls offen.
+Phase-11g erlaubt keine automatischen Browserereignisse und Browser-Scripts
+bleiben opt-in. Tracker und vorhandene APIs bestimmen nicht, ob ein naechster
+Pass Fokus-, Tastatur- oder Pointerereignisse samt jeweiliger Ziel-/Timing-
+Semantik einfuehren soll.
+
+**Vorschlag, nicht beschlossen:** Eine einzelne bounded Ereignisfamilie als
+Pass 9 waehlen (Fokusereignisse auf den bestehenden Shell-Fokuszielen,
+Tastaturereignisse fuer bereits fokussierte unterstuetzte Ziele oder
+Primary-button Mausereignisse an unterstuetzten Linkzielen); die jeweils
+anderen Ereignisse, allgemeinen DOM-Hit-Tests und Standardaktionen ausserhalb
+des gewaehlten Umfangs lassen. Die wesentliche Wahl wird vor Codebeginn
+angefragt. Pass 9 ist nicht begonnen.
+
+### KP-054 - Fokusereignisse fuer Pass 9 gewaehlt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl.
+- Quelle: aktuelle Nutzerantwort auf die strukturierte Pass-9-Umfangsfrage.
+- Bezug: DEC-026, Q-019, KP-053 und Pass 9.
+
+**Nutzerangabe / Entscheidung:** Der Nutzer waehlte die begrenzte Variante,
+opt-in Seiten bei Fokuswechseln auf bereits unterstuetzten Links und
+sichtbaren aktivierten Formcontrols zu benachrichtigen. Allgemeine Treffer-
+ziele sowie Tastatur-/Pointerereignisse sind ausgeschlossen.
+
+**Offen vor Implementierung:** Welche Event-Klassen/Flags und Uebergangs-
+reihenfolge den vorhandenen Browser-Fokuszustaenden entsprechen, wird anhand
+der lokalen DOM/HTML-Quellen sowie der bestehenden Lebenszyklus-/Shellregeln
+festgelegt. Automatic browser events, neue Fokusziele und Defaultaktionen
+werden nicht aus der Auswahl abgeleitet.
+
+### KP-055 - Fokusereignis-Uebergangsumfang offen
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Laufzeitpfad-Pruefung; Nutzerklaerung erforderlich.
+- Quellen: `BrowserController.FocusPage`, `FocusLink`, `FocusControl`,
+  `FocusPagePosition` und `DevelopmentShell.TraverseFocus`/
+  `HandlePagePrimaryPointerPress`; PageRendering- und Process-Renderer-
+  Ereignisdispatch; relevante lokale `html`- und `dom`-Quellen.
+- Bezug: DEC-026, Q-020, KP-054 und Pass 9.
+
+**Belegt:** Die browser-owned Fokuszustandsaenderungen sind synchron und
+werden durch Tab-Traversierung, Pointeraktivierung, Clear/Selection und
+Page-/Chrome-Uebergang aufgerufen. Opt-in Klickereignisse laufen dagegen
+ueber eine asynchrone Rendereroperation und anschliessenden Retained-Repaint;
+Pointer-/Controlaktionen koennen sofort weiterarbeiten. Ein vollstaendiger
+Fokuswechselumfang muss diese Reihenfolge mit blur/focus verknuepfen, bevor
+anschliessende Browseraktion oder Rendering entscheidet. System-/OS-
+Fensterfokuswechsel besitzt im betrachteten Shellpfad keine gleichwertige
+fokussierte Seitenelement-Abbildung.
+
+**Zum Erfassungszeitpunkt offen; spaeter entschieden:** Eine schmale Pass-9-
+Variante kann nur Tab/Shift+Tab-Uebergaenge behandeln; die breitere Variante
+deckt alle bestehenden In-Page-Zielwechsel einschliesslich Pointeraktivierung
+und Wechsel zur/von Browser-Chrome ab. Diese Wahl bestimmt die
+Renderer-Serialisierung. Die spaetere Nutzerwahl ist in KP-056 festgehalten.
+
+### KP-056 - Bestehende Fokusuebergaenge fuer Pass 9 bestaetigt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Datum der urspruenglichen Nutzerantwort unbekannt; die
+  ueberlieferte Gespraechszusammenfassung ist Quelle dieser Eintragung.
+- Erfassungsart: Nutzerwahl aus der vom Nutzer bereitgestellten
+  Gespraechszusammenfassung rekonstruiert.
+- Quelle: aktuelle Nutzer-Nachricht mit zusammengefasstem Verlauf; sie berichtet
+  die Auswahl aller bestehenden In-Page-Fokuswechsel nach KP-055.
+- Bezug: DEC-026, Q-020, KP-053 bis KP-055 und Pass 9.
+
+**Nutzerangabe / Entscheidung:** Pass 9 umfasst Tab/Shift+Tab, bereits
+unterstuetzte Links und sichtbare aktivierte Formcontrols, Pointerfokus sowie
+Wechsel zwischen Seite und Browser-Chrome. Betriebssystem-Fensterfokus-
+ereignisse und neue Fokusziele sind ausgeschlossen.
+
+**Abgrenzung:** Dies ist keine Freigabe fuer allgemeine DOM-Fokussierung,
+Pointer-/Keyboard-Events, HTML-Eventloop oder Browser-Standardaktionen ausser
+der bestehenden Shell-Interaktion. Fokus-/Blur-Reihenfolge und asynchrone
+Renderer-Serialisierung muessen diese ausgewaehlten Uebergaenge abdecken.
+
+### KP-057 - Pass 9 Fokusereignisse implementiert und lokal validiert
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26; exakte Uhrzeiten aus den einzelnen Befehlen sind
+  fuer die Implementierungsereignisse nicht weiter relevant.
+- Erfassungsart: Implementierungs-, Test-, Git- und CI-Belege dieser Sitzung.
+- Quellen: `plans/Missing.md`, `BrowserController.cs`, `RendererProtocol.cs`,
+  `StaticPageRenderer.cs`, `ProcessPageRenderer.cs`, `Program.cs`,
+  `ClickDispatchTests.cs`, `ProtocolTests.cs`, `LinkClickEventTests.cs`,
+  `docs/browser-shell.md`, `docs/renderer-processes.md`, `docs/scripting.md`,
+  Commit `0160dc0` und GitHub Actions Runs
+  [40370739592](https://github.com/khmseu/VisualWeb/actions/runs/40370739592),
+  [40370740622](https://github.com/khmseu/VisualWeb/actions/runs/40370740622),
+  [40370740629](https://github.com/khmseu/VisualWeb/actions/runs/40370740629).
+- Bezug: DEC-026, Q-019, Q-020, KP-053 bis KP-056 und Pass 9.
+
+**Belegt:** Opted-in Dokumente koennen auf Wechseln zwischen bereits
+unterstuetzten gerenderten Links und sichtbaren aktivierten Controls trusted
+`blur`-/`focus`-Events erhalten. Die Renderer erzeugen begrenzte positive
+document-lokale Target-IDs; IPC v48 fuehrt nur diese opaque IDs, Dokument-ID,
+Eventart und Script-Policy. Blur geht Focus voraus. Lokale und Process-Renderer
+verarbeiten die Events auf ihrem Owning Thread. Fokus-/Blur teilen die
+per-document-Grenze von 1.024 trusted Events mit Click/Auxclick. Die
+Implementierung ergaenzt weder OS-Fensterfokus, neue Fokusziele,
+`FocusEvent`-spezifische Eigenschaften, `activeElement`, allgemeine
+DOM-Fokussierung noch einen HTML-Eventloop.
+
+**Belegt / Korrektur waehrend Implementierung:** Die erste vollstaendige
+Browser-Suite meldete fuenf Regressionen in Navigationstests. Die fuenf Tests
+bestanden am Basiscommit `1463e6f`; die Ursache war eine zu breite
+Same-Tab-Serialisierung im Browser-Pump, durch die ein abgebrochener, noch
+nicht abgeschlossener Load spaetere Operationen blockierte. Die Serialisierung
+ignoriert nun solche bereits abgebrochenen Operationen, behaelt aber die
+Reihenfolge aktiver Fokusarbeit bei. Danach bestanden die fuenf gezielten Tests
+und alle 1.129 Browser-Tests.
+
+**Validiert:** `dotnet build VisualWeb.slnx` bestand mit null Warnungen und
+Fehlern; `dotnet test VisualWeb.slnx --no-build` bestand mit 14.216 Tests;
+`git diff --check` war sauber. `dotnet format VisualWeb.slnx
+--verify-no-changes --no-restore --exclude third_party` meldete weiterhin drei
+bestehende Diagnosen ausschliesslich in den nicht geaenderten
+`StaticLayout.cs`- und `ShellChrome.cs`-Dateien. Commit `0160dc0` wurde nach dem Testlauf erstellt und auf `origin/main`
+gepusht. Push-on-main
+([40370739592](https://github.com/khmseu/VisualWeb/actions/runs/40370739592)),
+Windows confinement
+([40370740622](https://github.com/khmseu/VisualWeb/actions/runs/40370740622))
+und Linux development
+([40370740629](https://github.com/khmseu/VisualWeb/actions/runs/40370740629))
+sind erfolgreich. Pass 9 ist damit CI-gruen. Naechster vorgesehener Schritt
+ist, fuer Pass 10 einen konkreten noch offenen Punkt aus `plans/Missing.md`
+zu waehlen; die Kontextdateien bleiben ausserhalb des Feature-Commits.
+
+### KP-058 - Pass-10-Umfang noch offen
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Nutzerauftrag aus dem bereitgestellten Verlauf und
+  Implementierungs-/Trackerpruefung dieser Sitzung.
+- Quelle: Nutzerauftrag, zehn getrennte Missing-Prioritaetspassen auszufuehren;
+  `plans/Missing.md` Abschnitt 2 und `docs/browser-shell.md`.
+- Bezug: Q-021; Pass 9 ist in KP-057 dokumentiert.
+
+**Nutzerangabe:** Der Arbeitsauftrag umfasst zehn getrennt validierte und
+committete Passen. Nach CI-gruenem Pass 9 ist Pass 10 noch Teil des Auftrags.
+
+**Belegt:** Der Tracker beschreibt verbleibende allgemeine Seiteninteraktion,
+Hit-Testing, weitere DOM-Events und nicht abgedeckte Fokusziele, legt aber
+keinen naechsten konkreten Ereignis- oder Fokusumfang fest.
+
+**Vorschlaege, nicht beschlossen:** (1) begrenzte trusted Pointer-Hover-Events
+fuer bereits vorhandene gerenderte Ziele; (2) `tabindex`-/Fokusunterstuetzung
+fuer bisher nicht interaktive Ziele (bestehende offene Q-017); (3) begrenzte
+DOM-Scroll-Events fuer vorhandene Root-/Nested-Scrollaktionen; (4) bis zu einer
+Entscheidung keine weiteren Aktionen. Diese Alternativen haben unterschiedliche
+Hit-Testing-, Renderer-, Eventziel- und Zustandsfolgen. Kein Vorschlag ist als
+Nutzerwahl oder Implementierungsfreigabe festgehalten; Pass 10 bleibt
+unbegonnen, bis der Umfang entschieden ist.
+
+### KP-059 - Pass-10-Pointer-Hover-Bereich gewaehlt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl in dieser Sitzung.
+- Quelle: Antwort auf die Auswahlfrage fuer Pass 10; vorausgehende Tracker-
+  und Codebelege aus `plans/Missing.md`, `docs/browser-shell.md` und
+  `DevelopmentShell.cs`.
+- Bezug: DEC-027, Q-021, Q-022 und KP-058.
+
+**Nutzerangabe / Entscheidung:** Pass 10 soll begrenzte Pointer-Hover-
+Benachrichtigungen auf bestehenden Seitenzielen behandeln. Dies waehlt den
+Funktionsbereich, bestimmt aber noch nicht, ob die Seite Mouse- oder
+Pointer-Eventnamen, bubbling oder pointer-spezifische Daten erhaelt.
+
+**Belegt:** Die Shell hat bereits browser-owned Hover-Hervorhebungen fuer
+sichtbare Links und Select-Popup-Zeilen; allgemeine Hover-Events werden nicht
+an die Seite dispatcht. Die Browser-/Scripting-Guides begrenzen bisherige
+Click-/Focus-Events ausdruecklich auf plain Events ohne Pointer-Metadaten.
+Diese vorhandenen Grenzen sind zu pruefen, bevor eine Event-Semantik
+implementiert wird.
+
+**Offen:** Vor Implementierung muss Q-022 klaeren, welche konkrete Eventfamilie
+und Propagation auf welchen bestehenden Zieltypen geliefert wird und ob
+`relatedTarget` oder Pointer-Metadaten ausgeschlossen bleiben. Keine
+Eventnamen oder Standardssemantik aus der Bezeichnung des gewaehlten Bereichs
+ableiten.
+
+### KP-060 - Pass-10-PointerEvent-Vertrag bestaetigt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl in dieser Sitzung.
+- Quelle: strukturierte Antwort auf Q-022.
+- Bezug: DEC-027, Q-021, Q-022 und KP-059.
+
+**Nutzerangabe / Entscheidung:** Hover-Wechsel sollen bubbling
+`pointerout`/`pointerover` PointerEvents erzeugen. Der Nutzer waehlte
+PointerEvents mit pointerId/type und Koordinaten, statt plain Events oder
+Mouse-Events. Zielmenge: bestehende gerenderte Links sowie sichtbare
+aktivierte unterstuetzte Controls. Browser-owned Popup-/Listbox-Zeilen sind
+keine Seitenziele.
+
+**Umsetzungshinweis:** Das konkrete begrenzte Koordinaten-/Pointerdatenfeld-
+Subset wird aus den vorhandenen Plattform-Mausdaten abgeleitet und in den
+Subsystem-Guides explizit beschrieben; keine Freigabe fuer pointer capture,
+weitere Pointer-Events oder andere DOM-Input-APIs wurde erteilt.
+
+### KP-061 - Pointer-Hover-Wahl blockiert durch Eventgrenze
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: Abgleich der ausdruecklichen Nutzerwahl mit einer geltenden
+  Projektbegrenzung.
+- Quellen: Nutzerantwort zu Q-022; `docs/scripting.md`, Abschnitt
+  "Bounded synchronous synthetic events (phase 11g)"; Phase-11g-Projektvorgabe.
+- Bezug: DEC-027, Q-022, Q-023, KP-059 und KP-060.
+
+**Nutzerangabe:** Der Nutzer waehlte bubbling `pointerout`/`pointerover`
+PointerEvents mit pointerId/type- und Koordinatenmetadaten auf bestehenden
+gerenderten Links und sichtbaren aktivierten Controls.
+
+**Belegt / Grenze:** Die aktuelle Event-Roadmap sagt ausdruecklich, dass
+automatische Browser-Input-Events nicht hinzugefuegt werden. Ein automatischer
+Dispatch bei Pointer-Hover-Wechseln faellt darunter. Daher ist diese Nutzerwahl
+als Vorschlag dokumentiert, aber nicht umgesetzt; es wurde kein Pass-10-Code
+begonnen. Eine blosse Vereinfachung auf weniger Pointer-Metadaten wuerde den
+Konflikt nicht loesen.
+
+**Offen:** Der Nutzer muss ein anderes mit den aktuellen Grenzen kompatibles
+Pass-10-Inkrement waehlen oder weitere Arbeit blockieren. Als unverbindlicher
+Vorschlag kommt eine browser-owned Hover-Darstellung fuer bestehende sichtbare
+Controls ohne Seiten-DOM-Events in Frage; andere Prioritaet-2-Punkte koennen
+ebenfalls vorgeschlagen werden. Q-023 bleibt offen.
+
+### KP-062 - Weitere Arbeit gestoppt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzeranweisung.
+- Quelle: aktuelle Nutzerantwort "stop".
+- Bezug: Q-023, DEC-027, KP-061.
+
+Der Nutzer bat nach der Bitte um eine scope-kompatible Alternative um Stopp.
+Es wird kein alternatives Pass-10-Inkrement angenommen und keine weitere
+Implementierung begonnen, bis der Nutzer eine neue ausdrueckliche Anweisung
+erteilt.
