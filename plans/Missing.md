@@ -47,6 +47,14 @@ Sandboxed documents and other inherited-origin contexts remain unsupported.
 
 Evidence: `networking trust boundary`, `isolation architecture`, and `Linux confinement architecture policy and evidence boundary`.
 
+Shell history-navigation increment: HTTP(S) Back/Forward/Reload targets use
+the development-shell authorizer. Cross-origin history destinations prompt
+against the currently committed document, and origin-changing redirects prompt
+relative to each preceding hop. HTTPS documents block HTTP history targets and
+downgrade redirects before transport. This does not close the broader
+production-authorization gap or change low-level controllers without an
+authorizer.
+
 ### 2. Basic interaction with pages
 
 The shell supports bounded textual link activation and vertical document scrolling, including Ctrl+Home/End outside editable controls;

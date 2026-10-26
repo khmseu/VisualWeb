@@ -1872,7 +1872,9 @@ public sealed class BrowserController : IDisposable
     }
     /// <summary>Compatibility alias for callers using the address-bar navigation entry point.</summary>
     public void NavigateFromAddressBar(TabId id, string address) => NavigateWithShellConfirmation(id, address);
-    public void Back(TabId id)
+    public void Back(TabId id) => Back(id, useShellConfirmation: false);
+    public void BackWithShellConfirmation(TabId id) => Back(id, useShellConfirmation: true);
+    private void Back(TabId id, bool useShellConfirmation)
     {
         Check();
         var tab = Session.Tab(id);
@@ -1880,10 +1882,13 @@ public sealed class BrowserController : IDisposable
         var index = tab.History.Index - 1;
         if (TryTraverseSameDocument(id, index)) { return; }
         var destination = tab.History.Entries[index];
-        Start(tab, destination, index, false, restoreScrollY: tab.History.ScrollPositionAt(index),
+        StartHistoryNavigation(tab, destination, index, false, useShellConfirmation,
+            restoreScrollY: tab.History.ScrollPositionAt(index),
             aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
     }
-    public void Forward(TabId id)
+    public void Forward(TabId id) => Forward(id, useShellConfirmation: false);
+    public void ForwardWithShellConfirmation(TabId id) => Forward(id, useShellConfirmation: true);
+    private void Forward(TabId id, bool useShellConfirmation)
     {
         Check();
         var tab = Session.Tab(id);
@@ -1891,16 +1896,36 @@ public sealed class BrowserController : IDisposable
         var index = tab.History.Index + 1;
         if (TryTraverseSameDocument(id, index)) { return; }
         var destination = tab.History.Entries[index];
-        Start(tab, destination, index, false, restoreScrollY: tab.History.ScrollPositionAt(index),
+        StartHistoryNavigation(tab, destination, index, false, useShellConfirmation,
+            restoreScrollY: tab.History.ScrollPositionAt(index),
             aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
     }
-    public void Reload(TabId id)
+    public void Reload(TabId id) => Reload(id, useShellConfirmation: false);
+    public void ReloadWithShellConfirmation(TabId id) => Reload(id, useShellConfirmation: true);
+    private void Reload(TabId id, bool useShellConfirmation)
     {
         Check();
         var tab = Session.Tab(id);
         var current = tab.History.Current ?? throw new InvalidOperationException("No committed page to reload.");
-        Start(tab, current, null, true,
+        StartHistoryNavigation(tab, current, null, true, useShellConfirmation,
             aboutBlankOrigin: current.IsAboutBlank ? tab.History.OriginAt(tab.History.Index) : null);
+    }
+    private void StartHistoryNavigation(BrowserTab tab, BrowserUrl url, int? traversal, bool replace,
+        bool useShellConfirmation, double restoreScrollY = 0, SecurityOrigin? aboutBlankOrigin = null)
+    {
+        var document = content[tab.Id].Document;
+        if (useShellConfirmation && pageNavigationAuthorizer is not null && url.Protocol is "http:" or "https:")
+        {
+            Start(tab, url, traversal, replace,
+                preventHttpsDowngrade: document?.Url.Protocol == "https:",
+                restoreScrollY: restoreScrollY,
+                authorizeRedirects: true,
+                preserveAddressWhileLoading: true,
+                authorizationSourceOrigin: document?.Origin,
+                aboutBlankOrigin: aboutBlankOrigin);
+            return;
+        }
+        Start(tab, url, traversal, replace, restoreScrollY: restoreScrollY, aboutBlankOrigin: aboutBlankOrigin);
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false,

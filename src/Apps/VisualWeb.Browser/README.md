@@ -111,6 +111,11 @@ separately. The built-in new-tab welcome page is a `data:` URL and does not
 prompt. Other non-HTTP(S) shell navigation and direct
 `BrowserController.Navigate` calls remain unchanged. This is not production
 request authorization.
+HTTP(S) Back/Forward/Reload operations also prompt for cross-origin history
+targets and origin-changing redirects. HTTPS documents block HTTP history
+targets and downgrade redirects before transport; same-origin history targets
+do not prompt. Direct `BrowserController.Back`, `Forward`, and `Reload` calls
+keep their existing behavior; the shell uses confirmation-aware entry points.
 
 Every shell session owns one bounded in-memory HSTS store shared across all
 tab-local GET loaders/windows, in local and multiprocess modes. Independent

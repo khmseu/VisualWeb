@@ -295,6 +295,15 @@ does not prompt. Other non-HTTP(S) shell navigation and direct low-level
 use the confirmation-aware shell navigation method. The prompt is not general
 request authorization or a production security boundary.
 
+HTTP(S) Back/Forward/Reload operations use the same confirmation path:
+cross-origin history destinations prompt relative to the currently committed
+document, and each origin-changing redirect prompts relative to the preceding
+hop. Same-origin history destinations do not prompt. If the current document
+is HTTPS, HTTP history targets and HTTPS-to-HTTP redirects are blocked before
+transport. This shell policy does not change low-level controller callers
+using `Back`, `Forward`, or `Reload` directly; the shell uses distinct
+confirmation-aware entry points for its chrome actions.
+
 ## Simple GET forms
 
 This is a deliberately narrow subset of HTML

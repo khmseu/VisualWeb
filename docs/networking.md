@@ -274,8 +274,14 @@ automatically started shell HTTP(S) loads (including launch URLs opened through
 with each origin-changing redirect confirmed separately. The built-in new-tab
 welcome page is a `data:` URL and does not prompt. Other non-HTTP(S) shell
 navigation and low-level `BrowserController.Navigate` calls remain unchanged.
-This is not general request authorization, and low-level `BrowserController`
-instances do not enable it unless configured with an authorizer. Other request
+HTTP(S) Back/Forward/Reload operations also use the shell authorizer: an
+initial history destination prompts if it differs from the currently committed
+document's origin, and each origin-changing redirect prompts relative to the
+previous hop. HTTPS documents block HTTP history targets and downgrade
+redirects before transport. Same-origin history destinations do not prompt.
+This is not general request authorization. Direct `BrowserController.Back`,
+`Forward`, and `Reload` calls keep their existing behavior; `DevelopmentShell`
+uses distinct confirmation-aware entry points for its chrome actions. Other request
 classes have no browser-wide origin authorization. Apart from these narrow rules and
 bad-port blocking above, there is no general CSP, mixed-content policy,
 referrer policy, cache, storage partitioning, sandbox or private-network policy

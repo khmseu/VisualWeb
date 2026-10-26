@@ -967,9 +967,9 @@ public sealed class DevelopmentShell : IDisposable
         { Controller.FocusPage(tab.Id, false); }
         switch (action)
         {
-            case ChromeAction.Back when tab?.History.CanGoBack == true: Controller.Back(tab.Id); break;
-            case ChromeAction.Forward when tab?.History.CanGoForward == true: Controller.Forward(tab.Id); break;
-            case ChromeAction.Reload when tab?.History.Current is not null: Controller.Reload(tab.Id); break;
+            case ChromeAction.Back when tab?.History.CanGoBack == true: Controller.BackWithShellConfirmation(tab.Id); break;
+            case ChromeAction.Forward when tab?.History.CanGoForward == true: Controller.ForwardWithShellConfirmation(tab.Id); break;
+            case ChromeAction.Reload when tab?.History.Current is not null: Controller.ReloadWithShellConfirmation(tab.Id); break;
             case ChromeAction.NewTab:
                 var created = Controller.CreateTab(window.Id);
                 Controller.NavigateWithShellConfirmation(created.Id, HomeUrl);

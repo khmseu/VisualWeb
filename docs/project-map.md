@@ -13,9 +13,12 @@ The development shell confirms cross-origin page link/form requests and typed
 HTTP(S) address-bar requests from an already committed document. With no
 committed document, it confirms every typed HTTP(S) address-bar destination
 and automatically started shell HTTP(S) loads such as a launch URL. Origin-
-changing redirects are confirmed hop by hop. The built-in `data:` new-tab
-welcome page, other non-HTTP(S) shell navigation and direct low-level controller
-calls remain outside this prompt. It is not production request authorization.
+changing redirects are confirmed hop by hop. HTTP(S) Back/Forward/Reload also
+confirm cross-origin history targets and origin-changing redirects; HTTPS
+documents block HTTP history targets and downgrade redirects. The built-in
+`data:` new-tab welcome page, other non-HTTP(S) shell navigation and direct
+`BrowserController` calls remain unchanged. It is not production request
+authorization.
 
 | Project                                                               | Responsibility                                                                                                                                                                                                                                                                                           | Planned dependencies / official sources                                                                     |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
