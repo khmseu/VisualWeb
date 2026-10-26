@@ -2179,3 +2179,41 @@ Der Nutzer bat nach der Bitte um eine scope-kompatible Alternative um Stopp.
 Es wird kein alternatives Pass-10-Inkrement angenommen und keine weitere
 Implementierung begonnen, bis der Nutzer eine neue ausdrueckliche Anweisung
 erteilt.
+
+### KP-063 - Endziel aus Missing-Uebersicht entfernt
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzeranweisung.
+- Quelle: aktuelle Nutzeranweisung zu `plans/Missing.md`.
+- Bezug: KP-011; redaktionelle Aenderung, keine neue Funktionsanforderung.
+
+Der Nutzer bat darum, die knappe Sektion "End goal" aus `plans/Missing.md`
+zu entfernen, weil sie weniger hilfreich als erwartet war. Die Sektion wurde
+entfernt. Diese redaktionelle Aenderung allein widerruft oder bestaetigt nicht
+die zuvor dokumentierte Nutzerangabe zum GitHub-Ziel; deren aktueller
+Anforderungsstatus wurde in diesem Auftrag nicht neu bewertet.
+
+### KP-064 - Missing-Eintraege als niedrigere Prioritaet formulieren
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzeranweisung und Codepruefung.
+- Quelle: aktuelle Nutzeranweisung; `plans/Missing.md`,
+  `InlinePageScripts.Collect` und `docs/scripting.md`.
+- Bezug: KP-063; Aktualisierung der Darstellungsweise, keine neue technische
+  Zusage.
+
+Der Nutzer bat darum, Aussagen in `plans/Missing.md`, die Funktionen als
+"deferred" bezeichnen, stattdessen als niedriger priorisierte Arbeit
+darzustellen. Die zwei expliziten Deferred-Aussagen wurden als derzeit
+unimplementierte, niedrig priorisierte Arbeit umformuliert. Das benennt eine
+Prioritaet, keine technische Sperre.
+
+Der Nutzer fragte ausserdem nach "external scripts". Hiermit sind Script-
+Elemente gemeint, deren JavaScript als separate Ressource ueber `src` referenziert
+wird, etwa `<script src="app.js"></script>`, im Gegensatz zu inline JavaScript
+zwischen den Script-Tags. Belegt durch `InlinePageScripts.Collect`: Beim
+aktivierten Inline-Scripting wird ein klassisches Script mit `src` abgelehnt;
+die Ressource wird nicht geladen oder ausgefuehrt. Module sind eine separate,
+ebenfalls nicht unterstuetzte Script-Art.

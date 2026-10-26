@@ -91,6 +91,10 @@ koennen. Das ist eine Nutzeranforderung, **kein Nachweis heutiger
 GitHub-Kompatibilitaet**. Welche GitHub-Funktionen als Abnahme gelten, ist noch
 nicht spezifiziert
 ([KP-011](./Kontextprotokoll.md#kp-011---startskript-und-github-endziel), Q-001).
+Die separate Sektion "End goal" wurde auf Nutzerwunsch aus
+[Missing.md](../plans/Missing.md) entfernt, da sie als wenig hilfreich
+bewertet wurde ([KP-063](./Kontextprotokoll.md#kp-063---endziel-aus-missing-uebersicht-entfernt)).
+Dieser redaktionelle Schritt bewertet den frueheren Zielstatus nicht neu.
 
 ## Rahmenbedingungen und Nicht-Ziele
 
@@ -122,24 +126,31 @@ nicht spezifiziert
 
 ## Wissenslandkarte und Begriffe
 
-| Thema                           | Bedeutung und Einstieg                                                                      | Autoritative Quelle                                                                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Projektgrenzen und Konventionen | Aktuelle Arbeitsregeln; Projektpfade und Validierung                                        | [AGENTS.md](../AGENTS.md)                                                                                                                            |
-| Subsysteme                      | Besitzer und Abhaengigkeitsrichtung                                                         | [Projektkarte](../docs/project-map.md), [Architektur](../docs/architecture/overview.md)                                                              |
-| Historische Phasen              | Freigegebene Meilensteine, nicht aktuelle Faehigkeitsmatrix                                 | [Roadmap](../plans/browser-foundation-plan.md), [ADR 0001](../docs/adr/0001-browser-foundation.md)                                                   |
-| Naechste Arbeit                 | Narrative Prioritaeten und explizite Restluecken                                            | [Missing.md](../plans/Missing.md#recommended-priority)                                                                                               |
-| Standards und Fixtures          | Cache ist Referenzbestand; gepinnte Testdaten bleiben separat                               | [Standards](../docs/standards.md), [Manifest](../specs/manifest.json)                                                                                |
-| Browser-Broker                  | Privilegierte Navigation und Stylesheet-Requests, nicht rendererseitiges Fetch              | [Shell](../docs/browser-shell.md), [Netzwerk](../docs/networking.md)                                                                                 |
-| Committed origin                | Erst mit erfolgreicher Navigation publizierte Dokument-Origin; bei Wechsel Rendererrotation | [Rendererprozesse](../docs/renderer-processes.md), [Missing.md](../plans/Missing.md)                                                                 |
-| Confinement                     | Linux namespaces/mounts/seccomp/cgroup; Windows AppContainer/Job Object                     | [Linux](../docs/linux-confinement.md), [Windows](../docs/windows-confinement.md)                                                                     |
-| Inline scripts                  | Expliziter Post-Parse-Classic-Opt-in; kein allgemeiner HTML-Scheduler                       | [Scripting](../docs/scripting.md)                                                                                                                    |
-| Retained host                   | Idle V8/Listener nur fuer begrenzte Link-click/auxclick-Dispatches, nicht Event Loop        | [Scripting: Link-Dispatch](../docs/scripting.md#retained-link-click-dispatch-pass-5), [PageRendering](../src/Apps/VisualWeb.PageRendering/README.md) |
-| Endlicher Renderumfang          | Eigene Parser/DOM/CSS, Latin/LTR-Layout und CPU-Paint                                       | [HTML/DOM](../docs/html-dom.md), [CSS](../docs/css.md), [Text/Layout](../docs/text-layout.md), [Paint](../docs/painting.md)                          |
-| Starten                         | Vorhandener Wrapper mit URL, Renderer und vertrauenswuerdiger Schrift                       | [run-browser.sh](../scripts/run-browser.sh), [README](../README.md#getting-started)                                                                  |
-| Lizenzen                        | First-party MIT, Drittmaterial mit eigenen Bedingungen                                      | [LICENSE](../LICENSE), [Notices](../THIRD_PARTY_NOTICES.md)                                                                                          |
+| Thema                           | Bedeutung und Einstieg                                                                              | Autoritative Quelle                                                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Projektgrenzen und Konventionen | Aktuelle Arbeitsregeln; Projektpfade und Validierung                                                | [AGENTS.md](../AGENTS.md)                                                                                                                            |
+| Subsysteme                      | Besitzer und Abhaengigkeitsrichtung                                                                 | [Projektkarte](../docs/project-map.md), [Architektur](../docs/architecture/overview.md)                                                              |
+| Historische Phasen              | Freigegebene Meilensteine, nicht aktuelle Faehigkeitsmatrix                                         | [Roadmap](../plans/browser-foundation-plan.md), [ADR 0001](../docs/adr/0001-browser-foundation.md)                                                   |
+| Naechste Arbeit                 | Narrative Prioritaeten und explizite Restluecken; niedrigere Prioritaet ist keine technische Sperre | [Missing.md](../plans/Missing.md#recommended-priority)                                                                                               |
+| Standards und Fixtures          | Cache ist Referenzbestand; gepinnte Testdaten bleiben separat                                       | [Standards](../docs/standards.md), [Manifest](../specs/manifest.json)                                                                                |
+| Browser-Broker                  | Privilegierte Navigation und Stylesheet-Requests, nicht rendererseitiges Fetch                      | [Shell](../docs/browser-shell.md), [Netzwerk](../docs/networking.md)                                                                                 |
+| Committed origin                | Erst mit erfolgreicher Navigation publizierte Dokument-Origin; bei Wechsel Rendererrotation         | [Rendererprozesse](../docs/renderer-processes.md), [Missing.md](../plans/Missing.md)                                                                 |
+| Confinement                     | Linux namespaces/mounts/seccomp/cgroup; Windows AppContainer/Job Object                             | [Linux](../docs/linux-confinement.md), [Windows](../docs/windows-confinement.md)                                                                     |
+| Inline scripts                  | Expliziter Post-Parse-Classic-Opt-in; kein allgemeiner HTML-Scheduler                               | [Scripting](../docs/scripting.md)                                                                                                                    |
+| Retained host                   | Idle V8/Listener nur fuer begrenzte Link-click/auxclick-Dispatches, nicht Event Loop                | [Scripting: Link-Dispatch](../docs/scripting.md#retained-link-click-dispatch-pass-5), [PageRendering](../src/Apps/VisualWeb.PageRendering/README.md) |
+| Endlicher Renderumfang          | Eigene Parser/DOM/CSS, Latin/LTR-Layout und CPU-Paint                                               | [HTML/DOM](../docs/html-dom.md), [CSS](../docs/css.md), [Text/Layout](../docs/text-layout.md), [Paint](../docs/painting.md)                          |
+| Starten                         | Vorhandener Wrapper mit URL, Renderer und vertrauenswuerdiger Schrift                               | [run-browser.sh](../scripts/run-browser.sh), [README](../README.md#getting-started)                                                                  |
+| Lizenzen                        | First-party MIT, Drittmaterial mit eigenen Bedingungen                                              | [LICENSE](../LICENSE), [Notices](../THIRD_PARTY_NOTICES.md)                                                                                          |
 
 Die Landkarte verlinkt auch Fachquellen, die hier nicht vollstaendig neu
 auditiert wurden; Quellenumfang und Nachweisgrenzen stehen im Protokoll.
+
+`plans/Missing.md` beschreibt niedrig priorisierte Luecken als Arbeit mit
+niedrigerer Prioritaet, nicht als dauerhaft ausgeschlossen. "Externe Scripts"
+sind JavaScript-Ressourcen, die durch `<script src="...">` referenziert werden;
+bei aktiviertem Inline-Scripting werden klassische Scripts dieser Art derzeit
+abgelehnt und nicht geladen
+([KP-064](./Kontextprotokoll.md#kp-064---missing-eintraege-als-niedrigere-prioritaet-formulieren)).
 
 ## Anforderungen und Spezifikationsstand
 

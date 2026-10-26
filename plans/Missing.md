@@ -44,7 +44,7 @@ Sandboxed documents and other inherited-origin contexts remain unsupported.
   In the shell-configured path, page-initiated cross-origin form redirects use these per-hop confirmations instead of silently following or applying the low-level fixed-action-origin form restriction; direct low-level controllers retain their existing restrictions unless given a policy.
   UIR's bounded shell integration upgrades HTTP GET form actions (including cross-origin actions) and same-origin page-initiated HTTP links, including redirect destinations, before applicable `form-action`, page-navigation authorization, downgrade and bad-port checks. Cross-origin link navigations are not upgraded. Explicit port 80 maps to HTTPS's default port 443; non-default ports and URL components are preserved. Form query values are sent only after the existing cross-origin confirmation. Explicit address-bar navigation does not inherit document-policy URL rewriting, but its HTTP(S) main-document hops carry the generic UIR header signal. Other resource types and non-shell controller paths remain unchanged. The cross-origin form/redirect confirmation regression now waits for the browser-owned prompt before accepting, avoiding repeated Enter events resubmitting a form while asynchronous redirect authorization is pending.
 
-- The bounded response-header CSP `base-uri` subset checks the first usable `<base href>` without `default-src` fallback. A disallowed base resolves stylesheet/import discovery, renderer links and form actions against the final document URL. The effective URL crosses IPC v41 as data only; dynamic base mutations remain deferred.
+- The bounded response-header CSP `base-uri` subset checks the first usable `<base href>` without `default-src` fallback. A disallowed base resolves stylesheet/import discovery, renderer links and form actions against the final document URL. The effective URL crosses IPC v41 as data only; dynamic base mutations are unimplemented and lower-priority work.
 
 Evidence: `networking trust boundary`, `isolation architecture`, and `Linux confinement architecture policy and evidence boundary`.
 
@@ -343,7 +343,8 @@ or be `*`; redirects are restricted to the effective initial stylesheet origin.
 This intentionally narrow policy is not full Fetch CORS. Any stylesheet failure
 fails the navigation. Missing pieces include:
 
-- Conditional/layer/late CSS imports, `url()` resources, external scripts, images,
+- Conditional/layer/late CSS imports, `url()` resources, external scripts (JavaScript
+  referenced by a `<script src="...">` URL rather than inline script text), images,
   fonts, media, and frame resources; media queries beyond exact comma-separated
   `all`/`screen`/`print` type lists, alternate/titled linked sheets,
   full CORS/SOP and
@@ -360,7 +361,10 @@ fails the navigation. Missing pieces include:
 - Full cookie policy and persistence. The browser currently disables cookies; the networking library’s optional cookie subset rejects Domain, SameSite, and Partitioned attributes.
 - MIME sniffing. The byte-level HTML charset prescan (`<meta charset>`, pragma, XML declaration; first 1024 bytes) now feeds navigation decoding, but statistical/locale encoding detection, container inheritance and the parser's reparse on a later conflicting declaration are absent.
 
-Unsupported linked-stylesheet semantics and external scripts are explicitly rejected rather than merely ignored.
+Unsupported linked-stylesheet semantics are explicitly rejected rather than merely
+ignored. When inline page scripting is enabled, classic scripts with a `src`
+attribute (for example, `<script src="app.js"></script>`) are rejected; their
+source is not fetched or executed.
 
 Evidence: `stylesheet collection`, `script classification`, `HTML loading policy`, and `networking scope`.
 
@@ -429,7 +433,9 @@ However:
   renderer-local host/listeners after initial execution, but only for bounded
   trusted link-event dispatch (1024 click/auxclick events combined per document; failures invalidate the
   host until reload); no timers, tasks or other callbacks run later.
-- Modules, external scripts, timers, workers, script-visible networking/storage, and full Window/Web IDL behavior remain deferred.
+- Modules, external scripts (`<script src="...">` resources), timers, workers,
+  script-visible networking/storage, and full Window/Web IDL behavior are
+  unimplemented and lower-priority work.
 - Synthetic events, finite lifecycle/microtask processing and the narrow link-click
   dispatch exist, but not general ongoing page interaction.
 - WebAssembly is explicitly disabled in the current host.
@@ -484,7 +490,3 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 `bc22600` ([Linux](https://github.com/khmseu/VisualWeb/actions/runs/39194869543),
 [Windows](https://github.com/khmseu/VisualWeb/actions/runs/39194869712)). These checks are not full conformance, security, CI-matrix or
 real-desktop validation.
-
-## End goal
-
-The browser should be able to handle the GitHub website.
