@@ -1434,3 +1434,10 @@ sie ist von den neuen Pass-Aenderungen zu trennen.
 **Status / naechste Schritte:** Pass 3 ist lokal implementiert und validiert;
 Commit, Push und CI stehen aus. Fuer die naechste Pass-Auswahl sind Tracker
 und verbleibende offene Policy erneut zu pruefen.
+
+**Nachtrag:** Commit `93111dc` (`feat(browser): confirm automatic HTTP(S)
+shell loads`) wurde am 2026-10-26 auf `origin/main` gepusht. CodeQL
+(`40288834382`), Linux development (`40288834949`) und Windows confinement
+(`40288835038`) sind erfolgreich. Die lokalen Browser-Tests (1.102),
+Solution-Build und Volltests bestanden. Die Formatpruefung meldet weiterhin
+nur die unveraenderten Findings in `StaticLayout.cs` und `ShellChrome.cs`.
