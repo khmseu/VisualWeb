@@ -191,7 +191,7 @@ public sealed class DevelopmentShell : IDisposable
             if (!empty)
             {
                 var tab = Controller.CreateTab(window.Id);
-                Controller.Navigate(tab.Id, url ?? HomeUrl);
+                Controller.NavigateWithShellConfirmation(tab.Id, url ?? HomeUrl);
             }
             return window;
         }
@@ -893,7 +893,7 @@ public sealed class DevelopmentShell : IDisposable
             case SDL.Scancode.Return:
                 var address = view.Editor.Text;
                 Edit(view, window, false);
-                Controller.NavigateFromAddressBar(tab.Id, address);
+                Controller.NavigateWithShellConfirmation(tab.Id, address);
                 break;
             case SDL.Scancode.Escape:
                 Controller.SetAddress(tab.Id, tab.History.Current?.Href ?? "");
@@ -972,7 +972,7 @@ public sealed class DevelopmentShell : IDisposable
             case ChromeAction.Reload when tab?.History.Current is not null: Controller.Reload(tab.Id); break;
             case ChromeAction.NewTab:
                 var created = Controller.CreateTab(window.Id);
-                Controller.Navigate(created.Id, HomeUrl);
+                Controller.NavigateWithShellConfirmation(created.Id, HomeUrl);
                 break;
             case ChromeAction.NewWindow: OpenWindow(); break;
             case ChromeAction.CloseTab when target is { } close: Controller.CloseTab(close); break;

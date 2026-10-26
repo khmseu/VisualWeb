@@ -286,10 +286,14 @@ is approved. The chrome shows only the destination origin and accepts
 Allow/Cancel, Enter, or Escape. For page-initiated requests, the address bar
 retains its prior value and GET form query values are neither shown in chrome
 nor sent while waiting; an address-bar submission retains the typed destination.
-Automatically started initial loads, non-HTTP(S) address-bar navigation, and
-low-level controller calls without an injected authorizer remain unchanged.
-The prompt is not general request authorization or a production security
-boundary.
+Automatically started shell HTTP(S) loads, including a launch URL supplied to
+`OpenWindow`, use the same confirmation path before their first request when
+there is no committed document. Origin-changing redirects continue to require
+separate confirmation. The built-in new-tab welcome page is a `data:` URL and
+does not prompt. Other non-HTTP(S) shell navigation and direct low-level
+`BrowserController.Navigate` calls remain unchanged unless callers explicitly
+use the confirmation-aware shell navigation method. The prompt is not general
+request authorization or a production security boundary.
 
 ## Simple GET forms
 

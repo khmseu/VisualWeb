@@ -1391,3 +1391,46 @@ development (<https://github.com/khmseu/VisualWeb/actions/runs/40278867244>)
 und Windows confinement
 (<https://github.com/khmseu/VisualWeb/actions/runs/40278867114>) sind
 erfolgreich.
+
+### KP-037 - Bestaetigung automatisch gestarteter HTTP-Navigation
+
+- Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-26.
+- Erfassungsart: ausdrueckliche Nutzerwahl laut aktueller
+  Gespraechszusammenfassung sowie anschliessender Codepruefung.
+- Quelle: aktuelle Gespraechszusammenfassung zum Pass 3 und Shell-Code.
+- Bezug: REQ-005, DEC-016 bis DEC-018, Q-002; folgt auf KP-036.
+
+**Nutzerangabe:** Fuer den naechsten Pass waehlte der Nutzer die Bestaetigung
+automatisch gestarteter HTTP(S)-Loads. Die ueberlieferte Passbeschreibung
+umfasst Launch-URLs und den Standard-New-Tab-Pfad; ein persoenliches Motiv
+wurde nicht ueberliefert.
+
+**Beschlossener Umfang (DEC-018):** Automatisch gestartete HTTP(S)-
+Shell-Navigation wird vor dem ersten Transport bestaetigt, wenn kein
+committed Dokument als Source-Origin vorhanden ist. Origin-aendernde
+Redirects bleiben einzeln bestaetigungspflichtig. Launch-URLs ueber
+`OpenWindow(url)` gehoeren dazu. Der eingebaute New-Tab-Welcome-Inhalt ist
+`data:` und bleibt daher ohne HTTP(S)-Prompt; andere Nicht-HTTP(S)-
+Shellnavigation und direkte `BrowserController.Navigate`-Aufrufe bleiben
+unveraendert. Die bestaetigungsbasierte Development-Shell-Policy ist keine
+Produktionsautorisierung. DEC-018 ersetzt die automatische Initial-Load-
+Ausnahme aus DEC-016/017 nur fuer diese HTTP(S)-Shell-Loads.
+
+**Belegt zum Dokumentationszeitpunkt:** `OpenWindow`, die Tastatur-
+Adressleisten-Navigation und die New-Tab-Erzeugung verwenden den
+confirmation-aware Controller-Einstieg; der direkte `Navigate`-Pfad bleibt
+unveraendert. Fokussierte Shell-Tests fuer Freigabe/Redirect und Abbruch eines
+HTTP(S)-Launches bestanden; die vollen Browser-Tests (1.102), der Solution-
+Build und die vollstaendige Solution-Testsuite sind ebenfalls erfolgreich. Die
+Formatpruefung meldet nur die bekannten, nicht geaenderten Findings in
+`StaticLayout.cs` und `ShellChrome.cs`; `git diff --check` ist sauber.
+
+**Offen:** Q-002 bleibt als breitere Produktionssicherheits-, SOP/CORS/CSP-,
+Frame/Origin- und Storage-Policy bestehen. Der Worktree hat eine bereits
+vorbestehende Markdown-Formatierungsaenderung in `Kontext/Wissensstand.md`;
+sie ist von den neuen Pass-Aenderungen zu trennen.
+
+**Status / naechste Schritte:** Pass 3 ist lokal implementiert und validiert;
+Commit, Push und CI stehen aus. Fuer die naechste Pass-Auswahl sind Tracker
+und verbleibende offene Policy erneut zu pruefen.

@@ -11,10 +11,11 @@ unsandboxed development requires explicit trusted-content acknowledgement.
 Low-level renderer/library defaults remain unchanged.
 The development shell confirms cross-origin page link/form requests and typed
 HTTP(S) address-bar requests from an already committed document. With no
-committed document, it confirms every typed HTTP(S) address-bar destination.
-Origin-changing redirects are confirmed hop by hop; automatically started
-initial loads and non-HTTP(S) address-bar navigation remain outside this prompt.
-It is not production request authorization.
+committed document, it confirms every typed HTTP(S) address-bar destination
+and automatically started shell HTTP(S) loads such as a launch URL. Origin-
+changing redirects are confirmed hop by hop. The built-in `data:` new-tab
+welcome page, other non-HTTP(S) shell navigation and direct low-level controller
+calls remain outside this prompt. It is not production request authorization.
 
 | Project                                                               | Responsibility                                                                                                                                                                                                                                                                                           | Planned dependencies / official sources                                                                     |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

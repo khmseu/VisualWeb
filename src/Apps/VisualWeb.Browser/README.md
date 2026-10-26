@@ -104,10 +104,13 @@ there is no committed document, each typed HTTP(S) address-bar destination is
 confirmed before transport. Origin-changing redirects are confirmed hop by hop,
 while same-origin hops do not prompt after the initial destination is approved.
 The confirmation shows only the destination origin and blocks transport until
-Allow/Cancel, Enter, or Escape. Automatically started initial loads,
-non-HTTP(S) address-bar navigation, and low-level controller calls without an
-injected authorizer remain unchanged. This is not production request
-authorization.
+Allow/Cancel, Enter, or Escape. Automatically started shell HTTP(S) loads,
+including launch URLs opened through `OpenWindow`, use the same initial
+confirmation before transport. Origin-changing redirects still prompt
+separately. The built-in new-tab welcome page is a `data:` URL and does not
+prompt. Other non-HTTP(S) shell navigation and direct
+`BrowserController.Navigate` calls remain unchanged. This is not production
+request authorization.
 
 Every shell session owns one bounded in-memory HSTS store shared across all
 tab-local GET loaders/windows, in local and multiprocess modes. Independent

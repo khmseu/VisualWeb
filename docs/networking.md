@@ -269,11 +269,14 @@ document. If no document is committed, every typed HTTP(S) address-bar
 destination requires confirmation because no source origin exists. Each
 origin-changing redirect is confirmed relative to the preceding request. The
 prompt runs before transport and shows only the destination origin;
-automatically started initial loads and non-HTTP(S) address-bar navigation are
-unchanged. This is not general request authorization, and low-level
-`BrowserController` instances do not enable it unless configured with an
-authorizer. Other request classes have
-no browser-wide origin authorization. Apart from these narrow rules and
+automatically started shell HTTP(S) loads (including launch URLs opened through
+`OpenWindow`) use the same initial confirmation when no document is committed,
+with each origin-changing redirect confirmed separately. The built-in new-tab
+welcome page is a `data:` URL and does not prompt. Other non-HTTP(S) shell
+navigation and low-level `BrowserController.Navigate` calls remain unchanged.
+This is not general request authorization, and low-level `BrowserController`
+instances do not enable it unless configured with an authorizer. Other request
+classes have no browser-wide origin authorization. Apart from these narrow rules and
 bad-port blocking above, there is no general CSP, mixed-content policy,
 referrer policy, cache, storage partitioning, sandbox or private-network policy
 yet.

@@ -23,7 +23,7 @@ public sealed class ShellTests
                 return Html("<!doctype html><title>Start</title><style>*{margin:0}</style>"
                     + "<a href='/next'>open</a><script>document.addEventListener('click',e=>{document.title='Clicked';e.preventDefault()})</script>");
             }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -60,7 +60,7 @@ public sealed class ShellTests
                 return Html("<!doctype html><title>Start</title><style>*{margin:0}</style>"
                     + "<a href='/next' target='_self'>open</a><script>document.addEventListener('click',e=>{document.title='Clicked';e.preventDefault()})</script>");
             }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
         shell.Controller.FocusPage(tab.Id);
@@ -97,7 +97,7 @@ public sealed class ShellTests
                     + "<a href='/next'>open</a><script>document.addEventListener('click',e=>{document.title='Clicked';"
                     + (cancelDefault ? "e.preventDefault()" : "") + "})</script>");
             }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var tab = window.ActiveTab!;
         var native = system.Items[0];
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -142,7 +142,7 @@ public sealed class ShellTests
                 _ => Html("<!doctype html><title>Final</title>")
             };
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -211,7 +211,7 @@ public sealed class ShellTests
                 ? Html("<!doctype html><title>Source</title>")
                 : Html("<!doctype html><title>Destination</title>");
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -261,7 +261,7 @@ public sealed class ShellTests
                 _ => Html("<!doctype html><title>Destination</title>")
             };
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -308,7 +308,7 @@ public sealed class ShellTests
             requests.Enqueue(url);
             return Html("<!doctype html><title>Source</title>");
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -430,6 +430,79 @@ public sealed class ShellTests
     }
 
     [Fact]
+    public void AutomaticallyStartedHttpAddressWaitsForConfirmationBeforeTransport()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            var url = request.RequestUri!.AbsoluteUri;
+            requests.Enqueue(url);
+            return url == "https://launch.example/start"
+                ? Redirect("https://outside.example/final")
+                : Html("<!doctype html><title>Destination</title>");
+        }));
+
+        var window = shell.OpenWindow("https://launch.example/start");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+
+        Assert.Empty(requests);
+        Assert.Null(shell.Controller.Page(tab.Id));
+        Assert.Null(tab.History.Current);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait(() => requests.Count == 1 && shell.HasPendingNavigationConfirmation(tab.Id));
+        Assert.Equal(["https://launch.example/start"], requests);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+        Wait(() => !tab.IsLoading && tab.History.Current?.Href == "https://outside.example/final");
+
+        Assert.Equal(["https://launch.example/start", "https://outside.example/final"], requests);
+        Assert.Null(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
+    [Fact]
+    public void CancelingAutomaticallyStartedHttpAddressPreventsItsRequest()
+    {
+        var requests = new ConcurrentQueue<string>();
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath, pageTransportFactory: () => new NavigationHandler(request =>
+        {
+            requests.Enqueue(request.RequestUri!.AbsoluteUri);
+            return Html("<!doctype html><title>Unexpected</title>");
+        }));
+
+        var window = shell.OpenWindow("https://launch.example/cancel");
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        Wait(() => shell.HasPendingNavigationConfirmation(tab.Id));
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Escape, 0, 0, true, false));
+        Wait(() => !tab.IsLoading);
+
+        Assert.Empty(requests);
+        Assert.Null(tab.History.Current);
+        Assert.Null(shell.Controller.Page(tab.Id));
+        Assert.NotNull(tab.Error);
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        }
+    }
+
+    [Fact]
     public void UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport()
     {
         var requests = new ConcurrentQueue<string>();
@@ -449,7 +522,7 @@ public sealed class ShellTests
                 _ => throw new InvalidOperationException($"Unexpected request: {url}")
             };
         }));
-        var window = shell.OpenWindow("http://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "http://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -509,7 +582,7 @@ public sealed class ShellTests
                     + "<a href='https://outside.example/secret'>open</a>")
                 : Html("<!doctype html><title>External</title>");
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -551,7 +624,7 @@ public sealed class ShellTests
                     + "<a target=_blank href='https://outside.example/page?private=yes'>open</a>")
                 : Html("<!doctype html><title>External</title>");
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var sourceTab = window.ActiveTab!;
         Wait(() => !sourceTab.IsLoading && shell.Controller.Page(sourceTab.Id) is not null);
@@ -607,7 +680,7 @@ public sealed class ShellTests
                     + "<form action='https://outside.example/send'><input name=secret value=private><input type=submit></form>")
                 : Html("<!doctype html><title>Sent</title>");
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -669,7 +742,7 @@ public sealed class ShellTests
                 _ => throw new InvalidOperationException("An insecure form request escaped UIR.")
             };
         }));
-        var window = shell.OpenWindow("https://source.example/page");
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/page");
         var native = system.Items[0];
         var tab = window.ActiveTab!;
         Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
@@ -3504,6 +3577,27 @@ public sealed class ShellTests
 
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
     private static string RendererPath => Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll");
+    private static BrowserWindow OpenWindowAndApproveInitialNavigation(DevelopmentShell shell, Windows system, string url)
+    {
+        var window = shell.OpenWindow(url);
+        var tab = window.ActiveTab ?? throw new InvalidOperationException("The opened window has no active tab.");
+        var native = system.Items[0];
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while ((tab.IsLoading || shell.Controller.Page(tab.Id) is null) && DateTime.UtcNow < deadline)
+        {
+            shell.Tick();
+            if (shell.HasPendingNavigationConfirmation(tab.Id))
+            {
+                shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Return, 0, 0, true, false));
+            }
+            Thread.Sleep(5);
+        }
+        Assert.True(!tab.IsLoading && shell.Controller.Page(tab.Id) is not null,
+            $"{tab.Error} | {tab.Status} | {tab.AddressText}");
+        Assert.Null(tab.Error);
+        return window;
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

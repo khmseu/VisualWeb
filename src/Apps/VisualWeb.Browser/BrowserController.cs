@@ -1852,8 +1852,8 @@ public sealed class BrowserController : IDisposable
         if (address.Length > Session.Options.MaxAddressCharacters) { throw new BrowserLimitException("Address length limit exceeded."); }
         Start(tab, BrowserUrl.Parse(address), null, false);
     }
-    /// <summary>Confirms cross-origin address-bar hops, or the first HTTP(S) destination before a page is committed.</summary>
-    public void NavigateFromAddressBar(TabId id, string address)
+    /// <summary>Routes shell navigation through origin confirmation when the shell has configured an authorizer.</summary>
+    public void NavigateWithShellConfirmation(TabId id, string address)
     {
         Check();
         ArgumentNullException.ThrowIfNull(address);
@@ -1870,6 +1870,8 @@ public sealed class BrowserController : IDisposable
         }
         Start(tab, url, null, false);
     }
+    /// <summary>Compatibility alias for callers using the address-bar navigation entry point.</summary>
+    public void NavigateFromAddressBar(TabId id, string address) => NavigateWithShellConfirmation(id, address);
     public void Back(TabId id)
     {
         Check();
