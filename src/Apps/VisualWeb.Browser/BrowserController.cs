@@ -1125,18 +1125,31 @@ public sealed class BrowserController : IDisposable
     private static bool Focusable(PageFormControl control) => control.Kind != "hidden" && !control.Disabled && control.Rect is not null;
     private static List<(bool Control, int Index)> Targets(BrowserPage? page)
     {
-        var targets = new List<(bool, int)>();
-        if (page is null) { return targets; }
+        var ordered = new List<(bool Control, int Index, int TabIndex, int TreeOrder)>();
+        if (page is null) { return []; }
         var control = 0;
+        var treeOrder = 0;
         for (var link = 0; link <= page.LinkTargets.Count; link++)
         {
             for (; control < page.FormControls.Count && page.FormControls[control].BeforeLink <= link; control++)
             {
-                if (Focusable(page.FormControls[control])) { targets.Add((true, control)); }
+                var formControl = page.FormControls[control];
+                var tabIndex = formControl.TabIndex ?? 0;
+                if (Focusable(formControl) && tabIndex >= 0)
+                { ordered.Add((true, control, tabIndex, treeOrder)); }
+                treeOrder++;
             }
-            if (link < page.LinkTargets.Count) { targets.Add((false, link)); }
+            if (link < page.LinkTargets.Count)
+            {
+                var tabIndex = page.LinkTargets[link].TabIndex ?? 0;
+                if (tabIndex >= 0) { ordered.Add((false, link, tabIndex, treeOrder)); }
+                treeOrder++;
+            }
         }
-        return targets;
+        return ordered.OrderBy(target => target.TabIndex > 0 ? 0 : 1)
+            .ThenBy(target => target.TabIndex > 0 ? target.TabIndex : 0)
+            .ThenBy(target => target.TreeOrder)
+            .Select(target => (target.Control, target.Index)).ToList();
     }
     private static int Position(Content owner, List<(bool Control, int Index)> targets) =>
         owner.FocusedControl >= 0 ? targets.IndexOf((true, owner.FocusedControl))

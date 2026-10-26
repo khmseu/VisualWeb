@@ -42,12 +42,13 @@ public sealed class StaticPageRenderer : IPageRenderer
     /// <summary>Strict bound on trusted click and auxclick events dispatched into one retained document host.</summary>
     public const int MaxLinkEventsPerDocument = 1024;
     public const int MaxLinkClicksPerDocument = MaxLinkEventsPerDocument;
-    private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName, double documentY)
+    private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName, double documentY, int? tabIndex)
     {
         public string Url { get; } = url;
         public bool OpenInNewTab { get; } = openInNewTab;
         public string? TargetName { get; } = targetName;
         public double DocumentY { get; set; } = documentY;
+        public int? TabIndex { get; } = tabIndex;
         public List<PageLinkRect> Rects { get; } = [];
         public bool IsBlockBoxAnchor { get; set; }
         public PageLinkRect? BlockRectangle { get; set; }
@@ -260,7 +261,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         List<PageLinkTarget> links = [];
         if (layout.Root is { } root) { Visit(root, 0, []); }
         links = linkData.Select(target => new PageLinkTarget(target.Rects.AsReadOnly(), target.Url,
-            target.OpenInNewTab, target.TargetName, target.DocumentY)).ToList();
+            target.OpenInNewTab, target.TargetName, target.DocumentY)
+        { TabIndex = target.TabIndex }).ToList();
         try
         {
             RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight);
@@ -286,7 +288,8 @@ public sealed class StaticPageRenderer : IPageRenderer
             if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
             { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
             var (openInNewTab, targetName) = ResolveTarget(anchor.GetAttribute("target"), baseTarget);
-            var target = new LinkTargetData(destination, openInNewTab, targetName, documentY);
+            var target = new LinkTargetData(destination, openInNewTab, targetName, documentY,
+                PageTabIndex.Parse(anchor.GetAttribute("tabindex")));
             anchors.Add(anchor, target);
             anchorOrder.Add(anchor);
             linkData.Add(target);

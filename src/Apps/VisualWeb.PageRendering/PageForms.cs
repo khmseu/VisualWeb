@@ -186,7 +186,10 @@ internal static class PageForms
                 lastLink, rect, minimum, maximum, step, stepAny, options, placeholder, submitterAction,
                 submitterActionError, submitterTarget, submitterTargetName, submitterTargetError,
                 textareaWrapColumns, textareaWrapHard, selectRows) with
-            { Dirname = dirname });
+            {
+                Dirname = dirname,
+                TabIndex = PageTabIndex.Parse(element.GetAttribute("tabindex")),
+            });
             controlIndexes.Add(element, controls.Count - 1);
             if (kind == "radio" && controlName.Length > 0 && controls[^1].Checked)
             {

@@ -48,7 +48,9 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(45, RendererProtocol.Version);
+        Assert.Equal(46, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 45 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 45 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
@@ -111,7 +113,7 @@ public sealed class ProtocolTests
         Title = "",
         Status = "",
         ScrollHeight = 2,
-        LinkTargets = [new(0, 0, 2, 2, "https://example.com/path#part")],
+        LinkTargets = [new PageLinkTarget(0, 0, 2, 2, "https://example.com/path#part") { TabIndex = 2 }],
         Forms = [],
         FormControls = [],
         TextTargets = [],
@@ -820,7 +822,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(45, RendererProtocol.Version);
+        Assert.Equal(46, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -843,6 +845,23 @@ public sealed class ProtocolTests
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>("{\"Url\":\"https://example.com/\"}"));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>(
             "{\"Rects\":[{\"X\":0,\"Y\":0,\"Width\":1,\"Height\":1}],\"Url\":\"https://example.com/\"}"));
+    }
+
+    [Fact]
+    public void TabIndexMetadataIsRequiredAndRoundTrips()
+    {
+        var link = LinkFrame.LinkTargets![0];
+        Assert.Equal(2, link.TabIndex);
+        Assert.Contains("\"TabIndex\":2", JsonSerializer.Serialize(link));
+        var linkJson = JsonNode.Parse(JsonSerializer.Serialize(link))!.AsObject();
+        linkJson.Remove("TabIndex");
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>(linkJson.ToJsonString()));
+
+        var control = FormFrame.FormControls![0] with { TabIndex = -1 };
+        Assert.Equal(-1, JsonSerializer.Deserialize<PageFormControl>(JsonSerializer.Serialize(control))!.TabIndex);
+        var controlJson = JsonNode.Parse(JsonSerializer.Serialize(control))!.AsObject();
+        controlJson.Remove("TabIndex");
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageFormControl>(controlJson.ToJsonString()));
     }
 
     [Theory]

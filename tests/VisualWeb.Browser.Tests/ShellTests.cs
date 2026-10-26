@@ -3708,6 +3708,65 @@ public sealed class ShellTests
             shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TabTraversalHonorsTabIndexForSupportedPageTargets(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><style>*{margin:0} a,input{display:block}</style>" +
+            "<a href='#default' tabindex='invalid'>default</a>" +
+            "<input name=zero tabindex=0>" +
+            "<a href='#two' tabindex=2>two</a>" +
+            "<input name=one tabindex=1>" +
+            "<a href='#negative' tabindex=-1>negative</a>" +
+            "<a href='#one' tabindex=1>one</a>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.Equal(5, shell.Controller.PageFocusCount(tab.Id));
+
+        Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedControlIndex(tab.Id));
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(3, shell.Controller.FocusedLinkIndex(tab.Id));
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(1, shell.Controller.FocusedLinkIndex(tab.Id));
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedLinkIndex(tab.Id));
+        Key(SDL.Scancode.Tab);
+        Assert.Equal(0, shell.Controller.FocusedControlIndex(tab.Id));
+        Key(SDL.Scancode.Tab);
+        Assert.False(shell.Controller.PageHasFocus(tab.Id));
+
+        void Key(SDL.Scancode scan, SDL.Keymod mod = SDL.Keymod.None) =>
+            shell.Dispatch(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
+    }
+
+    [Fact]
+    public void TabIndexOutsideSupportedRangeFailsNavigationExplicitly()
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath);
+        var tab = shell.OpenWindow().ActiveTab!;
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(
+            "<!doctype html><a href='#target' tabindex=2147483648>oversized</a>"));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+
+        Assert.False(tab.IsLoading);
+        Assert.Contains("tabindex exceeds the supported signed 32-bit range", tab.Error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TabTraversesDrawnChromeBeforeLinksAndNoLinksWrapInChrome()
     {

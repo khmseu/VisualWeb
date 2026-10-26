@@ -47,8 +47,8 @@ rendered block geometry for anchors without shaped text, including geometry
 contributed by rendered descendants. Text rectangles and block boxes are
 translated/clipped to visible CSS viewport space. URLs resolve against the final
 source URL before returning data-only IPC-contract targets. Each anchor is one
-target containing its visible rectangles and bounded document-space top offset;
-groups follow renderer target order, without exposing element identity. Offscreen
+target containing its visible rectangles, bounded document-space top offset and
+parsed `tabindex` value; groups follow renderer target order, without exposing element identity. Offscreen
 anchors have an empty rectangle list until scrolled into view. Empty inline
 anchors and non-text anchors without a non-empty rendered block box remain
 unsupported. IPC v37 adds the offset without exposing renderer DOM identity.
@@ -67,8 +67,8 @@ controls. Supported controls use finite inline-block layout: input/button fallba
 dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value; select
 controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallback geometry. Controls
-expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, and finite number/range bounds and step metadata, merged
-traversal position before a link group and clipped visible border box. Bounded
+expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, finite number/range bounds and step metadata, parsed `tabindex`, merged
+traversal position before a link group and clipped visible border box. IPC v46 carries link/control `tabindex` values as data-only metadata; the browser applies the bounded sequential-order subset documented in the shell guide. Bounded
 data-only label-text rectangles associate explicit `for` labels or the first
 supported labelable descendant with visible enabled controls; DOM identities do
 not cross IPC.

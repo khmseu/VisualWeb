@@ -34,6 +34,11 @@ public sealed record PageLinkTarget(
     [property: JsonRequired] string? TargetName,
     [property: JsonRequired] double DocumentY)
 {
+    /// <summary>Parsed <c>tabindex</c> attribute for this link; null means omitted or invalid.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/interaction.html#the-tabindex-attribute">the tabindex attribute</see>.</remarks>
+    [JsonRequired]
+    public int? TabIndex { get; init; }
+
     public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url) : this(rects, url, false) { }
     public PageLinkTarget(IReadOnlyList<PageLinkRect> rects, string url, bool openInNewTab)
         : this(rects, url, openInNewTab, null) { }
@@ -142,6 +147,11 @@ public sealed record PageFormControl(
     [property: JsonRequired] double? Step,
     [property: JsonRequired] bool StepAny)
 {
+    /// <summary>Parsed <c>tabindex</c> attribute; null means omitted or invalid.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/interaction.html#the-tabindex-attribute">the tabindex attribute</see>.</remarks>
+    [JsonRequired]
+    public int? TabIndex { get; init; }
+
     [JsonRequired]
     public PageFormOption[] Options { get; init; } = [];
     [JsonRequired]
@@ -533,7 +543,7 @@ public static class RendererProtocol
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 45;
+    public const int Version = 46;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;

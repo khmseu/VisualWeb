@@ -13,8 +13,9 @@ first dispatch trusted `click` and `auxclick` Events respectively; focused-link
 Enter/Shift+Enter/Ctrl+Enter and Ctrl+primary activation dispatch trusted `click`
 events. `preventDefault()` cancels the corresponding navigation or tab-opening
 default. These are plain Events, not PointerEvents, and do not synthesize DOM
-keyboard or modifier events. Keyboard traversal visits chrome
-before visible anchors;
+keyboard or modifier events. Keyboard traversal visits chrome before
+supported links and visible enabled form controls, honoring the bounded
+`tabindex` ordering documented in the controls guide;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
 Page text selection uses bounded visible HarfBuzz clusters, with individual
 stops for ordinary supported LTR characters and no estimated positions inside

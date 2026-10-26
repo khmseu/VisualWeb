@@ -108,6 +108,12 @@ broader page interaction is still missing:
   shell-owned outline without changing renderer pixels. Empty inline anchors and
   non-text anchors without measurable rendered block geometry remain unsupported.
   Primary non-link/control/non-text page clicks now clear focused page targets.
+  Sequential focus ordering honors valid signed-32-bit `tabindex` values on
+  rendered links and visible enabled supported form controls: positive values
+  precede zero/default values in ascending order, ties retain tree order, and
+  negative values are skipped. Invalid or omitted values retain tree order;
+  values outside the supported signed-32-bit range fail visibly, and other
+  elements do not become focusable through `tabindex`.
   On explicitly opted-in pages, focused-link Enter, Shift+Enter and Ctrl+Enter
   also dispatch the retained trusted click event before their existing current,
   active-new-tab or background-new-tab default action; Ctrl+primary pointer
@@ -292,7 +298,8 @@ This is a substantial gap even for a modest usable browser.
 The development-shell guide's limits summary and scrolling overview now reflect
 the implemented bounded link, form, selection and vertical-scroll behavior,
 including the nested wheel-scrolling subset above.
-General DOM input events, downloads, persistent sessions, complete history and
+General DOM input events, `tabindex` focus for elements outside the supported
+link/form targets, downloads, persistent sessions, complete history and
 horizontal overflow plus unsupported CSS overflow features remain missing; this
 documentation correction adds no runtime behavior.
 
