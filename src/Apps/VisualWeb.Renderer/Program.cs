@@ -88,6 +88,7 @@ try
                     new(request.Width, request.Height, request.Scale)
                     {
                         ScrollY = request.ScrollY,
+                        ScrollX = request.ScrollX,
                         ScrollOffsets = request.ScrollOffsets ?? Array.Empty<PageScrollOffset>()
                     },
                     CancellationToken.None, request.ReuseDocument);
@@ -105,6 +106,7 @@ try
                     Title = Bounded(rendered.Title),
                     Status = Bounded(rendered.Status),
                     ScrollHeight = rendered.ScrollHeight,
+                    ScrollWidth = rendered.ScrollWidth,
                     LinkTargets = rendered.LinkTargets.ToArray(),
                     FragmentTargets = rendered.FragmentTargets.ToArray(),
                     Forms = rendered.Forms.ToArray(),

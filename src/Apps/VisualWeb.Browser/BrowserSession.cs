@@ -35,6 +35,7 @@ public sealed class NavigationHistory
     private readonly List<long> documentIds = [];
     private readonly List<SecurityOrigin> origins = [];
     private readonly List<double> scrollPositions = [];
+    private readonly List<double> horizontalScrollPositions = [];
     private readonly int maximum;
     private long nextDocumentId;
     public IReadOnlyList<BrowserUrl> Entries { get; }
@@ -83,6 +84,11 @@ public sealed class NavigationHistory
         if (index < 0 || index >= scrollPositions.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
         return scrollPositions[index];
     }
+    internal double HorizontalScrollPositionAt(int index)
+    {
+        if (index < 0 || index >= horizontalScrollPositions.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return horizontalScrollPositions[index];
+    }
     internal SecurityOrigin OriginAt(int index)
     {
         if (index < 0 || index >= origins.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
@@ -93,6 +99,11 @@ public sealed class NavigationHistory
         if (!double.IsFinite(position) || position < 0) { throw new ArgumentOutOfRangeException(nameof(position)); }
         if (Index >= 0) { scrollPositions[Index] = position; }
     }
+    internal void SetCurrentHorizontalScrollPosition(double position)
+    {
+        if (!double.IsFinite(position) || position < 0) { throw new ArgumentOutOfRangeException(nameof(position)); }
+        if (Index >= 0) { horizontalScrollPositions[Index] = position; }
+    }
     private void Append(BrowserUrl url, SecurityOrigin origin, long documentId)
     {
         var forwardCount = entries.Count - Index - 1;
@@ -102,17 +113,20 @@ public sealed class NavigationHistory
             documentIds.RemoveRange(Index + 1, forwardCount);
             origins.RemoveRange(Index + 1, forwardCount);
             scrollPositions.RemoveRange(Index + 1, forwardCount);
+            horizontalScrollPositions.RemoveRange(Index + 1, forwardCount);
         }
         entries.Add(url);
         documentIds.Add(documentId);
         origins.Add(origin);
         scrollPositions.Add(0);
+        horizontalScrollPositions.Add(0);
         if (entries.Count > maximum)
         {
             entries.RemoveAt(0);
             documentIds.RemoveAt(0);
             origins.RemoveAt(0);
             scrollPositions.RemoveAt(0);
+            horizontalScrollPositions.RemoveAt(0);
         }
         Index = entries.Count - 1;
     }

@@ -99,7 +99,7 @@ public static class CpuRasterizer
 {
     public static RasterFrame Render(DisplayList list, PaintFontRegistry fonts, double scale = 1,
         CssColor? backdrop = null, PaintOptions? options = null, CancellationToken cancellationToken = default,
-        double scrollY = 0)
+        double scrollY = 0, double scrollX = 0)
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(fonts);
@@ -109,6 +109,7 @@ public static class CpuRasterizer
         cancellationToken.ThrowIfCancellationRequested();
         if (!double.IsFinite(scale) || scale <= 0) { throw new ArgumentOutOfRangeException(nameof(scale)); }
         if (!double.IsFinite(scrollY) || scrollY < 0 || scrollY > 1e9) { throw new ArgumentOutOfRangeException(nameof(scrollY)); }
+        if (!double.IsFinite(scrollX) || scrollX < 0 || scrollX > 1e9) { throw new ArgumentOutOfRangeException(nameof(scrollX)); }
         if (list.Height > PaintOptions.MaxDocumentHeight)
         { throw new PaintLimitException("Raster viewport exceeds the CSS-pixel height bound."); }
         var clear = backdrop ?? new CssColor(255, 255, 255);
@@ -173,7 +174,7 @@ public static class CpuRasterizer
         canvas.Clear(Color(clear));
         canvas.Scale(deviceScale);
         canvas.ClipRect(viewport);
-        canvas.Translate(0, -Float(scrollY));
+        canvas.Translate(-Float(scrollX), -Float(scrollY));
         scrollClipDepth = 0;
         using var paint = new SKPaint { IsAntialias = false, Style = SKPaintStyle.Fill };
         foreach (var command in list.Commands)

@@ -26,7 +26,7 @@ public sealed class DevelopmentShell : IDisposable
         <p>Ctrl T creates a tab. Ctrl W closes it. Ctrl N opens a window.</p>
         <p>Ctrl M moves the active tab to another window.</p>
         <p>Alt Left and Alt Right navigate history. F5 reloads.</p>
-        <p>Wheel, Arrow Up and Down, Page Up and Page Down, Home and End scroll outside editing fields. The page scrollbar can be clicked or dragged.</p>
+        <p>Wheel, Arrow keys, Page Up and Page Down, Home and End scroll outside editing fields. Page scrollbars can be clicked or dragged.</p>
         <p>Basic links, GET forms and visible text selection are available; pages with scripts enabled dispatch link events.</p>
         </body></html>
         """;
@@ -48,6 +48,7 @@ public sealed class DevelopmentShell : IDisposable
         internal double PendingLinkY { get; set; }
         internal PageViewport? PendingLinkViewport { get; set; }
         internal bool DraggingScrollbar { get; set; }
+        internal bool DraggingHorizontalScrollbar { get; set; }
         internal int DraggingRangeControl { get; set; } = -1;
         internal int HoveredLink { get; set; } = -1;
         internal int OpenSelectControl { get; set; } = -1;
@@ -273,6 +274,7 @@ public sealed class DevelopmentShell : IDisposable
                 view.HoveredLink = -1;
                 CloseSelectPopup(view);
                 view.DraggingScrollbar = false;
+                view.DraggingHorizontalScrollbar = false;
                 view.KeyboardTarget = null;
                 Edit(view, window, false);
                 view.Editor.Reset(window.ActiveTab?.AddressText ?? "");
@@ -302,7 +304,8 @@ public sealed class DevelopmentShell : IDisposable
                 Forms(window, view), window.ActiveTabId is { } selectedTab ? Controller.SelectedTextRects(selectedTab) : null,
                 window.ActiveTab is { } scrollingTab ? Controller.ScrollY(scrollingTab.Id) : 0, view.HoveredLink,
                 navigationConfirmationTab: prompt?.Tab,
-                navigationConfirmationMessage: prompt?.Message);
+                navigationConfirmationMessage: prompt?.Message,
+                scrollX: window.ActiveTab is { } horizontalTab ? Controller.ScrollX(horizontalTab.Id) : 0);
             view.Targets = frame.Targets;
             view.Native.Surface.Present(frame.Pixels, frame.Size, frame.Stride);
             view.Native.SetTitle(WindowTitle(window.ActiveTab?.Title));
@@ -443,11 +446,19 @@ public sealed class DevelopmentShell : IDisposable
         var dismissingSelect = view.OpenSelectControl >= 0;
         var dismissedControl = view.OpenSelectControl;
         if (dismissingSelect) { CloseSelectPopup(view); }
-        if (target?.Action == ChromeAction.Scrollbar)
+        if (target?.Action is ChromeAction.Scrollbar or ChromeAction.HorizontalScrollbar)
         {
             Action(window, view, target.Action, target.Tab);
-            view.DraggingScrollbar = true;
-            ScrollScrollbar(window, view, pointer.Y);
+            if (target.Action == ChromeAction.Scrollbar)
+            {
+                view.DraggingScrollbar = true;
+                ScrollScrollbar(window, view, pointer.Y);
+            }
+            else
+            {
+                view.DraggingHorizontalScrollbar = true;
+                ScrollHorizontalScrollbar(window, view, pointer.X);
+            }
         }
         else if (target is not null) { Action(window, view, target.Action, target.Tab); }
         else { HandlePagePrimaryPointerPress(window, view, pointer, dismissingSelect, dismissedControl); }
@@ -545,6 +556,7 @@ public sealed class DevelopmentShell : IDisposable
     private void HandlePrimaryPointerRelease(View view, BrowserTab releasedTab, PointerButtonChanged released)
     {
         view.DraggingScrollbar = false;
+        view.DraggingHorizontalScrollbar = false;
         view.DraggingRangeControl = -1;
         var window = Controller.Session.Windows.FirstOrDefault(candidate =>
             candidate.Tabs.Any(tab => tab.Id == releasedTab.Id));
@@ -596,6 +608,7 @@ public sealed class DevelopmentShell : IDisposable
         CloseSelectPopup(view);
         view.SelectingText = false;
         view.DraggingScrollbar = false;
+        view.DraggingHorizontalScrollbar = false;
         if (window.ActiveTab is { } tab) { Controller.EndTextSelection(tab.Id); }
     }
     private void HandlePointerMoved(BrowserWindow window, View view, PointerMoved moved)
@@ -608,6 +621,7 @@ public sealed class DevelopmentShell : IDisposable
         UpdateSelectPopupHover(view, window, moved.X, moved.Y);
         UpdateHoveredLink(view, window);
         if (view.DraggingScrollbar) { ScrollScrollbar(window, view, moved.Y); }
+        if (view.DraggingHorizontalScrollbar) { ScrollHorizontalScrollbar(window, view, moved.X); }
         if (view.DraggingRangeControl >= 0 && window.ActiveTab is { } rangeTab)
         { Controller.SetRangeFromPointer(rangeTab.Id, view.DraggingRangeControl, moved.X); }
         if (view.SelectingText && window.ActiveTab is { } selectingTab
@@ -650,11 +664,17 @@ public sealed class DevelopmentShell : IDisposable
                 || Controller.ScrollListboxAt(active.Id, pointerX, pointerY - ShellChrome.Height, rows));
         if (!overControl)
         {
-            var delta = Math.Clamp((double)wheel.Y, -100, 100) * 48;
+            var deltaX = Math.Clamp((double)wheel.X, -100, 100) * 48;
+            var deltaY = Math.Clamp((double)wheel.Y, -100, 100) * 48;
+            if (wheel.X == 0 && view.ShiftModifier)
+            {
+                deltaX = deltaY;
+                deltaY = 0;
+            }
             var remaining = hasPointer
-                ? Controller.ScrollOverflowAt(active.Id, pointerX, pointerY - ShellChrome.Height, delta)
-                : delta;
-            if (remaining != 0) { Controller.Scroll(active.Id, remaining); }
+                ? Controller.ScrollOverflowAt(active.Id, pointerX, pointerY - ShellChrome.Height, deltaY)
+                : deltaY;
+            Controller.ScrollBy(active.Id, deltaX, remaining);
         }
     }
     private void HandleTextEntered(BrowserWindow window, View view, TextEntered text)
@@ -680,10 +700,23 @@ public sealed class DevelopmentShell : IDisposable
             || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } viewport) { return; }
         var maximum = Math.Max(0, page.ScrollHeight - viewport.Height);
         if (maximum <= 0) { return; }
-        var thumbHeight = ShellChrome.ScrollbarThumbHeight(viewport.Height, page.ScrollHeight);
-        var trackRange = viewport.Height - thumbHeight;
+        var trackHeight = Math.Max(0, viewport.Height - (page.ScrollWidth > viewport.Width ? 12 : 0));
+        var thumbHeight = Math.Min(trackHeight, ShellChrome.ScrollbarThumbHeight(viewport.Height, page.ScrollHeight));
+        var trackRange = trackHeight - thumbHeight;
         var fraction = trackRange <= 0 ? 0 : Math.Clamp((pointerY - ShellChrome.Height - thumbHeight / 2) / trackRange, 0, 1);
         Controller.Scroll(tab.Id, fraction * maximum - Controller.ScrollY(tab.Id));
+    }
+    private void ScrollHorizontalScrollbar(BrowserWindow window, View view, double pointerX)
+    {
+        if (window.ActiveTab is not { } tab || Controller.Page(tab.Id) is not { } page
+            || ShellChrome.Viewport(view.Native.PixelSize, view.Native.PixelDensity) is not { } viewport) { return; }
+        var maximum = Math.Max(0, page.ScrollWidth - viewport.Width);
+        if (maximum <= 0) { return; }
+        var trackWidth = Math.Max(0, viewport.Width - (page.ScrollHeight > viewport.Height ? 12 : 0));
+        var thumbWidth = Math.Min(trackWidth, ShellChrome.ScrollbarThumbWidth(viewport.Width, page.ScrollWidth));
+        var trackRange = trackWidth - thumbWidth;
+        var fraction = trackRange <= 0 ? 0 : Math.Clamp((pointerX - thumbWidth / 2) / trackRange, 0, 1);
+        Controller.ScrollBy(tab.Id, fraction * maximum - Controller.ScrollX(tab.Id), 0);
     }
     private static int ScalarCount(string value)
     {
@@ -897,6 +930,12 @@ public sealed class DevelopmentShell : IDisposable
             {
                 switch (code)
                 {
+                    case SDL.Scancode.Left when !shift && !Controller.EditingFormControl(tab.Id):
+                        Controller.ScrollBy(tab.Id, -48, 0);
+                        break;
+                    case SDL.Scancode.Right when !shift && !Controller.EditingFormControl(tab.Id):
+                        Controller.ScrollBy(tab.Id, 48, 0);
+                        break;
                     case SDL.Scancode.Down when !Controller.EditingFormControl(tab.Id): Controller.Scroll(tab.Id, 48); break;
                     case SDL.Scancode.Up when !Controller.EditingFormControl(tab.Id): Controller.Scroll(tab.Id, -48); break;
                     case SDL.Scancode.Pagedown: Controller.Scroll(tab.Id, viewport.Height); break;
@@ -930,7 +969,8 @@ public sealed class DevelopmentShell : IDisposable
     private void TraverseFocus(BrowserWindow window, View view, bool backwards)
     {
         if (window.ActiveTab is not { } tab) { return; }
-        var targets = view.Targets.Where(target => target.Action != ChromeAction.Scrollbar).ToArray();
+        var targets = view.Targets.Where(target =>
+            target.Action is not (ChromeAction.Scrollbar or ChromeAction.HorizontalScrollbar)).ToArray();
         var count = Controller.PageFocusCount(tab.Id);
         if (Controller.PageHasFocus(tab.Id))
         {

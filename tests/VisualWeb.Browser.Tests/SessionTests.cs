@@ -39,6 +39,11 @@ public sealed class SessionTests
         history.Commit(Url("c"));
         Assert.Equal(new[] { "/b", "/c" }, history.Entries.Select(e => e.Pathname));
         Assert.Equal(1, history.Index);
+        history.SetCurrentHorizontalScrollPosition(20);
+        history.Commit(Url("d"));
+        Assert.Equal(new[] { "/c", "/d" }, history.Entries.Select(e => e.Pathname));
+        Assert.Equal(20, history.HorizontalScrollPositionAt(0));
+        Assert.Equal(0, history.HorizontalScrollPositionAt(1));
     }
     [Fact]
     public void TabMoveRetainsIdentityHistoryAndWindowSeparation()

@@ -26,6 +26,19 @@ public sealed class ScrollPaintTests
         }
     }
 
+    [Fact]
+    public void HorizontalTranslationUsesCssPixelsUnderFixedViewportClip()
+    {
+        using var fonts = new PaintFontRegistry();
+        var list = new DisplayList(10, 10,
+            [new FillRectangle(new LayoutRect(20, 0, 10, 10), new CssColor(0, 0, 255))]);
+        var frame = CpuRasterizer.Render(list, fonts,
+            cancellationToken: TestContext.Current.CancellationToken, scrollX: 20);
+        Assert.Equal(new PixelSize(10, 10), frame.Size);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, frame.Pixels.Span[..4].ToArray());
+        Assert.All(frame.Pixels.ToArray().Where((_, index) => index % 4 == 3), alpha => Assert.Equal(255, alpha));
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(double.NaN)]
@@ -36,6 +49,18 @@ public sealed class ScrollPaintTests
         using var fonts = new PaintFontRegistry();
         Assert.Throws<ArgumentOutOfRangeException>(() => CpuRasterizer.Render(new(10, 10, []), fonts,
             cancellationToken: TestContext.Current.CancellationToken, scrollY: offset));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(1e9 + 1)]
+    public void InvalidHorizontalOffsetsFailExplicitly(double offset)
+    {
+        using var fonts = new PaintFontRegistry();
+        Assert.Throws<ArgumentOutOfRangeException>(() => CpuRasterizer.Render(new(10, 10, []), fonts,
+            cancellationToken: TestContext.Current.CancellationToken, scrollX: offset));
     }
 
     [Fact]

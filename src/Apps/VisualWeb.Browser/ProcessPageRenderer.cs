@@ -135,6 +135,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             Height = viewport.Height,
             Scale = viewport.Scale,
             ScrollY = viewport.ScrollY,
+            ScrollX = viewport.ScrollX,
             ScrollOffsets = viewport.ScrollOffsets.ToArray()
         };
         RendererProtocol.Validate(request, 0);
@@ -148,11 +149,14 @@ public sealed class ProcessPageRenderer : IPageRenderer
             }
             if (packet.Message.ScrollHeight < viewport.Height)
             { throw new IpcProtocolException("Renderer scroll height is smaller than its CSS viewport."); }
+            if (packet.Message.ScrollWidth < viewport.Width)
+            { throw new IpcProtocolException("Renderer scroll width is smaller than its CSS viewport."); }
             var frame = RasterFrame.CopyFrom(packet.Pixels,
                 new(packet.Message.PixelWidth, packet.Message.PixelHeight), packet.Message.Stride);
             return new BrowserPage(frame, packet.Message.Title!, packet.Message.Status!)
             {
                 ScrollHeight = packet.Message.ScrollHeight,
+                ScrollWidth = packet.Message.ScrollWidth,
                 LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
                 FragmentTargets = Array.AsReadOnly(packet.Message.FragmentTargets!),
                 Forms = Array.AsReadOnly(packet.Message.Forms!),

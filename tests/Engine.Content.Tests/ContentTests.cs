@@ -33,6 +33,29 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void HorizontalScrollingRevealsOverflowWithoutChangingLayoutOrFrameDimensions()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><div></div>";
+        var styles = new[]
+        {
+            new CssStyleSource(Css + "html{background-color:blue}div{margin-left:200px;width:100px;height:20px;background-color:red}")
+        };
+        var first = OfflinePageRenderer.Render(html, styles, text, fonts, 200, 20,
+            new() { IncludeUserAgentStyle = false }, Cancellation);
+        var scrolled = OfflinePageRenderer.RenderParsed(first.Html, styles, text, fonts, 200, 20,
+            new() { IncludeUserAgentStyle = false, ScrollX = 100 }, Cancellation);
+
+        Assert.Equal(300, first.ScrollWidth);
+        Assert.Equal(first.Layout.Root!.BorderBox, scrolled.Layout.Root!.BorderBox);
+        Assert.Equal(first.Frame.Size, scrolled.Frame.Size);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, first.Frame.Pixels.Span[(199 * 4)..(200 * 4)].ToArray());
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, scrolled.Frame.Pixels.Span[(100 * 4)..(101 * 4)].ToArray());
+    }
+
+    [Fact]
     public void ExcessiveDocumentHeightFailsBeforeRasterAllocation()
     {
         using var fonts = new PaintFontRegistry();

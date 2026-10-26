@@ -23,6 +23,14 @@ public sealed class ProtocolTests
     [InlineData(-1)]
     [InlineData(double.NaN)]
     [InlineData(double.PositiveInfinity)]
+    [InlineData(1e9 + 1)]
+    public void InvalidHorizontalScrollRequestOffsetsFail(double offset) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollX = offset }, 0));
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
     [InlineData(10_000_001)]
     public void InvalidFrameScrollExtentsFail(double height) =>
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
@@ -42,15 +50,43 @@ public sealed class ProtocolTests
             Stride = 4,
             Title = "",
             Status = "",
-            ScrollHeight = height
+            ScrollHeight = height,
+            ScrollWidth = 1
+        }, 4));
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(10_000_001)]
+    public void InvalidFrameScrollWidthsFail(double width) =>
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
+        {
+            Kind = "frame",
+            Id = 1,
+            Width = 1,
+            Height = 1,
+            Scale = 1,
+            LinkTargets = [],
+            Forms = [],
+            FormControls = [],
+            TextTargets = [],
+            FragmentTargets = [],
+            PixelWidth = 1,
+            PixelHeight = 1,
+            Stride = 4,
+            Title = "",
+            Status = "",
+            ScrollHeight = 1,
+            ScrollWidth = width
         }, 4));
 
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(46, RendererProtocol.Version);
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 45 }, 0));
-        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 45 }, 0));
+        Assert.Equal(47, RendererProtocol.Version);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 46 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 46 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 43 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 41 }, 0));
@@ -94,9 +130,33 @@ public sealed class ProtocolTests
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 19 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 19 }, 0));
         RendererProtocol.Validate(Request with { ScrollY = 1e9 }, 0);
+        RendererProtocol.Validate(Request with { ScrollX = 1e9 }, 0);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollHeight = 1 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { ScrollWidth = 1 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
+        {
+            Kind = "frame",
+            Id = 1,
+            Width = 2,
+            Height = 1,
+            Scale = 1,
+            LinkTargets = [],
+            Forms = [],
+            FormControls = [],
+            TextTargets = [],
+            FragmentTargets = [],
+            PixelWidth = 2,
+            PixelHeight = 1,
+            Stride = 8,
+            Title = "",
+            Status = "",
+            ScrollHeight = 1,
+            ScrollWidth = 1
+        }, 8));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollX = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollHeight = 1 }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollWidth = 1 }, 0));
     }
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -113,6 +173,7 @@ public sealed class ProtocolTests
         Title = "",
         Status = "",
         ScrollHeight = 2,
+        ScrollWidth = 2,
         LinkTargets = [new PageLinkTarget(0, 0, 2, 2, "https://example.com/path#part") { TabIndex = 2 }],
         Forms = [],
         FormControls = [],
@@ -822,7 +883,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(46, RendererProtocol.Version);
+        Assert.Equal(47, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -837,8 +898,11 @@ public sealed class ProtocolTests
         }
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
         { LinkTargets = [link with { DocumentY = double.NaN }] }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(LinkFrame with
+        { LinkTargets = [link with { DocumentX = double.NaN }] }, 16));
         var json = JsonSerializer.Serialize(link);
         Assert.Contains("\"Rects\"", json);
+        Assert.Contains("\"DocumentX\":0", json);
         Assert.Contains("\"OpenInNewTab\":false", json);
         Assert.Contains("\"TargetName\":null", json);
         Assert.DoesNotContain("\"X\":0,\"Y\":0,\"Width\":2,\"Height\":2,\"Url\"", json);
@@ -852,9 +916,13 @@ public sealed class ProtocolTests
     {
         var link = LinkFrame.LinkTargets![0];
         Assert.Equal(2, link.TabIndex);
+        Assert.Equal(0, link.DocumentX);
         Assert.Contains("\"TabIndex\":2", JsonSerializer.Serialize(link));
         var linkJson = JsonNode.Parse(JsonSerializer.Serialize(link))!.AsObject();
         linkJson.Remove("TabIndex");
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>(linkJson.ToJsonString()));
+        linkJson = JsonNode.Parse(JsonSerializer.Serialize(link))!.AsObject();
+        linkJson.Remove("DocumentX");
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PageLinkTarget>(linkJson.ToJsonString()));
 
         var control = FormFrame.FormControls![0] with { TabIndex = -1 };
@@ -885,6 +953,11 @@ public sealed class ProtocolTests
         var links = Enumerable.Repeat(link with { Url = "data:," + new string('a', 8186) }, 126).ToList();
         links.Add(link with { Url = "data:," });
         var remaining = RendererProtocol.MaxLinkMetadataBytes - JsonSerializer.SerializeToUtf8Bytes(links).Length;
+        while (remaining < 0)
+        {
+            links.RemoveAt(links.Count - 2);
+            remaining = RendererProtocol.MaxLinkMetadataBytes - JsonSerializer.SerializeToUtf8Bytes(links).Length;
+        }
         while (remaining > 8186)
         {
             links.Add(link with { Url = "data:," });
@@ -1016,6 +1089,7 @@ public sealed class ProtocolTests
             ReuseDocument = true,
             CommittedDocumentId = Request.DocumentId,
             ScrollY = 48,
+            ScrollX = 12,
             BaseUrl = "https://example.com/base/",
             Stylesheets = [new("https://example.com/a.css", "p{content:\"café <&>\"}")
                 { BaseUrl = "https://example.com/assets/a.css" }]
@@ -1039,7 +1113,8 @@ public sealed class ProtocolTests
             Stride = 8,
             Title = "café",
             Status = "Ready",
-            ScrollHeight = 100
+            ScrollHeight = 100,
+            ScrollWidth = 20
         };
         await writer.WriteAsync(reply, pixels, Cancellation);
         await writer.WriteAsync(new() { Kind = "error", Id = 2, Error = "Unsupported page" }, cancellationToken: Cancellation);
@@ -1055,12 +1130,14 @@ public sealed class ProtocolTests
         Assert.Equal(input.CommittedDocumentId, request.CommittedDocumentId);
         Assert.True(request.ExecuteInlineScripts); Assert.True(request.ReuseDocument);
         Assert.Equal(input.ScrollY, request.ScrollY);
+        Assert.Equal(input.ScrollX, request.ScrollX);
         Assert.Equal(input.BaseUrl, request.BaseUrl);
         Assert.Equal(input.Stylesheets, request.Stylesheets);
         Assert.Equal("https://example.com/assets/a.css", Assert.Single(request.Stylesheets!).BaseUrl);
         var frame = (await reader.ReadAsync(Cancellation))!;
         Assert.Equal(pixels, frame.Pixels); Assert.Equal(reply.Title, frame.Message.Title);
         Assert.Equal(reply.ScrollHeight, frame.Message.ScrollHeight);
+        Assert.Equal(reply.ScrollWidth, frame.Message.ScrollWidth);
         Assert.Equal("error", (await reader.ReadAsync(Cancellation))!.Message.Kind);
         Assert.Null(await reader.ReadAsync(Cancellation));
     }

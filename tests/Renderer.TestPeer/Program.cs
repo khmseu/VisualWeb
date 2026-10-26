@@ -72,6 +72,7 @@ if (args is ["--windows-sandbox-worker", "--font", _])
             Stride = dimensions.Width * 4,
             Title = title,
             ScrollHeight = message.Height,
+            ScrollWidth = message.Width,
             Status = "Fixture"
         }, blue);
     }
@@ -99,6 +100,7 @@ if (args is ["--linux-sandbox-worker", "--font", _])
         {
             Kind = "frame",
             ScrollHeight = message.Height,
+            ScrollWidth = message.Width,
             Width = message.Width,
             Height = message.Height,
             Scale = message.Scale,
@@ -172,6 +174,7 @@ var reply = new RendererMessage
     Stride = size.Width * 4,
     Title = "Test peer",
     ScrollHeight = scenario == "wrong-scroll-height" ? 0 : request.Height,
+    ScrollWidth = request.Width,
     Status = "Fixture"
 };
 if (scenario == "wrong-link-bounds")

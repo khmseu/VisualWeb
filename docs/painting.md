@@ -103,16 +103,20 @@ This is a finite static subset, not general CSS painting conformance.
 
 ## Budgets and native boundaries
 
-`PageRenderOptions.ScrollY` requests a vertical CSS-pixel offset (finite,
-nonnegative, at most 1e9). Offline rendering keeps the original layout viewport,
-returns `RenderedPage.ScrollHeight` as the larger of viewport height and root
-border-box bottom, and clamps the offset before painting. `CpuRasterizer.Render`
-also accepts `scrollY` for callers supplying display lists: it scales, establishes
-the fixed viewport clip, then translates the canvas upward. No taller bitmap is
-allocated and display-command coordinates remain unchanged. Canvas backgrounds
-cover the scrollable extent. Root scroll height, raster viewport height and
-vertical paint geometry are bounded to 10,000,000 CSS pixels before raster allocation.
-This is a bounded document-scrolling primitive, not CSS overflow conformance.
+`PageRenderOptions.ScrollY` and `ScrollX` request vertical/horizontal CSS-pixel
+offsets (finite, nonnegative, at most 1e9). Offline rendering keeps the original
+layout viewport, returns `RenderedPage.ScrollHeight` and `ScrollWidth` as bounded
+root extents at least as large as the viewport, and clamps offsets before painting.
+The vertical extent uses the root border-box bottom; horizontal extent uses the
+maximum measurable right edge of layout border boxes, lines, text fragments and
+inline widgets. Negative-left-origin overflow is not included.
+`CpuRasterizer.Render` also accepts `scrollY` and `scrollX` for callers supplying
+display lists: it scales, establishes the fixed viewport clip, then translates
+the canvas upward/leftward. No taller or wider bitmap is allocated and
+display-command coordinates remain unchanged. Canvas backgrounds cover the
+scrollable extent. Root extents and paint geometry are bounded to 10,000,000 CSS
+pixels before raster allocation. This is bounded root document scrolling, not
+CSS overflow conformance or nested horizontal scrolling.
 
 PaintOptions defaults:
 

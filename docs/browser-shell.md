@@ -88,7 +88,9 @@ The native window title retains the same warning alongside the active page title
 | Tab / Shift+Tab                                                                                                                                           | Traverse drawn chrome controls, then supported links and visible enabled form controls; positive `tabindex` values precede zero/default values in ascending order, ties retain tree order, negative values are skipped, and focused offscreen anchors scroll into view                                   |
 | Enter outside address editing                                                                                                                             | Activate the focused chrome control or rendered anchor; Shift+Enter opens a focused anchor in a new active tab; Ctrl+Enter opens it in a background tab                                                                                                                                                  |
 | Arrow Up/Down, Page Up/Down, Home/End outside editable fields; Ctrl+Home/End outside address editing and form controls                                    | Scroll the active page vertically                                                                                                                                                                                                                                                                        |
+| Arrow Left/Right outside editable fields; horizontal wheel delta; Shift+vertical wheel delta                                                              | Scroll the active page horizontally; wheel deltas use the same bounded 48-CSS-pixel step                                                                                                                                                                                                                 |
 | Vertical page scrollbar                                                                                                                                   | Click or drag the browser-owned thumb to scroll the active page                                                                                                                                                                                                                                          |
+| Horizontal page scrollbar                                                                                                                                 | Click or drag the browser-owned thumb to scroll the active page horizontally                                                                                                                                                                                                                             |
 | Single-select control                                                                                                                                     | Click, Enter, or Space to open; arrows/Home/End, Page Up/Down, and committed-text prefix search select enabled options; optgroup labels prefix flattened options and disabled groups disable their options; hovered popup rows are highlighted; wheel scrolls long lists; Escape/outside click dismisses |
 | Tab / Shift+Tab with simple forms                                                                                                                         | Visible enabled supported form controls join link traversal in tree order for zero/default `tabindex`; positive values use the shared ascending order and negative values are skipped                                                                                                                    |
 | Committed text, Left/Right, Backspace/Delete in a focused text/search/email/tel/url/password/date/time/datetime-local/month/week/number field or textarea | Edit the shell-owned field value (no page scrolling); insertion and deletion replace any selected range                                                                                                                                                                                                  |
@@ -175,28 +177,37 @@ the underlying URL and page title are not modified by that display conversion.
 Long labels/statuses are clipped; full navigation errors are also written to
 stderr. The native window title is bounded to 120 Unicode scalars.
 
-## Basic vertical scrolling
+## Bounded document scrolling
 
-Wheel amounts use positive Y for scrolling down (48 CSS pixels per line, capped
-at 100 lines per event). Wheel input targets only the active tab, is suppressed
-while editing the address, and is ignored over chrome when the last logical
-pointer position is known. Wheel events themselves carry no pointer coordinates.
-Page Up/Down move one viewport; Home/End select the document top/bottom outside
-address editing, and Ctrl+Home/End do the same outside address editing and all
-focused form controls. A browser-owned vertical scrollbar supports click-to-
-position and drag scrolling. Bounded nested vertical wheel scrolling is also
-supported for definite-height block containers styled with
+Document wheel input uses positive X for right and positive Y for down, at 48
+CSS pixels per line capped at 100 lines per event. Shift+vertical-wheel moves
+horizontally when the shift modifier is held. Wheel input targets only the
+active tab, is suppressed while editing the address, and is ignored over chrome
+when the last logical pointer position is known. Wheel events themselves carry
+no pointer coordinates. Page Up/Down move one viewport; Home/End select the
+document top/bottom outside address editing, and Ctrl+Home/End do the same
+outside address editing and all focused form controls. Left/Right move the
+document horizontally outside editable form controls. Browser-owned vertical
+and horizontal scrollbars support click-to-position and drag scrolling. Bounded
+nested vertical wheel scrolling is also supported for definite-height block
+containers styled with
 `overflow-x:hidden` and `overflow-y:auto`: wheel input first consumes that
 container's remaining vertical range, then chains unconsumed delta to document
-scroll. Horizontal scrolling, general CSS overflow semantics and DOM scroll
-events remain unsupported; this does not dispatch general DOM input or
-default-action events.
+scroll. Root horizontal document scrolling is independent of nested overflow:
+the renderer bounds the reported width from measurable layout right edges
+(10,000,000 CSS-pixel maximum), retains the original layout viewport and frame
+dimensions, and translates paint plus viewport metadata by the clamped X offset.
+It does not add horizontal CSS overflow containers, negative-left-origin
+scrolling, general CSS overflow semantics or DOM scroll events, and does not
+dispatch general DOM input or default-action events.
 
 Each tab's controller content owns its scroll position, including across tab
-moves. Positions clamp to the rendered root document border-box bottom minus
-the current CSS viewport height. No-overflow pages stay at zero. Resize retains
-the document and preserves/clamps the offset; only successful new-document
-publication resets it. Failed navigation keeps the previous frame and position.
+moves. Vertical positions clamp to the rendered root document border-box bottom
+minus the current CSS viewport height; horizontal positions clamp to the reported
+root scroll width minus viewport width. No-overflow pages stay at zero. Resize
+retains the document and preserves/clamps both offsets; cross-document history
+stores and restores both per-entry offsets. Only successful new-document
+publication resets them. Failed navigation keeps the previous frame and position.
 Scrolling is inactive before a document commits and while navigation is loading.
 Failed scroll repaints report an error and retain the last published frame/offset.
 
@@ -204,8 +215,8 @@ Both local and process renderers repaint the retained parsed DOM (including
 script mutations), with no fetch, parse or script reexecution. Scroll translation
 is applied only during rasterization under the same viewport clip; CSS viewport
 width/height, layout coordinates and opaque BGRA frame dimensions are unchanged.
-Root extent and vertical paint coordinates are limited to 10,000,000 CSS pixels;
-this remains a bounded scrolling subset, not general CSS overflow semantics.
+Root width/height extents and paint coordinates are limited to 10,000,000 CSS
+pixels; this remains bounded document scrolling, not general CSS overflow semantics.
 Newer scroll/resize requests cancel older publications. In-flight retained
 process exchanges drain under their existing deadline to keep the DOM/channel
 alive; stale frames cannot publish. New-document candidates still commit
@@ -956,8 +967,10 @@ submission; they do not receive DOM form or input events. Visible shaped text
 supports bounded drag/double/triple-click selection, keyboard extension and
 clipboard copy; editable address and supported text fields also support
 bounded selection and replacement. Vertical document scrolling is available
-through wheel/keyboard input and the browser-owned scrollbar. These features
-do not provide general DOM focus, pointer, keyboard or input dispatch: only
+through wheel/keyboard input and the browser-owned scrollbar; horizontal root
+scrolling is available through horizontal/shift-wheel, Left/Right and its
+browser-owned scrollbar. These features do not provide general DOM focus,
+pointer, keyboard or input dispatch: only
 the explicitly documented trusted link `click`/`auxclick` dispatch is available
 on opted-in pages.
 

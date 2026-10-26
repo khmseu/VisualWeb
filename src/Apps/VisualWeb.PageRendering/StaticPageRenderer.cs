@@ -42,11 +42,13 @@ public sealed class StaticPageRenderer : IPageRenderer
     /// <summary>Strict bound on trusted click and auxclick events dispatched into one retained document host.</summary>
     public const int MaxLinkEventsPerDocument = 1024;
     public const int MaxLinkClicksPerDocument = MaxLinkEventsPerDocument;
-    private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName, double documentY, int? tabIndex)
+    private sealed class LinkTargetData(string url, bool openInNewTab, string? targetName,
+        double documentX, double documentY, int? tabIndex)
     {
         public string Url { get; } = url;
         public bool OpenInNewTab { get; } = openInNewTab;
         public string? TargetName { get; } = targetName;
+        public double DocumentX { get; set; } = documentX;
         public double DocumentY { get; set; } = documentY;
         public int? TabIndex { get; } = tabIndex;
         public List<PageLinkRect> Rects { get; } = [];
@@ -186,6 +188,10 @@ public sealed class StaticPageRenderer : IPageRenderer
         var scrollHeight = Math.Max(viewport.Height, bottom);
         if (!double.IsFinite(bottom) || bottom < 0 || scrollHeight > PaintOptions.MaxDocumentHeight)
         { throw new PaintLimitException("Document scroll height exceeds the CSS-pixel bound."); }
+        var scrollWidth = Math.Max(viewport.Width, MeasureScrollWidth(layout.Root, viewport.Width, cancellationToken));
+        if (!double.IsFinite(scrollWidth) || scrollWidth > PaintOptions.MaxDocumentWidth)
+        { throw new PaintLimitException("Document scroll width exceeds the CSS-pixel bound."); }
+        var clampedRootScrollX = Math.Min(viewport.ScrollX, scrollWidth - viewport.Width);
         var clampedRootScroll = Math.Min(viewport.ScrollY, scrollHeight - viewport.Height);
         var scrollContainers = ResolveScrollContainers(layout, styles, viewport, cancellationToken);
         var scrollClipMap = new Dictionary<LayoutBox, DisplayListBuilder.ScrollClipState>(
@@ -197,12 +203,13 @@ public sealed class StaticPageRenderer : IPageRenderer
                 container.Box,
                 new DisplayListBuilder.ScrollClipState(container.Box.PaddingBox, container.Offset));
         }
-        var display = DisplayListBuilder.Build(layout, styles, options.Paint, cancellationToken, scrollClipMap);
+        var display = DisplayListBuilder.Build(layout, styles, options.Paint, cancellationToken, scrollClipMap, scrollWidth);
         var frame = CpuRasterizer.Render(display, paint, viewport.Scale, options: options.Paint,
-            cancellationToken: cancellationToken, scrollY: clampedRootScroll);
+            cancellationToken: cancellationToken, scrollY: clampedRootScroll, scrollX: clampedRootScrollX);
         var (links, anchors, controlGeometry, labelGeometry, textTargets) = CollectLinks(parsed.Document, layout, page.Url,
-            clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers);
-        var nestedScrollContainers = CollectScrollContainers(layout.Root, scrollContainers, viewport.Width, viewport.Height, clampedRootScroll);
+            clampedRootScrollX, clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers);
+        var nestedScrollContainers = CollectScrollContainers(layout.Root, scrollContainers, viewport.Width, viewport.Height,
+            clampedRootScrollX, clampedRootScroll);
         var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, labelGeometry, links.Count,
             layout.ViewportWidth, layout.ViewportHeight, cancellationToken, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
@@ -214,6 +221,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         var result = new BrowserPage(frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
         {
+            ScrollWidth = scrollWidth,
             ScrollHeight = scrollHeight,
             LinkTargets = links,
             FragmentTargets = CollectFragmentTargets(layout, scrollHeight, cancellationToken),
@@ -237,7 +245,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         IReadOnlyDictionary<DomElement, (PageLinkRect, int)> Controls,
         IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> Labels,
         IReadOnlyList<PageTextTarget> TextTargets)
-        CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollY,
+        CollectLinks(DomDocument document, LayoutResult layout, BrowserUrl url, double scrollX, double scrollY,
             CancellationToken cancellationToken, BrowserUrl? baseUrlOverride, IReadOnlyList<ScrollContainerState> scrollContainers)
     {
         var baseTarget = FindBaseTarget(document, cancellationToken);
@@ -262,7 +270,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         if (layout.Root is { } root) { Visit(root, 0, []); }
         links = linkData.Select(target => new PageLinkTarget(target.Rects.AsReadOnly(), target.Url,
             target.OpenInNewTab, target.TargetName, target.DocumentY)
-        { TabIndex = target.TabIndex }).ToList();
+        { DocumentX = target.DocumentX, TabIndex = target.TabIndex }).ToList();
         try
         {
             RendererProtocol.ValidateLinks(links, layout.ViewportWidth, layout.ViewportHeight);
@@ -273,9 +281,14 @@ public sealed class StaticPageRenderer : IPageRenderer
             labelRectangles.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<PageLinkRect>)pair.Value.ToArray()),
             textTargets.AsReadOnly());
 
-        LinkTargetData GetLinkTarget(DomElement anchor, string href, double documentY)
+        LinkTargetData GetLinkTarget(DomElement anchor, string href, double documentX, double documentY)
         {
-            if (anchors.TryGetValue(anchor, out var existing)) { return existing; }
+            if (anchors.TryGetValue(anchor, out var existing))
+            {
+                existing.DocumentX = Math.Min(existing.DocumentX, documentX);
+                existing.DocumentY = Math.Min(existing.DocumentY, documentY);
+                return existing;
+            }
             if (linkData.Count >= RendererProtocol.MaxLinkTargets)
             { throw new PageNavigationException("Renderer link count limit exceeded."); }
             if (href.Length > RendererProtocol.MaxTextCharacters)
@@ -288,7 +301,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             if (urlBytes > RendererProtocol.MaxLinkMetadataBytes)
             { throw new PageNavigationException("Renderer link metadata byte limit exceeded."); }
             var (openInNewTab, targetName) = ResolveTarget(anchor.GetAttribute("target"), baseTarget);
-            var target = new LinkTargetData(destination, openInNewTab, targetName, documentY,
+            var target = new LinkTargetData(destination, openInNewTab, targetName, documentX, documentY,
                 PageTabIndex.Parse(anchor.GetAttribute("tabindex")));
             anchors.Add(anchor, target);
             anchorOrder.Add(anchor);
@@ -330,8 +343,9 @@ public sealed class StaticPageRenderer : IPageRenderer
             rects.Add(rect);
         }
 
-        void SetBlockRectangle(LinkTargetData target, PageLinkRect rect, double documentY)
+        void SetBlockRectangle(LinkTargetData target, PageLinkRect rect, double documentX, double documentY)
         {
+            target.DocumentX = Math.Min(target.DocumentX, documentX);
             target.DocumentY = Math.Min(target.DocumentY, documentY);
             target.IsBlockBoxAnchor = true;
             if (target.BlockRectangle is null)
@@ -375,8 +389,8 @@ public sealed class StaticPageRenderer : IPageRenderer
 
         bool TryProjectRect(LayoutRect rect, double nestedShift, IReadOnlyList<PageLinkRect> clips, out PageLinkRect projected)
         {
-            var left = rect.X;
-            var right = rect.X + rect.Width;
+            var left = rect.X - scrollX;
+            var right = rect.X + rect.Width - scrollX;
             var top = rect.Y - scrollY - nestedShift;
             var bottom = rect.Y + rect.Height - scrollY - nestedShift;
             left = Math.Clamp(left, 0, layout.ViewportWidth);
@@ -408,8 +422,8 @@ public sealed class StaticPageRenderer : IPageRenderer
 
         PageLinkRect ToViewportClip(LayoutRect rect, double nestedShift)
         {
-            var left = Math.Clamp(rect.X, 0, layout.ViewportWidth);
-            var right = Math.Clamp(rect.X + rect.Width, 0, layout.ViewportWidth);
+            var left = Math.Clamp(rect.X - scrollX, 0, layout.ViewportWidth);
+            var right = Math.Clamp(rect.X + rect.Width - scrollX, 0, layout.ViewportWidth);
             var top = Math.Clamp(rect.Y - scrollY - nestedShift, 0, layout.ViewportHeight);
             var bottom = Math.Clamp(rect.Y + rect.Height - scrollY - nestedShift, 0, layout.ViewportHeight);
             return new(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
@@ -436,10 +450,10 @@ public sealed class StaticPageRenderer : IPageRenderer
                         && anchor.GetAttribute("href") is { } href)
                     {
                         var border = block.Box.BorderBox;
-                        var target = GetLinkTarget(anchor, href, border.Y);
+                        var target = GetLinkTarget(anchor, href, border.X, border.Y);
                         if (TryProjectRect(border, nestedShift, clips, out var rect)
                             && !target.Rects.Except(target.BlockRectangle is null ? [] : [target.BlockRectangle]).Any())
-                        { SetBlockRectangle(target, rect, border.Y); }
+                        { SetBlockRectangle(target, rect, border.X, border.Y); }
                     }
                     if (block.Box.Element.LocalName is "input" or "button" or "select")
                     {
@@ -462,7 +476,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                         {
                             if (!anchors.TryGetValue(anchor, out target))
                             {
-                                target = GetLinkTarget(anchor, href, line.Line.Bounds.Y);
+                                target = GetLinkTarget(anchor, href, fragment.X, line.Line.Bounds.Y);
                                 lineNewAnchors.Add(anchor);
                             }
                             if (target.IsBlockBoxAnchor)
@@ -471,6 +485,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                                 { target.Rects.Remove(blockRectangle); }
                                 target.BlockRectangle = null;
                                 target.IsBlockBoxAnchor = false;
+                                target.DocumentX = fragment.X;
                                 target.DocumentY = line.Line.Bounds.Y;
                             }
                         }
@@ -625,7 +640,7 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
 
     private static IReadOnlyList<PageScrollContainer> CollectScrollContainers(LayoutBox? root,
-        IReadOnlyList<ScrollContainerState> states, double viewportWidth, double viewportHeight, double scrollY)
+        IReadOnlyList<ScrollContainerState> states, double viewportWidth, double viewportHeight, double scrollX, double scrollY)
     {
         if (root is null || states.Count == 0) { return Array.Empty<PageScrollContainer>(); }
         var byBox = new Dictionary<LayoutBox, ScrollContainerState>(
@@ -644,8 +659,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         {
             if (byBox.TryGetValue(box, out var state))
             {
-                var left = Math.Clamp(box.PaddingBox.X, 0, viewportWidth);
-                var right = Math.Clamp(box.PaddingBox.X + box.PaddingBox.Width, 0, viewportWidth);
+                var left = Math.Clamp(box.PaddingBox.X - scrollX, 0, viewportWidth);
+                var right = Math.Clamp(box.PaddingBox.X + box.PaddingBox.Width - scrollX, 0, viewportWidth);
                 var top = Math.Clamp(box.PaddingBox.Y - scrollY - nestedShift, 0, viewportHeight);
                 var bottom = Math.Clamp(box.PaddingBox.Y + box.PaddingBox.Height - scrollY - nestedShift, 0, viewportHeight);
                 result.Add(new(state.Index, state.ParentIndex, new(left, top,
@@ -658,6 +673,29 @@ public sealed class StaticPageRenderer : IPageRenderer
                 Visit(child.Box, nestedShift);
             }
         }
+    }
+
+    private static double MeasureScrollWidth(LayoutBox? root, double viewportWidth, CancellationToken cancellationToken)
+    {
+        if (root is null) { return viewportWidth; }
+        var right = viewportWidth;
+        var stack = new Stack<LayoutBox>();
+        stack.Push(root);
+        while (stack.TryPop(out var box))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            right = Math.Max(right, box.BorderBox.X + box.BorderBox.Width);
+            foreach (var line in box.Lines)
+            {
+                right = Math.Max(right, line.Bounds.X + line.Bounds.Width);
+                foreach (var fragment in line.Fragments)
+                { right = Math.Max(right, fragment.X + fragment.Run.Width); }
+                foreach (var widget in line.Widgets)
+                { right = Math.Max(right, widget.Bounds.X + widget.Bounds.Width); }
+            }
+            foreach (var child in box.Children) { stack.Push(child); }
+        }
+        return right;
     }
 
     /// <summary>Returns the valid URL selected by the first parsed base element with an href.</summary>

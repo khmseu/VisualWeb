@@ -34,6 +34,10 @@ public sealed record PageLinkTarget(
     [property: JsonRequired] string? TargetName,
     [property: JsonRequired] double DocumentY)
 {
+    /// <summary>Document-space horizontal anchor offset for browser-owned focus scrolling.</summary>
+    [JsonRequired]
+    public double DocumentX { get; init; }
+
     /// <summary>Parsed <c>tabindex</c> attribute for this link; null means omitted or invalid.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/interaction.html#the-tabindex-attribute">the tabindex attribute</see>.</remarks>
     [JsonRequired]
@@ -504,7 +508,9 @@ public sealed record RendererMessage
     public double Height { get; init; }
     public double Scale { get; init; }
     public double ScrollY { get; init; }
+    public double ScrollX { get; init; }
     public double ScrollHeight { get; init; }
+    public double ScrollWidth { get; init; }
     public int PixelWidth { get; init; }
     public int PixelHeight { get; init; }
     public int Stride { get; init; }
@@ -543,7 +549,7 @@ public static class RendererProtocol
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 46;
+    public const int Version = 47;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -596,7 +602,8 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Base URL overrides belong only to render requests."); }
         if (message.Kind != RenderKind && message.ScrollOffsets is not null)
         { throw new IpcProtocolException("Nested scroll offsets belong only to render requests."); }
-        if ((message.Kind != RenderKind && message.ScrollY != 0) || (message.Kind != FrameKind && message.ScrollHeight != 0))
+        if ((message.Kind != RenderKind && (message.ScrollY != 0 || message.ScrollX != 0))
+            || (message.Kind != FrameKind && (message.ScrollHeight != 0 || message.ScrollWidth != 0)))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
         if ((message.Kind is not (RenderKind or ClickKind) && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
             || (message.Kind != RenderKind && (message.CommittedDocumentId != Guid.Empty || message.ReuseDocument)))
@@ -632,6 +639,8 @@ public static class RendererProtocol
                 Dimensions(message.Width, message.Height, message.Scale);
                 if (!double.IsFinite(message.ScrollY) || message.ScrollY < 0 || message.ScrollY > 1e9)
                 { throw new IpcProtocolException("Invalid renderer scroll offset."); }
+                if (!double.IsFinite(message.ScrollX) || message.ScrollX < 0 || message.ScrollX > 1e9)
+                { throw new IpcProtocolException("Invalid renderer horizontal scroll offset."); }
                 break;
             case FrameKind:
                 var dimensions = Dimensions(message.Width, message.Height, message.Scale);
@@ -647,6 +656,10 @@ public static class RendererProtocol
                 }
                 if (!double.IsFinite(message.ScrollHeight) || message.ScrollHeight < 0 || message.ScrollHeight > MaxScrollHeight)
                 { throw new IpcProtocolException("Invalid renderer scroll height."); }
+                if (!double.IsFinite(message.ScrollWidth) || message.ScrollWidth < 0 || message.ScrollWidth > MaxScrollHeight)
+                { throw new IpcProtocolException("Invalid renderer scroll width."); }
+                if (message.ScrollWidth < message.Width)
+                { throw new IpcProtocolException("Renderer scroll width is smaller than its CSS viewport."); }
                 ValidateLinks(message.LinkTargets, message.Width, message.Height);
                 ValidateFragmentTargets(message.FragmentTargets, message.ScrollHeight);
                 ValidateForms(message.Forms, message.FormControls, message.LinkTargets!.Length, message.Width, message.Height);
@@ -693,6 +706,7 @@ public static class RendererProtocol
                 || string.IsNullOrEmpty(link.Url) || link.Url.Length > MaxTextCharacters
                 || link.TargetName is { Length: 0 or > MaxTextCharacters }
                 || link.OpenInNewTab && link.TargetName is not null
+                || !double.IsFinite(link.DocumentX) || link.DocumentX < 0 || link.DocumentX > MaxScrollHeight
                 || !double.IsFinite(link.DocumentY) || link.DocumentY < 0 || link.DocumentY > MaxScrollHeight)
             { throw new IpcProtocolException("Invalid renderer link rectangle count, URL or document offset limit."); }
             if (link.TargetName is { } targetName && (!targetName.All(char.IsAscii)

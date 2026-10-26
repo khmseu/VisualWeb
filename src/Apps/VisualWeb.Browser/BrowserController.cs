@@ -32,6 +32,7 @@ public sealed class BrowserController : IDisposable
         internal BrowserPage? Page { get; set; }
         internal PageViewport? Viewport { get; set; }
         internal double ScrollY { get; set; }
+        internal double ScrollX { get; set; }
         internal bool ResizeFailed { get; set; }
         internal bool PageFocused { get; set; }
         internal int FocusedLink { get; set; } = -1;
@@ -55,7 +56,8 @@ public sealed class BrowserController : IDisposable
         internal bool SelectingText { get; set; }
     }
     private sealed class Operation(TabId tab, long generation, Task<LoadedPage> load, CancellationTokenSource cancellation,
-        int? traversal, bool replace, bool resize = false, bool scroll = false, double restoreScrollY = 0)
+        int? traversal, bool replace, bool resize = false, bool scroll = false,
+        double restoreScrollY = 0, double restoreScrollX = 0)
     {
         internal TabId Tab { get; } = tab;
         internal long Generation { get; } = generation;
@@ -66,6 +68,7 @@ public sealed class BrowserController : IDisposable
         internal bool Resize { get; } = resize;
         internal bool Scroll { get; } = scroll;
         internal double RestoreScrollY { get; } = restoreScrollY;
+        internal double RestoreScrollX { get; } = restoreScrollX;
         /// <summary>Trusted page click that must complete before the retained repaint and any link activation.</summary>
         internal Task<bool>? Click { get; init; }
         internal PageLinkTarget? ClickLink { get; init; }
@@ -125,6 +128,7 @@ public sealed class BrowserController : IDisposable
     }
     public BrowserPage? Page(TabId tab) { Check(); return content[tab].Page; }
     public double ScrollY(TabId tab) { Check(); return content[tab].ScrollY; }
+    public double ScrollX(TabId tab) { Check(); return content[tab].ScrollX; }
     private static PageScrollOffset[] SnapshotScrollOffsets(Content owner) =>
         owner.NestedScrollOffsets.OrderBy(pair => pair.Key)
             .Select(pair => new PageScrollOffset(pair.Key, pair.Value)).ToArray();
@@ -184,7 +188,7 @@ public sealed class BrowserController : IDisposable
             || owner.FocusedLink >= page.LinkTargets.Count) { return; }
         var target = page.LinkTargets[owner.FocusedLink];
         if (target.Rects.Count != 0) { return; }
-        Scroll(id, target.DocumentY - owner.ScrollY);
+        ScrollBy(id, target.DocumentX - owner.ScrollX, target.DocumentY - owner.ScrollY);
     }
     /// <summary>Begins a browser-owned selection on the visible shaped text cluster under the pointer.</summary>
     public bool StartTextSelection(TabId id, double x, double y, PageViewport? displayedViewport = null)
@@ -1317,10 +1321,20 @@ public sealed class BrowserController : IDisposable
         var operation = new Operation(id, checked(++Session.Tab(id).Generation), Task.FromResult(owner.Document),
             new(), null, false, resize: true, scroll: true)
         {
-            Viewport = viewport with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) }
+            Viewport = viewport with
+            {
+                ScrollX = owner.ScrollX,
+                ScrollY = owner.ScrollY,
+                ScrollOffsets = SnapshotScrollOffsets(owner)
+            }
         };
         operations.Add(operation);
-        Advance(operation, () => viewport with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) });
+        Advance(operation, () => viewport with
+        {
+            ScrollX = owner.ScrollX,
+            ScrollY = owner.ScrollY,
+            ScrollOffsets = SnapshotScrollOffsets(owner)
+        });
         return remaining;
     }
     private static void SelectRadio(Content owner, int selected)
@@ -1736,9 +1750,11 @@ public sealed class BrowserController : IDisposable
         if (tab.History.Current?.Href != destination.Href)
         {
             tab.History.SetCurrentScrollPosition(previousScrollY);
+            tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
             tab.History.CommitSameDocument(destination);
         }
         tab.History.SetCurrentScrollPosition(owner.ScrollY);
+        tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
         tab.AddressText = destination.Href;
         tab.Error = null;
         Changed?.Invoke(id);
@@ -1756,6 +1772,7 @@ public sealed class BrowserController : IDisposable
         tab.AddressText = destination.Href;
         tab.Error = null;
         ScrollToFragment(id, destination, page);
+        ScrollBy(id, tab.History.HorizontalScrollPositionAt(index) - owner.ScrollX, 0);
         Changed?.Invoke(id);
         return true;
     }
@@ -1897,6 +1914,7 @@ public sealed class BrowserController : IDisposable
         var destination = tab.History.Entries[index];
         StartHistoryNavigation(tab, destination, index, false, useShellConfirmation,
             restoreScrollY: tab.History.ScrollPositionAt(index),
+            restoreScrollX: tab.History.HorizontalScrollPositionAt(index),
             aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
     }
     public void Forward(TabId id) => Forward(id, useShellConfirmation: false);
@@ -1911,6 +1929,7 @@ public sealed class BrowserController : IDisposable
         var destination = tab.History.Entries[index];
         StartHistoryNavigation(tab, destination, index, false, useShellConfirmation,
             restoreScrollY: tab.History.ScrollPositionAt(index),
+            restoreScrollX: tab.History.HorizontalScrollPositionAt(index),
             aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
     }
     public void Reload(TabId id) => Reload(id, useShellConfirmation: false);
@@ -1924,7 +1943,8 @@ public sealed class BrowserController : IDisposable
             aboutBlankOrigin: current.IsAboutBlank ? tab.History.OriginAt(tab.History.Index) : null);
     }
     private void StartHistoryNavigation(BrowserTab tab, BrowserUrl url, int? traversal, bool replace,
-        bool useShellConfirmation, double restoreScrollY = 0, SecurityOrigin? aboutBlankOrigin = null)
+        bool useShellConfirmation, double restoreScrollY = 0, double restoreScrollX = 0,
+        SecurityOrigin? aboutBlankOrigin = null)
     {
         var document = content[tab.Id].Document;
         if (useShellConfirmation && pageNavigationAuthorizer is not null
@@ -1933,16 +1953,19 @@ public sealed class BrowserController : IDisposable
             Start(tab, url, traversal, replace,
                 preventHttpsDowngrade: document?.Url.Protocol == "https:",
                 restoreScrollY: restoreScrollY,
+                restoreScrollX: restoreScrollX,
                 authorizeRedirects: true,
                 preserveAddressWhileLoading: true,
                 authorizationSourceOrigin: document?.Origin,
                 aboutBlankOrigin: aboutBlankOrigin);
             return;
         }
-        Start(tab, url, traversal, replace, restoreScrollY: restoreScrollY, aboutBlankOrigin: aboutBlankOrigin);
+        Start(tab, url, traversal, replace, restoreScrollY: restoreScrollY,
+            restoreScrollX: restoreScrollX, aboutBlankOrigin: aboutBlankOrigin);
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
-        SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, bool authorizeRedirects = false,
+        SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, double restoreScrollX = 0,
+        bool authorizeRedirects = false,
         bool preserveAddressWhileLoading = false, SecurityOrigin? authorizationSourceOrigin = null,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, SecurityOrigin? aboutBlankOrigin = null)
     {
@@ -1950,7 +1973,9 @@ public sealed class BrowserController : IDisposable
         Cancel(tab.Id);
         var owner = content[tab.Id];
         owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
+        owner.ScrollX = owner.Viewport?.ScrollX ?? 0;
         tab.History.SetCurrentScrollPosition(owner.ScrollY);
+        tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
         var cancellation = new CancellationTokenSource();
         Task<LoadedPage> task;
         try
@@ -1969,7 +1994,7 @@ public sealed class BrowserController : IDisposable
         }
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace,
-            restoreScrollY: restoreScrollY));
+            restoreScrollY: restoreScrollY, restoreScrollX: restoreScrollX));
         if (!preserveAddressWhileLoading) { tab.AddressText = url.Href; }
         tab.Error = null; tab.IsLoading = true;
         tab.Status = preserveAddressWhileLoading ? "Checking navigation authorization." : "Loading " + url.Href;
@@ -2057,7 +2082,11 @@ public sealed class BrowserController : IDisposable
                 var size = operation.Viewport ?? viewport();
                 if (size is null) { finished = false; return; }
                 operation.Document = document;
-                var requested = operation.Resize ? size.Value : size.Value with { ScrollY = operation.RestoreScrollY };
+                var requested = operation.Resize ? size.Value : size.Value with
+                {
+                    ScrollX = operation.RestoreScrollX,
+                    ScrollY = operation.RestoreScrollY
+                };
                 operation.Viewport = requested with { ScrollOffsets = SnapshotScrollOffsets(content[operation.Tab]) };
                 var renderer = operation.Renderer = Select(content[operation.Tab], operation, document);
                 operation.Render = operation.Resize
@@ -2072,6 +2101,7 @@ public sealed class BrowserController : IDisposable
                 if (latest is null) { finished = false; return; }
                 var geometry = latest.Value with
                 {
+                    ScrollX = operation.RestoreScrollX,
                     ScrollY = operation.RestoreScrollY,
                     ScrollOffsets = operation.Viewport?.ScrollOffsets ?? Array.Empty<PageScrollOffset>()
                 };
@@ -2079,6 +2109,16 @@ public sealed class BrowserController : IDisposable
                 {
                     operation.Viewport = geometry;
                     operation.Render = operation.Renderer!.RenderRetainedAsync(document, geometry, operation.Cancellation.Token);
+                    finished = false;
+                    return;
+                }
+                var maximumScrollX = Math.Max(0, rendered.ScrollWidth - geometry.Width);
+                var restoredScrollX = Math.Clamp(geometry.ScrollX, 0, maximumScrollX);
+                if (restoredScrollX != geometry.ScrollX)
+                {
+                    operation.Viewport = geometry with { ScrollX = restoredScrollX };
+                    operation.Render = operation.Renderer!.RenderRetainedAsync(document, operation.Viewport.Value,
+                        operation.Cancellation.Token);
                     finished = false;
                     return;
                 }
@@ -2104,8 +2144,11 @@ public sealed class BrowserController : IDisposable
                 operation.Candidate = null;
                 owner.Renderer = candidate; owner.Used = true;
             }
+            owner.ScrollX = Math.Min(operation.Viewport!.Value.ScrollX,
+                Math.Max(0, rendered.ScrollWidth - operation.Viewport.Value.Width));
             owner.ScrollY = Math.Min(operation.Viewport!.Value.ScrollY,
                 Math.Max(0, rendered.ScrollHeight - operation.Viewport.Value.Height));
+            tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
             tab.History.SetCurrentScrollPosition(owner.ScrollY);
             var sameControls = operation.Resize && owner.Document?.DocumentId == document.DocumentId
                 && owner.Page is { } old && SameControls(old, rendered);
@@ -2123,7 +2166,12 @@ public sealed class BrowserController : IDisposable
             if (!sameControls)
             { owner.Fields.Clear(); owner.Dirty.Clear(); owner.CheckedStates.Clear(); owner.SelectedOptions.Clear(); owner.ActiveSelectOptions.Clear(); owner.MultipleSelectedOptions.Clear(); owner.MultipleSelectRangeAnchors.Clear(); owner.ListboxFirstOptions.Clear(); owner.FocusedControl = -1; }
             else if (owner.FocusedControl >= 0 && !Focusable(rendered.FormControls[owner.FocusedControl])) { owner.FocusedControl = -1; }
-            owner.Viewport = operation.Viewport.Value with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) };
+            owner.Viewport = operation.Viewport.Value with
+            {
+                ScrollX = owner.ScrollX,
+                ScrollY = owner.ScrollY,
+                ScrollOffsets = SnapshotScrollOffsets(owner)
+            };
             tab.Origin = document.Origin;
             if (operation.Click is not null)
             {
@@ -2150,7 +2198,11 @@ public sealed class BrowserController : IDisposable
         {
             if (current)
             {
-                if (operation.Resize) { content[operation.Tab].ScrollY = content[operation.Tab].Viewport?.ScrollY ?? 0; }
+                if (operation.Resize)
+                {
+                    content[operation.Tab].ScrollX = content[operation.Tab].Viewport?.ScrollX ?? 0;
+                    content[operation.Tab].ScrollY = content[operation.Tab].Viewport?.ScrollY ?? 0;
+                }
                 Report(operation.Tab, "Navigation/rendering canceled.");
             }
         }
@@ -2161,6 +2213,7 @@ public sealed class BrowserController : IDisposable
                 if (operation.Resize)
                 {
                     var owner = content[operation.Tab];
+                    owner.ScrollX = owner.Viewport?.ScrollX ?? 0;
                     owner.ScrollY = owner.Viewport?.ScrollY ?? 0;
                     // A failed click keeps the last published frame; its host is invalidated and repaints fail explicitly.
                     if (!operation.Scroll && operation.Click is null)
@@ -2221,7 +2274,12 @@ public sealed class BrowserController : IDisposable
         var owner = content[id];
         var tab = Session.Tab(id);
         if (tab.IsLoading || owner.Document is null) { return; }
-        viewport = viewport with { ScrollY = owner.ScrollY, ScrollOffsets = SnapshotScrollOffsets(owner) };
+        viewport = viewport with
+        {
+            ScrollX = owner.ScrollX,
+            ScrollY = owner.ScrollY,
+            ScrollOffsets = SnapshotScrollOffsets(owner)
+        };
         var pending = operations.FirstOrDefault(op => op.Tab == id && op.Generation == tab.Generation);
         if (pending?.Viewport == viewport) { return; }
         if (owner.Viewport == viewport)
@@ -2239,21 +2297,35 @@ public sealed class BrowserController : IDisposable
     }
     /// <summary>Scroll the active retained document in CSS pixels; finite deltas saturate at its extent.</summary>
     public void Scroll(TabId id, double delta)
+        => ScrollBy(id, 0, delta);
+
+    /// <summary>Scroll the active retained document in CSS pixels; finite deltas saturate at its root extents.</summary>
+    public void ScrollBy(TabId id, double deltaX, double deltaY)
     {
         Check();
-        if (!double.IsFinite(delta)) { throw new ArgumentOutOfRangeException(nameof(delta), "Scroll delta must be finite."); }
+        if (!double.IsFinite(deltaX) || !double.IsFinite(deltaY))
+        { throw new ArgumentOutOfRangeException(nameof(deltaX), "Scroll deltas must be finite."); }
         var owner = content[id];
         var tab = Session.Tab(id);
-        if (tab.IsLoading || owner.Document is null || owner.Page is null || owner.Viewport is null || delta == 0) { return; }
+        if (tab.IsLoading || owner.Document is null || owner.Page is null || owner.Viewport is null
+            || deltaX == 0 && deltaY == 0) { return; }
         var pending = operations.FirstOrDefault(op => op.Tab == id && op.Generation == tab.Generation);
         var viewport = pending?.Viewport ?? owner.Viewport.Value;
-        var maximum = Math.Max(0, owner.Page.ScrollHeight - viewport.Height);
-        var offset = Math.Clamp(owner.ScrollY + delta, 0, maximum);
-        if (offset == owner.ScrollY) { return; }
+        var maximumX = Math.Max(0, owner.Page.ScrollWidth - viewport.Width);
+        var maximumY = Math.Max(0, owner.Page.ScrollHeight - viewport.Height);
+        var offsetX = Math.Clamp(owner.ScrollX + deltaX, 0, maximumX);
+        var offsetY = Math.Clamp(owner.ScrollY + deltaY, 0, maximumY);
+        if (offsetX == owner.ScrollX && offsetY == owner.ScrollY) { return; }
         Limit();
         Cancel(id);
-        owner.ScrollY = offset;
-        viewport = viewport with { ScrollY = offset, ScrollOffsets = SnapshotScrollOffsets(owner) };
+        owner.ScrollX = offsetX;
+        owner.ScrollY = offsetY;
+        viewport = viewport with
+        {
+            ScrollX = offsetX,
+            ScrollY = offsetY,
+            ScrollOffsets = SnapshotScrollOffsets(owner)
+        };
         var operation = new Operation(id, checked(++tab.Generation), Task.FromResult(owner.Document),
             new(), null, false, resize: true, scroll: true)
         { Viewport = viewport };

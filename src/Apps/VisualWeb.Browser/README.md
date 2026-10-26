@@ -17,6 +17,10 @@ keyboard or modifier events. Keyboard traversal visits chrome before
 supported links and visible enabled form controls, honoring the bounded
 `tabindex` ordering documented in the controls guide;
 visible link hover and per-tab page focus use shell-owned outlines without changing the renderer raster.
+Root document scrolling supports bounded horizontal and vertical offsets in
+local and process renderers, with retained-document repaints, per-entry history
+restoration and browser-owned scrollbars. Horizontal overflow here is not nested
+CSS overflow behavior.
 Page text selection uses bounded visible HarfBuzz clusters, with individual
 stops for ordinary supported LTR characters and no estimated positions inside
 multi-character ligatures or combining clusters. SDL-reported double-clicks on

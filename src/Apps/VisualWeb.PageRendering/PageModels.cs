@@ -101,12 +101,13 @@ public sealed record LoadedPage
         Diagnostics = this.Diagnostics;
     }
 }
-/// <summary>Unchanged CSS viewport geometry and a vertical canvas offset.</summary>
+/// <summary>Unchanged CSS viewport geometry and browser-owned root document scroll offsets.</summary>
 /// <remarks>Spec: css2-visual;
 /// <see href="https://www.w3.org/TR/CSS22/visuren.html#viewport">viewport</see>.</remarks>
 public readonly record struct PageViewport(double Width, double Height, double Scale)
 {
     public double ScrollY { get; init; }
+    public double ScrollX { get; init; }
     public IReadOnlyList<PageScrollOffset> ScrollOffsets { get; init; } = Array.Empty<PageScrollOffset>();
 }
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
@@ -123,6 +124,7 @@ public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
     /// <summary>Visible vertical nested scroll containers for browser-owned wheel routing.</summary>
     public IReadOnlyList<PageScrollContainer> ScrollContainers { get; init; } = Array.Empty<PageScrollContainer>();
     private readonly double scrollHeight;
+    private readonly double scrollWidth;
     public double ScrollHeight
     {
         get => scrollHeight;
@@ -131,6 +133,16 @@ public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
             if (!double.IsFinite(value) || value < 0 || value > PaintOptions.MaxDocumentHeight)
             { throw new ArgumentOutOfRangeException(nameof(value), "Document scroll height exceeds the CSS-pixel bound."); }
             scrollHeight = value;
+        }
+    }
+    public double ScrollWidth
+    {
+        get => scrollWidth;
+        init
+        {
+            if (!double.IsFinite(value) || value < 0 || value > PaintOptions.MaxDocumentWidth)
+            { throw new ArgumentOutOfRangeException(nameof(value), "Document scroll width exceeds the CSS-pixel bound."); }
+            scrollWidth = value;
         }
     }
 }

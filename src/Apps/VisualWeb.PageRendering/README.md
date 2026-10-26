@@ -29,10 +29,13 @@ Both event types are plain Events without PointerEvent metadata.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
 
-`PageViewport.ScrollY` is an optional init-only CSS-pixel offset; its three-value
-constructor/deconstruction are unchanged. `BrowserPage.ScrollHeight` reports the
-bounded root extent (at least the viewport height). Scroll changes raster
-translation only, not layout viewport geometry or frame size.
+`PageViewport.ScrollY` and `ScrollX` are optional init-only CSS-pixel offsets;
+its three-value constructor/deconstruction are unchanged. `BrowserPage.ScrollHeight`
+and `ScrollWidth` report bounded root extents (at least the corresponding viewport
+dimension). Scroll changes raster translation only, not layout viewport geometry
+or frame size. Horizontal width is measured from supported layout border boxes,
+lines, text fragments and inline widgets; negative-left-origin overflow and nested
+horizontal overflow are not represented.
 `PageViewport.ScrollOffsets` carries bounded per-container vertical offsets for
 the supported nested overflow subset. Rendering resolves definite-height block
 containers with computed `overflow-x:hidden` and `overflow-y:auto`, applies
@@ -47,11 +50,12 @@ rendered block geometry for anchors without shaped text, including geometry
 contributed by rendered descendants. Text rectangles and block boxes are
 translated/clipped to visible CSS viewport space. URLs resolve against the final
 source URL before returning data-only IPC-contract targets. Each anchor is one
-target containing its visible rectangles, bounded document-space top offset and
+target containing its visible rectangles, bounded document-space X/Y offsets and
 parsed `tabindex` value; groups follow renderer target order, without exposing element identity. Offscreen
 anchors have an empty rectangle list until scrolled into view. Empty inline
 anchors and non-text anchors without a non-empty rendered block box remain
-unsupported. IPC v37 adds the offset without exposing renderer DOM identity.
+unsupported. IPC v37 adds the vertical offset without exposing renderer DOM identity;
+IPC v47 adds the horizontal offset and bounded root scroll width.
 `_blank` opens a new tab; `_self`,
 `_parent`, and `_top` use the current tab, including the first `<base target>`
 fallback. Other ASCII names are preserved as current-window browsing-context
@@ -68,7 +72,10 @@ dimensions are 160 by 20 CSS pixels; textarea defaults to 20 columns by 2 rows
 with bounded cols/rows and exposes its text content as its initial value; select
 controls carry bounded direct-option metadata and use 160 by 20 CSS-pixel fallback geometry. Controls
 expose name, initial value, label, disabled/readonly/required/pattern/minlength/maxlength, email `multiple` state, bounded applicable placeholder text, finite number/range bounds and step metadata, parsed `tabindex`, merged
-traversal position before a link group and clipped visible border box. IPC v46 carries link/control `tabindex` values as data-only metadata; the browser applies the bounded sequential-order subset documented in the shell guide. Bounded
+traversal position before a link group and clipped visible border box. IPC v47 carries link/control `tabindex` values and bounded root horizontal scroll
+metadata as data-only fields; link targets include document-space X/Y anchor
+offsets so browser focus scrolling can bring offscreen links into view. The browser
+applies the bounded sequential-order subset documented in the shell guide. Bounded
 data-only label-text rectangles associate explicit `for` labels or the first
 supported labelable descendant with visible enabled controls; DOM identities do
 not cross IPC.

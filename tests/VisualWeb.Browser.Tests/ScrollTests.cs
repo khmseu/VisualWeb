@@ -51,6 +51,32 @@ public sealed class ScrollTests
         Assert.Equal(first.Title, retained.Title);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task HorizontalRetainedScrollRevealsDocumentOverflowWithoutChangingFrameSize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        var document = Document("""
+            <!doctype html><style>*{margin:0}html{background-color:blue}
+            #wide{margin-left:80px;width:20px;height:20px;background-color:red}</style><div id=wide></div>
+            """);
+        var viewport = new PageViewport(50, 20, 1);
+
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollX = 50 }, Cancellation);
+
+        Assert.Equal(100, first.ScrollWidth);
+        Assert.Equal(first.Frame.Size, scrolled.Frame.Size);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, first.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, scrolled.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, scrolled.Frame.Pixels.Span[(29 * 4)..(30 * 4)].ToArray());
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, scrolled.Frame.Pixels.Span[(30 * 4)..(31 * 4)].ToArray());
+    }
+
     [Fact]
     public void ControllerClampsPreservesResizeAndOnlyResetsOnSuccessfulNavigation()
     {
@@ -335,6 +361,92 @@ public sealed class ScrollTests
         Assert.Single(source.Requests); Assert.Single(tab.History.Entries);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HorizontalScrollClampsOnResizeAndRestoresPerHistoryEntry(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(20, 20, 1);
+        var firstUrl = BrowserUrl.Parse("https://example.com/first");
+        var secondUrl = BrowserUrl.Parse("https://example.com/second");
+        var wide = Document("""
+            <!doctype html><style>*{margin:0}#wide{margin-left:80px;width:40px;height:20px}</style><div id=wide></div>
+            """);
+
+        controller.Navigate(tab.Id, firstUrl.Href);
+        source.Requests[0].Completion.SetResult(new(firstUrl, wide.Html, 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        Assert.Equal(120, controller.Page(tab.Id)!.ScrollWidth);
+        ScrollTo(90);
+
+        viewport = new(50, 20, 1);
+        controller.Resize(tab.Id, viewport);
+        PumpUntil(() => controller.ScrollX(tab.Id) == 70);
+        Assert.Equal(70, controller.ScrollX(tab.Id));
+
+        controller.Navigate(tab.Id, secondUrl.Href);
+        source.Requests[1].Completion.SetResult(new(secondUrl, "<!doctype html><style>*{margin:0}</style>short", 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        Assert.Equal(0, controller.ScrollX(tab.Id));
+
+        controller.Back(tab.Id);
+        source.Requests[2].Completion.SetResult(new(firstUrl, wide.Html, 200, []));
+        PumpUntil(() => !tab.IsLoading);
+        Assert.Equal(70, controller.ScrollX(tab.Id));
+
+        void ScrollTo(double offset)
+        {
+            var previous = controller.Page(tab.Id);
+            controller.ScrollBy(tab.Id, offset, 0);
+            PumpUntil(() => !ReferenceEquals(previous, controller.Page(tab.Id)));
+            Assert.Equal(offset, controller.ScrollX(tab.Id));
+        }
+
+        void PumpUntil(Func<bool> complete)
+        {
+            var timer = Stopwatch.StartNew();
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => viewport);
+                if (complete()) { return; }
+                Thread.Sleep(10);
+            } while (timer.Elapsed < TimeSpan.FromSeconds(15));
+            Assert.Fail("Horizontal scroll operation timed out.");
+        }
+    }
+
+    [Fact]
+    public void FocusingAnOffscreenLinkScrollsItIntoTheHorizontalViewport()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(40, 20, 1);
+        var document = Document("""
+            <!doctype html><style>*{margin:0}#spacer{margin-left:90px}</style>
+            <div id=spacer><a href=/next>target</a></div>
+            """);
+
+        controller.Navigate(tab.Id, document.Url.Href);
+        source.Requests[0].Completion.SetResult(document);
+        controller.Pump(_ => viewport);
+        var target = Assert.Single(controller.Page(tab.Id)!.LinkTargets);
+        Assert.True(target.DocumentX >= viewport.Width, $"documentX={target.DocumentX}; rects={target.Rects.Count}");
+        Assert.Equal(0, controller.ScrollX(tab.Id));
+        Assert.Equal(0, controller.MoveLinkFocus(tab.Id));
+        controller.Pump(_ => viewport);
+
+        Assert.True(controller.ScrollX(tab.Id) > 0, $"documentX={target.DocumentX}; rects={target.Rects.Count}");
+        Assert.Contains(controller.Page(tab.Id)!.LinkTargets[0].Rects,
+            rect => rect.X >= 0 && rect.X < viewport.Width);
+    }
+
     [Fact]
     public void NestedOverflowWheelConsumesContainerThenChainsRemainingToDocument()
     {
@@ -373,6 +485,18 @@ public sealed class ScrollTests
         using var fonts = new PaintFontRegistry();
         var frame = CpuRasterizer.Render(new(1, 1, []), fonts, cancellationToken: Cancellation);
         Assert.Throws<ArgumentOutOfRangeException>(() => new BrowserPage(frame, "", "") { ScrollHeight = height });
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(10_000_001)]
+    public void BrowserPageRejectsInvalidScrollWidth(double width)
+    {
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(new(1, 1, []), fonts, cancellationToken: Cancellation);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BrowserPage(frame, "", "") { ScrollWidth = width });
     }
 
     private sealed class PendingRenderer : IPageRenderer

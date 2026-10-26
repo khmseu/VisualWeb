@@ -4032,6 +4032,65 @@ public sealed class ShellTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void HorizontalWheelShiftWheelArrowAndScrollbarOperateTheDocument(bool multiprocess)
+    {
+        using var system = new Windows();
+        var renderer = multiprocess ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null;
+        using var shell = new DevelopmentShell(system, FontPath, rendererPath: renderer);
+        var window = shell.OpenWindow();
+        var native = system.Items[0];
+        var tab = window.ActiveTab!;
+        var html = "<!doctype html><style>*{margin:0}div{width:2000px;height:2000px;background-color:red}</style><div></div>";
+        shell.Controller.Navigate(tab.Id, "data:text/html," + Uri.EscapeDataString(html));
+        Wait(() => !tab.IsLoading && shell.Controller.Page(tab.Id) is not null);
+
+        shell.Dispatch(new PointerMoved(native.Id, 10, 150));
+        shell.Dispatch(new PointerScrolled(native.Id, 1, 0));
+        Wait(() => !tab.IsLoading && shell.Controller.ScrollX(tab.Id) > 0);
+        Assert.Equal(48, shell.Controller.ScrollX(tab.Id));
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.LShift, 0, (ushort)SDL.Keymod.Shift, true, false));
+        shell.Dispatch(new PointerScrolled(native.Id, 0, 1));
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.LShift, 0, 0, false, false));
+        Wait(() => !tab.IsLoading && shell.Controller.ScrollX(tab.Id) > 48);
+
+        shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Right, 0, 0, true, false));
+        Wait(() => !tab.IsLoading && shell.Controller.ScrollX(tab.Id) > 96);
+        var trackX = native.Size.Width / 2;
+        var trackY = native.Size.Height - 6;
+        shell.Dispatch(new PointerMoved(native.Id, trackX, trackY));
+        shell.Tick();
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, trackX, trackY));
+        Wait(() => !tab.IsLoading && shell.Controller.ScrollX(tab.Id) > 100);
+        shell.Dispatch(new PointerMoved(native.Id, native.Size.Width - 2, trackY));
+        Wait(() => !tab.IsLoading);
+        var viewport = ShellChrome.Viewport(native.Size, 1)!.Value;
+        var maximum = shell.Controller.Page(tab.Id)!.ScrollWidth - viewport.Width;
+        Assert.Equal(maximum, shell.Controller.ScrollX(tab.Id));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, native.Size.Width - 2, trackY));
+
+        var verticalX = native.Size.Width - 6;
+        var verticalY = native.Size.Height / 2;
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, true, verticalX, verticalY));
+        Wait(() => !tab.IsLoading && shell.Controller.ScrollY(tab.Id) > 100);
+        shell.Dispatch(new PointerMoved(native.Id, verticalX, native.Size.Height - 2));
+        Wait(() => !tab.IsLoading);
+        var maximumY = shell.Controller.Page(tab.Id)!.ScrollHeight - viewport.Height;
+        Assert.Equal(maximumY, shell.Controller.ScrollY(tab.Id));
+        shell.Dispatch(new PointerButtonChanged(native.Id, 1, false, verticalX, native.Size.Height - 2));
+
+        void Wait(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (!condition() && DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition(), $"{tab.Error} | {tab.Status} | x={shell.Controller.ScrollX(tab.Id)} width={shell.Controller.Page(tab.Id)?.ScrollWidth} size={native.Size}");
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WheelArrowAndPageKeysScrollActivePageButNotChromeOrEditableFields(bool multiprocess)
     {
         using var system = new Windows();

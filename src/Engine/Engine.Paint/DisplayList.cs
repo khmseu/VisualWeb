@@ -9,6 +9,7 @@ public sealed class UnsupportedPaintException(string message) : Exception(messag
 public sealed record PaintOptions
 {
     public const double MaxDocumentHeight = 10_000_000;
+    public const double MaxDocumentWidth = 10_000_000;
     public int MaxCommands { get; init; } = 1_000_000;
     public int MaxGlyphs { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
@@ -104,12 +105,15 @@ public static class DisplayListBuilder
 
     public static DisplayList Build(LayoutResult layout, CssStyleResult styles, PaintOptions? options = null,
         CancellationToken cancellationToken = default,
-        IReadOnlyDictionary<LayoutBox, ScrollClipState>? scrollClips = null)
+        IReadOnlyDictionary<LayoutBox, ScrollClipState>? scrollClips = null, double? documentWidth = null)
     {
         ArgumentNullException.ThrowIfNull(layout);
         ArgumentNullException.ThrowIfNull(styles);
         var limits = options ?? new();
         limits.Validate();
+        var canvasWidth = documentWidth ?? layout.ViewportWidth;
+        if (!double.IsFinite(canvasWidth) || canvasWidth < layout.ViewportWidth || canvasWidth > PaintOptions.MaxDocumentWidth)
+        { throw new ArgumentOutOfRangeException(nameof(documentWidth), "Canvas width must be within the bounded document extent."); }
         cancellationToken.ThrowIfCancellationRequested();
         if (styles.Diagnostics.Count != 0) { throw new UnsupportedPaintException("Resolve CSS diagnostics before generating paint commands."); }
         var commands = new List<PaintCommand>();
@@ -127,7 +131,7 @@ public static class DisplayListBuilder
             // Canvas background must cover the visible region after a bounded scroll translation.
             if (rootColor.Alpha > 0)
             {
-                Add(new FillRectangle(new(0, 0, layout.ViewportWidth,
+                Add(new FillRectangle(new(0, 0, canvasWidth,
                 Math.Max(layout.ViewportHeight, root.BorderBox.Y + root.BorderBox.Height)), rootColor));
             }
             Background(root, 1);

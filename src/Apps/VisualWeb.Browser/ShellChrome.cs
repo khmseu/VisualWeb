@@ -9,7 +9,7 @@ using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Browser;
 
-public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, SelectOption, SelectListboxOption, AllowNavigation, CancelNavigation }
+public enum ChromeAction { Back, Forward, Reload, NewTab, CloseTab, NewWindow, MoveTab, PreviousTab, NextTab, ActivateTab, Address, Scrollbar, HorizontalScrollbar, SelectOption, SelectListboxOption, AllowNavigation, CancelNavigation }
 public sealed record ChromeTarget(LayoutRect Bounds, ChromeAction Action, TabId? Tab = null, int ControlIndex = -1, int OptionIndex = -1);
 public sealed record ShellFrame(byte[] Pixels, PixelSize Size, int Stride, IReadOnlyList<ChromeTarget> Targets);
 internal sealed record SelectPopupLayout(LayoutRect Bounds, int FirstOption, int VisibleOptions, double RowHeight);
@@ -38,6 +38,12 @@ public sealed class ShellChrome : IDisposable
         if (!double.IsFinite(viewportHeight) || viewportHeight <= 0 || !double.IsFinite(scrollHeight) || scrollHeight <= viewportHeight)
         { throw new ArgumentOutOfRangeException(nameof(scrollHeight)); }
         return Math.Min(viewportHeight, Math.Max(Math.Min(24, viewportHeight), viewportHeight * viewportHeight / scrollHeight));
+    }
+    internal static double ScrollbarThumbWidth(double viewportWidth, double scrollWidth)
+    {
+        if (!double.IsFinite(viewportWidth) || viewportWidth <= 0 || !double.IsFinite(scrollWidth) || scrollWidth <= viewportWidth)
+        { throw new ArgumentOutOfRangeException(nameof(scrollWidth)); }
+        return Math.Min(viewportWidth, Math.Max(Math.Min(24, viewportWidth), viewportWidth * viewportWidth / scrollWidth));
     }
     public static PageViewport? Viewport(PixelSize size, double density)
     {
@@ -203,7 +209,7 @@ public sealed class ShellChrome : IDisposable
         int focusedLink = -1, ChromeTarget? focusedChrome = null, ShellFormState? forms = null,
         IReadOnlyList<PageLinkRect>? selectedText = null, double scrollY = 0, int hoveredLink = -1,
         string? navigationConfirmationOrigin = null, TabId? navigationConfirmationTab = null,
-        string? navigationConfirmationMessage = null)
+        string? navigationConfirmationMessage = null, double scrollX = 0)
     {
         if (size.Width <= 0 || size.Height <= 0) { throw new ArgumentOutOfRangeException(nameof(size)); }
         if (!double.IsFinite(density) || density <= 0) { throw new ArgumentOutOfRangeException(nameof(density)); }
@@ -291,6 +297,8 @@ public sealed class ShellChrome : IDisposable
         var pageFits = page is not null && page.Frame.Size == new PixelSize(size.Width, size.Height - headerPixels);
         var pageViewport = pageFits ? Viewport(size, density) : null;
         var scrollRange = pageViewport is { } scrollViewport ? Math.Max(0, page!.ScrollHeight - scrollViewport.Height) : 0;
+        var horizontalScrollRange = pageViewport is { } horizontalViewport
+            ? Math.Max(0, page!.ScrollWidth - horizontalViewport.Width) : 0;
         SelectPopupLayout? selectPopup = null;
         if (pageFits && forms is not null && forms.Values.Count == page!.FormControls.Count)
         {
@@ -456,13 +464,25 @@ public sealed class ShellChrome : IDisposable
             }
             if (scrollRange > 0 && pageViewport is { } visible)
             {
-                var track = new LayoutRect(Math.Max(0, width - 12), Height, Math.Min(width, 12), visible.Height);
-                var thumbHeight = ScrollbarThumbHeight(visible.Height, page!.ScrollHeight);
-                var thumbRange = visible.Height - thumbHeight;
+                var trackHeight = Math.Max(0, visible.Height - (horizontalScrollRange > 0 ? 12 : 0));
+                var track = new LayoutRect(Math.Max(0, width - 12), Height, Math.Min(width, 12), trackHeight);
+                var thumbHeight = Math.Min(trackHeight, ScrollbarThumbHeight(visible.Height, page!.ScrollHeight));
+                var thumbRange = trackHeight - thumbHeight;
                 var thumbY = Height + (thumbRange <= 0 ? 0 : thumbRange * Math.Clamp(scrollY / scrollRange, 0, 1));
                 targets.Add(new(track, ChromeAction.Scrollbar, tab?.Id));
                 FillSurface(track, 222, 226, 232);
                 FillSurface(new(track.X + 2, thumbY, Math.Max(0, track.Width - 4), thumbHeight), 105, 117, 132);
+            }
+            if (horizontalScrollRange > 0 && pageViewport is { } horizontalVisible)
+            {
+                var trackWidth = Math.Max(0, horizontalVisible.Width - (scrollRange > 0 ? 12 : 0));
+                var track = new LayoutRect(0, Height + horizontalVisible.Height - 12, trackWidth, 12);
+                var thumbWidth = Math.Min(trackWidth, ScrollbarThumbWidth(horizontalVisible.Width, page!.ScrollWidth));
+                var thumbRange = trackWidth - thumbWidth;
+                var thumbX = thumbRange <= 0 ? 0 : thumbRange * Math.Clamp(scrollX / horizontalScrollRange, 0, 1);
+                targets.Add(new(track, ChromeAction.HorizontalScrollbar, tab?.Id));
+                FillSurface(track, 222, 226, 232);
+                FillSurface(new(thumbX, track.Y + 2, thumbWidth, Math.Max(0, track.Height - 4)), 105, 117, 132);
             }
             if (selectPopup is { } popup && forms is not null)
             {

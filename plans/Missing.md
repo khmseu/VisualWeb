@@ -73,7 +73,8 @@ not production request authorization.
 
 ### 2. Basic interaction with pages
 
-The shell supports bounded textual link activation and vertical document scrolling, including Ctrl+Home/End outside editable controls;
+The shell supports bounded textual link activation and horizontal/vertical
+document scrolling, including Ctrl+Home/End outside editable controls;
 broader page interaction is still missing:
 
 - Textual `<a href>` links and empty/non-text anchors with non-empty measurable
@@ -269,14 +270,19 @@ broader page interaction is still missing:
   Selection resets on successful
   document/scroll/resize publication and on page clicks before new control/link
   interaction.
-  Basic vertical document scrolling is implemented via wheel, Arrow Up/Down,
-  Page Up/Down, Home/End and Ctrl+Home/End outside editable fields, retaining
-  DOM/scripts across local/process repaints.
-  A browser-owned vertical scrollbar now supports click-to-position and drag scrolling.
+  Bounded root document scrolling is implemented on both axes. Vertical
+  scrolling uses wheel, Arrow Up/Down, Page Up/Down, Home/End and Ctrl+Home/End;
+  horizontal scrolling uses wheel X, Shift+wheel Y, Arrow Left/Right and its
+  browser-owned scrollbar. Both retain DOM/scripts across local/process repaints,
+  preserve/clamp per-tab offsets on resize, restore per-history-entry offsets and
+  keep layout viewport/frame dimensions fixed. Root horizontal extent is the
+  maximum supported measurable right edge, bounded at 10,000,000 CSS pixels;
+  negative-left-origin scrolling and nested horizontal overflow are excluded.
+  Browser-owned vertical and horizontal scrollbars support click-to-position and drag scrolling.
   Bounded nested vertical wheel scrolling with edge chaining is implemented for
   definite-height block containers styled with `overflow-x:hidden` and
-  `overflow-y:auto`; unconsumed wheel delta chains to document scroll. Horizontal
-  scrolling and general CSS overflow semantics remain missing.
+  `overflow-y:auto`; unconsumed wheel delta chains to document scroll. General CSS
+  overflow semantics, nested horizontal scrolling and DOM scroll events remain missing.
 - The shell does not dispatch general pointer/keyboard input to pages or synthesize
   page focus. It implements only the documented bounded link, form, and control
   interactions. For `--enable-inline-scripts` pages, primary-pointer, Ctrl+primary
@@ -288,20 +294,21 @@ broader page interaction is still missing:
   no pointer metadata; modifier/keyboard events, form/control defaults and other
   DOM event delivery remain unavailable to scripts.
 - No downloads, persistent browser sessions, or complete history behavior. History
-  stores URLs, per-entry scroll positions and internal same-document grouping:
+  stores URLs, per-entry two-axis scroll positions and internal same-document grouping:
   Back/Forward between user-created fragment entries retains the active document
   and restores fragment scrolling without a load; cross-document traversal reloads
-  at the saved bounded scroll position. Script History API and bfcache are absent.
+  at the saved bounded horizontal and vertical scroll positions. Script History
+  API and bfcache are absent.
 
 This is a substantial gap even for a modest usable browser.
 
 The development-shell guide's limits summary and scrolling overview now reflect
-the implemented bounded link, form, selection and vertical-scroll behavior,
-including the nested wheel-scrolling subset above.
+the implemented bounded link, form, selection, root two-axis scrolling and
+nested vertical wheel-scrolling behavior above.
 General DOM input events, `tabindex` focus for elements outside the supported
-link/form targets, downloads, persistent sessions, complete history and
-horizontal overflow plus unsupported CSS overflow features remain missing; this
-documentation correction adds no runtime behavior.
+link/form targets, downloads, persistent sessions, complete history, nested
+horizontal overflow and unsupported CSS overflow features remain missing; this
+increment does not implement general overflow semantics.
 
 Evidence: `page limitations`, `input dispatch`, and `history implementation`.
 
@@ -395,7 +402,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 - Flexbox, grid, tables, floats and positioning; margin collapse is implemented
   for adjacent block siblings and eligible parent/first-or-last block-child edges.
 - Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
-- Images/replaced elements, controls, list markers, decorations, nested/horizontal scrolling, and general overflow layout.
+- Images/replaced elements, controls, list markers, decorations, nested scrolling, and general overflow layout. Root horizontal document scrolling is browser-owned and does not implement CSS overflow.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 **A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
@@ -457,8 +464,9 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 1. **Security model and mandatory supported isolation** before untrusted browsing.
 2. **Links, page input, and subresource loading** for basic usability. Basic
-   bounded textual links, vertical document scrolling, bounded classic linked
-   stylesheets and simple current/new-tab GET forms are implemented; broader page input, other subresources and overflow remain.
+   bounded textual links, horizontal/vertical root document scrolling, bounded
+   classic linked stylesheets and simple current/new-tab GET forms are implemented;
+   broader page input, other subresources and CSS overflow remain.
 3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
 4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
 5. Broader standards, accessibility, conformance coverage, and release engineering.
