@@ -1446,11 +1446,11 @@ nur die unveraenderten Findings in `StaticLayout.cs` und `ShellChrome.cs`.
 
 - Dokumentiert am: 2026-10-26, Europe/Berlin (UTC+01:00).
 - Ereignisdatum: 2026-10-26.
-- Erfassungsart: Codepruefung, ausdrueckliche Nutzerentscheidung und
-  Implementierung in Arbeit.
+- Erfassungsart: Codepruefung, ausdrueckliche Nutzerentscheidung,
+  Implementierung, Validierung und CI-Abgleich.
 - Quelle: `BrowserController.Back`, `Forward`, `Reload`, `Start` und
   `GetPageSource.LoadAsync`; Nutzerantwort `confirm_initial_cross_origin`;
-  `plans/Missing.md` Prioritaet 1.
+  Commit `c2bf905`; `plans/Missing.md` Prioritaet 1.
 - Bezug: REQ-005, Q-002, KP-037; folgt auf KP-037.
 
 **Belegt vor Umsetzung:** Shell-Chrome routete `Back`, `Forward` und `Reload`
@@ -1482,4 +1482,10 @@ shell-spezifische Einstiege behoben sie und der anschliessende Gesamtlauf ist
 gruen. `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
 third_party` meldet ausschliesslich bekannte unveraenderte Findings in
 `StaticLayout.cs` (Whitespace/Imports) und `ShellChrome.cs` (Imports);
-`git diff --check` ist sauber. Commit, Push und CI stehen noch aus.
+`git diff --check` ist sauber. Commit `c2bf905` (`feat(browser): authorize
+shell history navigation`) wurde auf `origin/main` gepusht. CodeQL / Push on
+main (`40297681183`), Linux development (`40297681348`) und Windows
+confinement (`40297681328`) sind erfolgreich:
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/40297681183),
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/40297681348),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/40297681328).
