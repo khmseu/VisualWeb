@@ -2242,3 +2242,60 @@ neue Ressourcen und Script-Faehigkeiten muessen ihre Sicherheitspruefungen
 mitbringen. Vollstaendige Produktionssicherheit ist kein vorgeschalteter
 Blocker fuer jede Kompatibilitaetsverbesserung. Keine Codeimplementierung
 oder neue Sicherheits-/Konformitaetszusage in diesem Auftrag.
+
+### KP-066 - Neue Zehn-Passen-Serie und Listendarstellung
+
+- Dokumentiert am: 2026-10-28, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-28.
+- Erfassungsart: Nutzerauftrag, Codepruefung und offene Scope-Auswahl.
+- Quelle: aktueller Aufruf von `missing-priority-implementation` mit Argument
+  `10`; `StaticLayout.Check`, `CssStyleEngine` und Subsystem-Guides.
+- Bezug: KP-065; ersetzt den vorherigen Implementierungsstopp nur fuer den
+  neuen Auftrag.
+
+**Nutzerauftrag:** Zehn getrennt getestete und committete Inkremente nach der
+neuen Simple-Site-Prioritaet, jeweils mit Push und CI-Pruefung.
+
+**Belegt:** Der Ausgangsstand ist `81bb414` mit sauberem Worktree.
+Der HTML-Parser baut gewoehnliche Listen bereits auf. Die UA-Styles definieren
+Blockdarstellung und Listeneinrueckung; `StaticLayout.Check` lehnt sichtbare
+`ul`, `ol` und `li` trotzdem ab. Dadurch koennen gewoehnliche statische
+Seiten mit Listen nicht gerendert werden. Markerlayout/-painting fehlt.
+
+**Offen:** Fuer das erste Inkrement ist der Listenumfang zu klaeren:
+default ungeordnete Listen mit aeusseren Disc-Markern, zusaetzlich geordnete
+Listen mit Dezimalnummern, oder ein breiteres CSS-List-Style-Subset.
+Kein Marker darf still weggelassen oder durch unzutreffende Geometrie
+angenaehert werden. Noch keine Codeaenderung, kein Pass abgeschlossen.
+
+**Baseline-Validierung:** Die Solution-Formatpruefung auf unveraendertem
+`81bb414` scheitert mit Exitcode 2 an drei vorbestehenden Diagnosen:
+Whitespace und Imports in `StaticLayout.cs`, Imports in `ShellChrome.cs`.
+
+### KP-067 - Default-Unordered-Lists fuer Pass 1 gewaehlt
+
+- Dokumentiert am: 2026-10-28, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-28.
+- Erfassungsart: ausdrueckliche Nutzerwahl und laufende Implementierung.
+- Quelle: strukturierte Antwort `unordered-default`; Code und Tests fuer CSS,
+  Layout, Paint, Content und lokale/Prozess-Renderer.
+- Bezug: KP-066; Pass 1 der neuen Zehn-Passen-Serie.
+
+**Nutzerentscheidung:** Zuerst default ungeordnete Listen mit aeusseren
+Disc-Markern, nicht zusaetzlich geordnete Listen oder breitere List-Styles.
+
+**Implementierung in Validierung:** `display:list-item`, vererbte begrenzte
+List-Style-Longhands und eigene Disc-Marker-Geometrie/-Paintcommands.
+Verschachtelte/leere Items und Hidden/None-Verhalten werden getestet;
+geordnete Listen und breitere Styles bleiben explizit nicht unterstuetzt.
+Der offizielle Listentext `css2-lists` wurde im Manifest registriert und
+erfolgreich lokal geladen/gelesen. Keine neue DOM-/IPC-Objektweitergabe.
+
+**Lokale Validierung:** 18 neue fokussierte Regressionen bestanden,
+einschliesslich nativer Pixel und lokaler/Prozess-Retained-Repaints.
+Der Solution-Build bestand mit 0 Warnungen/Fehlern; die vollstaendige
+Solution-Testsuite bestand mit 14.234 Tests (CSS 329, Layout 63, Paint 39,
+Content 9, Browser 1.131). Die Solution-Formatpruefung meldet ausschliesslich
+die drei auf `81bb414` reproduzierten, unveraenderten Findings in
+`StaticLayout.cs` und `ShellChrome.cs`. Keine native Windows-/ARM-
+Ausfuehrung auf diesem Host.

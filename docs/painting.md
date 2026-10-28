@@ -69,6 +69,14 @@ ReadOnlyMemory; IPixelSurface does not retain presentation memory.
 
 ## Paint order and supported output
 
+Default unordered-list markers are separate `FillEllipse` commands using the
+item's computed `color` and layout's bounded outside-marker rectangle. Skia
+draws antialiased solid discs after block backgrounds and before that item's
+text, without synthesizing DOM text, reshaping a bullet glyph or creating font
+resources. Marker commands share command limits, geometry preflight, viewport
+transforms and cancellation with other commands. The finite list scope is
+described in the [text/layout guide](text-layout.md#default-unordered-lists).
+
 - The root background covers the viewport and is not repainted on its box.
   For an HTML root with transparent background, the first body child's
   background is propagated instead; a display:none body does not paint.

@@ -29,6 +29,10 @@ public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRec
     LayoutRect BorderBox, LayoutEdges Margin, IReadOnlyList<LayoutBox> Children, IReadOnlyList<LayoutLine> Lines)
 {
     public IReadOnlyList<LayoutFlowItem> Flow { get; init; } = Array.Empty<LayoutFlowItem>();
+    /// <summary>Outside disc-marker bounds, separate from selectable document text.</summary>
+    /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.
+    /// The finite LTR subset uses a 0.3em disc and a 0.5em gap before the content edge.</remarks>
+    public LayoutRect? DiscMarker { get; init; }
 }
 public sealed record LayoutResult(LayoutBox? Root, double ViewportWidth, double ViewportHeight);
 
@@ -103,6 +107,7 @@ public static class StaticLayout
         private CssComputedStyle Style(DomElement element) => styles.Styles.TryGetValue(element, out var style) ? style
             : throw new InvalidOperationException("Styles are incomplete or stale; recompute for the current DOM.");
         private string Display(DomElement element) => ((CssKeyword)Style(element)["display"]).Value;
+        private bool IsBlock(DomElement element) => Display(element) is "block" or "list-item";
         [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The repeated explicit element and input-kind literals define the finite supported layout grammar at its rejection boundary.")]
         private void Check(DomElement element, int depth, bool block = false)
         {
@@ -128,8 +133,18 @@ public static class StaticLayout
 
                 return;
             }
+            if (Display(element) == "list-item"
+                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" }))
+            {
+                throw new UnsupportedLayoutException("List-item markers currently require a direct unordered-list parent.");
+            }
+            if (element.LocalName is "ul" or "li"
+                && (element.GetAttribute("type") is not null || !block))
+            {
+                throw new UnsupportedLayoutException("Unordered lists require block layout without legacy type attributes.");
+            }
             if (element.LocalName is "bdi" or "bdo" or "img" or "select"
-                or "video" or "audio" or "canvas" or "iframe" or "object" or "embed" or "ul" or "ol" or "li"
+                or "video" or "audio" or "canvas" or "iframe" or "object" or "embed" or "ol"
                 or "table" or "ruby")
             {
                 throw new UnsupportedLayoutException($"<{element.LocalName}> requires unsupported specialized layout.");
@@ -207,7 +222,7 @@ public static class StaticLayout
             {
                 cancellation.ThrowIfCancellationRequested();
                 if (child is DomElement e && Display(e) == "none") { continue; }
-                if (child is DomElement block && Display(block) == "block")
+                if (child is DomElement block && IsBlock(block))
                 {
                     Flush();
                     var childTopMargin = Edges(Style(block), "margin", width).Top;
@@ -224,6 +239,15 @@ public static class StaticLayout
                 else { Gather(child, style, inline, depth + 1); }
             }
             Flush();
+            LayoutRect? marker = null;
+            if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: "disc" })
+            {
+                var size = ((CssLength)style["font-size"]).Value;
+                var (ascent, descent) = Extents(Shape("", style), style);
+                var baseline = FirstBaseline(flow) ?? contentY + ascent;
+                if (flow.Count == 0) { cursor += ascent + descent; }
+                marker = Rect(contentX - 0.8 * size, baseline - 0.5 * size, 0.3 * size, 0.3 * size);
+            }
             var autoHeight = cursor - contentY;
             var contentHeight = definiteHeight ?? autoHeight;
             contentHeight = Math.Max(minHeight, Math.Min(contentHeight, maxHeight));
@@ -233,7 +257,8 @@ public static class StaticLayout
             var borderBox = Rect(borderX, borderY, width + horizontal, contentHeight + vertical);
             return new(element, content, paddingBox, borderBox, margin, childBoxes.AsReadOnly(), blockLines.AsReadOnly())
             {
-                Flow = flow.AsReadOnly()
+                Flow = flow.AsReadOnly(),
+                DiscMarker = marker
             };
 
             void Flush()
@@ -247,8 +272,24 @@ public static class StaticLayout
                     cursor = formatted[^1].Bounds.Y + formatted[^1].Bounds.Height;
                     previousBlockBottomMargin = null;
                 }
+
                 inline.Clear();
             }
+        }
+
+        private double? FirstBaseline(IReadOnlyList<LayoutFlowItem> flow)
+        {
+            var pending = new Stack<LayoutFlowItem>(flow.Reverse());
+            while (pending.TryPop(out var item))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (item is LayoutLineItem line) { return line.Line.Baseline; }
+                if (item is LayoutBlockItem block)
+                {
+                    foreach (var child in block.Box.Flow.Reverse()) { pending.Push(child); }
+                }
+            }
+            return null;
         }
 
         private DomElement? EdgeBlockChild(DomElement parent, bool first)
@@ -260,7 +301,7 @@ public static class StaticLayout
                 if (node is DomComment || node is DomText text && IsCollapsibleWhitespace(text.Data)) { continue; }
                 if (node is not DomElement element) { return null; }
                 if (Display(element) == "none") { continue; }
-                return Display(element) == "block" ? element : null;
+                return IsBlock(element) ? element : null;
             }
             return null;
         }

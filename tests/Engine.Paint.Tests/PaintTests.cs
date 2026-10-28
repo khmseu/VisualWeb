@@ -32,6 +32,31 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void UnorderedListDiscUsesCurrentColorAndBoundedEllipseCommand()
+    {
+        var list = Page("<ul><li></li></ul>", "ul{display:block;padding-left:20px}li{display:list-item;color:red}");
+        Assert.Equal(new FillEllipse(new(12, 3, 3, 3), Red), Assert.Single(list.Commands));
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 13, 4));
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 11, 4));
+        Assert.Throws<PaintLimitException>(() => Page("<ul><li></li><li></li></ul>",
+            "ul{display:block;padding-left:20px}li{display:list-item}", new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
+    public void EllipseRasterizationValidatesGeometryBeforeDrawing()
+    {
+        using var fonts = new PaintFontRegistry();
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(
+            new DisplayList(10, 10, [new FillEllipse(new(double.NaN, 0, 3, 3), Red)]),
+            fonts, cancellationToken: Cancellation));
+        Assert.Throws<ArgumentException>(() => CpuRasterizer.Render(
+            new DisplayList(10, 10, [new FillEllipse(new(0, 0, -1, 3), Red)]),
+            fonts, cancellationToken: Cancellation));
+    }
+
+    [Fact]
     public void BackgroundAndSolidBordersHaveExactNonOverlappingCommands()
     {
         var list = Page("<div></div>", "div{width:10px;height:10px;padding:2px;border:1px solid red;background-color:blue}");

@@ -8,6 +8,25 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void SimpleUnorderedListReachesNativeFrameAndRetainedRepaint()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ul><li>First item</li><li>Second item</li></ul>";
+        var styles = new[] { new CssStyleSource("*{font-size:16px;line-height:20px}") };
+        var first = OfflinePageRenderer.Render(html, styles, text, fonts, 200, 80, cancellationToken: Cancellation);
+        var resized = OfflinePageRenderer.RenderParsed(first.Html, styles, text, fonts, 160, 80,
+            cancellationToken: Cancellation);
+        Assert.Empty(first.Styles.Diagnostics);
+        Assert.Equal(2, first.DisplayList.Commands.OfType<FillEllipse>().Count());
+        Assert.Equal(2, resized.DisplayList.Commands.OfType<FillEllipse>().Count());
+        Assert.Same(first.Html.Document, resized.Html.Document);
+        Assert.Contains(first.Frame.Pixels.ToArray().Where((_, index) => index % 4 != 3), value => value == 0);
+        Assert.All(first.Frame.Pixels.ToArray().Where((_, index) => index % 4 == 3), alpha => Assert.Equal(255, alpha));
+    }
+
+    [Fact]
     public void ScrollingMovesTextOnlyInPaintAndKeepsLayoutViewportAndOpaqueBackground()
     {
         using var font = new TextFont(FontPath);

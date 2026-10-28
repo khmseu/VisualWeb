@@ -32,6 +32,9 @@ internal static class CssProperties
         var result = new Dictionary<string, CssProperty>(StringComparer.Ordinal)
         {
             ["display"] = new(new CssKeyword("inline"), false),
+            ["list-style-type"] = new(new CssKeyword("disc"), true),
+            ["list-style-position"] = new(new CssKeyword("outside"), true),
+            ["list-style-image"] = new(new CssKeyword("none"), true),
             ["overflow-x"] = new(new CssKeyword("visible"), false),
             ["overflow-y"] = new(new CssKeyword("visible"), false),
             ["color"] = new(new CssColor(0, 0, 0), true),
@@ -156,7 +159,10 @@ internal static class CssProperties
         if (tokens.Count != 1) { return null; }
         var token = tokens[0];
         var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
-        if (name == "display") { return Keyword(keyword, "none", "block", "inline", "inline-block"); }
+        if (name == "display") { return Keyword(keyword, "none", "block", "inline", "inline-block", "list-item"); }
+        if (name == "list-style-type") { return Keyword(keyword, "disc", "none"); }
+        if (name == "list-style-position") { return Keyword(keyword, "outside"); }
+        if (name == "list-style-image") { return Keyword(keyword, "none"); }
         if (name is "overflow-x" or "overflow-y") { return Keyword(keyword, "visible", "hidden", "auto"); }
         if (name == "box-sizing") { return Keyword(keyword, "content-box", "border-box"); }
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }

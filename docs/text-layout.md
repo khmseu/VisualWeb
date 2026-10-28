@@ -93,6 +93,28 @@ not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
 
 ## Supported geometry
 
+### Default unordered lists
+
+Visible block `ul` containers and their direct `li` children now support
+outside disc markers. UA styles give lists 40px left padding and items
+`display:list-item`; each nested list uses the same disc default.
+`list-style-type:none` suppresses a marker, and `display:block` on an item
+removes its list-item semantics. Hidden items produce neither geometry nor
+markers. Ordered lists, legacy `type` attributes, other marker styles, inside
+positioning and arbitrary non-`li` list-item boxes still fail explicitly.
+
+Marker geometry follows the user-agent-defined latitude in
+[CSS 2.2 lists](https://www.w3.org/TR/CSS22/generate.html#lists)
+(local ID `css2-lists`): a solid disc of diameter 0.3em with a 0.5em gap
+before the item's content edge, its top 0.5em above the first in-flow
+descendant line baseline. Without such a line it uses the item's font strut;
+an empty marked item has that strut's height. Markers do not change wrapping
+width or enter selectable DOM text. Their metric shaping shares the existing
+shaping-call budgets; traversal and painting retain cancellation and limits.
+The LTR-only scope and explicitly registered font policy remain unchanged.
+
+### Ordinary flow
+
 - Horizontal LTR normal-flow block boxes and undecorated inline text elements.
 - Auto/px/% widths and min/max constraints; content-box/border-box sizing.
 - Horizontal auto margins, centering and LTR overconstraint resolution.
@@ -129,7 +151,7 @@ explicitly or those styles overridden.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab
   stops, justification and cross-node/style shaping inside an unbroken word.
 - Margin collapse, floats, positioning, inline-block, decorated inline boxes
-  (including backgrounds), tables, ruby, lists/markers, replaced elements,
+  (including backgrounds), tables, ruby, ordered lists and broader list markers, replaced elements,
   general controls, images/media/iframes and specialized element layout.
   The bounded forms subset lays out `input` text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/submit/reset/button,
   `textarea`, `select`, and `button` controls through finite inline-block fallbacks;

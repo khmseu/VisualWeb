@@ -29,6 +29,9 @@ public sealed record PaintOptions
 
 public abstract record PaintCommand;
 public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCommand;
+/// <summary>A bounded solid ellipse used by disc list markers.</summary>
+/// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.</remarks>
+public sealed record FillEllipse(LayoutRect Bounds, CssColor Color) : PaintCommand;
 public sealed record PushScrollClip(LayoutRect Clip, double OffsetY) : PaintCommand;
 public sealed record PopScrollClip : PaintCommand;
 public readonly record struct PaintGlyph(ushort Id, double X, double Y);
@@ -207,6 +210,10 @@ public static class DisplayListBuilder
         void Text(LayoutBox box, int depth)
         {
             Check(depth);
+            if (box.DiscMarker is { Width: > 0, Height: > 0 } marker)
+            {
+                Add(new FillEllipse(marker, Color(box, "color")));
+            }
             if (scrollClips is not null && scrollClips.TryGetValue(box, out var clip))
             {
                 Add(new PushScrollClip(clip.Clip, clip.OffsetY));

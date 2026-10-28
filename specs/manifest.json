@@ -2,6 +2,16 @@
   "version": 1,
   "documents": [
     {
+      "id": "css2-lists",
+      "title": "CSS 2.2 Generated Content and Lists",
+      "url": "https://www.w3.org/TR/CSS22/generate.html",
+      "file": "css2-lists.html",
+      "fetchedAt": "2026-10-28T18:52:07.0972018+00:00",
+      "checkedAt": "2026-10-28T18:52:07.0972018+00:00",
+      "eTag": null,
+      "lastModified": "2016-04-08T12:57:18+00:00"
+    },
+    {
       "id": "rfc6797",
       "title": "HTTP Strict Transport Security (HSTS)",
       "url": "https://www.rfc-editor.org/rfc/rfc6797.html",

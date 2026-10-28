@@ -14,6 +14,33 @@ public sealed class CascadeTests
         => CssStyleEngine.Compute(doc, sources, cancellationToken: Cancellation);
     private static CssComputedStyle Child(CssStyleResult result, DomDocument doc) => result.Styles[doc.GetElementById("child")!];
 
+    [Fact]
+    public void UnorderedListDefaultsAndInheritedMarkerSuppressionAreComputed()
+    {
+        var doc = Document("<ul id=parent><li id=child>item</li></ul>");
+        var defaults = Compute(doc);
+        Assert.Empty(defaults.Diagnostics);
+        Assert.Equal(new CssKeyword("list-item"), Child(defaults, doc)["display"]);
+        Assert.Equal(new CssKeyword("disc"), Child(defaults, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(defaults, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(defaults, doc)["list-style-image"]);
+        Assert.Equal(new CssLength(40, "px"), defaults.Styles[doc.GetElementById("parent")!]["padding-left"]);
+        var suppressed = Compute(doc, new CssStyleSource("#parent{list-style-type:none}"));
+        Assert.Empty(suppressed.Diagnostics);
+        Assert.Equal(new CssKeyword("none"), Child(suppressed, doc)["list-style-type"]);
+    }
+
+    [Theory]
+    [InlineData("list-style-type:decimal")]
+    [InlineData("list-style-type:circle")]
+    [InlineData("list-style-position:inside")]
+    [InlineData("list-style-image:url(marker.png)")]
+    public void UnsupportedListStylesProduceDiagnostics(string declaration)
+    {
+        var doc = Document();
+        Assert.NotEmpty(Compute(doc, new CssStyleSource("#child{" + declaration + "}")).Diagnostics);
+    }
+
     [Theory]
     [InlineData(false, false, false, CssOrigin.Author)]
     [InlineData(false, true, false, CssOrigin.User)]

@@ -106,6 +106,17 @@ Die Umordnung ist keine Freigabe fuer beliebige untrusted Websites und
 startet keine neue Implementierung
 ([KP-065](./Kontextprotokoll.md#kp-065---einfache-websites-zuerst)).
 
+**Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
+committete und gepushte Passen mit CI-Pruefung sind angefragt. Erster
+konkreter Blocker: sichtbare `ul`/`ol`/`li` werden trotz vorhandener
+Parser-/UA-Style-Unterstuetzung von Layout abgelehnt. Der Nutzer waehlte
+default ungeordnete Listen mit aeusseren Disc-Markern; Pass 1 ist implementiert
+und lokal validiert (18 neue Regressionen, Solution-Build und 14.234
+Solution-Tests bestanden), noch nicht committed/CI-validiert
+([KP-067](./Kontextprotokoll.md#kp-067---default-unordered-lists-fuer-pass-1-gewaehlt)).
+Noch kein Pass abgeschlossen
+([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
+
 ## Rahmenbedingungen und Nicht-Ziele
 
 - .NET 10; nullable und Warnungen als Fehler; zentrale Paketversionen;

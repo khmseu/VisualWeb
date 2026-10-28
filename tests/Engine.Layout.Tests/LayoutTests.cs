@@ -35,6 +35,72 @@ public sealed class LayoutTests
     private static LayoutBox? TryFind(LayoutBox root, string id) => root.Element.GetAttribute("id") == id ? root
         : root.Children.Select(child => TryFind(child, id)).FirstOrDefault(found => found is not null);
 
+    private static LayoutResult UnorderedList(string html, string css = "", double width = 100, LayoutOptions? options = null)
+    {
+        var doc = HtmlParser.Parse("<!doctype html>" + html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(doc, [new("*{margin:0;font-size:10px;line-height:10px}" + css)],
+            cancellationToken: Cancellation);
+        return StaticLayout.Layout(doc, styles, new MetricsShaper(), width, 200, options, Cancellation);
+    }
+
+    [Fact]
+    public void DefaultUnorderedListsHaveOutsideDiscsWithoutChangingContentGeometry()
+    {
+        var root = UnorderedList("<ul><li id=a>a</li><li id=b>b</li></ul>").Root!;
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+        Assert.Equal(new LayoutRect(40, 0, 60, 10), first.Content);
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), first.DiscMarker);
+        Assert.Equal(new LayoutRect(32, 13, 3, 3), second.DiscMarker);
+        Assert.Equal(20, root.Content.Height);
+        Assert.Single(first.Lines);
+        Assert.Equal("a", Assert.Single(first.Lines[0].Fragments).Source.Data);
+    }
+
+    [Fact]
+    public void NestedEmptyAndWrappedUnorderedItemsRetainOneMarkerEach()
+    {
+        var nested = UnorderedList("<ul><li id=outer><ul><li id=inner></li></ul></li></ul>").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nested, "outer").DiscMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nested, "inner").DiscMarker);
+        Assert.Equal(10, Find(nested, "inner").Content.Height);
+        var wrapped = Find(UnorderedList("<ul><li id=x>a b</li></ul>", width: 50).Root!, "x");
+        Assert.Equal(2, wrapped.Lines.Count);
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), wrapped.DiscMarker);
+    }
+
+    [Fact]
+    public void HiddenAndSuppressedMarkersDoNotAppear()
+    {
+        var root = UnorderedList("<ul><li id=a>a</li><li id=b>b</li><li id=c>c</li></ul>",
+            "#a{list-style-type:none} #b{display:none} #c{display:block}").Root!;
+        Assert.Null(Find(root, "a").DiscMarker);
+        Assert.Null(Find(root, "c").DiscMarker);
+        Assert.Null(TryFind(root, "b"));
+    }
+
+    [Theory]
+    [InlineData("<ol><li>x</li></ol>")]
+    [InlineData("<ul type=square><li>x</li></ul>")]
+    [InlineData("<ul><li type=circle>x</li></ul>")]
+    [InlineData("<li>x</li>")]
+    public void UnimplementedListKindsRemainExplicitFailures(string html) =>
+        Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
+
+    [Fact]
+    public void EmptyUnorderedListMarkersChargeShapingBudgetsAndHonorCancellation()
+    {
+        Assert.NotNull(UnorderedList("<ul><li></li></ul>", options: new() { MaxShapingCalls = 1 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<ul><li></li><li></li></ul>", options: new() { MaxShapingCalls = 1 }));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var doc = HtmlParser.Parse("<ul><li>x</li></ul>", cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(doc, cancellationToken: Cancellation);
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(doc, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
     [Fact]
     public void WidthPaddingBorderAndAutoMarginsFollowContainingBlockEquation()
     {

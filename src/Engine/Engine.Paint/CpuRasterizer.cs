@@ -139,6 +139,10 @@ public static class CpuRasterizer
                     ArgumentNullException.ThrowIfNull(fill.Color);
                     Rect(fill.Bounds);
                     break;
+                case FillEllipse ellipse:
+                    ArgumentNullException.ThrowIfNull(ellipse.Color);
+                    Rect(ellipse.Bounds);
+                    break;
                 case PushScrollClip push:
                     Rect(push.Clip);
                     Vertical(push.OffsetY);
@@ -185,6 +189,12 @@ public static class CpuRasterizer
                 paint.Color = Color(fill.Color);
                 paint.IsAntialias = false;
                 canvas.DrawRect(Rect(fill.Bounds), paint);
+            }
+            else if (command is FillEllipse ellipse)
+            {
+                paint.Color = Color(ellipse.Color);
+                paint.IsAntialias = true;
+                canvas.DrawOval(Rect(ellipse.Bounds), paint);
             }
             else if (command is DrawGlyphRun run && run.Glyphs.Count > 0)
             {

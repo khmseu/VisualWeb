@@ -126,6 +126,13 @@ not listed above. No selector silently approximates these features.
 
 ## Cascade and computed values
 
+The bounded unordered-list subset gives `li` a UA `display:list-item` default.
+List-style longhands participate in normal inheritance and CSS-wide keywords;
+only disc/none markers, outside positioning and no marker image are supported.
+Other list-style values and the `list-style` shorthand produce diagnostics.
+Layout currently accepts visible list-item boxes only for direct `li` children
+of `ul`; accepting a computed value does not imply general list-item layout.
+
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
 UA < user < author precedence, important author < user < UA precedence, inline
 styles above selector-based declarations of the same origin/importance,
@@ -143,7 +150,8 @@ Supported longhands:
 
 | Group   | Properties and supported values                                                                                                                                           |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block                                                                                                                              |
+| Display | `display`: none, block, inline, inline-block, list-item                                                                                                                   |
+| Lists   | inherited `list-style-type`: disc/none; `list-style-position`: outside; `list-style-image`: none                                                                          |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                      |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                   |
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                         |

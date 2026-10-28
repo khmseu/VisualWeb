@@ -21,3 +21,8 @@ property/value limits, UA policies and explicit deferred features. Style results
 are renderer-local snapshots; the caller must recompute after mutations and
 coordinate style-element/link loading separately. Unsupported features produce
 diagnostics rather than approximate behavior.
+
+The bounded list subset adds `display:list-item` and inherited longhands
+`list-style-type:disc/none`, `list-style-position:outside`, and
+`list-style-image:none` (official ID `css2-lists`). UA `li` defaults to
+list-item; broader list styles and the list-style shorthand remain unsupported.
