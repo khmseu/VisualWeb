@@ -476,14 +476,45 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 ## Recommended priority
 
-1. **Security model and mandatory supported isolation** before untrusted browsing.
-2. **Links, page input, and subresource loading** for basic usability. Basic
-   bounded textual links, horizontal/vertical root document scrolling, bounded
-   classic linked stylesheets and simple current/new-tab GET forms are implemented;
-   broader page input, other subresources and CSS overflow remain.
-3. **HTML recovery, ordinary layout, fonts, and common CSS** for static-site compatibility.
-4. **Persistent scripting/event-loop integration and browser APIs** for interactive sites.
-5. Broader standards, accessibility, conformance coverage, and release engineering.
+Prioritize handling simple websites end to end before advanced web applications.
+Start with mostly static, document-oriented pages: readable text, ordinary
+styling, images, working links, scrolling and basic forms. Choose small,
+testable increments that remove concrete blockers on representative pages;
+do not require completion of an entire subsystem before improving another.
+
+1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
+   common markup, lists, basic tables, common CSS, ordinary block/inline layout,
+   and font handling so pages parse and remain readable instead of failing on
+   routine constructs.
+2. **Essential page resources** so those pages render as intended. Build on
+   existing linked/imported stylesheet loading with images, required resource
+   discovery and sizing, and commonly encountered stylesheet features. Broader
+   media, frames and advanced resource scheduling have lower priority.
+3. **Reliable basic navigation and interaction.** Build on existing links,
+   root scrolling, selection and simple GET forms; prioritize remaining
+   scrolling/overflow, keyboard focus and form issues that prevent using simple
+   sites. Avoid adding advanced input APIs ahead of basic usability.
+4. **Small amounts of page JavaScript** once the static browsing path works.
+   Prioritize external classic scripts (`<script src="...">`), the DOM/events
+   needed by simple interactions, and bounded scheduling/lifecycle integration.
+   Full application frameworks, modules, workers and the wider browser API
+   surface have lower priority.
+5. **Broader production security and isolation** beyond the existing protections,
+   including general request authorization and wider SOP/CORS/CSP coverage,
+   before claiming safe browsing of arbitrary untrusted sites. Completing this
+   entire backlog is not a prerequisite for simple-site compatibility work.
+6. **Broader standards, accessibility, advanced layout/media/APIs and release
+   engineering** as coverage expands beyond simple websites.
+
+Preserve existing confinement, request restrictions, explicit development
+opt-ins and fail-closed behavior throughout all priorities. Add the security
+checks needed by each new resource or scripting capability as part of that
+increment; this ordering does not authorize weakening safeguards or imply that
+simple websites are safe to browse untrusted. Validate each increment with
+focused regressions and representative offline simple-site fixtures.
+
+_Priority order updated on 2026-10-28 to favor simple-site usability first;
+this is a work-order change, not a new implementation or validation claim._
 
 *Status cross-checked against the implementation and subsystem guides on
 2026-10-19. Native Linux x64/ARM64 and Windows x64/ARM64 CI passed for commit

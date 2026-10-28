@@ -2217,3 +2217,28 @@ zwischen den Script-Tags. Belegt durch `InlinePageScripts.Collect`: Beim
 aktivierten Inline-Scripting wird ein klassisches Script mit `src` abgelehnt;
 die Ressource wird nicht geladen oder ausgefuehrt. Module sind eine separate,
 ebenfalls nicht unterstuetzte Script-Art.
+
+### KP-065 - Einfache Websites zuerst
+
+- Dokumentiert am: 2026-10-28, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-28.
+- Erfassungsart: ausdrueckliche Nutzeranweisung und Planaktualisierung.
+- Quelle: aktuelle Nutzeranweisung zu `plans/Missing.md`.
+- Bezug: KP-064; ersetzt die bisherige Reihenfolge unter "Recommended priority".
+
+**Nutzerentscheidung:** Die empfohlenen Prioritaeten sollen zuerst einen
+Browser hervorbringen, der einfache Websites handhaben kann.
+
+**Umsetzung im Plan:** Dokumentorientierte, ueberwiegend statische Seiten
+bilden den ersten Arbeitsfokus: HTML-Recovery, gewoehnliches Rendering und
+Schriften, essentielle Ressourcen einschliesslich Bildern, grundlegende
+Navigation/Bedienung, danach kleine Script-Interaktionen. Breite
+Produktionssicherheit und weitergehende Standards/APIs haben niedrigere
+Prioritaet. Diese Konkretisierung ist eine Planableitung aus dem Nutzerziel,
+keine separat vereinbarte vollstaendige Abnahmedefinition.
+
+**Grenze:** Bestehende Confinement-/Request-Schutzmechanismen bleiben erhalten;
+neue Ressourcen und Script-Faehigkeiten muessen ihre Sicherheitspruefungen
+mitbringen. Vollstaendige Produktionssicherheit ist kein vorgeschalteter
+Blocker fuer jede Kompatibilitaetsverbesserung. Keine Codeimplementierung
+oder neue Sicherheits-/Konformitaetszusage in diesem Auftrag.

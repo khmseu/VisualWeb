@@ -96,6 +96,16 @@ Die separate Sektion "End goal" wurde auf Nutzerwunsch aus
 bewertet wurde ([KP-063](./Kontextprotokoll.md#kp-063---endziel-aus-missing-uebersicht-entfernt)).
 Dieser redaktionelle Schritt bewertet den frueheren Zielstatus nicht neu.
 
+**Aktuelle Prioritaet (Nutzerentscheidung, 2026-10-28):** Zuerst einfache
+Websites handhaben. Die [Prioritaeten in Missing.md](../plans/Missing.md#recommended-priority)
+ordnen HTML/CSS-/Schrift-Rendering, essentielle Ressourcen und grundlegende
+Bedienung vor kleinen Script-Interaktionen und der breiten
+Produktionssicherheitsarbeit ein. Bestehende Schutzmechanismen bleiben
+erhalten; neue Faehigkeiten brauchen ihre jeweiligen Sicherheitspruefungen.
+Die Umordnung ist keine Freigabe fuer beliebige untrusted Websites und
+startet keine neue Implementierung
+([KP-065](./Kontextprotokoll.md#kp-065---einfache-websites-zuerst)).
+
 ## Rahmenbedingungen und Nicht-Ziele
 
 - .NET 10; nullable und Warnungen als Fehler; zentrale Paketversionen;
