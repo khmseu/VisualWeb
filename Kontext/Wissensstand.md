@@ -112,9 +112,19 @@ konkreter Blocker: sichtbare `ul`/`ol`/`li` werden trotz vorhandener
 Parser-/UA-Style-Unterstuetzung von Layout abgelehnt. Der Nutzer waehlte
 default ungeordnete Listen mit aeusseren Disc-Markern; Pass 1 ist implementiert
 und lokal validiert (18 neue Regressionen, Solution-Build und 14.234
-Solution-Tests bestanden), noch nicht committed/CI-validiert
+Solution-Tests bestanden), als `7bb58b5` committed und gepusht.
+Linux development, CodeQL und Windows x64 bestanden. Windows ARM64 scheiterte
+in zwei Versuchen an Startup-/Recovery-Deadlines im CPU-Pressure-Test;
+beim zweiten Versuch bestanden die fuenf fokussierten Wiederholungen und
+alle neuen Listentests, aber der bestehende Test scheiterte im Solution-Lauf.
+CI ist deshalb nicht vollstaendig gruen. Der Nutzer waehlte Untersuchung
+und Behebung vor weiteren Passen. Der Test verwendet jetzt die unveraenderte
+Produktionsdeadline von 30 Sekunden statt eines 5-Sekunden-Overrides;
+Build, Browserprojekt und volle Solution bestanden lokal erneut.
+Native CI-Validierung dieser Korrektur steht aus (KP-069)
 ([KP-067](./Kontextprotokoll.md#kp-067---default-unordered-lists-fuer-pass-1-gewaehlt)).
-Noch kein Pass abgeschlossen
+Ein Inkrement geliefert, neun weitere noch nicht begonnen; Pass 1 hat einen
+offenen CI-Blocker
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
 
 ## Rahmenbedingungen und Nicht-Ziele

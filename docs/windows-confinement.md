@@ -98,8 +98,11 @@ the 64-bit native startup structure sizes and standard-handle offsets used on
 x64 and arm64. The native Windows x64/arm64 workflow runs the full solution test
 suite and repeats both CPU-pressure recovery cases five times without retrying
 failures. Process integration tests use a nonparallel xUnit collection so unrelated
-browser tests cannot compete with their cold worker staging/startup. The five-second
-renderer deadline and 500 ms cancellation remain unchanged; recovery checks actual
+browser tests cannot compete with their cold worker staging/startup. CPU-pressure
+recovery uses the production 30-second startup/render deadline, not a five-second
+test override that can expire during ordinary cold ARM64 staging or replacement
+startup before the fault is injected. The 500 ms cancellation remains unchanged;
+the deadline case still requires termination of the unresponsive worker. Recovery checks actual
 worker exit, replacement pixels and reuse, and the unaffected peer's identity.
 `WindowsSandboxSmoke` probes actual host-file/environment,
 process-creation, loopback-network and storage-write denials. The native platform

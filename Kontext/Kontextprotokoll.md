@@ -2299,3 +2299,56 @@ Content 9, Browser 1.131). Die Solution-Formatpruefung meldet ausschliesslich
 die drei auf `81bb414` reproduzierten, unveraenderten Findings in
 `StaticLayout.cs` und `ShellChrome.cs`. Keine native Windows-/ARM-
 Ausfuehrung auf diesem Host.
+
+### KP-068 - Pass-1-Commit und ARM64-CI-Blocker
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: Commit `7bb58b518b69e751e3126db2e364579eb9867a88`, GitHub-Actions-
+  Lauf [Windows confinement 40752493869](https://github.com/khmseu/VisualWeb/actions/runs/40752493869)
+  einschliesslich Versuch 2; Linux development 40752494000 und
+  CodeQL 40752492918.
+- Bezug: KP-067; Statuskorrektur nach Commit und CI-Pruefung.
+
+**Belegt:** Pass 1 ist committed und auf `origin/main` gepusht. Linux,
+CodeQL und Windows x64 bestanden, einschliesslich der x64-Sandbox-Smokes.
+ARM64 baute erfolgreich, scheiterte aber im ersten Versuch beim initialen
+Peer-Render des CPU-Pressure-Tests (ProcessTests.cs:226). Nach gezieltem
+Retry des fehlgeschlagenen Jobs bestanden alle fuenf fokussierten
+CPU-Pressure-Wiederholungen. Im anschliessenden Solution-Lauf scheiterte
+derselbe Test bei der Recovery (ProcessTests.cs:248, cancel=true) erneut
+an der fuenfsekundigen Renderer-Deadline. Die anderen 1.130 Browsertests
+und alle weiteren Testprojekte bestanden.
+
+**Einordnung:** Timingempfindlichkeit ist eine Ableitung aus wechselnden
+Fehlerstellen und erfolgreichen Wiederholungen, kein bewiesener
+Baseline-Fehler. Keine Deadline wurde erhoeht, keine Sicherheitsgarantie
+abgeschwaecht und kein Test unterdrueckt. Native ARM64-Reproduktion ist auf
+diesem Linux-Host nicht moeglich. CI bleibt rot; neun weitere Passen sind
+noch nicht begonnen. Das weitere Vorgehen wird zur Entscheidung gestellt.
+
+### KP-069 - ARM64-Blocker vor weiteren Passen untersuchen
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: strukturierte Nutzerantwort `investigate`; `ProcessPageRenderer`,
+  `ProcessTests` und privater `Renderer.TestPeer`.
+- Bezug: KP-068.
+
+**Nutzerentscheidung:** Den ARM64-CI-Fehler zuerst untersuchen und beheben,
+statt mit offenem Fehler weitere Feature-Passen zu beginnen.
+
+**Belegt:** Die Testueberschreibung von fuenf Sekunden gilt nicht nur fuer
+die CPU-Endlosschleife, sondern auch fuer kaltes AppContainer-Staging,
+Handshake und den Ersatzstart. Die Produktion verwendet 30 Sekunden.
+Die beiden beobachteten Fehler liegen im normalen Initial-/Recovery-Render.
+
+**Korrektur in Validierung:** Der CPU-Pressure-Test verwendet die vorhandene
+Produktionsdeadline statt der fuenfsekundigen Testueberschreibung. Produktcode,
+Confinement und 500-ms-Cancellation bleiben unveraendert. Die Endlosschleife
+muss weiterhin durch die Deadline beendet werden; Exit, Peer-Isolation,
+Ersatzprozess, Pixel und Wiederverwendung werden unveraendert geprueft.
+Dies ist eine separate CI-Korrektur, kein zweiter Simple-Site-Feature-Pass.
+
+**Lokale Validierung:** Solution-Build (0 Warnungen/Fehler), Browserprojekt
+(1.131 Tests) und volle Solution (14.234 Tests) bestanden. Formatpruefung
+meldet nur die drei in KP-066 belegten Baseline-Findings. Native
+Windows-Validierung erfolgt nach Push in CI.

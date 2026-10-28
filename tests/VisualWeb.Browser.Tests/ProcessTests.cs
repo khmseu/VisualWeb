@@ -221,7 +221,7 @@ public sealed class ProcessTests
     public async Task WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(bool cancel)
     {
         if (!OperatingSystem.IsWindows()) { return; }
-        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, TimeSpan.FromSeconds(5), requireSandbox: true);
+        using var renderer = new ProcessPageRenderer(PeerPath, FontPath, requireSandbox: true);
         using var other = new ProcessPageRenderer(RendererPath, FontPath, requireSandbox: true);
         await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
         await other.RenderAsync(Blue, new(20, 10, 1), Cancellation);
