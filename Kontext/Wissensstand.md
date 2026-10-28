@@ -124,13 +124,17 @@ Build, Browserprojekt und volle Solution bestanden lokal erneut.
 Die Korrektur ist als `8dfe817` gepusht; Linux, CodeQL und Windows x64/ARM64
 einschliesslich nativer Smokes bestanden (KP-070)
 ([KP-067](./Kontextprotokoll.md#kp-067---default-unordered-lists-fuer-pass-1-gewaehlt)).
-Ein Feature-Inkrement abgeschlossen, neun weitere noch nicht begonnen;
+Zwei Feature-Inkremente abgeschlossen; Pass 3 ist lokal validiert,
+sieben weitere noch nicht begonnen.
 der Pass-1-CI-Blocker ist behoben. Als naechster konkreter Blocker wurden
 geordnete Listen bestaetigt. Der Nutzer waehlte Dezimalmarker mit `start`,
 `reversed` und `li value`. Pass 2 ist implementiert und in Validierung
 (CSS 330, Layout 77, Paint 40, Content 10, Browser 1.133 und volle Solution
-14.253 Tests sowie Build bestanden; nur bekannte Baseline-Formatfindings), noch nicht
-committed oder CI-validiert (KP-071)
+14.253 Tests sowie Build bestanden; nur bekannte Baseline-Formatfindings),
+als `6441d67` gepusht und durch Linux/CodeQL/Windows x64/ARM64 CI bestaetigt.
+Pass 3 erweitert `list-style` atomar ueber das bestehende endliche
+Longhand-Subset. CSS 349, Content 11, Solution 14.273 Tests und Build
+bestanden; noch kein Pass-3-Commit/CI-Ergebnis (KP-072)
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
 
 ## Rahmenbedingungen und Nicht-Ziele

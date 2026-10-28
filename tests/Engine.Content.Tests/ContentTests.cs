@@ -8,6 +8,20 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void CommonListStyleNoneCssRendersWithoutDiagnosticsOrMarkers()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ul><li>Navigation</li></ul>";
+        var result = OfflinePageRenderer.Render(html, [new("ul{list-style:none}*{margin:0}")],
+            text, fonts, 200, 80, cancellationToken: Cancellation);
+        Assert.Empty(result.Styles.Diagnostics);
+        Assert.Empty(result.DisplayList.Commands.OfType<FillEllipse>());
+        Assert.Single(result.DisplayList.Commands.OfType<DrawGlyphRun>());
+    }
+
+    [Fact]
     public void OrderedListsReachNativePixelsAndRetainTheirParsedNumberingOnResize()
     {
         using var font = new TextFont(FontPath);

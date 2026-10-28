@@ -129,6 +129,26 @@ internal static class CssProperties
                     Add("border-" + side + "-color", color ?? Registry["border-top-color"].Initial);
                 }
             }
+            else if (name == "list-style")
+            {
+                var names = new[] { "list-style-type", "list-style-position", "list-style-image" };
+                if (wide is not null) { foreach (var property in names) { Add(property, wide); } continue; }
+                CssValue? type = null, position = null;
+                var noneCount = 0;
+                var valid = value.Count is >= 1 and <= 3;
+                foreach (var token in value)
+                {
+                    var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
+                    if (keyword == "none") { noneCount++; }
+                    else if (keyword == "outside" && position is null) { position = new CssKeyword(keyword); }
+                    else if (keyword is "disc" or "decimal" && type is null) { type = new CssKeyword(keyword); }
+                    else { valid = false; }
+                }
+                if (!valid || noneCount > 2 || noneCount == 2 && type is not null) { Invalid(); continue; }
+                Add(names[0], type ?? (noneCount > 0 ? new CssKeyword("none") : Registry[names[0]].Initial));
+                Add(names[1], position ?? Registry[names[1]].Initial);
+                Add(names[2], Registry[names[2]].Initial);
+            }
             else if (Registry.ContainsKey(name))
             {
                 var parsed = wide ?? Parse(name, declaration.Value);

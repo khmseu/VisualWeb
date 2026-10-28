@@ -2406,3 +2406,30 @@ nur die drei belegten Baseline-Findings. Noch kein Pass-2-Commit.
 mit 0 Warnungen/Fehlern, Browserprojekt mit 1.133 und volle Solution mit
 14.253 Tests bestanden. Keine neuen Formatfindings. Native Targets werden
 nach Commit/Push durch CI validiert.
+
+### KP-072 - Pass 2 gruen und List-Style-Shorthand fuer Pass 3
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: Commit `6441d67`; CI
+  [Linux 40767827687](https://github.com/khmseu/VisualWeb/actions/runs/40767827687),
+  [Windows 40767827860](https://github.com/khmseu/VisualWeb/actions/runs/40767827860),
+  [CodeQL 40767826172](https://github.com/khmseu/VisualWeb/actions/runs/40767826172);
+  `CssProperties.Expand`, lokaler Standard `css2-lists` und aktuelle Tests.
+- Bezug: KP-071, Pass 3 des Zehn-Passen-Auftrags.
+
+**Belegt:** Pass 2 ist committed, gepusht und auf allen genannten CI-Targets
+erfolgreich. Als naechster konkreter Common-CSS-Blocker war `list-style:none`
+noch als unbekannte Property diagnostiziert; Layout verlangt null Diagnosen.
+
+**Umsetzung:** Das Shorthand expandiert atomar zu den vorhandenen drei
+Longhands mit disc/decimal/none, outside und image none. Ausgelassene Werte
+werden zurueckgesetzt, `none`-Mehrdeutigkeit, CSS-wide-Keywords, Importance
+und Deklarationsreihenfolge bleiben konsistent mit der Cascade. Nicht
+unterstuetzte Werte/Images, doppelte Komponenten und gemischte Wide-Keywords
+diagnostizieren die ganze Deklaration. Keine neue Layout-/Paint-Faehigkeit
+und keine automatische Embedded-Style-Sammlung in Offline-Content.
+
+**Validierung:** 20 neue Regressionen (19 CSS, eine native Content-Fixture),
+CSS 349 und Content 11 Tests bestanden. Solution-Build bestand mit null
+Warnungen/Fehlern; alle 14.273 Solution-Tests bestanden. Format meldet nur
+die drei bekannten Baseline-Findings. Noch kein Pass-3-Commit/CI-Ergebnis.

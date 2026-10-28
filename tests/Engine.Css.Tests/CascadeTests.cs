@@ -55,6 +55,69 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("none", "none")]
+    [InlineData("none none", "none")]
+    [InlineData("outside", "disc")]
+    [InlineData("decimal outside none", "decimal")]
+    [InlineData("none outside disc", "disc")]
+    [InlineData("OUTSIDE DECIMAL", "decimal")]
+    public void ListStyleShorthandExpandsAllLonghandsAndResolvesNone(string value, string type)
+    {
+        var doc = Document("<ol><li id=child>x</li></ol>");
+        var result = Compute(doc, new CssStyleSource("li{list-style:" + value + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(type), Child(result, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(result, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(result, doc)["list-style-image"]);
+    }
+
+    [Theory]
+    [InlineData("disc decimal")]
+    [InlineData("outside outside")]
+    [InlineData("none none decimal")]
+    [InlineData("none none none")]
+    [InlineData("decimal inside")]
+    [InlineData("decimal url(marker.png)")]
+    [InlineData("inherit decimal")]
+    [InlineData("circle")]
+    public void InvalidListStyleShorthandNeverPartiallyOverridesLonghands(string value)
+    {
+        var doc = Document();
+        var result = Compute(doc, new CssStyleSource("#child{list-style-type:decimal;list-style:" + value + "}"));
+        Assert.Single(result.Diagnostics, d => d.Code == "invalid-property-value");
+        Assert.Equal(new CssKeyword("decimal"), Child(result, doc)["list-style-type"]);
+    }
+
+    [Theory]
+    [InlineData("initial", "disc")]
+    [InlineData("inherit", "none")]
+    [InlineData("unset", "none")]
+    [InlineData("revert", "none")]
+    public void ListStyleShorthandUsesNormalWideKeywordInheritance(string keyword, string expected)
+    {
+        var doc = Document("<ul id=parent><li id=child>x</li></ul>");
+        var result = Compute(doc, new CssStyleSource("#parent{list-style:none} #child{list-style:decimal;list-style:" + keyword + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), Child(result, doc)["list-style-type"]);
+    }
+
+    [Fact]
+    public void ListStyleShorthandPreservesImportanceOrderAndExactAssignmentBudget()
+    {
+        var doc = Document();
+        var result = Compute(doc, new CssStyleSource("#child{list-style:none!important;list-style-type:decimal}"));
+        Assert.Equal(new CssKeyword("none"), Child(result, doc)["list-style-type"]);
+        var ordered = Compute(doc, new CssStyleSource("#child{list-style:decimal;list-style-type:none;list-style:outside}"));
+        Assert.Empty(ordered.Diagnostics);
+        Assert.Equal(new CssKeyword("disc"), Child(ordered, doc)["list-style-type"]);
+        var sources = new[] { new CssStyleSource("#child{list-style:none}") };
+        Assert.Empty(CssStyleEngine.Compute(doc, sources, options: new() { MaxAssignments = 3 },
+            includeUserAgent: false, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, sources, options: new() { MaxAssignments = 2 },
+            includeUserAgent: false, cancellationToken: Cancellation));
+    }
+
+    [Theory]
     [InlineData(false, false, false, CssOrigin.Author)]
     [InlineData(false, true, false, CssOrigin.User)]
     [InlineData(false, true, true, CssOrigin.User)]

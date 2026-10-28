@@ -130,7 +130,12 @@ The bounded list subset gives `li` a UA `display:list-item` default,
 `ul` disc markers and `ol` decimal markers.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
 only disc/decimal/none markers, outside positioning and no marker image are supported.
-Other list-style values and the `list-style` shorthand produce diagnostics.
+The `list-style` shorthand expands this same finite subset in any order,
+resets omitted longhands, and supports CSS-wide keywords. `none` suppresses
+the type and image unless the type is otherwise specified; `none decimal`
+therefore retains decimal markers. Duplicate components or unsupported values
+(inside, images, other marker types) diagnose the whole declaration without
+partially changing longhands.
 Layout currently accepts visible list-item boxes only for direct `li` children
 of `ul` or `ol`; accepting a computed value does not imply general list-item layout.
 

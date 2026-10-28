@@ -427,7 +427,7 @@ The current engine implements finite static block/inline rendering. Missing esse
   suppression preserves numbering. Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` attributes except `ol type=1`,
-  other marker styles, inside positioning, the `list-style` shorthand and
+  other marker styles, inside positioning and
   arbitrary list-item elements remain unsupported. See the
   [list layout scope](../docs/text-layout.md#default-unordered-lists) and
   [paint guide](../docs/painting.md#paint-order-and-supported-output).
@@ -436,6 +436,12 @@ The current engine implements finite static block/inline rendering. Missing esse
   local/process retained repainting; the solution build and all 14,253
   solution tests pass. Solution formatting still reports
   only the three existing findings reproduced on base commit `81bb414`.
+  The finite `list-style` shorthand now supports disc/decimal/none, outside
+  positioning, image none, resets and CSS-wide keywords; invalid or unsupported
+  components diagnose the complete declaration atomically instead of partially
+  applying values. Its 20 new CSS/native-content regressions, solution build
+  and all 14,273 solution tests pass locally; formatting retains only the
+  same three documented baseline findings.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 **A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
