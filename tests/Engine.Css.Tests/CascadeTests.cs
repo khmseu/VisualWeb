@@ -31,7 +31,7 @@ public sealed class CascadeTests
     }
 
     [Theory]
-    [InlineData("list-style-type:decimal")]
+    [InlineData("list-style-type:lower-alpha")]
     [InlineData("list-style-type:circle")]
     [InlineData("list-style-position:inside")]
     [InlineData("list-style-image:url(marker.png)")]
@@ -39,6 +39,19 @@ public sealed class CascadeTests
     {
         var doc = Document();
         Assert.NotEmpty(Compute(doc, new CssStyleSource("#child{" + declaration + "}")).Diagnostics);
+    }
+
+    [Fact]
+    public void OrderedListsDefaultToDecimalAndNestedUnorderedListsResetToDisc()
+    {
+        var doc = Document("<ol id=parent><li id=child><ul id=nested><li id=inner>x</li></ul></li></ol>");
+        var styles = Compute(doc);
+        Assert.Empty(styles.Diagnostics);
+        Assert.Equal(new CssKeyword("decimal"), Child(styles, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("disc"), styles.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+        var overridden = Compute(doc, new CssStyleSource("#nested{list-style-type:decimal}"));
+        Assert.Empty(overridden.Diagnostics);
+        Assert.Equal(new CssKeyword("decimal"), overridden.Styles[doc.GetElementById("inner")!]["list-style-type"]);
     }
 
     [Theory]

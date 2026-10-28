@@ -76,6 +76,10 @@ text, without synthesizing DOM text, reshaping a bullet glyph or creating font
 resources. Marker commands share command limits, geometry preflight, viewport
 transforms and cancellation with other commands. The finite list scope is
 described in the [text/layout guide](text-layout.md#default-unordered-lists).
+Decimal markers use the same bounded glyph-run command builder as page text,
+with the item's exact font and color, but remain separate from selectable DOM
+fragments. They paint before the item's own scroll clip, like disc markers;
+ancestor clips and viewport transforms still apply.
 
 - The root background covers the viewport and is not repainted on its box.
   For an HTML root with transparent background, the first body child's

@@ -8,6 +8,26 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void OrderedListsReachNativePixelsAndRetainTheirParsedNumberingOnResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ol reversed start=5><li>First</li><li value=-1>Second</li></ol>";
+        var styles = new[] { new CssStyleSource("*{margin:0;font-size:16px;line-height:20px}li{color:red}") };
+        var first = OfflinePageRenderer.Render(html, styles, text, fonts, 200, 80, cancellationToken: Cancellation);
+        var resized = OfflinePageRenderer.RenderParsed(first.Html, styles, text, fonts, 160, 80,
+            cancellationToken: Cancellation);
+        Assert.Empty(first.Styles.Diagnostics);
+        Assert.Equal(4, first.DisplayList.Commands.OfType<DrawGlyphRun>().Count());
+        Assert.Equal(4, resized.DisplayList.Commands.OfType<DrawGlyphRun>().Count());
+        Assert.Same(first.Html.Document, resized.Html.Document);
+        var markerPixels = Enumerable.Range(0, 40).SelectMany(y => Enumerable.Range(0, 40).Select(x => (y * 200 + x) * 4));
+        Assert.Contains(markerPixels, offset => first.Frame.Pixels.Span[offset + 2] == 255
+            && first.Frame.Pixels.Span[offset + 1] < 255);
+    }
+
+    [Fact]
     public void SimpleUnorderedListReachesNativeFrameAndRetainedRepaint()
     {
         using var font = new TextFont(FontPath);

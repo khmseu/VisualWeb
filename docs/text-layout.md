@@ -100,7 +100,7 @@ outside disc markers. UA styles give lists 40px left padding and items
 `display:list-item`; each nested list uses the same disc default.
 `list-style-type:none` suppresses a marker, and `display:block` on an item
 removes its list-item semantics. Hidden items produce neither geometry nor
-markers. Ordered lists, legacy `type` attributes, other marker styles, inside
+markers. Legacy `type` attributes except `ol type=1`, other marker styles, inside
 positioning and arbitrary non-`li` list-item boxes still fail explicitly.
 
 Marker geometry follows the user-agent-defined latitude in
@@ -112,6 +112,31 @@ an empty marked item has that strut's height. Markers do not change wrapping
 width or enter selectable DOM text. Their metric shaping shares the existing
 shaping-call budgets; traversal and painting retain cancellation and limits.
 The LTR-only scope and explicitly registered font policy remain unchanged.
+
+### Decimal ordered lists
+
+Visible block `ol` containers and their direct list-item `li` children support
+outside decimal markers (`1.`, `2.`, etc.). Each list has independent numbering;
+`start`, boolean `reversed`, and `li value` use the HTML integer-parsing and
+[ordinal-value algorithms](https://html.spec.whatwg.org/multipage/grouping-content.html#the-li-element)
+(local ID `html`). Only rendered `display:list-item` children participate;
+`list-style-type:none` hides a marker without removing its ordinal.
+Without a valid `start`, reversed lists start at their rendered item count.
+Invalid integer syntax falls back as specified; successfully parsed values
+outside signed 32-bit range fail with `LayoutLimitException`. Automatic
+increments/decrements can continue beyond that attribute range without wrapping.
+`ol type=1` is accepted; other legacy types fail explicitly.
+
+`list-style-type:decimal` also works on supported unordered items, including
+`li value` resets. UA rules reset nested `ul` to disc and nested `ol` to decimal.
+Decimal markers are shaped with the item's registered font and color, aligned
+to its first in-flow baseline (or font strut when empty), and right-aligned
+0.5em before the content edge. They do not consume line wrapping width, become
+DOM text, or enter selection/hit-test metadata. Empty marked items retain a
+font-strut height. Attribute scanning and marker output share text limits;
+numbering scans share node/cancellation limits, while marker shaping/painting
+share the existing call, glyph and command limits. No CSS counters, inside
+markers, alphabetic/Roman markers or general list ownership are implied.
 
 ### Ordinary flow
 

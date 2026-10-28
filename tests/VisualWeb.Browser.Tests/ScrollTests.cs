@@ -46,6 +46,31 @@ public sealed class ScrollTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OrderedListNumbersSurviveLocalAndProcessRetainedRepaint(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        var document = Document("""
+            <!doctype html><style>*{margin:0;font-size:20px;line-height:20px}li{color:red}</style>
+            <ol reversed start=5><li></li><li value=5></li></ol>
+            """);
+        var viewport = new PageViewport(100, 20, 1);
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal(40, first.ScrollHeight);
+        Assert.Contains(Enumerable.Range(0, 20).SelectMany(y => Enumerable.Range(0, 40).Select(x => (y * 100 + x) * 4)),
+            offset => first.Frame.Pixels.Span[offset + 2] == 255 && first.Frame.Pixels.Span[offset + 1] < 255);
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 20 }, Cancellation);
+        Assert.Equal(first.Frame.Pixels.ToArray(), scrolled.Frame.Pixels.ToArray());
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 80 }, Cancellation);
+        Assert.Equal(40, resized.ScrollHeight);
+        Assert.Equal(80, resized.Frame.Size.Width);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]

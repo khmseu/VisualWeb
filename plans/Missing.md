@@ -414,21 +414,27 @@ The current engine implements finite static block/inline rendering. Missing esse
 - Flexbox, grid, tables, floats and positioning; margin collapse is implemented
   for adjacent block siblings and eligible parent/first-or-last block-child edges.
 - Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
-- Images/replaced elements, general controls, ordered lists and broader list
+- Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
 - Default unordered lists now render with outside disc bullets, including
   nested and empty items. UA items use `display:list-item`; inherited
-  `list-style-type:disc/none`, outside positioning and no marker image are
+  `list-style-type:disc/decimal/none`, outside positioning and no marker image are
   supported. Markers use bounded layout geometry and current-color ellipse
-  painting, not synthetic DOM text. Ordered lists, legacy `type` attributes,
+  painting, not synthetic DOM text. Ordered lists now use separately shaped
+  decimal markers with `start`, `reversed` and `li value`; nested lists have
+  independent numbering, hidden/non-list-items do not count, and marker
+  suppression preserves numbering. Numbering attributes accept HTML integer
+  syntax within signed 32-bit limits and fail visibly beyond that range.
+  Legacy `type` attributes except `ol type=1`,
   other marker styles, inside positioning, the `list-style` shorthand and
   arbitrary list-item elements remain unsupported. See the
   [list layout scope](../docs/text-layout.md#default-unordered-lists) and
   [paint guide](../docs/painting.md#paint-order-and-supported-output).
-  Local validation: 18 new regressions cover CSS, exact layout, native marker
-  pixels, offline content and local/process retained repainting; the solution
-  build and all 14,234 solution tests pass. Solution formatting still reports
+  Local validation: the decimal increment adds 19 regressions covering CSS,
+  exact numbering/geometry/budgets, native marker pixels, offline content and
+  local/process retained repainting; the solution build and all 14,253
+  solution tests pass. Solution formatting still reports
   only the three existing findings reproduced on base commit `81bb414`.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 

@@ -1,5 +1,6 @@
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Layout;
+using VisualWeb.Engine.Text;
 
 namespace VisualWeb.Engine.Paint;
 
@@ -214,6 +215,10 @@ public static class DisplayListBuilder
             {
                 Add(new FillEllipse(marker, Color(box, "color")));
             }
+            if (box.TextMarker is { } textMarker)
+            {
+                DrawText(textMarker.Run, textMarker.X, textMarker.Baseline, Color(box, "color"));
+            }
             if (scrollClips is not null && scrollClips.TryGetValue(box, out var clip))
             {
                 Add(new PushScrollClip(clip.Clip, clip.OffsetY));
@@ -237,23 +242,8 @@ public static class DisplayListBuilder
                     if (!lines.Remove(line.Line)) { throw new InvalidOperationException("Layout flow contains an absent or duplicate line."); }
                     foreach (var fragment in line.Line.Fragments)
                     {
-                        var run = fragment.Run;
-                        var glyphs = new List<PaintGlyph>();
-                        var x = fragment.X;
-                        foreach (var glyph in run.Glyphs)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            if (++glyphCount > limits.MaxGlyphs) { throw new PaintLimitException("Display glyph limit exceeded."); }
-                            if (glyph.GlyphId is 0 or > ushort.MaxValue) { throw new UnsupportedPaintException("Glyph ID is outside Skia's supported OpenType range."); }
-                            glyphs.Add(new((ushort)glyph.GlyphId, x + glyph.OffsetX, fragment.Baseline + glyph.OffsetY));
-                            x += glyph.Advance;
-                        }
-                        if (glyphs.Count != 0)
-                        {
-                            Add(new DrawGlyphRun(run.FontIdentity, run.FontSize,
-                                fragment.Style["color"] as CssColor ?? throw new UnsupportedPaintException("Unresolved text color."),
-                                glyphs, limits));
-                        }
+                        DrawText(fragment.Run, fragment.X, fragment.Baseline,
+                            fragment.Style["color"] as CssColor ?? throw new UnsupportedPaintException("Unresolved text color."));
                     }
                 }
                 else { throw new InvalidOperationException("Unknown layout flow item."); }
@@ -263,6 +253,19 @@ public static class DisplayListBuilder
             {
                 Add(new PopScrollClip());
             }
+        }
+        void DrawText(ShapedRun run, double x, double baseline, CssColor color)
+        {
+            var glyphs = new List<PaintGlyph>();
+            foreach (var glyph in run.Glyphs)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (++glyphCount > limits.MaxGlyphs) { throw new PaintLimitException("Display glyph limit exceeded."); }
+                if (glyph.GlyphId is 0 or > ushort.MaxValue) { throw new UnsupportedPaintException("Glyph ID is outside Skia's supported OpenType range."); }
+                glyphs.Add(new((ushort)glyph.GlyphId, x + glyph.OffsetX, baseline + glyph.OffsetY));
+                x += glyph.Advance;
+            }
+            if (glyphs.Count != 0) { Add(new DrawGlyphRun(run.FontIdentity, run.FontSize, color, glyphs, limits)); }
         }
     }
 }

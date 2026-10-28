@@ -39,6 +39,8 @@ public static class CssStyleEngine
         p, blockquote, pre, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         blockquote { margin-left: 40px; margin-right: 40px }
         ul, ol { padding-left: 40px }
+        ul { list-style-type: disc }
+        ol { list-style-type: decimal }
         li { display: list-item }
         dd { margin-left: 40px }
         h1 { font-size: 2em; margin-top: .67em; margin-bottom: .67em; font-weight: bold }

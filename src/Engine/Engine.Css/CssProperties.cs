@@ -160,7 +160,7 @@ internal static class CssProperties
         var token = tokens[0];
         var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
         if (name == "display") { return Keyword(keyword, "none", "block", "inline", "inline-block", "list-item"); }
-        if (name == "list-style-type") { return Keyword(keyword, "disc", "none"); }
+        if (name == "list-style-type") { return Keyword(keyword, "disc", "decimal", "none"); }
         if (name == "list-style-position") { return Keyword(keyword, "outside"); }
         if (name == "list-style-image") { return Keyword(keyword, "none"); }
         if (name is "overflow-x" or "overflow-y") { return Keyword(keyword, "visible", "hidden", "auto"); }

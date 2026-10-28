@@ -2352,3 +2352,57 @@ Dies ist eine separate CI-Korrektur, kein zweiter Simple-Site-Feature-Pass.
 (1.131 Tests) und volle Solution (14.234 Tests) bestanden. Formatpruefung
 meldet nur die drei in KP-066 belegten Baseline-Findings. Native
 Windows-Validierung erfolgt nach Push in CI.
+
+### KP-070 - CI-Korrektur nativ validiert und naechster Listenumfang
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: Commit `8dfe817`; GitHub Actions
+  [Windows 40758152591](https://github.com/khmseu/VisualWeb/actions/runs/40758152591),
+  [Linux 40758152794](https://github.com/khmseu/VisualWeb/actions/runs/40758152794)
+  und [CodeQL 40758152061](https://github.com/khmseu/VisualWeb/actions/runs/40758152061);
+  erneute Pruefung von `StaticLayout.Check`, UA-Styles und Rendering-Guides.
+- Bezug: KP-069, neuer Zehn-Passen-Auftrag KP-066.
+
+**Belegt:** Alle drei CI-Laeufe bestanden. Windows x64 und ARM64 liefen
+einschliesslich der wiederholten CPU-Pressure-Tests, vollen Solution und
+nativen Smokes erfolgreich. Damit ist der CI-Blocker behoben und Pass 1
+abgeschlossen. Die Testkorrektur zaehlt nicht als weiterer Feature-Pass.
+
+**Naechster Blocker:** Default ungeordnete Listen sind geliefert, geordnete
+Listen werden weiterhin vollstaendig abgelehnt. Die Standardsquelle
+beschreibt Dezimalmarker und Nummerierung ueber `start`, `reversed` und
+`li value`; der endliche Umfang des zweiten Inkrements ist noch offen.
+Keine Pass-2-Codeaenderung. Neun Feature-Passen stehen aus.
+
+### KP-071 - Dezimalnummerierung fuer Pass 2 gewaehlt
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: strukturierte Nutzerantwort `decimal-numbering`; lokale Quellen
+  `html` (ol/li und Integer-Mikrosyntax) und `css2-lists`; aktuelle
+  CSS-/Layout-/Paint-/Content-/Browser-Implementierung und Tests.
+- Bezug: KP-070; Pass 2 des neuen Zehn-Passen-Auftrags.
+
+**Nutzerentscheidung:** Dezimalmarker einschliesslich `start`, `reversed`
+und `li value`, nicht nur default aufsteigende Listen. Andere Markerarten
+bleiben unimplementiert.
+
+**Umsetzung in Validierung:** Eigene geformte Markerruns ohne synthetische
+DOM-Textknoten; gemeinsame Paint-Glyph-Logik mit normalen Textfragmenten.
+Direkte gerenderte List-Items werden einmal je Liste unter Node-Limits
+nummeriert. Versteckte oder als Block formatierte Items zaehlen nicht;
+Markerunterdrueckung per `none` laesst die Nummerierung bestehen.
+Verschachtelte Listen haben unabhaengige Zaehler und UA-Style-Resets.
+HTML-Integersyntax wird mit expliziter signed-32-bit-Grenze fuer Attribute
+gelesen; automatische Fortschreibung verwendet long und laeuft nicht um.
+Scans/Markerausgabe teilen Text-, Shaping-, Glyph-, Command- und
+Cancellation-Budgets. Breitere List-Ownership, CSS-Counter und nichtdezimaler
+Legacy-Typ bleiben sichtbar nicht unterstuetzt.
+
+**Zwischenstand:** CSS 330, Layout 77, Paint 40 und Content 10 Tests bestanden.
+Build, Browserprojekt und volle Solution sind in Validierung. Format meldet
+nur die drei belegten Baseline-Findings. Noch kein Pass-2-Commit.
+
+**Abschliessende lokale Validierung:** 19 neue Regressionen; Solution-Build
+mit 0 Warnungen/Fehlern, Browserprojekt mit 1.133 und volle Solution mit
+14.253 Tests bestanden. Keine neuen Formatfindings. Native Targets werden
+nach Commit/Push durch CI validiert.

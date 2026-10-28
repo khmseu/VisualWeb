@@ -121,10 +121,16 @@ CI ist deshalb nicht vollstaendig gruen. Der Nutzer waehlte Untersuchung
 und Behebung vor weiteren Passen. Der Test verwendet jetzt die unveraenderte
 Produktionsdeadline von 30 Sekunden statt eines 5-Sekunden-Overrides;
 Build, Browserprojekt und volle Solution bestanden lokal erneut.
-Native CI-Validierung dieser Korrektur steht aus (KP-069)
+Die Korrektur ist als `8dfe817` gepusht; Linux, CodeQL und Windows x64/ARM64
+einschliesslich nativer Smokes bestanden (KP-070)
 ([KP-067](./Kontextprotokoll.md#kp-067---default-unordered-lists-fuer-pass-1-gewaehlt)).
-Ein Inkrement geliefert, neun weitere noch nicht begonnen; Pass 1 hat einen
-offenen CI-Blocker
+Ein Feature-Inkrement abgeschlossen, neun weitere noch nicht begonnen;
+der Pass-1-CI-Blocker ist behoben. Als naechster konkreter Blocker wurden
+geordnete Listen bestaetigt. Der Nutzer waehlte Dezimalmarker mit `start`,
+`reversed` und `li value`. Pass 2 ist implementiert und in Validierung
+(CSS 330, Layout 77, Paint 40, Content 10, Browser 1.133 und volle Solution
+14.253 Tests sowie Build bestanden; nur bekannte Baseline-Formatfindings), noch nicht
+committed oder CI-validiert (KP-071)
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
 
 ## Rahmenbedingungen und Nicht-Ziele

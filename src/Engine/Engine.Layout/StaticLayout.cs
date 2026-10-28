@@ -16,6 +16,9 @@ public sealed class LayoutLimitException(string message) : Exception(message);
 public readonly record struct LayoutRect(double X, double Y, double Width, double Height);
 public readonly record struct LayoutEdges(double Top, double Right, double Bottom, double Left);
 public sealed record LayoutTextFragment(DomText Source, ShapedRun Run, double X, double Baseline, CssComputedStyle Style);
+/// <summary>Shaped outside list marker, not selectable document text.</summary>
+/// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.</remarks>
+public sealed record LayoutTextMarker(ShapedRun Run, double X, double Baseline);
 public sealed record LayoutInlineWidget(DomElement Element, LayoutRect Bounds);
 public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments)
 {
@@ -33,6 +36,7 @@ public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRec
     /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.
     /// The finite LTR subset uses a 0.3em disc and a 0.5em gap before the content edge.</remarks>
     public LayoutRect? DiscMarker { get; init; }
+    public LayoutTextMarker? TextMarker { get; init; }
 }
 public sealed record LayoutResult(LayoutBox? Root, double ViewportWidth, double ViewportHeight);
 
@@ -82,6 +86,7 @@ public static class StaticLayout
         private readonly LayoutOptions options;
         private readonly CancellationToken cancellation;
         private int nodes, boxes, lines, characters, glyphs, calls;
+        private readonly Dictionary<DomElement, long> ordinals = new(ReferenceEqualityComparer.Instance);
 
         internal Builder(CssStyleResult styles, ITextShaper shaper, LayoutOptions options, CancellationToken cancellation)
         {
@@ -134,17 +139,18 @@ public static class StaticLayout
                 return;
             }
             if (Display(element) == "list-item"
-                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" }))
+                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" or "ol" }))
             {
-                throw new UnsupportedLayoutException("List-item markers currently require a direct unordered-list parent.");
+                throw new UnsupportedLayoutException("List-item markers require a direct ul or ol parent.");
             }
-            if (element.LocalName is "ul" or "li"
-                && (element.GetAttribute("type") is not null || !block))
+            if (element.LocalName is "ul" or "ol" or "li"
+                && (!block || element.GetAttribute("type") is { } type
+                    && !(type == "1" && element.LocalName == "ol")))
             {
-                throw new UnsupportedLayoutException("Unordered lists require block layout without legacy type attributes.");
+                throw new UnsupportedLayoutException("Lists require block layout and only support decimal legacy type=1 on ordered lists.");
             }
             if (element.LocalName is "bdi" or "bdo" or "img" or "select"
-                or "video" or "audio" or "canvas" or "iframe" or "object" or "embed" or "ol"
+                or "video" or "audio" or "canvas" or "iframe" or "object" or "embed"
                 or "table" or "ruby")
             {
                 throw new UnsupportedLayoutException($"<{element.LocalName}> requires unsupported specialized layout.");
@@ -160,6 +166,7 @@ public static class StaticLayout
             Visit();
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             var style = Style(element);
+            if (element.LocalName is "ul" or "ol") { PrepareList(element); }
             var padding = Edges(style, "padding", containingWidth);
             var border = Edges(style, "border", containingWidth, "-width");
             var margin = Edges(style, "margin", containingWidth);
@@ -240,13 +247,22 @@ public static class StaticLayout
             }
             Flush();
             LayoutRect? marker = null;
-            if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: "disc" })
+            LayoutTextMarker? textMarker = null;
+            if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: not "none" } markerType)
             {
                 var size = ((CssLength)style["font-size"]).Value;
-                var (ascent, descent) = Extents(Shape("", style), style);
+                var text = markerType.Value == "decimal"
+                    ? ordinals[element].ToString(System.Globalization.CultureInfo.InvariantCulture) + "." : "";
+                ChargeCharacters(text.Length);
+                var run = Shape(text, style);
+                var (ascent, descent) = Extents(run, style);
                 var baseline = FirstBaseline(flow) ?? contentY + ascent;
                 if (flow.Count == 0) { cursor += ascent + descent; }
-                marker = Rect(contentX - 0.8 * size, baseline - 0.5 * size, 0.3 * size, 0.3 * size);
+                if (markerType.Value == "disc")
+                {
+                    marker = Rect(contentX - 0.8 * size, baseline - 0.5 * size, 0.3 * size, 0.3 * size);
+                }
+                else { textMarker = new(run, Finite(contentX - 0.5 * size - run.Width), baseline); }
             }
             var autoHeight = cursor - contentY;
             var contentHeight = definiteHeight ?? autoHeight;
@@ -258,7 +274,8 @@ public static class StaticLayout
             return new(element, content, paddingBox, borderBox, margin, childBoxes.AsReadOnly(), blockLines.AsReadOnly())
             {
                 Flow = flow.AsReadOnly(),
-                DiscMarker = marker
+                DiscMarker = marker,
+                TextMarker = textMarker
             };
 
             void Flush()
@@ -275,6 +292,55 @@ public static class StaticLayout
 
                 inline.Clear();
             }
+        }
+
+        private void PrepareList(DomElement list)
+        {
+            var items = new List<DomElement>();
+            foreach (var child in list.ChildNodes)
+            {
+                Visit();
+                if (child is DomElement { LocalName: "li" } item && Display(item) == "list-item")
+                { items.Add(item); }
+            }
+            var reversed = list.LocalName == "ol" && list.GetAttribute("reversed") is not null;
+            var numbering = list.LocalName == "ol" && ParseListInteger(list.GetAttribute("start")) is { } start
+                ? start : reversed ? items.Count : 1L;
+            foreach (var item in items)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (ParseListInteger(item.GetAttribute("value")) is { } value) { numbering = value; }
+                ordinals.Add(item, numbering);
+                numbering += reversed ? -1 : 1;
+            }
+        }
+
+        // HTML integer parsing accepts a sign and a leading digit run, not BCL whole-string parsing.
+        private long? ParseListInteger(string? raw)
+        {
+            if (raw is null) { return null; }
+            ChargeCharacters(raw.Length);
+            var index = 0;
+            while (index < raw.Length && raw[index] is ' ' or '\t' or '\n' or '\f' or '\r')
+            { cancellation.ThrowIfCancellationRequested(); index++; }
+            var negative = index < raw.Length && raw[index] == '-';
+            if (index < raw.Length && raw[index] is '+' or '-') { index++; }
+            if (index == raw.Length || !char.IsAsciiDigit(raw[index])) { return null; }
+            var maximum = negative ? 2147483648L : int.MaxValue;
+            var value = 0L;
+            while (index < raw.Length && char.IsAsciiDigit(raw[index]))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                value = value * 10 + raw[index++] - '0';
+                if (value > maximum) { throw new LayoutLimitException("List numbering attributes exceed the supported signed 32-bit range."); }
+            }
+            return negative ? -value : value;
+        }
+
+        private void ChargeCharacters(int count)
+        {
+            if (count > options.MaxTextCharacters - characters) { throw new LayoutLimitException("Layout text limit exceeded."); }
+            characters += count;
         }
 
         private double? FirstBaseline(IReadOnlyList<LayoutFlowItem> flow)
@@ -365,8 +431,7 @@ public static class StaticLayout
             if (depth > options.MaxDepth) { throw new LayoutLimitException("Inline nesting limit exceeded."); }
             if (node is DomText text)
             {
-                characters = checked(characters + text.Data.Length);
-                if (characters > options.MaxTextCharacters) { throw new LayoutLimitException("Layout text limit exceeded."); }
+                ChargeCharacters(text.Data.Length);
                 var whitespace = ((CssKeyword)inheritedStyle["white-space"]).Value;
                 if (whitespace is not ("normal" or "nowrap" or "pre" or "pre-line"))
                 {

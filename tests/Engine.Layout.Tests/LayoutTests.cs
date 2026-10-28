@@ -80,7 +80,7 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("<ol><li>x</li></ol>")]
+    [InlineData("<ol type=a><li>x</li></ol>")]
     [InlineData("<ul type=square><li>x</li></ul>")]
     [InlineData("<ul><li type=circle>x</li></ul>")]
     [InlineData("<li>x</li>")]
@@ -99,6 +99,93 @@ public sealed class LayoutTests
         var styles = CssStyleEngine.Compute(doc, cancellationToken: Cancellation);
         Assert.Throws<OperationCanceledException>(() =>
             StaticLayout.Layout(doc, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
+    [Fact]
+    public void OrderedListMarkersUseShapedDecimalsOutsideTheFirstBaseline()
+    {
+        var root = UnorderedList("<ol type=1 start=9><li id=a>a b</li><li id=b></li></ol>", width: 50).Root!;
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+        var marker = Assert.IsType<LayoutTextMarker>(first.TextMarker);
+        Assert.Equal("9.", marker.Run.Text);
+        Assert.Equal(25, marker.X);
+        Assert.Equal(8, marker.Baseline);
+        Assert.Equal(2, first.Lines.Count);
+        Assert.Equal("10.", second.TextMarker!.Run.Text);
+        Assert.Equal(20, second.TextMarker.X);
+        Assert.Equal(28, second.TextMarker.Baseline);
+        Assert.Equal(10, second.Content.Height);
+        Assert.Null(first.DiscMarker);
+        Assert.Equal("a", first.Lines[0].Fragments[0].Source.Data[..1]);
+    }
+
+    [Theory]
+    [InlineData("", "1.", "2.", "3.")]
+    [InlineData("start=' \t+004tail'", "4.", "5.", "6.")]
+    [InlineData("start='-2'", "-2.", "-1.", "0.")]
+    [InlineData("start='x'", "1.", "2.", "3.")]
+    [InlineData("reversed", "3.", "2.", "1.")]
+    [InlineData("reversed=false start=7", "7.", "6.", "5.")]
+    [InlineData("reversed start='-'", "3.", "2.", "1.")]
+    public void OrderedListStartingValuesFollowHtmlIntegerParsing(string attributes, string a, string b, string c)
+    {
+        var root = UnorderedList($"<ol {attributes}><li id=a></li><li id=b></li><li id=c></li></ol>").Root!;
+        Assert.Equal(new[] { a, b, c }, new[] { "a", "b", "c" }.Select(id => Find(root, id).TextMarker!.Run.Text));
+    }
+
+    [Fact]
+    public void ReversedNumberingCountsOnlyRenderedListItemsAndValueResetsTheSequence()
+    {
+        var root = UnorderedList("""
+            <ol reversed><li id=a></li><li id=hidden value=100></li><li id=block value=200></li>
+            <li id=b value='-3suffix'></li><li id=c></li><li id=d></li></ol>
+            """, "#hidden{display:none} #block{display:block} #a{list-style-type:none}").Root!;
+        Assert.Null(Find(root, "a").TextMarker);
+        Assert.Null(Find(root, "block").TextMarker);
+        Assert.Null(TryFind(root, "hidden"));
+        Assert.Equal("-3.", Find(root, "b").TextMarker!.Run.Text);
+        Assert.Equal("-4.", Find(root, "c").TextMarker!.Run.Text);
+        Assert.Equal("-5.", Find(root, "d").TextMarker!.Run.Text);
+        var counted = UnorderedList("<ol reversed><li id=a></li><li id=b></li><li id=c></li></ol>",
+            "#b{display:none}").Root!;
+        Assert.Equal("2.", Find(counted, "a").TextMarker!.Run.Text);
+        Assert.Equal("1.", Find(counted, "c").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void NestedListCountersAreIndependentAndDecimalOverridesWorkOnUnorderedLists()
+    {
+        var root = UnorderedList("""
+            <ol start=5><li id=a><ul><li id=disc></li></ul>
+            <ol reversed><li id=nested></li><li></li></ol></li><li id=b></li></ol>
+            <ul id=decimal><li value=8 id=c></li><li id=d></li></ul>
+            """, "#decimal{list-style-type:decimal}").Root!;
+        Assert.Equal("5.", Find(root, "a").TextMarker!.Run.Text);
+        Assert.Equal("6.", Find(root, "b").TextMarker!.Run.Text);
+        Assert.Equal("2.", Find(root, "nested").TextMarker!.Run.Text);
+        Assert.NotNull(Find(root, "disc").DiscMarker);
+        Assert.Equal("8.", Find(root, "c").TextMarker!.Run.Text);
+        Assert.Equal("9.", Find(root, "d").TextMarker!.Run.Text);
+    }
+
+    [Theory]
+    [InlineData("start=2147483648", "")]
+    [InlineData("start=-2147483649", "")]
+    [InlineData("", "value=999999999999999999999")]
+    public void OutOfRangeNumberingFailsVisibly(string listAttributes, string itemAttributes) =>
+        Assert.Throws<LayoutLimitException>(() => UnorderedList($"<ol {listAttributes}><li {itemAttributes}></li></ol>"));
+
+    [Fact]
+    public void DecimalMarkersChargeExactTextGlyphAndShapingLimits()
+    {
+        const string html = "<ol><li></li></ol>";
+        Assert.NotNull(UnorderedList(html, options: new() { MaxTextCharacters = 2, MaxShapedGlyphs = 2, MaxShapingCalls = 1 }).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxTextCharacters = 1 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxShapedGlyphs = 1 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList("<ol><li></li><li></li></ol>",
+            options: new() { MaxShapingCalls = 1 }));
+        Assert.Equal("2147483648.", Find(UnorderedList("<ol start=2147483647><li></li><li id=x></li></ol>").Root!, "x").TextMarker!.Run.Text);
     }
 
     [Fact]

@@ -57,6 +57,23 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void DecimalMarkersShareTextPaintBudgetsAndRemainSeparateFromContent()
+    {
+        const string css = "ol{display:block;padding-left:40px}li{display:list-item;list-style-type:decimal;color:red}";
+        var list = Page("<ol start=12><li>x</li><li></li></ol>", css);
+        var runs = list.Commands.OfType<DrawGlyphRun>().ToArray();
+        Assert.Equal(3, runs.Length);
+        Assert.Equal(new ushort[] { '1', '2', '.' }, runs[0].Glyphs.Select(g => g.Id));
+        Assert.Equal(new[] { 20.0, 25, 30 }, runs[0].Glyphs.Select(g => g.X));
+        Assert.All(runs[0].Glyphs, glyph => Assert.Equal(8, glyph.Y));
+        Assert.Equal(Red, runs[0].Color);
+        Assert.Equal((ushort)'x', Assert.Single(runs[1].Glyphs).Id);
+        Assert.Equal(new ushort[] { '1', '3', '.' }, runs[2].Glyphs.Select(g => g.Id));
+        Assert.Throws<PaintLimitException>(() => Page("<ol><li></li></ol>", css, new() { MaxGlyphs = 1 }));
+        Assert.Throws<PaintLimitException>(() => Page("<ol><li></li><li></li></ol>", css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
     public void BackgroundAndSolidBordersHaveExactNonOverlappingCommands()
     {
         var list = Page("<div></div>", "div{width:10px;height:10px;padding:2px;border:1px solid red;background-color:blue}");
