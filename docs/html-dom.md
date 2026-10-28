@@ -66,7 +66,11 @@ before-html, before-head, in-head, after-head, in-body, text, after-body and
 after-after-body modes. Supported behavior includes:
 
 - Explicit or implied html/head/body; first-value root/body attribute merging.
-- HTML5/legacy-compat doctype and missing/invalid doctype quirks mode.
+- HTML5/legacy-compat and legacy public/system doctypes, preserving identifiers
+  and selecting no-quirks, limited-quirks or quirks mode using the complete
+  initial-mode identifier tables. Comparisons are ASCII-case-insensitive;
+  force-quirks takes precedence. Nonconforming doctypes report
+  `invalid-doctype` instead of aborting. DTD identifiers never cause fetching.
 - Comments/processing instructions at the appropriate document/tree locations.
 - Head metadata and title/style/script text; misplaced head content restoration.
 - Ordinary HTML body elements, correctly nested inline formatting, headings,
@@ -114,11 +118,18 @@ Other tokens that require table foster parenting throw explicitly, as do
 unsupported table tags outside the contexts covered above. The following
 additionally throw explicitly: templates, SVG/MathML,
 unsupported select contents (including optgroups outside selects and non-option optgroup children), textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
-applet/marquee/object-specific algorithms. Legacy public/system doctype mode
-selection (except `about:legacy-compat`) also throws. Fragment parsing is not
+applet/marquee/object-specific algorithms. Fragment parsing is not
 offered. Nested anchors/nobr, misnested formatting and closures requiring
 active-formatting reconstruction/adoption agency throw instead of returning
 an incorrect tree.
+
+Doctype classification follows the cached
+[initial insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode)
+(local ID `html`), including HTML 4.01 loose doctypes with missing/empty versus
+nonempty system identifiers and XHTML 1.0 loose doctypes. Later doctypes cannot
+replace the original doctype or mode. This document-only parser does not expose
+srcdoc/parser-mode-lock flags. Mode selection does not add legacy CSS sizing,
+table/image-baseline quirks or other unsupported rendering algorithms.
 
 `DomFormControls` exposes only `input type` and `button type` keyword
 normalization. There are no specialized HTML element classes, custom-element reactions,

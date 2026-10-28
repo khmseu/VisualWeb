@@ -12,7 +12,10 @@ subset, inert in-table `script`/`style` text, table `type=hidden` inputs and
 text-only table foster parenting, bounded nested-table recovery and the
 in-table form-pointer exception, and root-attribute merging for in-table
 `html` starts. Other tokens requiring table foster parenting remain
-unsupported.
+unsupported. Legacy doctypes preserve public/system identifiers and recover
+with explicit diagnostics, using the complete HTML initial-mode tables for
+no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and
+additional quirks-layout behavior is not implied.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.

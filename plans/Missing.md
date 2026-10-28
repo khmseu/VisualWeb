@@ -395,7 +395,17 @@ parser work includes:
 - Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
-- Broader legacy doctype handling.
+
+Legacy public/system doctypes now recover with `invalid-doctype` diagnostics
+instead of rejecting the page. The complete HTML initial-mode identifier
+tables select no-quirks/limited-quirks/quirks mode using ASCII comparisons,
+preserve inert identifiers and never fetch DTDs. This removes a parser blocker,
+not the remaining CSS/table/image rendering gaps or a claim of full quirks
+layout support.
+Validation: 35 parser classification/recovery cases plus a native content
+fixture pass; one prior unsupported case is replaced by positive coverage.
+The solution build and all 14,308 tests pass locally. Formatting reports only
+the three previously documented baseline findings.
 
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser APIs;

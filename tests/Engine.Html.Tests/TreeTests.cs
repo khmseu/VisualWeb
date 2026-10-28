@@ -78,6 +78,73 @@ public sealed class TreeTests
         Assert.NotNull(Parse("").Document.Body);
     }
 
+    [Theory]
+    [InlineData("<!doctype html>", DomDocumentMode.NoQuirks, false)]
+    [InlineData("<!doctype html SYSTEM 'about:legacy-compat'>", DomDocumentMode.NoQuirks, false)]
+    [InlineData("<!doctype html SYSTEM 'ABOUT:LEGACY-COMPAT'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html SYSTEM ''>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html PUBLIC ''>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html PUBLIC 'legacy'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html PUBLIC 'HTML'>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC 'HTMLsuffix'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-/W3C/DTD HTML 4.0 Transitional/EN'>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3O//DTD W3 HTML Strict 3.0//EN//'>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.0 Transitional//EN' 'anything'>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' ''>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'anything'>", DomDocumentMode.LimitedQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01 Frameset//EN' 'anything'>", DomDocumentMode.LimitedQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD HTML 4.01//EN' 'anything'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>", DomDocumentMode.LimitedQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD XHTML 1.0 Frameset//EN' ''>", DomDocumentMode.LimitedQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//w3c//dtd xhtml 1.0 transitional//en'>", DomDocumentMode.LimitedQuirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD XHTML 1.0 Tran\u017fitional//EN'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype html SYSTEM 'HTTP://WWW.IBM.COM/DATA/DTD/V11/IBMXHTML1-TRANSITIONAL.DTD'>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html SYSTEM 'http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtdx'>", DomDocumentMode.NoQuirks, true)]
+    [InlineData("<!doctype svg>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype>", DomDocumentMode.Quirks, true)]
+    [InlineData("<!doctype html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' x>", DomDocumentMode.Quirks, true)]
+    public void DoctypeClassificationPreservesRecoveryAndDiagnosticPolicy(string declaration, DomDocumentMode mode, bool invalid)
+    {
+        var result = Parse(declaration + "<p id=body>Readable</p>");
+        Assert.Equal(mode, result.Document.Mode);
+        Assert.Equal("Readable", result.Document.GetElementById("body")!.TextContent);
+        Assert.Equal(invalid, result.Errors.Any(error => error.Code == "invalid-doctype"));
+        Assert.NotNull(result.Document.Doctype);
+    }
+
+    [Theory]
+    [InlineData("+//Silmaril//dtd html Pro v0r11 19970101//")]
+    [InlineData("-//AS//DTD HTML 3.0 asWedit + extensions//")]
+    [InlineData("-//IETF//DTD HTML 2.0 Strict Level 2//")]
+    [InlineData("-//Microsoft//DTD Internet Explorer 3.0 Tables//")]
+    [InlineData("-//O'Reilly and Associates//DTD HTML Extended Relaxed 1.0//")]
+    [InlineData("-//SoftQuad Software//DTD HoTMetaL PRO 6.0::19990601::extensions to HTML 4.0//")]
+    [InlineData("-//W3C//DTD HTML Experimental 970421//")]
+    [InlineData("-//WebTechs//DTD Mozilla HTML//")]
+    public void LegacyQuirksPrefixesMatchAsciiCaseAndAllowTrailingIdentifiers(string prefix)
+    {
+        var original = prefix + "EN";
+        var result = Parse("<!doctype html PUBLIC \"" + original + "\" 'https://invalid.example/never-fetch.dtd'>");
+        Assert.Equal(DomDocumentMode.Quirks, result.Document.Mode);
+        Assert.Equal(original, result.Document.Doctype!.PublicId);
+        Assert.Equal("https://invalid.example/never-fetch.dtd", result.Document.Doctype.SystemId);
+        var mixed = Parse("<!doctype html PUBLIC \"" + original.ToUpperInvariant() + "\">");
+        Assert.Equal(DomDocumentMode.Quirks, mixed.Document.Mode);
+    }
+
+    [Fact]
+    public void LaterDoctypesCannotReplaceTheDocumentTypeOrMode()
+    {
+        var result = Parse("<!doctype html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN'>"
+            + "<!doctype html PUBLIC 'HTML'><p>Body</p><!doctype html>");
+        Assert.Equal(DomDocumentMode.LimitedQuirks, result.Document.Mode);
+        Assert.Equal("-//W3C//DTD XHTML 1.0 Transitional//EN", result.Document.Doctype!.PublicId);
+        Assert.Single(result.Document.ChildNodes.OfType<DomDocumentType>());
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-doctype");
+    }
+
     [Fact]
     public void SimpleSelectOptionsBuildAsDirectChildren()
     {
@@ -350,7 +417,6 @@ public sealed class TreeTests
     [InlineData("<b><i>x</b>y</i>")]
     [InlineData("<a><a>x")]
     [InlineData("<nobr><nobr>x")]
-    [InlineData("<!doctype html PUBLIC 'legacy'>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 

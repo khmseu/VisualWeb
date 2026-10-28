@@ -8,6 +8,23 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void SimpleLegacyDoctypeDocumentReachesAnOfflineNativeFrame()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = """
+            <!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "https://invalid.example/never-fetch.dtd">
+            <p>Simple document</p>
+            """;
+        var result = OfflinePageRenderer.Render(html, [], text, fonts, 200, 80, cancellationToken: Cancellation);
+        Assert.Equal(VisualWeb.Engine.Dom.DomDocumentMode.LimitedQuirks, result.Html.Document.Mode);
+        Assert.Contains(result.Html.Errors, error => error.Code == "invalid-doctype");
+        Assert.NotEmpty(result.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(200, result.Frame.Size.Width);
+    }
+
+    [Fact]
     public void CommonListStyleNoneCssRendersWithoutDiagnosticsOrMarkers()
     {
         using var font = new TextFont(FontPath);

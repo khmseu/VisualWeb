@@ -5,7 +5,8 @@ namespace VisualWeb.Engine.Html;
 
 /// <summary>Static HTML document tree construction with explicit unsupported-feature failures.</summary>
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
-/// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody">in body</see>,
+/// including <see href="https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode">doctype mode selection</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody">in body</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intable">in table</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intabletext">in table text</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-incaption">in caption</see>,
@@ -130,15 +131,15 @@ public static class HtmlParser
                         if (Miscellaneous(token, document)) { return; }
                         if (token is HtmlDoctype doctype)
                         {
-                            if (!string.IsNullOrEmpty(doctype.PublicId)
-                                || !string.IsNullOrEmpty(doctype.SystemId) && doctype.SystemId != "about:legacy-compat")
+                            if (doctype.Name != "html" || doctype.PublicId is not null
+                                || doctype.SystemId is not null && doctype.SystemId != "about:legacy-compat")
                             {
-                                throw Unsupported("Legacy doctype mode selection is not implemented.");
+                                Error("invalid-doctype");
                             }
 
                             CountNode();
                             document.AppendChild(document.CreateDocumentType(doctype.Name ?? "", doctype.PublicId ?? "", doctype.SystemId ?? ""));
-                            if (doctype.ForceQuirks || doctype.Name != "html") { document.Mode = DomDocumentMode.Quirks; Error("invalid-doctype"); }
+                            document.Mode = DoctypeMode(doctype);
                             mode = Mode.BeforeHtml;
                             return;
                         }
@@ -1227,7 +1228,99 @@ public static class HtmlParser
             nodes++;
         }
 
-        private static bool AsciiEqualsIgnoreCase(string value, string expected)
+        // HTML initial insertion mode: identifiers select a mode but never load a DTD.
+        private static DomDocumentMode DoctypeMode(HtmlDoctype token)
+        {
+            if (token.ForceQuirks || token.Name != "html"
+                || token.PublicId is { } publicId && (AsciiEqualsIgnoreCase(publicId, "-//w3o//dtd w3 html strict 3.0//en//")
+                    || AsciiEqualsIgnoreCase(publicId, "-/w3c/dtd html 4.0 transitional/en")
+                    || AsciiEqualsIgnoreCase(publicId, "html"))
+                || token.SystemId is { } systemId
+                    && AsciiEqualsIgnoreCase(systemId, "http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtd")
+                || HasPrefix(token.PublicId, QuirksPublicPrefixes))
+            {
+                return DomDocumentMode.Quirks;
+            }
+            if (HasPrefix(token.PublicId, Html4LoosePrefixes))
+            {
+                return string.IsNullOrEmpty(token.SystemId) ? DomDocumentMode.Quirks : DomDocumentMode.LimitedQuirks;
+            }
+            return HasPrefix(token.PublicId, XhtmlLoosePrefixes) ? DomDocumentMode.LimitedQuirks : DomDocumentMode.NoQuirks;
+        }
+
+        private static bool HasPrefix(string? value, string[] prefixes) => value is not null
+            && prefixes.Any(prefix => value.Length >= prefix.Length && AsciiEqualsIgnoreCase(value.AsSpan(0, prefix.Length), prefix));
+
+        private static readonly string[] Html4LoosePrefixes =
+        [
+            "-//w3c//dtd html 4.01 frameset//",
+            "-//w3c//dtd html 4.01 transitional//"
+        ];
+        private static readonly string[] XhtmlLoosePrefixes =
+        [
+            "-//w3c//dtd xhtml 1.0 frameset//",
+            "-//w3c//dtd xhtml 1.0 transitional//"
+        ];
+        private static readonly string[] QuirksPublicPrefixes =
+        [
+            "+//silmaril//dtd html pro v0r11 19970101//",
+            "-//as//dtd html 3.0 aswedit + extensions//",
+            "-//advasoft ltd//dtd html 3.0 aswedit + extensions//",
+            "-//ietf//dtd html 2.0 level 1//",
+            "-//ietf//dtd html 2.0 level 2//",
+            "-//ietf//dtd html 2.0 strict level 1//",
+            "-//ietf//dtd html 2.0 strict level 2//",
+            "-//ietf//dtd html 2.0 strict//",
+            "-//ietf//dtd html 2.0//",
+            "-//ietf//dtd html 2.1e//",
+            "-//ietf//dtd html 3.0//",
+            "-//ietf//dtd html 3.2 final//",
+            "-//ietf//dtd html 3.2//",
+            "-//ietf//dtd html 3//",
+            "-//ietf//dtd html level 0//",
+            "-//ietf//dtd html level 1//",
+            "-//ietf//dtd html level 2//",
+            "-//ietf//dtd html level 3//",
+            "-//ietf//dtd html strict level 0//",
+            "-//ietf//dtd html strict level 1//",
+            "-//ietf//dtd html strict level 2//",
+            "-//ietf//dtd html strict level 3//",
+            "-//ietf//dtd html strict//",
+            "-//ietf//dtd html//",
+            "-//metrius//dtd metrius presentational//",
+            "-//microsoft//dtd internet explorer 2.0 html strict//",
+            "-//microsoft//dtd internet explorer 2.0 html//",
+            "-//microsoft//dtd internet explorer 2.0 tables//",
+            "-//microsoft//dtd internet explorer 3.0 html strict//",
+            "-//microsoft//dtd internet explorer 3.0 html//",
+            "-//microsoft//dtd internet explorer 3.0 tables//",
+            "-//netscape comm. corp.//dtd html//",
+            "-//netscape comm. corp.//dtd strict html//",
+            "-//o'reilly and associates//dtd html 2.0//",
+            "-//o'reilly and associates//dtd html extended 1.0//",
+            "-//o'reilly and associates//dtd html extended relaxed 1.0//",
+            "-//sq//dtd html 2.0 hotmetal + extensions//",
+            "-//softquad software//dtd hotmetal pro 6.0::19990601::extensions to html 4.0//",
+            "-//softquad//dtd hotmetal pro 4.0::19971010::extensions to html 4.0//",
+            "-//spyglass//dtd html 2.0 extended//",
+            "-//sun microsystems corp.//dtd hotjava html//",
+            "-//sun microsystems corp.//dtd hotjava strict html//",
+            "-//w3c//dtd html 3 1995-03-24//",
+            "-//w3c//dtd html 3.2 draft//",
+            "-//w3c//dtd html 3.2 final//",
+            "-//w3c//dtd html 3.2//",
+            "-//w3c//dtd html 3.2s draft//",
+            "-//w3c//dtd html 4.0 frameset//",
+            "-//w3c//dtd html 4.0 transitional//",
+            "-//w3c//dtd html experimental 19960712//",
+            "-//w3c//dtd html experimental 970421//",
+            "-//w3c//dtd w3 html//",
+            "-//w3o//dtd w3 html 3.0//",
+            "-//webtechs//dtd mozilla html 2.0//",
+            "-//webtechs//dtd mozilla html//"
+        ];
+
+        private static bool AsciiEqualsIgnoreCase(ReadOnlySpan<char> value, string expected)
         {
             if (value.Length != expected.Length) { return false; }
             for (var index = 0; index < value.Length; index++)

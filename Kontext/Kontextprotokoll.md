@@ -2433,3 +2433,36 @@ und keine automatische Embedded-Style-Sammlung in Offline-Content.
 CSS 349 und Content 11 Tests bestanden. Solution-Build bestand mit null
 Warnungen/Fehlern; alle 14.273 Solution-Tests bestanden. Format meldet nur
 die drei bekannten Baseline-Findings. Noch kein Pass-3-Commit/CI-Ergebnis.
+
+### KP-073 - Pass 3 bestaetigt und Legacy-Doctypes fuer Pass 4
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: Commit `70c7aef`; CI
+  [Linux 40771152013](https://github.com/khmseu/VisualWeb/actions/runs/40771152013),
+  [Windows 40771152048](https://github.com/khmseu/VisualWeb/actions/runs/40771152048),
+  [CodeQL 40771152079](https://github.com/khmseu/VisualWeb/actions/runs/40771152079);
+  `HtmlParser`, `DomDocumentMode`, lokaler HTML-Standard und aktuelle Tests.
+- Bezug: KP-072, Pass 4 des neuen Zehn-Passen-Auftrags.
+
+**Belegt:** Pass 3 ist gepusht und auf allen genannten Targets gruen.
+Der naechste Parserblocker war die explizite Ablehnung von Legacy-Doctypes,
+obwohl das native DOM alle drei Dokumentmodi bereits besitzt.
+
+**Umsetzung in Validierung:** Die initiale HTML-Moduswahl verwendet die
+vollstaendigen Identifierregeln, einschliesslich Force-Quirks-Vorrang,
+ASCII-Vergleichen und fehlenden/leeren versus nichtleeren HTML-4.01-System-IDs.
+Die 55 Quirks-Praefixe wurden per exaktem Tabellenvergleich gegen den lokalen
+HTML-Cache geprueft: keine fehlenden/ueberzaehligen Eintraege, gleiche Reihenfolge.
+Unbekannte IDs bleiben inert erhalten; nichtkonforme Doctypes melden
+`invalid-doctype`, statt die Seite abzubrechen. Keine DTD-Requests, kein
+srcdoc-/Fragmentmodus und keine neue Quirks-Layout-Zusage.
+
+**Zwischenstand:** 35 neue Parser-Modus-/Recoveryfaelle und eine native
+Content-Fixture bestanden; ein frueherer Unsupported-Fall wurde durch die
+neue positive Abdeckung ersetzt. Build/volle Solution laufen. Format meldet
+nur bekannte Baseline-Findings. Noch kein Pass-4-Commit.
+
+**Abschliessende lokale Validierung:** HTML-Projekt 7.270 Tests, Content 12,
+Solution-Build (0 Warnungen/Fehler) und volle Solution 14.308 Tests bestanden.
+Format meldet ausschliesslich die belegten Baseline-Findings. CI nach Push
+bleibt erforderlich.
