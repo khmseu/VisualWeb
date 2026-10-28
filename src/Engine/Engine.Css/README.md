@@ -28,3 +28,10 @@ The bounded list subset adds `display:list-item` and inherited longhands
 list-item. The `list-style` shorthand expands the same finite longhands,
 including resets, CSS-wide keywords and `none` ambiguity handling.
 Broader list styles remain unsupported.
+
+The finite table properties add canonical table/group/row/cell displays,
+`table-layout:auto`, inherited `border-collapse:separate` and single-length
+`border-spacing`, plus `vertical-align:baseline/top` (ID `css2-tables`).
+UA cells use 1px padding and top alignment; UA tables use 2px spacing.
+See the [layout subset](../../../docs/text-layout.md#basic-automatic-tables)
+for accepted geometry and explicit downstream failures.

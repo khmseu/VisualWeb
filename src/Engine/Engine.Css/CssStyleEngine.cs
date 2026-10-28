@@ -42,6 +42,12 @@ public static class CssStyleEngine
         ul { list-style-type: disc }
         ol { list-style-type: decimal }
         li { display: list-item }
+        table { display: table; border-spacing: 2px }
+        tbody { display: table-row-group }
+        thead { display: table-header-group }
+        tfoot { display: table-footer-group }
+        tr { display: table-row }
+        td, th { display: table-cell; padding: 1px; vertical-align: top }
         dd { margin-left: 40px }
         h1 { font-size: 2em; margin-top: .67em; margin-bottom: .67em; font-weight: bold }
         h2 { font-size: 1.5em; margin-top: .83em; margin-bottom: .83em; font-weight: bold }

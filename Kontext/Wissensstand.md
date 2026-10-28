@@ -107,40 +107,40 @@ startet keine neue Implementierung
 ([KP-065](./Kontextprotokoll.md#kp-065---einfache-websites-zuerst)).
 
 **Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
-committete und gepushte Passen mit CI-Pruefung sind angefragt. Erster
-konkreter Blocker: sichtbare `ul`/`ol`/`li` werden trotz vorhandener
-Parser-/UA-Style-Unterstuetzung von Layout abgelehnt. Der Nutzer waehlte
-default ungeordnete Listen mit aeusseren Disc-Markern; Pass 1 ist implementiert
-und lokal validiert (18 neue Regressionen, Solution-Build und 14.234
-Solution-Tests bestanden), als `7bb58b5` committed und gepusht.
-Linux development, CodeQL und Windows x64 bestanden. Windows ARM64 scheiterte
-in zwei Versuchen an Startup-/Recovery-Deadlines im CPU-Pressure-Test;
-beim zweiten Versuch bestanden die fuenf fokussierten Wiederholungen und
-alle neuen Listentests, aber der bestehende Test scheiterte im Solution-Lauf.
-CI ist deshalb nicht vollstaendig gruen. Der Nutzer waehlte Untersuchung
-und Behebung vor weiteren Passen. Der Test verwendet jetzt die unveraenderte
-Produktionsdeadline von 30 Sekunden statt eines 5-Sekunden-Overrides;
-Build, Browserprojekt und volle Solution bestanden lokal erneut.
-Die Korrektur ist als `8dfe817` gepusht; Linux, CodeQL und Windows x64/ARM64
-einschliesslich nativer Smokes bestanden (KP-070)
-([KP-067](./Kontextprotokoll.md#kp-067---default-unordered-lists-fuer-pass-1-gewaehlt)).
-Drei Feature-Inkremente abgeschlossen; Pass 4 ist in Validierung,
-sechs weitere noch nicht begonnen.
-der Pass-1-CI-Blocker ist behoben. Als naechster konkreter Blocker wurden
-geordnete Listen bestaetigt. Der Nutzer waehlte Dezimalmarker mit `start`,
-`reversed` und `li value`. Pass 2 ist implementiert und in Validierung
-(CSS 330, Layout 77, Paint 40, Content 10, Browser 1.133 und volle Solution
-14.253 Tests sowie Build bestanden; nur bekannte Baseline-Formatfindings),
-als `6441d67` gepusht und durch Linux/CodeQL/Windows x64/ARM64 CI bestaetigt.
-Pass 3 erweitert `list-style` atomar ueber das bestehende endliche
-Longhand-Subset. CSS 349, Content 11, Solution 14.273 Tests und Build
-bestanden; als `70c7aef` gepusht und auf Linux/CodeQL/Windows x64/ARM64
-bestaetigt (KP-072/KP-073). Pass 4 implementiert vollstaendige initiale
-Legacy-Doctype-Moduswahl mit Recoverydiagnostik, ohne DTD-Requests oder
-zusaetzliche Quirks-Layout-Zusage. HTML 7.270, Content 12 und Solution 14.308
-Tests sowie Build bestanden; nur bekannte Baseline-Formatfindings.
-Noch kein Pass-4-Commit/CI-Ergebnis.
+committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
+Vier Feature-Passen sind abgeschlossen; sechs stehen aus:
+
+| Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
+| ---- | -------------------------------------------------------------------------- | --------- | ----------------- |
+| 1    | Default ungeordnete Listen mit aeusseren Disc-Markern, vom Nutzer gewaehlt | `7bb58b5` | KP-067 bis KP-070 |
+| 2    | Dezimalmarker mit `start`, `reversed`, `li value`, vom Nutzer gewaehlt     | `6441d67` | KP-071/KP-072     |
+| 3    | Atomarer endlicher `list-style`-Shorthand                                  | `70c7aef` | KP-072/KP-073     |
+| 4    | Vollstaendige initiale Legacy-Doctype-Moduswahl mit Recoverydiagnostik     | `cef5ce6` | KP-073/KP-074     |
+
+Alle vier Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
+CodeQL und Windows x64/ARM64 CI einschliesslich nativer Smokes.
+Zuletzt lokal: HTML 7.270, CSS 349, Layout 77, Paint 40, Content 12,
+Browser 1.133 und volle Solution 14.308 Tests sowie Build bestanden.
+Format meldet nur drei auf `81bb414` belegte Baseline-Findings
+(Whitespace/Imports in `StaticLayout.cs`, Imports in `ShellChrome.cs`).
+
+Die separate Testkorrektur `8dfe817` zaehlt nicht als Feature-Pass:
+Nach Nutzerentscheidung wurde der ARM64-CI-Blocker vor weiteren Features
+behoben. Der CPU-Pressure-Test nutzt die unveraenderte Produktionsdeadline
+von 30 Sekunden statt eines 5-Sekunden-Testoverrides; Cancellation und
+Confinement bleiben unveraendert (KP-068 bis KP-070).
+
+**Pass 5 in Arbeit (KP-075):** Der Nutzer waehlte `auto-basic`: automatische
+inhaltsbasierte Spalten fuer einfache Text-/Blockzellen ohne Spans statt
+ausschliesslich explizitem Fixed-Layout. Die Implementierung umfasst kanonische
+HTML-Tabellen mit separate borders, einem Spacing-Laengenwert und Top-Alignment.
+Explizite Ausschluesse stehen im [Layoutguide](../docs/text-layout.md#basic-automatic-tables).
+`css2-tables` wurde registriert und erfolgreich lokal aktualisiert.
+Layout 99, CSS 356, Content 13, Paint 40, Browser 1.135 und alle 14.340
+Solution-Tests sowie der Build bestehen. Format meldet nur die drei bekannten
+Baseline-Findings. 32 neue Regressionen pruefen den Tabellenumfang.
+Noch kein Pass-5-Commit, keine Pass-5-CI und kein Abschluss der zehn Passen.
 
 ## Rahmenbedingungen und Nicht-Ziele
 

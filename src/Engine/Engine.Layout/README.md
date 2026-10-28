@@ -14,8 +14,14 @@ list-item elements remain unsupported. See the guide for exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
 `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,
-`css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`.
+`css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`, `css2-tables`.
 See the [standards workflow](../../../docs/standards.md).
 Read the [text/layout guide](../../../docs/text-layout.md) for exact scope:
 non-root vertical margins must be zero while margin collapse is deferred;
 unsupported advanced layouts throw rather than return approximate geometry.
+
+Canonical HTML tables support bounded automatic intrinsic columns, separate
+borders, one spacing length and top-aligned text/block cells. Table/cell
+backgrounds and ordinary borders reuse existing flow. Spans, captions/columns,
+row/group backgrounds, nested tables/widgets and other
+[listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.

@@ -8,6 +8,40 @@ namespace VisualWeb.Browser.Tests;
 
 public sealed class ScrollTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AutomaticTablesRetainCellPixelsAndLinksAcrossScrollAndResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        var document = Document("""
+            <!doctype html><style>*{margin:0}table{border-spacing:0}td{padding:0;width:40px;height:30px}
+            #a{background-color:red}#b{background-color:blue}</style>
+            <table><tr><td id=a><a href=/next>go</a></td></tr><tr><td id=b>End</td></tr></table>
+            """);
+        var viewport = new PageViewport(100, 30, 1);
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal(60, first.ScrollHeight);
+        var link = Assert.Single(first.LinkTargets);
+        Assert.Equal("https://example.com/next", link.Url);
+        Assert.NotEmpty(link.Rects);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, first.Frame.Pixels.Span[..4].ToArray());
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 30 }, Cancellation);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, scrolled.Frame.Pixels.Span[..4].ToArray());
+        var offscreenLink = Assert.Single(scrolled.LinkTargets);
+        Assert.Equal(link.FocusTargetId, offscreenLink.FocusTargetId);
+        Assert.Empty(offscreenLink.Rects);
+        Assert.Equal(0, offscreenLink.Width);
+        Assert.Equal(0, offscreenLink.Height);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 80 }, Cancellation);
+        Assert.Equal(60, resized.ScrollHeight);
+        Assert.Equal(80, resized.Frame.Size.Width);
+        Assert.NotEmpty(Assert.Single(resized.LinkTargets).Rects);
+    }
+
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
     private static string RendererPath => Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll");
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

@@ -63,8 +63,11 @@ public sealed record LayoutOptions
 /// <remarks>Specs: css2-visual/css2-sizing;
 /// <see href="https://www.w3.org/TR/CSS22/visuren.html#block-formatting">block formatting</see>,
 /// <see href="https://www.w3.org/TR/CSS22/visuren.html#inline-formatting">inline formatting</see>.
+/// Basic automatic tables follow local ID css2-tables,
+/// <see href="https://www.w3.org/TR/CSS22/tables.html#auto-table-layout">automatic table layout</see>,
+/// with canonical HTML boxes, separate borders and top-aligned cells only.
 /// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
-public static class StaticLayout
+public static partial class StaticLayout
 {
     public static LayoutResult Layout(DomDocument document, CssStyleResult styles, ITextShaper shaper,
         double viewportWidth, double viewportHeight, LayoutOptions? options = null, CancellationToken cancellationToken = default)
@@ -79,7 +82,7 @@ public static class StaticLayout
             viewportWidth, viewportHeight);
     }
 
-    private sealed class Builder
+    private sealed partial class Builder
     {
         private readonly CssStyleResult styles;
         private readonly ITextShaper shaper;
@@ -112,12 +115,17 @@ public static class StaticLayout
         private CssComputedStyle Style(DomElement element) => styles.Styles.TryGetValue(element, out var style) ? style
             : throw new InvalidOperationException("Styles are incomplete or stale; recompute for the current DOM.");
         private string Display(DomElement element) => ((CssKeyword)Style(element)["display"]).Value;
-        private bool IsBlock(DomElement element) => Display(element) is "block" or "list-item";
+        private bool IsBlock(DomElement element) => Display(element) is "block" or "list-item" or "table";
         [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The repeated explicit element and input-kind literals define the finite supported layout grammar at its rejection boundary.")]
-        private void Check(DomElement element, int depth, bool block = false)
+        private void Check(DomElement element, int depth, bool block = false, bool tableContext = false)
         {
             cancellation.ThrowIfCancellationRequested();
             if (depth > options.MaxDepth) { throw new LayoutLimitException("Layout nesting limit exceeded."); }
+            if (Display(element).StartsWith("table-", StringComparison.Ordinal) && !tableContext)
+            { throw new UnsupportedLayoutException("Internal table boxes require the canonical table layout context."); }
+            if (Style(element)["vertical-align"] is CssKeyword { Value: not "baseline" }
+                && !(tableContext && Display(element) == "table-cell"))
+            { throw new UnsupportedLayoutException("Non-baseline vertical alignment is supported only on table cells."); }
             if (element.GetAttribute("dir") is { } dir && !dir.Equals("ltr", StringComparison.OrdinalIgnoreCase))
             {
                 throw new UnsupportedLayoutException("dir=rtl/auto requires bidi layout.");
@@ -151,7 +159,8 @@ public static class StaticLayout
             }
             if (element.LocalName is "bdi" or "bdo" or "img" or "select"
                 or "video" or "audio" or "canvas" or "iframe" or "object" or "embed"
-                or "table" or "ruby")
+                or "ruby" || element.LocalName == "table" && (!block || Display(element) != "table")
+                || Display(element) == "table" && element.LocalName != "table")
             {
                 throw new UnsupportedLayoutException($"<{element.LocalName}> requires unsupported specialized layout.");
             }
@@ -160,19 +169,20 @@ public static class StaticLayout
         [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The repeated CSS box-model vocabulary is intentionally local to the bounded block-formatting calculation.")]
         private LayoutBox Block(DomElement element, double containingX, double top, double containingWidth,
             double? containingHeight, int depth, bool isRoot = false, bool suppressTopMargin = false,
-            bool suppressBottomMargin = false)
+            bool suppressBottomMargin = false, double? cellWidth = null)
         {
-            Check(element, depth, block: true);
+            Check(element, depth, block: true, tableContext: cellWidth is not null);
             Visit();
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             var style = Style(element);
             if (element.LocalName is "ul" or "ol") { PrepareList(element); }
+            var table = Display(element) == "table" ? PlanTable(element, containingWidth, depth) : null;
             var padding = Edges(style, "padding", containingWidth);
             var border = Edges(style, "border", containingWidth, "-width");
             var margin = Edges(style, "margin", containingWidth);
             var horizontal = padding.Left + padding.Right + border.Left + border.Right;
             var sizing = ((CssKeyword)style["box-sizing"]).Value;
-            var width = ContentWidth(style, containingWidth);
+            var width = cellWidth ?? table?.Width ?? ContentWidth(style, containingWidth);
             var leftAuto = style["margin-left"] is CssKeyword { Value: "auto" };
             var rightAuto = style["margin-right"] is CssKeyword { Value: "auto" };
             var extra = containingWidth - width - horizontal - margin.Left - margin.Right;
@@ -198,9 +208,9 @@ public static class StaticLayout
                 maxHeight = double.IsPositiveInfinity(maxHeight) ? maxHeight : Math.Max(0, maxHeight - vertical);
             }
             if (definiteHeight is { } definite) { definiteHeight = Math.Max(minHeight, Math.Min(definite, maxHeight)); }
-            var collapseTopChild = !isRoot && padding.Top == 0 && border.Top == 0
+            var collapseTopChild = !isRoot && cellWidth is null && padding.Top == 0 && border.Top == 0
                 ? EdgeBlockChild(element, first: true) : null;
-            var collapseBottomChild = padding.Bottom == 0 && border.Bottom == 0
+            var collapseBottomChild = cellWidth is null && padding.Bottom == 0 && border.Bottom == 0
                 && definiteHeight is null && minHeight == 0 ? EdgeBlockChild(element, first: false) : null;
             if (suppressTopMargin) { margin = margin with { Top = 0 }; }
             else if (collapseTopChild is not null)
@@ -225,7 +235,14 @@ public static class StaticLayout
                 var (ascent, descent) = Extents(Shape("", style), style);
                 cursor += ascent + descent;
             }
-            foreach (var child in element.LocalName is "input" or "textarea" or "select" ? [] : element.ChildNodes)
+            if (table is not null)
+            {
+                var arranged = ArrangeTable(table, contentX, contentY, depth);
+                childBoxes.AddRange(arranged.Groups);
+                flow.AddRange(arranged.Groups.Select(group => new LayoutBlockItem(group)));
+                cursor += arranged.Height;
+            }
+            foreach (var child in table is not null || element.LocalName is "input" or "textarea" or "select" ? [] : element.ChildNodes)
             {
                 cancellation.ThrowIfCancellationRequested();
                 if (child is DomElement e && Display(e) == "none") { continue; }
@@ -265,7 +282,7 @@ public static class StaticLayout
                 else { textMarker = new(run, Finite(contentX - 0.5 * size - run.Width), baseline); }
             }
             var autoHeight = cursor - contentY;
-            var contentHeight = definiteHeight ?? autoHeight;
+            var contentHeight = cellWidth is not null ? Math.Max(definiteHeight ?? 0, autoHeight) : definiteHeight ?? autoHeight;
             contentHeight = Math.Max(minHeight, Math.Min(contentHeight, maxHeight));
             var content = Rect(contentX, contentY, width, contentHeight);
             var paddingBox = Rect(contentX - padding.Left, contentY - padding.Top,

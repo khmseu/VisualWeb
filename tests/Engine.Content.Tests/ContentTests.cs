@@ -8,6 +8,28 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void AutomaticTablesPaintNativeCellBackgroundsAndRetainTheirParsedDocument()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><table><tr><td id=a>A</td></tr><tr><td id=b>B</td></tr></table>";
+        var styles = new[] { new CssStyleSource("""
+            *{margin:0;line-height:20px}table{border-spacing:0}td{padding:0;width:40px;height:20px}
+            #a{background-color:red}#b{background-color:blue}
+            """) };
+        var result = OfflinePageRenderer.Render(html, styles, text, fonts, 100, 40, cancellationToken: Cancellation);
+        var resized = OfflinePageRenderer.RenderParsed(result.Html, styles, text, fonts, 80, 40, cancellationToken: Cancellation);
+        Assert.Empty(result.Styles.Diagnostics);
+        Assert.Same(result.Html.Document, resized.Html.Document);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, result.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, result.Frame.Pixels.Span.Slice(20 * result.Frame.Stride, 4).ToArray());
+        Assert.Equal(2, result.DisplayList.Commands.OfType<DrawGlyphRun>().Count());
+        Assert.Equal(40, result.ScrollHeight);
+        Assert.Equal(80, resized.Frame.Size.Width);
+    }
+
+    [Fact]
     public void SimpleLegacyDoctypeDocumentReachesAnOfflineNativeFrame()
     {
         using var font = new TextFont(FontPath);
@@ -177,7 +199,7 @@ public sealed class ContentTests
         Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => OfflinePageRenderer.Render("<!doctype html><div></div>",
             [new(Css + " @import 'https://example.com/x'")], new EmptyShaper(), fonts, 20, 20,
             new() { IncludeUserAgentStyle = false }, Cancellation));
-        Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => OfflinePageRenderer.Render("<table></table>",
+        Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => OfflinePageRenderer.Render("<img>",
             [new(Css)], new EmptyShaper(), fonts, 20, 20, cancellationToken: Cancellation));
     }
 

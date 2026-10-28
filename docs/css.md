@@ -156,7 +156,8 @@ Supported longhands:
 
 | Group   | Properties and supported values                                                                                                                                           |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block, list-item                                                                                                                   |
+| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                            |
+| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                        |
 | Lists   | inherited `list-style-type`: disc/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                  |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                      |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                   |
@@ -190,11 +191,17 @@ not yet implemented.
 
 Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
 layers, conditional rules (including media/supports/container), imports/font-face,
-logical properties, positioning, flex/grid/table display, animations,
+logical properties, positioning, flex/grid and broader table display, animations,
 transitions, modern color spaces/functions and unlisted properties/units.
 The browser applies the limited `@import` preprocessing described above before
 passing sources to Engine.Css. No layout, shaping, painting, used-value
 resolution or V8 work is performed here.
+
+Canonical HTML tables now receive their finite table display defaults, 2px
+spacing, and 1px top-aligned cell padding. Automatic column sizing and explicit
+downstream exclusions are documented in the
+[table layout subset](text-layout.md#basic-automatic-tables). Accepted display
+values do not imply anonymous table generation or arbitrary CSS table layout.
 
 ## Limits and cancellation
 

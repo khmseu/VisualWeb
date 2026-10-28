@@ -388,8 +388,8 @@ repeated starts are ignored while the pointer is set. In-table form end tags
 use in-body handling. Duplicate `html` start tokens in table, section and row
 modes merge missing root attributes without inserting a new element. Nested
 tables inside captions and other tokens that require table foster parenting
-remain explicitly unsupported; tree construction still does not implement
-table layout. Other remaining
+remain explicitly unsupported; rendering supports only the
+[basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 
 - Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
@@ -421,7 +421,7 @@ outside the supported scope.
 
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
-- Flexbox, grid, tables, floats and positioning; margin collapse is implemented
+- Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented
   for adjacent block siblings and eligible parent/first-or-last block-child edges.
 - Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
 - Images/replaced elements, general controls and broader list
@@ -453,6 +453,20 @@ The current engine implements finite static block/inline rendering. Missing esse
   and all 14,273 solution tests pass locally; formatting retains only the
   same three documented baseline findings.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
+
+Basic canonical HTML tables now support automatic intrinsic column sizing,
+separate borders, one spacing length, top-aligned text/block cells and
+table/cell backgrounds through ordinary paint flow. Explicit table width and
+cell heights act as minima; header/footer groups are ordered around body groups.
+Spans, captions/columns, anonymous/arbitrary CSS tables, collapsed borders,
+fixed layout, nested tables/widgets, percentages inside cells, row/group
+backgrounds and legacy presentation attributes remain unsupported. See the
+[exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
+The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
+exact work limits and cancellation, native pixels, and local/process
+scroll/link/retained resize behavior. Build, touched suites and all 14,340
+solution tests pass locally. Formatting reports only the three established
+baseline findings, not new table findings.
 
 **A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
 

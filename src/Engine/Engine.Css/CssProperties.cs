@@ -35,6 +35,10 @@ internal static class CssProperties
             ["list-style-type"] = new(new CssKeyword("disc"), true),
             ["list-style-position"] = new(new CssKeyword("outside"), true),
             ["list-style-image"] = new(new CssKeyword("none"), true),
+            ["table-layout"] = new(new CssKeyword("auto"), false),
+            ["border-collapse"] = new(new CssKeyword("separate"), true),
+            ["border-spacing"] = new(new CssLength(0, "px"), true),
+            ["vertical-align"] = new(new CssKeyword("baseline"), false),
             ["overflow-x"] = new(new CssKeyword("visible"), false),
             ["overflow-y"] = new(new CssKeyword("visible"), false),
             ["color"] = new(new CssColor(0, 0, 0), true),
@@ -179,7 +183,15 @@ internal static class CssProperties
         if (tokens.Count != 1) { return null; }
         var token = tokens[0];
         var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
-        if (name == "display") { return Keyword(keyword, "none", "block", "inline", "inline-block", "list-item"); }
+        if (name == "display")
+        {
+            return Keyword(keyword, "none", "block", "inline", "inline-block", "list-item",
+                "table", "table-row-group", "table-header-group", "table-footer-group", "table-row", "table-cell");
+        }
+        if (name == "table-layout") { return Keyword(keyword, "auto"); }
+        if (name == "border-collapse") { return Keyword(keyword, "separate"); }
+        if (name == "border-spacing") { return Length(token, false) is { Value: >= 0 } spacing ? spacing : null; }
+        if (name == "vertical-align") { return Keyword(keyword, "baseline", "top"); }
         if (name == "list-style-type") { return Keyword(keyword, "disc", "decimal", "none"); }
         if (name == "list-style-position") { return Keyword(keyword, "outside"); }
         if (name == "list-style-image") { return Keyword(keyword, "none"); }

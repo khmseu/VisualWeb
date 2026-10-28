@@ -2466,3 +2466,69 @@ nur bekannte Baseline-Findings. Noch kein Pass-4-Commit.
 Solution-Build (0 Warnungen/Fehler) und volle Solution 14.308 Tests bestanden.
 Format meldet ausschliesslich die belegten Baseline-Findings. CI nach Push
 bleibt erforderlich.
+
+### KP-074 - Vier Passen bestaetigt und Tabellenlayout-Auswahl
+
+- Dokumentiert am: 2026-10-28.
+- Quelle: Commit `cef5ce6`; CI
+  [Linux 40774705097](https://github.com/khmseu/VisualWeb/actions/runs/40774705097),
+  [Windows 40774705119](https://github.com/khmseu/VisualWeb/actions/runs/40774705119),
+  [CodeQL 40774704995](https://github.com/khmseu/VisualWeb/actions/runs/40774704995);
+  `StaticLayout.Check`, CSS-Propertyregistry/UA-Styles und Rendering-Guides.
+- Bezug: KP-073; Pass-5-Auswahl des Zehn-Passen-Auftrags.
+
+**Belegt:** Pass 4 ist gepusht; alle drei genannten CI-Laeufe bestanden.
+Vier Feature-Passen abgeschlossen, sechs verbleiben. Der Parser baut einfache
+Tabellen bereits, aber sichtbare Tabellen werden in Layout explizit abgelehnt.
+Tabellen-Displaywerte und Sizing-Properties fehlen in CSS.
+
+**Offene materielle Designentscheidung:** Ein erster Tabellenlayout-Umfang
+kann inhaltsbasierte automatische Spaltenbreiten fuer einfache Tabellen
+liefern oder zunaechst nur explizites Fixed-Layout. Erstes hilft
+unveraenderten einfachen Webseiten unmittelbar, verlangt aber intrinsische
+Text-/Zellmessung; zweites ist kleiner und deterministischer, hilft ohne
+passende Autoren-CSS aber nicht. Spans, collapsed borders und allgemeinere
+Tabellensemantik sollen nicht still angenaehert werden. Konkrete Auswahl
+einschliesslich expliziter Blockieroption wird gestellt. Keine
+Tabellenlayout-Implementierung begonnen.
+
+### KP-075 - Automatische einfache Tabellen fuer Pass 5
+
+- Dokumentiert am: 2026-10-29.
+- Quelle: Nutzerwahl `auto-basic` im laufenden Gespraech; CSS-Registry,
+  `TableLayout.cs`, Layout-/CSS-/Content-Tests und offizieller lokaler
+  CSS-2.2-Tabellencache (`css2-tables`).
+- Bezug: KP-074; Pass 5 des Zehn-Passen-Auftrags.
+
+**Nutzerentscheidung, beschlossen:** Inhaltsbasierte automatische Spalten
+fuer einfache Text-/Blockzellen ohne Spans. Fixed-only haette passende
+Autoren-CSS verlangt und unveraenderte einfache Seiten weniger unterstuetzt.
+Die angebotene Blockieroption wurde nicht gewaehlt.
+
+**Implementiert, noch nicht committed:** Kanonische HTML-Tabellen erhalten
+intrinsische Min-/Max-Messung, automatische Spaltenverteilung, separate
+borders, einen Spacing-Wert und top-aligned Zellen. Zellhoehe ist ein Minimum;
+Zellen gleichen sich der Zeilenhoehe an. Vorhandener Layout-/Paint-/Metadatenfluss
+wird wiederverwendet; Messung und Anordnung teilen Budgets und Cancellation.
+Spans, captions/columns, anonymous tables, nested tables/widgets, Prozentmasse
+in Zellen, row/group backgrounds und weitere im Guide gelistete Faelle
+scheitern explizit. Row-background-Rechtecke wuerden Spacing-Luecken falsch
+fuellen; deshalb keine stille Naeherung. Keine Netzwerk-/IPC-/Confinementaenderung.
+
+**Standardbeleg:** `css2-tables` registriert, SpecCache erfolgreich ausgefuehrt.
+CSS 2.2 erlaubt UA-definierte automatische Breitenverteilung; die gewaehlte
+endliche Policy ist kein Nachweis pixelgleicher allgemeiner Browserkonformitaet.
+
+**Zwischenvalidierung:** Layout 98, CSS 356, Content 13 Tests bestanden.
+Browser-Tabellen-Scroll-/Link-/Resizefaelle laufen noch. Build, volle Browser-/
+Paint-/Solution-Suiten, Format und anschliessendes Commit/Push/CI stehen aus.
+
+**Abschliessende lokale Validierung:** 32 neue Regressionen; Layout 99,
+CSS 356, Content 13, Paint 40, Browser 1.135 und alle 14.340 Solution-Tests
+bestanden. Build: null Warnungen/Fehler. Die erste Formatpruefung fand neue
+Whitespace-Findings; diese wurden korrigiert. Die Wiederholung meldet nur
+die drei auf `81bb414` belegten Baseline-Findings. Die ersten beiden
+Browser-Tabellenfaelle erwarteten irrtuemlich das Entfernen eines offscreen
+Links; der vorhandene Fokusvertrag behaelt Identitaet ohne sichtbare Rects.
+Die Tests pruefen jetzt diesen Vertrag und wieder sichtbare Rects nach Resize,
+ohne Produktionsverhalten zu veraendern. Commit/Push/CI bleiben erforderlich.

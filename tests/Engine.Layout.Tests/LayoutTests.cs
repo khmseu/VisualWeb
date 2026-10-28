@@ -189,6 +189,134 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void AutomaticTablesShrinkToIntrinsicColumnsAndKeepExactSeparatedGeometry()
+    {
+        var root = UnorderedList("<table id=t><tr><td id=a>aa bb</td><td id=b>x</td></tr>"
+            + "<tr><td id=c>cccc</td><td>yy</td></tr></table>").Root!;
+        Assert.Equal(new LayoutRect(0, 0, 45, 30), Find(root, "t").Content);
+        Assert.Equal(new LayoutRect(2, 2, 27, 12), Find(root, "a").BorderBox);
+        Assert.Equal(new LayoutRect(3, 3, 25, 10), Find(root, "a").Content);
+        Assert.Equal(new LayoutRect(31, 2, 12, 12), Find(root, "b").BorderBox);
+        Assert.Equal(16, Find(root, "c").BorderBox.Y);
+        Assert.Single(Find(root, "a").Lines);
+    }
+
+    [Theory]
+    [InlineData(30, 40, 22, 40)]
+    [InlineData(40, 40, 22, 40)]
+    [InlineData(42.5, 42.5, 24.5, 40)]
+    [InlineData(45, 45, 27, 30)]
+    public void AutomaticTablesInterpolateColumnsWrapAndOverflowAtTheirIntrinsicMinimum(
+        double viewport, double tableWidth, double columnWidth, double height)
+    {
+        var root = UnorderedList("<table id=t><tr><td id=a>aa bb</td><td>x</td></tr>"
+            + "<tr><td>cccc</td><td>yy</td></tr></table>", width: viewport).Root!;
+        Assert.Equal(tableWidth, Find(root, "t").Content.Width);
+        Assert.Equal(columnWidth, Find(root, "a").BorderBox.Width);
+        Assert.Equal(height, Find(root, "t").Content.Height);
+    }
+
+    [Fact]
+    public void ExplicitTableWidthDistributesSurplusAndHonorsWrapperAutoMargins()
+    {
+        var root = UnorderedList("<table id=t><tr><td id=a>aa bb</td><td id=b>x</td></tr>"
+            + "<tr><td>cccc</td><td>yy</td></tr></table>", "table{width:65px;margin-left:auto;margin-right:auto}").Root!;
+        Assert.Equal(17.5, Find(root, "t").Content.X);
+        Assert.Equal(37, Find(root, "a").BorderBox.Width);
+        Assert.Equal(22, Find(root, "b").BorderBox.Width);
+    }
+
+    [Fact]
+    public void EmptyTablesAndMissingCellsPreserveGridSpacingWithoutInventingBoxes()
+    {
+        var empty = Find(UnorderedList("<table id=t></table>").Root!, "t");
+        Assert.Equal(0, empty.Content.Width);
+        Assert.Equal(0, empty.Content.Height);
+        Assert.Empty(empty.Children);
+        var root = UnorderedList("<table id=t><tr><td id=a>a</td><td>b</td></tr>"
+            + "<tr id=row><td id=c>c</td></tr></table>").Root!;
+        Assert.Equal(20, Find(root, "t").Content.Width);
+        Assert.Equal(30, Find(root, "t").Content.Height);
+        Assert.Single(Find(root, "row").Children);
+        Assert.Equal(Find(root, "a").BorderBox.Width, Find(root, "c").BorderBox.Width);
+        Assert.Equal(16, Find(root, "c").BorderBox.Y);
+    }
+
+    [Fact]
+    public void TablesSupportOrdinaryBlockCellsHiddenRowsAndHeaderFooterOrdering()
+    {
+        var root = UnorderedList("""
+            <table id=t><tfoot><tr><td id=foot>end</td></tr></tfoot>
+            <tbody><tr id=hidden><td>verylonghiddenword</td></tr><tr><td id=body><div>aa bb</div><p>ccc</p></td></tr></tbody>
+            <thead><tr><th id=head>top</th></tr></thead></table>
+            """, "#hidden{display:none}").Root!;
+        Assert.Equal(31, Find(root, "t").Content.Width);
+        Assert.True(Find(root, "head").BorderBox.Y < Find(root, "body").BorderBox.Y);
+        Assert.True(Find(root, "body").BorderBox.Y < Find(root, "foot").BorderBox.Y);
+        Assert.Equal(2, Find(root, "body").Children.Count);
+        Assert.Null(TryFind(root, "hidden"));
+    }
+
+    [Fact]
+    public void TableCellsDoNotCollapseMarginsThroughTheirEdgesAndStretchToRowHeight()
+    {
+        var root = UnorderedList("<table><tr><td id=a><p>a</p></td><td id=b>b<br>b</td></tr></table>",
+            "td{padding:0;height:1px}p{margin-top:5px;margin-bottom:5px}").Root!;
+        Assert.Equal(20, Find(root, "a").BorderBox.Height);
+        Assert.Equal(20, Find(root, "b").BorderBox.Height);
+        Assert.Equal(7, Find(root, "a").Children[0].Content.Y);
+        Assert.Equal(2, Find(root, "b").Content.Y);
+    }
+
+    [Fact]
+    public void TableMeasurementAndFinalLayoutShareExactWorkBudgets()
+    {
+        const string html = "<table><tr><td>a</td></tr></table>";
+        Assert.NotNull(UnorderedList(html, options: new()
+        {
+            MaxBoxes = 6,
+            MaxNodes = 12,
+            MaxDepth = 7,
+            MaxLines = 3,
+            MaxTextCharacters = 2,
+            MaxShapedGlyphs = 3,
+            MaxShapingCalls = 6
+        }).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxBoxes = 5 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxNodes = 11 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxDepth = 6 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxLines = 2 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxTextCharacters = 1 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxShapedGlyphs = 2 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxShapingCalls = 5 }));
+    }
+
+    [Fact]
+    public void TableIntrinsicMeasurementObservesCancellationBeforePublishingGeometry()
+    {
+        var doc = HtmlParser.Parse("<table><tr><td>one two</td></tr></table>", cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(doc, cancellationToken: Cancellation);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(doc, styles,
+            new CancelingShaper(cancellation), 100, 100, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
+    [InlineData("<table><tr><td colspan=2>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td rowspan=0>x</td></tr></table>", "")]
+    [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
+    [InlineData("<table><tr><td><input></td></tr></table>", "")]
+    [InlineData("<table width=100><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
+    [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:baseline}")]
+    [InlineData("<table><tr><td>x</td></tr></table>", "table{height:100px}")]
+    [InlineData("<table><tr><td>x</td></tr></table>", "tr{background-color:red}")]
+    public void UnsupportedTableFeaturesFailInsteadOfReturningApproximateGeometry(string html, string css) =>
+        Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, css));
+
+    [Fact]
     public void WidthPaddingBorderAndAutoMarginsFollowContainingBlockEquation()
     {
         var root = Layout("<div id=x>hi</div>", "#x{width:40px; padding:5px;border:2px solid; margin-left:auto;margin-right:auto}").Root!;
@@ -539,6 +667,16 @@ public sealed class LayoutTests
         var line = Assert.Single(Find(result.Root!, "x").Lines);
         Assert.Equal(21.796875, line.Bounds.Height);
         Assert.Equal(17.109375, line.Baseline);
+    }
+
+    private sealed class CancelingShaper(CancellationTokenSource cancellation) : ITextShaper
+    {
+        public ShapedRun Shape(string text, TextFontRequest request, CancellationToken cancellationToken = default)
+        {
+            var run = new MetricsShaper().Shape(text, request, cancellationToken);
+            cancellation.Cancel();
+            return run;
+        }
     }
 
     private sealed class MetricsShaper : ITextShaper

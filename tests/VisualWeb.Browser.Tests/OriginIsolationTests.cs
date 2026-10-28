@@ -624,7 +624,7 @@ public sealed class OriginIsolationTests
                 },
                 "first.test" => Html(request, blue),
                 "second.test" => Html(request, red),
-                _ => Html(request, "<!doctype html><table></table>")
+                _ => Html(request, "<!doctype html><img>")
             })), () =>
             {
                 var renderer = new ProcessPageRenderer(RendererPath, FontPath);

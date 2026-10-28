@@ -138,6 +138,35 @@ numbering scans share node/cancellation limits, while marker shaping/painting
 share the existing call, glyph and command limits. No CSS counters, inside
 markers, alphabetic/Roman markers or general list ownership are implied.
 
+### Basic automatic tables
+
+Canonical HTML `table`/`thead`/`tbody`/`tfoot`/`tr`/`td`/`th` boxes support
+content-sized automatic columns, separate borders and one nonnegative
+`border-spacing` length. See [CSS 2.2 automatic table layout](https://www.w3.org/TR/CSS22/tables.html#auto-table-layout)
+(local ID `css2-tables`). Each column takes its cells' maximum minimum/maximum
+intrinsic widths. Auto tables shrink toward maximum content width without
+shrinking below minimum content; explicit table width is a minimum. Available
+growth is proportional between intrinsic bounds, then equal beyond them.
+CSS 2.2 permits UA-defined automatic distribution; this is a finite policy,
+not a claim of matching every browser.
+
+Header groups precede ordinary groups and footer groups follow them.
+Cells are top-aligned and equalized to the row's maximum border-box height;
+specified cell height is a minimum. Cell block margins do not collapse through
+cell edges. Table/cell backgrounds and solid borders use ordinary paint flow.
+UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
+is not synthesized. Measurement and arrangement share node, text, shaping,
+line, glyph, box, depth and cancellation budgets.
+
+Explicit failures remain for spans other than absent/exact `1`, captions,
+columns/colgroups, anonymous or arbitrary CSS tables, nested tables/widgets,
+percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
+spacing, other cell alignments, nonzero cell margins, cell maximum height,
+nonautomatic table/row/group heights, row/group sizing/decorations/backgrounds,
+and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
+`cellspacing`, `align`, `valign`, `nowrap`). Hidden parts are omitted; missing
+cells leave empty grid slots. Empty grids have zero intrinsic content size.
+
 ### Ordinary flow
 
 - Horizontal LTR normal-flow block boxes and undecorated inline text elements.
@@ -176,7 +205,7 @@ explicitly or those styles overridden.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab
   stops, justification and cross-node/style shaping inside an unbroken word.
 - Margin collapse, floats, positioning, inline-block, decorated inline boxes
-  (including backgrounds), tables, ruby, ordered lists and broader list markers, replaced elements,
+  (including backgrounds), tables beyond the subset above, ruby, broader list markers, replaced elements,
   general controls, images/media/iframes and specialized element layout.
   The bounded forms subset lays out `input` text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/submit/reset/button,
   `textarea`, `select`, and `button` controls through finite inline-block fallbacks;

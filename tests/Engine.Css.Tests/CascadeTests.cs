@@ -7,6 +7,30 @@ namespace VisualWeb.Engine.Css.Tests;
 
 public sealed class CascadeTests
 {
+    [Fact]
+    public void TableUaDisplaysAndInheritedSpacingUseTheFiniteSeparateModel()
+    {
+        var doc = Document("<table id=parent><tr><td id=child>x</td></tr></table>");
+        var result = Compute(doc, new CssStyleSource("table{border-spacing:.5em}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("table"), result.Styles[doc.GetElementById("parent")!]["display"]);
+        Assert.Equal(new CssKeyword("table-cell"), Child(result, doc)["display"]);
+        Assert.Equal(new CssKeyword("top"), Child(result, doc)["vertical-align"]);
+        Assert.Equal(new CssKeyword("separate"), Child(result, doc)["border-collapse"]);
+        Assert.Equal(new CssLength(8, "px"), Child(result, doc)["border-spacing"]);
+        Assert.Equal(new CssLength(1, "px"), Child(result, doc)["padding-left"]);
+    }
+
+    [Theory]
+    [InlineData("border-spacing:-1px")]
+    [InlineData("border-spacing:10%")]
+    [InlineData("border-spacing:1px 2px")]
+    [InlineData("border-collapse:collapse")]
+    [InlineData("table-layout:fixed")]
+    [InlineData("vertical-align:middle")]
+    public void UnsupportedTableCssProducesDiagnostics(string declaration) =>
+        Assert.NotEmpty(Compute(Document(), new CssStyleSource("#child{" + declaration + "}")).Diagnostics);
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
     private static DomDocument Document(string body = "<div id=parent><p id=child class=x>text</p></div>")
         => HtmlParser.Parse("<!doctype html>" + body, cancellationToken: Cancellation).Document;

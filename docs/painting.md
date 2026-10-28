@@ -81,6 +81,12 @@ with the item's exact font and color, but remain separate from selectable DOM
 fragments. They paint before the item's own scroll clip, like disc markers;
 ancestor clips and viewport transforms still apply.
 
+The [basic table subset](text-layout.md#basic-automatic-tables) reuses ordered
+group/row/cell block flow for table/cell backgrounds, solid borders and text.
+Separate-border spacing remains transparent to the table background.
+Row/group backgrounds are rejected by layout rather than painted as rectangles
+across gaps; no collapsed-border or broader table-layer painting is implied.
+
 - The root background covers the viewport and is not repainted on its box.
   For an HTML root with transparent background, the first body child's
   background is propagated instead; a display:none body does not paint.

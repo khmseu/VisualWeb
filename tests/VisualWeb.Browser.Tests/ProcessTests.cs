@@ -77,7 +77,7 @@ public sealed class ProcessTests
         using var renderer = new ProcessPageRenderer(RendererPath, FontPath);
         await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
         var pid = renderer.ProcessId;
-        await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(Blue with { Html = "<!doctype html><table></table>" },
+        await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(Blue with { Html = "<!doctype html><img>" },
             new(20, 10, 1), Cancellation));
         await renderer.RenderAsync(Blue, new(20, 10, 1), Cancellation);
         Assert.Equal(pid, renderer.ProcessId);

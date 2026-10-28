@@ -2,6 +2,16 @@
   "version": 1,
   "documents": [
     {
+      "id": "css2-tables",
+      "title": "CSS 2.2 Tables",
+      "url": "https://www.w3.org/TR/CSS22/tables.html",
+      "file": "css2-tables.html",
+      "fetchedAt": "2026-10-28T23:08:49.3195118+00:00",
+      "checkedAt": "2026-10-28T23:08:49.3195118+00:00",
+      "eTag": null,
+      "lastModified": "2016-04-08T12:57:18+00:00"
+    },
+    {
       "id": "css2-lists",
       "title": "CSS 2.2 Generated Content and Lists",
       "url": "https://www.w3.org/TR/CSS22/generate.html",

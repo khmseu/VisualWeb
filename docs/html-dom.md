@@ -101,8 +101,9 @@ after-after-body modes. Supported behavior includes:
   unsupported because they require foster parenting.
   Contiguous non-whitespace table-character runs (including their adjacent
   whitespace) are foster-parented before the nearest table; whitespace-only
-  runs stay in the table. This tree-building support does not add table layout;
-  `Engine.Layout` still rejects table frames.
+  runs stay in the table. Rendering is separate:
+  `Engine.Layout` supports a [bounded automatic table subset](text-layout.md#basic-automatic-tables);
+  parser support for captions/columns does not imply layout support.
 
 Simple `form` elements use the form element pointer: `<form>` closes an open
 `p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
