@@ -2751,3 +2751,26 @@ Gezielt CSS 581 und FontTests 53 bestanden; voll Browser 1.194 und alle
 Format: nur drei bekannte Baseline-Findings. Commit/Push/CI stehen aus.
 Der aktuelle Wissensstand kennzeichnet fruehere Serienabschnitte jetzt
 ausdruecklich als historische Evidenz und verweist auf die aktuelle KP-066-Serie.
+
+### KP-082 - Abschluss der zehn Passen fuer einfache Websites
+
+- Dokumentiert am: 2026-10-29.
+- Quellen: Commit `c4987a0`, lokaler Validierungsnachweis in KP-081 und
+  abgeschlossene GitHub-Actions-Laeufe fuer genau diesen Commit.
+
+**Belegter Abschluss Pass 10:** `c4987a0` ist committed und gepusht.
+Der Commit-Hook formatierte Wissensstand und meldete fuer acht Dateien
+keine Issues. [Linux 40835953198](https://github.com/khmseu/VisualWeb/actions/runs/40835953198),
+[Windows 40835953086](https://github.com/khmseu/VisualWeb/actions/runs/40835953086)
+und [CodeQL 40835953318](https://github.com/khmseu/VisualWeb/actions/runs/40835953318)
+sind erfolgreich, einschliesslich nativer x64/ARM64-Smokes.
+
+**Auftragsstatus:** Alle zehn Feature-Inkremente aus KP-066 sind einzeln
+implementiert, lokal validiert, committed, gepusht und CI-bestaetigt.
+Die separate CPU-Pressure-Testkorrektur zaehlt weiterhin nicht als Feature.
+Kein automatischer elfter Pass. Missing.md beschreibt weiterhin konkrete
+Subsets und verbleibende Arbeit, keine allgemeine Websitekonformitaet.
+Die drei vorbestehenden Formatfindings und der einmalige, unveraendert
+erfolgreich wiederholte Windows-Historytest aus KP-080 bleiben offengelegt.
+Dieser abschliessende Dokumentationscheckpoint wird separat persistiert;
+er aendert weder Code noch die oben zugeordneten Feature-CI-Nachweise.

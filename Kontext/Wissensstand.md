@@ -5,7 +5,7 @@
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
 - Dokumentationsdatum: 2026-10-29, Zeitzone Europe/Berlin (UTC+01:00).
-- Aktuelle Serie: Der Auftrag vom 2026-10-28 (KP-066 bis KP-081) und die
+- Aktuelle Serie: Der Auftrag vom 2026-10-28 (KP-066 bis KP-082) und die
   Passentabelle unter [Auftrag und Ziel](#auftrag-und-ziel) beschreiben den
   aktuellen Lauf fuer einfache Websites. Aeltere Serienstaende und deren
   damalige naechste Schritte bleiben unten als historische Evidenz erhalten,
@@ -114,7 +114,7 @@ startet keine neue Implementierung
 **Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
-Neun Feature-Passen sind abgeschlossen; einer steht aus:
+Alle zehn Feature-Passen sind abgeschlossen; kein weiterer Pass ist beauftragt:
 
 | Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
 | ---- | -------------------------------------------------------------------------- | --------- | ----------------- |
@@ -127,11 +127,13 @@ Neun Feature-Passen sind abgeschlossen; einer steht aus:
 | 7    | Explizite vertrauenswuerdige Bold-/Italic-/BoldItalic-Dateien end-to-end   | `780250f` | KP-078            |
 | 8    | Alle 148 standardisierten opaken CSS-Farbnamen                             | `8832410` | KP-079            |
 | 9    | Atomarer endlicher Farb-/none-Background-Shorthand                         | `9066215` | KP-080            |
+| 10   | Atomarer endlicher Font-Shorthand mit fuenf Longhand-Resets                | `c4987a0` | KP-081/KP-082     |
 
-Alle neun Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
+Alle zehn Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
 CodeQL und Windows x64/ARM64 CI einschliesslich nativer Smokes.
 Zuletzt lokal validiert: Build und 14.646 Solution-Tests einschliesslich
-Browser 1.194, CSS 581 und Content 20. Pass 10: Commit/Push/CI stehen aus.
+Browser 1.194, CSS 581 und Content 20. Pass 10: Linux `40835953198`,
+Windows `40835953086` und CodeQL `40835953318` erfolgreich.
 Pass 9 ist CI-bestaetigt; Windows x64
 brauchte nach einem nicht reproduzierten alten 15s-Historytest-Timeout einen
 einzelnen unveraenderten Failed-Job-ReRun (KP-080). Ursache bleibt unbewiesen.
@@ -180,7 +182,7 @@ Linux `40825983844`, Windows x64/ARM64 `40825983728`, CodeQL `40825983204`.
 51 neue Regressionen, Browser 1.186 und alle 14.408 Solution-Tests sowie Build
 bestanden. Platform 40, Linux-Denial-Smoke und echter confined CLI-Smoke mit
 vier Faces bestehen. Format meldet nur drei bekannte Baseline-Findings.
-Ein Feature-Pass bleibt. Pass 8 erweitert die belegte 18-Farbnamen-
+Pass 8 erweitert die belegte 18-Farbnamen-
 Grenze auf die vollstaendige offizielle Tabelle mit 148 opaken sRGB-Namen
 (CSS Color 4, Cache 2026-10-04; keine Systemfarben/neuen Farbraeume).
 155 neue Regressionen und alle 14.563 Tests bestehen lokal.
@@ -192,6 +194,9 @@ Pass 9: Linux `40831928303`, Windows `40831928285` nach einmaligem ReRun und
 CodeQL `40831928331` erfolgreich. Pass 10 implementiert den belegten fehlenden
 `font`-Shorthand fuer die fuenf vorhandenen Font-Longhands (KP-081).
 Pass 10 besteht lokal: 52 neue Regressionen, Build und alle 14.646 Tests.
+Commit `c4987a0` ist gepusht und auf allen CI-Plattformen erfolgreich (KP-082).
+Die beauftragte Serie endet hier; breite Kompatibilitaetsbereiche in
+Missing.md bleiben offen und werden nicht pauschal als erledigt markiert.
 
 ## Rahmenbedingungen und Nicht-Ziele
 
