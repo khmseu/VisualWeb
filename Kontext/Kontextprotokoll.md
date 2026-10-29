@@ -2642,3 +2642,34 @@ Build ohne Warnungen/Fehler, Platform 40, Browser 1.186 und alle 14.408
 Solution-Tests bestanden. Expliziter LinuxSandboxSmoke und echter confined
 CLI-Dummy-Smoke mit vier Faces bestehen. Format: nur die drei bekannten
 Baseline-Findings. Commit/Push/CI stehen noch aus.
+
+**Commit/Push/CI:** `780250f` ist auf `origin/main`. Der Hook formatierte
+den Linux-Confinementguide und meldete fuer 30 Dateien keine Issues.
+[Linux 40825983844](https://github.com/khmseu/VisualWeb/actions/runs/40825983844),
+[Windows 40825983728](https://github.com/khmseu/VisualWeb/actions/runs/40825983728)
+und [CodeQL 40825983204](https://github.com/khmseu/VisualWeb/actions/runs/40825983204)
+bestanden einschliesslich nativer x64/ARM64-Font-/Confinementtests.
+
+### KP-079 - Vollstaendige Standardfarbnamen fuer gewoehnliche Stylesheets
+
+- Dokumentiert am: 2026-10-29.
+- Quellen: `CssProperties.Colors` auf `780250f`; lokale offizielle
+  CSS-Color-4-Tabelle `named-colors`, Cache 2026-10-04.
+
+**Belegter Blocker/Pass 8:** Nur 18 opake Farbnamen waren registriert.
+Gewoehnliche Stylesheetwerte wie lightgray/whitesmoke scheiterten daher.
+Die komplette offizielle Tabelle enthaelt 148 Namen; Hex- und Dezimalkanale
+wurden vor Uebernahme fuer jeden Eintrag gegengeprueft. Implementiert wird
+nur diese endliche Tabelle im bestehenden Parser, ohne Systemfarben,
+neue Farbraeume oder neue Fehlerbehandlung.
+Offline-Tests pruefen die vollstaendige Familie einschliesslich Aliases,
+ASCII-Casing, CSS-Escapes und aller Farbproperties; ein Contenttest prueft
+unabhaengige native Hintergrund-/Borderpixel. Validierung steht aus.
+
+**Lokale Validierung:** Alle 148 Produktions-RGB-Eintraege und die getrennten
+Offline-Hexwerte wurden komplett gegen die offizielle Cachetabelle verglichen.
+155 Regressionen hinzugefuegt; CSS 510, Content 16, Build mit null Warnungen/
+Fehlern und alle 14.563 Solution-Tests bestanden. Format meldet nur drei bekannte
+Baseline-Findings. Ein initial fehlendes Escape einer interpolierten
+CSS-Testklammer wurde vor der erfolgreichen Validierung korrigiert.
+Commit/Push/CI stehen aus.

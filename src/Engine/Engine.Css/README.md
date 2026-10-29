@@ -9,6 +9,10 @@ Selectors include `:scope` with explicit immutable `CssSelectorScope` roots
 selector lists, filtered inclusive element siblings and maximum argument
 specificity, sharing the original scope and matching budgets.
 Depends on Engine.Dom only; no native, networking or script dependency.
+Color values include the complete 148-name opaque sRGB table in CSS Color 4
+(`css-color`), including gray/grey and cyan/magenta aliases. Names remain
+ASCII case-insensitive; transparent/currentColor retain their separate behavior.
+System colors and additional functional color spaces remain unsupported.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,

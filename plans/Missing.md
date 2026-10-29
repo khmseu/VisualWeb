@@ -434,6 +434,15 @@ shell wiring, confined/scripted workers and retained resize. Build and all
 14,408 solution tests pass, as do the Linux denial smoke and confined CLI
 four-face smoke. Formatting retains only the three established baseline findings.
 
+Standard named colors now cover all 148 opaque CSS Color 4 names, rather than
+only the 16 basic colors plus orange/rebeccapurple. Common ordinary stylesheet
+values such as lightgray, whitesmoke and darkslategray no longer reject a page.
+Exact sRGB channels, gray/grey aliases and case/escape handling use the existing
+bounded color parser across text, backgrounds and borders. This does not add
+system colors, new functional color spaces, gradients or broad color management.
+Its 155 regressions, solution build and all 14,563 solution tests pass locally;
+formatting reports only the three established baseline findings.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented

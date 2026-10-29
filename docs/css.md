@@ -162,7 +162,7 @@ Supported longhands:
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                      |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                   |
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                         |
-| Color   | color, background-color, border colors; hex 3/4/6/8, legacy comma rgb/rgba, transparent/currentColor, 16 basic named colors plus orange/rebeccapurple                     |
+| Color   | color, background-color, border colors; hex 3/4/6/8, legacy comma rgb/rgba, transparent/currentColor, all 148 standard opaque named colors                                |
 | Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique        |
 | Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
 

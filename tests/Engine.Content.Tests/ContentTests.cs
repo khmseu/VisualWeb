@@ -7,6 +7,21 @@ namespace VisualWeb.Engine.Content.Tests;
 
 public sealed class ContentTests
 {
+    [Fact]
+    public void StandardNamedBackgroundAndBorderColorsReachExactNativePixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var result = OfflinePageRenderer.Render("<!doctype html><div></div>",
+            [new("*{margin:0}div{height:20px;background-color:lightgray;border:2px solid darkslategrey}")],
+            text, fonts, 40, 30, cancellationToken: Cancellation);
+        Assert.Empty(result.Styles.Diagnostics);
+        Assert.Equal(new byte[] { 79, 79, 47, 255 }, result.Frame.Pixels.Span[..4].ToArray());
+        Assert.Equal(new byte[] { 211, 211, 211, 255 },
+            result.Frame.Pixels.Span.Slice(3 * result.Frame.Stride + 3 * 4, 4).ToArray());
+    }
+
     [Theory]
     [InlineData("pre")]
     [InlineData("nowrap")]
