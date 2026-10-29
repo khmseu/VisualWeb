@@ -53,6 +53,12 @@ requires an exact configured weight/style in the requested family list; no
 nearest-weight matching, synthetic bold/italic, system fallback, variation-axis
 selection or font download is implied. The bundled font is for tests only.
 
+The browser's shared page renderer can now explicitly register optional real
+700 normal, 400 italic and 700 italic faces through trusted startup paths.
+See [shell configuration](browser-shell.md#run-it). This uses the existing
+exact matching and exact-byte paint registration, not a change to FontSet's
+selection policy; missing faces, 900/other weights and oblique still fail.
+
 This stage shapes Latin/common text, combining marks and a finite punctuation
 subset with HarfBuzz's Latin script, English language and LTR direction.
 Ligatures, kerning and combining clusters are real native shaping.

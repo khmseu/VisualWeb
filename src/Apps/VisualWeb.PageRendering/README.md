@@ -32,6 +32,13 @@ invalidate the host, and replacement/disposal releases it. Link events remain
 plain Events without PointerEvent metadata.
 Fonts remain creating-thread-affine; asynchronous process orchestration belongs
 to the browser client, not this synchronous native policy.
+`StaticPageRenderer` accepts optional trusted bold/italic/bold-italic paths
+alongside the required regular path. It registers 400 normal, 700 normal,
+400 italic and 700 italic against the existing explicit generic aliases,
+using the same exact bytes for native shaping and painting. Files are loaded
+eagerly, owned and released on the creating thread; constructor failure releases
+already loaded faces. Missing descriptors still fail; no metadata discovery,
+font synthesis, fallback, downloads or broader weight matching is added.
 
 `PageViewport.ScrollY` and `ScrollX` are optional init-only CSS-pixel offsets;
 its three-value constructor/deconstruction are unchanged. `BrowserPage.ScrollHeight`

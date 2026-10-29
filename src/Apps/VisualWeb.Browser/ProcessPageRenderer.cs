@@ -57,6 +57,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
     }
     private readonly string rendererPath;
     private readonly string fontPath;
+    private readonly string? boldFontPath;
+    private readonly string? italicFontPath;
+    private readonly string? boldItalicFontPath;
     private readonly string dotnetPath;
     private readonly TimeSpan timeout;
     private readonly SemaphoreSlim exchange = new(1);
@@ -73,7 +76,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
     public string? ResourceUnit { get { lock (sync) { return connection?.Resources?.Unit; } } }
 
     public ProcessPageRenderer(string rendererPath, string fontPath, TimeSpan? timeout = null,
-        bool requireSandbox = false, string? dotnetPath = null, bool executeInlineScripts = false)
+        bool requireSandbox = false, string? dotnetPath = null, bool executeInlineScripts = false,
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
     {
         this.executeInlineScripts = executeInlineScripts;
         if (requireSandbox)
@@ -95,6 +99,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
         ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
         this.rendererPath = Path.GetFullPath(rendererPath);
         this.fontPath = Path.GetFullPath(fontPath);
+        this.boldFontPath = boldFontPath is null ? null : Path.GetFullPath(boldFontPath);
+        this.italicFontPath = italicFontPath is null ? null : Path.GetFullPath(italicFontPath);
+        this.boldItalicFontPath = boldItalicFontPath is null ? null : Path.GetFullPath(boldItalicFontPath);
         this.dotnetPath = dotnetPath ?? (this.rendererPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? RuntimeHost() : "");
         if (dotnetPath is not null) { ArgumentException.ThrowIfNullOrWhiteSpace(dotnetPath); }
         this.timeout = timeout ?? TimeSpan.FromSeconds(30);
@@ -359,7 +366,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 throw new PlatformNotSupportedException("Windows confinement requires the framework-dependent renderer DLL.");
             }
             var worker = WindowsRendererSandbox.Start(Path.GetDirectoryName(rendererPath)!, fontPath,
-                RuntimeEnvironment.GetRuntimeDirectory(), Path.GetFileName(rendererPath));
+                RuntimeEnvironment.GetRuntimeDirectory(), Path.GetFileName(rendererPath),
+                boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath);
             var connection = new Connection(worker.Process, null, worker);
             connection.Diagnostics = DrainDiagnostics(connection, worker.Error);
             return connection;
@@ -382,6 +390,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         info.ArgumentList.Add(requireSandbox ? "--linux-sandbox-bootstrap" : "--development-unsandboxed");
         info.ArgumentList.Add("--font"); info.ArgumentList.Add(fontPath);
+        if (boldFontPath is not null) { info.ArgumentList.Add("--font-bold"); info.ArgumentList.Add(boldFontPath); }
+        if (italicFontPath is not null) { info.ArgumentList.Add("--font-italic"); info.ArgumentList.Add(italicFontPath); }
+        if (boldItalicFontPath is not null) { info.ArgumentList.Add("--font-bold-italic"); info.ArgumentList.Add(boldItalicFontPath); }
         var resources = requireSandbox ? new LinuxRendererResources() : null;
         var process = Process.Start(resources?.Wrap(info) ?? info) ?? throw new RendererProcessException("Renderer process did not start.");
         var owner = new Connection(process, resources, null);

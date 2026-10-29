@@ -5,17 +5,38 @@ using VisualWeb.PageRendering;
 using VisualWeb.Platform.Linux.Sandbox;
 using VisualWeb.Platform.Windows.Sandbox;
 
-if (args is not [var mode, "--font", var fontPath]
-    || mode is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap" or "--linux-sandbox-worker" or "--windows-sandbox-worker"))
+if (args.Length < 3 || args[1] != "--font"
+    || args[0] is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap" or "--linux-sandbox-worker" or "--windows-sandbox-worker"))
 {
-    Console.Error.WriteLine("Renderer is an internal worker. Usage: (--development-unsandboxed | --linux-sandbox-bootstrap | --windows-sandbox-worker) --font TRUSTED_FONT");
+    Console.Error.WriteLine("Renderer is an internal worker. Usage: (--development-unsandboxed | --linux-sandbox-bootstrap | --windows-sandbox-worker) --font TRUSTED_FONT [--font-bold PATH] [--font-italic PATH] [--font-bold-italic PATH]");
     return 2;
 }
 try
 {
+    var mode = args[0];
+    var fontPath = args[2];
+    ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
+    string? bold = null, italic = null, boldItalic = null;
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    for (var index = 3; index < args.Length; index += 2)
+    {
+        var option = args[index];
+        if (index + 1 >= args.Length || !seen.Add(option)) { throw new ArgumentException("Missing or duplicate renderer font option: " + option); }
+        var path = args[index + 1];
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (path.StartsWith("--", StringComparison.Ordinal)) { throw new ArgumentException("Missing renderer font path for " + option); }
+        switch (option)
+        {
+            case "--font-bold": bold = path; break;
+            case "--font-italic": italic = path; break;
+            case "--font-bold-italic": boldItalic = path; break;
+            default: throw new ArgumentException("Unknown renderer font option: " + option);
+        }
+    }
     if (mode == "--linux-sandbox-bootstrap")
     {
-        LinuxRendererSandbox.Enter(AppContext.BaseDirectory, fontPath);
+        LinuxRendererSandbox.Enter(AppContext.BaseDirectory, fontPath,
+            boldFontPath: bold, italicFontPath: italic, boldItalicFontPath: boldItalic);
         throw new InvalidOperationException("Sandbox bootstrap returned without confinement.");
     }
     var confined = mode == "--linux-sandbox-worker";
@@ -25,7 +46,8 @@ try
     using var input = Console.OpenStandardInput();
     using var output = Console.OpenStandardOutput();
     var channel = new RendererChannel(input, output);
-    using var renderer = new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels);
+    using var renderer = new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels,
+        boldFontPath: bold, italicFontPath: italic, boldItalicFontPath: boldItalic);
     StaticPageRenderer? scriptedRenderer = null;
     bool? scriptPolicy = null;
     channel.WriteAsync(new()
@@ -101,7 +123,8 @@ try
             try
             {
                 var active = request.ExecuteInlineScripts
-                    ? scriptedRenderer ??= new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels, executeInlineScripts: true)
+                    ? scriptedRenderer ??= new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels, executeInlineScripts: true,
+                        boldFontPath: bold, italicFontPath: italic, boldItalicFontPath: boldItalic)
                     : renderer;
                 if (active.HasDocument(request.CommittedDocumentId)) { active.CommitDocument(request.CommittedDocumentId); }
                 var page = new LoadedPage(BrowserUrl.Parse(request.Url!), request.Html!, request.StatusCode, request.Diagnostics!)

@@ -4,7 +4,9 @@ Windows x64/arm64 per-renderer confinement uses an AppContainer token with no
 capabilities and a kill-on-close Job Object with 512 MiB per-process and total
 commit bounds, a one-process limit and a one-CPU hard cap. The launcher stages
 only the trusted renderer, its active .NET runtime and the explicitly selected
-font into a private read-only AppContainer-readable directory. Writes to
+regular font and any explicitly configured bold/italic/bold-italic files into
+a private read-only AppContainer-readable directory. No font-source directory
+access is granted. Writes to
 renderer temp and profile storage are denied. The child receives only private
 stdin/stdout/stderr pipes and a minimal environment. Startup fails closed if
 required APIs or resource controls are unavailable.

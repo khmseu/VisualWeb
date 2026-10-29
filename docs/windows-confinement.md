@@ -21,7 +21,9 @@ mode or `--require-sandbox`. Low-level renderer/library defaults are unchanged.
 
 The browser launches the trusted framework-dependent renderer DLL. The
 renderer, its deployment directory, active runtime and selected font are
-copied into a unique staging directory. The AppContainer SID receives
+copied into a unique staging directory. Explicit optional bold/italic/bold-italic
+font files are copied individually beside the staged regular font; their host
+directories are not granted access. The AppContainer SID receives
 read/execute access to that staged tree. Its temporary directory is also
 read-only, and the profile storage ACL replaces the container SID's default
 access with read/execute only. The host process supplies only private standard

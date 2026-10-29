@@ -16,7 +16,7 @@ namespace VisualWeb.PageRendering;
 /// No network, platform backend or browser chrome dependency.</remarks>
 public sealed class StaticPageRenderer : IPageRenderer
 {
-    private readonly TextFont font;
+    private readonly List<TextFont> fonts = [];
     private readonly FontSet text = new();
     private readonly PaintFontRegistry paint;
     private readonly PageRenderOptions options;
@@ -77,18 +77,28 @@ public sealed class StaticPageRenderer : IPageRenderer
     private DocumentState? committed;
     private DocumentState? candidate;
     private bool disposed;
-    public StaticPageRenderer(string fontPath, int maxPixels, bool executeInlineScripts = false)
+    public StaticPageRenderer(string fontPath, int maxPixels, bool executeInlineScripts = false,
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
     {
         this.executeInlineScripts = executeInlineScripts;
         options = new() { Html = DocumentHtmlOptions, Paint = new() { MaxPixels = maxPixels } };
-        font = new(fontPath);
         paint = new(options.Paint);
         try
         {
-            foreach (var family in new[] { "serif", "sans-serif", "monospace", "VisualWeb" }) { text.Register(family, font); }
-            paint.Register(font);
+            Register(fontPath, 400, "normal");
+            if (boldFontPath is not null) { Register(boldFontPath, 700, "normal"); }
+            if (italicFontPath is not null) { Register(italicFontPath, 400, "italic"); }
+            if (boldItalicFontPath is not null) { Register(boldItalicFontPath, 700, "italic"); }
         }
-        catch { paint.Dispose(); font.Dispose(); throw; }
+        catch { paint.Dispose(); foreach (var font in fonts) { font.Dispose(); } throw; }
+        void Register(string path, double weight, string style)
+        {
+            var font = new TextFont(path);
+            fonts.Add(font);
+            foreach (var family in new[] { "serif", "sans-serif", "monospace", "VisualWeb" })
+            { text.Register(family, font, weight, style); }
+            if (!fonts.Take(fonts.Count - 1).Any(existing => existing.Identity == font.Identity)) { paint.Register(font); }
+        }
     }
     public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         Task.FromResult(Render(page, viewport, cancellationToken));
@@ -1074,6 +1084,6 @@ public sealed class StaticPageRenderer : IPageRenderer
             try { pending?.Release(); }
             finally { retained?.Release(); }
         }
-        finally { paint.Dispose(); font.Dispose(); }
+        finally { paint.Dispose(); foreach (var font in fonts) { font.Dispose(); } }
     }
 }

@@ -29,7 +29,8 @@ try
     if (launch.ExecuteInlineScripts) { Console.Error.WriteLine("WARNING: post-parse inline scripts enabled; no HTML scheduling, CSP, browser-wide origin policy or browser event loop."); }
     using var shell = new DevelopmentShell(system, launch.FontPath, hidden: launch.Smoke,
         textInput: !launch.SkipTextInput, rendererPath: launch.RendererPath, requireSandbox: launch.RequireSandbox,
-        executeInlineScripts: launch.ExecuteInlineScripts);
+        executeInlineScripts: launch.ExecuteInlineScripts, boldFontPath: launch.BoldFontPath,
+        italicFontPath: launch.ItalicFontPath, boldItalicFontPath: launch.BoldItalicFontPath);
     shell.OpenWindow(launch.Url);
     if (!launch.Smoke) { shell.Run(); return 0; }
     BrowserSmoke.Run(shell, launch.RequireSandbox, launch.ExecuteInlineScripts);
@@ -49,6 +50,7 @@ catch (Exception exception) when (BrowserController.IsPageFailure(exception) || 
 
 static void Usage() => Console.Error.WriteLine(
     "Usage: dotnet run --project src/Apps/VisualWeb.Browser -- (--multiprocess --renderer /built/renderer.dll | --development-multiprocess --renderer /built/renderer.dll | --development-single-process) --font /trusted/font.ttf "
+    + "[--font-bold /trusted/bold.ttf] [--font-italic /trusted/italic.ttf] [--font-bold-italic /trusted/bold-italic.ttf] "
     + "[--allow-unsandboxed-development | --require-sandbox] [--enable-inline-scripts] [--url ABSOLUTE_URL] [--backend x11|wayland|windows] [--smoke [--backend dummy] [--skip-text-input]]\n"
     + "Recommended: --multiprocess requires supported OS renderer confinement before display/content startup; no fallback.\n"
     + "--development-multiprocess also requires confinement by default; --require-sandbox is a redundant assertion.\n"
@@ -59,12 +61,16 @@ namespace VisualWeb.Browser
     public sealed record BrowserLaunchOptions(string FontPath, string? Url, string? Backend, bool Smoke, bool SkipTextInput,
         string? RendererPath = null, bool RequireSandbox = false, bool ExecuteInlineScripts = false)
     {
+        public string? BoldFontPath { get; init; }
+        public string? ItalicFontPath { get; init; }
+        public string? BoldItalicFontPath { get; init; }
         public static BrowserLaunchOptions Parse(IReadOnlyList<string> args) => Parse(args, RequireRendererSupport);
 
         // Only tests may replace the startup probe. Public CLI parsing always performs native preflight.
         internal static BrowserLaunchOptions Parse(IReadOnlyList<string> args, Action requireRendererSupport)
         {
             string? font = null, url = null, backend = null, renderer = null;
+            string? bold = null, italic = null, boldItalic = null;
             var development = false;
             var multiprocess = false;
             var normalMultiprocess = false;
@@ -90,6 +96,9 @@ namespace VisualWeb.Browser
                     case "--smoke": smoke = true; break;
                     case "--skip-text-input": skip = true; break;
                     case "--font": font = Value(); break;
+                    case "--font-bold": bold = Value(); break;
+                    case "--font-italic": italic = Value(); break;
+                    case "--font-bold-italic": boldItalic = Value(); break;
                     case "--url": url = Value(); break;
                     case "--backend": backend = Value(); break;
                     default: throw new ArgumentException("Unknown option: " + arg);
@@ -121,12 +130,19 @@ namespace VisualWeb.Browser
             if (development && sandbox) { throw new ArgumentException("--require-sandbox requires multiprocess mode."); }
             sandbox = !allowUnsandboxed;
             if (string.IsNullOrWhiteSpace(font)) { throw new ArgumentException("An explicit trusted --font path is required."); }
+            foreach (var path in new[] { bold, italic, boldItalic })
+            { if (path is not null) { ArgumentException.ThrowIfNullOrWhiteSpace(path); } }
             if (backend is not (null or "x11" or "wayland" or "windows" or "dummy")) { throw new ArgumentException("Unsupported video backend."); }
             if (!smoke && (skip || backend == "dummy")) { throw new ArgumentException("Dummy backend and text-input exclusion are restricted to smoke checks."); }
             if (smoke && url is not null) { throw new ArgumentException("Smoke checks use offline fixtures, not --url."); }
             if (url is not null) { _ = Core.Url.BrowserUrl.Parse(url); }
             if (sandbox) { requireRendererSupport(); }
-            return new(Path.GetFullPath(font), url, backend, smoke, skip, renderer is null ? null : Path.GetFullPath(renderer), sandbox, scripts);
+            return new(Path.GetFullPath(font), url, backend, smoke, skip, renderer is null ? null : Path.GetFullPath(renderer), sandbox, scripts)
+            {
+                BoldFontPath = bold is null ? null : Path.GetFullPath(bold),
+                ItalicFontPath = italic is null ? null : Path.GetFullPath(italic),
+                BoldItalicFontPath = boldItalic is null ? null : Path.GetFullPath(boldItalic)
+            };
         }
 
         private static void RequireRendererSupport()

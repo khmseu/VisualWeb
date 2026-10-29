@@ -109,7 +109,7 @@ startet keine neue Implementierung
 **Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
-Fuenf Feature-Passen sind abgeschlossen; fuenf stehen aus:
+Sechs Feature-Passen sind abgeschlossen; vier stehen aus:
 
 | Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
 | ---- | -------------------------------------------------------------------------- | --------- | ----------------- |
@@ -118,11 +118,12 @@ Fuenf Feature-Passen sind abgeschlossen; fuenf stehen aus:
 | 3    | Atomarer endlicher `list-style`-Shorthand                                  | `70c7aef` | KP-072/KP-073     |
 | 4    | Vollstaendige initiale Legacy-Doctype-Moduswahl mit Recoverydiagnostik     | `cef5ce6` | KP-073/KP-074     |
 | 5    | Automatische einfache HTML-Tabellen, vom Nutzer gewaehlt                   | `ff918ff` | KP-075/KP-076     |
+| 6    | Satzzeichen/URLs in nicht umbrechendem pre/nowrap-Text                     | `35543c3` | KP-076/KP-077     |
 
-Alle fuenf Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
+Alle sechs Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
 CodeQL und Windows x64/ARM64 CI einschliesslich nativer Smokes.
-Zuletzt lokal: HTML 7.270, CSS 356, Layout 99, Paint 40, Content 13,
-Browser 1.135 und volle Solution 14.340 Tests sowie Build bestanden.
+Zuletzt lokal: Layout 114, Content 15 und volle Solution 14.357 Tests
+sowie Build bestanden; Browser 1.135 in der vollen Solution.
 Format meldet nur drei auf `81bb414` belegte Baseline-Findings
 (Whitespace/Imports in `StaticLayout.cs`, Imports in `ShellChrome.cs`).
 
@@ -144,7 +145,7 @@ Baseline-Findings. 32 neue Regressionen pruefen den Tabellenumfang.
 Pass 5 ist als `ff918ff` committed und gepusht; Linux (`40789165962`),
 Windows (`40789165996`) und CodeQL (`40789166119`) sind erfolgreich.
 
-**Pass 6 in Validierung:** Gewoehnliche URLs und Bindestrich-/Satzzeichentexte
+**Pass 6 abgeschlossen:** Gewoehnliche URLs und Bindestrich-/Satzzeichentexte
 scheitern selbst bei `white-space:pre/nowrap` an der Layout-Zeilenbruchpruefung.
 Diese Modi erlauben keine Soft-Wraps; die bestehende Textvalidierung bleibt
 erforderlich, die Unicode-Break-Analyse dort aber nicht. Geplant ist eine
@@ -153,7 +154,21 @@ Die Korrektur ist implementiert: Layout 114 und Content 15 Tests bestehen,
 darunter 17 neue Regressionen fuer Text/Geometrie, Whitespace, intrinsische
 Tabellenbreite, Limits und native Pixel/Retained-Resize. Build und alle 14.357
 Solution-Tests bestanden; Format meldet nur drei bekannte Baseline-Findings.
-Commit/Push/CI stehen aus.
+Commit `35543c3` ist gepusht; Linux (`40791947973`), Windows x64/ARM64
+(`40791947945`) und CodeQL (`40791947748`) bestehen.
+
+**Q-010 - Umfang des naechsten Schriftinkrements (beschlossen, KP-077/KP-078):**
+Default-Headings/strong/em verlangen echte Bold-/Italic-Faces; der Browser
+registriert derzeit nur Regular 400 normal. Vorschlaege: optionale explizite
+vertrauenswuerdige Pfade fuer Bold/Italic/BoldItalic durch Local-/Worker-
+und Confinementpfade fuehren, oder zunaechst nur Bold. Fehlende Faces bleiben
+sichtbare Fehler; keine Synthese, kein Systemfallback, keine pauschalen Mounts.
+Der Nutzer waehlte `four-faces`: alle drei optionalen Pfade end-to-end.
+Pass 7 ist implementiert und lokal validiert; Commit/Push/CI stehen aus.
+51 neue Regressionen, Browser 1.186 und alle 14.408 Solution-Tests sowie Build
+bestanden. Platform 40, Linux-Denial-Smoke und echter confined CLI-Smoke mit
+vier Faces bestehen. Format meldet nur drei bekannte Baseline-Findings.
+Vier Feature-Passen bleiben einschliesslich dieses noch nicht CI-bestaetigten Passes.
 
 ## Rahmenbedingungen und Nicht-Ziele
 

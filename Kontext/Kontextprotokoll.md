@@ -2575,3 +2575,70 @@ und Commit/Push/CI stehen noch aus.
 und alle 14.357 Solution-Tests bestanden, darunter Browser 1.135.
 Format meldet nur die drei belegten Baseline-Findings, keine neuen.
 Gezielte Layout-/Content-Suiten bestanden mit 114 beziehungsweise 15 Tests.
+
+### KP-077 - Nicht umbrechender Text bestaetigt; Schriftumfang offen
+
+- Dokumentiert am: 2026-10-29.
+- Quellen: Commit `35543c3`; abgeschlossene CI-Laeufe
+  [Linux 40791947973](https://github.com/khmseu/VisualWeb/actions/runs/40791947973),
+  [Windows 40791947945](https://github.com/khmseu/VisualWeb/actions/runs/40791947945),
+  [CodeQL 40791947748](https://github.com/khmseu/VisualWeb/actions/runs/40791947748);
+  `StaticPageRenderer`-Konstruktor, `FontSet.Shape`, UA-Regeln in `CssStyleEngine`,
+  Browser-CLI und Schrift-/Shellguides.
+
+**Belegt:** Pass 6 ist committed/gepusht und alle CI-Laeufe bestanden,
+einschliesslich nativer Linux-/Windows-x64/ARM64-Smokes. Der Commit-Hook
+formatierte Wissensstand und meldete fuer acht Dateien keine Issues.
+Sechs von zehn Feature-Passen sind abgeschlossen.
+
+**Naechster konkreter Renderingblocker:** Default-Headings und strong/em
+benoetigen Bold beziehungsweise Italic. Der gemeinsame Seitenrenderer
+registriert nur Regular 400 normal; die bewusst exakte Fontauswahl lehnt
+andere Gewichte/Stile ab. Die CLI akzeptiert nur einen vertrauenswuerdigen
+Schriftpfad. Routine-Markup scheitert damit ohne explizite CSS-Neutralisierung.
+
+**Vorschlag/offene Entscheidung Q-010:** Optionale echte Bold-/Italic-/
+BoldItalic-Dateien explizit konfigurieren und sicher durch Local-/Worker-/
+Confinementpfade fuehren; alternativ kleinerer Bold-only-Pass fuer Headings
+und strong. Vollstaendige Drei-Face-Erweiterung deckt auch em und kombinierte
+Auszeichnung ab, hat aber mehr Konfigurations-/Validierungsumfang.
+Keine Synthese, kein Fontdownload oder Systemfallback und keine breiteren
+Sandboxmounts. Als dritte Option weitere Aktionen bis zur Entscheidung
+blockieren. Nutzerentscheidung ist noch nicht erfolgt; kein Fontcode geaendert.
+
+### KP-078 - Explizite vier Schriftfaces beschlossen
+
+- Dokumentiert am: 2026-10-29.
+- Quelle: strukturierte Nutzerantwort `four-faces` im laufenden Chat.
+
+**Nutzerentscheidung:** Pass 7 soll optionale vertrauenswuerdige Bold-, Italic-
+und BoldItalic-Pfade end-to-end unterstuetzen, nicht nur Bold.
+Regular bleibt erforderlich; fehlende Stile scheitern explizit.
+Echte OFL-NotoSans-Faces werden als unveraenderte, gepinnte Offline-Testdaten
+mit eigener Upstreamlizenz aufgenommen. Linux bindet einzelne Dateien
+read-only, Windows kopiert sie in den bestehenden privaten Stagingbaum;
+kein Verzeichniszugriff wird fuer Schriftquellen erweitert.
+Die Implementierung ist in Arbeit; ein erster Solution-Build besteht.
+
+**Umsetzung und lokale Evidenz:** Drei optionale CLI-/API-Pfade konfigurieren
+700 normal, 400 italic und 700 italic fuer alle expliziten generischen Aliases.
+Native Ressourcen werden vor der Worker-Hello-Nachricht geladen, pro Worker
+gehalten und bei Teilfehlern/Disposal freigegeben. Keine IPC-Erweiterung.
+Zusatzmounts sind einzelne read-only-Dateien; Windows kopiert nur die Dateien.
+OFL-Faces sind auf `notofonts/noto-fonts` Revision
+`ffebf8c1ee449e544955a7e813c54f9b73848eac` und SHA-256 gepinnt.
+Der lokale CSS-Fonts-Cache vom 2026-10-04 ist noch innerhalb 30 Tagen.
+
+51 neue Regressionen pruefen unter anderem exakte Face-Pixel, UA-Auszeichnung,
+unabhaengige optionale Slots, strikte CLI/Workerargumente, fehlende Dateien,
+Shellwiring, Confinement, Scriptmodus und Retained-Resize. Erste Tests deckten
+einen Testfehler auf: Ein lokaler Native-Renderer wurde ueber ein asynchrones
+Worker-await auf einen anderen Thread getragen. Referenzframes werden nun
+komplett synchron erzeugt und der Owner vor dem await entsorgt. Ein isolierter
+BoldItalic-Test benoetigt eine einzelne beidseitig formatierte Span; verschachtelte
+Bold-/Italic-Ancestors benoetigen weiterhin ihre eigenen exakten Metrikfaces.
+
+Build ohne Warnungen/Fehler, Platform 40, Browser 1.186 und alle 14.408
+Solution-Tests bestanden. Expliziter LinuxSandboxSmoke und echter confined
+CLI-Dummy-Smoke mit vier Faces bestehen. Format: nur die drei bekannten
+Baseline-Findings. Commit/Push/CI stehen noch aus.

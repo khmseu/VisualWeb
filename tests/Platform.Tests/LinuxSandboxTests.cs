@@ -188,6 +188,21 @@ public sealed class LinuxSandboxTests
                 RuntimeEnvironment.GetRuntimeDirectory(), 7, "../outside.dll"));
             Assert.Throws<FileNotFoundException>(() => LinuxRendererSandbox.Arguments(directory, font + ".missing",
                 RuntimeEnvironment.GetRuntimeDirectory(), 7));
+            var styled = LinuxRendererSandbox.Arguments(directory, font, RuntimeEnvironment.GetRuntimeDirectory(), 7,
+                boldFontPath: font, italicFontPath: font, boldItalicFontPath: font).ToList();
+            foreach (var name in new[] { "bold", "italic", "bold-italic" })
+            {
+                var mount = styled.IndexOf("/font/" + name);
+                Assert.Equal("--ro-bind", styled[mount - 2]);
+                Assert.Equal(font, styled[mount - 1]);
+                var option = styled.IndexOf("--font-" + name);
+                Assert.Equal("/font/" + name, styled[option + 1]);
+                Assert.True(option > styled.IndexOf("--"));
+            }
+            Assert.DoesNotContain("--bind", styled);
+            Assert.Equal(1, styled.Count(value => value == directory));
+            Assert.Throws<FileNotFoundException>(() => LinuxRendererSandbox.Arguments(directory, font,
+                RuntimeEnvironment.GetRuntimeDirectory(), 7, italicFontPath: font + ".missing"));
         }
         finally
         {

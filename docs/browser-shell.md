@@ -45,9 +45,26 @@ The bundled [OFL font](../tests/Engine.Text.Tests/Data/README.md) is a pinned
 development/test fixture, not automatic production font discovery. A supplied
 font must contain the ASCII chrome glyphs and supported page text. There is no
 fallback, synthetic bold/italic or nearest-weight matching.
-The single supplied face is explicitly mapped to the generic serif/sans-serif/
-monospace aliases; this is development caller configuration, not font metadata
-matching or a guarantee that the supplied face has all those characteristics.
+The required `--font` supplies weight 400 normal for chrome and pages.
+Optional `--font-bold`, `--font-italic` and `--font-bold-italic` trusted file
+paths configure page faces at 700 normal, 400 italic and 700 italic respectively.
+For example, append these to the recommended confined launch command:
+
+```sh
+--font-bold tests/Engine.Text.Tests/Data/NotoSans-Bold.ttf \
+--font-italic tests/Engine.Text.Tests/Data/NotoSans-Italic.ttf \
+--font-bold-italic tests/Engine.Text.Tests/Data/NotoSans-BoldItalic.ttf
+```
+
+This enables ordinary headings, bold/emphasis and combined bold italic using
+real configured faces. Every supplied face is loaded at renderer startup, even
+if unused; missing/invalid files fail visibly. Omitted faces still fail when
+requested; there is no regular-face substitution. Other weights (including
+nested `bolder` resolving to 900), oblique, variable axes and downloaded fonts
+remain unsupported. Inline ancestors also need their exact faces for metrics.
+Each face is explicitly mapped to serif/sans-serif/monospace/VisualWeb aliases;
+this is operator configuration, not font metadata verification or a guarantee
+that a face has all those family characteristics. Chrome keeps the regular face.
 
 The explicit mode, development opt-out where applicable, and font path are mandatory. `--help`
 describes options. `--url ABSOLUTE_URL` replaces the offline welcome page;

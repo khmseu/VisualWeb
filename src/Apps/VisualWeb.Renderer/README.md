@@ -2,6 +2,10 @@
 
 Per-tab static rendering executable. Requires `--development-unsandboxed`
 and a trusted `--font` path; intended only for private browser-launched stdio IPC.
+Optional trusted `--font-bold`, `--font-italic` and `--font-bold-italic` file paths
+configure the same exact page faces as local rendering. Linux bootstrap remaps
+these individual files into read-only mounts; Windows receives staged paths.
+All faces are loaded before the handshake and owned by the worker's main thread.
 
 Owns native fonts and HTML/CSS/layout/paint through VisualWeb.PageRendering
 and Engine.Content. No networking/window/chrome dependency; stdout is protocol

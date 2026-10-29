@@ -3,6 +3,10 @@
 Runnable development-only browser executable. Draws SDL
 address/tab chrome, navigates GET HTML into the static engine, and manages
 history, tabs and multiple windows.
+The required trusted `--font` configures regular text; optional `--font-bold`,
+`--font-italic` and `--font-bold-italic` paths enable real styled page faces in
+both local and worker modes. See [explicit font configuration](../../../docs/browser-shell.md#run-it);
+missing exact faces still fail, without synthesis or silent fallback.
 Visible textual HTML anchors and anchors whose measurable rendered block geometry
 comes from the anchor itself or rendered descendants activate through the current tab's GET navigation on primary left click or
 Tab/Shift+Tab/Enter, open in a new active tab on middle click, and open in a

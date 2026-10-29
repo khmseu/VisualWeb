@@ -419,6 +419,21 @@ outside the supported scope.
 
 ### 5. General CSS, layout, and painting
 
+The browser now accepts optional trusted `--font-bold`, `--font-italic` and
+`--font-bold-italic` paths alongside its required regular font. Local and worker
+rendering use exact 700 normal, 400 italic and 700 italic faces for ordinary
+headings, bold/emphasis and combinations. Workers load and retain their own
+native resources; Linux mounts only the selected files read-only, and Windows
+stages only those files. Missing faces/files still fail visibly. This does not
+add automatic family selection, synthesis, nearest-weight matching, weight 900,
+oblique, variable axes or downloaded fonts. See
+[explicit font configuration](../docs/browser-shell.md#run-it).
+Validation adds 51 regressions: pinned native faces and exact styled pixels,
+missing/partial/duplicate configuration, strict worker startup, local/process
+shell wiring, confined/scripted workers and retained resize. Build and all
+14,408 solution tests pass, as do the Linux denial smoke and confined CLI
+four-face smoke. Formatting retains only the three established baseline findings.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented

@@ -32,6 +32,13 @@ accidentally launching .NET 10 workers with an unrelated .NET 8 installation.
 Custom runtime layouts can supply the `ProcessPageRenderer` API's explicit
 `dotnetPath`; native apphosts need no host lookup. Self-contained/single-file
 distribution has not been certified.
+Optional `--font-bold`, `--font-italic` and `--font-bold-italic` paths configure
+the same explicit page style faces in local and process rendering; see
+[font configuration](browser-shell.md#run-it). Font paths are startup-only
+trusted configuration, never IPC/page data. Every worker and replacement loads
+its own thread-owned shaping/painting resources. Confined Linux remaps only
+the selected files into `/font`; Windows stages only those additional files.
+No new filesystem directories, process capabilities or protocol fields are added.
 Apphost runtime-root configuration follows the official
 [.NET host environment reference](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64),
 cached as `dotnet-host-environment`.

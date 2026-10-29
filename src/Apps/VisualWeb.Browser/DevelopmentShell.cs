@@ -94,7 +94,8 @@ public sealed class DevelopmentShell : IDisposable
     [SuppressMessage("Sonar", "S107:Methods should not have too many parameters", Justification = "This composition-root constructor binds the shell's explicit platform, rendering, confinement, and trusted transport dependencies.")]
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
         bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false,
-        bool executeInlineScripts = false, Func<HttpMessageHandler>? pageTransportFactory = null)
+        bool executeInlineScripts = false, Func<HttpMessageHandler>? pageTransportFactory = null,
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
     {
         this.system = system;
         this.hidden = hidden;
@@ -106,8 +107,9 @@ public sealed class DevelopmentShell : IDisposable
         var multiprocess = rendererPath is not null;
         chrome = new(fontPath, settings.MaxFramePixels, multiprocess, requireSandbox);
         Controller = new(() => new GetPageSource(pageTransportFactory?.Invoke(), hstsPolicyStore), () => rendererPath is null
-            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts)
-            : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts), settings,
+            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts, boldFontPath, italicFontPath, boldItalicFontPath)
+            : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts,
+                boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath), settings,
             // Every multiprocess mode (confined or explicitly unsandboxed) rotates renderers per origin; there is no opt-out.
             isolateOrigins: multiprocess, pageNavigationAuthorizer: ConfirmPageNavigationAsync);
         Controller.Changed += id =>

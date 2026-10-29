@@ -11,6 +11,8 @@ syscall rules are unchanged; ARM64 excludes only explicitly listed legacy
 entry points absent from its ABI. Unresolved required rules fail filter export.
 
 The trusted bootstrap reexecutes before receiving page content. The worker
+mounts each explicitly supplied regular/bold/italic/bold-italic font as an
+individual read-only file, never its source directory. The worker
 profile confirms configuration, not hostile-code attestation. The generic
 SystemProcessLauncher still rejects sandbox requests because it lacks this
 renderer-specific mount/runtime contract.

@@ -155,7 +155,8 @@ public static class WindowsRendererSandbox
 
     public static WindowsRendererWorker Start(string applicationDirectory, string fontPath,
         string runtimeDirectory, string workerAssembly = "VisualWeb.Renderer.dll",
-        IReadOnlyList<string>? workerArguments = null)
+        IReadOnlyList<string>? workerArguments = null,
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
     {
         RequireSupport();
         ArgumentException.ThrowIfNullOrWhiteSpace(applicationDirectory);
@@ -168,6 +169,14 @@ public static class WindowsRendererSandbox
 
         var appSource = Existing(applicationDirectory, directory: true);
         var fontSource = Existing(fontPath, directory: false);
+        var additionalFonts = new List<(string Source, string Name)>();
+        AddFont(boldFontPath, "bold");
+        AddFont(italicFontPath, "italic");
+        AddFont(boldItalicFontPath, "bold-italic");
+        void AddFont(string? path, string name)
+        {
+            if (path is not null) { additionalFonts.Add((Existing(path, directory: false), name)); }
+        }
         var runtimeSource = Existing(runtimeDirectory, directory: true);
         if (!File.Exists(Path.Combine(appSource, workerAssembly)))
         {
@@ -211,12 +220,20 @@ public static class WindowsRendererSandbox
             File.Copy(hostSource, Path.Combine(stagedRuntime, "dotnet.exe"));
             Directory.CreateDirectory(Path.GetDirectoryName(stagedFont)!);
             File.Copy(fontSource, stagedFont);
+            var arguments = new List<string>();
+            foreach (var (source, name) in additionalFonts)
+            {
+                var target = Path.Combine(stagedRoot, "font", name);
+                File.Copy(source, target);
+                arguments.AddRange(["--font-" + name, target]);
+            }
+            if (workerArguments is not null) { arguments.AddRange(workerArguments); }
             Directory.CreateDirectory(stagedTemp);
             SetAppContainerAccess(stagedTemp, appContainerSid, writable: false);
 
             job = CreateJob();
             return CreateWorker(profileName, appContainerSid, job, staging, profileStorage, stagedApp,
-                stagedRuntime, stagedFont, stagedTemp, workerAssembly, workerArguments);
+                stagedRuntime, stagedFont, stagedTemp, workerAssembly, arguments);
         }
         catch
         {

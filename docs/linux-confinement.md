@@ -88,21 +88,22 @@ unit and reruns the complete resource/confinement bootstrap.
 There is no bind of the host root, home, session sockets, browser working
 directory or host temporary directory.
 
-| Sandbox path                                      | Source / access                                            |
-| ------------------------------------------------- | ---------------------------------------------------------- |
-| `/app`                                            | Trusted renderer deployment directory, read-only           |
-| `/font/font`                                      | One explicitly selected trusted font file, read-only       |
-| `/runtime/dotnet`                                 | Active runtime's host, read-only                           |
-| `/runtime/host/fxr`                               | Matching installation's host resolver directory, read-only |
-| `/runtime/shared/Microsoft.NETCore.App/<version>` | Only the active shared runtime directory, read-only        |
-| `/usr/lib`, optional `/usr/lib64`                 | Host native system libraries, read-only; no `/usr/bin`     |
-| `/lib`, optional `/lib64`                         | Symlinks into the mounted system library trees             |
-| `/etc/ld.so.cache`                                | Native loader cache only, read-only when present           |
-| `/proc`                                           | Private PID namespace procfs, read-only                    |
-| `/resource-limits`                                | Only this worker's kernel cgroup directory, read-only      |
-| `/dev`                                            | Bubblewrap's synthetic minimal devices, read-only mount    |
-| `/tmp`                                            | Private 64 MiB tmpfs, writable, discarded on worker exit   |
-| `/`                                               | Read-only mount skeleton                                   |
+| Sandbox path                                      | Source / access                                               |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| `/app`                                            | Trusted renderer deployment directory, read-only              |
+| `/font/font`                                      | One explicitly selected trusted font file, read-only          |
+| `/font/bold`, `/font/italic`, `/font/bold-italic` | Only explicitly supplied optional style font files, read-only |
+| `/runtime/dotnet`                                 | Active runtime's host, read-only                              |
+| `/runtime/host/fxr`                               | Matching installation's host resolver directory, read-only    |
+| `/runtime/shared/Microsoft.NETCore.App/<version>` | Only the active shared runtime directory, read-only           |
+| `/usr/lib`, optional `/usr/lib64`                 | Host native system libraries, read-only; no `/usr/bin`        |
+| `/lib`, optional `/lib64`                         | Symlinks into the mounted system library trees                |
+| `/etc/ld.so.cache`                                | Native loader cache only, read-only when present              |
+| `/proc`                                           | Private PID namespace procfs, read-only                       |
+| `/resource-limits`                                | Only this worker's kernel cgroup directory, read-only         |
+| `/dev`                                            | Bubblewrap's synthetic minimal devices, read-only mount       |
+| `/tmp`                                            | Private 64 MiB tmpfs, writable, discarded on worker exit      |
+| `/`                                               | Read-only mount skeleton                                      |
 
 Read-only device mounting still permits normal I/O to the synthetic null/random
 devices; it prevents creating extra writable files in that mount. The system

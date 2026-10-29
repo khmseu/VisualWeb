@@ -10,6 +10,30 @@ namespace VisualWeb.Browser.Tests;
 
 public sealed class ShellTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShellPassesExplicitStyleFacesIntoLocalAndWorkerRenderers(bool process)
+    {
+        using var system = new Windows();
+        using var shell = new DevelopmentShell(system, FontPath,
+            rendererPath: process ? Path.Combine(AppContext.BaseDirectory, "Renderer", "VisualWeb.Renderer.dll") : null,
+            boldFontPath: Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-Bold.ttf"),
+            italicFontPath: Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-Italic.ttf"),
+            boldItalicFontPath: Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-BoldItalic.ttf"),
+            pageTransportFactory: () => new NavigationHandler(_ => Html(
+                "<!doctype html><title>Fonts</title><style>*{margin:0}</style>"
+                + "<h1>Heading</h1><p><strong>Bold</strong></p><p><em>Italic</em></p><p><b><i>Both</i></b></p>")));
+        var window = OpenWindowAndApproveInitialNavigation(shell, system, "https://source.example/fonts");
+        var tab = window.ActiveTab!;
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.Equal("Fonts", tab.Title);
+        Assert.NotNull(shell.Controller.Page(tab.Id));
+    }
+
     [Fact]
     public void OptedInPrimaryPointerLinkDispatchesClickBeforeDefaultNavigation()
     {

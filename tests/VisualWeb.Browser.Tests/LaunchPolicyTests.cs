@@ -4,6 +4,39 @@ namespace VisualWeb.Browser.Tests;
 
 public sealed class LaunchPolicyTests
 {
+    [Fact]
+    public void OptionalTrustedStyleFontPathsAreExplicitAndNormalized()
+    {
+        var options = BrowserLaunchOptions.Parse(
+            ["--development-single-process", "--allow-unsandboxed-development", "--font", "regular.ttf",
+            "--font-bold", "bold face.ttf", "--font-italic", "italic.ttf", "--font-bold-italic", "both.ttf"],
+            () => throw new InvalidOperationException("No confinement preflight for explicit local development."));
+        Assert.Equal(Path.GetFullPath("bold face.ttf"), options.BoldFontPath);
+        Assert.Equal(Path.GetFullPath("italic.ttf"), options.ItalicFontPath);
+        Assert.Equal(Path.GetFullPath("both.ttf"), options.BoldItalicFontPath);
+        var regular = BrowserLaunchOptions.Parse(
+            ["--development-single-process", "--allow-unsandboxed-development", "--font", "regular.ttf"], () => { });
+        Assert.Null(regular.BoldFontPath);
+        Assert.Null(regular.ItalicFontPath);
+        Assert.Null(regular.BoldItalicFontPath);
+    }
+
+    [Theory]
+    [InlineData("--font-bold")]
+    [InlineData("--font-italic")]
+    [InlineData("--font-bold-italic")]
+    public void InvalidOptionalFontValuesAndDuplicatesFailBeforeConfinementPreflight(string option)
+    {
+        string[] basic = ["--multiprocess", "--renderer", "renderer.dll", "--font", "regular.ttf"];
+        var calls = 0;
+        foreach (var tail in new[] { new[] { option }, new[] { option, "" }, new[] { option, " " },
+            new[] { option, "--smoke" }, new[] { option, "a.ttf", option, "b.ttf" } })
+        {
+            Assert.Throws<ArgumentException>(() => BrowserLaunchOptions.Parse([.. basic, .. tail], () => calls++));
+        }
+        Assert.Equal(0, calls);
+    }
+
     public static IEnumerable<object[]> ModeMatrix()
     {
         for (var modes = 0; modes < 8; modes++)

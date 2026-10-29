@@ -20,7 +20,7 @@ public static class LinuxRendererSandbox
 
     public static IReadOnlyList<string> Arguments(string application, string font, string runtime, int filterDescriptor,
         string workerAssembly = "VisualWeb.Renderer.dll", IReadOnlyList<string>? workerArguments = null,
-        string? resourceGroup = null)
+        string? resourceGroup = null, string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
     {
         RequireSupport();
         ArgumentOutOfRangeException.ThrowIfNegative(filterDescriptor);
@@ -60,19 +60,31 @@ public static class LinuxRendererSandbox
             LinuxRendererResources.VerifyLimits(resourceGroup);
             args.AddRange(["--ro-bind", resourceGroup, "/resource-limits"]);
         }
+        var fontArguments = new List<string>();
+        AddFont(boldFontPath, "bold");
+        AddFont(italicFontPath, "italic");
+        AddFont(boldItalicFontPath, "bold-italic");
+        void AddFont(string? path, string name)
+        {
+            if (path is null) { return; }
+            args.AddRange(["--ro-bind", Existing(path, directory: false), "/font/" + name]);
+            fontArguments.AddRange(["--font-" + name, "/font/" + name]);
+        }
         args.AddRange([
             "--proc", "/proc", "--dev", "/dev", "--size", "67108864", "--tmpfs", "/tmp",
             "--remount-ro", "/proc", "--remount-ro", "/dev", "--remount-ro", "/",
             "--chdir", "/app", "--seccomp", filterDescriptor.ToString(System.Globalization.CultureInfo.InvariantCulture),
             "--", "/runtime/dotnet", "/app/" + workerAssembly, "--linux-sandbox-worker", "--font", "/font/font"
         ]);
+        args.AddRange(fontArguments);
         if (workerArguments is not null) { args.AddRange(workerArguments); }
         return args.AsReadOnly();
     }
 
     /// <summary>Replace this trusted bootstrap with bubblewrap; never return on success.</summary>
     public static void Enter(string application, string font, string workerAssembly = "VisualWeb.Renderer.dll",
-        IReadOnlyList<string>? workerArguments = null)
+        IReadOnlyList<string>? workerArguments = null,
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
     {
         RequireSupport();
         var resourceGroup = LinuxRendererResources.VerifyCurrent();
@@ -86,7 +98,8 @@ public static class LinuxRendererSandbox
             Limit(7, 256); // RLIMIT_NOFILE.
             Limit(1, 64 * 1024 * 1024); // RLIMIT_FSIZE, also bounds private temporary files.
             Limit(8, 1024 * 1024); // RLIMIT_MEMLOCK for CoreCLR's write-barrier page.
-            var arguments = Arguments(application, font, RuntimeEnvironment.GetRuntimeDirectory(), descriptor, workerAssembly, workerArguments, resourceGroup);
+            var arguments = Arguments(application, font, RuntimeEnvironment.GetRuntimeDirectory(), descriptor, workerAssembly, workerArguments,
+                resourceGroup, boldFontPath, italicFontPath, boldItalicFontPath);
             var strings = arguments.Select(Marshal.StringToCoTaskMemUTF8).ToArray();
             var vector = Marshal.AllocHGlobal((strings.Length + 1) * IntPtr.Size);
             try
