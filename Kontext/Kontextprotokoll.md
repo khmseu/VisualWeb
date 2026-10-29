@@ -2707,3 +2707,47 @@ Build/Volltests und Commit/Push/CI bleiben vor Abschluss erforderlich.
 **Abschliessende lokale Validierung:** Solution-Build mit null Warnungen/
 Fehlern und alle 14.594 Solution-Tests bestanden. Format bleibt bei drei
 bekannten Baseline-Findings. Commit/Push/CI stehen aus.
+
+**Commit/Push und CI-Zwischenstand:** `9066215` ist gepusht; Hook formatierte
+Wissensstand, acht Dateien ohne Issues. Linux `40831928303`, CodeQL
+`40831928331` und Windows ARM64 bestanden. Windows x64 in `40831928285`
+scheiterte dagegen in
+`ScrollTests.CrossDocumentHistoryTraversalRestoresEachEntryScrollPosition(true)`
+beim ersten Pump nach 15 Sekunden, nicht in neuen CSS-/Contenttests
+(537/20 bestanden). Test/ProcessPageRenderer/StaticPageRenderer sind gegen
+`8832410` unveraendert; der vorherige native Windowslauf war erfolgreich.
+Ein einzelner Failed-Job-ReRun prueft die Reproduzierbarkeit, bevor Pass 10
+begonnen wird. Ein Cold-Startup-/Runnerlastproblem ist eine Ableitung, noch
+keine bewiesene Ursache. Keine Produktionsdeadline oder fremden Tests geaendert.
+
+**Reproduzierbarkeit/Abschluss Pass 9:** Derselbe unveraenderte Windows-x64-Job
+bestand beim einmaligen ReRun einschliesslich aller Tests und nativen Smokes.
+Damit sind alle Plattformlaeufe erfolgreich. Die urspruengliche 15s-
+Historytestgrenze bleibt als Flakinessrisiko dokumentiert; eine Ursache ist
+nicht bewiesen und es wurde kein Fehler durch Test-/Produktionsaenderungen
+unterdrueckt. Pass 9 abgeschlossen, Pass 10 wird jetzt begonnen.
+
+### KP-081 - Endlicher Font-Shorthand
+
+- Dokumentiert am: 2026-10-29.
+- Quellen: `CssProperties.Expand` auf `9066215`; lokaler CSS-Fonts-4-Cache
+  vom 2026-10-04, `#font-prop`, Grammatik und Resetsemantik.
+
+**Belegter Blocker/Pass 10:** Selbst `font:16px serif` wurde als unbekannte
+Property diagnostiziert, obwohl alle fuenf beteiligten Longhands bestehen.
+Implementiert wird deren atomare Expansion mit verpflichtender Size/Family,
+optionaler Style/Weight-Reihenfolge und Slash-Lineheight sowie normal-
+Platzhaltern der bis zu vier Prefixkomponenten. Nichtnormale Varianten/
+Breiten, Oblique-Winkel und Systemfonts bleiben explizit unsupported.
+Bestehende Longhandparser, Cascade und native Exact-Face-Policy bleiben
+unveraendert. CSS- und Browser-Nativ-/Worker-Regressionsfaelle sind
+hinzugefuegt; Validierung steht aus.
+
+**Abschliessende lokale Validierung:** 52 Regressionen hinzugefuegt, darunter
+44 CSS-Faelle fuer Grammatik, alle fuenf Resets, Wide Keywords, Cascade und
+exakte Assignmentgrenzen sowie acht native Browser-/Workerpixel-/Resizefaelle.
+Gezielt CSS 581 und FontTests 53 bestanden; voll Browser 1.194 und alle
+14.646 Solution-Tests bestanden. Build: null Warnungen/Fehler.
+Format: nur drei bekannte Baseline-Findings. Commit/Push/CI stehen aus.
+Der aktuelle Wissensstand kennzeichnet fruehere Serienabschnitte jetzt
+ausdruecklich als historische Evidenz und verweist auf die aktuelle KP-066-Serie.

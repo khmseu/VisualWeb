@@ -173,7 +173,15 @@ to transparent. It expands the currently supported background longhand before
 normal cascade, including CSS-wide keywords, currentColor and importance.
 Unsupported images, layers, repeat/position/size/attachment/box components and
 duplicate values diagnose the entire declaration without partial assignments.
-Font/text-decoration shorthands remain deferred.
+The finite `font` shorthand requires size and family, accepts optional
+style/weight before size and `/ line-height` after size, and resets all five
+supported font longhands before cascade. Default `normal` placeholders for
+style/variant/weight/width are accepted (at most four prefix components);
+non-normal variants/widths, oblique angles and system-font keywords remain
+unsupported whole-declaration diagnostics. Existing font units, family lists,
+CSS-wide keywords and relative weight/size computation are reused. The engine
+does not add other font longhands or expand its exact native face policy.
+Text-decoration shorthand remains deferred.
 
 Length units are **px, em, rem, %**, plus unitless zero. Font-size em/% use the
 parent size; other em values use the element's size; rem uses the root size

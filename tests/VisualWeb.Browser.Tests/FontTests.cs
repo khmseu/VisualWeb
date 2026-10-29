@@ -18,6 +18,50 @@ public sealed class FontTests
         boldFontPath: Font("-Bold"), italicFontPath: Font("-Italic"), boldItalicFontPath: Font("-BoldItalic"));
 
     [Theory]
+    [InlineData("16px serif", "font-size:16px;line-height:normal;font-weight:400;font-style:normal;font-family:serif")]
+    [InlineData("italic 16px/24px serif", "font-size:16px;line-height:24px;font-weight:400;font-style:italic;font-family:serif")]
+    [InlineData("bold 20px/1.5 sans-serif", "font-size:20px;line-height:1.5;font-weight:700;font-style:normal;font-family:sans-serif")]
+    [InlineData("italic bold 16px/24px serif", "font-size:16px;line-height:24px;font-weight:700;font-style:italic;font-family:serif")]
+    [InlineData("normal normal normal normal 16px/24px serif", "font-size:16px;line-height:24px;font-weight:400;font-style:normal;font-family:serif")]
+    [InlineData("700 italic 16px/24px \"VisualWeb\"", "font-size:16px;line-height:24px;font-weight:700;font-style:italic;font-family:VisualWeb")]
+    public void FontShorthandResetsUaHeadingAndUsesExactConfiguredNativeFace(string shorthand, string longhands)
+    {
+        using var renderer = Local();
+        using var reference = Local();
+        var viewport = new PageViewport(300, 100, 1);
+        var actual = renderer.Render(Document("<h1>Sample</h1>", "<style>h1{font:" + shorthand + "}</style>"), viewport, Cancellation);
+        var expected = reference.Render(Document("<h1>Sample</h1>", "<style>h1{" + longhands + "}</style>"), viewport, Cancellation);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FontShorthandReachesWorkerPixelsAndRetainedResizeWithoutChangingFacePolicy(bool confined)
+    {
+        const string markup = "<h1>Heading</h1><p>Both</p>";
+        var document = Document(markup, "<style>h1{font:20px/30px serif}p{font:italic 700 16px/24px serif}</style>");
+        var expectedDocument = Document(markup, "<style>h1{font-size:20px;line-height:30px;font-weight:400;font-style:normal}"
+            + "p{font-size:16px;line-height:24px;font-weight:700;font-style:italic}</style>");
+        var viewport = new PageViewport(300, 100, 1);
+        var resized = viewport with { Width = 260 };
+        byte[] reference, expectedRetained;
+        using (var local = Local())
+        {
+            reference = local.Render(expectedDocument, viewport, Cancellation).Frame.Pixels.ToArray();
+            local.CommitDocument(expectedDocument.DocumentId);
+            expectedRetained = local.Render(expectedDocument, resized, Cancellation, reuseDocument: true).Frame.Pixels.ToArray();
+        }
+        using var renderer = new ProcessPageRenderer(Renderer, Font(), requireSandbox: confined,
+            boldFontPath: Font("-Bold"), italicFontPath: Font("-Italic"), boldItalicFontPath: Font("-BoldItalic"));
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        Assert.Equal(reference, first.Frame.Pixels.ToArray());
+        renderer.CommitDocument(document.DocumentId);
+        var next = await renderer.RenderRetainedAsync(document, resized, Cancellation);
+        Assert.Equal(expectedRetained, next.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
     [InlineData("-Bold", "C976E4B1B99EDC88775377FCC21692CA4BFA46B6D6CA6522BFDA505B28FF9D6A")]
     [InlineData("-Italic", "36CFF144DF01309DAB648BEA71BAFF9BB074026914AFE63AEACC8BC90B67A28B")]
     [InlineData("-BoldItalic", "6EDF4227EF0FA846ACA70E86A307804CA4401741830F5B3AF0F2554ABE2B8466")]

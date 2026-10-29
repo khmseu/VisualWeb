@@ -17,6 +17,11 @@ The finite color-only `background` shorthand accepts one color plus optional
 `none`, or `none` alone, and expands the supported background-color longhand.
 Images/layers and other background components remain explicit diagnostics;
 invalid declarations never partially override a previous color.
+The finite `font` shorthand atomically resets/sets style, weight, size,
+line-height and family using the existing longhand parsers. Size/family are
+mandatory; optional style/weight and slash line-height are supported.
+Non-normal variants/widths, oblique angles and system-font keywords remain
+diagnostics. This does not add font fallback or change native face selection.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,

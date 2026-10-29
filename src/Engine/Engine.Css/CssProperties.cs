@@ -133,6 +133,40 @@ internal static class CssProperties
                     Add("border-" + side + "-color", color ?? Registry["border-top-color"].Initial);
                 }
             }
+            else if (name == "font")
+            {
+                var names = new[] { "font-style", "font-weight", "font-size", "line-height", "font-family" };
+                if (wide is not null) { foreach (var property in names) { Add(property, wide); } continue; }
+                CssValue? style = null, weight = null, size = null;
+                var index = 0;
+                var prefixCount = 0;
+                var valid = true;
+                while (index < value.Count)
+                {
+                    var component = new List<CssToken> { value[index++] };
+                    if (Parse("font-size", component) is { } parsedSize) { size = parsedSize; break; }
+                    if (++prefixCount > 4) { valid = false; break; }
+                    if (component[0].Kind == CssTokenKind.Ident && CssText.Lower(component[0].Value) == "normal") { continue; }
+                    if (style is null && Parse("font-style", component) is { } parsedStyle) { style = parsedStyle; }
+                    else if (weight is null && Parse("font-weight", component) is { } parsedWeight) { weight = parsedWeight; }
+                    else { valid = false; break; }
+                }
+                if (!valid || size is null) { Invalid(); continue; }
+                var line = Registry["line-height"].Initial;
+                if (index < value.Count && value[index].Kind == CssTokenKind.Delim && value[index].Value == "/")
+                {
+                    index++;
+                    if (index == value.Count || Parse("line-height", [value[index++]]) is not { } parsedLine)
+                    { Invalid(); continue; }
+                    line = parsedLine;
+                }
+                if (Families(value.Skip(index).ToArray()) is not { } families) { Invalid(); continue; }
+                Add(names[0], style ?? Registry[names[0]].Initial);
+                Add(names[1], weight ?? Registry[names[1]].Initial);
+                Add(names[2], size);
+                Add(names[3], line);
+                Add(names[4], families);
+            }
             else if (name == "background")
             {
                 CssValue? color = wide;

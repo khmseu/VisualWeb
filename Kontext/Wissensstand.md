@@ -4,16 +4,21 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-10-26, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-10-29, Zeitzone Europe/Berlin (UTC+01:00).
+- Aktuelle Serie: Der Auftrag vom 2026-10-28 (KP-066 bis KP-081) und die
+  Passentabelle unter [Auftrag und Ziel](#auftrag-und-ziel) beschreiben den
+  aktuellen Lauf fuer einfache Websites. Aeltere Serienstaende und deren
+  damalige naechste Schritte bleiben unten als historische Evidenz erhalten,
+  nicht als aktueller Arbeitsauftrag. Alte Quellen wurden nicht pauschal neu geprueft.
 - Rekonstruktionsstand: teilweise; Originalauftrag ab 2026-10-04,
   ausgewaehlte Entscheidungen bis 2026-10-22 nachvollzogen.
-- Artefaktstand: `c39b6d3` (`feat(browser): confirm typed cross-origin
+- Aelterer Artefaktstand: `c39b6d3` (`feat(browser): confirm typed cross-origin
 address-bar navigation`) und die Projektkartenkorrektur `41f6e96` wurden am
   2026-10-26 auf `origin/main` gepusht; CodeQL, Linux development und Windows
   confinement sind fuer beide Commits erfolgreich. Pass 3 wurde als
   `93111dc` gepusht; CodeQL, Linux development und Windows confinement sind
   ebenfalls erfolgreich.
-- Arbeitsstand: Die zehn vorherigen HTML-Recovery-Passen sind getrennt
+- Aelterer Arbeitsstand: Die zehn vorherigen HTML-Recovery-Passen sind getrennt
   committed, gepusht und abschliessend CI-gruen. Eine neue Zehn-Passen-Serie
   ist angefragt. Pass 1, page-initiated `about:blank` mit geerbter Origin,
   browser-UI blank opaque und Origin-erhaltender History, ist implementiert
@@ -109,7 +114,7 @@ startet keine neue Implementierung
 **Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
-Acht Feature-Passen sind abgeschlossen; zwei stehen aus:
+Neun Feature-Passen sind abgeschlossen; einer steht aus:
 
 | Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
 | ---- | -------------------------------------------------------------------------- | --------- | ----------------- |
@@ -121,11 +126,15 @@ Acht Feature-Passen sind abgeschlossen; zwei stehen aus:
 | 6    | Satzzeichen/URLs in nicht umbrechendem pre/nowrap-Text                     | `35543c3` | KP-076/KP-077     |
 | 7    | Explizite vertrauenswuerdige Bold-/Italic-/BoldItalic-Dateien end-to-end   | `780250f` | KP-078            |
 | 8    | Alle 148 standardisierten opaken CSS-Farbnamen                             | `8832410` | KP-079            |
+| 9    | Atomarer endlicher Farb-/none-Background-Shorthand                         | `9066215` | KP-080            |
 
-Alle acht Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
+Alle neun Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
 CodeQL und Windows x64/ARM64 CI einschliesslich nativer Smokes.
-Zuletzt lokal validiert: Build und 14.594 Solution-Tests einschliesslich
-Browser 1.186, CSS 537 und Content 20. Pass 9: Commit/Push/CI stehen aus.
+Zuletzt lokal validiert: Build und 14.646 Solution-Tests einschliesslich
+Browser 1.194, CSS 581 und Content 20. Pass 10: Commit/Push/CI stehen aus.
+Pass 9 ist CI-bestaetigt; Windows x64
+brauchte nach einem nicht reproduzierten alten 15s-Historytest-Timeout einen
+einzelnen unveraenderten Failed-Job-ReRun (KP-080). Ursache bleibt unbewiesen.
 Format meldet nur drei auf `81bb414` belegte Baseline-Findings
 (Whitespace/Imports in `StaticLayout.cs`, Imports in `ShellChrome.cs`).
 
@@ -171,7 +180,7 @@ Linux `40825983844`, Windows x64/ARM64 `40825983728`, CodeQL `40825983204`.
 51 neue Regressionen, Browser 1.186 und alle 14.408 Solution-Tests sowie Build
 bestanden. Platform 40, Linux-Denial-Smoke und echter confined CLI-Smoke mit
 vier Faces bestehen. Format meldet nur drei bekannte Baseline-Findings.
-Zwei Feature-Passen bleiben. Pass 8 erweitert die belegte 18-Farbnamen-
+Ein Feature-Pass bleibt. Pass 8 erweitert die belegte 18-Farbnamen-
 Grenze auf die vollstaendige offizielle Tabelle mit 148 opaken sRGB-Namen
 (CSS Color 4, Cache 2026-10-04; keine Systemfarben/neuen Farbraeume).
 155 neue Regressionen und alle 14.563 Tests bestehen lokal.
@@ -179,6 +188,10 @@ Pass 8 ist als `8832410` gepusht; Linux `40828734021`, Windows `40828734049`
 und CodeQL `40828733649` bestehen. Pass 9 implementiert den belegten
 fehlenden Farb-/none-Subset des `background`-Shorthands; weitere
 Hintergrundkomponenten bleiben diagnostizierte Ausschluesse (KP-080).
+Pass 9: Linux `40831928303`, Windows `40831928285` nach einmaligem ReRun und
+CodeQL `40831928331` erfolgreich. Pass 10 implementiert den belegten fehlenden
+`font`-Shorthand fuer die fuenf vorhandenen Font-Longhands (KP-081).
+Pass 10 besteht lokal: 52 neue Regressionen, Build und alle 14.646 Tests.
 
 ## Rahmenbedingungen und Nicht-Ziele
 

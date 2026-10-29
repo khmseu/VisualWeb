@@ -451,6 +451,15 @@ remain explicit whole-declaration diagnostics, not partial color application.
 Its 31 regressions, solution build and all 14,594 solution tests pass locally;
 formatting reports only the three established baseline findings.
 
+The finite `font` shorthand now expands style/weight/size/line-height/family
+atomically, with mandatory size/family, optional style/weight and slash
+line-height, CSS-wide keywords and resets of omitted supported fields.
+Existing units, relative sizes/weights and family lists are reused.
+Non-normal variants/widths, oblique angles and system fonts remain diagnosed.
+This does not add new font longhands, downloads, fallback or synthesized faces.
+Its 52 regressions, solution build and all 14,646 solution tests pass locally;
+formatting reports only the three established baseline findings.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented
