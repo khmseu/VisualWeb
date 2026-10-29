@@ -7,6 +7,88 @@ namespace VisualWeb.Engine.Css.Tests;
 
 public sealed class CascadeTests
 {
+    [Theory]
+    [InlineData("red", 255, 0, 0, 255)]
+    [InlineData("none", 0, 0, 0, 0)]
+    [InlineData("transparent", 0, 0, 0, 0)]
+    [InlineData("none LIGHTGRAY", 211, 211, 211, 255)]
+    [InlineData("blue none", 0, 0, 255, 255)]
+    [InlineData("#1234", 17, 34, 51, 68)]
+    [InlineData("rgba(10,20,30,.5) none", 10, 20, 30, 128)]
+    [InlineData("none rgb(100%,0%,0%)", 255, 0, 0, 255)]
+    public void ColorOnlyBackgroundShorthandUsesExistingColorParser(string value, byte r, byte g, byte b, byte a)
+    {
+        var doc = Document();
+        var result = Compute(doc, new CssStyleSource("#child{background:" + value + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(r, g, b, a), Child(result, doc)["background-color"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("red blue")]
+    [InlineData("none none")]
+    [InlineData("red none none")]
+    [InlineData("red repeat")]
+    [InlineData("red center")]
+    [InlineData("red / cover")]
+    [InlineData("red fixed")]
+    [InlineData("red border-box")]
+    [InlineData("url(image.png) red")]
+    [InlineData("linear-gradient(red,blue) red")]
+    [InlineData("none, red")]
+    [InlineData("inherit red")]
+    public void UnsupportedBackgroundShorthandIsAtomic(string value)
+    {
+        var doc = Document();
+        var result = Compute(doc, new CssStyleSource("#child{background-color:lime;background:" + value + "}"));
+        Assert.NotEmpty(result.Diagnostics);
+        Assert.Equal(new CssColor(0, 255, 0), Child(result, doc)["background-color"]);
+    }
+
+    [Theory]
+    [InlineData("initial", 0, 0)]
+    [InlineData("unset", 0, 0)]
+    [InlineData("inherit", 255, 255)]
+    [InlineData("revert", 0, 0)]
+    public void BackgroundShorthandWideKeywordsFollowNonInheritedLonghand(string keyword, byte red, byte alpha)
+    {
+        var doc = Document();
+        var result = Compute(doc, new CssStyleSource("#parent{background:red}#child{background:blue;background:" + keyword + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(red, 0, 0, alpha), Child(result, doc)["background-color"]);
+    }
+
+    [Fact]
+    public void BackgroundShorthandRetainsCurrentColorImportanceSourceOrderAndInlineCascade()
+    {
+        var doc = Document("<div id=parent><p id=child style='color:blue;background:currentColor!important'>Text</p></div>");
+        var result = Compute(doc, new CssStyleSource("#child{background:red}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(0, 0, 255), Child(result, doc)["background-color"]);
+        var ordinary = Document();
+        var ordered = Compute(ordinary, new CssStyleSource("#child{background:red!important;background-color:blue}"));
+        Assert.Equal(new CssColor(255, 0, 0), Child(ordered, ordinary)["background-color"]);
+        var reset = Compute(ordinary, new CssStyleSource("#child{background-color:red;background:none}"));
+        Assert.Equal(new CssColor(0, 0, 0, 0), Child(reset, ordinary)["background-color"]);
+    }
+
+    [Fact]
+    public void BackgroundShorthandUsesOneExactAssignmentAndInvalidValuesUseNone()
+    {
+        var doc = Document();
+        CssStyleSource[] source = [new("#child{background:red}")];
+        Assert.Empty(CssStyleEngine.Compute(doc, source, options: new() { MaxAssignments = 1 },
+            includeUserAgent: false, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc,
+            [new("#child{background:red;background:none}")], options: new() { MaxAssignments = 1 },
+            includeUserAgent: false, cancellationToken: Cancellation));
+        var invalid = CssStyleEngine.Compute(doc, [new("#child{background:red repeat;background:blue}")],
+            options: new() { MaxAssignments = 1 }, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Single(invalid.Diagnostics);
+        Assert.Equal(new CssColor(0, 0, 255), Child(invalid, doc)["background-color"]);
+    }
+
     [Fact]
     public void TableUaDisplaysAndInheritedSpacingUseTheFiniteSeparateModel()
     {

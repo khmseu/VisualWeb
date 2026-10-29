@@ -13,6 +13,10 @@ Color values include the complete 148-name opaque sRGB table in CSS Color 4
 (`css-color`), including gray/grey and cyan/magenta aliases. Names remain
 ASCII case-insensitive; transparent/currentColor retain their separate behavior.
 System colors and additional functional color spaces remain unsupported.
+The finite color-only `background` shorthand accepts one color plus optional
+`none`, or `none` alone, and expands the supported background-color longhand.
+Images/layers and other background components remain explicit diagnostics;
+invalid declarations never partially override a previous color.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,

@@ -443,6 +443,14 @@ system colors, new functional color spaces, gradients or broad color management.
 Its 155 regressions, solution build and all 14,563 solution tests pass locally;
 formatting reports only the three established baseline findings.
 
+The finite `background` shorthand now accepts one supported color and optional
+`none`, with transparent reset when the color is omitted. CSS-wide keywords,
+currentColor, inline/source-order/important cascade and existing limits apply.
+Images, multiple layers and positioning/sizing/repeat/attachment/box components
+remain explicit whole-declaration diagnostics, not partial color application.
+Its 31 regressions, solution build and all 14,594 solution tests pass locally;
+formatting reports only the three established baseline findings.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented

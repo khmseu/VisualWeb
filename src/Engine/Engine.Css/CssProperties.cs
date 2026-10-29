@@ -133,6 +133,25 @@ internal static class CssProperties
                     Add("border-" + side + "-color", color ?? Registry["border-top-color"].Initial);
                 }
             }
+            else if (name == "background")
+            {
+                CssValue? color = wide;
+                if (wide is null)
+                {
+                    var components = Components(value);
+                    var valid = components.Count is >= 1 and <= 2;
+                    var none = false;
+                    foreach (var component in components)
+                    {
+                        if (component.Count == 1 && component[0].Kind == CssTokenKind.Ident
+                            && CssText.Lower(component[0].Value) == "none" && !none) { none = true; }
+                        else if (color is null && Color(component) is { } parsed) { color = parsed; }
+                        else { valid = false; }
+                    }
+                    if (!valid) { Invalid(); continue; }
+                }
+                Add("background-color", color ?? Registry["background-color"].Initial);
+            }
             else if (name == "list-style")
             {
                 var names = new[] { "list-style-type", "list-style-position", "list-style-image" };

@@ -109,7 +109,7 @@ startet keine neue Implementierung
 **Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
-Sieben Feature-Passen sind abgeschlossen; drei stehen aus:
+Acht Feature-Passen sind abgeschlossen; zwei stehen aus:
 
 | Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
 | ---- | -------------------------------------------------------------------------- | --------- | ----------------- |
@@ -120,11 +120,12 @@ Sieben Feature-Passen sind abgeschlossen; drei stehen aus:
 | 5    | Automatische einfache HTML-Tabellen, vom Nutzer gewaehlt                   | `ff918ff` | KP-075/KP-076     |
 | 6    | Satzzeichen/URLs in nicht umbrechendem pre/nowrap-Text                     | `35543c3` | KP-076/KP-077     |
 | 7    | Explizite vertrauenswuerdige Bold-/Italic-/BoldItalic-Dateien end-to-end   | `780250f` | KP-078            |
+| 8    | Alle 148 standardisierten opaken CSS-Farbnamen                             | `8832410` | KP-079            |
 
-Alle sieben Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
+Alle acht Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
 CodeQL und Windows x64/ARM64 CI einschliesslich nativer Smokes.
-Zuletzt lokal validiert: Build und 14.563 Solution-Tests einschliesslich
-Browser 1.186, CSS 510 und Content 16. Farbpass 8: Commit/Push/CI stehen aus.
+Zuletzt lokal validiert: Build und 14.594 Solution-Tests einschliesslich
+Browser 1.186, CSS 537 und Content 20. Pass 9: Commit/Push/CI stehen aus.
 Format meldet nur drei auf `81bb414` belegte Baseline-Findings
 (Whitespace/Imports in `StaticLayout.cs`, Imports in `ShellChrome.cs`).
 
@@ -158,7 +159,7 @@ Solution-Tests bestanden; Format meldet nur drei bekannte Baseline-Findings.
 Commit `35543c3` ist gepusht; Linux (`40791947973`), Windows x64/ARM64
 (`40791947945`) und CodeQL (`40791947748`) bestehen.
 
-**Q-010 - Umfang des naechsten Schriftinkrements (beschlossen, KP-077/KP-078):**
+**Q-024 - Umfang des naechsten Schriftinkrements (beschlossen, KP-077/KP-078):**
 Default-Headings/strong/em verlangen echte Bold-/Italic-Faces; der Browser
 registriert derzeit nur Regular 400 normal. Vorschlaege: optionale explizite
 vertrauenswuerdige Pfade fuer Bold/Italic/BoldItalic durch Local-/Worker-
@@ -170,10 +171,14 @@ Linux `40825983844`, Windows x64/ARM64 `40825983728`, CodeQL `40825983204`.
 51 neue Regressionen, Browser 1.186 und alle 14.408 Solution-Tests sowie Build
 bestanden. Platform 40, Linux-Denial-Smoke und echter confined CLI-Smoke mit
 vier Faces bestehen. Format meldet nur drei bekannte Baseline-Findings.
-Drei Feature-Passen bleiben. Pass 8 erweitert gerade die belegte 18-Farbnamen-
+Zwei Feature-Passen bleiben. Pass 8 erweitert die belegte 18-Farbnamen-
 Grenze auf die vollstaendige offizielle Tabelle mit 148 opaken sRGB-Namen
 (CSS Color 4, Cache 2026-10-04; keine Systemfarben/neuen Farbraeume).
 155 neue Regressionen und alle 14.563 Tests bestehen lokal.
+Pass 8 ist als `8832410` gepusht; Linux `40828734021`, Windows `40828734049`
+und CodeQL `40828733649` bestehen. Pass 9 implementiert den belegten
+fehlenden Farb-/none-Subset des `background`-Shorthands; weitere
+Hintergrundkomponenten bleiben diagnostizierte Ausschluesse (KP-080).
 
 ## Rahmenbedingungen und Nicht-Ziele
 

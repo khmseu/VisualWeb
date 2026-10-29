@@ -167,7 +167,13 @@ Supported longhands:
 | Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
-physical border sides. Font/background/text-decoration shorthands are deferred.
+physical border sides. The finite `background` shorthand accepts one supported
+color and optional `none` in either order; `none` alone resets background-color
+to transparent. It expands the currently supported background longhand before
+normal cascade, including CSS-wide keywords, currentColor and importance.
+Unsupported images, layers, repeat/position/size/attachment/box components and
+duplicate values diagnose the entire declaration without partial assignments.
+Font/text-decoration shorthands remain deferred.
 
 Length units are **px, em, rem, %**, plus unitless zero. Font-size em/% use the
 parent size; other em values use the element's size; rem uses the root size

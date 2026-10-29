@@ -2597,7 +2597,7 @@ registriert nur Regular 400 normal; die bewusst exakte Fontauswahl lehnt
 andere Gewichte/Stile ab. Die CLI akzeptiert nur einen vertrauenswuerdigen
 Schriftpfad. Routine-Markup scheitert damit ohne explizite CSS-Neutralisierung.
 
-**Vorschlag/offene Entscheidung Q-010:** Optionale echte Bold-/Italic-/
+**Vorschlag/offene Entscheidung Q-024:** Optionale echte Bold-/Italic-/
 BoldItalic-Dateien explizit konfigurieren und sicher durch Local-/Worker-/
 Confinementpfade fuehren; alternativ kleinerer Bold-only-Pass fuer Headings
 und strong. Vollstaendige Drei-Face-Erweiterung deckt auch em und kombinierte
@@ -2673,3 +2673,37 @@ Fehlern und alle 14.563 Solution-Tests bestanden. Format meldet nur drei bekannt
 Baseline-Findings. Ein initial fehlendes Escape einer interpolierten
 CSS-Testklammer wurde vor der erfolgreichen Validierung korrigiert.
 Commit/Push/CI stehen aus.
+
+**Commit/Push/CI:** `8832410` ist gepusht. Hook formatierte Wissensstand und
+CSS-Guide; acht Dateien ohne Issues.
+[Linux 40828734021](https://github.com/khmseu/VisualWeb/actions/runs/40828734021),
+[Windows 40828734049](https://github.com/khmseu/VisualWeb/actions/runs/40828734049)
+und [CodeQL 40828733649](https://github.com/khmseu/VisualWeb/actions/runs/40828733649)
+bestanden einschliesslich nativer x64/ARM64-Smokes.
+
+### KP-080 - Endlicher Background-Shorthand
+
+- Dokumentiert am: 2026-10-29.
+- Quellen: `CssProperties.Expand` auf `8832410`, CSS-Guide und lokale
+  CSS-Backgrounds-3-Spezifikation `#background` (Cache 2026-10-04).
+
+**Pass 9 / belegter Blocker:** Selbst `background:red` wurde als unbekannte
+Property diagnostiziert, obwohl background-color laengst renderbar ist.
+Implementiert wird ein einzelner Farblayer mit optionalem none, atomarer
+Expansion der unterstuetzten Background-Longhand, transparentem Reset und
+normalen Wide-/Cascade-/Budgetsemantiken. Bilder, Layer, Repeat, Position,
+Groesse, Attachment und Boxkomponenten werden nicht still ignoriert.
+CSS- und native Contenttests sind hinzugefuegt; Validierung steht aus.
+
+**Redaktionelle ID-Korrektur:** Die Schriftumfangsfrage in KP-077 und im
+aktuellen Wissensstand war irrtuemlich ebenfalls Q-010 genannt, obwohl diese
+ID bereits zu einer aelteren Parserfrage gehoert. Sie ist jetzt Q-024;
+Inhalt und beschlossene Nutzerwahl bleiben unveraendert.
+
+**Gezielte Validierung:** 31 neue Regressionen; CSS 537 und Content 20
+Tests bestehen. Format meldet nur drei bekannte Baseline-Findings.
+Build/Volltests und Commit/Push/CI bleiben vor Abschluss erforderlich.
+
+**Abschliessende lokale Validierung:** Solution-Build mit null Warnungen/
+Fehlern und alle 14.594 Solution-Tests bestanden. Format bleibt bei drei
+bekannten Baseline-Findings. Commit/Push/CI stehen aus.

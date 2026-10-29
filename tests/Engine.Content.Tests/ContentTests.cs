@@ -7,6 +7,30 @@ namespace VisualWeb.Engine.Content.Tests;
 
 public sealed class ContentTests
 {
+    [Theory]
+    [InlineData("lightgray")]
+    [InlineData("none lightgray")]
+    [InlineData("currentColor")]
+    [InlineData("none")]
+    public void BackgroundShorthandMatchesLonghandNativePixelsAndRetainedResize(string background)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var shorthand = new[] { new CssStyleSource("*{margin:0}div{height:20px;color:lightgray;background:" + background + "}") };
+        var color = background == "none" ? "transparent" : "lightgray";
+        const string html = "<!doctype html><div></div>";
+        var result = OfflinePageRenderer.Render(html, shorthand, text, fonts, 40, 30, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html,
+            [new("*{margin:0}div{height:20px;background-color:" + color + "}")],
+            text, fonts, 40, 30, cancellationToken: Cancellation);
+        Assert.Empty(result.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), result.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(result.Html, shorthand, text, fonts, 30, 30, cancellationToken: Cancellation);
+        Assert.Same(result.Html.Document, resized.Html.Document);
+        Assert.Equal(result.Frame.Pixels.Span[..4].ToArray(), resized.Frame.Pixels.Span[..4].ToArray());
+    }
+
     [Fact]
     public void StandardNamedBackgroundAndBorderColorsReachExactNativePixels()
     {
