@@ -454,6 +454,7 @@ public static partial class StaticLayout
                 {
                     throw new UnsupportedLayoutException($"white-space:{whitespace} is outside the initial layout subset.");
                 }
+                var canWrap = whitespace is not ("pre" or "nowrap");
                 var word = new StringBuilder();
                 foreach (var c in text.Data.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'))
                 {
@@ -480,21 +481,24 @@ public static partial class StaticLayout
                     if (word.Length == 0) { return; }
                     var value = word.ToString();
                     TextFont.ValidateLatin(value, cancellation);
-                    if (value.Any(c => c is '-' or '/' or '\\' or >= '\u2010' and <= '\u2015'))
+                    if (canWrap)
                     {
-                        throw new UnsupportedLayoutException("Hyphen/punctuation line-break opportunities are deferred.");
-                    }
-                    for (var index = 1; index < value.Length - 1; index++)
-                    {
-                        var c = value[index];
-                        if (!char.IsLetterOrDigit(c) && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark
-                            && c is not ('\'' or '\u2019' or '\u00A0')
-                            && !(c == '.' && char.IsAsciiDigit(value[index - 1]) && char.IsAsciiDigit(value[index + 1])))
+                        if (value.Any(c => c is '-' or '/' or '\\' or >= '\u2010' and <= '\u2015'))
                         {
-                            throw new UnsupportedLayoutException("Internal punctuation needs deferred Unicode line-break analysis.");
+                            throw new UnsupportedLayoutException("Hyphen/punctuation line-break opportunities are deferred.");
+                        }
+                        for (var index = 1; index < value.Length - 1; index++)
+                        {
+                            var c = value[index];
+                            if (!char.IsLetterOrDigit(c) && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark
+                                && c is not ('\'' or '\u2019' or '\u00A0')
+                                && !(c == '.' && char.IsAsciiDigit(value[index - 1]) && char.IsAsciiDigit(value[index + 1])))
+                            {
+                                throw new UnsupportedLayoutException("Internal punctuation needs deferred Unicode line-break analysis.");
+                            }
                         }
                     }
-                    output.Add(new(text, inheritedStyle, value, UnitKind.Word, whitespace is not ("pre" or "nowrap")));
+                    output.Add(new(text, inheritedStyle, value, UnitKind.Word, canWrap));
                     word.Clear();
                 }
             }

@@ -480,6 +480,80 @@ public sealed class LayoutTests
         Assert.Equal(count, box.Lines.Count);
     }
 
+    [Theory]
+    [InlineData("nowrap")]
+    [InlineData("pre")]
+    public void NonWrappingTextPreservesUrlsAndInternalPunctuationWithoutSoftBreaks(string mode)
+    {
+        const string text = "well-known https://example.test/a?x=1";
+        var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}", width: 10).Root!, "x");
+        var line = Assert.Single(box.Lines);
+        Assert.Equal(text, string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(text.Length * 5, line.Fragments.Sum(fragment => fragment.Run.Width));
+        Assert.Equal(10, box.Content.Height);
+    }
+
+    [Theory]
+    [InlineData("nowrap", 1, "a-b c/d")]
+    [InlineData("pre", 2, "  a-b  c/d  ")]
+    public void NonWrappingPunctuationKeepsExistingWhitespaceAndForcedBreakSemantics(
+        string mode, int lines, string expected)
+    {
+        var box = Find(Layout("<p id=x>  a-b \n c/d  </p>", "#x{white-space:" + mode + "}", width: 10).Root!, "x");
+        Assert.Equal(lines, box.Lines.Count);
+        var actual = string.Concat(box.Lines.SelectMany(line => line.Fragments).Select(fragment => fragment.Run.Text));
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData("normal")]
+    [InlineData("pre-line")]
+    public void WrappingPunctuationStillRequiresSupportedLineBreakAnalysis(string mode) =>
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            Layout("<p>a-b/c</p>", "p{white-space:" + mode + "}"));
+
+    [Theory]
+    [InlineData("nowrap", "\u00AD")]
+    [InlineData("pre", "\u00AD")]
+    [InlineData("nowrap", "\u202E")]
+    [InlineData("pre", "\u202E")]
+    [InlineData("nowrap", "\u4E00")]
+    [InlineData("pre", "\u4E00")]
+    public void NonWrappingTextRetainsUnsupportedScriptControlAndSoftHyphenFailures(string mode, string text) =>
+        Assert.Throws<UnsupportedTextException>(() =>
+            Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
+
+    [Fact]
+    public void NonWrappingPunctuationHasIdenticalIntrinsicMinimumAndMaximumWidths()
+    {
+        var root = UnorderedList("<table id=t><tr><td id=c>a-b/c</td></tr></table>",
+            "td{white-space:nowrap}", width: 10).Root!;
+        Assert.Equal(31, Find(root, "t").Content.Width);
+        Assert.Equal(25, Find(root, "c").Content.Width);
+        Assert.Single(Find(root, "c").Lines);
+    }
+
+    [Theory]
+    [InlineData("nowrap")]
+    [InlineData("pre")]
+    public void NonWrappingPunctuationStillChargesExactTextAndShapingLimits(string mode)
+    {
+        var css = "p{white-space:" + mode + "}";
+        Assert.NotNull(Layout("<p>a-b/c</p>", css, options: new()
+        {
+            MaxTextCharacters = 5,
+            MaxShapedGlyphs = 5,
+            MaxShapingCalls = 2,
+            MaxLines = 1
+        }).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a-b/c</p>", css,
+            options: new() { MaxTextCharacters = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a-b/c</p>", css,
+            options: new() { MaxShapedGlyphs = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a-b/c</p>", css,
+            options: new() { MaxShapingCalls = 1 }));
+    }
+
     [Fact]
     public void BrBreaksAndPreservedSpacesHaveExplicitLineGeometry()
     {

@@ -2532,3 +2532,46 @@ Browser-Tabellenfaelle erwarteten irrtuemlich das Entfernen eines offscreen
 Links; der vorhandene Fokusvertrag behaelt Identitaet ohne sichtbare Rects.
 Die Tests pruefen jetzt diesen Vertrag und wieder sichtbare Rects nach Resize,
 ohne Produktionsverhalten zu veraendern. Commit/Push/CI bleiben erforderlich.
+
+**Commit/Push:** `ff918ff` (`feat(layout): render bounded automatic HTML tables`)
+ist auf `origin/main`. Der Hook formatierte vier Markdown-/JSON-Dateien,
+pruefte danach 21 geaenderte Dateien und meldete keine Issues.
+[Linux 40789165962](https://github.com/khmseu/VisualWeb/actions/runs/40789165962),
+[Windows 40789165996](https://github.com/khmseu/VisualWeb/actions/runs/40789165996)
+und [CodeQL 40789166119](https://github.com/khmseu/VisualWeb/actions/runs/40789166119)
+laufen noch; Pass 5 wird noch nicht als CI-bestaetigt gezaehlt.
+
+### KP-076 - Tabellen-CI bestaetigt und nicht umbrechende Satzzeichentexte
+
+- Dokumentiert am: 2026-10-29.
+- Quellen: `ff918ff`, die drei in KP-075 verlinkten abgeschlossenen CI-Laeufe;
+  `StaticLayout.Gather/EmitWord`, `TextFont.ValidateLatin`, Layouttests;
+  lokaler `css-text`-Cache, Abschnitte `white-space:pre` und `nowrap`.
+
+**Belegt:** Alle Linux-/CodeQL-/Windows-x64/ARM64-Laeufe bestanden, inklusive
+nativer Confinement-/V8-/Shell-Smokes. Fuenf Feature-Passen sind abgeschlossen.
+
+**Naechstes belegtes Problem:** Layout lehnt Bindestriche, Slashes und interne
+Satzzeichen unabhaengig vom White-space-Modus ab. Somit scheitern selbst
+einfache vorformatierte URL-/Codebeispiele trotz unterstuetzter Latin-Zeichen.
+Der lokale CSS-Text-Standard (geholt 2026-10-04, noch innerhalb 30 Tagen)
+verlangt fuer pre/nowrap keine Soft-Wrap-Analyse. Pass 6 beschraenkt deshalb
+die bestehende Punctuation-Ablehnung auf die umbrechenden Modi, behaelt aber
+Script-/Bidi-/Glyphenvalidierung, Budgets, Cross-boundary-Shaping-Ablehnung und
+das bisherige Whitespace-Verhalten bei. Keine neue Wrapping-Policy vereinbart.
+
+**Umsetzung/gezielte Validierung:** Fuenf neue positive Faelle scheiterten
+zunaechst nachweislich an der alten Punctuation-Ablehnung, acht negative Faelle
+bestanden. Die Korrektur nutzt das vorhandene CanWrap-Merkmal auch fuer die
+Break-Analyse; native Latin-Validierung bleibt davor. 17 Regressionen
+einschliesslich exakter Text-/Shapinglimits und nativer Pixel/Retained-Resize
+sind hinzugefuegt. Layout 114 und Content 15 Tests bestehen. Ein initialer
+Content-Test verwendete eine nicht existente DrawGlyphRun-Textproperty und
+wurde vor erfolgreicher Validierung auf echte Glyph-/Pixelausgabe korrigiert;
+Textgleichheit wird separat exakt im Layout getestet. Build/Format/Volltests
+und Commit/Push/CI stehen noch aus.
+
+**Abschliessende lokale Validierung:** Solution-Build mit null Warnungen/Fehlern
+und alle 14.357 Solution-Tests bestanden, darunter Browser 1.135.
+Format meldet nur die drei belegten Baseline-Findings, keine neuen.
+Gezielte Layout-/Content-Suiten bestanden mit 114 beziehungsweise 15 Tests.

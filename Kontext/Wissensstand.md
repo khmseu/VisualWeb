@@ -109,7 +109,7 @@ startet keine neue Implementierung
 **Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
-Vier Feature-Passen sind abgeschlossen; sechs stehen aus:
+Fuenf Feature-Passen sind abgeschlossen; fuenf stehen aus:
 
 | Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
 | ---- | -------------------------------------------------------------------------- | --------- | ----------------- |
@@ -117,11 +117,12 @@ Vier Feature-Passen sind abgeschlossen; sechs stehen aus:
 | 2    | Dezimalmarker mit `start`, `reversed`, `li value`, vom Nutzer gewaehlt     | `6441d67` | KP-071/KP-072     |
 | 3    | Atomarer endlicher `list-style`-Shorthand                                  | `70c7aef` | KP-072/KP-073     |
 | 4    | Vollstaendige initiale Legacy-Doctype-Moduswahl mit Recoverydiagnostik     | `cef5ce6` | KP-073/KP-074     |
+| 5    | Automatische einfache HTML-Tabellen, vom Nutzer gewaehlt                   | `ff918ff` | KP-075/KP-076     |
 
-Alle vier Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
+Alle fuenf Inkremente sind gepusht. Der aktuelle Stand besteht Linux,
 CodeQL und Windows x64/ARM64 CI einschliesslich nativer Smokes.
-Zuletzt lokal: HTML 7.270, CSS 349, Layout 77, Paint 40, Content 12,
-Browser 1.133 und volle Solution 14.308 Tests sowie Build bestanden.
+Zuletzt lokal: HTML 7.270, CSS 356, Layout 99, Paint 40, Content 13,
+Browser 1.135 und volle Solution 14.340 Tests sowie Build bestanden.
 Format meldet nur drei auf `81bb414` belegte Baseline-Findings
 (Whitespace/Imports in `StaticLayout.cs`, Imports in `ShellChrome.cs`).
 
@@ -131,7 +132,7 @@ behoben. Der CPU-Pressure-Test nutzt die unveraenderte Produktionsdeadline
 von 30 Sekunden statt eines 5-Sekunden-Testoverrides; Cancellation und
 Confinement bleiben unveraendert (KP-068 bis KP-070).
 
-**Pass 5 in Arbeit (KP-075):** Der Nutzer waehlte `auto-basic`: automatische
+**Pass 5 bestaetigt (KP-075/KP-076):** Der Nutzer waehlte `auto-basic`: automatische
 inhaltsbasierte Spalten fuer einfache Text-/Blockzellen ohne Spans statt
 ausschliesslich explizitem Fixed-Layout. Die Implementierung umfasst kanonische
 HTML-Tabellen mit separate borders, einem Spacing-Laengenwert und Top-Alignment.
@@ -140,7 +141,19 @@ Explizite Ausschluesse stehen im [Layoutguide](../docs/text-layout.md#basic-auto
 Layout 99, CSS 356, Content 13, Paint 40, Browser 1.135 und alle 14.340
 Solution-Tests sowie der Build bestehen. Format meldet nur die drei bekannten
 Baseline-Findings. 32 neue Regressionen pruefen den Tabellenumfang.
-Noch kein Pass-5-Commit, keine Pass-5-CI und kein Abschluss der zehn Passen.
+Pass 5 ist als `ff918ff` committed und gepusht; Linux (`40789165962`),
+Windows (`40789165996`) und CodeQL (`40789166119`) sind erfolgreich.
+
+**Pass 6 in Validierung:** Gewoehnliche URLs und Bindestrich-/Satzzeichentexte
+scheitern selbst bei `white-space:pre/nowrap` an der Layout-Zeilenbruchpruefung.
+Diese Modi erlauben keine Soft-Wraps; die bestehende Textvalidierung bleibt
+erforderlich, die Unicode-Break-Analyse dort aber nicht. Geplant ist eine
+begrenzte Korrektur nur fuer diese Modi, nicht allgemeines Unicode-Wrapping.
+Die Korrektur ist implementiert: Layout 114 und Content 15 Tests bestehen,
+darunter 17 neue Regressionen fuer Text/Geometrie, Whitespace, intrinsische
+Tabellenbreite, Limits und native Pixel/Retained-Resize. Build und alle 14.357
+Solution-Tests bestanden; Format meldet nur drei bekannte Baseline-Findings.
+Commit/Push/CI stehen aus.
 
 ## Rahmenbedingungen und Nicht-Ziele
 

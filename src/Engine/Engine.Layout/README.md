@@ -25,3 +25,9 @@ borders, one spacing length and top-aligned text/block cells. Table/cell
 backgrounds and ordinary borders reuse existing flow. Spans, captions/columns,
 row/group backgrounds, nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
+
+Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
+including URLs and hyphens, retaining forced-break/space handling, overflow
+geometry and shared shaping/text limits. Wrapping modes retain their explicit
+punctuation/Unicode-break exclusions; text-node/style boundaries still require
+supported cross-boundary shaping.

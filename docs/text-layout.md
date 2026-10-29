@@ -185,6 +185,12 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   unbreakable text. Exact fits do not wrap. Line-edge collapsible spaces drop.
 - white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
   explicit br breaks. Preserved tabs/form feeds are unsupported.
+  `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
+  including URLs, hyphens and internal punctuation, without introducing soft
+  breaks. Overflow remains measurable for document scrolling. `pre` still
+  preserves spaces/forced newlines; `nowrap` still collapses whitespace.
+  See [CSS Text white-space](https://drafts.csswg.org/css-text-3/#white-space-property)
+  (local ID `css-text`). Script/bidi/control and missing-glyph failures remain.
 - Left/start, right/end and center text alignment; baseline alignment across
   font sizes, line-height multipliers/px/normal, half-leading and inline struts.
   Negative leading is valid; an empty inline strut can affect an existing line
@@ -199,7 +205,8 @@ explicitly or those styles overridden.
 - Bidi/RTL/auto direction, non-English language-specific layout, script
   itemization, advanced script/fallback/emoji shaping.
 - Full Unicode line breaking, hyphenation and punctuation-internal
-  opportunities. Hyphens/slashes and unsupported internal punctuation fail.
+  opportunities. In wrapping modes, hyphens/slashes and unsupported internal
+  punctuation fail; nonwrapping pre/nowrap do not need this break analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab

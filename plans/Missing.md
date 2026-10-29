@@ -454,6 +454,15 @@ The current engine implements finite static block/inline rendering. Missing esse
   same three documented baseline findings.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
+Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common
+punctuation (including ordinary URL and hyphenated text) without soft wrapping;
+spaces/forced breaks and horizontal overflow remain mode-appropriate.
+Wrapping punctuation/Unicode-break algorithms, cross-node word shaping,
+unsupported scripts/bidi/controls and missing-font handling are not broadened.
+See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
+Its 17 new regressions, solution build and all 14,357 solution tests pass;
+formatting retains only the three established baseline findings.
+
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one spacing length, top-aligned text/block cells and
 table/cell backgrounds through ordinary paint flow. Explicit table width and

@@ -7,6 +7,28 @@ namespace VisualWeb.Engine.Content.Tests;
 
 public sealed class ContentTests
 {
+    [Theory]
+    [InlineData("pre")]
+    [InlineData("nowrap")]
+    public void NonWrappingUrlTextReachesNativePixelsAndRetainedResize(string mode)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string url = "https://example.test/a-b?x=1";
+        var styles = new[] { new CssStyleSource("*{margin:0}p{white-space:" + mode + "}") };
+        var result = OfflinePageRenderer.Render("<!doctype html><p>" + url + "</p>", styles,
+            text, fonts, 40, 40, cancellationToken: Cancellation);
+        var resized = OfflinePageRenderer.RenderParsed(result.Html, styles, text, fonts, 60, 40,
+            cancellationToken: Cancellation);
+        Assert.NotEmpty(Assert.Single(result.DisplayList.Commands.OfType<DrawGlyphRun>()).Glyphs);
+        Assert.NotEmpty(Assert.Single(resized.DisplayList.Commands.OfType<DrawGlyphRun>()).Glyphs);
+        Assert.True(result.ScrollWidth > 60);
+        Assert.Equal(result.ScrollWidth, resized.ScrollWidth);
+        Assert.Same(result.Html.Document, resized.Html.Document);
+        Assert.Contains(result.Frame.Pixels.ToArray().Where((_, index) => index % 4 != 3), value => value == 0);
+    }
+
     [Fact]
     public void AutomaticTablesPaintNativeCellBackgroundsAndRetainTheirParsedDocument()
     {
