@@ -482,11 +482,19 @@ See the [CSS length scope](../docs/css.md#cascade-and-computed-values).
 Thirty new regressions, the solution build and all 14,676 solution tests pass
 locally. Formatting reports only the three findings reproduced on base `ad0bca6`.
 
+The static `:any-link` pseudo-class matches HTML `a` and `area` elements with
+an `href` attribute in stylesheets and DOM queries. It follows current attribute
+presence, including empty or non-navigable values, without changing navigation
+policy or exposing history. `:link` and `:visited` remain unsupported. See the
+[static selector scope](../docs/css.md#static-selectors). Its 28 regressions,
+the solution build and all 14,789 solution tests pass locally; local V8 smoke
+passes. Formatting reports only the three findings reproduced on base `ad0bca6`.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented
   for adjacent block siblings and eligible parent/first-or-last block-child edges.
-- Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, dynamic state, namespaces and pseudo-elements remain missing.)
+- Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope`, `:any-link` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, visited/dynamic state, namespaces and pseudo-elements remain missing.)
 - Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.

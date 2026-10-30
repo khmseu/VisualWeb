@@ -89,6 +89,10 @@ Supported:
 - Descendant, child, adjacent sibling and general sibling combinators;
   non-element siblings do not affect element relationships.
 - `:root`, `:empty`, first/last/only-child and first/last/only-of-type.
+- [`:any-link`](https://drafts.csswg.org/selectors-4/#the-any-link-pseudo)
+  matches HTML `a` and `area` elements with an `href` attribute, including
+  empty or non-navigable values. Matching follows current attribute presence,
+  independently of history and navigation authorization.
 - [`:scope`](https://drafts.csswg.org/selectors-4/#the-scope-pseudo) with
   pseudo-class specificity `(0,1,0)`. Without a scoping root (stylesheets and
   scope-less matching) it equals `:root`. An Element scope matches that element;
@@ -121,7 +125,8 @@ Selectors 2/3 and currently deployed browser behavior; the test states the
 chosen standard explicitly.
 
 Unsupported: namespaces/column combinators, pseudo-elements, `:has`, `of` clauses
-on `:nth-of-type`/`:nth-last-of-type`, dynamic/interactive pseudo-classes and other pseudo-classes
+on `:nth-of-type`/`:nth-last-of-type`, visited-state selectors `:link`/`:visited`,
+dynamic/interactive pseudo-classes and other pseudo-classes
 not listed above. No selector silently approximates these features.
 
 ## Cascade and computed values

@@ -138,15 +138,27 @@ reproduzierten Baseline-Fehler. Commit `e110697` ist gepusht; Linux, Windows
 x64/ARM64 und CodeQL sind erfolgreich
 ([KP-084](./Kontextprotokoll.md#kp-084---moderne-rgb-syntax)).
 
-**Pass 3 (Arbeitsstand):** `hsl()`/`hsla()` ist als weiterer haeufiger
+**Pass 3 (abgeschlossen):** `hsl()`/`hsla()` ist als weiterer haeufiger
 Stylesheet-Blocker umgesetzt. Der finite Parser rechnet In-Gamut-Werte
 einschliesslich Winkel, Komma-/moderner Syntax und Alpha in vorhandenes
 8-Bit-sRGB um; Out-of-Gamut-Mapping bleibt explizit diagnostiziert. Der Build,
 693 CSS-, 23 Content- und alle 14.761 Solution-Tests bestehen. Darunter sind
 49 neue CSS-Faelle und ein nativer Rendering-/Resizefall. Die Formatpruefung
 meldet nur die drei auf `ad0bca6` reproduzierten Baseline-Fehler; die geaenderten
-C#-Dateien bestehen die separate Formatpruefung. Commit und CI stehen noch aus
+C#-Dateien bestehen die separate Formatpruefung. Commit `c9e5f59` ist gepusht;
+Linux, Windows x64/ARM64 und CodeQL bestehen
 ([KP-085](./Kontextprotokoll.md#kp-085---begrenzte-hsl-farben)).
+
+**Pass 4 (Arbeitsstand):** Der statische Selektor `:any-link` erkennt HTML-`a`
+und `area` anhand eines vorhandenen `href`, auch bei leerem oder nicht
+navigierbarem Wert. Er wird von Stylesheets und DOM-Abfragen geteilt;
+Verlauf und Navigationsberechtigung bleiben unveraendert. Vor der Umsetzung
+scheiterten 20 gezielte CSS-Faelle; danach bestehen 28 neue Regressionen,
+CSS 717, Scripting 351, Content 24 und alle 14.789 Solution-Tests. Der
+Solution-Build und der lokale V8-Smoke bestehen. Die Formatpruefung meldet
+nur die drei auf `ad0bca6` reproduzierten Baseline-Fehler; geaenderte
+C#-Dateien bestehen die separate Pruefung. Commit und CI stehen noch aus
+([KP-086](./Kontextprotokoll.md#kp-086---statischer-any-link-selektor)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

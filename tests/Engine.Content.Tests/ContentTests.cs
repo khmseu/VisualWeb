@@ -8,6 +8,35 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void AnyLinkStylesReachNativePixelsAndRecomputeAfterHrefRemoval()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><a id=live href>Link</a><a>Plain</a>";
+        var actualStyles = new[] { new CssStyleSource(
+            "*{margin:0}a{display:block;width:80px;height:20px;background:red}:any-link{background:blue}") };
+        var equivalentStyles = new[] { new CssStyleSource(
+            "*{margin:0}a{display:block;width:80px;height:20px;background:red}a[href]{background:blue}") };
+        var actual = OfflinePageRenderer.Render(html, actualStyles, text, fonts, 100, 45, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, equivalentStyles, text, fonts, 100, 45, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, actual.Frame.Pixels.Span.Slice(5 * actual.Frame.Stride + 70 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, actual.Frame.Pixels.Span.Slice(25 * actual.Frame.Stride + 70 * 4, 4).ToArray());
+
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, actualStyles, text, fonts, 90, 45, cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, equivalentStyles, text, fonts, 90, 45,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+        actual.Html.Document.GetElementById("live")!.RemoveAttribute("href");
+        var removed = OfflinePageRenderer.RenderParsed(actual.Html, actualStyles, text, fonts, 90, 45, cancellationToken: Cancellation);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, removed.Frame.Pixels.Span.Slice(5 * removed.Frame.Stride + 70 * 4, 4).ToArray());
+    }
+
+    [Fact]
     public void HslColorsMatchRgbPixelsAndRemainStableOnResize()
     {
         using var font = new TextFont(FontPath);

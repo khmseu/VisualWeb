@@ -67,6 +67,30 @@ public sealed class QueryTests
         Assert.True(host.Evaluate("ok", Cancellation).Boolean);
     }
 
+    [Fact]
+    public void AnyLinkQueriesObserveHrefChangesWithoutChangingSnapshotsOrWrapperIdentity()
+    {
+        using var host = new V8ScriptHost(document: Document());
+        host.ExecuteClassic("""
+            let fragment=document.createDocumentFragment(), anchor=document.createElement('a');
+            let area=document.createElement('area'), child=document.createElement('span');
+            anchor.setAttribute('href','javascript:alert(1)');anchor.appendChild(child);
+            fragment.appendChild(anchor);fragment.appendChild(area);
+            let before=fragment.querySelectorAll(':any-link');
+            let ok=before.length===1 && before[0]===anchor && anchor.matches(':any-link')
+                && child.closest(':any-link')===anchor && fragment.querySelector(':scope > :any-link')===anchor;
+            anchor.removeAttribute('href');area.setAttribute('href','');
+            ok=ok && before.length===1 && before[0]===anchor && !anchor.matches(':any-link')
+                && child.closest(':any-link')===null && fragment.querySelector(':any-link')===area;
+            document.body.appendChild(fragment);
+            let link=document.createElement('link');link.setAttribute('href','x');document.body.appendChild(link);
+            let after=document.querySelectorAll(':any-link');
+            ok=ok && after.length===1 && after[0]===area && area.matches(':any-link')
+                && document.body.querySelector(':any-link')===area && !link.matches(':any-link');
+            """, Cancellation);
+        Assert.True(host.Evaluate("ok", Cancellation).Boolean);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("div,")]
@@ -84,6 +108,8 @@ public sealed class QueryTests
     [Theory]
     [InlineData(":hover")]
     [InlineData(":focus")]
+    [InlineData(":link")]
+    [InlineData(":visited")]
     [InlineData(":has(div)")]
     [InlineData("div::before")]
     [InlineData("svg|a")]

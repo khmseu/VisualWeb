@@ -50,6 +50,8 @@ public sealed class CssSelectorScope
 
 /// <summary>A compiled static HTML selector list. Invalid syntax throws; unsupported features are distinct.</summary>
 /// <remarks>Spec: selectors; <see href="https://www.w3.org/TR/selectors-4/#match">matching</see>.
+/// <see href="https://www.w3.org/TR/selectors-4/#the-any-link-pseudo">:any-link</see> matches HTML
+/// <see href="https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements">a and area hyperlinks</see> (spec ID: html).
 /// No namespaces, pseudo-elements, :has() or dynamic state. Without an explicit
 /// <see cref="CssSelectorScope"/>, <c>:scope</c> is equivalent to <c>:root</c>.</remarks>
 public sealed class CssSelectorList
@@ -424,6 +426,8 @@ public sealed class CssSelectorList
             return pseudo switch
             {
                 "root" => new((e, _) => e.ParentNode is DomDocument, new(0, 1, 0)),
+                "any-link" => new((e, _) => (e.LocalName is "a" or "area") && e.GetAttribute("href") is not null,
+                    new(0, 1, 0)),
                 "scope" => new((e, ctx) =>
                 {
                     ctx.MatchStep();

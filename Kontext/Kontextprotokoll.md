@@ -2869,4 +2869,34 @@ Der Build meldet null Warnungen/Fehler; 693 CSS- und 23 Content-Tests bestehen.
 Darunter sind 49 neue CSS-Faelle und ein nativer Rendering-/Resizefall. Alle
 14.761 Solution-Tests bestehen. Die Solution-Formatpruefung meldet nur die drei
 auf `ad0bca6` reproduzierten Baseline-Fehler; die geaenderten C#-Dateien
-bestehen die separate Formatpruefung. Commit und CI stehen noch aus.
+bestehen die separate Formatpruefung.
+
+**Commit/Push:** `c9e5f59` ist auf `origin/main`; der Commit-Hook pruefte
+acht Dateien ohne Findings. [Linux 41142326726](https://github.com/khmseu/VisualWeb/actions/runs/41142326726),
+[Windows 41142326727](https://github.com/khmseu/VisualWeb/actions/runs/41142326727)
+und [CodeQL 41142326171](https://github.com/khmseu/VisualWeb/actions/runs/41142326171)
+bestanden; Windows umfasst x64 und ARM64.
+
+### KP-086 - Statischer Any-Link-Selektor
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: `CssSelectorList`, [CSS-Guide](../docs/css.md#static-selectors),
+  [DOM-Abfragen](../docs/scripting.md#bounded-dom-queries-phase-11i) und der
+  lokale `selectors`-/`html`-Cache zu `:any-link` und HTML-Hyperlinks.
+
+**Belegt:** Vor Pass 4 wurde `:any-link` als nicht unterstuetzt diagnostiziert;
+20 neue CSS-Tests scheiterten vor der Implementierung. Die relevanten
+Standards-Caches waren bei Auswahl weniger als 30 Tage alt. Der Selektor
+betrifft `a` und `area` mit vorhandenem `href`, unabhaengig vom Wert;
+`link`-Elemente und Verlauf unterscheiden sich davon.
+
+**Arbeitsstand:** Der gemeinsame Matcher unterstuetzt `:any-link` fuer
+Stylesheets und DOM-Abfragen, ohne Navigation oder Verlauf freizugeben.
+`:link` und `:visited` bleiben explizit nicht unterstuetzt. 28 neue
+Regressionen umfassen 24 CSS-Faelle, Live-DOM-Abfragen, nicht unterstuetzte
+Verlaufsselektoren und einen nativen Pixel-/Resizefall. CSS 717, Scripting 351,
+Content 24 und alle 14.789 Solution-Tests bestehen; der Solution-Build hat
+null Warnungen und Fehler, und der lokale V8-Smoke besteht. Die
+Solution-Formatpruefung meldet nur die drei auf `ad0bca6` reproduzierten
+Baseline-Fehler; die geaenderten C#-Dateien bestehen die separate Pruefung.
+Commit und CI stehen noch aus.
