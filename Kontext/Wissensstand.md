@@ -4,10 +4,10 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-10-29, Zeitzone Europe/Berlin (UTC+01:00).
-- Aktuelle Serie: Der Auftrag vom 2026-10-28 (KP-066 bis KP-082) und die
-  Passentabelle unter [Auftrag und Ziel](#auftrag-und-ziel) beschreiben den
-  aktuellen Lauf fuer einfache Websites. Aeltere Serienstaende und deren
+- Dokumentationsdatum: 2026-10-30, Zeitzone Europe/Berlin (UTC+01:00).
+- Aktuelle Serie: Der neue Auftrag vom 2026-10-30 ist unter
+  [Auftrag und Ziel](#auftrag-und-ziel) und KP-083 erfasst. Der Auftrag vom
+  2026-10-28 (KP-066 bis KP-082) ist abgeschlossen. Aeltere Serienstaende und deren
   damalige naechste Schritte bleiben unten als historische Evidenz erhalten,
   nicht als aktueller Arbeitsauftrag. Alte Quellen wurden nicht pauschal neu geprueft.
 - Rekonstruktionsstand: teilweise; Originalauftrag ab 2026-10-04,
@@ -111,10 +111,24 @@ Die Umordnung ist keine Freigabe fuer beliebige untrusted Websites und
 startet keine neue Implementierung
 ([KP-065](./Kontextprotokoll.md#kp-065---einfache-websites-zuerst)).
 
-**Neuer Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
+**Aktueller Implementierungsauftrag (2026-10-30):** Der Nutzer hat erneut die
+Missing-Prioritaetsimplementierung mit zehn Passen aufgerufen. Jeder Pass soll
+ein eigenes testbares Inkrement nach Trackerprioritaet enthalten und vor dem
+naechsten Pass validiert, committed, gepusht und hinsichtlich CI geprueft werden.
+Eine ungeloeste wesentliche Verhaltensentscheidung wird vor Implementierung
+gefragt; bestehende Sicherheitsgrenzen bleiben erhalten. Pass 1 wird auf
+absolute CSS-Laengeneinheiten (`in`, `cm`, `mm`, `Q`, `pt`, `pc`) fuer
+bereits unterstuetzte Properties eingegrenzt. Der vorherige Parser akzeptierte
+nur `px`, `em` und `rem`. Die Umsetzung ist lokal getestet: 29 CSS- und ein
+nativer Content-Regressionstest, Build mit null Warnungen/Fehlern und alle
+14.676 Solution-Tests bestanden. Die drei Formatfehler wurden unveraendert
+auf dem Ausgangscommit `ad0bca6` reproduziert. Commit, Push und CI stehen aus
+([KP-083](./Kontextprotokoll.md#kp-083---neuer-zehn-passen-auftrag-und-css-laengen)).
+
+**Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
 ([KP-066](./Kontextprotokoll.md#kp-066---neue-zehn-passen-serie-und-listendarstellung)).
-Alle zehn Feature-Passen sind abgeschlossen; kein weiterer Pass ist beauftragt:
+Alle zehn Feature-Passen dieser frueheren Serie sind abgeschlossen:
 
 | Pass | Implementiertes Inkrement                                                  | Commit    | Evidenz           |
 | ---- | -------------------------------------------------------------------------- | --------- | ----------------- |

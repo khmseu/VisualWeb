@@ -3,8 +3,9 @@ using System.Globalization;
 namespace VisualWeb.Engine.Css;
 
 /// <summary>Typed static CSS values. Percentages remain unresolved until layout supplies a containing size.</summary>
-/// <remarks>Spec: css-values; <see href="https://www.w3.org/TR/css-values-4/#lengths">lengths</see>.
-/// em/rem lengths become px during computation; line-height numbers remain multipliers.</remarks>
+/// <remarks>Spec: css-values; <see href="https://www.w3.org/TR/css-values-4/#lengths">lengths</see>,
+/// including <see href="https://www.w3.org/TR/css-values-4/#absolute-lengths">absolute lengths</see>.
+/// Absolute and em/rem lengths become px; line-height numbers remain multipliers.</remarks>
 public abstract record CssValue;
 public sealed record CssKeyword(string Value) : CssValue;
 public sealed record CssLength(double Value, string Unit) : CssValue;
@@ -305,8 +306,19 @@ internal static class CssProperties
         if (number is null) { return null; }
         if (token.Kind == CssTokenKind.Number && number == 0) { return new(0, "px"); }
         if (token.Kind == CssTokenKind.Percentage && percentage) { return new(number.Value, "%"); }
+        if (token.Kind != CssTokenKind.Dimension) { return null; }
         var unit = CssText.Lower(token.Unit);
-        return token.Kind == CssTokenKind.Dimension && unit is "px" or "em" or "rem" ? new(number.Value, unit) : null;
+        return unit switch
+        {
+            "px" or "em" or "rem" => new(number.Value, unit),
+            "in" => new(number.Value * 96, "px"),
+            "cm" => new(number.Value * (96 / 2.54), "px"),
+            "mm" => new(number.Value * (96 / 25.4), "px"),
+            "q" => new(number.Value * (96 / 101.6), "px"),
+            "pt" => new(number.Value * (96 / 72d), "px"),
+            "pc" => new(number.Value * 16, "px"),
+            _ => null
+        };
     }
 
     private static CssFontFamilies? Families(IReadOnlyList<CssToken> tokens)

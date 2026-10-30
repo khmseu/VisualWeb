@@ -183,7 +183,10 @@ CSS-wide keywords and relative weight/size computation are reused. The engine
 does not add other font longhands or expand its exact native face policy.
 Text-decoration shorthand remains deferred.
 
-Length units are **px, em, rem, %**, plus unitless zero. Font-size em/% use the
+Length units are **px, in, cm, mm, Q, pt, pc, em, rem, %**, plus unitless zero.
+The [absolute units](https://www.w3.org/TR/css-values-4/#absolute-lengths)
+use the standard fixed CSS-pixel ratios for every supported length property;
+viewport and additional font-relative units remain unsupported. Font-size em/% use the
 parent size; other em values use the element's size; rem uses the root size
 (the initial 16px size when computing the root's own font-size). Unitless
 line-height is inherited as a multiplier; percentage line-height computes to px

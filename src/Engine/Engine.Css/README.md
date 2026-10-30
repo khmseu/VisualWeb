@@ -13,6 +13,9 @@ Color values include the complete 148-name opaque sRGB table in CSS Color 4
 (`css-color`), including gray/grey and cyan/magenta aliases. Names remain
 ASCII case-insensitive; transparent/currentColor retain their separate behavior.
 System colors and additional functional color spaces remain unsupported.
+Supported lengths also include the CSS absolute units `in`, `cm`, `mm`, `Q`,
+`pt` and `pc`, converted to CSS pixels for all existing length-valued
+properties. This does not add viewport or additional font-relative units.
 The finite color-only `background` shorthand accepts one color plus optional
 `none`, or `none` alone, and expands the supported background-color longhand.
 Images/layers and other background components remain explicit diagnostics;

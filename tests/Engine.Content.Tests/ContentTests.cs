@@ -7,6 +7,29 @@ namespace VisualWeb.Engine.Content.Tests;
 
 public sealed class ContentTests
 {
+    [Fact]
+    public void AbsoluteLengthsMatchPixelStylesThroughNativeRenderingAndResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><div>Sample</div>";
+        var absolute = new[] { new CssStyleSource(
+            "*{margin:0}div{width:1in;height:18pt;border:.75pt solid darkslategrey;background:lightgray;font:12pt/18pt serif}") };
+        var pixels = new[] { new CssStyleSource(
+            "*{margin:0}div{width:96px;height:24px;border:1px solid darkslategrey;background:lightgray;font:16px/24px serif}") };
+        var actual = OfflinePageRenderer.Render(html, absolute, text, fonts, 120, 45, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, pixels, text, fonts, 120, 45, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, absolute, text, fonts, 110, 45, cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, pixels, text, fonts, 110, 45,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
     [Theory]
     [InlineData("lightgray")]
     [InlineData("none lightgray")]

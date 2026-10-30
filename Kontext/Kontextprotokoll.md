@@ -2774,3 +2774,34 @@ Die drei vorbestehenden Formatfindings und der einmalige, unveraendert
 erfolgreich wiederholte Windows-Historytest aus KP-080 bleiben offengelegt.
 Dieser abschliessende Dokumentationscheckpoint wird separat persistiert;
 er aendert weder Code noch die oben zugeordneten Feature-CI-Nachweise.
+
+### KP-083 - Neuer Zehn-Passen-Auftrag und CSS-Laengen
+
+- Dokumentiert am: 2026-10-30, Europe/Berlin (UTC+01:00).
+- Quellen: expliziter Aufruf von `missing-priority-implementation` mit Argument
+  `10` im aktuellen Gespraech; [Prioritaeten](../plans/Missing.md#recommended-priority);
+  `CssProperties.Length`, `CssStyleEngine` und lokaler `css-values`-Cache,
+  Abschnitt `absolute-lengths`.
+
+**Nutzerangabe:** Eine neue Serie von zehn getrennten Implementierungspassen
+nach der Missing-Prioritaet ist angefordert. Der Skill verlangt je Pass
+Validierung, Commit, Push und CI-Ueberwachung; eine ungeklaerte wesentliche
+Entscheidung wird vor weiteren Aktionen geklaert.
+
+**Belegt:** Das Worktree war zu Beginn sauber, `main` entsprach `origin/main`.
+Die vorherige Zehn-Passen-Serie ist abgeschlossen. Der CSS-Parser vor Pass 1
+akzeptierte bei Laengen nur `px`, `em`, `rem` und kontextabhaengig `%`; die
+sechs anderen standardisierten absoluten Laengeneinheiten fehlen. Der relevante
+Cache wurde am 2026-10-04 geprueft und war zum Arbeitsbeginn weniger als
+30 Tage alt.
+
+**Umsetzung und lokale Validierung:** Pass 1 rechnet die sechs absoluten
+Einheiten fuer bestehende Longhands und Shorthands in CSS-Pixel um.
+29 CSS-Regressionsfaelle und ein nativer Offline-Rendering-/Resizefall pruefen
+Umrechnung, Cascade, Vererbung, Fehler und Grenzen. Acht Umrechnungsfaelle
+scheiterten vor der Implementierung. CSS 610, Content 21 und alle 14.676
+Solution-Tests bestehen; der Build meldet null Warnungen/Fehler. Die
+Formatpruefung meldet drei Fehler nur in `StaticLayout.cs` und `ShellChrome.cs`;
+ein separater sauberer Worktree auf Ausgangscommit `ad0bca6` reproduzierte
+genau diese drei Fehler. Layout-, Schrift-, Netz- und Sicherheitsumfang werden
+nicht erweitert. Commit, Push und CI stehen noch aus.

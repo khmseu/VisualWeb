@@ -460,6 +460,13 @@ This does not add new font longhands, downloads, fallback or synthesized faces.
 Its 52 regressions, solution build and all 14,646 solution tests pass locally;
 formatting reports only the three established baseline findings.
 
+CSS absolute lengths `in`, `cm`, `mm`, `Q`, `pt` and `pc` now use their fixed
+CSS-pixel ratios in the existing length-valued properties and shorthands.
+Viewport units and additional font-relative units remain unsupported.
+See the [CSS length scope](../docs/css.md#cascade-and-computed-values).
+Thirty new regressions, the solution build and all 14,676 solution tests pass
+locally. Formatting reports only the three findings reproduced on base `ad0bca6`.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented
