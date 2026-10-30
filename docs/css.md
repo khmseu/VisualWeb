@@ -154,17 +154,17 @@ computed color (or inherited color for the color property itself).
 
 Supported longhands:
 
-| Group   | Properties and supported values                                                                                                                                           |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                            |
-| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                        |
-| Lists   | inherited `list-style-type`: disc/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                  |
-| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                      |
-| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                   |
-| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                         |
-| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba, transparent/currentColor, all 148 standard opaque named colors                   |
-| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique        |
-| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
+| Group   | Properties and supported values                                                                                                                                               |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                |
+| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                            |
+| Lists   | inherited `list-style-type`: disc/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                      |
+| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                          |
+| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                       |
+| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                             |
+| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors |
+| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique            |
+| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces     |
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. The finite `background` shorthand accepts one supported
@@ -197,6 +197,14 @@ slash-separated alpha, and `none` components treated as zero for this static
 8-bit output. CSS token boundaries also permit adjacent components where they
 remain distinct tokens, including comment-separated components. Color
 interpolation and missing-component preservation remain unsupported.
+[`hsl()`/`hsla()`](https://www.w3.org/TR/css-color-4/#the-hsl-notation)
+(`css-color`) accepts a numeric hue in degrees or `deg`, `grad`, `rad` and
+`turn` angles. Modern syntax accepts numeric/percentage saturation and
+lightness plus static `none` components; comma syntax requires percentage
+saturation/lightness and does not accept `none`. Negative saturation clamps to
+zero. Saturation above 100 and lightness outside 0..100 are diagnosed rather
+than approximating out-of-gamut color mapping; interpolation and
+higher-precision storage remain unsupported.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.
@@ -215,7 +223,7 @@ not yet implemented.
 Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
 layers, conditional rules (including media/supports/container), imports/font-face,
 logical properties, positioning, flex/grid and broader table display, animations,
-transitions, modern color spaces/functions and unlisted properties/units.
+transitions, other modern color spaces/functions and unlisted properties/units.
 The browser applies the limited `@import` preprocessing described above before
 passing sources to Engine.Css. No layout, shaping, painting, used-value
 resolution or V8 work is performed here.

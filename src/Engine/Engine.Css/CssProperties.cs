@@ -371,23 +371,21 @@ internal static class CssProperties
         }
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
-        if (function is not ("rgb" or "rgba")) { return null; }
+        if (function is not ("rgb" or "rgba" or "hsl" or "hsla")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
-        List<CssToken> values;
-        if (args.Any(t => t.Kind == CssTokenKind.Comma))
+        var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
+        var values = ColorFunctionComponents(args, legacy);
+        if (values is null) { return null; }
+        if (function is "hsl" or "hsla") { return HslColor(values, legacy); }
+        if (legacy)
         {
-            values = args.Where(t => t.Kind != CssTokenKind.Comma).ToList();
-            if (values.Count is not (3 or 4) || args.Count != values.Count * 2 - 1
-                || args.Where((_, i) => i % 2 == 1).Any(t => t.Kind != CssTokenKind.Comma)
-                || values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
+            if (values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
                 || values.Take(3).Select(t => t.Kind).Distinct().Count() != 1
                 || values.Count == 4 && values[3].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage)) { return null; }
         }
-        else
+        else if (values.Any(token => token.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(token)))
         {
-            var modern = ModernRgbComponents(args);
-            if (modern is null) { return null; }
-            values = modern;
+            return null;
         }
         var numbers = values.Select(token => token.Kind == CssTokenKind.Ident ? (double?)0 : Number(token)).ToList();
         if (numbers.Any(n => n is null)) { return null; }
@@ -398,14 +396,73 @@ internal static class CssProperties
         return new CssColor(Channel(0), Channel(1), Channel(2), values.Count == 4 ? Channel(3, true) : (byte)255);
     }
 
-    private static List<CssToken>? ModernRgbComponents(IReadOnlyList<CssToken> args)
+    private static List<CssToken>? ColorFunctionComponents(IReadOnlyList<CssToken> args, bool legacy)
     {
+        if (legacy)
+        {
+            var commaValues = args.Where(t => t.Kind != CssTokenKind.Comma).ToList();
+            return commaValues.Count is 3 or 4 && args.Count == commaValues.Count * 2 - 1
+                && args.Where((_, i) => i % 2 == 1).All(t => t.Kind == CssTokenKind.Comma) ? commaValues : null;
+        }
         if (args.Count != 3 && (args.Count != 5 || !args[3].IsDelimiter("/"))) { return null; }
         var values = args.Take(3).ToList();
         if (args.Count == 5) { values.Add(args[4]); }
-        return values.All(token => token.Kind is CssTokenKind.Number or CssTokenKind.Percentage
-            || token.Kind == CssTokenKind.Ident && CssText.Lower(token.Value) == "none") ? values : null;
+        return values;
     }
+
+    private static CssColor? HslColor(IReadOnlyList<CssToken> values, bool legacy)
+    {
+        if (legacy && (values[1].Kind != CssTokenKind.Percentage || values[2].Kind != CssTokenKind.Percentage)) { return null; }
+        if (Hue(values[0], !legacy) is not { } hue
+            || ColorComponent(values[1], !legacy) is not { } saturation
+            || ColorComponent(values[2], !legacy) is not { } lightness
+            || saturation > 100 || lightness is < 0 or > 100) { return null; }
+        var alpha = values.Count == 4 ? ColorComponent(values[3], !legacy) : 1;
+        if (alpha is null) { return null; }
+        var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage ? alpha.Value / 100 : alpha.Value;
+
+        saturation = Math.Max(0, saturation) / 100;
+        lightness /= 100;
+        var chroma = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+        var sector = hue / 60;
+        var second = chroma * (1 - Math.Abs(sector % 2 - 1));
+        var (red, green, blue) = sector switch
+        {
+            < 1 => (chroma, second, 0d),
+            < 2 => (second, chroma, 0d),
+            < 3 => (0d, chroma, second),
+            < 4 => (0d, second, chroma),
+            < 5 => (second, 0d, chroma),
+            _ => (chroma, 0d, second)
+        };
+        var offset = lightness - chroma / 2;
+        static byte Channel(double value) => (byte)Math.Round(Math.Clamp(value * 255, 0, 255), MidpointRounding.AwayFromZero);
+        return new CssColor(Channel(red + offset), Channel(green + offset), Channel(blue + offset), Channel(alphaValue));
+    }
+
+    private static double? Hue(CssToken token, bool allowNone)
+    {
+        if (allowNone && IsNone(token)) { return 0; }
+        if (token.Kind is not (CssTokenKind.Number or CssTokenKind.Dimension) || Number(token) is not { } number) { return null; }
+        var unit = token.Kind == CssTokenKind.Number ? "deg" : CssText.Lower(token.Unit);
+        var (period, degrees) = unit switch
+        {
+            "deg" => (360d, 1d),
+            "grad" => (400d, 0.9d),
+            "rad" => (2 * Math.PI, 180 / Math.PI),
+            "turn" => (1d, 360d),
+            _ => (0d, 0d)
+        };
+        if (period == 0) { return null; }
+        var hue = number % period * degrees;
+        if (hue < 0) { hue += 360; }
+        return hue >= 360 ? 0 : hue;
+    }
+
+    private static double? ColorComponent(CssToken token, bool allowNone) => allowNone && IsNone(token)
+        ? 0 : token.Kind is CssTokenKind.Number or CssTokenKind.Percentage ? Number(token) : null;
+
+    private static bool IsNone(CssToken token) => token.Kind == CssTokenKind.Ident && CssText.Lower(token.Value) == "none";
 
     private static List<List<CssToken>> Components(List<CssToken> tokens)
     {

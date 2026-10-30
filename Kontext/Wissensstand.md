@@ -126,7 +126,7 @@ auf dem Ausgangscommit `ad0bca6` reproduziert. Commit `9f8aa41` ist gepusht;
 Linux, Windows x64/ARM64 und CodeQL sind erfolgreich
 ([KP-083](./Kontextprotokoll.md#kp-083---neuer-zehn-passen-auftrag-und-css-laengen)).
 
-**Pass 2 (Arbeitsstand):** Moderne `rgb()`/`rgba()`-Werte mit gemischten
+**Pass 2 (abgeschlossen):** Moderne `rgb()`/`rgba()`-Werte mit gemischten
 Zahlen/Prozenten, optionalem Slash-Alpha und `none` als Null werden auf die
 vorhandenen statischen 8-Bit-sRGB-Farbwerte abgebildet. Auch benachbarte
 getrennte CSS-Tokens sind gueltig; Legacy-Kommasyntax, atomare Shorthands
@@ -134,8 +134,19 @@ und bestehende Budgets bleiben erhalten. Farbraeume und Interpolation werden
 nicht erweitert. Der Build ist erfolgreich; 644 CSS-, 22 Content- und alle
 14.711 Solution-Tests bestehen, einschliesslich 34 neuer CSS-Faelle und eines
 nativen Renderingtests. Die Formatpruefung zeigt nur die drei auf `ad0bca6`
-reproduzierten Baseline-Fehler. Commit und CI stehen noch aus
+reproduzierten Baseline-Fehler. Commit `e110697` ist gepusht; Linux, Windows
+x64/ARM64 und CodeQL sind erfolgreich
 ([KP-084](./Kontextprotokoll.md#kp-084---moderne-rgb-syntax)).
+
+**Pass 3 (Arbeitsstand):** `hsl()`/`hsla()` ist als weiterer haeufiger
+Stylesheet-Blocker umgesetzt. Der finite Parser rechnet In-Gamut-Werte
+einschliesslich Winkel, Komma-/moderner Syntax und Alpha in vorhandenes
+8-Bit-sRGB um; Out-of-Gamut-Mapping bleibt explizit diagnostiziert. Der Build,
+693 CSS-, 23 Content- und alle 14.761 Solution-Tests bestehen. Darunter sind
+49 neue CSS-Faelle und ein nativer Rendering-/Resizefall. Die Formatpruefung
+meldet nur die drei auf `ad0bca6` reproduzierten Baseline-Fehler; die geaenderten
+C#-Dateien bestehen die separate Formatpruefung. Commit und CI stehen noch aus
+([KP-085](./Kontextprotokoll.md#kp-085---begrenzte-hsl-farben)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

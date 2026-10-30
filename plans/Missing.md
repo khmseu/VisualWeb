@@ -445,10 +445,17 @@ formatting reports only the three established baseline findings.
 
 Modern space-separated `rgb()` and `rgba()` now use the same bounded sRGB
 output, including mixed number/percentage components, optional slash alpha,
-and static `none` components. Legacy comma syntax remains supported. Other
-functional color spaces and interpolation remain unsupported; see the
+and static `none` components. Legacy comma syntax remains supported.
+Missing-component preservation and interpolation remain unsupported; see the
 [CSS color scope](../docs/css.md#cascade-and-computed-values).
 Its 35 regressions, solution build and all 14,711 solution tests pass locally;
+formatting reports only the three findings reproduced on base `ad0bca6`.
+
+The finite color parser now also accepts in-gamut `hsl()`/`hsla()` syntax,
+including hue angles, legacy commas, modern components and alpha. Values
+requiring out-of-gamut mapping remain diagnostics; other color spaces and
+interpolation remain unsupported. See the [CSS color scope](../docs/css.md#cascade-and-computed-values).
+Its 50 regressions, solution build and all 14,761 solution tests pass locally;
 formatting reports only the three findings reproduced on base `ad0bca6`.
 
 The finite `background` shorthand now accepts one supported color and optional

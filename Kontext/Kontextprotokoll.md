@@ -2822,8 +2822,8 @@ bestanden; Windows umfasst x64 und ARM64.
 **Belegt:** Der Farbparser akzeptierte vor Pass 2 nur kommaseparierte
 RGB-/RGBA-Werte. Moderne Syntax mit leerzeichengetrennten Kanaelen und
 optionalem Slash-Alpha wurde diagnostiziert und blockierte die Seitenanzeige.
-Der Cache wurde am
-2026-10-04 geprueft und ist zum Arbeitsbeginn weniger als 30 Tage alt.
+Der Cache wurde am 2026-10-04 geprueft und ist zum Arbeitsbeginn weniger als
+30 Tage alt.
 
 **Arbeitsstand:** Pass 2 implementiert moderne `rgb()`-/`rgba()`-Syntax fuer
 die bestehenden 8-Bit-sRGB-Farben, einschliesslich gemischter Zahlen/Prozente
@@ -2837,4 +2837,36 @@ ausgeschlossen. Der Build mit null Warnungen/Fehlern und die gezielten
 Subsystemtests (CSS 644, Content 22) bestehen, darunter 34 neue CSS-Faelle
 und ein nativer Rendering-/Resizefall. Alle 14.711 Solution-Tests bestehen.
 Die Formatpruefung meldet ausschliesslich die drei auf Ausgangscommit
-`ad0bca6` reproduzierten Baseline-Fehler. Commit und CI stehen noch aus.
+`ad0bca6` reproduzierten Baseline-Fehler.
+
+**Commit/Push:** `e110697` ist auf `origin/main`; der Commit-Hook pruefte
+acht Dateien ohne Findings. [Linux 41139190918](https://github.com/khmseu/VisualWeb/actions/runs/41139190918),
+[Windows 41139190787](https://github.com/khmseu/VisualWeb/actions/runs/41139190787)
+und [CodeQL 41139190757](https://github.com/khmseu/VisualWeb/actions/runs/41139190757)
+bestanden; Windows umfasst x64 und ARM64.
+
+### KP-085 - Begrenzte HSL-Farben
+
+- Dokumentiert am: 2026-10-30, Europe/Berlin (UTC+01:00).
+- Quellen: `CssProperties.Color`, vorhandene CSS-/Contenttests,
+  [CSS-Guide](../docs/css.md) und lokaler `css-color`-Cache, Abschnitte
+  `the-hsl-notation` und `hsl-to-rgb`.
+
+**Belegt:** Vor Pass 3 diagnostizierte der Farbparser alle `hsl()`-/`hsla()`-
+Werte; ein neuer Shorthand-/Longhandfall scheiterte vor der Implementierung.
+Der Standards-Cache wurde am 2026-10-04 geprueft und ist weniger als 30 Tage
+alt. Der aktuelle Standard erlaubt auch ausserhalb von sRGB liegende HSL-
+Ergebnisse. Bei `hsl(0 200% 25%)` gab der Vergleichsbrowser `rgb(128, 0, 0)`
+aus; der lokale Standardalgorithmus ergibt vor etwaigem Gamut-Mapping einen
+Rotkanal von 0,75. Die bestehende Darstellung speichert nur 8-Bit-sRGB.
+
+**Umsetzung:** Pass 3 nimmt den haeufigen In-Gamut-Bereich mit Hue-Winkeln,
+Komma-/moderner Syntax, Alpha und statischem `none` auf. Negative
+Saettigung wird standardgemaess auf Null begrenzt; Saettigung ueber 100 und
+Lightness ausserhalb 0..100 bleiben Diagnosen statt angenaehertem
+Out-of-Gamut-Mapping. Interpolation und Farbmanagement werden nicht erweitert.
+Der Build meldet null Warnungen/Fehler; 693 CSS- und 23 Content-Tests bestehen.
+Darunter sind 49 neue CSS-Faelle und ein nativer Rendering-/Resizefall. Alle
+14.761 Solution-Tests bestehen. Die Solution-Formatpruefung meldet nur die drei
+auf `ad0bca6` reproduzierten Baseline-Fehler; die geaenderten C#-Dateien
+bestehen die separate Formatpruefung. Commit und CI stehen noch aus.
