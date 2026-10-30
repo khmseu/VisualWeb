@@ -2804,4 +2804,37 @@ Solution-Tests bestehen; der Build meldet null Warnungen/Fehler. Die
 Formatpruefung meldet drei Fehler nur in `StaticLayout.cs` und `ShellChrome.cs`;
 ein separater sauberer Worktree auf Ausgangscommit `ad0bca6` reproduzierte
 genau diese drei Fehler. Layout-, Schrift-, Netz- und Sicherheitsumfang werden
-nicht erweitert. Commit, Push und CI stehen noch aus.
+nicht erweitert.
+
+**Commit/Push:** `9f8aa41` ist auf `origin/main`; der Commit-Hook pruefte
+acht Dateien ohne Findings. [Linux 41135010782](https://github.com/khmseu/VisualWeb/actions/runs/41135010782),
+[Windows 41135010810](https://github.com/khmseu/VisualWeb/actions/runs/41135010810)
+und [CodeQL 41135010616](https://github.com/khmseu/VisualWeb/actions/runs/41135010616)
+bestanden; Windows umfasst x64 und ARM64.
+
+### KP-084 - Moderne RGB-Syntax
+
+- Dokumentiert am: 2026-10-30, Europe/Berlin (UTC+01:00).
+- Quellen: `CssProperties.Color`, vorhandene CSS-/Contenttests,
+  [CSS-Guide](../docs/css.md) und lokaler `css-color`-Cache, Abschnitte
+  `color-syntax-modern`, `missing-color-component` und `rgb-functions`.
+
+**Belegt:** Der Farbparser akzeptierte vor Pass 2 nur kommaseparierte
+RGB-/RGBA-Werte. Moderne Syntax mit leerzeichengetrennten Kanaelen und
+optionalem Slash-Alpha wurde diagnostiziert und blockierte die Seitenanzeige.
+Der Cache wurde am
+2026-10-04 geprueft und ist zum Arbeitsbeginn weniger als 30 Tage alt.
+
+**Arbeitsstand:** Pass 2 implementiert moderne `rgb()`-/`rgba()`-Syntax fuer
+die bestehenden 8-Bit-sRGB-Farben, einschliesslich gemischter Zahlen/Prozente
+und `none` als Null fuer statische Darstellung. Ein Browservergleich zeigte,
+dass getrennte CSS-Tokens auch ohne Leerzeichen gueltig sein koennen, etwa
+`rgb(255/**/0 0)` und `rgb(1%2%3%)`; fuenf Regressionen schlugen vor der
+Korrektur fehl. Die Validierung nutzt daher Tokengrenzen statt vorgeschriebener
+Whitespace-Zeichen. Legacy-Syntax, Shorthand-Atomicitaet, Fehlerdiagnostik
+und Budgets bleiben erhalten. Weitere Farbraeume und Interpolation bleiben
+ausgeschlossen. Der Build mit null Warnungen/Fehlern und die gezielten
+Subsystemtests (CSS 644, Content 22) bestehen, darunter 34 neue CSS-Faelle
+und ein nativer Rendering-/Resizefall. Alle 14.711 Solution-Tests bestehen.
+Die Formatpruefung meldet ausschliesslich die drei auf Ausgangscommit
+`ad0bca6` reproduzierten Baseline-Fehler. Commit und CI stehen noch aus.

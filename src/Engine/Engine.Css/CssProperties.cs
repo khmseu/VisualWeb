@@ -373,19 +373,38 @@ internal static class CssProperties
         var function = CssText.Lower(tokens[0].Value);
         if (function is not ("rgb" or "rgba")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
-        var values = args.Where(t => t.Kind != CssTokenKind.Comma).ToList();
-        if (values.Count is not (3 or 4) || args.Count != values.Count * 2 - 1
-            || args.Where((_, i) => i % 2 == 1).Any(t => t.Kind != CssTokenKind.Comma)
-            || values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
-            || values.Take(3).Select(t => t.Kind).Distinct().Count() != 1
-            || values.Count == 4 && values[3].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage)) { return null; }
-        var numbers = values.Select(Number).ToList();
+        List<CssToken> values;
+        if (args.Any(t => t.Kind == CssTokenKind.Comma))
+        {
+            values = args.Where(t => t.Kind != CssTokenKind.Comma).ToList();
+            if (values.Count is not (3 or 4) || args.Count != values.Count * 2 - 1
+                || args.Where((_, i) => i % 2 == 1).Any(t => t.Kind != CssTokenKind.Comma)
+                || values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
+                || values.Take(3).Select(t => t.Kind).Distinct().Count() != 1
+                || values.Count == 4 && values[3].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage)) { return null; }
+        }
+        else
+        {
+            var modern = ModernRgbComponents(args);
+            if (modern is null) { return null; }
+            values = modern;
+        }
+        var numbers = values.Select(token => token.Kind == CssTokenKind.Ident ? (double?)0 : Number(token)).ToList();
         if (numbers.Any(n => n is null)) { return null; }
         byte Channel(int index, bool alpha = false) => (byte)Math.Round(Math.Clamp(
             values[index].Kind == CssTokenKind.Percentage ? numbers[index]!.Value / 100 * 255
                 : numbers[index]!.Value * (alpha ? 255 : 1), 0, 255),
             MidpointRounding.AwayFromZero);
         return new CssColor(Channel(0), Channel(1), Channel(2), values.Count == 4 ? Channel(3, true) : (byte)255);
+    }
+
+    private static List<CssToken>? ModernRgbComponents(IReadOnlyList<CssToken> args)
+    {
+        if (args.Count != 3 && (args.Count != 5 || !args[3].IsDelimiter("/"))) { return null; }
+        var values = args.Take(3).ToList();
+        if (args.Count == 5) { values.Add(args[4]); }
+        return values.All(token => token.Kind is CssTokenKind.Number or CssTokenKind.Percentage
+            || token.Kind == CssTokenKind.Ident && CssText.Lower(token.Value) == "none") ? values : null;
     }
 
     private static List<List<CssToken>> Components(List<CssToken> tokens)

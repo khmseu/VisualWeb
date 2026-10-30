@@ -443,6 +443,14 @@ system colors, new functional color spaces, gradients or broad color management.
 Its 155 regressions, solution build and all 14,563 solution tests pass locally;
 formatting reports only the three established baseline findings.
 
+Modern space-separated `rgb()` and `rgba()` now use the same bounded sRGB
+output, including mixed number/percentage components, optional slash alpha,
+and static `none` components. Legacy comma syntax remains supported. Other
+functional color spaces and interpolation remain unsupported; see the
+[CSS color scope](../docs/css.md#cascade-and-computed-values).
+Its 35 regressions, solution build and all 14,711 solution tests pass locally;
+formatting reports only the three findings reproduced on base `ad0bca6`.
+
 The finite `background` shorthand now accepts one supported color and optional
 `none`, with transparent reset when the color is omitted. CSS-wide keywords,
 currentColor, inline/source-order/important cascade and existing limits apply.

@@ -162,7 +162,7 @@ Supported longhands:
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                      |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                   |
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                         |
-| Color   | color, background-color, border colors; hex 3/4/6/8, legacy comma rgb/rgba, transparent/currentColor, all 148 standard opaque named colors                                |
+| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba, transparent/currentColor, all 148 standard opaque named colors                   |
 | Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique        |
 | Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
 
@@ -191,6 +191,12 @@ parent size; other em values use the element's size; rem uses the root size
 (the initial 16px size when computing the root's own font-size). Unitless
 line-height is inherited as a multiplier; percentage line-height computes to px
 before inheritance. Sizing/box percentages remain percentages for layout.
+Modern [`rgb()`/`rgba()`](https://www.w3.org/TR/css-color-4/#rgb-functions)
+(`css-color`) permits mixed number/percentage components, optional
+slash-separated alpha, and `none` components treated as zero for this static
+8-bit output. CSS token boundaries also permit adjacent components where they
+remain distinct tokens, including comment-separated components. Color
+interpolation and missing-component preservation remain unsupported.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.
@@ -237,10 +243,12 @@ All CssOptions limits are positive and configurable:
 | Selector evaluation operations across a computation / direct match | 10,000,000 |
 
 Exceeding any limit throws CssLimitException. Cancellation is checked during
-input/token scanning, parsing, compilation and matching. Finite numeric overflow
-during computation also fails explicitly. Whole-string processing and these
-limits are not a total memory budget or an OS sandbox. Direct DOM construction
-and arbitrarily large DOM attribute values remain the caller's responsibility.
+input/token scanning, parsing, compilation and matching. Numeric values outside
+the finite `double` range are diagnosed, including color components; finite
+numeric overflow during computation also fails explicitly. Whole-string
+processing and these limits are not a total memory budget or an OS sandbox.
+Direct DOM construction and arbitrarily large DOM attribute values remain the
+caller's responsibility.
 
 ## Offline evidence and standards
 

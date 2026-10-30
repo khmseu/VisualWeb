@@ -122,8 +122,20 @@ bereits unterstuetzte Properties eingegrenzt. Der vorherige Parser akzeptierte
 nur `px`, `em` und `rem`. Die Umsetzung ist lokal getestet: 29 CSS- und ein
 nativer Content-Regressionstest, Build mit null Warnungen/Fehlern und alle
 14.676 Solution-Tests bestanden. Die drei Formatfehler wurden unveraendert
-auf dem Ausgangscommit `ad0bca6` reproduziert. Commit, Push und CI stehen aus
+auf dem Ausgangscommit `ad0bca6` reproduziert. Commit `9f8aa41` ist gepusht;
+Linux, Windows x64/ARM64 und CodeQL sind erfolgreich
 ([KP-083](./Kontextprotokoll.md#kp-083---neuer-zehn-passen-auftrag-und-css-laengen)).
+
+**Pass 2 (Arbeitsstand):** Moderne `rgb()`/`rgba()`-Werte mit gemischten
+Zahlen/Prozenten, optionalem Slash-Alpha und `none` als Null werden auf die
+vorhandenen statischen 8-Bit-sRGB-Farbwerte abgebildet. Auch benachbarte
+getrennte CSS-Tokens sind gueltig; Legacy-Kommasyntax, atomare Shorthands
+und bestehende Budgets bleiben erhalten. Farbraeume und Interpolation werden
+nicht erweitert. Der Build ist erfolgreich; 644 CSS-, 22 Content- und alle
+14.711 Solution-Tests bestehen, einschliesslich 34 neuer CSS-Faelle und eines
+nativen Renderingtests. Die Formatpruefung zeigt nur die drei auf `ad0bca6`
+reproduzierten Baseline-Fehler. Commit und CI stehen noch aus
+([KP-084](./Kontextprotokoll.md#kp-084---moderne-rgb-syntax)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

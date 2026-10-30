@@ -8,6 +8,30 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void ModernRgbColorsMatchLegacyPixelsAndRemainStableOnResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><div>Sample</div>";
+        var modern = new[] { new CssStyleSource(
+            "*{margin:0}div{width:80px;height:24px;color:rgb(100% 0 0);background:rgb(25% 0 100% / 50%);border:1px solid rgb(0 0 0)}") };
+        var legacy = new[] { new CssStyleSource(
+            "*{margin:0}div{width:80px;height:24px;color:rgb(255,0,0);background:rgba(25%,0%,100%,.5);border:1px solid rgb(0,0,0)}") };
+        var actual = OfflinePageRenderer.Render(html, modern, text, fonts, 100, 40, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, legacy, text, fonts, 100, 40, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(new byte[] { 255, 127, 159, 255 }, actual.Frame.Pixels.Span.Slice(20 * actual.Frame.Stride + 70 * 4, 4).ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, modern, text, fonts, 90, 40, cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, legacy, text, fonts, 90, 40,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void AbsoluteLengthsMatchPixelStylesThroughNativeRenderingAndResize()
     {
         using var font = new TextFont(FontPath);
