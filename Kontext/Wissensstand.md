@@ -161,7 +161,7 @@ C#-Dateien bestehen die separate Pruefung. Commit `d473814` ist gepusht;
 Linux, Windows x64/ARM64 und CodeQL bestehen
 ([KP-086](./Kontextprotokoll.md#kp-086---statischer-any-link-selektor)).
 
-**Pass 5 (Arbeitsstand):** Verschachtelte CSS-`@media`-Gruppen unterstuetzen
+**Pass 5 (abgeschlossen):** Verschachtelte CSS-`@media`-Gruppen unterstuetzen
 nur leere oder kommaseparierte `all`-/`screen`-/`print`-Listen fuer den
 bereits bestehenden Screen-Modus. Cascade-Reihenfolge, Syntaxdiagnosen,
 gemeinsame Arbeitsbudgets und die bisherige Import-Sicherheitsgrenze bleiben
@@ -170,8 +170,22 @@ erhalten; Bedingungen und weitere Medientypen bleiben nicht unterstuetzt.
 Solution-Tests bestehen. Der Build hat null Warnungen/Fehler; geaenderte
 C#-Dateien bestehen die separate Formatpruefung. Die Solution-Formatpruefung
 meldet nur die drei auf `ad0bca6` reproduzierten Baseline-Findings.
-Commit, Push und CI stehen noch aus
+Commit `9864bad` ist gepusht; Linux, Windows x64/ARM64 und CodeQL bestehen
 ([KP-087](./Kontextprotokoll.md#kp-087---begrenzte-screen-media-regeln)).
+
+**Pass 6 (lokale Umsetzung):** Gewoehnliche ASCII-hyphenierte Woerter sind im
+Wrapping-Modus umgesetzt: Weiche Umbrueche nach internen Bindestrichen
+zwischen ASCII-Buchstaben eines Textknotens teilen nur bei Bedarf den Shaping-Lauf.
+Wiederholte Analyse hat ein gemeinsames Arbeitsbudget; andere Interpunktions-
+und Unicode-Umbrueche bleiben ausgeschlossen. 30 fokussierte Layout-Faelle,
+ein nativer Pixel-/Resizefall und je ein lokaler und Prozess-Renderer-Fall
+einschliesslich sichtbarer Textauswahl bestehen. Der Solution-Build sowie
+alle 138 Layout-, 26 Content- und 1.200 Browser-Tests bestehen. Die
+Solution-Formatpruefung meldet nur die drei auf `ad0bca6` reproduzierten
+Baseline-Findings; die geaenderten Testdateien bestehen separat. Alle 14.852
+Solution-Tests bestehen, darunter 27 neue Regressionen; Commit, Push und CI
+stehen noch aus
+([KP-088](./Kontextprotokoll.md#kp-088---bindestrichumbrueche)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

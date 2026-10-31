@@ -292,6 +292,16 @@
       "lastModified": "2026-09-01T21:00:40+00:00"
     },
     {
+      "id": "unicode-linebreak",
+      "title": "Unicode Standard Annex 14: Line Breaking Algorithm, Unicode 17",
+      "url": "https://www.unicode.org/reports/tr14/tr14-55.html",
+      "file": "unicode-linebreak.html",
+      "fetchedAt": "2026-10-31T00:38:16.9230059+00:00",
+      "checkedAt": "2026-10-31T00:38:16.9230059+00:00",
+      "eTag": null,
+      "lastModified": "2025-09-08T14:08:18+00:00"
+    },
+    {
       "id": "url",
       "title": "WHATWG URL",
       "url": "https://url.spec.whatwg.org/",

@@ -187,8 +187,17 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   positive and negative margins. Parent margins also collapse through eligible
   first/last block-child edges without intervening content/borders/padding; bottom
   propagation requires auto height and zero min-height.
-- Shaped unbroken words, collapsing spaces, space-only wrapping and overflow of
-  unbreakable text. Exact fits do not wrap. Line-edge collapsible spaces drop.
+- Shaped unbroken words, collapsing spaces, wrapping at spaces and supported
+  internal hyphens, and overflow of unbreakable text. Exact fits do not wrap.
+  Line-edge collapsible spaces drop.
+- In `normal`/`pre-line`, an ASCII hyphen between ASCII letters in one text
+  node is a soft break after the hyphen. The whole word stays one shaped run
+  if it fits; otherwise the last fitting hyphen is used, or the first
+  unbreakable segment overflows. Fragments retain their source text node,
+  including during table intrinsic sizing and retained-document reflow.
+  See [CSS Text line breaking](https://drafts.csswg.org/css-text-3/#line-breaking)
+  (local ID `css-text`) and [Unicode line-break rules](https://www.unicode.org/reports/tr14/tr14-55.html#LB20a)
+  (local ID `unicode-linebreak`, Unicode 17, UAX 14 revision 55).
 - white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
   explicit br breaks. Preserved tabs/form feeds are unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
@@ -210,9 +219,10 @@ explicitly or those styles overridden.
 
 - Bidi/RTL/auto direction, non-English language-specific layout, script
   itemization, advanced script/fallback/emoji shaping.
-- Full Unicode line breaking, hyphenation and punctuation-internal
-  opportunities. In wrapping modes, hyphens/slashes and unsupported internal
-  punctuation fail; nonwrapping pre/nowrap do not need this break analysis.
+- Full Unicode line breaking, hyphenation and other punctuation-internal
+  opportunities. In wrapping modes, leading/trailing, adjacent or non-ASCII
+  hyphens, hyphens beside digits, slashes and unsupported internal punctuation
+  fail; nonwrapping pre/nowrap do not need this break analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab
@@ -242,18 +252,21 @@ FontSet registration and caller-owned font counts remain caller resource policy.
 
 LayoutOptions defaults:
 
-| Limit                                            |   Default |
-| ------------------------------------------------ | --------: |
-| Nesting, including gathered text nodes           |       128 |
-| Generated block boxes                            |   100,000 |
-| Visited visible nodes                            | 1,000,000 |
-| Generated lines                                  |   100,000 |
-| Input text characters across gathered text nodes | 1,000,000 |
-| Glyphs returned across all shaping calls         | 1,000,000 |
-| Shaping calls, including spaces/struts           |   100,000 |
+| Limit                                            |    Default |
+| ------------------------------------------------ | ---------: |
+| Nesting, including gathered text nodes           |        128 |
+| Generated block boxes                            |    100,000 |
+| Visited visible nodes                            |  1,000,000 |
+| Generated lines                                  |    100,000 |
+| Input text characters across gathered text nodes |  1,000,000 |
+| Glyphs returned across all shaping calls         |  1,000,000 |
+| Shaping calls, including spaces/struts           |    100,000 |
+| Hyphen line-break processing operations          | 10,000,000 |
 
 All limits are positive/configurable, tested at boundaries and throw typed
-limit exceptions. Nonfinite computed geometry also fails explicitly.
+limit exceptions. The shared line-break budget charges repeated whole-run
+shaping, candidate scans/substring shaping and remainder copies, including
+intrinsic table measurements. Nonfinite computed geometry also fails explicitly.
 Cancellation is checked during managed scanning, gathering and shaping loops
 and before/after native shaping. A native HarfBuzz call is not interruptible
 mid-call; bounded run/font inputs are not a process-isolation guarantee.
@@ -262,7 +275,7 @@ The whole-string/tree strategy is not a total memory budget.
 ## Standards and evidence
 
 See cached document IDs harfbuzz-shaping, harfbuzz-font, css2-visual, css2-sizing,
-css-box, css-sizing, css-inline, css-text, css-fonts and css-values in the
+css-box, css-sizing, css-inline, css-text, unicode-linebreak, css-fonts and css-values in the
 [standards registry](../specs/manifest.json). Official document refresh remains
 independent of tests.
 

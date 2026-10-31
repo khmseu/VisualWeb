@@ -537,11 +537,20 @@ The current engine implements finite static block/inline rendering. Missing esse
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common
 punctuation (including ordinary URL and hyphenated text) without soft wrapping;
 spaces/forced breaks and horizontal overflow remain mode-appropriate.
-Wrapping punctuation/Unicode-break algorithms, cross-node word shaping,
-unsupported scripts/bidi/controls and missing-font handling are not broadened.
+`normal`/`pre-line` now also allow a soft break after an ASCII hyphen between
+ASCII letters in one text node, with bounded break-search work and retained
+source identity. Other punctuation/Unicode-break algorithms, cross-node word
+shaping, unsupported scripts/bidi/controls and missing-font handling remain
+unsupported.
 See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
-Its 17 new regressions, solution build and all 14,357 solution tests pass;
-formatting retains only the three established baseline findings.
+The earlier nonwrapping increment's 17 new regressions, solution build and all
+14,357 solution tests pass; formatting retains only the three established
+baseline findings.
+The internal-hyphen increment adds 27 regressions covering deterministic
+wrapping, work limits, intrinsic table sizing, native pixels, retained resize,
+link geometry and visible text selection. The solution build, all 138 Layout,
+26 Content, 1,200 Browser and 14,852 solution tests pass locally. Formatting
+reports only the three findings reproduced on base `ad0bca6`.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one spacing length, top-aligned text/block cells and

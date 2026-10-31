@@ -191,6 +191,33 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void HyphenWrapMatchesExplicitNativeLineBreakAndReflowsRetainedDocument()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var narrowWidth = Math.Ceiling(Math.Max(font.Shape("well-", 16, Cancellation).Width,
+            font.Shape("known", 16, Cancellation).Width));
+        var wideWidth = Math.Ceiling(font.Shape("well-known", 16, Cancellation).Width) + 1;
+        Assert.True(wideWidth > narrowWidth);
+        CssStyleSource[] styles = [new("*{margin:0}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><p>well-known</p>", styles, text, fonts,
+            narrowWidth, 60, cancellationToken: Cancellation);
+        CssStyleSource[] explicitBreakStyles = [new("*{margin:0}p{white-space:pre}")];
+        var expected = OfflinePageRenderer.Render("<!doctype html><p>well-<br>known</p>", explicitBreakStyles,
+            text, fonts, narrowWidth, 60, cancellationToken: Cancellation);
+        Assert.Equal(2, actual.DisplayList.Commands.OfType<DrawGlyphRun>().Count());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, styles, text, fonts, wideWidth, 60,
+            cancellationToken: Cancellation);
+        var wide = OfflinePageRenderer.Render("<!doctype html><p>well-known</p>", styles, text, fonts,
+            wideWidth, 60, cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Single(resized.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(wide.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void AutomaticTablesPaintNativeCellBackgroundsAndRetainTheirParsedDocument()
     {
         using var font = new TextFont(FontPath);

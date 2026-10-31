@@ -1,8 +1,9 @@
 # Engine.Layout
 
-Phase-7 finite horizontal LTR normal-flow block/inline geometry and space-based
-line wrapping. Inputs are renderer-local DOM, computed CSS snapshots and an
-injected text shaper. Outputs are box/line/glyph-run snapshots, not pixels.
+Phase-7 finite horizontal LTR normal-flow block/inline geometry and bounded
+space/internal-ASCII-hyphen line wrapping. Inputs are renderer-local DOM,
+computed CSS snapshots and an injected text shaper. Outputs are
+box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
 Default unordered lists now use block list-item boxes with separate outside
@@ -14,7 +15,8 @@ list-item elements remain unsupported. See the guide for exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
 `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,
-`css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`, `css2-tables`.
+`css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`, `css2-tables`,
+`unicode-linebreak`.
 See the [standards workflow](../../../docs/standards.md).
 Read the [text/layout guide](../../../docs/text-layout.md) for exact scope:
 non-root vertical margins must be zero while margin collapse is deferred;
@@ -28,6 +30,7 @@ row/group backgrounds, nested tables/widgets and other
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow
-geometry and shared shaping/text limits. Wrapping modes retain their explicit
-punctuation/Unicode-break exclusions; text-node/style boundaries still require
-supported cross-boundary shaping.
+geometry and shared shaping/text limits. In wrapping modes, only hyphens
+between ASCII letters in one text node add a break after the hyphen. Repeated
+break analysis uses a shared work budget; other punctuation/Unicode-break
+exclusions and cross-node/style shaping restrictions remain.

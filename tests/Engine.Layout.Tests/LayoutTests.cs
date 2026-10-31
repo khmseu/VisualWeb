@@ -506,6 +506,109 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("normal", "aa-bb", 25, "aa-bb")]
+    [InlineData("normal", "aa-bb", 24, "aa-|bb")]
+    [InlineData("normal", "aa-bb", 15, "aa-|bb")]
+    [InlineData("normal", "aa-bb", 10, "aa-|bb")]
+    [InlineData("normal", "a-b-c", 20, "a-b-|c")]
+    [InlineData("normal", "a-b-c", 10, "a-|b-|c")]
+    [InlineData("normal", "x aa-bb", 25, "x aa-|bb")]
+    [InlineData("normal", "x aa-bb", 20, "x|aa-|bb")]
+    [InlineData("normal", "aaa b-c", 10, "aaa|b-|c")]
+    [InlineData("normal", "aa-bb cc-dd", 25, "aa-bb|cc-dd")]
+    [InlineData("normal", "aa-bb.", 15, "aa-|bb.")]
+    [InlineData("pre-line", "a-b\nc-d", 10, "a-|b|c-|d")]
+    public void InternalAsciiHyphensProvideSoftWrapOpportunities(
+        string mode, string text, double width, string expected)
+    {
+        var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}", width).Root!, "x");
+        var actual = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(expected.Split('|'), actual);
+        Assert.Equal(text.Replace("\n", "", StringComparison.Ordinal).Replace(" ", "", StringComparison.Ordinal),
+            string.Concat(actual).Replace(" ", "", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AnUnwrappedHyphenatedWordRemainsOneShapedRun()
+    {
+        var box = Find(Layout("<p id=x>aa-bb</p>", width: 25).Root!, "x");
+        var fragment = Assert.Single(Assert.Single(box.Lines).Fragments);
+        Assert.Equal("aa-bb", fragment.Run.Text);
+        Assert.Equal(25, fragment.Run.Width);
+    }
+
+    [Fact]
+    public void BrokenHyphenatedFragmentsRetainTheirSourceTextNode()
+    {
+        var (document, styles) = Page("<p id=x>aa-bb</p>");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 15, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        Assert.All(box.Lines.SelectMany(line => line.Fragments), fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Fact]
+    public void HyphenatedTextContributesItsWidestUnbreakablePartToTableIntrinsicWidth()
+    {
+        var root = UnorderedList("<table id=t><tr><td id=c>aa-bb</td></tr></table>", width: 10).Root!;
+        Assert.Equal(21, Find(root, "t").Content.Width);
+        var cell = Find(root, "c");
+        Assert.Equal(15, cell.Content.Width);
+        Assert.Equal(["aa-", "bb"], cell.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Theory]
+    [InlineData("-ab")]
+    [InlineData("ab-")]
+    [InlineData("a--b")]
+    [InlineData("1-a")]
+    [InlineData("a-1")]
+    [InlineData("a-b/c")]
+    [InlineData("a-<span>b</span>")]
+    public void OtherHyphenAndCrossNodeCasesRemainExplicitlyUnsupported(string text) =>
+        Assert.Throws<UnsupportedLayoutException>(() => Layout("<p>" + text + "</p>"));
+
+    [Fact]
+    public void HyphenBreakWorkAndExistingTextLimitsHaveExactSharedBoundaries()
+    {
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = 5,
+            MaxShapedGlyphs = 10,
+            MaxShapingCalls = 5,
+            MaxLines = 2,
+            MaxLineBreakOperations = 17
+        };
+        Assert.NotNull(Layout("<p>aa-bb</p>", width: 15, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb</p>", width: 15,
+            options: exact with { MaxTextCharacters = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb</p>", width: 15,
+            options: exact with { MaxShapedGlyphs = 9 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb</p>", width: 15,
+            options: exact with { MaxShapingCalls = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb</p>", width: 15,
+            options: exact with { MaxLines = 1 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb</p>", width: 15,
+            options: exact with { MaxLineBreakOperations = 16 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Layout("<p>aa-bb</p>", width: 15,
+            options: exact with { MaxLineBreakOperations = 0 }));
+        var shared = new LayoutOptions { MaxLineBreakOperations = 34 };
+        Assert.NotNull(Layout("<p>aa-bb</p><p>aa-bb</p>", width: 15, options: shared).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb</p><p>aa-bb</p>", width: 15,
+            options: shared with { MaxLineBreakOperations = 33 }));
+    }
+
+    [Fact]
+    public void HyphenBreakSearchObservesCancellationFromTheShaper()
+    {
+        var (document, styles) = Page("<p>aa-bb</p>");
+        using var cancellation = new CancellationTokenSource();
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            new CancelingShaper(cancellation), 15, 200, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
     [InlineData("normal")]
     [InlineData("pre-line")]
     public void WrappingPunctuationStillRequiresSupportedLineBreakAnalysis(string mode) =>
@@ -619,7 +722,7 @@ public sealed class LayoutTests
     [InlineData("<p>x</p>", "p{text-align:justify}")]
     [InlineData("<p>x</p>", "p{white-space:pre-wrap}")]
     [InlineData("<p>\t</p>", "p{white-space:pre}")]
-    [InlineData("<p>a-b</p>", "")]
+    [InlineData("<p>-ab</p>", "")]
     [InlineData("<p lang=de>x</p>", "")]
     [InlineData("<span>x</span>", "span{background-color:red}")]
     [InlineData("<p>a <span>bb cc</span></p>", "span{white-space:nowrap}")]

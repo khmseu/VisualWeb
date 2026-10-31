@@ -2933,4 +2933,45 @@ Requests fuer verschachtelte Imports. Der Solution-Build hat null Warnungen und
 Fehler; CSS 748, Content 25, Browser 1.198 und alle 14.825 Solution-Tests
 bestehen. Geaenderte C#-Dateien bestehen die separate Formatpruefung; die
 vollstaendige Pruefung zeigt ausschliesslich die drei auf `ad0bca6`
-reproduzierten Baseline-Fehler. Commit, Push und CI stehen aus.
+reproduzierten Baseline-Fehler.
+
+**Commit/Push:** `9864bad` ist auf `origin/main`; der Commit-Hook pruefte
+17 Dateien ohne verbleibende Findings und formatierte zwei Markdown-Guides.
+[Linux 41150024317](https://github.com/khmseu/VisualWeb/actions/runs/41150024317),
+[Windows 41150024335](https://github.com/khmseu/VisualWeb/actions/runs/41150024335)
+und [CodeQL 41150024337](https://github.com/khmseu/VisualWeb/actions/runs/41150024337)
+bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
+
+### KP-088 - Bindestrichumbrueche
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Text-/Layout-Guide](../docs/text-layout.md#ordinary-flow),
+  `StaticLayout.Gather` und `Inline`, lokale Caches `css-text` und
+  `unicode-linebreak` (Unicode 17, UAX 14 Revision 55) sowie ein gezielter
+  Vergleich mit Chromium im aktuellen Arbeitslauf.
+
+**Belegt:** Vor Pass 6 scheiterten bei `white-space:normal/pre-line` auch
+gewoehnliche Texte wie `well-known`; `pre`/`nowrap` waren bereits unterstuetzt.
+Der lokale CSS-Text-Standard verweist fuer Basis-Umbruchgelegenheiten auf UAX 14;
+dessen Regeln LB20a/LB21/LB31 unterscheiden interne und wortinitiale
+Bindestriche. Chromium bricht `aa-bb` bei begrenzter Breite nach `aa-`,
+laesst bei ausreichender Breite das Wort zusammen und kann mehrere interne
+Bindestriche nutzen. Andere untersuchte Interpunktion, insbesondere Schraegstriche,
+wird nicht aus diesem Vergleich verallgemeinert. Der neu registrierte
+Unicode-17-Standardcache wurde erfolgreich heruntergeladen.
+
+**Umsetzung, lokal fokussiert geprueft:** Nur Bindestriche zwischen
+ASCII-Buchstaben innerhalb eines Textknotens gelten bei normal/pre-line als
+Umbruchgelegenheiten. Wortinitiale, numerische und andere bisher ausgeschlossene
+Interpunktion bleiben ausdrueckliche Fehler. Ungebrochene Woerter werden zusammen
+geformt; bei Bedarf bleiben Quelltextidentitaet, Tabellen-Intrinsic-Sizing und
+Link-/Textmetadaten erhalten. Ein gemeinsames Arbeitsbudget begrenzt wiederholte
+Formungs- und Kopierarbeit. 30 fokussierte Layout-Faelle, ein nativer
+Pixel-/Resizefall und je ein lokaler und Prozess-Renderer-Fall einschliesslich
+sichtbarer Textauswahl bestehen. Der Solution-Build sowie alle 138 Layout-,
+26 Content- und 1.200 Browser-Tests bestehen. Ein alter Negativtest erwartete
+noch, dass `a-b` scheitert, und wurde auf den weiter ausgeschlossenen Fall
+`-ab` korrigiert. Die Solution-Formatpruefung meldet nur die drei auf
+`ad0bca6` reproduzierten Baseline-Findings; die geaenderten Testdateien
+bestehen separat. Alle 14.852 Solution-Tests bestehen, darunter 27 neue
+Regressionen. Commit, Push und CI stehen noch aus.

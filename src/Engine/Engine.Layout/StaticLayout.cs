@@ -49,10 +49,11 @@ public sealed record LayoutOptions
     public int MaxTextCharacters { get; init; } = 1_000_000;
     public int MaxShapedGlyphs { get; init; } = 1_000_000;
     public int MaxShapingCalls { get; init; } = 100_000;
+    public long MaxLineBreakOperations { get; init; } = 10_000_000;
     internal void Validate()
     {
         if (MaxDepth <= 0 || MaxBoxes <= 0 || MaxNodes <= 0 || MaxLines <= 0 || MaxTextCharacters <= 0
-            || MaxShapedGlyphs <= 0 || MaxShapingCalls <= 0)
+            || MaxShapedGlyphs <= 0 || MaxShapingCalls <= 0 || MaxLineBreakOperations <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(LayoutOptions), "All layout limits must be positive.");
         }
@@ -66,6 +67,9 @@ public sealed record LayoutOptions
 /// Basic automatic tables follow local ID css2-tables,
 /// <see href="https://www.w3.org/TR/CSS22/tables.html#auto-table-layout">automatic table layout</see>,
 /// with canonical HTML boxes, separate borders and top-aligned cells only.
+/// Internal ASCII-letter hyphens use css-text
+/// <see href="https://drafts.csswg.org/css-text-3/#line-breaking">line breaking</see> and unicode-linebreak
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">hyphen rules</see>.
 /// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
 public static partial class StaticLayout
 {
@@ -89,6 +93,7 @@ public static partial class StaticLayout
         private readonly LayoutOptions options;
         private readonly CancellationToken cancellation;
         private int nodes, boxes, lines, characters, glyphs, calls;
+        private long lineBreakOperations;
         private readonly Dictionary<DomElement, long> ordinals = new(ReferenceEqualityComparer.Instance);
 
         internal Builder(CssStyleResult styles, ITextShaper shaper, LayoutOptions options, CancellationToken cancellation)
@@ -481,16 +486,29 @@ public static partial class StaticLayout
                     if (word.Length == 0) { return; }
                     var value = word.ToString();
                     TextFont.ValidateLatin(value, cancellation);
+                    var hasHyphenBreaks = false;
                     if (canWrap)
                     {
-                        if (value.Any(c => c is '-' or '/' or '\\' or >= '\u2010' and <= '\u2015'))
+                        for (var index = 0; index < value.Length; index++)
                         {
-                            throw new UnsupportedLayoutException("Hyphen/punctuation line-break opportunities are deferred.");
-                        }
-                        for (var index = 1; index < value.Length - 1; index++)
-                        {
+                            cancellation.ThrowIfCancellationRequested();
                             var c = value[index];
-                            if (!char.IsLetterOrDigit(c) && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark
+                            if (c is '/' or '\\' or >= '\u2010' and <= '\u2015')
+                            {
+                                throw new UnsupportedLayoutException("Punctuation line-break opportunities are deferred.");
+                            }
+                            if (c == '-')
+                            {
+                                if (index == 0 || index == value.Length - 1
+                                    || !char.IsAsciiLetter(value[index - 1]) || !char.IsAsciiLetter(value[index + 1]))
+                                {
+                                    throw new UnsupportedLayoutException("Only internal hyphens between ASCII letters support line breaking.");
+                                }
+                                hasHyphenBreaks = true;
+                                continue;
+                            }
+                            if (index > 0 && index < value.Length - 1 && !char.IsLetterOrDigit(c)
+                                && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark
                                 && c is not ('\'' or '\u2019' or '\u00A0')
                                 && !(c == '.' && char.IsAsciiDigit(value[index - 1]) && char.IsAsciiDigit(value[index + 1])))
                             {
@@ -498,7 +516,7 @@ public static partial class StaticLayout
                             }
                         }
                     }
-                    output.Add(new(text, inheritedStyle, value, UnitKind.Word, canWrap));
+                    output.Add(new(text, inheritedStyle, value, UnitKind.Word, canWrap) { HasHyphenBreaks = hasHyphenBreaks });
                     word.Clear();
                 }
             }
@@ -610,6 +628,13 @@ public static partial class StaticLayout
                 {
                     throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
                 }
+                if (unit.HasHyphenBreaks)
+                {
+                    PlaceHyphenatedWord(unit);
+                    previousWord = true;
+                    previousWidget = false;
+                    continue;
+                }
                 var run = Shape(unit.Text, unit.Style);
                 var gap = space is not null && hasContent ? Shape(" ", space.Style) : null;
                 var breakable = space?.Wrap == true || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
@@ -632,6 +657,76 @@ public static partial class StaticLayout
             }
             if (hasContent) { Emit(false); }
             return output;
+
+            void PlaceHyphenatedWord(InlineUnit unit)
+            {
+                var remaining = unit.Text;
+                var gap = space is not null && hasContent ? Shape(" ", space.Style) : null;
+                while (true)
+                {
+                    ChargeLineBreakWork(remaining.Length);
+                    var whole = Shape(remaining, unit.Style);
+                    var available = width - advance - (gap?.Width ?? 0);
+                    if (whole.Width <= available)
+                    {
+                        Place(whole);
+                        return;
+                    }
+
+                    ChargeLineBreakWork(remaining.Length);
+                    ShapedRun? first = null;
+                    ShapedRun? best = null;
+                    var firstEnd = 0;
+                    var bestEnd = 0;
+                    for (var index = 0; index < remaining.Length; index++)
+                    {
+                        cancellation.ThrowIfCancellationRequested();
+                        if (remaining[index] != '-') { continue; }
+                        var end = index + 1;
+                        ChargeLineBreakWork(end);
+                        var candidate = Shape(remaining[..end], unit.Style);
+                        if (first is null) { first = candidate; firstEnd = end; }
+                        if (candidate.Width <= available) { best = candidate; bestEnd = end; }
+                    }
+                    if (best is null && hasContent && (space?.Wrap == true || previousWidget))
+                    {
+                        Emit(false);
+                        space = null;
+                        gap = null;
+                        previousWidget = false;
+                        continue;
+                    }
+                    if (best is null)
+                    {
+                        best = first;
+                        bestEnd = firstEnd;
+                    }
+                    if (best is null)
+                    {
+                        Place(whole);
+                        return;
+                    }
+                    Place(best);
+                    Emit(false);
+                    ChargeLineBreakWork(remaining.Length - bestEnd);
+                    remaining = remaining[bestEnd..];
+                    gap = null;
+                    previousWidget = false;
+                }
+
+                void Place(ShapedRun run)
+                {
+                    if (gap is not null)
+                    {
+                        pending.Add(new(space!.Source!, gap, space.Style, advance));
+                        advance += gap.Width;
+                    }
+                    space = null;
+                    pending.Add(new(unit.Source!, run, unit.Style, advance));
+                    advance += run.Width;
+                    hasContent = true;
+                }
+            }
 
             void Emit(bool force)
             {
@@ -753,6 +848,14 @@ public static partial class StaticLayout
             return run;
         }
 
+        private void ChargeLineBreakWork(int count)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (count > options.MaxLineBreakOperations - lineBreakOperations)
+            { throw new LayoutLimitException("Layout line-break processing limit exceeded."); }
+            lineBreakOperations += count;
+        }
+
         private void Visit()
         {
             cancellation.ThrowIfCancellationRequested();
@@ -810,6 +913,7 @@ public static partial class StaticLayout
         private sealed record InlineUnit(DomText? Source, CssComputedStyle Style, string Text, UnitKind Kind, bool Wrap)
         {
             public DomElement? Widget { get; init; }
+            public bool HasHyphenBreaks { get; init; }
         }
         private sealed record Placed(DomText? Source, ShapedRun Run, CssComputedStyle Style, double Advance,
             DomElement? Widget = null, double Width = 0, double Height = 0);
