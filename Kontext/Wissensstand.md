@@ -23,8 +23,18 @@
   Renderingregressionen wurden zuerst angelegt und scheiterten wie erwartet.
   Der Build und alle 15.065 Solution-Tests bestehen; die geaenderten
   C#-Dateien bestehen die separate Formatpruefung. Der Gesamtformatter meldet
-  nur die drei bekannten Baseline-Findings. Commit, Push und CI stehen noch aus
+  nur die drei bekannten Baseline-Findings. Commit `67f296b` ist gepusht;
+  Linux, Windows und CodeQL bestanden, einschliesslich x64 und arm64
   ([KP-096](./Kontextprotokoll.md#kp-096---ua-abstaende-fuer-verschachtelte-listen)).
+  Pass 4 bearbeitet die vorhandenen Markerwerte als begrenzte HTML-`type`-
+  Praesentationshinweise mit eigener Cascade-Prioritaet; unbekannte Werte
+  bleiben explizite Layoutfehler. Test-first-Regressionsfaelle wurden vor der
+  Umsetzung ausgefuehrt und scheiterten wie erwartet. Build, V8-Smoke und
+  alle 15.097 Solution-Tests bestehen; der Gesamtformatter meldet nur drei
+  auf `b47a5a0` reproduzierte Baseline-Findings. Zwei betreffen ungeaenderte
+  Zeilen der geaenderten `StaticLayout.cs`; die anderen geaenderten C#-Dateien
+  bestehen eine separate Formatpruefung. Commit, Push und CI stehen noch aus
+  ([KP-097](./Kontextprotokoll.md#kp-097---html-listentypen-als-praesentationshinweise)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

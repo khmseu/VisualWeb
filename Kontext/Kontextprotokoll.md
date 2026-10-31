@@ -3300,3 +3300,42 @@ Browserfaelle bestehen, ebenso der Solution-Build, 870 CSS-, 184 Layout-,
 Solutionformatter meldet nur die drei auf `b47a5a0` reproduzierten
 Baseline-Findings; alle geaenderten C#-Dateien bestehen die separate
 Formatpruefung. Commit, Push und CI sind noch offen.
+
+**Commit, Push und CI:** `67f296b` wurde auf `origin/main` gepusht; der
+Commit-Hook pruefte 12 Dateien ohne Findings.
+[Linux 41190659343](https://github.com/khmseu/VisualWeb/actions/runs/41190659343)
+und [CodeQL 41190659135](https://github.com/khmseu/VisualWeb/actions/runs/41190659135)
+bestanden. [Windows 41190659344](https://github.com/khmseu/VisualWeb/actions/runs/41190659344)
+bestand ebenfalls; Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-097 - HTML-Listentypen als Praesentationshinweise
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [HTML-Listentypen](https://html.spec.whatwg.org/multipage/rendering.html#lists),
+  [CSS-Praesentationshinweise](https://www.w3.org/TR/css-cascade-5/#preshint),
+  lokale `html`-/`css-cascade`-Caches, geprueft am 2026-10-04.
+
+**Belegte Auswahl fuer Pass 4:** Die bereits implementierten Markerformen
+erlauben einen begrenzten HTML-`type`-Hinweis fuer `ul`/`li` (Disc, Circle,
+Square, None; ASCII-Gross-/Kleinschreibung wird ignoriert) und `ol`/`li`
+(`1` als Decimal). Hinweise stehen zwischen normaler User- und Autor-Cascade,
+zaehlen bei `revert` zum Autorursprung und belasten das CSS-Zuweisungsbudget.
+Unbekannte oder fehlerhafte Typen bleiben sichtbare Layoutfehler, auch bei
+CSS-Ueberschreibung. Es kommen weder neue Markerstile noch allgemeine
+Presentational-Hint-Unterstuetzung hinzu.
+
+**Test-first und Umsetzung:** Vor der Implementierung scheiterten elf CSS-,
+acht Layout-, ein Pixel- und zwei geskriptete lokale/Prozess-Browserfaelle.
+Die begrenzte Mappingfunktion, Cascade-Rangfolge und Layoutvalidierung wurden
+ergaenzt; weitere Tests decken unter anderem ungueltige Werte, `revert`,
+Mutationen und genaue Zuweisungslimits ab.
+
+**Lokale Abschlusspruefung:** Der Solution-Build und V8-Smoke bestehen ebenso
+wie alle 15.097 Solution-Tests, darunter 890 CSS-, 193 Layout-, 34 Content-,
+352 Scripting- und 1.220 Browserfaelle. Gegenueber Pass 3 sind dies netto
+32 zusaetzliche Solution-Testfaelle. Der Solutionformatter endet mit den drei
+bereits auf `b47a5a0` reproduzierten Baseline-Findings; zwei davon betreffen
+ungeaenderte Zeilen in der hier geaenderten `StaticLayout.cs`. Alle anderen
+geaenderten C#-Dateien bestehen die separate Formatpruefung. Commit, Push
+und native CI-Pruefung stehen noch aus.

@@ -55,6 +55,34 @@ public sealed class ScrollTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ScriptedListTypeHintSurvivesLocalAndProcessRetainedRepaint(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 10000, executeInlineScripts: true);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        const string body = "<ul id=list><li></li><li></li></ul>";
+        var viewport = new PageViewport(100, 20, 1);
+        var document = Document("<!doctype html><style>" + style + "</style>" + body
+            + "<script>document.getElementById('list').setAttribute('type','circle')</script>");
+        var actual = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 20 }, Cancellation);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 80 }, Cancellation);
+        var reference = Document("<!doctype html><style>" + style + "ul{list-style-type:circle}</style>" + body);
+        var expected = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var expectedScrolled = await renderer.RenderRetainedAsync(reference, viewport with { ScrollY = 20 }, Cancellation);
+        var expectedResized = await renderer.RenderRetainedAsync(reference, viewport with { Width = 80 }, Cancellation);
+        Assert.Equal(40, actual.ScrollHeight);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expectedScrolled.Frame.Pixels.ToArray(), scrolled.Frame.Pixels.ToArray());
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NestedUaListMarginsSurviveLocalAndProcessRetainedRepaint(bool process)
     {
         using IPageRenderer renderer = process

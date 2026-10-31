@@ -8,6 +8,22 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void ListTypeHintProducesTheSameNativePixelsAsAuthoredCss()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        var actual = OfflinePageRenderer.Render("<!doctype html><ul type=CiRcLe><li></li><li></li></ul>",
+            [new(style)], text, fonts, 100, 40, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render("<!doctype html><ul><li></li><li></li></ul>",
+            [new(style + "ul{list-style-type:circle}")], text, fonts, 100, 40, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(2, actual.DisplayList.Commands.OfType<StrokeEllipse>().Count());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void NestedUaListMarginsMatchExplicitZeroMarginPixels()
     {
         using var font = new TextFont(FontPath);

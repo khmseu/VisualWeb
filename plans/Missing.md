@@ -527,7 +527,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 - Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
-- Default unordered lists now render with outside disc bullets, including
+- Default unordered lists now render with outside markers, including
   nested and empty items. UA items use `display:list-item`; inherited
   `list-style-type:disc/circle/square/decimal/none`, outside positioning and no marker
   image are supported. Graphical markers use bounded geometry and current-color
@@ -545,9 +545,11 @@ The current engine implements finite static block/inline rendering. Missing esse
   `dir`/`menu` list layout remain unsupported.
   Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
-  Legacy `type` attributes except `ol type=1`,
-  other marker styles, inside positioning and
-  arbitrary list-item elements remain unsupported. See the
+  Legacy `type` hints support ASCII-case-insensitive disc/circle/square/none
+  on `ul`/`li` and exact `1` on `ol`/`li`, using the author presentational
+  hint origin and shared CSS assignment budget. Unsupported/malformed type
+  values, other marker styles, inside positioning and arbitrary list-item
+  elements remain explicit failures. See the
   [list layout scope](../docs/text-layout.md#default-unordered-lists) and
   [paint guide](../docs/painting.md#paint-order-and-supported-output).
   Local validation: the decimal increment adds 19 regressions covering CSS,
@@ -578,6 +580,12 @@ The current engine implements finite static block/inline rendering. Missing esse
   regression cases. The solution build and all 15,065 solution tests pass;
   formatting reports only the same three baseline findings, and changed C#
   files pass a targeted format check.
+  The list-type presentational hint increment adds 32 net CSS, layout,
+  native-content and local/process browser regression cases. Its solution
+  build, V8 smoke and all 15,097 solution tests pass locally. The solution
+  formatter reports only the three findings reproduced on base `b47a5a0`,
+  including two in unchanged lines of `StaticLayout.cs`; the other changed
+  C# files pass a separate format check.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common

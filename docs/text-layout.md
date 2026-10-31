@@ -115,8 +115,10 @@ items; inherited hollow circles and solid squares use the same outside bounds
 as discs. Authors can override the nested UA defaults.
 `list-style-type:none` suppresses a marker, and `display:block` on an item
 removes its list-item semantics. Hidden items produce neither geometry nor
-markers. Legacy `type` attributes except `ol type=1`, other marker styles,
-inside positioning and arbitrary non-`li` list-item boxes still fail explicitly.
+markers. `ul` and `li` support the legacy ASCII-case-insensitive `type` values
+`disc`, `circle`, `square` and `none` as HTML presentational hints; unsupported
+or malformed values still fail explicitly. Other marker styles, inside
+positioning and arbitrary non-`li` list-item boxes remain unsupported.
 
 Marker geometry follows the user-agent-defined latitude in
 [CSS 2.2 lists](https://www.w3.org/TR/CSS22/generate.html#lists)
@@ -142,7 +144,8 @@ Without a valid `start`, reversed lists start at their rendered item count.
 Invalid integer syntax falls back as specified; successfully parsed values
 outside signed 32-bit range fail with `LayoutLimitException`. Automatic
 increments/decrements can continue beyond that attribute range without wrapping.
-`ol type=1` is accepted; other legacy types fail explicitly.
+`ol type=1` and `li type=1` select decimal markers as presentational hints;
+other `ol` types remain explicit failures.
 
 `list-style-type:decimal` also works on supported unordered items, including
 `li value` resets. Nested `ol` defaults remain decimal; nested `ul` defaults

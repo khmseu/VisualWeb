@@ -180,11 +180,22 @@ therefore retains decimal markers. Duplicate components or unsupported values
 (inside, images, other marker types) diagnose the whole declaration without
 partially changing longhands.
 Layout currently accepts visible list-item boxes only for direct `li` children
-of `ul` or `ol`; the UA rules do not enable `dir`/`menu` list layout or legacy
-HTML `type` attributes.
+of `ul` or `ol`; the UA rules do not enable `dir`/`menu` list layout.
+
+The supported [HTML list `type` hints](https://html.spec.whatwg.org/multipage/rendering.html#lists)
+(local ID `html`) map ASCII-case-insensitive `disc`, `circle`, `square` and
+`none` on `ul` or `li`, and exact `1` on `ol` or `li`, to the corresponding
+list-style type. They enter the
+[author presentational hint origin](https://www.w3.org/TR/css-cascade-5/#preshint)
+(local ID `css-cascade`): above normal user styles, below all normal author
+styles, and grouped with author origin for `revert`. Important origins keep
+their normal ordering. Hints apply even when the UA stylesheet is disabled;
+each supported hint consumes one expanded-assignment budget unit. Recompute
+styles after attribute mutations. Unsupported or malformed list `type` values
+remain explicit layout failures, even if an author rule overrides them.
 
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
-UA < user < author precedence, important author < user < UA precedence, inline
+UA < user < author presentational hint < author precedence, important author < user < UA precedence, inline
 styles above selector-based declarations of the same origin/importance,
 specificity, then source/declaration order. Validating values and expanding
 shorthands happens before deciding winners. Invalid shorthands never apply

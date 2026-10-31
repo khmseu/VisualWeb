@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using VisualWeb.Engine.Dom;
 
 namespace VisualWeb.Engine.Css;
@@ -29,6 +30,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see>.
 /// Finite marker values use css2-lists
 /// <see href="https://www.w3.org/TR/CSS22/generate.html#propdef-list-style-type">list style types</see>.
+/// Supported HTML list type hints enter the
+/// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
 /// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {
@@ -71,6 +74,34 @@ public static class CssStyleEngine
         code, kbd, samp { font-family: monospace }
         """;
 
+    /// <summary>Finds a supported HTML list marker hint without accepting unsupported list types.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list type hints</see>.
+    /// A false result means the attribute is absent or unsupported; layout rejects unsupported attributes.</remarks>
+    public static bool TryGetListTypeHint(DomElement element, [NotNullWhen(true)] out string? marker)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        if (element.LocalName is not ("ol" or "ul" or "li"))
+        {
+            marker = null;
+            return false;
+        }
+        var type = element.GetAttribute("type");
+        marker = element.LocalName switch
+        {
+            "ol" or "li" when type == "1" => "decimal",
+            "ul" or "li" when type is { Length: 4 or 6 } => CssText.Lower(type) switch
+            {
+                "disc" => "disc",
+                "circle" => "circle",
+                "square" => "square",
+                "none" => "none",
+                _ => null
+            },
+            _ => null
+        };
+        return marker is not null;
+    }
+
     public static CssStyleResult Compute(DomDocument document, IEnumerable<CssStyleSource>? sources = null,
         bool includeUserAgent = true, CssOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -92,6 +123,12 @@ public static class CssStyleEngine
             {
                 if (rule.Selectors.Match(element, context) is not { } specificity) { continue; }
                 foreach (var assignment in rule.Assignments) { Add(assignment, rule.Origin, false, specificity, rule.Order); }
+            }
+            if (TryGetListTypeHint(element, out var marker))
+            {
+                context.Assignment();
+                Add(new("list-style-type", new CssKeyword(marker), false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
             }
             if (element.GetAttribute("style") is { } inline)
             {
@@ -150,10 +187,12 @@ public static class CssStyleEngine
             }
             styles.Add(element, new(computed));
 
-            void Add(CssAssignment assignment, CssOrigin origin, bool isInline, CssSpecificity specificity, int sourceOrder)
+            void Add(CssAssignment assignment, CssOrigin origin, bool isInline, CssSpecificity specificity, int sourceOrder,
+                bool presentationalHint = false)
             {
                 if (!candidates.TryGetValue(assignment.Name, out var list)) { candidates[assignment.Name] = list = []; }
-                list.Add(new(assignment.Value, origin, assignment.Important, isInline, specificity, sourceOrder, list.Count));
+                list.Add(new(assignment.Value, origin, assignment.Important, isInline, specificity, sourceOrder, list.Count,
+                    presentationalHint));
             }
 
             CssValue Winner(string name, CssProperty property, CssValue inherited)
@@ -261,8 +300,10 @@ public static class CssStyleEngine
 
     private sealed record StyleRule(CssSelectorList Selectors, IReadOnlyList<CssAssignment> Assignments, CssOrigin Origin, int Order);
     private sealed record Candidate(CssValue Value, CssOrigin Origin, bool Important, bool Inline,
-        CssSpecificity Specificity, int Order, int DeclarationOrder)
+        CssSpecificity Specificity, int Order, int DeclarationOrder, bool PresentationalHint)
     {
-        internal int Rank => Important ? Origin switch { CssOrigin.UserAgent => 5, CssOrigin.User => 4, _ => 3 } : (int)Origin;
+        // Hints rank below author rules but remain in the author origin for revert.
+        internal int Rank => Important ? Origin switch { CssOrigin.UserAgent => 6, CssOrigin.User => 5, _ => 4 }
+            : PresentationalHint ? 2 : Origin switch { CssOrigin.UserAgent => 0, CssOrigin.User => 1, _ => 3 };
     }
 }

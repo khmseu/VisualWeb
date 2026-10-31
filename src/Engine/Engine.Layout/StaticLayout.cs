@@ -80,6 +80,8 @@ public sealed record LayoutOptions
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">hyphen rules</see>.
 /// Internal ASCII-letter solidus uses the css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#line-break-property">interoperable no-break guidance</see>.
+/// Supported legacy list type hints follow html
+/// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list rendering</see>.
 /// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
 public static partial class StaticLayout
 {
@@ -167,10 +169,10 @@ public static partial class StaticLayout
                 throw new UnsupportedLayoutException("List-item markers require a direct ul or ol parent.");
             }
             if (element.LocalName is "ul" or "ol" or "li"
-                && (!block || element.GetAttribute("type") is { } type
-                    && !(type == "1" && element.LocalName == "ol")))
+                && (!block || element.GetAttribute("type") is not null
+                    && !CssStyleEngine.TryGetListTypeHint(element, out _)))
             {
-                throw new UnsupportedLayoutException("Lists require block layout and only support decimal legacy type=1 on ordered lists.");
+                throw new UnsupportedLayoutException("Lists require block layout and a supported legacy type attribute.");
             }
             if (element.LocalName is "bdi" or "bdo" or "img" or "select"
                 or "video" or "audio" or "canvas" or "iframe" or "object" or "embed"

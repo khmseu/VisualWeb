@@ -410,6 +410,104 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("<ul id=target type=disc><li>x</li></ul>", "disc")]
+    [InlineData("<ul id=target type=CiRcLe><li>x</li></ul>", "circle")]
+    [InlineData("<ul id=target type=SQUARE><li>x</li></ul>", "square")]
+    [InlineData("<ul id=target type=none><li>x</li></ul>", "none")]
+    [InlineData("<ol><li id=target type=disc>x</li></ol>", "disc")]
+    [InlineData("<ol><li id=target type=CIRCLE>x</li></ol>", "circle")]
+    [InlineData("<ol><li id=target type=square>x</li></ol>", "square")]
+    [InlineData("<ol><li id=target type=NoNe>x</li></ol>", "none")]
+    [InlineData("<ul><li id=target type=1>x</li></ul>", "decimal")]
+    [InlineData("<ol id=target type=1><li>x</li></ol>", "decimal")]
+    public void ListTypeHintsComputeSupportedMarkerValues(string html, string expected)
+    {
+        var doc = Document(html);
+        var result = Compute(doc);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["list-style-type"]);
+    }
+
+    [Fact]
+    public void ListTypeHintCascadeUsesAuthorPresentationalOriginAndRevert()
+    {
+        var doc = Document("<ul id=target type=square><li>x</li></ul>");
+        var target = doc.GetElementById("target")!;
+        var user = new CssStyleSource("ul{list-style-type:circle}", CssOrigin.User);
+        var hinted = Compute(doc, user);
+        Assert.Empty(hinted.Diagnostics);
+        Assert.Equal(new CssKeyword("square"), hinted.Styles[target]["list-style-type"]);
+        var author = Compute(doc, user, new CssStyleSource("*{list-style-type:disc}"));
+        Assert.Equal(new CssKeyword("disc"), author.Styles[target]["list-style-type"]);
+        var reverted = Compute(doc, user, new CssStyleSource("ul{list-style-type:revert}"));
+        Assert.Equal(new CssKeyword("circle"), reverted.Styles[target]["list-style-type"]);
+        var important = Compute(doc, new CssStyleSource("ul{list-style-type:circle!important}", CssOrigin.User),
+            new CssStyleSource("ul{list-style-type:disc!important}"));
+        Assert.Equal(new CssKeyword("circle"), important.Styles[target]["list-style-type"]);
+        var userRevert = Compute(doc, new CssStyleSource("ul{list-style-type:revert!important}", CssOrigin.User),
+            new CssStyleSource("ul{list-style-type:circle!important}"));
+        Assert.Equal(new CssKeyword("disc"), userRevert.Styles[target]["list-style-type"]);
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword("square"), withoutUa.Styles[target]["list-style-type"]);
+        target.SetAttribute("style", "list-style-type:disc");
+        Assert.Equal(new CssKeyword("disc"), Compute(doc, user).Styles[target]["list-style-type"]);
+        var ordered = Document("<ol id=target type=1><li>x</li></ol>");
+        var orderedStyle = Compute(ordered, new CssStyleSource("ol{list-style-type:square}", CssOrigin.User));
+        Assert.Equal(new CssKeyword("decimal"), orderedStyle.Styles[ordered.GetElementById("target")!]["list-style-type"]);
+    }
+
+    [Theory]
+    [InlineData("<ul id=target type='circle '></ul>")]
+    [InlineData("<ul id=target type='di\u017fc'></ul>")]
+    [InlineData("<ul id=target type=1></ul>")]
+    [InlineData("<ol id=target type=circle></ol>")]
+    [InlineData("<li id=target type=a></li>")]
+    [InlineData("<div id=target type=disc></div>")]
+    [InlineData("<input id=target type=1>")]
+    public void ListTypeHintsRejectUnsupportedOrNonAsciiAttributeValues(string html)
+    {
+        var doc = Document(html);
+        Assert.False(CssStyleEngine.TryGetListTypeHint(doc.GetElementById("target")!, out var marker));
+        Assert.Null(marker);
+    }
+
+    [Fact]
+    public void ListTypeHintRecomputesAfterAttributeMutationWithoutChangingEarlierSnapshots()
+    {
+        var doc = Document("<ul id=target><li>x</li></ul>");
+        var target = doc.GetElementById("target")!;
+        var before = Compute(doc);
+        target.SetAttribute("type", "circle");
+        var changed = Compute(doc);
+        target.RemoveAttribute("type");
+        var removed = Compute(doc);
+        Assert.Equal(new CssKeyword("disc"), before.Styles[target]["list-style-type"]);
+        Assert.Equal(new CssKeyword("circle"), changed.Styles[target]["list-style-type"]);
+        Assert.Equal(new CssKeyword("disc"), removed.Styles[target]["list-style-type"]);
+    }
+
+    [Fact]
+    public void ListTypeHintsShareTheExpandedAssignmentBudgetAndCancellation()
+    {
+        var doc = Document("<ul type=disc><li type=1>x</li><li type=square>y</li></ul>");
+        var styles = CssStyleEngine.Compute(doc, includeUserAgent: false,
+            options: new() { MaxAssignments = 3 }, cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation));
+        var overridden = Document("<ul type=disc><li>x</li></ul>");
+        CssStyleSource[] source = [new("ul{list-style-type:square}")];
+        Assert.Empty(CssStyleEngine.Compute(overridden, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(overridden, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() =>
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
     [InlineData("none", "none")]
     [InlineData("none none", "none")]
     [InlineData("outside", "disc")]

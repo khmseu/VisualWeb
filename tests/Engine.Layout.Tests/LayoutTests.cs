@@ -228,10 +228,11 @@ public sealed class LayoutTests
 
     [Theory]
     [InlineData("<ol type=a><li>x</li></ol>")]
-    [InlineData("<ul type=square><li>x</li></ul>")]
-    [InlineData("<ul type=circle><li>x</li></ul>")]
     [InlineData("<ol type=circle><li>x</li></ol>")]
-    [InlineData("<ul><li type=circle>x</li></ul>")]
+    [InlineData("<ul type=1><li>x</li></ul>")]
+    [InlineData("<ul type='circle '><li>x</li></ul>")]
+    [InlineData("<ul type='di\u017fc'><li>x</li></ul>")]
+    [InlineData("<ul><li type=a>x</li></ul>")]
     [InlineData("<dir><li>x</li></dir>")]
     [InlineData("<menu><li>x</li></menu>")]
     [InlineData("<li>x</li>")]
@@ -239,11 +240,49 @@ public sealed class LayoutTests
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
 
     [Theory]
-    [InlineData("<ul type=circle><li>x</li></ul>")]
     [InlineData("<ol type=circle><li>x</li></ol>")]
-    [InlineData("<ul><li type=circle>x</li></ul>")]
-    public void CircleCssDoesNotEnableLegacyHtmlTypeAttributes(string html) =>
+    [InlineData("<ul type=triangle><li>x</li></ul>")]
+    [InlineData("<ul><li type=a>x</li></ul>")]
+    public void CircleCssDoesNotEnableUnsupportedLegacyHtmlTypeAttributes(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, "ul,ol,li{list-style:circle}"));
+
+    [Theory]
+    [InlineData("<ul type=DISC><li id=x></li></ul>", "disc")]
+    [InlineData("<ul type=CiRcLe><li id=x></li></ul>", "circle")]
+    [InlineData("<ul type=square><li id=x></li></ul>", "square")]
+    [InlineData("<ul type=none><li id=x></li></ul>", "none")]
+    [InlineData("<ol><li id=x type=circle></li></ol>", "circle")]
+    [InlineData("<ol><li id=x type=square></li></ol>", "square")]
+    [InlineData("<ul><li id=x type=1></li></ul>", "decimal")]
+    public void ListTypeHintsProduceTheCorrespondingMarkers(string html, string marker)
+    {
+        var item = Find(UnorderedList(html).Root!, "x");
+        Assert.Equal(marker == "disc", item.DiscMarker is not null);
+        Assert.Equal(marker == "circle", item.CircleMarker is not null);
+        Assert.Equal(marker == "square", item.SquareMarker is not null);
+        Assert.Equal(marker == "decimal", item.TextMarker is not null);
+        if (marker == "decimal") { Assert.Equal("1.", item.TextMarker!.Run.Text); }
+    }
+
+    [Fact]
+    public void ListTypeHintsPreserveNumberingAndAuthorOverrides()
+    {
+        var root = UnorderedList("""
+            <ol start=5><li id=a type=circle></li><li id=b type=none></li>
+            <li id=c type=1></li><li id=d></li></ol>
+            """).Root!;
+        Assert.NotNull(Find(root, "a").CircleMarker);
+        Assert.Null(Find(root, "b").TextMarker);
+        Assert.Null(Find(root, "b").DiscMarker);
+        Assert.Null(Find(root, "b").CircleMarker);
+        Assert.Null(Find(root, "b").SquareMarker);
+        Assert.Equal("7.", Find(root, "c").TextMarker!.Run.Text);
+        Assert.Equal("8.", Find(root, "d").TextMarker!.Run.Text);
+        var overridden = UnorderedList("<ul type=square><li id=x></li></ul>",
+            "ul{list-style-type:circle}").Root!;
+        Assert.NotNull(Find(overridden, "x").CircleMarker);
+        Assert.Null(Find(overridden, "x").SquareMarker);
+    }
 
     [Fact]
     public void CircleCssDoesNotEnableArbitraryListItemElements() =>

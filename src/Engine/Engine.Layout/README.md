@@ -13,9 +13,10 @@ use discs, circles and squares at increasing list depth. Circles and squares use
 the same outside geometry as discs; circles are hollow.
 Ordered lists add shaped decimal markers with independent `start`,
 `reversed` and `li value` numbering; scans and output share existing budgets.
-Inside markers, legacy `type` attributes other than `ol type=1`, other marker
-styles and arbitrary list-item elements remain unsupported. See the guide for
-exact geometry.
+Legacy `type` hints support disc/circle/square/none on `ul`/`li` and `1` on
+`ol`/`li`; unsupported values still fail explicitly. Inside markers, other
+marker styles and arbitrary list-item elements remain unsupported. See the
+guide for exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
 `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,

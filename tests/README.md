@@ -13,6 +13,9 @@ local/process retained rendering.
 Nested-list UA margin regressions cover the five HTML list ancestor types,
 outer font-relative margins, cascade overrides, layout gaps, native pixels and
 local/process retained scroll and resize.
+Legacy list-type hint tests cover ASCII casing, presentational cascade and
+`revert`, snapshot mutation, exact assignment limits, explicit unsupported-type
+failures, numbering, native pixels, and scripted local/process retained repaint.
 
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,
