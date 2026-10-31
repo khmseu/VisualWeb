@@ -627,10 +627,13 @@ the same unbroken segment; this also works with supported hyphen breaks.
 The ASCII infix separators `.`, `,`, `:` and `;` between ASCII letters/digits
 in one text node likewise stay unbroken, allowing `example.com`, `1,000.25`
 and `12:30` without changing space/hyphen breaks or intrinsic sizing.
+Internal `@`, `_` and `+` between ASCII letters/digits in one text node also
+stay unbroken, allowing `first.last+tag@example.com` and
+`user_name@example.com` through the same bounded layout and retained rendering.
 Other solidus forms, unsupported internal infix contexts (including adjacent
-separators or non-ASCII neighbors), broader punctuation/Unicode-break algorithms,
-cross-node word shaping, unsupported scripts/bidi/controls and missing-font
-handling remain unsupported.
+separators or non-ASCII neighbors), unsupported neighbors of those email
+joiners, broader punctuation/Unicode-break algorithms, cross-node word shaping,
+unsupported scripts/bidi/controls and missing-font handling remain unsupported.
 See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
 The earlier nonwrapping increment's 17 new regressions, solution build and all
 14,357 solution tests pass; formatting retains only the three established
@@ -651,6 +654,11 @@ all 15,308 solution tests pass; the solution formatter reports only the three
 baseline findings, with changed test files passing a targeted check. Earlier
 full runs each hit an unchanged V8 or browser deadline test; both passed
 individually and the subsequent serialized full run passed.
+The email-joiner increment adds 74 net layout, native-content and local/process
+browser cases, including exact table widths, work limits, cancellation and
+retained link selection. The solution build, all 15,403 solution tests and
+solution formatting verification pass locally, as does the local V8 smoke.
+General email, URL and Unicode line breaking remain unsupported.
 
 The previously rejected `text-align:justify` now supports bounded English
 inter-word justification on soft-wrapped lines. Collapsed ASCII spaces absorb

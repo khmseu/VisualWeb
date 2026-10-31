@@ -468,6 +468,42 @@ public sealed class ContentTests
     }
 
     [Theory]
+    [InlineData("normal", "first.last+tag@example.com")]
+    [InlineData("pre-line", "first.last+tag@example.com")]
+    [InlineData("normal", "user_name@example.com")]
+    [InlineData("pre-line", "user_name@example.com")]
+    public void AsciiEmailRunsMatchNonwrappingNativePixelsAcrossRetainedResize(string mode, string address)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var html = "<!doctype html><p>" + address + "</p>";
+        var wordWidth = font.Shape(address, 16, Cancellation).Width;
+        var narrowWidth = Math.Floor(wordWidth / 2);
+        var wideWidth = Math.Ceiling(wordWidth) + 1;
+        CssStyleSource[] wrapping = [new("*{margin:0}p{white-space:" + mode + "}")];
+        CssStyleSource[] reference = [new("*{margin:0}p{white-space:nowrap}")];
+        var actual = OfflinePageRenderer.Render(html, wrapping, text, fonts, narrowWidth, 60,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, reference, text, fonts, narrowWidth, 60,
+            cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Single(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.True(actual.ScrollWidth > narrowWidth);
+        Assert.Equal(expected.ScrollWidth, actual.ScrollWidth);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Contains(actual.Frame.Pixels.ToArray(), channel => channel < 255);
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, wrapping, text, fonts, wideWidth, 60,
+            cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, reference, text, fonts, wideWidth, 60,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Single(resized.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expectedResized.ScrollWidth, resized.ScrollWidth);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
     [InlineData("example.com")]
     [InlineData("1,000.25")]
     [InlineData("12:30")]

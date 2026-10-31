@@ -1141,6 +1141,250 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("a@b")]
+    [InlineData("a@1")]
+    [InlineData("1@b")]
+    [InlineData("1@2")]
+    [InlineData("A@Z")]
+    [InlineData("a_b")]
+    [InlineData("a_1")]
+    [InlineData("1_b")]
+    [InlineData("1_2")]
+    [InlineData("A_9")]
+    [InlineData("a+b")]
+    [InlineData("a+1")]
+    [InlineData("1+b")]
+    [InlineData("1+2")]
+    [InlineData("9+Z")]
+    public void AsciiEmailJoinersBetweenLettersAndDigitsRemainUnbroken(string text)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var (document, styles) = Page("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}");
+            var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+            foreach (var width in new[] { 10.0, 15.0 })
+            {
+                var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), width, 200,
+                    cancellationToken: Cancellation).Root!, "x");
+                var fragment = Assert.Single(Assert.Single(box.Lines).Fragments);
+                Assert.Same(source, fragment.Source);
+                Assert.Equal(text, fragment.Run.Text);
+                Assert.Equal(15, fragment.Run.Width);
+                Assert.Equal(width, box.Content.Width);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("normal", "first.last+tag@example.com", 130, "first.last+tag@example.com")]
+    [InlineData("normal", "first.last+tag@example.com", 20, "first.last+tag@example.com")]
+    [InlineData("pre-line", "first.last+tag@example.com", 130, "first.last+tag@example.com")]
+    [InlineData("pre-line", "first.last+tag@example.com", 20, "first.last+tag@example.com")]
+    [InlineData("normal", "go user_name@example.com", 105, "go|user_name@example.com")]
+    [InlineData("normal", "a@b  c_d", 35, "a@b c_d")]
+    [InlineData("normal", "a@b\nc_d", 35, "a@b c_d")]
+    [InlineData("pre-line", "a@b\nc_d\ne+f", 100, "a@b|c_d|e+f")]
+    [InlineData("normal", "a@b-c_d", 20, "a@b-|c_d")]
+    [InlineData("pre-line", "a-b+c", 10, "a-|b+c")]
+    [InlineData("normal", "a/b-c+d", 20, "a/b-|c+d")]
+    public void AsciiEmailRunsKeepExistingWhitespaceAndHyphenBreaks(
+        string mode, string text, double width, string expected)
+    {
+        var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}", width).Root!, "x");
+        var lines = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(expected.Split('|'), lines);
+    }
+
+    [Theory]
+    [InlineData("normal")]
+    [InlineData("pre-line")]
+    public void AsciiEmailHyphenBreaksPreserveSourceIdentity(string mode)
+    {
+        var (document, styles) = Page("<p id=x>aa-bb+cc</p>", "#x{white-space:" + mode + "}");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 25, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var fragments = box.Lines.SelectMany(line => line.Fragments).ToArray();
+        Assert.Equal(["aa-", "bb+cc"], fragments.Select(fragment => fragment.Run.Text));
+        Assert.All(fragments, fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Theory]
+    [InlineData("@")]
+    [InlineData("_")]
+    [InlineData("+")]
+    public void AsciiEmailJoinersRetainExactTableIntrinsicWidths(string joiner)
+    {
+        var word = "a" + joiner + "b";
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var css = "td{white-space:" + mode + "}";
+            var unbroken = UnorderedList("<table id=t><tr><td id=c>" + word + "</td></tr></table>",
+                css, width: 10).Root!;
+            var cell = Find(unbroken, "c");
+            Assert.Equal(21, Find(unbroken, "t").Content.Width);
+            Assert.Equal(15, cell.Content.Width);
+            var fragment = Assert.Single(Assert.Single(cell.Lines).Fragments);
+            Assert.Equal(word, fragment.Run.Text);
+            Assert.Same(Assert.IsType<DomText>(cell.Element.ChildNodes[0]), fragment.Source);
+
+            var mixed = UnorderedList("<table id=t><tr><td id=c>" + word + "-c</td></tr></table>",
+                css, width: 10).Root!;
+            cell = Find(mixed, "c");
+            Assert.Equal(26, Find(mixed, "t").Content.Width);
+            Assert.Equal(20, cell.Content.Width);
+            var fragments = cell.Lines.SelectMany(line => line.Fragments).ToArray();
+            Assert.Equal([word + "-", "c"], fragments.Select(item => item.Run.Text));
+            Assert.All(fragments, item => Assert.Same(Assert.IsType<DomText>(cell.Element.ChildNodes[0]), item.Source));
+        }
+    }
+
+    [Fact]
+    public void EmailAddressContributesItsFullExactTableIntrinsicWidth()
+    {
+        const string address = "first.last+tag@example.com";
+        foreach (var width in new[] { 10.0, 200.0 })
+        {
+            var root = UnorderedList("<table id=t><tr><td id=c>" + address + "</td></tr></table>", width: width).Root!;
+            Assert.Equal(136, Find(root, "t").Content.Width);
+            Assert.Equal(130, Find(root, "c").Content.Width);
+            Assert.Equal(address, Assert.Single(Assert.Single(Find(root, "c").Lines).Fragments).Run.Text);
+        }
+    }
+
+    [Theory]
+    [InlineData("a@@b")]
+    [InlineData("a__b")]
+    [InlineData("a++b")]
+    [InlineData("a@_b")]
+    [InlineData("a+@b")]
+    [InlineData("a@.b")]
+    [InlineData("a._b")]
+    [InlineData("a+;b")]
+    [InlineData("a-@b")]
+    [InlineData("a+-b")]
+    [InlineData("a@/b")]
+    [InlineData("a/@b")]
+    [InlineData("a@\u00e9")]
+    [InlineData("\u00e9@a")]
+    [InlineData("a_\u00e9")]
+    [InlineData("\u00e9_a")]
+    [InlineData("a+\u00e9")]
+    [InlineData("\u00e9+a")]
+    [InlineData("a\u0301@b")]
+    [InlineData("a@\u0301b")]
+    [InlineData("a_\u00a0b")]
+    [InlineData("a+b?x=1")]
+    [InlineData("a@<span>b</span>")]
+    [InlineData("a<span>_b</span>")]
+    [InlineData("a<span>+</span>b")]
+    public void AsciiEmailJoinersDoNotAdmitOtherNeighborsOrCrossNodeWords(string text)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            Assert.Throws<UnsupportedLayoutException>(() =>
+                Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
+        }
+    }
+
+    [Theory]
+    [InlineData("@")]
+    [InlineData("_")]
+    [InlineData("+")]
+    public void AsciiEmailJoinersKeepPreviouslyAcceptedWordEdgeBehavior(string joiner)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            foreach (var text in new[] { joiner, joiner + "a", "a" + joiner })
+            {
+                var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}").Root!, "x");
+                Assert.Equal(text, Assert.Single(Assert.Single(box.Lines).Fragments).Run.Text);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("@")]
+    [InlineData("_")]
+    [InlineData("+")]
+    public void AsciiEmailJoinersShareExactTextShapingAndHyphenWorkLimits(string joiner)
+    {
+        var html = "<p>a" + joiner + "b</p>";
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = 3,
+            MaxShapedGlyphs = 3,
+            MaxShapingCalls = 2,
+            MaxLines = 1,
+            MaxLineBreakOperations = 1
+        };
+        Assert.NotNull(Layout(html, width: 10, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout(html, width: 10, options: exact with { MaxTextCharacters = 2 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(html, width: 10, options: exact with { MaxShapedGlyphs = 2 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(html, width: 10, options: exact with { MaxShapingCalls = 1 }));
+
+        var mixedHtml = "<p>aa-bb" + joiner + "cc</p>";
+        var mixed = new LayoutOptions
+        {
+            MaxTextCharacters = 8,
+            MaxShapedGlyphs = 16,
+            MaxShapingCalls = 5,
+            MaxLines = 2,
+            MaxLineBreakOperations = 29
+        };
+        Assert.NotNull(Layout(mixedHtml, width: 25, options: mixed).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout(mixedHtml, width: 25, options: mixed with { MaxTextCharacters = 7 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(mixedHtml, width: 25, options: mixed with { MaxShapedGlyphs = 15 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(mixedHtml, width: 25, options: mixed with { MaxShapingCalls = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(mixedHtml, width: 25, options: mixed with { MaxLines = 1 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(mixedHtml, width: 25, options: mixed with { MaxLineBreakOperations = 28 }));
+        Assert.NotNull(Layout(mixedHtml + mixedHtml, width: 25, options: new() { MaxLineBreakOperations = 58 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(mixedHtml + mixedHtml, width: 25, options: new() { MaxLineBreakOperations = 57 }));
+    }
+
+    [Fact]
+    public void AsciiEmailTableMeasurementAndFinalLayoutShareExactBudgets()
+    {
+        const string html = "<table><tr><td>a@b</td></tr></table>";
+        var exact = new LayoutOptions
+        {
+            MaxBoxes = 6,
+            MaxNodes = 12,
+            MaxDepth = 7,
+            MaxLines = 3,
+            MaxTextCharacters = 6,
+            MaxShapedGlyphs = 9,
+            MaxShapingCalls = 6,
+            MaxLineBreakOperations = 1
+        };
+        Assert.NotNull(UnorderedList(html, width: 10, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxBoxes = 5 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxNodes = 11 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxDepth = 6 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxLines = 2 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxTextCharacters = 5 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxShapedGlyphs = 8 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxShapingCalls = 5 }));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AsciiEmailRunsObserveCancellationDuringShapingAndTableMeasurement(bool table)
+    {
+        const string word = "aa-bb+cc";
+        var html = table ? "<table><tr><td>" + word + "</td></tr></table>" : "<p>" + word + "</p>";
+        var document = HtmlParser.Parse("<!doctype html>" + html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        var shaper = new CancelOnTextShaper(cancellation, word);
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            shaper, 25, 200, cancellationToken: cancellation.Token));
+        Assert.True(shaper.CanceledOnText);
+    }
+
+    [Theory]
     [InlineData("a.b")]
     [InlineData("a.1")]
     [InlineData("1.b")]
@@ -1983,6 +2227,22 @@ public sealed class LayoutTests
         var line = Assert.Single(Find(result.Root!, "x").Lines);
         Assert.Equal(21.796875, line.Bounds.Height);
         Assert.Equal(17.109375, line.Baseline);
+    }
+
+    private sealed class CancelOnTextShaper(CancellationTokenSource cancellation, string expected) : ITextShaper
+    {
+        public bool CanceledOnText { get; private set; }
+
+        public ShapedRun Shape(string text, TextFontRequest request, CancellationToken cancellationToken = default)
+        {
+            var run = new MetricsShaper().Shape(text, request, cancellationToken);
+            if (text == expected)
+            {
+                CanceledOnText = true;
+                cancellation.Cancel();
+            }
+            return run;
+        }
     }
 
     private sealed class CancelingShaper(CancellationTokenSource cancellation) : ITextShaper

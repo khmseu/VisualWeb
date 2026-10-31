@@ -5,7 +5,17 @@
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
 - Dokumentationsdatum: 2026-10-31, Zeitzone Europe/Berlin (UTC+01:00).
-- Aktueller Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
+- Aktueller Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
+  committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
+  ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
+  Ausgangspunkt ist `1bf9b74`; der saubere Branch enthaelt bereits zwei
+  lokale Commits vor `origin/main`. Pass 1 ist in Arbeit: gewoehnliche
+  ASCII-E-Mail-Adressen sollen im vorhandenen begrenzten Textlayout nicht mehr
+  an internen `@`, `_` oder `+` zwischen ASCII-Buchstaben und Ziffern
+  scheitern. Die Umsetzung und 74 neue Faelle sind lokal validiert:
+  Solution-Build, alle 15.403 Solution-Tests, Formatpruefung und lokaler
+  V8-Smoke bestehen. Commit, Push und CI stehen noch aus.
+- Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
   Pass 1 ist lokal und in CI validiert: das zuvor abgelehnte CSS-Listenmarker-

@@ -3635,3 +3635,44 @@ ueberzaehlige Leerzeichen.
 besteht ohne Warnungen; alle 338 Layout- und 1.236 Browser-Tests bestehen.
 `git diff --check` besteht. Die Codeaenderungen sind lokal und noch nicht
 committet.
+
+### KP-106 - Erneuter Auftrag und erstes Textinkrement
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle: aktueller Nutzeraufruf von `missing-priority-implementation` mit
+  Argument `10`; [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [Textlayout](../docs/text-layout.md#ordinary-flow),
+  [StaticLayout.Gather](../src/Engine/Engine.Layout/StaticLayout.cs) und
+  Git-Status.
+- Bezug: KP-065, KP-094 und KP-105.
+
+**Nutzerauftrag:** Zehn weitere priorisierte, jeweils getrennt getestete,
+committete, gepushte und CI-gepruefte Inkremente. Bestehende Schutzmechanismen
+und nicht zum jeweiligen Inkrement gehoerende Aenderungen bleiben erhalten.
+
+**Belegt:** Der Worktree ist zu Beginn sauber. `main` steht bei `1bf9b74` und
+enthaelt die beiden vorbestehenden lokalen Commits `972d935` und `1bf9b74`,
+die noch nicht auf `origin/main` liegen. Das praezisiert den damaligen
+uncommitteten Stand aus KP-105; ein regulaerer Push wuerde beide mit
+veroeffentlichen. Die letzten abgefragten Linux-, Windows- und CodeQL-Laeufe
+fuer `05dffda` bestanden.
+
+**Gewaehlter begrenzter Umfang:** Gewoehnliche E-Mail-Adressen und Kennungen
+mit internem `@`, `_` oder `+` zwischen ASCII-Buchstaben beziehungsweise
+Ziffern werden derzeit im umbruchfaehigen Textlayout explizit abgelehnt.
+Diese klar abgrenzbare Luecke gehoert zur ersten Prioritaet fuer lesbare
+statische Seiten. Unicode-17-Zeilenumbruchregeln LB23 bis LB25 und LB28
+stuetzen die ausgewaehlten untrennbaren Nachbarschaften; allgemeiner
+Unicode- oder URL-Umbruch bleibt ausserhalb dieses Inkrements.
+
+**Lokale Umsetzung und Validierung:** In `normal` und `pre-line` bleiben diese
+Zeichen zwischen ASCII-Buchstaben oder Ziffern desselben Textknotens Teil des
+ungetrennten Shaping-Runs. Die vorhandenen Zeichen-, Glyphen-, Traversal- und
+Abbruchgrenzen gelten weiter; andere Nachbarschaften und Cross-Node-Woerter
+bleiben explizit ununterstuetzt. Test-first schlugen drei Layout-, ein
+Native-Content- und zwei lokale/Prozess-Browserfaelle erwartungsgemaess fehl.
+Nach der Umsetzung bestehen 66 gezielte Layout-, vier Content- und vier
+Browserfaelle. Der Solution-Build, die Formatpruefung, der lokale V8-Smoke
+und alle 15.403 Solution-Tests bestehen. Der Review fand keine inhaltlichen
+Fehler; die abschliessende Diffpruefung erfolgte hier anhand der geaenderten
+Dateien. Commit, Push und CI stehen noch aus.

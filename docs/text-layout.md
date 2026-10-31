@@ -261,6 +261,17 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) and
   [LB29](https://www.unicode.org/reports/tr14/tr14-55.html#LB29) (local ID
   `unicode-linebreak`). This is not general punctuation or URL line breaking.
+- In `normal`/`pre-line`, internal `@`, `_` and `+` with an ASCII letter or
+  digit immediately on each side in the same text node stay in the unbroken
+  shaped word. This allows examples such as `first.last+tag@example.com` and
+  `user_name@example.com` without changing space or supported hyphen breaks.
+  Table intrinsic sizing and retained reflow use the same unbroken segments.
+  See Unicode 17 [LB23](https://www.unicode.org/reports/tr14/tr14-55.html#LB23),
+  [LB24](https://www.unicode.org/reports/tr14/tr14-55.html#LB24),
+  [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) and
+  [LB28](https://www.unicode.org/reports/tr14/tr14-55.html#LB28) (local ID
+  `unicode-linebreak`). Adjacent symbols, non-ASCII neighbors and cross-node
+  words remain unsupported; this is not general email or URL line breaking.
 - white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
   explicit br breaks. Preserved tabs/form feeds are unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
@@ -285,8 +296,9 @@ explicitly or those styles overridden.
 - Full Unicode line breaking, hyphenation and other punctuation-internal
   opportunities. In wrapping modes, leading/trailing, repeated,
   non-ASCII-adjacent or digit-adjacent hyphens and solidi, adjacent internal
-  infix separators, non-ASCII-adjacent infix separators and other unsupported
-  internal punctuation fail; nonwrapping pre/nowrap do not need this analysis.
+  infix separators, non-ASCII-adjacent infix separators, unsupported neighbors
+  of internal `@`, `_` or `+`, and other unsupported internal punctuation fail;
+  nonwrapping pre/nowrap do not need this analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab

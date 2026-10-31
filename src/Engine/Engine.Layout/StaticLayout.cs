@@ -87,6 +87,12 @@ public sealed record LayoutOptions
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB15d">LB15d</see>,
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see> and
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB29">LB29</see>.
+/// Internal ASCII @, _ and + between ASCII letters/digits follow unicode-linebreak
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB23">LB23</see>,
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB24">LB24</see>,
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see> and
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB28">LB28</see>.
+/// These finite cases do not imply general email, URL or Unicode line breaking.
 /// Bounded inter-word justification uses css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#text-align-property">text alignment</see> and
 /// <see href="https://drafts.csswg.org/css-text-3/#text-justify-property">justification methods</see>.
@@ -605,7 +611,7 @@ public static partial class StaticLayout
                             if (index > 0 && index < value.Length - 1 && !char.IsLetterOrDigit(c)
                                 && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark
                                 && c is not ('\'' or '\u2019' or '\u00A0')
-                                && !(c is '.' or ',' or ':' or ';'
+                                && !(c is '.' or ',' or ':' or ';' or '@' or '_' or '+'
                                     && char.IsAsciiLetterOrDigit(value[index - 1]) && char.IsAsciiLetterOrDigit(value[index + 1])))
                             {
                                 throw new UnsupportedLayoutException("Internal punctuation needs deferred Unicode line-break analysis.");

@@ -2,8 +2,9 @@
 
 Phase-7 finite horizontal LTR normal-flow block/inline geometry and bounded
 space/internal-ASCII-hyphen line wrapping, with internal ASCII-letter solidi
-and bounded ASCII infix separators retained in unbroken words. Inputs are renderer-local DOM,
-computed CSS snapshots and an injected text shaper. Outputs are
+and bounded ASCII infix separators and email joiners retained in unbroken
+words. Inputs are renderer-local DOM, computed CSS snapshots and an injected
+text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
@@ -46,10 +47,13 @@ between ASCII letters in one text node add a break after the hyphen; a solidus
 between ASCII letters in one text node is retained without a soft break.
 Likewise `.`, `,`, `:` and `;` between ASCII letters or digits in one text
 node remain unbroken, including `example.com`, `1,000.25` and `12:30`.
+Internal `@`, `_` and `+` between ASCII letters or digits in one text node
+also remain unbroken, including `first.last+tag@example.com` and
+`user_name@example.com`; this is not general email or URL line breaking.
 Repeated hyphen break analysis uses a shared work budget; leading/trailing,
 repeated, non-ASCII-adjacent and digit-adjacent solidi, other punctuation/Unicode-break
-exclusions (including adjacent or non-ASCII-adjacent internal infix separators)
-and cross-node/style shaping restrictions remain.
+exclusions (including adjacent or non-ASCII-adjacent internal infix separators
+and email joiners) and cross-node/style shaping restrictions remain.
 
 `text-align:justify` distributes positive slack on soft-wrapped English text
 lines across collapsed ASCII spaces. Final/forced-break lines and lines without
