@@ -427,6 +427,46 @@ public sealed class ContentTests
         Assert.Equal(wide.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
     }
 
+    [Fact]
+    public void JustifiedTextMatchesIndependentRightAlignedNativePixelsAndReflows()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var firstWidth = font.Shape("aa", 16, Cancellation).Width;
+        var secondWidth = font.Shape("bb", 16, Cancellation).Width;
+        var thirdWidth = font.Shape("cc", 16, Cancellation).Width;
+        var spaceWidth = font.Shape(" ", 16, Cancellation).Width;
+        var width = Math.Ceiling(firstWidth + spaceWidth + secondWidth + spaceWidth / 2);
+        Assert.True(width < firstWidth + secondWidth + thirdWidth + 2 * spaceWidth);
+        CssStyleSource[] justified = [new("*{margin:0}p{text-align:justify}")];
+        CssStyleSource[] right = [new("*{margin:0}p{text-align:right}")];
+        CssStyleSource[] left = [new("*{margin:0}p{text-align:left}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><p>aa bb cc</p>", justified,
+            text, fonts, width, 80, cancellationToken: Cancellation);
+        var reference = OfflinePageRenderer.Render("<!doctype html><p>bb</p>", right,
+            text, fonts, width, 80, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        var glyphRuns = actual.DisplayList.Commands.OfType<DrawGlyphRun>().ToArray();
+        Assert.Equal(4, glyphRuns.Length);
+        Assert.Equal(Assert.Single(reference.DisplayList.Commands.OfType<DrawGlyphRun>()).Glyphs, glyphRuns[2].Glyphs);
+        var startX = (int)Math.Ceiling(width - secondWidth);
+        var rowBytes = (int)(width - startX) * 4;
+        for (var y = 0; y < 20; y++)
+        {
+            Assert.Equal(reference.Frame.Pixels.Span.Slice(y * reference.Frame.Stride + startX * 4, rowBytes).ToArray(),
+                actual.Frame.Pixels.Span.Slice(y * actual.Frame.Stride + startX * 4, rowBytes).ToArray());
+        }
+        Assert.Contains(reference.Frame.Pixels.ToArray(), value => value == 0);
+
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, justified, text, fonts, 200, 80,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.RenderParsed(actual.Html, left, text, fonts, 200, 80,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
     [Theory]
     [InlineData("example.com")]
     [InlineData("1,000.25")]

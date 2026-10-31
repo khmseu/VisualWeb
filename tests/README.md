@@ -33,6 +33,10 @@ equivalence and scripted local/process retained repaint with links.
 ASCII infix-separator tests cover letter/digit pairs, shaping and hyphen
 budgets, table intrinsic sizing, explicit exclusions, native pixels, and
 local/process link selection across retained reflow.
+Inter-word justification tests cover exact, fractional and large-width spacing,
+forced and final lines, overflow, inline styles/widgets, table sizing,
+no-break-space and missing-glyph failures, shared budgets, independent native
+pixels, and local/process link and selection geometry during retained reflow.
 
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,

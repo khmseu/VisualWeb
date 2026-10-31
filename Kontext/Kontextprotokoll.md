@@ -3541,3 +3541,50 @@ Der Solutionformatter meldet nur die drei auf `b47a5a0` reproduzierten
 Baseline-Findings, zwei auf unveraenderten Zeilen der geaenderten
 `StaticLayout.cs`. Alle geaenderten Testdateien bestehen die separate
 Formatpruefung. Commit, Push und CI stehen noch aus.
+
+**Commit und CI:** `872507e` wurde auf `origin/main` gepusht; der Commit-Hook
+pruefte 11 Dateien ohne Findings. [Linux 41206904645](https://github.com/khmseu/VisualWeb/actions/runs/41206904645),
+[Windows 41206904769](https://github.com/khmseu/VisualWeb/actions/runs/41206904769)
+und [CodeQL 41206904453](https://github.com/khmseu/VisualWeb/actions/runs/41206904453)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-104 - Begrenzter Wortzwischenraum-Blocksatz
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [CSS Text Ausrichtung](https://drafts.csswg.org/css-text-3/#text-align-property)
+  und [Blocksatzmethode](https://drafts.csswg.org/css-text-3/#text-justify-property).
+  Der lokale `css-text`-Cache wurde am 2026-10-04 geprueft und war aktuell.
+
+**Belegte Auswahl:** `text-align:justify` wurde von CSS akzeptiert, aber selbst
+bei einem einfachen Absatz von Layout abgelehnt. Dieser eigenstaendige
+Darstellungsblocker liegt in der ersten Trackerprioritaet; der bestehende
+Umbruch und die Latein/LTR-Beschraenkung bleiben unveraendert.
+
+**Umfang:** Bei einem weichen Zeilenumbruch wird positive Restbreite gleichmaessig
+auf kollabierte ASCII-Wortzwischenraeume verteilt. Letzte Zeilen und Zeilen vor
+erzwungenem Umbruch bleiben startbuendig. Quellen, Glyphencluster und erweiterte
+Vorschuebe erhalten Paint-, Link- und Auswahlgeometrie; Tabellenmessung,
+Widgets, Bindestrichumbrueche und Budgets werden mitgeprueft. NBSP in einer
+Zeile, die Dehnung braucht, und fehlende Leerzeichenglyphen scheitern explizit.
+Andere Blocksatzmethoden, `text-align-last` und `text-justify` bleiben aus.
+
+**Test-first und Zwischenvalidierung:** Vor der Umsetzung scheiterten
+erwartungsgemaess zwoelf Layout-, ein nativer Pixel- und zwei lokale/Prozess-
+Browserfaelle. Ein xUnit-Analyzerfehler im neuen Test wurde zuvor korrigiert.
+Anschliessend bestehen 18 fokussierte Layout-, ein Pixel- und zwei Browserfaelle.
+Ein zusaetzlicher Reviewtest reproduzierte ungleiche Abstaende bei sehr grossen
+zulaessigen Layoutbreiten durch Rundung; nach Berechnung des Differenzbetrags
+vor der Addition bestehen alle 19 fokussierten Layoutfaelle. Der erneute
+Solution-Build besteht ohne Warnungen. Ein vorheriger Gesamtlauf wurde wegen
+dieser nachtraeglichen Korrektur vor Ende abgebrochen.
+
+**Lokale Abschlusspruefung:** Der finale serialisierte Gesamtlauf besteht mit
+15.329 Tests, darunter 338 Layout-, 42 Content- und 1.236 Browserfaelle;
+gegenueber Pass 9 sind dies 21 netto neue Faelle. Der lokale V8-Smoke besteht
+ebenfalls; ein erster Aufruf ohne den erforderlichen `--local`-Parameter hatte
+nur die Nutzung ausgegeben und wurde korrigiert. Der Solutionformatter meldet
+die drei bereits auf `b47a5a0` reproduzierten Baseline-Findings: zwei auf
+unveraenderten Zeilen von `StaticLayout.cs` und eines in `ShellChrome.cs`.
+Alle geaenderten Testdateien bestehen die separate Formatpruefung. Commit,
+Push und CI stehen noch aus.

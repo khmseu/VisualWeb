@@ -87,6 +87,9 @@ public sealed record LayoutOptions
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB15d">LB15d</see>,
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see> and
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB29">LB29</see>.
+/// Bounded inter-word justification uses css-text
+/// <see href="https://drafts.csswg.org/css-text-3/#text-align-property">text alignment</see> and
+/// <see href="https://drafts.csswg.org/css-text-3/#text-justify-property">justification methods</see>.
 /// Supported legacy list type hints follow html
 /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list rendering</see>.
 /// Menu lists follow html <see href="https://html.spec.whatwg.org/multipage/grouping-content.html#the-menu-element">menu</see>.
@@ -701,12 +704,12 @@ public static partial class StaticLayout
                     if (hasContent && (space?.Wrap == true || previousWidget)
                         && advance + (widgetGap?.Width ?? 0) + widgetWidth > width)
                     {
-                        Emit(false);
+                        Emit(false, softWrap: true);
                         widgetGap = null;
                     }
                     if (widgetGap is not null)
                     {
-                        pending.Add(new(space!.Source!, widgetGap, space.Style, advance));
+                        pending.Add(new(space!.Source!, widgetGap, space.Style, advance) { JustificationSpace = true });
                         advance += widgetGap.Width;
                     }
                     space = null;
@@ -733,12 +736,12 @@ public static partial class StaticLayout
                 var breakable = space?.Wrap == true || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
                 if (hasContent && breakable && advance + (gap?.Width ?? 0) + run.Width > width)
                 {
-                    Emit(false);
+                    Emit(false, softWrap: true);
                     gap = null;
                 }
                 if (gap is not null)
                 {
-                    pending.Add(new(space!.Source!, gap, space.Style, advance));
+                    pending.Add(new(space!.Source!, gap, space.Style, advance) { JustificationSpace = true });
                     advance += gap.Width;
                 }
                 space = null;
@@ -783,7 +786,7 @@ public static partial class StaticLayout
                     }
                     if (best is null && hasContent && (space?.Wrap == true || previousWidget))
                     {
-                        Emit(false);
+                        Emit(false, softWrap: true);
                         space = null;
                         gap = null;
                         previousWidget = false;
@@ -800,7 +803,7 @@ public static partial class StaticLayout
                         return;
                     }
                     Place(best);
-                    Emit(false);
+                    Emit(false, softWrap: true);
                     ChargeLineBreakWork(remaining.Length - bestEnd);
                     remaining = remaining[bestEnd..];
                     gap = null;
@@ -811,7 +814,7 @@ public static partial class StaticLayout
                 {
                     if (gap is not null)
                     {
-                        pending.Add(new(space!.Source!, gap, space.Style, advance));
+                        pending.Add(new(space!.Source!, gap, space.Style, advance) { JustificationSpace = true });
                         advance += gap.Width;
                     }
                     space = null;
@@ -821,7 +824,7 @@ public static partial class StaticLayout
                 }
             }
 
-            void Emit(bool force)
+            void Emit(bool force, bool softWrap = false)
             {
                 if (!force && !hasContent) { return; }
                 if (++lines > options.MaxLines) { throw new LayoutLimitException("Layout line limit exceeded."); }
@@ -839,7 +842,7 @@ public static partial class StaticLayout
                     descent = Math.Max(descent, extents.Descent);
                 }
                 var align = ((CssKeyword)blockStyle["text-align"]).Value;
-                if (align == "justify") { throw new UnsupportedLayoutException("Justification is deferred."); }
+                if (align == "justify" && softWrap && width > advance) { Justify(); }
                 var offset = align is "right" or "end" ? width - advance : align == "center" ? (width - advance) / 2 : 0;
                 var baseline = y + ascent;
                 var fragments = pending.Where(p => p.Source is not null).Select(p => new LayoutTextFragment(p.Source!, p.Run,
@@ -854,6 +857,49 @@ public static partial class StaticLayout
                 advance = 0;
                 hasContent = false;
                 foreach (var style in activeInline) { pending.Add(new(null, Shape("", style), style, 0)); }
+            }
+
+            void Justify()
+            {
+                ChargeLineBreakWork(pending.Count);
+                var opportunities = 0;
+                foreach (var placed in pending)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (placed.Run.Text.Contains('\u00a0'))
+                    {
+                        throw new UnsupportedLayoutException("Justification of no-break spaces is unsupported.");
+                    }
+                    if (placed.JustificationSpace) { opportunities++; }
+                }
+                if (opportunities == 0) { return; }
+                var slack = width - advance;
+                var shift = 0.0;
+                var seen = 0;
+                for (var index = 0; index < pending.Count; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    var placed = pending[index] with { Advance = Finite(pending[index].Advance + shift) };
+                    if (placed.JustificationSpace)
+                    {
+                        if (placed.Run.Glyphs.Count == 0)
+                        { throw new UnsupportedLayoutException("Justified spaces require a shaped glyph."); }
+                        var nextShift = slack * (++seen / (double)opportunities);
+                        var addition = nextShift - shift;
+                        var glyphs = placed.Run.Glyphs.ToArray();
+                        glyphs[^1] = glyphs[^1] with { Advance = Finite(glyphs[^1].Advance + addition) };
+                        placed = placed with
+                        {
+                            Run = placed.Run with
+                            {
+                                Glyphs = Array.AsReadOnly(glyphs),
+                                Width = Finite(placed.Run.Width + addition)
+                            }
+                        };
+                        shift = nextShift;
+                    }
+                    pending[index] = placed;
+                }
             }
         }
 
@@ -1009,6 +1055,9 @@ public static partial class StaticLayout
             public bool HasHyphenBreaks { get; init; }
         }
         private sealed record Placed(DomText? Source, ShapedRun Run, CssComputedStyle Style, double Advance,
-            DomElement? Widget = null, double Width = 0, double Height = 0);
+            DomElement? Widget = null, double Width = 0, double Height = 0)
+        {
+            public bool JustificationSpace { get; init; }
+        }
     }
 }

@@ -652,6 +652,19 @@ baseline findings, with changed test files passing a targeted check. Earlier
 full runs each hit an unchanged V8 or browser deadline test; both passed
 individually and the subsequent serialized full run passed.
 
+The previously rejected `text-align:justify` now supports bounded English
+inter-word justification on soft-wrapped lines. Collapsed ASCII spaces absorb
+equal shares of positive slack; final and forced-break lines remain
+start-aligned, and source/selection/link geometry follows the expanded glyph
+advances. A no-break space on a line needing expansion and a missing shaped
+space glyph fail explicitly. Other justification methods, `text-align-last`,
+`text-justify`, broader script handling and Unicode word separators remain
+unsupported. See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
+This increment adds 21 net regression cases. The solution build, local V8
+smoke and all 15,329 solution tests pass, including 338 Layout, 42 Content and
+1,236 Browser cases. The solution formatter reports the same three baseline
+findings on unchanged lines; all changed test files pass a targeted check.
+
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one spacing length, top-aligned text/block cells and
 table/cell backgrounds through ordinary paint flow. Explicit table width and

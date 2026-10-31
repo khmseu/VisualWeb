@@ -50,3 +50,10 @@ Repeated hyphen break analysis uses a shared work budget; leading/trailing,
 repeated, non-ASCII-adjacent and digit-adjacent solidi, other punctuation/Unicode-break
 exclusions (including adjacent or non-ASCII-adjacent internal infix separators)
 and cross-node/style shaping restrictions remain.
+
+`text-align:justify` distributes positive slack on soft-wrapped English text
+lines across collapsed ASCII spaces. Final/forced-break lines and lines without
+opportunities remain start-aligned. Expanded glyph advances retain source and
+selection geometry; U+00A0 on a line needing expansion and missing space glyphs
+fail explicitly. Scans share the line-break work and cancellation budgets.
+Other justification methods and properties remain unsupported.

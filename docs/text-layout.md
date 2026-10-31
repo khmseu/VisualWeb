@@ -225,6 +225,19 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
 - Shaped unbroken words, collapsing spaces, wrapping at spaces and supported
   internal hyphens, and overflow of unbreakable text. Exact fits do not wrap.
   Line-edge collapsible spaces drop.
+- `text-align:justify` uses an English inter-word policy: positive remaining
+  width on a soft-wrapped line is distributed equally across its collapsed
+  ASCII space fragments. Lines without such opportunities remain start-aligned;
+  final lines and lines ending at `br` or a preserved newline are also
+  start-aligned. The original source nodes and clusters are retained, and
+  expanded space advances feed paint, link hit-testing and selection geometry.
+  When positive expansion would involve a no-break space (U+00A0), layout fails
+  explicitly rather than ignoring that word separator. A shaper that produces
+  no space glyph also fails if expansion is needed. Per-line scans share the
+  line-break work budget and cancellation. See
+  [text alignment](https://drafts.csswg.org/css-text-3/#text-align-property)
+  and [justification methods](https://drafts.csswg.org/css-text-3/#text-justify-property)
+  (local ID `css-text`).
 - In `normal`/`pre-line`, an ASCII hyphen between ASCII letters in one text
   node is a soft break after the hyphen. The whole word stays one shaped run
   if it fits; otherwise the last fitting hyphen is used, or the first
@@ -256,7 +269,7 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   preserves spaces/forced newlines; `nowrap` still collapses whitespace.
   See [CSS Text white-space](https://drafts.csswg.org/css-text-3/#white-space-property)
   (local ID `css-text`). Script/bidi/control and missing-glyph failures remain.
-- Left/start, right/end and center text alignment; baseline alignment across
+- Left/start, right/end, center and bounded justification; baseline alignment across
   font sizes, line-height multipliers/px/normal, half-leading and inline struts.
   Negative leading is valid; an empty inline strut can affect an existing line
   but does not create a standalone visible line.
@@ -277,7 +290,8 @@ explicitly or those styles overridden.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab
-  stops, justification and cross-node/style shaping inside an unbroken word.
+  stops, other justification opportunities/methods, `text-align-last`,
+  `text-justify` and cross-node/style shaping inside an unbroken word.
 - Margin collapse, floats, positioning, inline-block, decorated inline boxes
   (including backgrounds), tables beyond the subset above, ruby, broader list markers, replaced elements,
   general controls, images/media/iframes and specialized element layout.

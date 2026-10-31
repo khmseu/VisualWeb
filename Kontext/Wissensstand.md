@@ -84,8 +84,20 @@
   darunter 48 neue Faelle; zwei zwischenzeitliche Deadlinetests bestanden
   einzeln und im letzten serialisierten Lauf. Der Gesamtformatter meldet nur
   die drei bekannten Baseline-Findings, geaenderte Testdateien bestehen separat.
-  Commit, Push und CI stehen noch aus
+  Commit `872507e` ist gepusht; Linux, Windows und CodeQL bestanden,
+  einschliesslich x64 und arm64
   ([KP-103](./Kontextprotokoll.md#kp-103---ascii-infixtrennzeichen-im-text)).
+  Pass 10 beseitigt die Layoutablehnung fuer `text-align:justify` mit
+  begrenztem englischem Wortzwischenraum-Blocksatz. Nur weiche Umbruchzeilen
+  mit positiven Restbreiten dehnen kollabierte ASCII-Leerzeichen; End- und
+  Zwangsumbruchzeilen bleiben linksbuendig. Quellen, Glyphen- und Auswahl-
+  geometrie bleiben erhalten; benoetigte NBSP-Dehnung und fehlende Leerzeichen-
+  glyphen scheitern explizit. Build, lokaler V8-Smoke und alle 15.329
+  Solution-Tests bestehen, darunter 21 netto neue Faelle; der Gesamtformatter
+  meldet nur drei auf unveraenderten Zeilen reproduzierte Baseline-Findings,
+  waehrend alle geaenderten Testdateien separat bestehen. Commit, Push und CI
+  stehen noch aus
+  ([KP-104](./Kontextprotokoll.md#kp-104---begrenzter-wortzwischenraum-blocksatz)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

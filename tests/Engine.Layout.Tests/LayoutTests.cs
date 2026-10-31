@@ -1593,6 +1593,221 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("normal", 40, 5)]
+    [InlineData("normal", 42, 6)]
+    [InlineData("pre-line", 41, 5.5)]
+    public void JustificationDistributesSpaceAcrossSoftWrappedLines(string mode, double width, double spaceWidth)
+    {
+        var box = Find(Layout("<p id=x>aa bb cc dd</p>",
+            "#x{text-align:justify;white-space:" + mode + "}", width).Root!, "x");
+        Assert.Equal(2, box.Lines.Count);
+        var fragments = box.Lines[0].Fragments;
+        Assert.Equal(["aa", " ", "bb", " ", "cc"], fragments.Select(fragment => fragment.Run.Text));
+        Assert.Equal([0, 10, 10 + spaceWidth, 20 + spaceWidth, 20 + 2 * spaceWidth],
+            fragments.Select(fragment => fragment.X));
+        Assert.Equal([10, spaceWidth, 10, spaceWidth, 10], fragments.Select(fragment => fragment.Run.Width));
+        Assert.All(fragments.Where(fragment => fragment.Run.Text == " "),
+            fragment => Assert.Equal(spaceWidth, Assert.Single(fragment.Run.Glyphs).Advance));
+        Assert.Equal(width, fragments[^1].X + fragments[^1].Run.Width);
+        var last = Assert.Single(box.Lines[1].Fragments);
+        Assert.Equal("dd", last.Run.Text);
+        Assert.Equal(0, last.X);
+    }
+
+    [Theory]
+    [InlineData("<br>", "normal")]
+    [InlineData("\n", "pre-line")]
+    public void JustificationLeavesForcedAndFinalLinesStartAligned(string separator, string mode)
+    {
+        var box = Find(Layout("<p id=x>aa bb cc" + separator + "dd ee</p>",
+            "#x{text-align:justify;white-space:" + mode + "}", width: 28).Root!, "x");
+        Assert.Equal(3, box.Lines.Count);
+        Assert.Equal(28, box.Lines[0].Fragments[^1].X + box.Lines[0].Fragments[^1].Run.Width);
+        Assert.Equal("cc", Assert.Single(box.Lines[1].Fragments).Run.Text);
+        Assert.Equal(0, box.Lines[1].Fragments[0].X);
+        Assert.Equal(["dd", " ", "ee"], box.Lines[2].Fragments.Select(fragment => fragment.Run.Text));
+        Assert.Equal(25, box.Lines[2].Fragments[^1].X + box.Lines[2].Fragments[^1].Run.Width);
+    }
+
+    [Theory]
+    [InlineData("nowrap")]
+    [InlineData("pre")]
+    public void JustificationDoesNotIntroduceBreaksInNonWrappingModes(string mode)
+    {
+        var box = Find(Layout("<p id=x>aa bb cc</p>",
+            "#x{text-align:justify;white-space:" + mode + "}", width: 10).Root!, "x");
+        var line = Assert.Single(box.Lines);
+        Assert.Equal("aa bb cc", string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(40, line.Fragments.Sum(fragment => fragment.Run.Width));
+    }
+
+    [Fact]
+    public void JustificationPreservesSourcesStylesAndHyphenBreaks()
+    {
+        var (document, styles) = Page("<p id=x>aa <span id=y>bb</span> cc</p>", "#x{text-align:justify}");
+        var paragraph = document.GetElementById("x")!;
+        var firstSource = Assert.IsType<DomText>(paragraph.ChildNodes[0]);
+        var span = document.GetElementById("y")!;
+        var secondSource = Assert.IsType<DomText>(span.ChildNodes[0]);
+        var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 28, 200,
+            cancellationToken: Cancellation).Root!;
+        var fragments = Find(root, "x").Lines[0].Fragments;
+        Assert.Equal(["aa", " ", "bb"], fragments.Select(fragment => fragment.Run.Text));
+        Assert.Same(firstSource, fragments[0].Source);
+        Assert.Same(firstSource, fragments[1].Source);
+        Assert.Same(secondSource, fragments[2].Source);
+        Assert.Same(styles.Styles[span], fragments[2].Style);
+        Assert.Equal(8, fragments[1].Run.Width);
+        Assert.Equal(28, fragments[2].X + fragments[2].Run.Width);
+
+        var hyphen = Find(Layout("<p id=x>a b-cd</p>", "#x{text-align:justify}", width: 22).Root!, "x");
+        Assert.Equal(["a", " ", "b-"], hyphen.Lines[0].Fragments.Select(fragment => fragment.Run.Text));
+        Assert.Equal(7, hyphen.Lines[0].Fragments[1].Run.Width);
+        Assert.Equal(22, hyphen.Lines[0].Fragments[^1].X + hyphen.Lines[0].Fragments[^1].Run.Width);
+        Assert.Equal("cd", Assert.Single(hyphen.Lines[1].Fragments).Run.Text);
+    }
+
+    [Fact]
+    public void JustificationRetainsInlineStrutsAcrossWrappedLines()
+    {
+        var box = Find(Layout("<p id=x>aa <span>bb cc dd</span></p>",
+            "#x{text-align:justify}span{font-size:20px;line-height:20px}", width: 38).Root!, "x");
+        Assert.Equal(3, box.Lines.Count);
+        Assert.All(box.Lines, line => Assert.Equal(20, line.Bounds.Height));
+        Assert.Equal(8, box.Lines[0].Fragments[1].Run.Width);
+        Assert.Equal(38, box.Lines[0].Fragments[^1].X + box.Lines[0].Fragments[^1].Run.Width);
+        Assert.Equal("cc", Assert.Single(box.Lines[1].Fragments).Run.Text);
+        Assert.Equal("dd", Assert.Single(box.Lines[2].Fragments).Run.Text);
+    }
+
+    [Fact]
+    public void JustificationDistributesFractionalSlackWithoutChangingTextOrClusters()
+    {
+        var box = Find(Layout("<p id=x>a b c d e</p>", "#x{text-align:justify}", width: 37).Root!, "x");
+        var fragments = box.Lines[0].Fragments;
+        Assert.Equal("a b c d", string.Concat(fragments.Select(fragment => fragment.Run.Text)));
+        var spaces = fragments.Where(fragment => fragment.Run.Text == " ").ToArray();
+        Assert.Equal(3, spaces.Length);
+        Assert.All(spaces, fragment =>
+        {
+            Assert.Equal(5 + 2.0 / 3, fragment.Run.Width, 10);
+            Assert.Equal(fragment.Run.Width, Assert.Single(fragment.Run.Glyphs).Advance, 10);
+            Assert.Equal(0, fragment.Run.Glyphs[0].Cluster);
+        });
+        Assert.Equal(37, fragments[^1].X + fragments[^1].Run.Width, 10);
+    }
+
+    [Fact]
+    public void JustificationKeepsEqualSpaceWidthsAtLargeFiniteWidths()
+    {
+        var (document, styles) = Page("<p id=x>a b c d</p>", "#x{text-align:justify}");
+        var result = StaticLayout.Layout(document, styles, new WideMetricsShaper(),
+            3_800_000_000_000_000d, 200, cancellationToken: Cancellation);
+        var line = Find(result.Root!, "x").Lines[0];
+        var spaces = line.Fragments.Where(fragment => fragment.Run.Text == " ").ToArray();
+        Assert.Equal(2, spaces.Length);
+        Assert.Equal(spaces[0].Run.Width, spaces[1].Run.Width);
+        Assert.All(spaces, fragment => Assert.Equal(fragment.Run.Width, Assert.Single(fragment.Run.Glyphs).Advance));
+    }
+
+    [Fact]
+    public void JustificationIncludesInlineWidgetPositionsAndKeepsTableIntrinsicSizing()
+    {
+        var widget = Find(Layout("<p id=x>a <input> b c</p>",
+            "#x{text-align:justify}input{display:inline-block;width:10px;height:10px}", width: 25).Root!, "x");
+        var first = widget.Lines[0];
+        Assert.Equal(10, first.Fragments[1].Run.Width);
+        Assert.Equal(new LayoutRect(15, 0, 10, 10), Assert.Single(first.Widgets).Bounds);
+
+        const string html = "<table id=t><tr><td id=c>a b c</td></tr></table>";
+        var justified = UnorderedList(html, "td{text-align:justify}", width: 25).Root!;
+        var left = UnorderedList(html, "td{text-align:left}", width: 25).Root!;
+        Assert.Equal(Find(left, "t").Content.Width, Find(justified, "t").Content.Width);
+        var cell = Find(justified, "c");
+        Assert.Equal(2, cell.Lines.Count);
+        Assert.Equal(cell.Content.X + cell.Content.Width,
+            cell.Lines[0].Fragments[^1].X + cell.Lines[0].Fragments[^1].Run.Width);
+    }
+
+    [Fact]
+    public void JustificationLeavesUnbreakableOverflowAndNoOpportunityLinesUnstretched()
+    {
+        var box = Find(Layout("<p id=x>abcdef gh</p>", "#x{text-align:justify}", width: 10).Root!, "x");
+        Assert.Equal(2, box.Lines.Count);
+        Assert.Equal(30, Assert.Single(box.Lines[0].Fragments).Run.Width);
+        Assert.Equal(0, box.Lines[0].Fragments[0].X);
+        Assert.Equal(0, box.Lines[1].Fragments[0].X);
+    }
+
+    [Fact]
+    public void JustificationRejectsUnsupportedNoBreakSpaceExpansion()
+    {
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            Layout("<p>a\u00a0b c d</p>", "p{text-align:justify}", width: 28));
+        var exact = Find(Layout("<p id=x>a\u00a0b c d</p>", "#x{text-align:justify}", width: 25).Root!, "x");
+        Assert.Equal(25, exact.Lines[0].Fragments[^1].X + exact.Lines[0].Fragments[^1].Run.Width);
+        var oneLine = Find(Layout("<p id=x>a\u00a0b</p>", "#x{text-align:justify}", width: 30).Root!, "x");
+        Assert.Equal("a\u00a0b", Assert.Single(Assert.Single(oneLine.Lines).Fragments).Run.Text);
+    }
+
+    [Fact]
+    public void JustificationRejectsShapersWithoutSpaceGlyphs()
+    {
+        var (document, styles) = Page("<p>a b c</p>", "p{text-align:justify}");
+        Assert.Throws<UnsupportedLayoutException>(() => StaticLayout.Layout(document, styles,
+            new GlyphlessSpaceShaper(), 18, 200, cancellationToken: Cancellation));
+    }
+
+    [Fact]
+    public void JustificationObservesCancellationBeforeScanningTheLine()
+    {
+        var (document, styles) = Page("<p>a b c</p>", "p{text-align:justify}");
+        using var canceled = new CancellationTokenSource();
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            new CancelOnStrutShaper(canceled), 18, 200, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
+    [InlineData("text-justify:inter-character")]
+    [InlineData("text-align-last:center")]
+    public void AdditionalJustificationPropertiesRemainExplicitDiagnostics(string declaration)
+    {
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            Layout("<p>a b</p>", "p{text-align:justify;" + declaration + "}"));
+    }
+
+    [Fact]
+    public void JustificationUsesSharedExactWorkAndRenderingBudgets()
+    {
+        const string html = "<p>a b c</p>";
+        const string css = "p{text-align:justify}";
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = 5,
+            MaxShapedGlyphs = 5,
+            MaxShapingCalls = 7,
+            MaxLines = 2,
+            MaxLineBreakOperations = 3
+        };
+        Assert.NotNull(Layout(html, css, width: 18, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout(html, css, width: 18,
+            options: exact with { MaxTextCharacters = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(html, css, width: 18,
+            options: exact with { MaxShapedGlyphs = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(html, css, width: 18,
+            options: exact with { MaxShapingCalls = 6 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(html, css, width: 18,
+            options: exact with { MaxLines = 1 }));
+        Assert.Throws<LayoutLimitException>(() => Layout(html, css, width: 18,
+            options: exact with { MaxLineBreakOperations = 2 }));
+
+        Assert.NotNull(Layout("<p>a b-cd</p>", css, width: 22,
+            options: new() { MaxLineBreakOperations = 17 }).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a b-cd</p>", css, width: 22,
+            options: new() { MaxLineBreakOperations = 16 }));
+    }
+
+    [Theory]
     [InlineData("left", 0)]
     [InlineData("right", 90)]
     [InlineData("center", 45)]
@@ -1644,7 +1859,6 @@ public sealed class LayoutTests
     [InlineData("<p dir=rtl>x</p>", "")]
     [InlineData("<p>\u05D0</p>", "")]
     [InlineData("<p>ab<span>cd</span></p>", "")]
-    [InlineData("<p>x</p>", "p{text-align:justify}")]
     [InlineData("<p>x</p>", "p{white-space:pre-wrap}")]
     [InlineData("<p>\t</p>", "p{white-space:pre}")]
     [InlineData("<p>-ab</p>", "")]
@@ -1778,6 +1992,36 @@ public sealed class LayoutTests
             var run = new MetricsShaper().Shape(text, request, cancellationToken);
             cancellation.Cancel();
             return run;
+        }
+    }
+
+    private sealed class GlyphlessSpaceShaper : ITextShaper
+    {
+        public ShapedRun Shape(string text, TextFontRequest request, CancellationToken cancellationToken = default)
+        {
+            var run = new MetricsShaper().Shape(text, request, cancellationToken);
+            return text == " " ? run with { Glyphs = [] } : run;
+        }
+    }
+
+    private sealed class CancelOnStrutShaper(CancellationTokenSource cancellation) : ITextShaper
+    {
+        public ShapedRun Shape(string text, TextFontRequest request, CancellationToken cancellationToken = default)
+        {
+            var run = new MetricsShaper().Shape(text, request, cancellationToken);
+            if (text.Length == 0) { cancellation.Cancel(); }
+            return run;
+        }
+    }
+
+    private sealed class WideMetricsShaper : ITextShaper
+    {
+        public ShapedRun Shape(string text, TextFontRequest request, CancellationToken cancellationToken = default)
+        {
+            var run = new MetricsShaper().Shape(text, request, cancellationToken);
+            if (text.Length == 0) { return run; }
+            var width = text == " " ? 5.3 : 1_000_000_000_000_000d;
+            return run with { Width = width, Glyphs = [run.Glyphs[0] with { Advance = width }] };
         }
     }
 

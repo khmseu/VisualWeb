@@ -227,6 +227,11 @@ Supported longhands:
 | Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                                  |
 | Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces                |
 
+The layout stage implements `text-align:justify` only for the bounded English
+inter-word policy described in [ordinary text flow](text-layout.md#ordinary-flow).
+`text-align-last` and `text-justify` remain unsupported declarations; computed
+CSS values do not imply broader layout or international justification.
+
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. The finite `background` shorthand accepts one supported
 color and optional `none` in either order; `none` alone resets background-color

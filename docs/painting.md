@@ -113,8 +113,10 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   must have the same color; differing colors need deferred corner joins.
   Translucent same-color corners are composited once, not double blended.
 - Positioned glyph IDs and absolute CSS baseline positions come directly from
-  HarfBuzz-shaped fragments, including ligatures and combining offsets. Skia
-  draws glyph blobs, **not reshaped Unicode strings**. Both use font sizes
+  HarfBuzz-shaped fragments, including ligatures and combining offsets. Bounded
+  inter-word justification expands the already-shaped space advances before
+  painting; no additional text is inserted. Skia draws glyph blobs, **not
+  reshaped Unicode strings**. Both use font sizes
   quantized to 1/64 CSS pixel. Text uses grayscale antialiasing, subpixel
   positions and no hinting; rectangles are not antialiased.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical

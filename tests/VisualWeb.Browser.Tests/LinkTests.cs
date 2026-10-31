@@ -169,6 +169,80 @@ public sealed class LinkTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task JustifiedLinkSelectionAndGeometryReflowOnRetainedResize(bool process)
+    {
+        var (narrowWidth, naturalSpace) = NarrowWidth();
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var document = Document("""
+            <!doctype html><style>*{margin:0}p{text-align:justify}</style>
+            <p><a href='/next'>aa bb cc</a></p>
+            """);
+        var first = await renderer.RenderAsync(document, new(narrowWidth, 100, 1), Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal("aa bbcc", string.Concat(first.TextTargets.Select(target => target.Text)));
+        var space = Assert.Single(first.TextTargets, target => target.Text == " ");
+        Assert.True(space.Rect.Width > naturalSpace);
+        var link = Assert.Single(first.LinkTargets);
+        Assert.Equal(2, link.Rects.Select(rect => rect.Y).Distinct().Count());
+        Assert.True(link.Contains(space.Rect.X + space.Rect.Width / 2, space.Rect.Y + space.Rect.Height / 2));
+        var lastOnFirstLine = first.TextTargets.Last(target => target.Rect.Y == space.Rect.Y);
+        Assert.Equal(narrowWidth, lastOnFirstLine.Rect.X + lastOnFirstLine.Rect.Width, 6);
+
+        var resized = await renderer.RenderRetainedAsync(document, new(200, 100, 1), Cancellation);
+        Assert.Equal("aa bb cc", string.Concat(resized.TextTargets.Select(target => target.Text)));
+        Assert.Single(Assert.Single(resized.LinkTargets).Rects.Select(rect => rect.Y).Distinct());
+        Assert.All(resized.TextTargets.Where(target => target.Text == " "),
+            target => Assert.Equal(naturalSpace, target.Rect.Width, 6));
+
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var narrow = new PageViewport(narrowWidth, 100, 1);
+        var wide = new PageViewport(200, 100, 1);
+        controller.Navigate(tab.Id, "https://example.com/final/index.html");
+        source.Requests[0].Completion.SetResult(document);
+        PumpUntil(() => controller.Page(tab.Id) is not null, narrow);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal("aa bb\ncc", controller.SelectedText(tab.Id));
+        var previous = controller.Page(tab.Id);
+        controller.Resize(tab.Id, wide);
+        PumpUntil(() => !ReferenceEquals(previous, controller.Page(tab.Id)), wide);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal("aa bb cc", controller.SelectedText(tab.Id));
+        Assert.Single(source.Requests);
+
+        static (double Width, double Space) NarrowWidth()
+        {
+            using var font = new TextFont(FontPath);
+            var first = font.Shape("aa", 16, Cancellation).Width;
+            var second = font.Shape("bb", 16, Cancellation).Width;
+            var third = font.Shape("cc", 16, Cancellation).Width;
+            var space = font.Shape(" ", 16, Cancellation).Width;
+            var width = Math.Ceiling(first + second + space * 1.5);
+            Assert.True(width < first + second + third + space * 2);
+            return (width, space);
+        }
+
+        void PumpUntil(Func<bool> condition, PageViewport viewport)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do
+            {
+                controller.Pump(_ => viewport);
+                if (condition()) { return; }
+                Thread.Sleep(5);
+            } while (DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task SolidusLinkSelectionAndGeometryReflowOnRetainedResize(bool process)
     {
         var narrowWidth = NarrowWidth();
