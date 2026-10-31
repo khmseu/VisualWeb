@@ -3469,6 +3469,24 @@ Findings. [Linux 41200590442](https://github.com/khmseu/VisualWeb/actions/runs/4
 und [CodeQL 41200590326](https://github.com/khmseu/VisualWeb/actions/runs/41200590326)
 bestanden. Linux und Windows umfassten jeweils x64 und arm64.
 
+### KP-101 - Markdown-Diagnosen
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle: aktueller Nutzerauftrag und Problems-Pruefung in VS Code.
+
+**Nutzerangabe:** Die angehaengten Diagnosen sollen behoben werden.
+Die als Anhang markierte [.trunk/trunk.yaml](../.trunk/trunk.yaml) hatte
+laut Problems-Pruefung keine Fehler. Die Workspace-Pruefung fand zunaechst
+zwei `MD051/link-fragments`-Fehler im [Wissensstand](./Wissensstand.md):
+die Quellenzeilen fuer `DEC-001` und `DEC-002`. Nach dieser Korrektur wurden
+zwei weitere fehlerhafte `#decisions`-Fragmente in `Q-012` und `Q-013`
+sichtbar; sie verweisen jetzt auf `#aktuelle-entscheidungen`. Die dadurch
+veraenderten Tabellenzeilen wurden anschliessend wieder ausgerichtet.
+
+**Belegte Validierung:** Die abschliessende Problems-Pruefung meldet in
+`.trunk/trunk.yaml` und `Kontext/Wissensstand.md` keine Fehler. `git diff
+--check` besteht. Der Trunk-Lint selbst wurde nicht ausgefuehrt.
+
 ### KP-102 - Menu-Listenlayout
 
 - Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
@@ -3588,3 +3606,14 @@ die drei bereits auf `b47a5a0` reproduzierten Baseline-Findings: zwei auf
 unveraenderten Zeilen von `StaticLayout.cs` und eines in `ShellChrome.cs`.
 Alle geaenderten Testdateien bestehen die separate Formatpruefung. Commit,
 Push und CI stehen noch aus.
+
+**Commit und CI:** `05dffdaadf12fafaf0ef89d23dee5bb50cf69fb2`
+wurde auf `origin/main` gepusht; der Commit-Hook pruefte 12 Dateien ohne
+Findings. Die exakten Commitlaeufe fuer
+[Linux 41211828356](https://github.com/khmseu/VisualWeb/actions/runs/41211828356),
+[Windows 41211828413](https://github.com/khmseu/VisualWeb/actions/runs/41211828413)
+und [CodeQL 41211827926](https://github.com/khmseu/VisualWeb/actions/runs/41211827926)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64. Die drei ersten
+`gh run watch`-Aufrufe brachen durch einen GitHub-Verbindungsreset ab; erneute
+direkte Abfragen und die fortgesetzte Windows-Ueberwachung bestaetigten den
+erfolgreichen Abschluss.
