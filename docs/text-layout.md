@@ -104,20 +104,22 @@ not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
 Visible block `ul` containers and their direct `li` children now support
 outside disc markers. UA styles give lists 40px left padding and items
 `display:list-item`; each nested list uses the same disc default.
-Authors may instead select `list-style-type:square` or `list-style:square`
-on supported unordered or ordered items; the inherited square marker uses
-the same outside bounds as a disc. This does not change nested UA defaults.
+Authors may instead select `list-style-type:circle` or `list-style-type:square`,
+or the corresponding `list-style` shorthand, on supported unordered or ordered
+items; inherited hollow circles and solid squares use the same outside bounds
+as discs. This does not change nested UA defaults.
 `list-style-type:none` suppresses a marker, and `display:block` on an item
 removes its list-item semantics. Hidden items produce neither geometry nor
-markers. Legacy `type` attributes except `ol type=1`, circle and other marker
-styles, inside positioning and arbitrary non-`li` list-item boxes still fail
-explicitly.
+markers. Legacy `type` attributes except `ol type=1`, other marker styles,
+inside positioning and arbitrary non-`li` list-item boxes still fail explicitly.
 
 Marker geometry follows the user-agent-defined latitude in
 [CSS 2.2 lists](https://www.w3.org/TR/CSS22/generate.html#lists)
-(local ID `css2-lists`): a solid disc or square with a 0.3em diameter or side and a 0.5em gap
-before the item's content edge, its top 0.5em above the first in-flow
-descendant line baseline. Without such a line it uses the item's font strut;
+(local ID `css2-lists`): a solid disc, hollow circle or solid square with a
+0.3em diameter or side and a 0.5em gap before the item's content edge, its top
+0.5em above the first in-flow descendant line baseline. Circle stroke width is
+one quarter of its diameter (0.075em), entirely inside those bounds. Without
+such a line it uses the item's font strut;
 an empty marked item has that strut's height. Markers do not change wrapping
 width or enter selectable DOM text. Their metric shaping shares the existing
 shaping-call budgets; traversal and painting retain cancellation and limits.

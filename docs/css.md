@@ -161,7 +161,7 @@ not listed above. No selector silently approximates these features.
 The bounded list subset gives `li` a UA `display:list-item` default,
 `ul` disc markers and `ol` decimal markers.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
-only disc/square/decimal/none markers, outside positioning and no marker image
+only disc/circle/square/decimal/none markers, outside positioning and no marker image
 are supported.
 The `list-style` shorthand expands this same finite subset in any order,
 resets omitted longhands, and supports CSS-wide keywords. `none` suppresses
@@ -171,6 +171,8 @@ therefore retains decimal markers. Duplicate components or unsupported values
 partially changing longhands.
 Layout currently accepts visible list-item boxes only for direct `li` children
 of `ul` or `ol`; accepting a computed value does not imply general list-item layout.
+The `circle` keyword is author-selectable, but nested `ul` UA defaults remain
+`disc`, and it does not enable legacy HTML `type` attributes.
 
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
 UA < user < author precedence, important author < user < UA precedence, inline
@@ -191,7 +193,7 @@ Supported longhands:
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                       |
 | Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                   |
-| Lists   | inherited `list-style-type`: disc/square/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                                      |
+| Lists   | inherited `list-style-type`: disc/circle/square/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                               |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                 |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                              |
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                    |
@@ -259,8 +261,8 @@ UA sheet handles ordinary blocks/head metadata, body margin, headings,
 paragraphs/lists, emphasis and monospace text, plus `form { display: block }`
 and `input[type=hidden i] { display: none !important }`; it is **not** the
 complete HTML rendering stylesheet (controls keep `display: inline` rather
-than inline-block, and have no UA borders/padding/fonts). List markers, decoration and replaced-element sizing are
-not yet implemented.
+than inline-block, and have no UA borders/padding/fonts). Broader marker types,
+decoration and replaced-element sizing are not yet implemented.
 
 Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
 layers, conditional rules (including media/supports/container), imports/font-face,

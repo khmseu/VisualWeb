@@ -3172,3 +3172,44 @@ Konformitaetszusage.
 `dotnet test VisualWeb.slnx --no-build` bestanden; der Solutiontest nutzte
 vorhandene Buildausgaben und fuehrte 14.972 Tests erfolgreich aus. Ein neues
 Browserfeature wurde damit nicht validiert.
+
+### KP-094 - Erneuter Zehn-Passen-Auftrag
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle: Nutzeraufruf `/missing-priority-implementation 10` in der aktuellen
+  Sitzung `d5bf1438-982a-44e5-9d2e-47e75b858436`; Arbeitsstand `b47a5a0`.
+- Bezug: [Prioritaeten](../plans/Missing.md#recommended-priority), REQ-011,
+  KP-065 und KP-093.
+
+**Nutzerauftrag:** Zehn aufeinanderfolgende, einzeln testbare Inkremente nach
+Trackerprioritaet umsetzen; jedes vor dem naechsten validieren, committen,
+pushen und hinsichtlich CI pruefen. Wesentliche ungeloeste Entscheidungen
+muessen vor einer Implementierung geklaert werden. Die vorhandenen
+Sicherheitsgrenzen bleiben erhalten.
+
+**Belegte Auswahl fuer den begonnenen ersten Pass:** Die Prioritaet fuer
+gewoehnliche Listen und CSS steht vor Ressourcen und Interaktion. Der
+CSS-Parser diagnostiziert `list-style-type:circle` und `list-style:circle`
+noch als nicht unterstuetzt; Layout und Paint kennen nur Disc, Quadrat und
+Dezimalmarker. Der am 2026-10-28 gepruefte lokale Standard `css2-lists`
+nennt `circle` und ueberlaesst die genaue Darstellung dem User Agent.
+Geplant ist ein hohler Marker mit denselben Layout-/Sicherheitsbudgets;
+die bisherigen verschachtelten UA-Defaults sollen dabei unveraendert bleiben.
+Implementierung, Tests und CI sind zu diesem Zeitpunkt noch offen.
+
+**Umsetzung und lokale Pruefung:** `circle` wird als Longhand und im
+`list-style`-Shorthand berechnet; der Outside-Marker hat eine einmal
+komponierte, begrenzte Kontur und bewahrt die tatsaechlichen Pixel im Inneren.
+Listen-Defaults und Legacy-HTML-Attribute bleiben unveraendert. Ein Review
+fand zunaechst einen Praezisionsfehler bei grossen Scrollpositionen. Die
+Korrektur rechnet die Markerkoordinaten vor nativer Float-Konvertierung auf
+Root-/verschachtelte Scroll-Offsets um; fuenf gezielt zuvor fehlgeschlagene
+Faelle und weitere grosse, gebrochene und verschachtelte Offsets bestehen.
+
+Der Solution-Build, 840 CSS-, 180 Layout-, 59 Paint-, 31 Content- und 1.214
+Browser-Tests sowie alle 15.025 Solution-Tests bestehen. Der vollstaendige
+Browserlauf wurde separat ausgefuehrt. Die Solution-Formatpruefung meldet
+ausschliesslich die drei vor der Aenderung auf `b47a5a0` reproduzierten
+Fehler in `StaticLayout.cs` und `ShellChrome.cs`; die anderen geaenderten
+C#-Dateien bestehen die separate Formatpruefung. Commit, Push und CI sind
+noch nicht erfolgt.

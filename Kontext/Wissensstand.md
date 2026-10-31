@@ -5,14 +5,16 @@
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
 - Dokumentationsdatum: 2026-10-31, Zeitzone Europe/Berlin (UTC+01:00).
-- Aktueller Auftrag: Debugging-Protokolle als moegliche Entwicklungsunterstuetzung
-  und WAI-ARIA/WebMCP als niedrigere Prioritaeten dokumentieren
-  ([KP-093](./Kontextprotokoll.md#kp-093---webdriver-debugging-und-spaetere-standards)).
+- Aktueller Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
+  gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
+  ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
+  Pass 1 ist lokal implementiert und validiert: das zuvor abgelehnte
+  CSS-Listenmarker-Keyword `circle` erzeugt einen hohlen Marker durch CSS,
+  Layout und Paint. Commit, Push und CI-Pruefung stehen noch aus.
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
-  der Auftrag vom 2026-10-28 (KP-066 bis KP-082) sind abgeschlossen. Aeltere
-  Serienstaende und deren damalige naechste Schritte bleiben unten als historische
-  Evidenz erhalten, nicht als aktueller Arbeitsauftrag. Alte Quellen wurden nicht
-  pauschal neu geprueft.
+  der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
+  Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als
+  historische Evidenz erhalten. Alte Quellen wurden nicht pauschal neu geprueft.
 - Rekonstruktionsstand: teilweise; Originalauftrag ab 2026-10-04,
   ausgewaehlte Entscheidungen bis 2026-10-22 nachvollzogen.
 - Aelterer Artefaktstand: `c39b6d3` (`feat(browser): confirm typed cross-origin

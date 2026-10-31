@@ -138,6 +138,68 @@ public sealed class ScrollTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task CircleMarkersAndLinksSurviveLocalAndProcessScrollAndResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        const string html = """
+            <!doctype html><style>*{margin:0;font-size:20px;line-height:20px}
+            ul{list-style:MARKER;background:blue}
+            li:first-child{color:rgba(255,0,0,.5)}li:last-child{color:rgba(0,255,0,.5)}a{color:black}</style>
+            <ul><li><a href=/next>go</a></li><li><a href=/next>go</a></li></ul>
+            """;
+        var document = Document(html.Replace("MARKER", "circle", StringComparison.Ordinal));
+        var viewport = new PageViewport(100, 20, 1);
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal(40, first.ScrollHeight);
+        Assert.Equal(2, first.LinkTargets.Count);
+        Assert.NotEmpty(first.LinkTargets[0].Rects);
+        Assert.Empty(first.LinkTargets[1].Rects);
+        var markerPixels = MarkerPixelPositions(first.Frame, 2);
+        Assert.NotEmpty(markerPixels);
+        Assert.Empty(MarkerPixelPositions(first.Frame, 1));
+        var centerX = (markerPixels.Min(pixel => pixel.X) + markerPixels.Max(pixel => pixel.X)) / 2;
+        var centerY = (markerPixels.Min(pixel => pixel.Y) + markerPixels.Max(pixel => pixel.Y)) / 2;
+        var center = centerY * first.Frame.Stride + centerX * 4;
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, first.Frame.Pixels.Span[center..(center + 4)].ToArray());
+
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 20 }, Cancellation);
+        Assert.Equal(markerPixels, MarkerPixelPositions(scrolled.Frame, 1));
+        Assert.Empty(MarkerPixelPositions(scrolled.Frame, 2));
+        Assert.Empty(scrolled.LinkTargets[0].Rects);
+        Assert.NotEmpty(scrolled.LinkTargets[1].Rects);
+        Assert.Equal(first.LinkTargets.Select(link => link.FocusTargetId),
+            scrolled.LinkTargets.Select(link => link.FocusTargetId));
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 80 }, Cancellation);
+        Assert.Equal(40, resized.ScrollHeight);
+        Assert.Equal(80, resized.Frame.Size.Width);
+        Assert.NotEmpty(resized.LinkTargets[0].Rects);
+        Assert.Equal(markerPixels, MarkerPixelPositions(resized.Frame, 2));
+        Assert.Empty(MarkerPixelPositions(resized.Frame, 1));
+
+        var reference = Document(html.Replace("MARKER", "none", StringComparison.Ordinal));
+        var referenceFirst = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var referenceScrolled = await renderer.RenderRetainedAsync(reference, viewport with { ScrollY = 20 }, Cancellation);
+        Assert.Equal(TextPixels(referenceFirst.Frame), TextPixels(first.Frame));
+        Assert.Equal(TextPixels(referenceScrolled.Frame), TextPixels(scrolled.Frame));
+
+        static (int X, int Y)[] MarkerPixelPositions(RasterFrame frame, int channel) =>
+            Enumerable.Range(0, frame.Size.Height)
+                .SelectMany(y => Enumerable.Range(0, 40).Where(x => frame.Pixels.Span[y * frame.Stride + x * 4 + channel] > 0)
+                    .Select(x => (x, y)))
+                .ToArray();
+        static byte[] TextPixels(RasterFrame frame) =>
+            Enumerable.Range(0, frame.Size.Height)
+                .SelectMany(y => frame.Pixels.Slice(y * frame.Stride + 40 * 4, 60 * 4).ToArray())
+                .ToArray();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task OrderedListNumbersSurviveLocalAndProcessRetainedRepaint(bool process)
     {
         using IPageRenderer renderer = process

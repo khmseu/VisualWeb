@@ -1,5 +1,12 @@
 # Tests
 
+List marker regressions cover finite CSS circle longhand/shorthand cascade,
+inheritance and invalid-value atomicity; wrapped, nested and empty layout with
+existing numbering and limits; single-composite native outline pixels over
+opaque/translucent backgrounds, large root and nested scroll offsets (including
+fractional root offsets), clipping and fill-state restoration; offline content
+and retained local/process browser scroll and resize.
+
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,
 native Document mode/owner remapping, fresh wrapper IDs and uncopied listeners.

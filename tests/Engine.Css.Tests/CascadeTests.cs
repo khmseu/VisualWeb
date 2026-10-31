@@ -193,8 +193,108 @@ public sealed class CascadeTests
     }
 
     [Theory]
-    [InlineData("list-style-type:lower-alpha")]
     [InlineData("list-style-type:circle")]
+    [InlineData("list-style-type:CiRcLe")]
+    [InlineData("list-style-type:ci\\72 cle")]
+    [InlineData("list-style:CIRCLE")]
+    [InlineData("list-style:ci\\72 cle outside none")]
+    [InlineData("list-style:none circle outside")]
+    [InlineData("list-style:outside CIRCLE none")]
+    [InlineData("list-style:circle!important")]
+    public void CircleListStyleUsesTheCascadeAndInheritance(string declaration)
+    {
+        var doc = Document("<ul id=parent><li id=child>item</li></ul>");
+        var result = Compute(doc, new CssStyleSource("#parent{" + declaration + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("circle"), result.Styles[doc.GetElementById("parent")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("circle"), Child(result, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(result, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(result, doc)["list-style-image"]);
+    }
+
+    [Fact]
+    public void CircleListStyleRespectsImportanceResetsNestedDefaultsAndAssignmentLimits()
+    {
+        var doc = Document("<ul id=parent><li id=child><ul id=nested><li id=inner>x</li></ul></li></ul>");
+        var important = Compute(doc, new CssStyleSource(
+            "#parent{list-style:circle!important}#child{list-style:square;list-style-type:circle!important;list-style-type:decimal}"));
+        Assert.Empty(important.Diagnostics);
+        Assert.Equal(new CssKeyword("circle"), Child(important, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("disc"), important.Styles[doc.GetElementById("nested")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("disc"), important.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+
+        var inherited = Compute(doc, new CssStyleSource("#parent{list-style:circle}#nested{list-style:inherit}"));
+        Assert.Empty(inherited.Diagnostics);
+        Assert.Equal(new CssKeyword("circle"), inherited.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+        var childOverride = Compute(doc, new CssStyleSource(
+            "#parent{list-style:circle!important}#child{list-style-type:square}"));
+        Assert.Equal(new CssKeyword("square"), Child(childOverride, doc)["list-style-type"]);
+        var reset = Compute(doc, new CssStyleSource("#child{list-style:circle;list-style:outside}"));
+        Assert.Empty(reset.Diagnostics);
+        Assert.Equal(new CssKeyword("disc"), Child(reset, doc)["list-style-type"]);
+        var overridden = Compute(doc, new CssStyleSource(
+            "#child{list-style:circle;list-style-type:decimal!important;list-style:circle}"));
+        Assert.Equal(new CssKeyword("decimal"), Child(overridden, doc)["list-style-type"]);
+
+        var sources = new[] { new CssStyleSource("#child{list-style:circle outside none}") };
+        Assert.Empty(CssStyleEngine.Compute(doc, sources, options: new() { MaxAssignments = 3 },
+            includeUserAgent: false, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, sources,
+            options: new() { MaxAssignments = 2 }, includeUserAgent: false, cancellationToken: Cancellation));
+    }
+
+    [Theory]
+    [InlineData("list-style", "initial", "disc")]
+    [InlineData("list-style", "inherit", "circle")]
+    [InlineData("list-style", "unset", "circle")]
+    [InlineData("list-style", "revert", "circle")]
+    [InlineData("list-style-type", "initial", "disc")]
+    [InlineData("list-style-type", "inherit", "circle")]
+    [InlineData("list-style-type", "unset", "circle")]
+    [InlineData("list-style-type", "revert", "circle")]
+    public void CircleListStyleUsesNormalCssWideKeywordSemantics(string property, string keyword, string expected)
+    {
+        var doc = Document("<ul id=parent><li id=child>item</li></ul>");
+        var result = Compute(doc, new CssStyleSource(
+            "#parent{list-style:circle}#child{list-style:decimal;" + property + ":" + keyword + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), Child(result, doc)["list-style-type"]);
+    }
+
+    [Theory]
+    [InlineData("circle decimal")]
+    [InlineData("circle circle")]
+    [InlineData("none none circle")]
+    [InlineData("circle none none")]
+    [InlineData("circle inside")]
+    [InlineData("circle url(marker.png)")]
+    [InlineData("circle outside outside")]
+    [InlineData("inherit circle")]
+    public void InvalidCircleShorthandNeverPartiallyOverridesLonghands(string value)
+    {
+        var doc = Document("<ul id=parent><li id=child>x</li></ul>");
+        var result = Compute(doc, new CssStyleSource(
+            "#child{list-style:decimal;list-style:" + value + "}"));
+        Assert.Single(result.Diagnostics, d => d.Code == "invalid-property-value");
+        Assert.Equal(new CssKeyword("decimal"), Child(result, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(result, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(result, doc)["list-style-image"]);
+    }
+
+    [Fact]
+    public void InvalidImportantCircleShorthandCannotOverrideAnEarlierValidStyle()
+    {
+        var doc = Document("<ul><li id=child>x</li></ul>");
+        var result = Compute(doc, new CssStyleSource(
+            "#child{list-style:decimal;list-style:circle inside!important}"));
+        Assert.Single(result.Diagnostics, d => d.Code == "invalid-property-value");
+        Assert.Equal(new CssKeyword("decimal"), Child(result, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(result, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(result, doc)["list-style-image"]);
+    }
+
+    [Theory]
+    [InlineData("list-style-type:lower-alpha")]
     [InlineData("list-style-position:inside")]
     [InlineData("list-style-image:url(marker.png)")]
     public void UnsupportedListStylesProduceDiagnostics(string declaration)
@@ -241,7 +341,6 @@ public sealed class CascadeTests
     [InlineData("decimal inside")]
     [InlineData("decimal url(marker.png)")]
     [InlineData("inherit decimal")]
-    [InlineData("circle")]
     [InlineData("square decimal")]
     [InlineData("square square")]
     [InlineData("square inside")]

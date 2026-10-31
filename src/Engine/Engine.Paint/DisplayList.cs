@@ -33,6 +33,12 @@ public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCom
 /// <summary>A bounded solid ellipse used by disc list markers.</summary>
 /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.</remarks>
 public sealed record FillEllipse(LayoutRect Bounds, CssColor Color) : PaintCommand;
+/// <summary>A bounded, single-composite ellipse outline used by hollow circle list markers.</summary>
+/// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.
+/// Bounds enclose the entire stroke; the interior is not painted. Raster preflight requires finite,
+/// positive bounds and a finite positive stroke narrower than half the smaller dimension, with
+/// representable inset geometry and device-scaled stroke.</remarks>
+public sealed record StrokeEllipse(LayoutRect Bounds, CssColor Color, double StrokeWidth) : PaintCommand;
 public sealed record PushScrollClip(LayoutRect Clip, double OffsetY) : PaintCommand;
 public sealed record PopScrollClip : PaintCommand;
 public readonly record struct PaintGlyph(ushort Id, double X, double Y);
@@ -214,6 +220,10 @@ public static class DisplayListBuilder
             if (box.DiscMarker is { Width: > 0, Height: > 0 } marker)
             {
                 Add(new FillEllipse(marker, Color(box, "color")));
+            }
+            if (box.CircleMarker is { Width: > 0, Height: > 0 } circle)
+            {
+                Add(new StrokeEllipse(circle, Color(box, "color"), Math.Min(circle.Width, circle.Height) / 4));
             }
             if (box.SquareMarker is { Width: > 0, Height: > 0 } square)
             {

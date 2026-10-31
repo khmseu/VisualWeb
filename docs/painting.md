@@ -75,9 +75,20 @@ draws antialiased solid discs after block backgrounds and before that item's
 text, without synthesizing DOM text, reshaping a bullet glyph or creating font
 resources. Author-selected square markers instead use the same bounds and
 color in non-antialiased `FillRectangle` commands, including source-over alpha
-compositing. Marker commands share command limits, geometry preflight, viewport
-transforms and cancellation with other commands. The finite list scope is
-described in the [text/layout guide](text-layout.md#default-unordered-lists).
+compositing. Author-selected circles use one data-only `StrokeEllipse` command
+with a stroke one quarter of the diameter: its antialiased centerline is inset
+by half the stroke, clipped to the declared bounds and drawn once with
+source-over color. Its center therefore retains the actual underlying pixels,
+including on nonwhite or translucent-painted backgrounds; no backdrop-colored
+erasure or second color composite is used. Raster preflight checks positive
+finite geometry, stroke width below half the smaller dimension and representable
+Skia coordinates and device-scaled stroke before allocating the framebuffer;
+outlines are rebased against root and nested scroll offsets before native float
+conversion to retain small markers on long pages. Fill and clip state are
+restored afterward. Marker commands share command
+limits, geometry preflight, viewport transforms and cancellation with other
+commands. The finite list scope is described in the
+[text/layout guide](text-layout.md#default-unordered-lists).
 Decimal markers use the same bounded glyph-run command builder as page text,
 with the item's exact font and color, but remain separate from selectable DOM
 fragments. They paint before the item's own scroll clip, like disc markers;

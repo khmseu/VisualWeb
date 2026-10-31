@@ -8,6 +8,44 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void CircleMarkersKeepTransparentCentersAndSurviveRetainedResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ul><li></li><li></li></ul>";
+        CssStyleSource[] styles =
+        [
+            new("*{margin:0;font-size:20px;line-height:20px}"
+                + "ul{list-style:circle;color:rgba(255,0,0,.5);background:blue}")
+        ];
+        var rendered = OfflinePageRenderer.Render(html, styles, text, fonts, 100, 40, cancellationToken: Cancellation);
+        Assert.Empty(rendered.Styles.Diagnostics);
+        var markers = rendered.DisplayList.Commands.OfType<StrokeEllipse>().ToArray();
+        Assert.Equal(2, markers.Length);
+        Assert.All(markers, marker =>
+        {
+            Assert.Equal(new CssColor(255, 0, 0, 128), marker.Color);
+            Assert.Equal(24, marker.Bounds.X);
+            Assert.Equal(6, marker.Bounds.Width);
+            Assert.Equal(6, marker.Bounds.Height);
+            Assert.Equal(1.5, marker.StrokeWidth);
+            var x = (int)Math.Floor(marker.Bounds.X + marker.Bounds.Width / 2);
+            var y = (int)Math.Floor(marker.Bounds.Y + marker.Bounds.Height / 2);
+            var offset = y * rendered.Frame.Stride + x * 4;
+            Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[offset..(offset + 4)].ToArray());
+            Assert.Contains(Enumerable.Range((int)Math.Floor(marker.Bounds.Y), 7)
+                .SelectMany(row => Enumerable.Range(24, 6).Select(column => row * rendered.Frame.Stride + column * 4)),
+                index => rendered.Frame.Pixels.Span[index + 2] > 0);
+        });
+        Assert.Equal(markers[0].Bounds.Y + 20, markers[1].Bounds.Y);
+        var resized = OfflinePageRenderer.RenderParsed(rendered.Html, styles, text, fonts, 80, 40,
+            cancellationToken: Cancellation);
+        Assert.Same(rendered.Html.Document, resized.Html.Document);
+        Assert.Equal(markers, resized.DisplayList.Commands.OfType<StrokeEllipse>());
+    }
+
+    [Fact]
     public void SquareMarkersRenderSolidNativePixelsAndSurviveRetainedResize()
     {
         using var font = new TextFont(FontPath);

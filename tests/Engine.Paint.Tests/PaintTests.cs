@@ -59,6 +59,7 @@ public sealed class PaintTests
         Assert.Equal(2, Page("<ul><li></li><li></li></ul>", css, new() { MaxCommands = 2 }).Commands.Count);
         Assert.Throws<PaintLimitException>(() => Page("<ul><li></li><li></li></ul>",
             css, new() { MaxCommands = 1 }));
+        Assert.Empty(Page("<ul><li></li></ul>", css + "li{font-size:0}").Commands);
         var withText = Page("<ul><li>x</li></ul>", css);
         Assert.IsType<FillRectangle>(withText.Commands[0]);
         Assert.IsType<DrawGlyphRun>(withText.Commands[1]);
@@ -77,6 +78,255 @@ public sealed class PaintTests
         var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
         Assert.Equal(((byte)128, (byte)0, (byte)127, (byte)255), Pixel(frame, 13, 4));
         Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 11, 4));
+    }
+
+    [Fact]
+    public void CircleMarkersUseOneCurrentColorOutlineCommandAndTheExistingBudget()
+    {
+        const string css = "ul{display:block;padding-left:20px;list-style:circle}li{display:list-item;color:red}";
+        var list = Page("<ul><li></li></ul>", css, new() { MaxCommands = 1 });
+        Assert.Equal(new StrokeEllipse(new(12, 3, 3, 3), Red, 0.75), Assert.Single(list.Commands));
+        using var fonts = new PaintFontRegistry();
+        var normal = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(normal, 13, 4));
+        Assert.True(Pixel(normal, 13, 3).G < 255);
+        var frame = CpuRasterizer.Render(list, fonts, scale: 4, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 53, 17));
+        Assert.True(Pixel(frame, 53, 13).G < 255);
+        var twoMarkers = Page("<ul><li></li><li></li></ul>", css, new() { MaxCommands = 2 });
+        Assert.Equal(2, twoMarkers.Commands.Count);
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(twoMarkers, fonts,
+            options: new() { MaxCommands = 1 }, cancellationToken: Cancellation));
+        Assert.Throws<PaintLimitException>(() => Page("<ul><li></li><li></li></ul>",
+            css, new() { MaxCommands = 1 }));
+        var withText = Page("<ul><li>x</li></ul>", css);
+        Assert.IsType<StrokeEllipse>(withText.Commands[0]);
+        Assert.IsType<DrawGlyphRun>(withText.Commands[1]);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() =>
+            CpuRasterizer.Render(list, fonts, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
+    [InlineData(0, 0, 255, 255)]
+    [InlineData(20, 200, 30, 128)]
+    public void CircleRingCompositesOnceAndLeavesTheActualBackgroundInItsCenter(byte r, byte g, byte b, byte a)
+    {
+        var background = new FillRectangle(new(0, 0, 24, 24), new CssColor(r, g, b, a));
+        var markerColor = new CssColor(255, 0, 0, 128);
+        var marker = new StrokeEllipse(new(4, 4, 16, 16), markerColor, 4);
+        var backdrop = new CssColor(25, 85, 160);
+        using var fonts = new PaintFontRegistry();
+        var behind = CpuRasterizer.Render(new(24, 24, [background]), fonts,
+            backdrop: backdrop, cancellationToken: Cancellation);
+        var once = CpuRasterizer.Render(new(24, 24,
+            [background, new FillRectangle(new(0, 0, 24, 24), markerColor)]), fonts,
+            backdrop: backdrop, cancellationToken: Cancellation);
+        var outlined = CpuRasterizer.Render(new(24, 24, [background, marker]), fonts,
+            backdrop: backdrop, cancellationToken: Cancellation);
+        var small = CpuRasterizer.Render(new(24, 24,
+            [background, new StrokeEllipse(new(4, 4, 3, 3), markerColor, 0.75)]), fonts,
+            backdrop: backdrop, cancellationToken: Cancellation);
+        Assert.Equal(Pixel(behind, 5, 5), Pixel(small, 5, 5));
+        Assert.NotEqual(Pixel(behind, 5, 4), Pixel(small, 5, 4));
+        for (var y = 11; y <= 12; y++)
+        {
+            for (var x = 11; x <= 12; x++) { Assert.Equal(Pixel(behind, x, y), Pixel(outlined, x, y)); }
+        }
+        Assert.Equal(Pixel(once, 11, 5), Pixel(outlined, 11, 5));
+        Assert.NotEqual(Pixel(behind, 11, 5), Pixel(outlined, 11, 5));
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 24; x++)
+            {
+                if (x < 4 || x >= 20 || y < 4 || y >= 20)
+                {
+                    Assert.Equal(Pixel(behind, x, y), Pixel(outlined, x, y));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void CircleOutlineHonorsScaleScrollAndAncestorClip()
+    {
+        var background = new FillRectangle(new(0, 0, 100, 100), Blue);
+        var marker = new StrokeEllipse(new(0, 2, 12, 12), Red, 2);
+        var clippedList = new DisplayList(12, 12,
+            [background, new PushScrollClip(new(2, 2, 6, 6), 2), marker, new PopScrollClip()]);
+        using var fonts = new PaintFontRegistry();
+        var actual = CpuRasterizer.Render(clippedList, fonts, scale: 2, scrollX: 1, scrollY: 2,
+            cancellationToken: Cancellation);
+        var uncut = CpuRasterizer.Render(new(12, 12,
+            [background, new PushScrollClip(new(-100, -100, 200, 200), 2), marker, new PopScrollClip()]),
+            fonts, scale: 2, scrollX: 1, scrollY: 2, cancellationToken: Cancellation);
+        var behind = CpuRasterizer.Render(new(12, 12, [background]), fonts, scale: 2,
+            scrollX: 1, scrollY: 2, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(actual, 2, 1));
+        Assert.Equal(Pixel(behind, 10, 8), Pixel(actual, 10, 8));
+        Assert.NotEqual(Pixel(behind, 16, 0), Pixel(uncut, 16, 0));
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 24; x++)
+            {
+                var insideClip = x is >= 2 and < 14 && y < 12;
+                if (!insideClip) { Assert.Equal(Pixel(behind, x, y), Pixel(actual, x, y)); }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8_388_608, 0, 1)]
+    [InlineData(0, 8_388_608, 1)]
+    [InlineData(8_388_608, 8_388_608, 1)]
+    [InlineData(0, 8_388_608, 100)]
+    [InlineData(8_388_608.375, 8_388_608.125, 100)]
+    [InlineData(100_000_000, 9_999_994, 1)]
+    public void CircleOutlineRetainsPrecisionAtLargeScrolledCoordinates(double x, double y, double scale)
+    {
+        var local = new StrokeEllipse(new(2, 2, 3, 3), Red, 0.75);
+        var distant = new StrokeEllipse(new(x + 2, y + 2, 3, 3), Red, 0.75);
+        using var fonts = new PaintFontRegistry();
+        var expected = CpuRasterizer.Render(new(8, 8, [local]), fonts, scale: scale, cancellationToken: Cancellation);
+        var actual = CpuRasterizer.Render(new(8, 8, [distant]), fonts, scale: scale,
+            scrollX: x, scrollY: y, cancellationToken: Cancellation);
+        Assert.Equal(expected.Pixels.ToArray(), actual.Pixels.ToArray());
+
+        var offscreen = CpuRasterizer.Render(new(8, 8, [distant]), fonts, cancellationToken: Cancellation);
+        Assert.All(offscreen.Pixels.ToArray(), value => Assert.Equal(255, value));
+    }
+
+    [Fact]
+    public void CircleOutlineRetainsPrecisionInsideALargeNestedScrollOffset()
+    {
+        const double offset = 8_388_608;
+        var clip = new LayoutRect(0, 0, 8, 8);
+        var marker = new StrokeEllipse(new(2, 2, 3, 3), Red, 0.75);
+        using var fonts = new PaintFontRegistry();
+        var expected = CpuRasterizer.Render(new(8, 8, [new PushScrollClip(clip, 0), marker, new PopScrollClip()]),
+            fonts, scale: 100, cancellationToken: Cancellation);
+        var actual = CpuRasterizer.Render(new(8, 8,
+            [new PushScrollClip(clip, offset), marker with { Bounds = marker.Bounds with { Y = offset + 2 } }, new PopScrollClip()]),
+            fonts, scale: 100, cancellationToken: Cancellation);
+        Assert.Equal(expected.Pixels.ToArray(), actual.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void CircleOutlinesRestoreOffsetsWhenNestedScrollClipsEnd()
+    {
+        const double outerOffset = 3_000_000;
+        const double innerOffset = 5_388_608;
+        var clip = new LayoutRect(0, 0, 8, 8);
+        var red = new StrokeEllipse(new(1, 1, 2, 2), Red, 0.5);
+        var blue = new StrokeEllipse(new(3, 3, 2, 2), Blue, 0.5);
+        var green = new StrokeEllipse(new(5, 5, 2, 2), new(0, 128, 0), 0.5);
+        using var fonts = new PaintFontRegistry();
+        var expected = CpuRasterizer.Render(new(8, 8,
+            [new PushScrollClip(clip, 0), new PushScrollClip(clip, 0), red, new PopScrollClip(), blue,
+                new PopScrollClip(), green]), fonts, scale: 100, cancellationToken: Cancellation);
+        var actual = CpuRasterizer.Render(new(8, 8,
+            [new PushScrollClip(clip, outerOffset),
+                new PushScrollClip(clip with { Y = outerOffset }, innerOffset),
+                red with { Bounds = red.Bounds with { Y = outerOffset + innerOffset + 1 } },
+                new PopScrollClip(), blue with { Bounds = blue.Bounds with { Y = outerOffset + 3 } },
+                new PopScrollClip(), green]), fonts, scale: 100, cancellationToken: Cancellation);
+        Assert.Equal(expected.Pixels.ToArray(), actual.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void CircleOutlineIsClippedToItsFractionalDeclaredBounds()
+    {
+        var bounds = new LayoutRect(2.25, 2.25, 10.5, 10.5);
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(new(16, 16, [new StrokeEllipse(bounds, Red, 2)]), fonts,
+            scale: 2, cancellationToken: Cancellation);
+        for (var y = 0; y < 32; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                if (x + 1 <= bounds.X * 2 || x >= (bounds.X + bounds.Width) * 2
+                    || y + 1 <= bounds.Y * 2 || y >= (bounds.Y + bounds.Height) * 2)
+                {
+                    Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, x, y));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void OutlineCommandAlsoKeepsANonCircularEllipseHollow()
+    {
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(new(24, 16,
+            [new StrokeEllipse(new(3, 4, 16, 8), Red, 1.5)]), fonts, scale: 2, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 22, 16));
+        Assert.True(Pixel(frame, 22, 9).G < 255);
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 5, 16));
+    }
+
+    [Fact]
+    public void CircleOutlineRestoresFillStateForLaterRectanglesEllipsesAndGlyphs()
+    {
+        using var font = new TextFont(FontPath);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        var glyph = Assert.Single(font.Shape("M", 20, Cancellation).Glyphs);
+        PaintCommand[] later =
+        [
+            new FillRectangle(new(20, 1, 8, 8), Blue),
+            new FillEllipse(new(20, 15, 8, 8), Blue),
+            new DrawGlyphRun(font.Identity, 20, new(0, 0, 0),
+                [new((ushort)glyph.GlyphId, 35 + glyph.OffsetX, 25 + glyph.OffsetY)])
+        ];
+        var reference = CpuRasterizer.Render(new(80, 40, later), fonts, cancellationToken: Cancellation);
+        var actual = CpuRasterizer.Render(new(80, 40,
+            [new StrokeEllipse(new(1, 1, 16, 16), Red, 4), .. later]), fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(actual, 24, 5));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(actual, 24, 19));
+        Assert.Contains(Enumerable.Range(0, 40).SelectMany(y => Enumerable.Range(35, 40)
+            .Select(x => Pixel(reference, x, y))), pixel => pixel.R < 255);
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 20; x < 80; x++) { Assert.Equal(Pixel(reference, x, y), Pixel(actual, x, y)); }
+        }
+    }
+
+    [Fact]
+    public void CircleOutlinePreflightsGeometryAndStrokeBeforeDrawing()
+    {
+        using var fonts = new PaintFontRegistry();
+        void Render(StrokeEllipse marker) => CpuRasterizer.Render(
+            new(10, 10, [new FillRectangle(new(0, 0, 1, 1), Blue), marker]),
+            fonts, cancellationToken: Cancellation);
+        Assert.Throws<PaintLimitException>(() => Render(new(new(double.NaN, 0, 4, 4), Red, 1)));
+        Assert.Throws<PaintLimitException>(() => Render(new(new(0, 0, double.PositiveInfinity, 4), Red, 1)));
+        Assert.Throws<PaintLimitException>(() => Render(new(new(1_000_000_001, 0, 4, 4), Red, 1)));
+        Assert.Throws<PaintLimitException>(() => Render(new(new(0, 10_000_000, 4, 4), Red, 1)));
+        Assert.Throws<ArgumentException>(() => Render(new(new(0, 0, -1, 4), Red, 1)));
+        Assert.Throws<ArgumentException>(() => Render(new(new(0, 0, 0, 4), Red, 1)));
+        Assert.Throws<ArgumentException>(() => Render(new(new(0, 0, 4, -1), Red, 1)));
+        Assert.Throws<ArgumentException>(() => Render(new(new(0, 0, 4, 0), Red, 1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Render(new(new(0, 0, 4, 4), Red, 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Render(new(new(0, 0, 4, 4), Red, -1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Render(new(new(0, 0, 4, 4), Red, double.NaN)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Render(new(new(0, 0, 4, 4), Red, double.PositiveInfinity)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Render(new(new(0, 0, 4, 4), Red, 2)));
+        Assert.Throws<PaintLimitException>(() => Render(new(new(0, 0, 4, 4), Red, 1.999999999)));
+        Assert.Throws<PaintLimitException>(() => Render(new(new(0, 0, 4, 4), Red, double.Epsilon)));
+        Assert.Throws<ArgumentNullException>(() => Render(new(new(0, 0, 4, 4), null!, 1)));
+    }
+
+    [Fact]
+    public void CircleOutlineRejectsStrokeUnderflowAfterDeviceScaling()
+    {
+        using var fonts = new PaintFontRegistry();
+        var marker = new StrokeEllipse(new(0, 0, 1e-8, 1e-8), Red, 2.5e-9);
+        Assert.Throws<PaintLimitException>(() =>
+            CpuRasterizer.Render(new(10, 10, [marker]), fonts, scale: 1e-40, cancellationToken: Cancellation));
+        var supported = CpuRasterizer.Render(new(10, 10, [marker]), fonts,
+            scale: 1e-20, cancellationToken: Cancellation);
+        Assert.Equal(new PixelSize(1, 1), supported.Size);
     }
 
     [Fact]

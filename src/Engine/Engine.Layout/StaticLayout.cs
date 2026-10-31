@@ -36,6 +36,10 @@ public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRec
     /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.
     /// The finite LTR subset uses a 0.3em disc and a 0.5em gap before the content edge.</remarks>
     public LayoutRect? DiscMarker { get; init; }
+    /// <summary>Outside hollow circle-marker bounds, separate from selectable document text.</summary>
+    /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.
+    /// The finite LTR subset uses a 0.3em diameter and a 0.5em gap before the content edge.</remarks>
+    public LayoutRect? CircleMarker { get; init; }
     /// <summary>Outside square-marker bounds, separate from selectable document text.</summary>
     /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.
     /// The finite LTR subset uses a 0.3em square and a 0.5em gap before the content edge.</remarks>
@@ -275,6 +279,7 @@ public static partial class StaticLayout
             }
             Flush();
             LayoutRect? discMarker = null;
+            LayoutRect? circleMarker = null;
             LayoutRect? squareMarker = null;
             LayoutTextMarker? textMarker = null;
             if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: not "none" } markerType)
@@ -287,10 +292,11 @@ public static partial class StaticLayout
                 var (ascent, descent) = Extents(run, style);
                 var baseline = FirstBaseline(flow) ?? contentY + ascent;
                 if (flow.Count == 0) { cursor += ascent + descent; }
-                if (markerType.Value is "disc" or "square")
+                if (markerType.Value is "disc" or "circle" or "square")
                 {
                     var bounds = Rect(contentX - 0.8 * size, baseline - 0.5 * size, 0.3 * size, 0.3 * size);
                     if (markerType.Value == "disc") { discMarker = bounds; }
+                    else if (markerType.Value == "circle") { circleMarker = bounds; }
                     else { squareMarker = bounds; }
                 }
                 else if (markerType.Value == "decimal")
@@ -310,6 +316,7 @@ public static partial class StaticLayout
             {
                 Flow = flow.AsReadOnly(),
                 DiscMarker = discMarker,
+                CircleMarker = circleMarker,
                 SquareMarker = squareMarker,
                 TextMarker = textMarker
             };

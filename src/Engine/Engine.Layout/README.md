@@ -9,11 +9,13 @@ Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
 Default unordered lists now use block list-item boxes with separate outside
 disc-marker geometry; nested/empty items and inherited marker suppression are
-bounded. The CSS `square` marker uses the same outside geometry as a disc.
+bounded. The CSS `circle` and `square` markers use the same outside geometry
+as a disc; circles are hollow and do not change nested UA defaults.
 Ordered lists add shaped decimal markers with independent `start`,
 `reversed` and `li value` numbering; scans and output share existing budgets.
-Inside markers, other marker styles and arbitrary
-list-item elements remain unsupported. See the guide for exact geometry.
+Inside markers, legacy `type` attributes other than `ol type=1`, other marker
+styles and arbitrary list-item elements remain unsupported. See the guide for
+exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
 `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,

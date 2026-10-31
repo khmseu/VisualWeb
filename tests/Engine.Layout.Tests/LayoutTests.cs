@@ -109,6 +109,67 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void CircleMarkersKeepOutsideGeometryForWrappedNestedAndEmptyItems()
+    {
+        var root = UnorderedList("<ul id=parent><li id=a>a b</li><li id=b></li></ul>",
+            "#parent{list-style:circle}", width: 50).Root!;
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+        Assert.Equal(new LayoutRect(40, 0, 10, 20), first.Content);
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), first.CircleMarker);
+        Assert.Equal(new LayoutRect(32, 23, 3, 3), second.CircleMarker);
+        Assert.Null(first.DiscMarker);
+        Assert.Null(first.SquareMarker);
+        Assert.Null(first.TextMarker);
+        Assert.Equal(2, first.Lines.Count);
+        Assert.Equal("a b", first.Lines[0].Fragments[0].Source.Data);
+        Assert.Equal(10, second.Content.Height);
+
+        const string nestedHtml = "<ul id=outer-list><li id=outer><ul id=inner-list><li id=inner></li></ul></li></ul>";
+        var nestedDefault = UnorderedList(nestedHtml, "#outer-list{list-style:circle}").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nestedDefault, "outer").CircleMarker);
+        Assert.Null(Find(nestedDefault, "inner").CircleMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nestedDefault, "inner").DiscMarker);
+        var nestedCircle = UnorderedList(nestedHtml, "#outer-list,#inner-list{list-style-type:circle}").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nestedCircle, "outer").CircleMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nestedCircle, "inner").CircleMarker);
+        Assert.Equal(10, Find(nestedCircle, "inner").Content.Height);
+    }
+
+    [Fact]
+    public void CircleSuppressionAndHiddenItemsPreserveOrderedListNumbering()
+    {
+        var root = UnorderedList(
+            "<ol start=5><li id=a></li><li id=b></li><li id=hidden></li><li id=block></li><li id=c></li></ol>",
+            "#a{list-style:circle}#b{list-style:none}#hidden{display:none}#block{display:block;list-style:circle}").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(root, "a").CircleMarker);
+        Assert.Null(Find(root, "a").TextMarker);
+        Assert.Null(Find(root, "b").CircleMarker);
+        Assert.Null(Find(root, "b").TextMarker);
+        Assert.Null(TryFind(root, "hidden"));
+        Assert.Null(Find(root, "block").CircleMarker);
+        Assert.Null(Find(root, "block").TextMarker);
+        Assert.Null(Find(root, "c").CircleMarker);
+        Assert.Equal("7.", Find(root, "c").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void CircleMarkersShareShapingBudgetsAndCancellation()
+    {
+        const string html = "<ul><li></li><li></li></ul>";
+        const string css = "ul{list-style:circle}";
+        Assert.NotNull(UnorderedList(html, css, options: new() { MaxShapingCalls = 2 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList(html, css, options: new() { MaxShapingCalls = 1 }));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var doc = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(doc, [new(css)], cancellationToken: Cancellation);
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(doc, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
+    [Fact]
     public void NestedEmptyAndWrappedUnorderedItemsRetainOneMarkerEach()
     {
         var nested = UnorderedList("<ul><li id=outer><ul><li id=inner></li></ul></li></ul>").Root!;
@@ -133,10 +194,24 @@ public sealed class LayoutTests
     [Theory]
     [InlineData("<ol type=a><li>x</li></ol>")]
     [InlineData("<ul type=square><li>x</li></ul>")]
+    [InlineData("<ul type=circle><li>x</li></ul>")]
+    [InlineData("<ol type=circle><li>x</li></ol>")]
     [InlineData("<ul><li type=circle>x</li></ul>")]
     [InlineData("<li>x</li>")]
     public void UnimplementedListKindsRemainExplicitFailures(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
+
+    [Theory]
+    [InlineData("<ul type=circle><li>x</li></ul>")]
+    [InlineData("<ol type=circle><li>x</li></ol>")]
+    [InlineData("<ul><li type=circle>x</li></ul>")]
+    public void CircleCssDoesNotEnableLegacyHtmlTypeAttributes(string html) =>
+        Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, "ul,ol,li{list-style:circle}"));
+
+    [Fact]
+    public void CircleCssDoesNotEnableArbitraryListItemElements() =>
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<ul><div>x</div></ul>", "div{display:list-item;list-style:circle}"));
 
     [Fact]
     public void EmptyUnorderedListMarkersChargeShapingBudgetsAndHonorCancellation()

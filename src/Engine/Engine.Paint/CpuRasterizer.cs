@@ -128,6 +128,8 @@ public static class CpuRasterizer
         var viewport = new SKRect(0, 0, Float(list.Width), Float(list.Height));
         long glyphCount = 0;
         var scrollClipDepth = 0;
+        var scrollOffsets = new Stack<double>();
+        var activeScrollY = scrollY;
         if (list.Commands.Count > limits.MaxCommands) { throw new PaintLimitException("Raster command limit exceeded."); }
         // Validate every command/resource before allocating a framebuffer or drawing partial output.
         foreach (var command in list.Commands)
@@ -143,16 +145,27 @@ public static class CpuRasterizer
                     ArgumentNullException.ThrowIfNull(ellipse.Color);
                     Rect(ellipse.Bounds);
                     break;
+                case StrokeEllipse outline:
+                    StrokeRect(outline);
+                    RelativeCoordinate(outline.Bounds.X - scrollX);
+                    RelativeCoordinate(outline.Bounds.Y - activeScrollY);
+                    var scaledStroke = (float)((double)deviceScale * Float(outline.StrokeWidth));
+                    if (!float.IsFinite(scaledStroke) || scaledStroke <= 0)
+                    { throw new PaintLimitException("Outlined ellipse stroke is outside Skia's scaled numeric range."); }
+                    break;
                 case PushScrollClip push:
                     Rect(push.Clip);
                     Vertical(push.OffsetY);
                     if (++scrollClipDepth > limits.MaxDepth)
                     { throw new PaintLimitException("Raster scroll-clip depth limit exceeded."); }
+                    scrollOffsets.Push(activeScrollY);
+                    activeScrollY += push.OffsetY;
                     break;
                 case PopScrollClip:
                     if (scrollClipDepth == 0)
                     { throw new UnsupportedPaintException("Scroll-clip stack underflow."); }
                     scrollClipDepth--;
+                    activeScrollY = scrollOffsets.Pop();
                     break;
                 case DrawGlyphRun run:
                     var typeface = fonts.Resolve(run.FontIdentity);
@@ -180,6 +193,7 @@ public static class CpuRasterizer
         canvas.ClipRect(viewport);
         canvas.Translate(-Float(scrollX), -Float(scrollY));
         scrollClipDepth = 0;
+        activeScrollY = scrollY;
         using var paint = new SKPaint { IsAntialias = false, Style = SKPaintStyle.Fill };
         foreach (var command in list.Commands)
         {
@@ -195,6 +209,32 @@ public static class CpuRasterizer
                 paint.Color = Color(ellipse.Color);
                 paint.IsAntialias = true;
                 canvas.DrawOval(Rect(ellipse.Bounds), paint);
+            }
+            else if (command is StrokeEllipse outline)
+            {
+                var centerline = StrokeRect(outline);
+                canvas.Save();
+                try
+                {
+                    // Rebase before conversion to native floats to preserve small outlines on long, scrolled pages.
+                    canvas.ResetMatrix();
+                    canvas.Scale(deviceScale);
+                    canvas.Translate(RelativeCoordinate(outline.Bounds.X - scrollX),
+                        RelativeCoordinate(outline.Bounds.Y - activeScrollY));
+                    canvas.ClipRect(Rect(new(0, 0, outline.Bounds.Width, outline.Bounds.Height)),
+                        SKClipOperation.Intersect, antialias: true);
+                    paint.Color = Color(outline.Color);
+                    paint.IsAntialias = true;
+                    paint.Style = SKPaintStyle.Stroke;
+                    paint.StrokeWidth = Float(outline.StrokeWidth);
+                    canvas.DrawOval(centerline, paint);
+                }
+                finally
+                {
+                    paint.Style = SKPaintStyle.Fill;
+                    paint.StrokeWidth = 0;
+                    canvas.Restore();
+                }
             }
             else if (command is DrawGlyphRun run && run.Glyphs.Count > 0)
             {
@@ -219,12 +259,15 @@ public static class CpuRasterizer
                 canvas.Save();
                 canvas.ClipRect(Rect(push.Clip));
                 canvas.Translate(0, -Float(push.OffsetY));
+                scrollOffsets.Push(activeScrollY);
+                activeScrollY += push.OffsetY;
             }
             else if (command is PopScrollClip)
             {
                 if (scrollClipDepth == 0) { throw new UnsupportedPaintException("Scroll-clip stack underflow."); }
                 canvas.Restore();
                 scrollClipDepth--;
+                activeScrollY = scrollOffsets.Pop();
             }
         }
         if (scrollClipDepth != 0) { throw new UnsupportedPaintException("Scroll-clip stack is unbalanced."); }
@@ -249,11 +292,38 @@ public static class CpuRasterizer
         if (value != 0 && result == 0) { throw new PaintLimitException("Paint coordinate underflows Skia's numeric range."); }
         return result;
     }
+    private static float RelativeCoordinate(double value)
+    {
+        var result = (float)value;
+        if (!double.IsFinite(value) || !float.IsFinite(result) || (value != 0 && result == 0))
+        { throw new PaintLimitException("Relative paint coordinate exceeds Skia's numeric range."); }
+        return result;
+    }
     private static SKRect Rect(LayoutRect rect)
     {
         if (rect.Width < 0 || rect.Height < 0) { throw new ArgumentException("Paint rectangle sizes cannot be negative."); }
         Vertical(rect.Y); Vertical(rect.Y + rect.Height);
         return new(Float(rect.X), Float(rect.Y), Float(rect.X + rect.Width), Float(rect.Y + rect.Height));
+    }
+    private static SKRect StrokeRect(StrokeEllipse ellipse)
+    {
+        ArgumentNullException.ThrowIfNull(ellipse.Color);
+        Rect(ellipse.Bounds);
+        if (ellipse.Bounds.Width <= 0 || ellipse.Bounds.Height <= 0)
+        { throw new ArgumentException("Outlined ellipse bounds must be positive."); }
+        var bounds = Rect(new(0, 0, ellipse.Bounds.Width, ellipse.Bounds.Height));
+        var stroke = ellipse.StrokeWidth;
+        if (!double.IsFinite(stroke) || stroke <= 0 || stroke >= Math.Min(ellipse.Bounds.Width, ellipse.Bounds.Height) / 2)
+        { throw new ArgumentOutOfRangeException(nameof(ellipse), "Outlined ellipse stroke must leave a positive interior."); }
+        var nativeStroke = Float(stroke);
+        var half = stroke / 2;
+        var centerline = Rect(new(half, half,
+            ellipse.Bounds.Width - stroke, ellipse.Bounds.Height - stroke));
+        if (centerline.Left <= bounds.Left || centerline.Right >= bounds.Right
+            || centerline.Top <= bounds.Top || centerline.Bottom >= bounds.Bottom
+            || centerline.Width <= nativeStroke || centerline.Height <= nativeStroke)
+        { throw new PaintLimitException("Outlined ellipse geometry exceeds Skia's numeric precision."); }
+        return centerline;
     }
     private static void Vertical(double value)
     {
