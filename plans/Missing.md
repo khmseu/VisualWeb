@@ -434,6 +434,17 @@ shell wiring, confined/scripted workers and retained resize. Build and all
 14,408 solution tests pass, as do the Linux denial smoke and confined CLI
 four-face smoke. Formatting retains only the three established baseline findings.
 
+HTML user-agent phrasing defaults now apply `font-size:larger` to `big`,
+`font-size:smaller` to `small`, italic style to `dfn`, and the monospace family
+to `tt`. Relative sizes reuse the existing parent-relative computation and
+ordinary cascade. Shaping still requires explicitly registered matching faces,
+including italic for `dfn`; there is no fallback or synthesis. Other HTML
+phrasing rules and cross-style unbroken-word layout remain unsupported. See
+the [phrasing font scope](../docs/css.md#cascade-and-computed-values).
+Its 27 new CSS, layout, native-content and local/process browser cases pass;
+the solution build, all 15,780 solution tests, solution formatting, local and
+confined V8 smokes, and Linux confinement smoke also pass locally.
+
 Standard named colors now cover all 148 opaque CSS Color 4 names, rather than
 only the 16 basic colors plus orange/rebeccapurple. Common ordinary stylesheet
 values such as lightgray, whitesmoke and darkslategray no longer reject a page.

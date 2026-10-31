@@ -1,4 +1,5 @@
 using VisualWeb.Engine.Css;
+using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Paint;
 using VisualWeb.Engine.Text;
 using Xunit;
@@ -7,6 +8,92 @@ namespace VisualWeb.Engine.Content.Tests;
 
 public sealed class ContentTests
 {
+    [Theory]
+    [InlineData("big", "font-size:larger", "regular", 36)]
+    [InlineData("small", "font-size:smaller", "regular", 25)]
+    [InlineData("dfn", "font-style:italic", "italic", 30)]
+    [InlineData("tt", "font-family:monospace", "monospace", 30)]
+    public void PhrasingDefaultsMatchExplicitCssNativePixelsAndConfiguredFaces(
+        string tag, string declaration, string expectedFace, double expectedSize)
+    {
+        using var regular = new TextFont(FontPath);
+        using var italic = new TextFont(Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-Italic.ttf"));
+        // Deliberately register distinct bytes for the generic alias; no monospace font is inferred.
+        using var monospace = new TextFont(Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-Bold.ttf"));
+        var text = new FontSet();
+        text.Register("serif", regular);
+        text.Register("serif", italic, style: "italic");
+        text.Register("monospace", monospace);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(regular);
+        fonts.Register(italic);
+        fonts.Register(monospace);
+        CssStyleSource[] styles = [new("*{margin:0}body{font-size:30px;line-height:1}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><p><" + tag + ">Sample</" + tag + "></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render("<!doctype html><p><span style='" + declaration + "'>Sample</span></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+        var plain = OfflinePageRenderer.Render("<!doctype html><p><span>Sample</span></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Empty(expected.Styles.Diagnostics);
+        var run = Assert.Single(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        var identity = expectedFace switch
+        {
+            "italic" => italic.Identity,
+            "monospace" => monospace.Identity,
+            _ => regular.Identity
+        };
+        Assert.Equal(identity, run.FontIdentity);
+        Assert.Equal(expectedSize, run.FontSize, 9);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.NotEqual(plain.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void NestedPhrasingRelativeSizesMatchExplicitCssNativePixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet();
+        text.Register("serif", font);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        CssStyleSource[] styles = [new("*{margin:0}body{font-size:30px;line-height:1}")];
+        var actual = OfflinePageRenderer.Render(
+            "<!doctype html><p><big>A <small>B </small></big><small>C <big>D</big></small></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(
+            "<!doctype html><p><span style='font-size:larger'>A <span style='font-size:smaller'>B </span></span>"
+            + "<span style='font-size:smaller'>C <span style='font-size:larger'>D</span></span></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(new double[] { 25, 30, 36 },
+            actual.DisplayList.Commands.OfType<DrawGlyphRun>().Select(run => run.FontSize).Distinct().Order());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Throws<UnsupportedLayoutException>(() => OfflinePageRenderer.Render(
+            "<!doctype html><p><big>A<small>B</small></big></p>", styles, text, fonts, 240, 90,
+            cancellationToken: Cancellation));
+    }
+
+    [Fact]
+    public void DefinitionDefaultFailsExplicitlyWhenTheItalicFaceIsNotConfigured()
+    {
+        using var regular = new TextFont(FontPath);
+        var text = new FontSet();
+        text.Register("serif", regular);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(regular);
+        CssStyleSource[] styles = [new("*{margin:0}body{font-size:30px;line-height:1}")];
+
+        Assert.Throws<UnsupportedTextException>(() => OfflinePageRenderer.Render("<!doctype html><dfn>Sample</dfn>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation));
+        var overridden = OfflinePageRenderer.Render("<!doctype html><dfn>Sample</dfn>",
+            [.. styles, new("dfn{font-style:normal}")], text, fonts, 240, 90, cancellationToken: Cancellation);
+        Assert.Equal(regular.Identity, Assert.Single(overridden.DisplayList.Commands.OfType<DrawGlyphRun>()).FontIdentity);
+    }
+
     [Fact]
     public void MenuListMatchesEquivalentUnorderedListNativePixels()
     {

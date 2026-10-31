@@ -72,9 +72,11 @@ public static class CssStyleEngine
         h5 { font-size: .83em; margin-top: 1.67em; margin-bottom: 1.67em; font-weight: bold }
         h6 { font-size: .67em; margin-top: 2.33em; margin-bottom: 2.33em; font-weight: bold }
         b, strong { font-weight: bolder }
-        i, em, cite, var { font-style: italic }
+        i, em, cite, dfn, var { font-style: italic }
         pre { white-space: pre; font-family: monospace }
-        code, kbd, samp { font-family: monospace }
+        code, kbd, samp, tt { font-family: monospace }
+        big { font-size: larger }
+        small { font-size: smaller }
         """;
 
     /// <summary>Finds a supported HTML list marker hint without accepting unsupported list types.</summary>

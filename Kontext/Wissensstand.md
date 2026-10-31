@@ -18,7 +18,13 @@
   mangels Backtracking explizit
   ([KP-107](./Kontextprotokoll.md#kp-107---zahlen-und-datumsangaben-im-textlayout)).
   Build, Formatpruefung, lokaler V8-Smoke und alle 15.753 Solution-Tests
-  bestehen, darunter 350 netto neue Faelle. Commit, Push und CI stehen aus.
+  bestehen, darunter 350 netto neue Faelle. Commit `e1c4ae2` ist gepusht;
+  Linux, Windows und CodeQL bestanden, einschliesslich x64 und arm64. Pass 3
+  bearbeitet fehlende HTML-UA-Schriftdefaults fuer `small`, `big`, `dfn` und
+  `tt`. Build, Formatpruefung, lokale und sandboxed V8-Smokes, Linux-
+  Sandbox-Smoke und alle 15.780 Solution-Tests bestehen, darunter 27 neue
+  Faelle; Commit, Push und CI stehen aus
+  ([KP-108](./Kontextprotokoll.md#kp-108---html-schriftdefaults)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).

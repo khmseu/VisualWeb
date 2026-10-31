@@ -1,5 +1,16 @@
 # Tests
 
+Phrasing-font UA regressions cover `big`/`small` relative and nested sizes,
+`dfn` italic and `tt` monospace alongside the existing selector groups, including
+inheritance, author/user/inline/important cascade, `revert`, disabled UA styles,
+cancellation and finite-value limits. Deterministic and native layout tests
+check wrapping, metrics and baselines; offline native pixels are compared with
+explicit CSS and exact configured face identities. The generic monospace test
+alias deliberately uses distinct registered fixture bytes, not a claim that the
+fixture itself is monospaced. Missing italic faces and unsupported cross-style
+unbroken words still fail explicitly. Local and process browser tests check
+links and visible selection across retained reflow without another fetch.
+
 List marker regressions cover finite CSS circle longhand/shorthand cascade,
 inheritance and invalid-value atomicity; wrapped, nested and empty layout with
 existing numbering and limits; single-composite native outline pixels over

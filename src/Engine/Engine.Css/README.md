@@ -39,6 +39,13 @@ line-height and family using the existing longhand parsers. Size/family are
 mandatory; optional style/weight and slash line-height are supported.
 Non-normal variants/widths, oblique angles and system-font keywords remain
 diagnostics. This does not add font fallback or change native face selection.
+The [HTML phrasing-content UA rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
+(ID `html`) give `big`/`small` the existing `larger`/`smaller` relative sizes,
+`dfn` the existing italic default and `tt` the existing monospace default.
+They use the parent's computed size and normal inheritance/cascade, and are
+absent when the UA sheet is disabled. Text shaping still requires exact
+configured faces; no fallback, synthesis, additional phrasing rules or
+layout/text support is implied.
 `text-decoration` and `text-decoration-line` accept only `none` or the supported
 CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`), with a
 non-inherited line value and the normal cascade. `revert-layer` remains

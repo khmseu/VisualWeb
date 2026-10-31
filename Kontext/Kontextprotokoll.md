@@ -3723,4 +3723,38 @@ Reviewkorrektur rot ausgefuehrt. Danach bestehen die drei betroffenen Suites
 mit 734 Layout-, 54 Content- und 1.252 Browserfaellen sowie alle 15.753
 serialisierten Solution-Tests. Der Solution-Build, die Formatpruefung und
 der lokale V8-Smoke bestehen. Das sind 350 netto neue Solution-Faelle.
-Commit, Push und CI stehen noch aus.
+
+**Commit und CI:** `e1c4ae2d46d090ed618a2c0522c706179f77a409` wurde auf
+`origin/main` gepusht. Der Commit-Hook pruefte elf Dateien ohne Findings.
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/41238759855),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41238759827)
+und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41238759524)
+bestanden; Linux und Windows umfassten x64 und arm64. Die CI meldete
+Node-20-Aktionsdeprecation, keinen Fehler.
+
+### KP-108 - HTML-Schriftdefaults
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle: aktueller Zehn-Passen-Auftrag,
+  [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [CSS-UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs) und lokaler
+  HTML-Cache, Abschnitt `#phrasing-content-3`.
+- Bezug: KP-107.
+
+**Auswahl (Ableitung):** Der Tracker priorisiert die lesbare Darstellung
+einfacher Dokumente und deren Schriftbehandlung. Die vorhandene begrenzte
+UA-Stylesheet behandelt `small`, `big`, `dfn` und `tt` nicht entsprechend
+den HTML-Schriftdefaults. Das vorhandene CSS unterstuetzt bereits relative
+Schriftgroessen, kursiven Stil und die Monospace-Familie. Ein begrenztes
+Inkrement soll diese Defaults ergaenzen, ohne die explizite Auswahl wirklich
+registrierter Schriftdateien oder andere Layoutgrenzen zu veraendern.
+
+**Umsetzung und lokale Validierung:** Die vier UA-Regeln verwenden vorhandene
+CSS-Werte und Fontauswahl. Vor der Umsetzung scheiterten neue zielgerichtete
+CSS-, Layout-, Content- und Browsertests; danach bestehen 964 CSS-, 736 Layout-,
+60 Content- und 1.256 Browserfaelle. Tests decken unter anderem verschachtelte
+Groessen, Cascade, konkrete Fontidentitaeten, native Pixel, fehlende
+Kursivschrift und erhaltene Links/Auswahl bei Resize in beiden Renderermodi ab.
+Solution-Build, Formatpruefung, lokale und sandboxed V8-Smokes sowie der Linux-
+Sandbox-Smoke bestanden. Alle 15.780 serialisierten Solution-Tests bestehen;
+das sind 27 neue Faelle. Commit, Push und CI stehen noch aus.

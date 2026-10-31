@@ -291,9 +291,21 @@ sRGB/alpha channels, not high-precision color-management values. The minimal
 UA sheet handles ordinary blocks/head metadata, body margin, headings,
 paragraphs/lists, emphasis and monospace text, plus `form { display: block }`
 and `input[type=hidden i] { display: none !important }`; it is **not** the
-complete HTML rendering stylesheet (controls keep `display: inline` rather
-than inline-block, and have no UA borders/padding/fonts). Broader marker types,
+complete HTML rendering stylesheet (controls have limited inline-block defaults
+and no UA borders/padding/fonts). Broader marker types,
 decoration and replaced-element sizing are not yet implemented.
+
+The [HTML phrasing-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
+(local ID `html`) set `big` to `font-size:larger`, `small` to
+`font-size:smaller`, `dfn` to italic alongside `cite`/`em`/`i`/`var`, and
+`tt` to monospace alongside `code`/`kbd`/`samp`. Relative sizes multiply or
+divide the parent's computed size by 1.2, including when nested; the resulting
+values inherit normally. User, author, inline and important declarations retain
+the normal cascade, and disabling the UA sheet disables these defaults.
+These rules do not add font fallback or synthesis: shaping still needs an exact
+configured family/weight/style face, including an italic face for default
+`dfn`. Other HTML phrasing rules, unsupported text-node/style boundaries inside
+unbroken words, and the existing text/layout exclusions remain unchanged.
 
 Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
 layers, conditional rules (including media/supports/container), imports/font-face,

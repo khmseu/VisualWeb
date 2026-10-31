@@ -49,6 +49,89 @@ public sealed class LinkTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void PhrasingFontDefaultsRetainLinkSelectionAndReflowWithoutRefetch(bool process)
+    {
+        var italicPath = Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-Italic.ttf");
+        double narrowWidth;
+        using (var font = new TextFont(FontPath))
+        {
+            narrowWidth = Math.Ceiling(Math.Max(font.Shape("well-", 24, Cancellation).Width,
+                font.Shape("known", 24, Cancellation).Width));
+            Assert.True(font.Shape("well-known", 24, Cancellation).Width > narrowWidth);
+        }
+        var narrow = new PageViewport(narrowWidth, 200, 1);
+        var wide = new PageViewport(400, 200, 1);
+        const string prefix = "<!doctype html><style>*{margin:0}body{font-size:20px;line-height:1.5}</style><a href='/next'>";
+        var document = Document(prefix
+            + "<big>well-known</big><br><small>tiny</small><br><dfn>term</dfn><br><tt>type</tt></a>");
+        var equivalent = Document(prefix
+            + "<span style='font-size:larger'>well-known</span><br>"
+            + "<span style='font-size:smaller'>tiny</span><br>"
+            + "<span style='font-style:italic'>term</span><br>"
+            + "<span style='font-family:monospace'>type</span></a>");
+        BrowserPage expectedNarrow, expectedWide;
+        using (var reference = new StaticPageRenderer(FontPath, 100000, italicFontPath: italicPath))
+        {
+            expectedNarrow = reference.Render(equivalent, narrow, Cancellation);
+            reference.CommitDocument(equivalent.DocumentId);
+            expectedWide = reference.Render(equivalent, wide, Cancellation, reuseDocument: true);
+        }
+
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath, italicFontPath: italicPath)
+            : new StaticPageRenderer(FontPath, 100000, italicFontPath: italicPath));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        controller.Navigate(tab.Id, "https://example.com/final/index.html");
+        source.Requests[0].Completion.SetResult(document);
+        PumpUntil(() => controller.Page(tab.Id) is not null, narrow);
+
+        var first = controller.Page(tab.Id)!;
+        AssertEquivalent(expectedNarrow, first);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal("well-\nknown\ntiny\nterm\ntype", controller.SelectedText(tab.Id));
+        var firstLink = Assert.Single(first.LinkTargets);
+        Assert.True(firstLink.Rects.Select(rect => rect.Y).Distinct().Count() > 4);
+
+        controller.Resize(tab.Id, wide);
+        PumpUntil(() => !ReferenceEquals(first, controller.Page(tab.Id)), wide);
+        var resized = controller.Page(tab.Id)!;
+        AssertEquivalent(expectedWide, resized);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal("well-known\ntiny\nterm\ntype", controller.SelectedText(tab.Id));
+        Assert.Equal(4, Assert.Single(resized.LinkTargets).Rects.Select(rect => rect.Y).Distinct().Count());
+        Assert.Single(source.Requests);
+        Assert.Single(tab.History.Entries);
+
+        static void AssertEquivalent(BrowserPage expected, BrowserPage actual)
+        {
+            Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+            Assert.Equal(expected.TextTargets.ToArray(), actual.TextTargets.ToArray());
+            var expectedLink = Assert.Single(expected.LinkTargets);
+            var link = Assert.Single(actual.LinkTargets);
+            Assert.Equal("https://example.com/next", link.Url);
+            Assert.Equal(expectedLink.Rects.ToArray(), link.Rects.ToArray());
+            Assert.All(link.Rects, rect => Assert.True(link.Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)));
+        }
+
+        void PumpUntil(Func<bool> condition, PageViewport viewport)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => viewport);
+                if (condition()) { return; }
+                Thread.Sleep(5);
+            } while (DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task HyphenatedLinkSelectionAndGeometryReflowOnRetainedResize(bool process)
     {
         var narrowWidth = NarrowWidth();

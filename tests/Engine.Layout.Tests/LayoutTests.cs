@@ -2365,6 +2365,70 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void PhrasingRelativeSizesDriveWrappingMetricsAndSharedBaselines()
+    {
+        var document = HtmlParser.Parse("<!doctype html><p id=x><big>aa</big> <small>b c</small></p>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, [new("*{margin:0}body{font-size:30px;line-height:1}")],
+            cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 64, 200,
+            cancellationToken: Cancellation).Root!, "x");
+
+        Assert.Equal(2, box.Lines.Count);
+        var first = box.Lines[0];
+        var second = box.Lines[1];
+        var big = Assert.Single(first.Fragments, fragment => fragment.Run.Text == "aa").Run;
+        var small = Assert.Single(first.Fragments, fragment => fragment.Run.Text == "b").Run;
+        var wrapped = Assert.Single(second.Fragments, fragment => fragment.Run.Text == "c").Run;
+        Assert.Equal(36, big.FontSize);
+        Assert.Equal(36, big.Width);
+        Assert.Equal(25, small.FontSize);
+        Assert.Equal(12.5, small.Width);
+        Assert.Equal(25, wrapped.FontSize);
+        Assert.Equal(12.5, wrapped.Width);
+        Assert.Equal(36, first.Bounds.Height, 9);
+        Assert.Equal(28.8, first.Baseline, 9);
+        Assert.Equal(30, second.Bounds.Height, 9);
+        Assert.Equal(60, second.Baseline, 9);
+        Assert.All(first.Fragments, fragment => Assert.Equal(first.Baseline, fragment.Baseline, 9));
+        Assert.All(second.Fragments, fragment => Assert.Equal(second.Baseline, fragment.Baseline, 9));
+        Assert.Throws<LayoutLimitException>(() => StaticLayout.Layout(document, styles, new MetricsShaper(), 64, 200,
+            new() { MaxLines = 1 }, Cancellation));
+    }
+
+    [Fact]
+    public void PhrasingRelativeSizesUseNativeFaceMetricsWithoutChangingBaselineAlignment()
+    {
+        using var font = new TextFont(Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf"));
+        var fonts = new FontSet();
+        fonts.Register("serif", font);
+        var document = HtmlParser.Parse("<!doctype html><p id=x><big>office</big> <small>sample</small></p>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, [new("*{margin:0}body{font-size:30px;line-height:1}")],
+            cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+        var box = Find(StaticLayout.Layout(document, styles, fonts, 300, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var line = Assert.Single(box.Lines);
+        var big = Assert.Single(line.Fragments, fragment => fragment.Run.Text == "office");
+        var small = Assert.Single(line.Fragments, fragment => fragment.Run.Text == "sample");
+        var expectedBig = font.Shape("office", 36, Cancellation);
+        var expectedSmall = font.Shape("sample", 25, Cancellation);
+
+        Assert.Equal(font.Identity, big.Run.FontIdentity);
+        Assert.Equal(font.Identity, small.Run.FontIdentity);
+        Assert.Equal(expectedBig.FontSize, big.Run.FontSize);
+        Assert.Equal(expectedSmall.FontSize, small.Run.FontSize);
+        Assert.Equal(expectedBig.Width, big.Run.Width);
+        Assert.Equal(expectedSmall.Width, small.Run.Width);
+        Assert.Equal(expectedBig.Metrics, big.Run.Metrics);
+        Assert.Equal(expectedSmall.Metrics, small.Run.Metrics);
+        Assert.Equal(line.Baseline, big.Baseline);
+        Assert.Equal(line.Baseline, small.Baseline);
+    }
+
+    [Fact]
     public void InlineGroupsBeforeAndAfterBlocksCreateAnonymousLineGroups()
     {
         var box = Find(Layout("<div id=x>before<p>inside</p>after</div>").Root!, "x");

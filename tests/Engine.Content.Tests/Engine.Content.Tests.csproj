@@ -10,5 +10,7 @@
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <ProjectReference Include="../../src/Engine/Engine.Content/Engine.Content.csproj" />
     <None Include="../Engine.Text.Tests/Data/NotoSans.ttf" Link="Data/NotoSans.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Engine.Text.Tests/Data/NotoSans-Bold.ttf" Link="Data/NotoSans-Bold.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Engine.Text.Tests/Data/NotoSans-Italic.ttf" Link="Data/NotoSans-Italic.ttf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
