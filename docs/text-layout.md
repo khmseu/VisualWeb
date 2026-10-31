@@ -145,7 +145,12 @@ ordinals. The predefined `lower-roman` and `upper-roman` styles use additive
 Roman numerals for ordinals 1 through 3999 and decimal fallback outside that
 range; extended overlined forms illustrated in HTML for 4000 and above are
 not implemented. See the [predefined numeric styles](https://www.w3.org/TR/css-counter-styles-3/#simple-numeric)
-(local ID `css-counter-styles`). Each list has independent numbering;
+(local ID `css-counter-styles`). The `decimal-leading-zero` style pads
+nonnegative single-digit ordinals to two characters (`00.` through `09.`);
+negative signs count towards the width, so `-1.` is not padded. This follows
+the [padding descriptor](https://www.w3.org/TR/css-counter-styles-3/#counter-style-pad)
+(local ID `css-counter-styles`), not a new HTML `type` hint or general
+custom-counter support. Each list has independent numbering;
 `start`, boolean `reversed`, and `li value` use the HTML integer-parsing and
 [ordinal-value algorithms](https://html.spec.whatwg.org/multipage/grouping-content.html#the-li-element)
 (local ID `html`). Only rendered `display:list-item` children participate;

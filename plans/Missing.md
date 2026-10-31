@@ -529,14 +529,15 @@ The current engine implements finite static block/inline rendering. Missing esse
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
 - Default unordered lists now render with outside markers, including
   nested and empty items. UA items use `display:list-item`; inherited
-  `list-style-type:disc/circle/square/decimal/none`, the alphabetic and Roman
+  `list-style-type:disc/circle/square/decimal/decimal-leading-zero/none`, the alphabetic and Roman
   styles `lower-alpha`/`upper-alpha`/`lower-roman`/`upper-roman` and the
   `lower-latin`/`upper-latin` aliases, outside positioning and no marker image
   are supported. Graphical markers use bounded geometry and current-color
   ellipse or rectangle painting, not synthetic DOM text. Ordered lists use separately shaped
-  decimal, ASCII alphabetic or Roman markers with `start`, `reversed` and `li value`;
+  decimal (including zero-padded), ASCII alphabetic or Roman markers with `start`, `reversed` and `li value`;
   alphabetic ordinals wrap bijectively and fall back to decimal at zero or below.
   Roman styles use decimal fallback outside 1..3999, not extended overlines.
+  Zero-padded decimal counts a negative sign toward its two-character minimum.
   Nested lists have
   independent numbering, hidden/non-list-items do not count, and marker
   suppression preserves numbering. CSS square and hollow circle markers reuse
@@ -603,6 +604,11 @@ The current engine implements finite static block/inline rendering. Missing esse
   solution build, local V8 smoke and all 15,212 solution tests pass; solution
   formatting reports only the same three baseline findings, with all other
   changed C# files passing a targeted format check.
+  The zero-padded decimal increment adds 35 net regressions covering the entire
+  -10..10 boundary, cascade, layout, budgets, native pixels and retained browser
+  rendering. The solution build, local V8 smoke and all 15,247 solution tests
+  pass; solution formatting reports only the same three baseline findings, with
+  all other changed C# files passing a targeted format check.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common

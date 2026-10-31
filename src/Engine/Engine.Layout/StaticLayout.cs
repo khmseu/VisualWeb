@@ -296,7 +296,7 @@ public static partial class StaticLayout
             if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: not "none" } markerType)
             {
                 var size = ((CssLength)style["font-size"]).Value;
-                var isTextMarker = markerType.Value is "decimal" or "lower-alpha" or "upper-alpha"
+                var isTextMarker = markerType.Value is "decimal" or "decimal-leading-zero" or "lower-alpha" or "upper-alpha"
                     or "lower-latin" or "upper-latin" or "lower-roman" or "upper-roman";
                 var text = isTextMarker ? FormatListMarker(ordinals[element], markerType.Value) : "";
                 ChargeCharacters(text.Length);
@@ -352,9 +352,11 @@ public static partial class StaticLayout
         private static string FormatListMarker(long ordinal, string markerType)
         {
             var roman = markerType is "lower-roman" or "upper-roman";
-            if (markerType == "decimal" || ordinal <= 0 || roman && ordinal > 3999)
+            if (markerType is "decimal" or "decimal-leading-zero" || ordinal <= 0 || roman && ordinal > 3999)
             {
-                return ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".";
+                var number = ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                return markerType == "decimal-leading-zero" && ordinal is >= 0 and <= 9
+                    ? "0" + number + "." : number + ".";
             }
 
             if (roman)

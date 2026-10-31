@@ -171,7 +171,7 @@ five list types, including across intermediate elements. These physical
 properties are the horizontal-writing equivalent of HTML's block margins;
 they do not add vertical writing support.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
-only disc/circle/square/decimal/none, the alphabetic `lower-alpha`,
+only disc/circle/square/decimal/none, `decimal-leading-zero`, the alphabetic `lower-alpha`,
 `upper-alpha`, `lower-latin` and `upper-latin`, and the `lower-roman`/
 `upper-roman` markers, outside positioning and no marker image are supported.
 The two `latin` names are aliases for the
@@ -214,17 +214,17 @@ computed color (or inherited color for the color property itself).
 
 Supported longhands:
 
-| Group   | Properties and supported values                                                                                                                                                                      |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                       |
-| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                   |
-| Lists   | inherited `list-style-type`: disc/circle/square/decimal/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none       |
-| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                 |
-| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                              |
-| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                    |
-| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors                        |
-| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                   |
-| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
+| Group   | Properties and supported values                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                                      |
+| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                                  |
+| Lists   | inherited `list-style-type`: disc/circle/square/decimal/decimal-leading-zero/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none |
+| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                                |
+| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                                             |
+| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                                   |
+| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors                                       |
+| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                                  |
+| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces                |
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. The finite `background` shorthand accepts one supported

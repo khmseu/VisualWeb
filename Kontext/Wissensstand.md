@@ -54,8 +54,18 @@
   unabhaengige Stellenwerttabelle. Solution-Build, lokaler V8-Smoke und alle
   15.212 Solution-Tests bestehen; der Solutionformatter meldet nur die drei
   bekannten Baseline-Findings und die uebrigen geaenderten C#-Dateien bestehen
-  die gezielte Formatpruefung. Commit, Push und CI stehen noch aus
+  die gezielte Formatpruefung. Commit `69f0610` ist gepusht; Linux, Windows
+  und CodeQL bestanden, einschliesslich x64 und arm64
   ([KP-099](./Kontextprotokoll.md#kp-099---roemische-listenmarker)).
+  Pass 7 ergaenzt CSS-`decimal-leading-zero` fuer vorhandene Listenmarker;
+  die Mindestbreite zwei zaehlt ein Minuszeichen mit (`-1.`, aber `01.` und
+  `00.`). HTML-`type`-Hinweise bleiben unveraendert. Gezielt getestete CSS-,
+  Layout-, Paint-, native Pixel- und lokale/Prozess-Browserfaelle bestehen,
+  ebenso Solution-Build, lokaler V8-Smoke und alle 15.247 Solution-Tests.
+  Der Solutionformatter meldet nur die drei bekannten Baseline-Findings;
+  die uebrigen geaenderten C#-Dateien bestehen die separate Formatpruefung.
+  Commit, Push und CI stehen noch aus
+  ([KP-100](./Kontextprotokoll.md#kp-100---nullaufgefuellte-dezimalmarker)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

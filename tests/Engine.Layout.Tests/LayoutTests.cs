@@ -506,6 +506,105 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("-2147483648", "-2147483648.")]
+    [InlineData("-11", "-11.")]
+    [InlineData("-10", "-10.")]
+    [InlineData("-9", "-9.")]
+    [InlineData("-1", "-1.")]
+    [InlineData("0", "00.")]
+    [InlineData("1", "01.")]
+    [InlineData("9", "09.")]
+    [InlineData("10", "10.")]
+    [InlineData("99", "99.")]
+    [InlineData("100", "100.")]
+    [InlineData("2147483647", "2147483647.")]
+    public void LeadingZeroMarkersPadTheEntireRepresentationToTwoCharacters(string start, string expected)
+    {
+        var root = UnorderedList($"<ol start={start}><li id=x></li></ol>",
+            "ol{list-style-type:decimal-leading-zero}").Root!;
+        Assert.Equal(expected, Find(root, "x").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void LeadingZeroMarkersCoverEveryValueAroundThePaddingBoundary()
+    {
+        var html = "<ol id=list start=-10>" + string.Concat(Enumerable.Repeat("<li></li>", 21)) + "</ol>";
+        var list = Find(UnorderedList(html, "ol{list-style:decimal-leading-zero}").Root!, "list");
+        string[] expected =
+        [
+            "-10.", "-9.", "-8.", "-7.", "-6.", "-5.", "-4.", "-3.", "-2.", "-1.",
+            "00.", "01.", "02.", "03.", "04.", "05.", "06.", "07.", "08.", "09.", "10."
+        ];
+        Assert.Equal(expected, list.Children.Select(item => item.TextMarker!.Run.Text));
+    }
+
+    [Fact]
+    public void LeadingZeroMarkersPreserveReversedAndNestedNumbering()
+    {
+        var root = UnorderedList("""
+            <ol reversed start=2>
+            <li id=first><ol><li id=nested></li><li id=nested-next></li></ol></li>
+            <li id=zero value=0></li><li id=hidden></li><li id=none></li>
+            <li id=negative></li><li id=reset value=9></li><li id=last></li></ol>
+            """, "ol{list-style:decimal-leading-zero}#hidden{display:none}#none{list-style:none}").Root!;
+        Assert.Equal("02.", Find(root, "first").TextMarker!.Run.Text);
+        Assert.Equal("01.", Find(root, "nested").TextMarker!.Run.Text);
+        Assert.Equal("02.", Find(root, "nested-next").TextMarker!.Run.Text);
+        Assert.Equal("00.", Find(root, "zero").TextMarker!.Run.Text);
+        Assert.Null(TryFind(root, "hidden"));
+        Assert.Null(Find(root, "none").TextMarker);
+        Assert.Equal("-2.", Find(root, "negative").TextMarker!.Run.Text);
+        Assert.Equal("09.", Find(root, "reset").TextMarker!.Run.Text);
+        Assert.Equal("08.", Find(root, "last").TextMarker!.Run.Text);
+        var beyondInt = UnorderedList("<ol start=2147483647><li></li><li id=x></li></ol>",
+            "ol{list-style-type:decimal-leading-zero}").Root!;
+        Assert.Equal("2147483648.", Find(beyondInt, "x").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void LeadingZeroStyleWorksOnUnorderedItemsWithOutsideTextGeometry()
+    {
+        var root = UnorderedList("<ul><li id=x value=9></li></ul>",
+            "ul{list-style:decimal-leading-zero}").Root!;
+        var item = Find(root, "x");
+        Assert.Equal("09.", item.TextMarker!.Run.Text);
+        Assert.Equal(20, item.TextMarker.X);
+        Assert.Equal(8, item.TextMarker.Baseline);
+        Assert.Null(item.DiscMarker);
+        Assert.Empty(item.Lines);
+        Assert.Equal(10, item.Content.Height);
+    }
+
+    [Theory]
+    [InlineData("<ol type=decimal-leading-zero><li>x</li></ol>")]
+    [InlineData("<ol><li type=decimal-leading-zero>x</li></ol>")]
+    public void LeadingZeroCssDoesNotEnableUnsupportedHtmlTypeAttributes(string html) =>
+        Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, "ol,li{list-style:decimal-leading-zero}"));
+
+    [Fact]
+    public void LeadingZeroMarkersChargeExactTextGlyphAndShapingBudgets()
+    {
+        const string html = "<ol><li></li></ol>";
+        const string css = "ol{list-style:decimal-leading-zero}";
+        Assert.NotNull(UnorderedList(html, css, options: new()
+        {
+            MaxTextCharacters = 3,
+            MaxShapedGlyphs = 3,
+            MaxShapingCalls = 1
+        }).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, css, options: new() { MaxTextCharacters = 2 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, css, options: new() { MaxShapedGlyphs = 2 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<ol><li></li><li></li></ol>", css, options: new() { MaxShapingCalls = 1 }));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var document = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, [new(css)], cancellationToken: Cancellation);
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
     [InlineData(1, "i.", "I.")]
     [InlineData(3, "iii.", "III.")]
     [InlineData(4, "iv.", "IV.")]

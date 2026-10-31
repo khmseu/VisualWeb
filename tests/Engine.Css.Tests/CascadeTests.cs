@@ -599,6 +599,67 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("list-style-type:decimal-leading-zero")]
+    [InlineData("list-style-type:DECIMAL-LEADING-ZERO")]
+    [InlineData("list-style-type:decimal-leading-\\7a ero")]
+    [InlineData("list-style:decimal-leading-zero")]
+    [InlineData("list-style:none decimal-leading-zero outside")]
+    [InlineData("list-style:OUTSIDE DECIMAL-LEADING-ZERO none")]
+    public void LeadingZeroListStyleUsesExistingCascadeAndInheritance(string declaration)
+    {
+        var doc = Document("<ol id=parent><li id=child>x</li></ol>");
+        var styles = Compute(doc, new CssStyleSource("#parent{" + declaration + "}"));
+        Assert.Empty(styles.Diagnostics);
+        Assert.Equal(new CssKeyword("decimal-leading-zero"), styles.Styles[doc.GetElementById("parent")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("decimal-leading-zero"), Child(styles, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(styles, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(styles, doc)["list-style-image"]);
+    }
+
+    [Theory]
+    [InlineData("decimal-leading-zero decimal")]
+    [InlineData("decimal-leading-zero inside")]
+    [InlineData("decimal-leading-zero url(marker.png)")]
+    [InlineData("decimal-leading-zero none none")]
+    public void InvalidLeadingZeroShorthandDoesNotPartiallyOverrideEarlierStyles(string value)
+    {
+        var doc = Document("<ol><li id=child>x</li></ol>");
+        var styles = Compute(doc, new CssStyleSource("#child{list-style:square;list-style:" + value + "}"));
+        Assert.Single(styles.Diagnostics, diagnostic => diagnostic.Code == "invalid-property-value");
+        Assert.Equal(new CssKeyword("square"), Child(styles, doc)["list-style-type"]);
+    }
+
+    [Fact]
+    public void LeadingZeroShorthandPreservesImportanceResetsAndAssignmentLimits()
+    {
+        var doc = Document("<ol><li id=child>x</li></ol>");
+        var important = Compute(doc, new CssStyleSource(
+            "#child{list-style:decimal-leading-zero!important;list-style-type:decimal}"));
+        Assert.Empty(important.Diagnostics);
+        Assert.Equal(new CssKeyword("decimal-leading-zero"), Child(important, doc)["list-style-type"]);
+        var reset = Compute(doc, new CssStyleSource("#child{list-style:decimal-leading-zero;list-style:outside}"));
+        Assert.Equal(new CssKeyword("disc"), Child(reset, doc)["list-style-type"]);
+        var inherited = Compute(doc, new CssStyleSource(
+            "ol{list-style:decimal-leading-zero}#child{list-style:decimal;list-style:inherit}"));
+        Assert.Equal(new CssKeyword("decimal-leading-zero"), Child(inherited, doc)["list-style-type"]);
+        CssStyleSource[] source = [new("#child{list-style:decimal-leading-zero outside none}")];
+        Assert.Empty(CssStyleEngine.Compute(doc, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 3 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation));
+    }
+
+    [Theory]
+    [InlineData("<ol id=target type=decimal-leading-zero><li>x</li></ol>")]
+    [InlineData("<ol><li id=target type=decimal-leading-zero>x</li></ol>")]
+    public void LeadingZeroIsNotAnHtmlTypeHint(string html)
+    {
+        var doc = Document(html);
+        Assert.False(CssStyleEngine.TryGetListTypeHint(doc.GetElementById("target")!, out var marker));
+        Assert.Null(marker);
+    }
+
+    [Theory]
     [InlineData("list-style-type:lower-roman", "lower-roman")]
     [InlineData("list-style-type:UPPER-ROMAN", "upper-roman")]
     [InlineData("list-style:lower-roman", "lower-roman")]

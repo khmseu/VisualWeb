@@ -20,6 +20,9 @@ Alphabetic marker tests cover both cases and aliases, case-sensitive HTML
 attributes, bijective wrap boundaries, decimal fallback, nested/reversed
 numbering, exact shared limits, native text-pixel equivalence and scripted
 local/process retained repaint.
+Zero-padded decimal tests cover the complete -10..10 boundary, larger values,
+CSS cascade/shorthand and atomic rejection, nesting/reversed numbering, exact
+budgets, native text-pixel equivalence and scripted local/process repaint.
 Roman marker tests cover both cases and exact HTML type hints, all 1..3999
 representations against an independent place-value table, decimal fallback,
 numbering and exact shared limits, native text-pixel equivalence and scripted

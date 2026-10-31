@@ -3423,3 +3423,39 @@ Stellenwerttabelle.
 `b47a5a0` reproduzierten Baseline-Findings, zwei auf unveraenderten Zeilen
 der geaenderten `StaticLayout.cs`. Alle uebrigen geaenderten C#-Dateien
 bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus.
+
+**Commit und CI:** `69f0610` wurde auf `origin/main` gepusht; der Commit-Hook
+pruefte 20 Dateien ohne Findings. [Linux 41198202781](https://github.com/khmseu/VisualWeb/actions/runs/41198202781),
+[Windows 41198202753](https://github.com/khmseu/VisualWeb/actions/runs/41198202753)
+und [CodeQL 41198202566](https://github.com/khmseu/VisualWeb/actions/runs/41198202566)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-100 - Nullaufgefuellte Dezimalmarker
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [vordefinierte numerische Stile](https://www.w3.org/TR/css-counter-styles-3/#simple-numeric)
+  und [Padding-Algorithmus](https://www.w3.org/TR/css-counter-styles-3/#counter-style-pad).
+  Der lokale `css-counter-styles`-Cache wurde am 2026-10-31 geprueft.
+
+**Belegte Auswahl und Umfang fuer Pass 7:** Das gebraeuchliche CSS
+`decimal-leading-zero` verursachte zuvor eine Diagnose und verhinderte das
+Seitenlayout. Das Inkrement ergaenzt den vordefinierten numerischen Stil in
+Longhand, Shorthand und der vorhandenen Textmarker-Pipeline. Die CSS-Mindest-
+breite zwei zaehlt das negative Vorzeichen mit: `0` bis `9` ergeben `00.`
+bis `09.`, `-1` bleibt `-1.`. Weitere CSS-Counter und neue HTML-`type`-
+Hinweise sind nicht enthalten; alle bestehenden Budgets und ausdruecklichen
+Fehler fuer ungueltige Attribute bleiben erhalten.
+
+**Test-first und Umsetzung:** Vor der Implementierung scheiterten
+erwartungsgemaess sieben CSS-, 15 Layout-, ein Paint-, ein nativer Pixel-
+und zwei lokale/Prozess-Browserfaelle. Die anschliessenden gezielten
+Regressionen bestehen.
+
+**Lokale Abschlusspruefung:** Der Solution-Build, lokale V8-Smoke und alle
+15.247 Solution-Tests bestehen, darunter 948 CSS-, 269 Layout-, 62 Paint-,
+37 Content- und 1.230 Browserfaelle. Gegenueber Pass 6 sind dies netto
+35 weitere Testfaelle. Der Solutionformatter meldet nur die drei auf
+`b47a5a0` reproduzierten Baseline-Findings, zwei auf unveraenderten Zeilen
+der geaenderten `StaticLayout.cs`. Alle uebrigen geaenderten C#-Dateien
+bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus.

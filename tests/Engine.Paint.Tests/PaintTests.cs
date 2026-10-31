@@ -378,6 +378,24 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void LeadingZeroMarkersUsePositionedGlyphCommandsAndSharedPaintLimits()
+    {
+        const string css = "ol{display:block;padding-left:40px;list-style-type:decimal-leading-zero}li{display:list-item;color:red}";
+        var list = Page("<ol start=9><li>x</li><li></li></ol>", css);
+        var runs = list.Commands.OfType<DrawGlyphRun>().ToArray();
+        Assert.Equal(3, runs.Length);
+        Assert.Equal(new ushort[] { '0', '9', '.' }, runs[0].Glyphs.Select(glyph => glyph.Id));
+        Assert.Equal(new[] { 20.0, 25, 30 }, runs[0].Glyphs.Select(glyph => glyph.X));
+        Assert.Equal((ushort)'x', Assert.Single(runs[1].Glyphs).Id);
+        Assert.Equal(new ushort[] { '1', '0', '.' }, runs[2].Glyphs.Select(glyph => glyph.Id));
+        Assert.All(runs[2].Glyphs, glyph => Assert.Equal(18, glyph.Y));
+        Assert.Equal(Red, runs[2].Color);
+        Assert.Throws<PaintLimitException>(() => Page("<ol><li></li></ol>", css, new() { MaxGlyphs = 2 }));
+        Assert.Throws<PaintLimitException>(() =>
+            Page("<ol><li></li><li></li></ol>", css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
     public void RomanMarkersUsePositionedGlyphCommandsAndSharedPaintLimits()
     {
         const string css = "ol{display:block;padding-left:40px;list-style-type:lower-roman}li{display:list-item;color:red}";

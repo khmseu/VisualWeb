@@ -90,7 +90,7 @@ restored afterward. Marker commands share command
 limits, geometry preflight, viewport transforms and cancellation with other
 commands. The finite list scope is described in the
 [text/layout guide](text-layout.md#default-unordered-lists).
-Decimal, ASCII alphabetic and Roman markers use the same bounded glyph-run command builder as page text,
+Decimal (including zero-padded), ASCII alphabetic and Roman markers use the same bounded glyph-run command builder as page text,
 with the item's exact font and color, but remain separate from selectable DOM
 fragments. They paint before the item's own scroll clip, like disc markers;
 ancestor clips and viewport transforms still apply.

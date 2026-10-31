@@ -305,7 +305,7 @@ internal static class CssProperties
     }
 
     private static bool IsListStyleType(string keyword) =>
-        keyword is "disc" or "circle" or "square" or "decimal" or "none"
+        keyword is "disc" or "circle" or "square" or "decimal" or "decimal-leading-zero" or "none"
             or "lower-alpha" or "upper-alpha" or "lower-latin" or "upper-latin"
             or "lower-roman" or "upper-roman";
 
