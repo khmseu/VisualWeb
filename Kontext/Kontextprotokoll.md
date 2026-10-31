@@ -3617,3 +3617,21 @@ bestanden. Linux und Windows umfassten jeweils x64 und arm64. Die drei ersten
 `gh run watch`-Aufrufe brachen durch einen GitHub-Verbindungsreset ab; erneute
 direkte Abfragen und die fortgesetzte Windows-Ueberwachung bestaetigten den
 erfolgreichen Abschluss.
+
+### KP-105 - Formatdiagnosen behoben
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle der Anforderung: aktueller Nutzerauftrag.
+
+**Belegte Aenderung:** Der Nutzer bat, die verbliebenen Formatterprobleme zu
+beheben. Vorherige vollstaendige Solution-Pruefungen meldeten zwei Diagnosen
+in `StaticLayout.cs` (Importreihenfolge und Leerraum am Primary Constructor)
+und eine Importdiagnose in `ShellChrome.cs`. `dotnet format` wurde nur auf
+diese Dateien begrenzt; es sortierte `System`-Usings und entfernte das
+ueberzaehlige Leerzeichen.
+
+**Validierung:** `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` besteht nun ohne Findings. `dotnet build VisualWeb.slnx`
+besteht ohne Warnungen; alle 338 Layout- und 1.236 Browser-Tests bestehen.
+`git diff --check` besteht. Die Codeaenderungen sind lokal und noch nicht
+committet.

@@ -93,11 +93,12 @@
   Zwangsumbruchzeilen bleiben linksbuendig. Quellen, Glyphen- und Auswahl-
   geometrie bleiben erhalten; benoetigte NBSP-Dehnung und fehlende Leerzeichen-
   glyphen scheitern explizit. Build, lokaler V8-Smoke und alle 15.329
-  Solution-Tests bestehen, darunter 21 netto neue Faelle; der Gesamtformatter
-  meldet nur drei auf unveraenderten Zeilen reproduzierte Baseline-Findings,
-  waehrend alle geaenderten Testdateien separat bestehen. Commit `05dffda` ist
-  gepusht; Linux und Windows auf x64/arm64 sowie CodeQL bestanden. Damit ist
-  die angeforderte Zehn-Passen-Serie abgeschlossen
+  Solution-Tests bestehen, darunter 21 netto neue Faelle. Auf den Folgeauftrag
+  hin wurden die drei verbleibenden Formatdiagnosen in `StaticLayout.cs` und
+  `ShellChrome.cs` behoben; vollstaendige Solution-Formatpruefung, Build,
+  Layout- und Browser-Tests bestehen ([KP-105](./Kontextprotokoll.md#kp-105---formatdiagnosen-behoben)).
+  Commit `05dffda` ist gepusht; Linux und Windows auf x64/arm64 sowie CodeQL
+  bestanden. Damit ist die angeforderte Zehn-Passen-Serie abgeschlossen
   ([KP-104](./Kontextprotokoll.md#kp-104---begrenzter-wortzwischenraum-blocksatz)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.

@@ -1,5 +1,5 @@
-using System.Text;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Text;
@@ -7,7 +7,7 @@ using VisualWeb.Engine.Text;
 namespace VisualWeb.Engine.Layout;
 
 [SuppressMessage("Sonar", "S2166", Justification = "These public exception types intentionally expose only the failure-category constructor used by the bounded layout API.")]
-public sealed class UnsupportedLayoutException (string message) : Exception(message);
+public sealed class UnsupportedLayoutException(string message) : Exception(message);
 [SuppressMessage("Sonar", "S2166", Justification = "These public exception types intentionally expose only the failure-category constructor used by the bounded layout API.")]
 public sealed class LayoutLimitException(string message) : Exception(message);
 
