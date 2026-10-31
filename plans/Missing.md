@@ -554,7 +554,9 @@ punctuation (including ordinary URL and hyphenated text) without soft wrapping;
 spaces/forced breaks and horizontal overflow remain mode-appropriate.
 `normal`/`pre-line` now also allow a soft break after an ASCII hyphen between
 ASCII letters in one text node, with bounded break-search work and retained
-source identity. Other punctuation/Unicode-break algorithms, cross-node word
+source identity. A solidus between ASCII letters in one text node stays in
+the same unbroken segment; this also works with supported hyphen breaks.
+Other solidus forms, punctuation/Unicode-break algorithms, cross-node word
 shaping, unsupported scripts/bidi/controls and missing-font handling remain
 unsupported.
 See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
@@ -566,6 +568,11 @@ wrapping, work limits, intrinsic table sizing, native pixels, retained resize,
 link geometry and visible text selection. The solution build, all 138 Layout,
 26 Content, 1,200 Browser and 14,852 solution tests pass locally. Formatting
 reports only the three findings reproduced on base `ad0bca6`.
+The internal-solidus increment adds 33 regressions covering unbroken runs,
+explicit exclusions, mixed hyphen work limits, table sizing, native pixels and
+local/process retained link selection. The solution build, all 171 Layout,
+29 Content, 1,206 Browser and 14,944 solution tests pass locally. Formatting
+reports only the same three baseline findings; changed test files pass separately.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one spacing length, top-aligned text/block cells and

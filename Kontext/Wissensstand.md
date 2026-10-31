@@ -207,7 +207,7 @@ reproduzierten Baseline-Findings. Commit `ae43073` ist gepusht; Linux, Windows
 und CodeQL bestehen
 ([KP-089](./Kontextprotokoll.md#kp-089---css-text-decoration-none)).
 
-**Pass 8 (lokale Umsetzung):** Als naechster einfacher Render-Blocker wurde
+**Pass 8 (abgeschlossen):** Als naechster einfacher Render-Blocker wurde
 `list-style-type:square` einschliesslich des vorhandenen `list-style`-
 Shorthands eingegrenzt. Der bestehende CSS-Parser diagnostiziert diesen Wert;
 das lokale CSS-2.2-Listenreferenzdokument laesst das genaue Aussehen der
@@ -219,8 +219,22 @@ bestehen. Vollstaendig bestehen 796 CSS-, 141 Layout-, 42 Paint-, 28
 Content- und 1.204 Browser-Tests sowie alle 14.911 Solution-Tests einschliesslich
 23 neuer Regressionen. Die Formatpruefung meldet nur die drei auf `ad0bca6`
 reproduzierten Baseline-Findings; die uebrigen geaenderten C#-Dateien bestehen
-die separate Pruefung. Commit, Push und CI stehen noch aus
+die separate Pruefung. Commit `137e779` ist gepusht; Linux, Windows und CodeQL
+bestehen
 ([KP-090](./Kontextprotokoll.md#kp-090---quadratische-css-listenmarker)).
+
+**Pass 9 (lokal validiert):** Im umbruchfaehigen Text blockierten zuvor auch
+gewoehnliche ASCII-Woerter wie `and/or`. CSS Text empfiehlt fuer Browser-
+Interoperabilitaet keinen Umbruch zwischen Solidus und folgendem Buchstaben;
+ein lokaler Chromium-Vergleich bestaetigt dies fuer untersuchte Beispiele.
+Umgesetzt ist ausschliesslich ein ungebrochener Solidus zwischen ASCII-Buchstaben
+eines Textknotens; Zahlen, fuehrende/abschliessende, doppelte, Unicode- und
+knotenuebergreifende Faelle bleiben ausgeschlossen. Der Build, 171 Layout-,
+29 Content-, 1.206 Browser- und alle 14.944 Solution-Tests bestehen,
+darunter 33 neue Regressionen. Die Formatpruefung meldet nur drei auf
+`ad0bca6` reproduzierte Baseline-Findings; die geaenderten Testdateien bestehen
+separat. Commit, Push und CI stehen noch aus
+([KP-091](./Kontextprotokoll.md#kp-091---ungebrochener-ascii-solidus)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

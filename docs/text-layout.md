@@ -202,6 +202,12 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   See [CSS Text line breaking](https://drafts.csswg.org/css-text-3/#line-breaking)
   (local ID `css-text`) and [Unicode line-break rules](https://www.unicode.org/reports/tr14/tr14-55.html#LB20a)
   (local ID `unicode-linebreak`, Unicode 17, UAX 14 revision 55).
+- In `normal`/`pre-line`, a solidus between ASCII letters in one text node is
+  part of the unbroken shaped word, including when mixed with supported hyphen
+  breaks. It can overflow and contributes its full unbreakable segment width to
+  table sizing. This narrow behavior follows the
+  [CSS Text interoperability guidance](https://drafts.csswg.org/css-text-3/#line-break-property)
+  (local ID `css-text`); it is not general URL or Unicode line breaking.
 - white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
   explicit br breaks. Preserved tabs/form feeds are unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
@@ -224,9 +230,9 @@ explicitly or those styles overridden.
 - Bidi/RTL/auto direction, non-English language-specific layout, script
   itemization, advanced script/fallback/emoji shaping.
 - Full Unicode line breaking, hyphenation and other punctuation-internal
-  opportunities. In wrapping modes, leading/trailing, adjacent or non-ASCII
-  hyphens, hyphens beside digits, slashes and unsupported internal punctuation
-  fail; nonwrapping pre/nowrap do not need this break analysis.
+  opportunities. In wrapping modes, leading/trailing, repeated,
+  non-ASCII-adjacent or digit-adjacent hyphens and solidi, and unsupported
+  internal punctuation fail; nonwrapping pre/nowrap do not need this analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab

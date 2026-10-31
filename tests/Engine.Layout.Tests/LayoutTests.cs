@@ -557,6 +557,153 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("normal", "a/b", 10, "a/b")]
+    [InlineData("normal", "and/or", 15, "and/or")]
+    [InlineData("normal", "aa/bb", 25, "aa/bb")]
+    [InlineData("normal", "aa/bb", 24, "aa/bb")]
+    [InlineData("normal", "A/z", 10, "A/z")]
+    [InlineData("normal", "a/b/c", 10, "a/b/c")]
+    [InlineData("normal", "go and/or", 30, "go|and/or")]
+    [InlineData("normal", "a-b/c", 10, "a-|b/c")]
+    [InlineData("normal", "a/b-c", 20, "a/b-|c")]
+    [InlineData("normal", "a/b-d/e", 20, "a/b-|d/e")]
+    [InlineData("normal", "a/b.", 10, "a/b.")]
+    [InlineData("pre-line", "a/b\nc/d", 10, "a/b|c/d")]
+    public void InternalAsciiSolidusStaysUnbrokenInWrappingText(
+        string mode, string text, double width, string expected)
+    {
+        var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}", width).Root!, "x");
+        var actual = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(expected.Split('|'), actual);
+        Assert.Equal(text.Replace("\n", "", StringComparison.Ordinal).Replace(" ", "", StringComparison.Ordinal),
+            string.Concat(actual).Replace(" ", "", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SolidusWordOverflowsAsOneShapedRunAndRetainsItsSource()
+    {
+        var (document, styles) = Page("<p id=x>a/b</p>");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 10, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var fragment = Assert.Single(Assert.Single(box.Lines).Fragments);
+        Assert.Same(source, fragment.Source);
+        Assert.Equal("a/b", fragment.Run.Text);
+        Assert.Equal(15, fragment.Run.Width);
+        Assert.Equal(10, box.Content.Width);
+    }
+
+    [Fact]
+    public void MixedHyphenAndSolidusFragmentsRetainTheirSource()
+    {
+        var (document, styles) = Page("<p id=x>aa-bb/cc</p>");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 25, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var fragments = box.Lines.SelectMany(line => line.Fragments).ToArray();
+        Assert.Equal(["aa-", "bb/cc"], fragments.Select(fragment => fragment.Run.Text));
+        Assert.All(fragments, fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Fact]
+    public void SolidusWordContributesItsFullWidthToTableIntrinsicSizing()
+    {
+        var root = UnorderedList("<table id=t><tr><td id=c>a/b</td></tr></table>", width: 10).Root!;
+        Assert.Equal(21, Find(root, "t").Content.Width);
+        var cell = Find(root, "c");
+        Assert.Equal(15, cell.Content.Width);
+        Assert.Equal("a/b", Assert.Single(Assert.Single(cell.Lines).Fragments).Run.Text);
+
+        var mixed = UnorderedList("<table id=t><tr><td id=c>a/b-c</td></tr></table>", width: 10).Root!;
+        Assert.Equal(26, Find(mixed, "t").Content.Width);
+        Assert.Equal(20, Find(mixed, "c").Content.Width);
+        Assert.Equal(["a/b-", "c"], Find(mixed, "c").Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/a")]
+    [InlineData("a/")]
+    [InlineData("a//b")]
+    [InlineData("1/a")]
+    [InlineData("a/1")]
+    [InlineData("a/\u00e9")]
+    [InlineData("\u00e9/a")]
+    [InlineData("a / b")]
+    [InlineData("a/<span>b</span>")]
+    [InlineData("a<span>/b</span>")]
+    [InlineData("a<span>/</span>b")]
+    public void OtherSolidusAndCrossNodeCasesRemainExplicitlyUnsupported(string text)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var error = Assert.Throws<UnsupportedLayoutException>(() =>
+                Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
+            Assert.Contains("solidus", error.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void SolidusWordsRespectExactTextAndShapingLimitsWithoutBreakSearch()
+    {
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = 3,
+            MaxShapedGlyphs = 3,
+            MaxShapingCalls = 2,
+            MaxLines = 1,
+            MaxLineBreakOperations = 1
+        };
+        Assert.NotNull(Layout("<p>a/b</p>", width: 10, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a/b</p>", width: 10,
+            options: exact with { MaxTextCharacters = 2 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a/b</p>", width: 10,
+            options: exact with { MaxShapedGlyphs = 2 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a/b</p>", width: 10,
+            options: exact with { MaxShapingCalls = 1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Layout("<p>a/b</p>", width: 10,
+            options: exact with { MaxLineBreakOperations = 0 }));
+    }
+
+    [Fact]
+    public void MixedHyphenAndSolidusBreakSearchSharesExactLimits()
+    {
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = 8,
+            MaxShapedGlyphs = 16,
+            MaxShapingCalls = 5,
+            MaxLines = 2,
+            MaxLineBreakOperations = 29
+        };
+        Assert.NotNull(Layout("<p>aa-bb/cc</p>", width: 25, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb/cc</p>", width: 25,
+            options: exact with { MaxTextCharacters = 7 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb/cc</p>", width: 25,
+            options: exact with { MaxShapedGlyphs = 15 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb/cc</p>", width: 25,
+            options: exact with { MaxShapingCalls = 4 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb/cc</p>", width: 25,
+            options: exact with { MaxLines = 1 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb/cc</p>", width: 25,
+            options: exact with { MaxLineBreakOperations = 28 }));
+        Assert.NotNull(Layout("<p>aa-bb/cc</p><p>aa-bb/cc</p>", width: 25,
+            options: new() { MaxLineBreakOperations = 58 }).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb/cc</p><p>aa-bb/cc</p>", width: 25,
+            options: new() { MaxLineBreakOperations = 57 }));
+    }
+
+    [Fact]
+    public void SolidusLayoutObservesCancellationFromTheShaper()
+    {
+        var (document, styles) = Page("<p>a/b</p>");
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            new CancelingShaper(cancellation), 10, 200, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
     [InlineData("normal", "aa-bb", 25, "aa-bb")]
     [InlineData("normal", "aa-bb", 24, "aa-|bb")]
     [InlineData("normal", "aa-bb", 15, "aa-|bb")]
@@ -615,7 +762,7 @@ public sealed class LayoutTests
     [InlineData("a--b")]
     [InlineData("1-a")]
     [InlineData("a-1")]
-    [InlineData("a-b/c")]
+    [InlineData("a-b//c")]
     [InlineData("a-<span>b</span>")]
     public void OtherHyphenAndCrossNodeCasesRemainExplicitlyUnsupported(string text) =>
         Assert.Throws<UnsupportedLayoutException>(() => Layout("<p>" + text + "</p>"));
@@ -664,7 +811,7 @@ public sealed class LayoutTests
     [InlineData("pre-line")]
     public void WrappingPunctuationStillRequiresSupportedLineBreakAnalysis(string mode) =>
         Assert.Throws<UnsupportedLayoutException>(() =>
-            Layout("<p>a-b/c</p>", "p{white-space:" + mode + "}"));
+            Layout("<p>a-b//c</p>", "p{white-space:" + mode + "}"));
 
     [Theory]
     [InlineData("nowrap", "\u00AD")]

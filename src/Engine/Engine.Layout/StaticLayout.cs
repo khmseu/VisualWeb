@@ -74,6 +74,8 @@ public sealed record LayoutOptions
 /// Internal ASCII-letter hyphens use css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#line-breaking">line breaking</see> and unicode-linebreak
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">hyphen rules</see>.
+/// Internal ASCII-letter solidus uses the css-text
+/// <see href="https://drafts.csswg.org/css-text-3/#line-break-property">interoperable no-break guidance</see>.
 /// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
 public static partial class StaticLayout
 {
@@ -505,7 +507,16 @@ public static partial class StaticLayout
                         {
                             cancellation.ThrowIfCancellationRequested();
                             var c = value[index];
-                            if (c is '/' or '\\' or >= '\u2010' and <= '\u2015')
+                            if (c == '/')
+                            {
+                                if (index == 0 || index == value.Length - 1
+                                    || !char.IsAsciiLetter(value[index - 1]) || !char.IsAsciiLetter(value[index + 1]))
+                                {
+                                    throw new UnsupportedLayoutException("Only internal solidus between ASCII letters is supported in wrapping text.");
+                                }
+                                continue;
+                            }
+                            if (c is '\\' or >= '\u2010' and <= '\u2015')
                             {
                                 throw new UnsupportedLayoutException("Punctuation line-break opportunities are deferred.");
                             }

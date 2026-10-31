@@ -1,7 +1,8 @@
 # Engine.Layout
 
 Phase-7 finite horizontal LTR normal-flow block/inline geometry and bounded
-space/internal-ASCII-hyphen line wrapping. Inputs are renderer-local DOM,
+space/internal-ASCII-hyphen line wrapping, with internal ASCII-letter solidi
+retained in unbroken words. Inputs are renderer-local DOM,
 computed CSS snapshots and an injected text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
@@ -32,6 +33,8 @@ row/group backgrounds, nested tables/widgets and other
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow
 geometry and shared shaping/text limits. In wrapping modes, only hyphens
-between ASCII letters in one text node add a break after the hyphen. Repeated
-break analysis uses a shared work budget; other punctuation/Unicode-break
+between ASCII letters in one text node add a break after the hyphen; a solidus
+between ASCII letters in one text node is retained without a soft break.
+Repeated hyphen break analysis uses a shared work budget; leading/trailing,
+repeated, non-ASCII-adjacent and digit-adjacent solidi, other punctuation/Unicode-break
 exclusions and cross-node/style shaping restrictions remain.

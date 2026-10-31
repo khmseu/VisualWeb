@@ -3055,4 +3055,45 @@ CSS-, Layout-, Paint-, Content- und Browser-Suiten bestehen mit 796, 141, 42,
 28 bzw. 1.204 Tests. Der Build und alle 14.911 Solution-Tests bestehen,
 darunter 23 neue Regressionen. Die Solution-Formatpruefung meldet nur die
 drei auf `ad0bca6` reproduzierten Baseline-Findings; die uebrigen geaenderten
-C#-Dateien bestehen die separate Pruefung. Commit, Push und CI stehen noch aus.
+C#-Dateien bestehen die separate Pruefung.
+
+**Commit/Push:** `137e779` ist auf `origin/main`; der Commit-Hook pruefte
+18 Dateien ohne verbleibende Findings.
+[Linux 41162002945](https://github.com/khmseu/VisualWeb/actions/runs/41162002945),
+[Windows 41162003004](https://github.com/khmseu/VisualWeb/actions/runs/41162003004)
+und [CodeQL 41162002921](https://github.com/khmseu/VisualWeb/actions/runs/41162002921)
+bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
+
+### KP-091 - Ungebrochener ASCII-Solidus
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Text-/Layout-Guide](../docs/text-layout.md#ordinary-flow),
+  `StaticLayout.Gather`, lokale Caches `css-text` und `unicode-linebreak`
+  sowie ein Chromium-Vergleich im aktuellen Arbeitslauf.
+
+**Belegt:** Bei `white-space:normal/pre-line` wird ein Solidus auch zwischen
+ASCII-Buchstaben derzeit explizit abgewiesen; `pre/nowrap` akzeptieren ihn.
+UAX 14 ordnet den Solidus der Klasse SY zu und erlaubt grundsaetzlich einen
+Umbruch danach. Die lokale CSS-Text-Referenz nennt fuer Web-Interoperabilitaet
+die Abweichung, vor einem folgenden Buchstaben keinen Umbruch einzufuehren.
+Chromium liess `and/or`, `a/b`, `aa/bb` und laengere untersuchte
+Solidus-Woerter auch bei schmaler Breite ungebrochen; `a-b/c` brach am
+Bindestrich, nicht am Solidus.
+
+**Auswahl fuer Pass 9:** Nur Solidus zwischen ASCII-Buchstaben innerhalb
+eines Textknotens bei normal/pre-line als Teil eines ungebrochenen Shaping-
+Laufs zulassen. Bestehende Bindestrichumbrueche und Limits bleiben erhalten;
+numerische, fuehrende/abschliessende, benachbarte, nicht-ASCII- und
+knotenuebergreifende Solidusfaelle bleiben explizit ausgeschlossen. Dies
+implementiert keine allgemeine URL- oder Unicode-Umbruchanalyse.
+
+**Umsetzung, fokussiert geprueft:** Zuvor scheiterten neun positive
+Layoutfaelle. Der Solidus bleibt jetzt im gemeinsamen Shaping-Lauf;
+Bindestrichumbrueche, Identitaet der Quellknoten, Intrinsic-Sizing und
+Text-/Shaping-/Umbruchbudgets bleiben erhalten. Die fokussierten Tests fuer
+39 Layoutfaelle, einen nativen Pixel-/Resizefall und je einen lokalen und
+Prozess-Rendererfall bestehen. Der Build sowie alle 171 Layout-, 29 Content-,
+1.206 Browser- und 14.944 Solution-Tests bestehen, darunter 33 neue
+Regressionen. Die Solution-Formatpruefung meldet nur die drei auf `ad0bca6`
+reproduzierten Baseline-Findings; geaenderte Testdateien bestehen separat.
+Commit, Push und CI stehen noch aus.
