@@ -101,12 +101,13 @@ not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
 
 ### Default unordered lists
 
-Visible block `ul` containers and their direct `li` children now support
+Visible block `ul` and `menu` containers and their direct `li` children support
 outside markers. UA styles give lists 40px left padding and items
 `display:list-item`; unordered lists default to discs at the outermost level,
 circles with one list ancestor, and squares with two or more list ancestors.
-`ol`, `ul`, `dir` and `menu` count as ancestors, but `dir`/`menu` list layout
-itself remains unsupported.
+`ol`, `ul`, `dir` and `menu` count as ancestors, but `dir` list layout
+itself remains unsupported. A `menu` uses the same bounded unordered-list
+rendering as `ul`; this does not add toolbar interaction or menu-specific APIs.
 HTML UA vertical margins are 1em on outer lists and zero on lists nested within
 `dir`, `dl`, `menu`, `ol` or `ul`; author styles may override those defaults.
 Authors may instead select `list-style-type:circle` or `list-style-type:square`,
@@ -117,7 +118,8 @@ as discs. Authors can override the nested UA defaults.
 removes its list-item semantics. Hidden items produce neither geometry nor
 markers. `ul` and `li` support the legacy ASCII-case-insensitive `type` values
 `disc`, `circle`, `square` and `none` as HTML presentational hints; unsupported
-or malformed values still fail explicitly. Other marker styles, inside
+or malformed values still fail explicitly. A `menu` element's `type`, `start`
+and `reversed` do not affect marker type or numbering. Other marker styles, inside
 positioning and arbitrary non-`li` list-item boxes remain unsupported.
 
 Marker geometry follows the user-agent-defined latitude in

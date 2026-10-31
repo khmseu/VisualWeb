@@ -3459,3 +3459,43 @@ Regressionen bestehen.
 `b47a5a0` reproduzierten Baseline-Findings, zwei auf unveraenderten Zeilen
 der geaenderten `StaticLayout.cs`. Alle uebrigen geaenderten C#-Dateien
 bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus.
+
+**Commit und CI:** Zwischenzeitlich erschien der unabhaengige
+Lint-Konfigurationscommit `20c0cc7` auf `main`; er ist nicht Teil dieses
+Inkrements. `9e3fdd1` wurde anschliessend auf `origin/main` gepusht.
+Der Commit-Hook formatierte den CSS-Guide und pruefte 19 Dateien ohne
+Findings. [Linux 41200590442](https://github.com/khmseu/VisualWeb/actions/runs/41200590442),
+[Windows 41200590426](https://github.com/khmseu/VisualWeb/actions/runs/41200590426)
+und [CodeQL 41200590326](https://github.com/khmseu/VisualWeb/actions/runs/41200590326)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-102 - Menu-Listenlayout
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [HTML-menu](https://html.spec.whatwg.org/multipage/grouping-content.html#the-menu-element)
+  und [HTML-Listenrendering](https://html.spec.whatwg.org/multipage/rendering.html#lists).
+  Der lokale `html`-Cache war am 2026-10-04 geprueft und damit noch frisch.
+
+**Belegte Auswahl und Umfang fuer Pass 8:** Der Parser und die UA-Marker-
+Kaskade kannten `menu` bereits; Blockdisplay, 40px Einrueckung und Layout
+direkter `li`-Kinder fehlten, sodass einfache Menulisten scheiterten.
+Die bestehende begrenzte `ul`-Pipeline wird fuer `menu` genutzt, einschliesslich
+verschachtelter Marker, CSS-Zahlenstile, `li value` und `li type` sowie
+vorhandener Budgets. `menu`-Attribute `type`, `start` und `reversed` werden
+nicht als Listenhinweise interpretiert; `dir`-Listenlayout, spezielle Toolbar-
+APIs, beliebige List-Item-Besitzer und Inside-Marker bleiben ausgenommen.
+
+**Test-first und Umsetzung:** Vor der Implementierung scheiterten erwartungs-
+gemaess ein CSS-, vier Layout-, ein Paint-, ein nativer Pixel- und zwei
+lokale/Prozess-Browserfaelle. Nach der Umsetzung bestehen gezielte Tests
+einschliesslich Pixelvergleich mit gleichwertigen `ul`-Listen und exakten
+Layout-/Paint-Budgets.
+
+**Lokale Abschlusspruefung:** Der Solution-Build, lokale V8-Smoke und alle
+15.260 Solution-Tests bestehen, darunter 949 CSS-, 277 Layout-, 63 Paint-,
+38 Content- und 1.232 Browserfaelle. Gegenueber Pass 7 sind dies netto
+13 weitere Testfaelle. Der Solutionformatter meldet nur die drei auf
+`b47a5a0` reproduzierten Baseline-Findings, zwei auf unveraenderten Zeilen
+der geaenderten `StaticLayout.cs`. Alle uebrigen geaenderten C#-Dateien
+bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus.

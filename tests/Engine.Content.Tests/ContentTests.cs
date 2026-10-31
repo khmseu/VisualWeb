@@ -8,6 +8,24 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void MenuListMatchesEquivalentUnorderedListNativePixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string items = "<li>one</li><li>two<menu><li>three</li></menu></li>";
+        const string referenceItems = "<li>one</li><li>two<ul><li>three</li></ul></li>";
+        CssStyleSource[] style = [new("html,body{margin:0}*{font-size:20px;line-height:20px;color:red}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><menu>" + items + "</menu>",
+            style, text, fonts, 160, 120, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render("<!doctype html><ul>" + referenceItems + "</ul>",
+            style, text, fonts, 160, 120, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void LeadingZeroListMarkerMatchesIndependentlyPositionedNativeTextPixels()
     {
         using var font = new TextFont(FontPath);

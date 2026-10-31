@@ -58,6 +58,90 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void MenuItemsUseTheSameDefaultOutsideGeometryAsUnorderedLists()
+    {
+        const string items = "<li id=a>a b</li><li id=b></li>";
+        var menu = UnorderedList("<menu id=list>" + items + "</menu>", width: 50).Root!;
+        var unordered = UnorderedList("<ul id=list>" + items + "</ul>", width: 50).Root!;
+        Assert.Equal(Find(unordered, "list").Content, Find(menu, "list").Content);
+        foreach (var id in new[] { "a", "b" })
+        {
+            var actual = Find(menu, id);
+            var expected = Find(unordered, id);
+            Assert.Equal(expected.Content, actual.Content);
+            Assert.Equal(expected.DiscMarker, actual.DiscMarker);
+            Assert.Equal(expected.Lines.Count, actual.Lines.Count);
+        }
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(menu, "a").DiscMarker);
+        Assert.Equal(2, Find(menu, "a").Lines.Count);
+        Assert.Equal(10, Find(menu, "b").Content.Height);
+    }
+
+    [Fact]
+    public void NestedMenuAndUnorderedListsUseExistingDepthAndMarginRules()
+    {
+        var root = UnorderedList(
+            "<menu><li id=a><ul><li id=b><menu><li id=c></li></menu></li></ul></li></menu>",
+            width: 180).Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(root, "a").DiscMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(root, "b").CircleMarker);
+        Assert.Equal(new LayoutRect(112, 3, 3, 3), Find(root, "c").SquareMarker);
+        Assert.Equal(10, Find(root, "c").Content.Height);
+        var ordered = UnorderedList("<ol start=9><li id=a><menu><li id=b></li></menu></li><li id=c></li></ol>",
+            width: 180).Root!;
+        Assert.Equal("9.", Find(ordered, "a").TextMarker!.Run.Text);
+        Assert.NotNull(Find(ordered, "b").CircleMarker);
+        Assert.Equal("10.", Find(ordered, "c").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void MenuNumericMarkersRetainIndependentCountersAndItemOverrides()
+    {
+        var root = UnorderedList("""
+            <menu start=9 reversed type=square>
+            <li id=first><menu><li id=nested></li><li id=nested-next></li></menu></li>
+            <li id=reset value=4></li><li id=roman type=I></li><li id=hidden></li>
+            <li id=suppressed></li><li id=last></li></menu>
+            """, "menu{list-style-type:decimal-leading-zero}#hidden{display:none}#suppressed{list-style:none}").Root!;
+        Assert.Equal("01.", Find(root, "first").TextMarker!.Run.Text);
+        Assert.Equal("01.", Find(root, "nested").TextMarker!.Run.Text);
+        Assert.Equal("02.", Find(root, "nested-next").TextMarker!.Run.Text);
+        Assert.Equal("04.", Find(root, "reset").TextMarker!.Run.Text);
+        Assert.Equal("V.", Find(root, "roman").TextMarker!.Run.Text);
+        Assert.Null(TryFind(root, "hidden"));
+        Assert.Null(Find(root, "suppressed").TextMarker);
+        Assert.Equal("07.", Find(root, "last").TextMarker!.Run.Text);
+        var typeIsNotAHint = UnorderedList("<menu type=square><li id=x></li></menu>").Root!;
+        Assert.NotNull(Find(typeIsNotAHint, "x").DiscMarker);
+    }
+
+    [Theory]
+    [InlineData("<menu style='display:inline'></menu>")]
+    [InlineData("<menu style='display:inline'><li>x</li></menu>")]
+    [InlineData("<menu><li type=triangle>x</li></menu>")]
+    [InlineData("<dir><li>x</li></dir>")]
+    [InlineData("<div><li>x</li></div>")]
+    public void MenuSupportKeepsUnsupportedListContextsExplicit(string html) =>
+        Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
+
+    [Fact]
+    public void MenuListScansUseExistingExactLimitsAndCancellation()
+    {
+        const string html = "<menu><li></li></menu>";
+        Assert.NotNull(UnorderedList(html, options: new() { MaxBoxes = 4, MaxNodes = 5, MaxShapingCalls = 1 }).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxBoxes = 3 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxNodes = 4 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<menu><li></li><li></li></menu>", options: new() { MaxShapingCalls = 1 }));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var document = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
+    [Fact]
     public void SquareMarkersKeepOutsideGeometryForWrappedNestedAndEmptyItems()
     {
         var root = UnorderedList("<ul id=parent><li id=a>a b</li><li id=b></li></ul>",
@@ -236,7 +320,6 @@ public sealed class LayoutTests
     [InlineData("<ul type='di\u017fc'><li>x</li></ul>")]
     [InlineData("<ul><li type=x>x</li></ul>")]
     [InlineData("<dir><li>x</li></dir>")]
-    [InlineData("<menu><li>x</li></menu>")]
     [InlineData("<li>x</li>")]
     public void UnimplementedListKindsRemainExplicitFailures(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));

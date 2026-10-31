@@ -69,7 +69,7 @@ ReadOnlyMemory; IPixelSurface does not retain presentation memory.
 
 ## Paint order and supported output
 
-Outermost default unordered-list markers are separate `FillEllipse` commands
+Outermost default `ul` and `menu` markers are separate `FillEllipse` commands
 using the item's computed `color` and layout's bounded outside-marker rectangle.
 Skia draws antialiased solid discs after block backgrounds and before that item's
 text, without synthesizing DOM text, reshaping a bullet glyph or creating font

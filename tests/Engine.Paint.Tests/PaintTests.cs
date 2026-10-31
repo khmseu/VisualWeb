@@ -45,6 +45,17 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void MenuListUsesExistingMarkerPaintCommandsAndLimits()
+    {
+        const string css = "menu{display:block;padding-left:20px}li{display:list-item;color:red}";
+        var list = Page("<menu><li></li><li></li></menu>", css, new() { MaxCommands = 2 });
+        Assert.Equal(new FillEllipse(new(12, 3, 3, 3), Red), list.Commands[0]);
+        Assert.Equal(new FillEllipse(new(12, 13, 3, 3), Red), list.Commands[1]);
+        Assert.Throws<PaintLimitException>(() => Page("<menu><li></li><li></li></menu>",
+            css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
     public void SquareMarkersUseCurrentColorRectanglePixelsAndCommandBudget()
     {
         const string css = "ul{display:block;padding-left:20px;list-style:square}li{display:list-item;color:red}";

@@ -64,8 +64,17 @@
   ebenso Solution-Build, lokaler V8-Smoke und alle 15.247 Solution-Tests.
   Der Solutionformatter meldet nur die drei bekannten Baseline-Findings;
   die uebrigen geaenderten C#-Dateien bestehen die separate Formatpruefung.
-  Commit, Push und CI stehen noch aus
+  Commit `9e3fdd1` ist gepusht; Linux, Windows und CodeQL bestanden,
+  einschliesslich x64 und arm64
   ([KP-100](./Kontextprotokoll.md#kp-100---nullaufgefuellte-dezimalmarker)).
+  Pass 8 ergaenzt begrenztes `<menu>`-Listenlayout mit denselben UA-Block- und
+  Paddingwerten, Markern und Budgets wie `<ul>`; verschachtelte Listen und
+  `li`-Hinweise bleiben unterstuetzt. `dir`-Listenlayout und spezielle Toolbar-
+  APIs bleiben ausgenommen. Build, lokaler V8-Smoke und alle 15.260 Solution-
+  Tests bestehen, darunter 13 netto neue Faelle; der Gesamtformatter meldet nur
+  die drei bekannten Baseline-Findings und die uebrigen geaenderten C#-Dateien
+  bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus
+  ([KP-102](./Kontextprotokoll.md#kp-102---menu-listenlayout)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

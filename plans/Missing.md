@@ -527,7 +527,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 - Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
-- Default unordered lists now render with outside markers, including
+- Default `ul` and `menu` unordered lists now render with outside markers, including
   nested and empty items. UA items use `display:list-item`; inherited
   `list-style-type:disc/circle/square/decimal/decimal-leading-zero/none`, the alphabetic and Roman
   styles `lower-alpha`/`upper-alpha`/`lower-roman`/`upper-roman` and the
@@ -545,17 +545,19 @@ The current engine implements finite static block/inline rendering. Missing esse
   rectangle or a single clipped, inset outline command respectively. The
   HTML UA marker defaults now use circles with one list ancestor and squares
   with two or more; ordered lists remain decimal, author styles still override
-  UA rules, and `dir`/`menu` participate only in CSS list rules.
+  UA rules. `menu` has `ul`-equivalent block/padding and bounded list layout;
+  `dir` participates only in CSS marker rules.
   HTML UA list margins are 1em above and below outer lists and zero on
   descendants of `dir`/`dl`/`menu`/`ol`/`ul`; vertical writing and
-  `dir`/`menu` list layout remain unsupported.
+  `dir` list layout remain unsupported.
   Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` hints support ASCII-case-insensitive disc/circle/square/none
   on `ul`/`li` and exact `1`, `a`, `A`, `i` and `I` on `ol`/`li`, using the author presentational
-  hint origin and shared CSS assignment budget. Unsupported/malformed type
-  values, other marker styles, inside positioning and arbitrary list-item
-  elements remain explicit failures. See the
+  hint origin and shared CSS assignment budget. `menu` attributes `type`,
+  `start` and `reversed` do not affect list rendering. Unsupported or malformed
+  types on the supported hint elements, other marker styles, inside positioning
+  and arbitrary list-item elements remain explicit failures. See the
   [list layout scope](../docs/text-layout.md#default-unordered-lists) and
   [paint guide](../docs/painting.md#paint-order-and-supported-output).
   Local validation: the decimal increment adds 19 regressions covering CSS,
@@ -609,6 +611,10 @@ The current engine implements finite static block/inline rendering. Missing esse
   rendering. The solution build, local V8 smoke and all 15,247 solution tests
   pass; solution formatting reports only the same three baseline findings, with
   all other changed C# files passing a targeted format check.
+  The `menu` list-layout increment adds 13 net CSS, layout, paint, native-pixel
+  and browser regressions. The solution build, local V8 smoke and all 15,260
+  solution tests pass; the solution formatter reports only the same three
+  baseline findings, with other changed C# files passing a targeted check.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common

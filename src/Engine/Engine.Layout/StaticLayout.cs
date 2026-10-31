@@ -85,6 +85,7 @@ public sealed record LayoutOptions
 /// <see href="https://drafts.csswg.org/css-text-3/#line-break-property">interoperable no-break guidance</see>.
 /// Supported legacy list type hints follow html
 /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list rendering</see>.
+/// Menu lists follow html <see href="https://html.spec.whatwg.org/multipage/grouping-content.html#the-menu-element">menu</see>.
 /// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
 public static partial class StaticLayout
 {
@@ -173,15 +174,15 @@ public static partial class StaticLayout
                 return;
             }
             if (Display(element) == "list-item"
-                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" or "ol" }))
+                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" or "ol" or "menu" }))
             {
-                throw new UnsupportedLayoutException("List-item markers require a direct ul or ol parent.");
+                throw new UnsupportedLayoutException("List-item markers require a direct ul, ol or menu parent.");
             }
-            if (element.LocalName is "ul" or "ol" or "li"
-                && (!block || element.GetAttribute("type") is not null
+            if (element.LocalName is "ul" or "ol" or "menu" or "li"
+                && (!block || element.LocalName != "menu" && element.GetAttribute("type") is not null
                     && !CssStyleEngine.TryGetListTypeHint(element, out _)))
             {
-                throw new UnsupportedLayoutException("Lists require block layout and a supported legacy type attribute.");
+                throw new UnsupportedLayoutException("List elements require block layout and, where applicable, a supported legacy type attribute.");
             }
             if (element.LocalName is "bdi" or "bdo" or "img" or "select"
                 or "video" or "audio" or "canvas" or "iframe" or "object" or "embed"
@@ -201,7 +202,7 @@ public static partial class StaticLayout
             Visit();
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             var style = Style(element);
-            if (element.LocalName is "ul" or "ol") { PrepareList(element); }
+            if (element.LocalName is "ul" or "ol" or "menu") { PrepareList(element); }
             var table = Display(element) == "table" ? PlanTable(element, containingWidth, depth) : null;
             var padding = Edges(style, "padding", containingWidth);
             var border = Edges(style, "border", containingWidth, "-width");

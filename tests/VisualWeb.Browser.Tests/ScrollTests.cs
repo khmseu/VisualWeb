@@ -55,6 +55,36 @@ public sealed class ScrollTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ScriptedMenuItemsRetainPixelsAndLinksAcrossScrollAndResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 10000, executeInlineScripts: true);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        const string items = "<li id=item><a href=/next>x</a></li><li></li>";
+        var viewport = new PageViewport(140, 20, 1);
+        var document = Document("<!doctype html><style>" + style + "</style><menu>" + items + "</menu>"
+            + "<script>document.getElementById('item').setAttribute('type','I')</script>");
+        var actual = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 20 }, Cancellation);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 120 }, Cancellation);
+        var reference = Document("<!doctype html><style>" + style + "</style><ul>"
+            + "<li type=I><a href=/next>x</a></li><li></li></ul>");
+        var expected = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var expectedScrolled = await renderer.RenderRetainedAsync(reference, viewport with { ScrollY = 20 }, Cancellation);
+        var expectedResized = await renderer.RenderRetainedAsync(reference, viewport with { Width = 120 }, Cancellation);
+        Assert.Equal(40, actual.ScrollHeight);
+        Assert.Equal("https://example.com/next", Assert.Single(actual.LinkTargets).Url);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expectedScrolled.Frame.Pixels.ToArray(), scrolled.Frame.Pixels.ToArray());
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ScriptedLeadingZeroStyleSurvivesRetainedRepaint(bool process)
     {
         using IPageRenderer renderer = process

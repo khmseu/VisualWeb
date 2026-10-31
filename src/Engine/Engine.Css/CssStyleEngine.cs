@@ -44,7 +44,7 @@ public static class CssStyleEngine
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, p, section, article, aside, nav, header, footer, main, address,
-        blockquote, pre, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, figure, figcaption, hr, form { display: block }
+        blockquote, pre, h1, h2, h3, h4, h5, h6, ul, ol, menu, li, dl, dt, dd, figure, figcaption, hr, form { display: block }
         input, button, textarea, select { display: inline-block }
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }
@@ -52,7 +52,7 @@ public static class CssStyleEngine
         p, blockquote, pre, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         :is(dir, dl, menu, ol, ul) :is(dir, dl, menu, ol, ul) { margin-top: 0; margin-bottom: 0 }
         blockquote { margin-left: 40px; margin-right: 40px }
-        ul, ol { padding-left: 40px }
+        ul, ol, menu { padding-left: 40px }
         dir, menu, ul { list-style-type: disc }
         ol { list-style-type: decimal }
         :is(dir, menu, ol, ul) :is(dir, menu, ul) { list-style-type: circle }

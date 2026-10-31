@@ -7,6 +7,7 @@ Does not depend on browser chrome or concrete OS backends.
 Caller-supplied CSS can select the bounded outside disc, hollow circle, square,
 decimal (including zero-padded), ASCII alphabetic or Roman list markers supported by the layout and paint subsystems; content
 does not discover styles or fetch marker resources.
+Static `menu` lists use the same bounded outside-marker rendering as `ul`.
 
 See the [painting guide](../../../docs/painting.md), [project map](../../../docs/project-map.md) and
 [architecture](../../../docs/architecture/overview.md).

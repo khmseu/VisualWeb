@@ -136,6 +136,27 @@ public sealed class CascadeTests
         Assert.Equal(new CssKeyword("none"), Child(suppressed, doc)["list-style-type"]);
     }
 
+    [Fact]
+    public void MenuListUsesUaBlockPaddingAndExistingCascade()
+    {
+        var doc = Document("<menu id=parent type=square><li id=child>item</li></menu>");
+        var menu = doc.GetElementById("parent")!;
+        var defaults = Compute(doc);
+        Assert.Empty(defaults.Diagnostics);
+        Assert.Equal(new CssKeyword("block"), defaults.Styles[menu]["display"]);
+        Assert.Equal(new CssLength(40, "px"), defaults.Styles[menu]["padding-left"]);
+        Assert.Equal(new CssLength(16, "px"), defaults.Styles[menu]["margin-top"]);
+        Assert.Equal(new CssKeyword("disc"), Child(defaults, doc)["list-style-type"]);
+        Assert.False(CssStyleEngine.TryGetListTypeHint(menu, out _));
+
+        var authored = Compute(doc, new CssStyleSource("#parent{padding-left:12px;list-style-type:square}"));
+        Assert.Equal(new CssLength(12, "px"), authored.Styles[menu]["padding-left"]);
+        Assert.Equal(new CssKeyword("square"), Child(authored, doc)["list-style-type"]);
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword("inline"), withoutUa.Styles[menu]["display"]);
+        Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[menu]["padding-left"]);
+    }
+
     [Theory]
     [InlineData("list-style-type:square")]
     [InlineData("list-style-type:SqUaRe")]

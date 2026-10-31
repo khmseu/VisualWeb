@@ -7,7 +7,7 @@ computed CSS snapshots and an injected text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
-Unordered lists use block list-item boxes with separate outside marker geometry;
+Unordered `ul` and `menu` lists use block list-item boxes with separate outside marker geometry;
 nested/empty items and inherited marker suppression are bounded. HTML UA defaults
 use discs, circles and squares at increasing list depth. Circles and squares use
 the same outside geometry as discs; circles are hollow.
@@ -19,8 +19,9 @@ sign, so `0`/`9` become `00.`/`09.` while `-1` stays `-1.`.
 Roman ordinals outside 1..3999 use decimal fallback rather
 than extended overlined forms. Scans and output share existing budgets.
 Legacy `type` hints support disc/circle/square/none on `ul`/`li` and exact
-`1`/`a`/`A`/`i`/`I` on `ol`/`li`; unsupported values still fail explicitly. Inside markers, other
-marker styles and arbitrary list-item elements remain unsupported. See the
+`1`/`a`/`A`/`i`/`I` on `ol`/`li`; unsupported values still fail explicitly.
+`menu` ignores `type`, `start` and `reversed` for list rendering. Inside markers, other
+marker styles, `dir` list layout and arbitrary list-item elements remain unsupported. See the
 guide for exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,

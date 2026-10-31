@@ -67,9 +67,10 @@ The bounded list subset adds `display:list-item` and inherited longhands
 list-item. The `list-style` shorthand expands the same finite longhands,
 including resets, CSS-wide keywords and `none` ambiguity handling.
 HTML UA marker defaults select discs, circles or squares according to list
-ancestor depth; nested ordered lists remain decimal. `dir`/`menu` participate
-in these CSS rules without adding support for their list layout. Broader list
-styles remain unsupported.
+ancestor depth; nested ordered lists remain decimal. `menu` receives the same
+UA block display and start padding as `ul`; `dir` participates in the marker
+rules without adding support for its list layout. Broader list styles remain
+unsupported.
 For horizontal writing, HTML UA list block margins are represented by 1em
 top/bottom margins on outer `dir`/`dl`/`menu`/`ol`/`ul` and zero on list
 descendants of any of those types. Author and user cascade remain unchanged.

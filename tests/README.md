@@ -27,6 +27,9 @@ Roman marker tests cover both cases and exact HTML type hints, all 1..3999
 representations against an independent place-value table, decimal fallback,
 numbering and exact shared limits, native text-pixel equivalence and scripted
 local/process retained repaint.
+Menu-list tests cover UA block/padding, unordered and ordered nesting, numeric
+and item-type markers, exact limits, unsupported contexts, native pixel
+equivalence and scripted local/process retained repaint with links.
 
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,

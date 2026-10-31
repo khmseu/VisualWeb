@@ -182,8 +182,9 @@ the type and image unless the type is otherwise specified; `none decimal`
 therefore retains decimal markers. Duplicate components or unsupported values
 (inside, images, other marker types) diagnose the whole declaration without
 partially changing longhands.
-Layout currently accepts visible list-item boxes only for direct `li` children
-of `ul` or `ol`; the UA rules do not enable `dir`/`menu` list layout.
+The UA sheet gives `menu` the same block display and 40px start padding as
+`ul`. Layout currently accepts visible list-item boxes only for direct `li`
+children of `ul`, `ol` or `menu`; `dir` list layout remains unsupported.
 
 The supported [HTML list `type` hints](https://html.spec.whatwg.org/multipage/rendering.html#lists)
 (local ID `html`) map ASCII-case-insensitive `disc`, `circle`, `square` and
