@@ -106,6 +106,150 @@ public sealed class LinkTests
     }
 
     [Theory]
+    [InlineData(false, "a-1-b", "a-1-|b")]
+    [InlineData(true, "a-1-b", "a-1-|b")]
+    [InlineData(false, "1-a-2-b", "1-|a-2-|b")]
+    [InlineData(true, "1-a-2-b", "1-|a-2-|b")]
+    public async Task BoundedNumericTextHyphenLinkSelectionAndGeometryReflowOnRetainedResize(
+        bool process, string value, string segments)
+    {
+        var (narrowWidth, wideWidth) = Widths(value, segments);
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var document = Document("<!doctype html><style>*{margin:0}</style><a href='/next'>" + value + "</a>");
+        var first = await renderer.RenderAsync(document, new(narrowWidth, 100, 1), Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal(value, string.Concat(first.TextTargets.Select(target => target.Text)));
+        Assert.Equal(segments.Split('|'), first.TextTargets.GroupBy(target => target.Rect.Y)
+            .Select(line => string.Concat(line.Select(target => target.Text))));
+        var link = Assert.Single(first.LinkTargets);
+        Assert.Equal("https://example.com/next", link.Url);
+        Assert.Equal(segments.Split('|').Length, link.Rects.Select(rect => rect.Y).Distinct().Count());
+        Assert.All(link.Rects, rect => Assert.True(link.Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)));
+
+        var resized = await renderer.RenderRetainedAsync(document, new(wideWidth, 100, 1), Cancellation);
+        Assert.Equal(value, string.Concat(resized.TextTargets.Select(target => target.Text)));
+        Assert.Single(Assert.Single(resized.LinkTargets).Rects.Select(rect => rect.Y).Distinct());
+
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var narrow = new PageViewport(narrowWidth, 100, 1);
+        var wide = new PageViewport(wideWidth, 100, 1);
+        controller.Navigate(tab.Id, "https://example.com/final/index.html");
+        source.Requests[0].Completion.SetResult(document);
+        PumpUntil(() => controller.Page(tab.Id) is not null, narrow);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal(segments.Replace('|', '\n'), controller.SelectedText(tab.Id));
+        var previous = controller.Page(tab.Id);
+        controller.Resize(tab.Id, wide);
+        PumpUntil(() => !ReferenceEquals(previous, controller.Page(tab.Id)), wide);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal(value, controller.SelectedText(tab.Id));
+        Assert.Single(source.Requests);
+
+        static (double Narrow, double Wide) Widths(string word, string lines)
+        {
+            using var font = new TextFont(FontPath);
+            var narrow = Math.Ceiling(lines.Split('|').Max(line => font.Shape(line, 16, Cancellation).Width));
+            var wide = Math.Ceiling(font.Shape(word, 16, Cancellation).Width) + 1;
+            Assert.True(wide > narrow);
+            return (narrow, wide);
+        }
+
+        void PumpUntil(Func<bool> condition, PageViewport viewport)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do
+            {
+                controller.Pump(_ => viewport);
+                if (condition()) { return; }
+                Thread.Sleep(5);
+            } while (DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
+    [InlineData(false, "normal", "-10")]
+    [InlineData(true, "normal", "-10")]
+    [InlineData(false, "normal", "2026-10-31")]
+    [InlineData(true, "normal", "2026-10-31")]
+    [InlineData(false, "pre-line", "1/2")]
+    [InlineData(true, "pre-line", "1/2")]
+    [InlineData(false, "pre-line", "24/7")]
+    [InlineData(true, "pre-line", "24/7")]
+    public async Task BoundedNumericTextUnbrokenLinkSelectionAndGeometryReflowOnRetainedResize(
+        bool process, string mode, string value)
+    {
+        var (narrowWidth, wideWidth) = Widths(value);
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var document = Document("<!doctype html><style>*{margin:0}body{white-space:" + mode
+            + "}</style><a href='/next'>go " + value + "</a>");
+        var first = await renderer.RenderAsync(document, new(narrowWidth, 100, 1), Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal("go" + value, string.Concat(first.TextTargets.Select(target => target.Text)));
+        Assert.Equal(["go", value], first.TextTargets.GroupBy(target => target.Rect.Y)
+            .Select(line => string.Concat(line.Select(target => target.Text))));
+        var link = Assert.Single(first.LinkTargets);
+        Assert.Equal("https://example.com/next", link.Url);
+        Assert.Equal(2, link.Rects.Select(rect => rect.Y).Distinct().Count());
+        Assert.All(link.Rects, rect => Assert.True(link.Contains(rect.X + rect.Width / 2, rect.Y + rect.Height / 2)));
+
+        var resized = await renderer.RenderRetainedAsync(document, new(wideWidth, 100, 1), Cancellation);
+        Assert.Equal("go " + value, string.Concat(resized.TextTargets.Select(target => target.Text)));
+        Assert.Single(Assert.Single(resized.LinkTargets).Rects.Select(rect => rect.Y).Distinct());
+
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var narrow = new PageViewport(narrowWidth, 100, 1);
+        var wide = new PageViewport(wideWidth, 100, 1);
+        controller.Navigate(tab.Id, "https://example.com/final/index.html");
+        source.Requests[0].Completion.SetResult(document);
+        PumpUntil(() => controller.Page(tab.Id) is not null, narrow);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal("go\n" + value, controller.SelectedText(tab.Id));
+        var previous = controller.Page(tab.Id);
+        controller.Resize(tab.Id, wide);
+        PumpUntil(() => !ReferenceEquals(previous, controller.Page(tab.Id)), wide);
+        Assert.True(controller.SelectAllVisibleText(tab.Id));
+        Assert.Equal("go " + value, controller.SelectedText(tab.Id));
+        Assert.Single(source.Requests);
+
+        static (double Narrow, double Wide) Widths(string word)
+        {
+            using var font = new TextFont(FontPath);
+            var prefix = font.Shape("go", 16, Cancellation).Width;
+            var space = font.Shape(" ", 16, Cancellation).Width;
+            var width = font.Shape(word, 16, Cancellation).Width;
+            var narrow = Math.Ceiling(Math.Max(prefix, width));
+            var wide = Math.Ceiling(prefix + space + width) + 1;
+            Assert.True(wide > narrow);
+            return (narrow, wide);
+        }
+
+        void PumpUntil(Func<bool> condition, PageViewport viewport)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do
+            {
+                controller.Pump(_ => viewport);
+                if (condition()) { return; }
+                Thread.Sleep(5);
+            } while (DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
     [InlineData(false, "normal", "first.last+tag@example.com")]
     [InlineData(true, "normal", "first.last+tag@example.com")]
     [InlineData(false, "pre-line", "user_name@example.com")]

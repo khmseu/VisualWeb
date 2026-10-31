@@ -427,6 +427,81 @@ public sealed class ContentTests
         Assert.Equal(wide.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
     }
 
+    [Theory]
+    [InlineData("-10")]
+    [InlineData("-1,000.25")]
+    [InlineData("2026-10-31")]
+    [InlineData("1/2")]
+    [InlineData("24/7")]
+    [InlineData("a-1")]
+    public void BoundedNumericTextUnbrokenRunsMatchNativeNonwrappingPixelsAndReflow(string value)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var html = "<!doctype html><p>" + value + "</p>";
+        var wordWidth = font.Shape(value, 16, Cancellation).Width;
+        var narrowWidth = Math.Floor(wordWidth / 2);
+        var wideWidth = Math.Ceiling(wordWidth) + 1;
+        CssStyleSource[] wrapping = [new("*{margin:0}p{white-space:normal}")];
+        CssStyleSource[] reference = [new("*{margin:0}p{white-space:nowrap}")];
+        var actual = OfflinePageRenderer.Render(html, wrapping, text, fonts, narrowWidth, 80,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, reference, text, fonts, narrowWidth, 80,
+            cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Single(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.True(actual.ScrollWidth > narrowWidth);
+        Assert.Equal(expected.ScrollWidth, actual.ScrollWidth);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Contains(actual.Frame.Pixels.ToArray(), channel => channel < 255);
+
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, wrapping, text, fonts, wideWidth, 80,
+            cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, reference, text, fonts, wideWidth, 80,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Single(resized.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expectedResized.ScrollWidth, resized.ScrollWidth);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
+    [InlineData("a-1-b", "a-1-|b", "a-", "a-1-")]
+    [InlineData("1-a-2-b", "1-|a-2-|b", "1-", "a-2-")]
+    public void BoundedNumericTextHyphenBreaksMatchExplicitNativePixelsAndReflow(
+        string value, string segments, string fitting, string overflowing)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        var narrowWidth = Math.Ceiling(Math.Max(font.Shape(fitting, 16, Cancellation).Width,
+            font.Shape("b", 16, Cancellation).Width));
+        var wideWidth = Math.Ceiling(font.Shape(value, 16, Cancellation).Width) + 1;
+        Assert.True(font.Shape(overflowing, 16, Cancellation).Width > narrowWidth);
+        Assert.True(wideWidth > narrowWidth);
+        CssStyleSource[] styles = [new("*{margin:0}")];
+        CssStyleSource[] explicitBreakStyles = [new("*{margin:0}p{white-space:pre}")];
+        var html = "<!doctype html><p>" + value + "</p>";
+        var actual = OfflinePageRenderer.Render(html, styles, text, fonts, narrowWidth, 100,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render("<!doctype html><p>"
+            + string.Join("<br>", segments.Split('|')) + "</p>", explicitBreakStyles, text, fonts,
+            narrowWidth, 100, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(segments.Split('|').Length, actual.DisplayList.Commands.OfType<DrawGlyphRun>().Count());
+        Assert.Equal(expected.ScrollWidth, actual.ScrollWidth);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, styles, text, fonts, wideWidth, 100,
+            cancellationToken: Cancellation);
+        var wide = OfflinePageRenderer.Render(html, styles, text, fonts, wideWidth, 100,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Single(resized.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(wide.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
     [Fact]
     public void JustifiedTextMatchesIndependentRightAlignedNativePixelsAndReflows()
     {

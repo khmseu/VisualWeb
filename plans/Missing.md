@@ -620,10 +620,12 @@ The current engine implements finite static block/inline rendering. Missing esse
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common
 punctuation (including ordinary URL and hyphenated text) without soft wrapping;
 spaces/forced breaks and horizontal overflow remain mode-appropriate.
-`normal`/`pre-line` now also allow a soft break after an ASCII hyphen between
-ASCII letters in one text node, with bounded break-search work and retained
-source identity. A solidus between ASCII letters in one text node stays in
-the same unbroken segment; this also works with supported hyphen breaks.
+`normal`/`pre-line` support a leading ASCII hyphen before a digit and internal
+hyphens between ASCII letters/digits in one text node. Internal hyphens break
+only before a letter, not before a digit; `-10` and `2026-10-31` stay
+unbroken. A solidus between two ASCII letters or two ASCII digits likewise
+stays unbroken, including `and/or`, `1/2` and `24/7`. These cases retain
+source identity and share bounded break-search work and table sizing.
 The ASCII infix separators `.`, `,`, `:` and `;` between ASCII letters/digits
 in one text node likewise stay unbroken, allowing `example.com`, `1,000.25`
 and `12:30` without changing space/hyphen breaks or intrinsic sizing.
@@ -634,6 +636,10 @@ Other solidus forms, unsupported internal infix contexts (including adjacent
 separators or non-ASCII neighbors), unsupported neighbors of those email
 joiners, broader punctuation/Unicode-break algorithms, cross-node word shaping,
 unsupported scripts/bidi/controls and missing-font handling remain unsupported.
+Supported inline form controls now provide soft-wrap opportunities on both
+sides in wrapping modes, including beside U+00A0; `pre`/`nowrap` remain
+nonwrapping. Direct control adjacency to U+035C..U+0362 glue in wrapping
+modes fails explicitly until line-break backtracking is implemented.
 See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
 The earlier nonwrapping increment's 17 new regressions, solution build and all
 14,357 solution tests pass; formatting retains only the three established
@@ -659,6 +665,11 @@ browser cases, including exact table widths, work limits, cancellation and
 retained link selection. The solution build, all 15,403 solution tests and
 solution formatting verification pass locally, as does the local V8 smoke.
 General email, URL and Unicode line breaking remain unsupported.
+The bounded numeric and atomic-control increment adds 350 net layout,
+native-content and local/process browser cases. It covers negative numbers,
+dates, fractions, mixed hyphen opportunities, intrinsic widths, whitespace,
+explicit glue rejection and retained selection. The solution build, all 15,753
+solution tests, solution formatting and local V8 smoke pass.
 
 The previously rejected `text-align:justify` now supports bounded English
 inter-word justification on soft-wrapped lines. Collapsed ASCII spaces absorb

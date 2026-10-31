@@ -33,6 +33,12 @@ equivalence and scripted local/process retained repaint with links.
 ASCII infix-separator tests cover letter/digit pairs, shaping and hyphen
 budgets, table intrinsic sizing, explicit exclusions, native pixels, and
 local/process link selection across retained reflow.
+ASCII email-joiner tests cover bounded `@`, `_` and `+` neighbors, source
+identity, table sizing and limits, native pixels, and local/process link
+selection and reflow. Numeric punctuation and atomic-widget tests cover
+negative numbers, dates, fractions, exact hyphen and widget boundaries,
+whitespace modes, glue rejection, budgets, cancellation, native pixels,
+and retained local/process selection.
 Inter-word justification tests cover exact, fractional and large-width spacing,
 forced and final lines, overflow, inline styles/widgets, table sizing,
 no-break-space and missing-glyph failures, shared budgets, independent native

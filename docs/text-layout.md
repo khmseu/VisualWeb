@@ -238,20 +238,30 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   [text alignment](https://drafts.csswg.org/css-text-3/#text-align-property)
   and [justification methods](https://drafts.csswg.org/css-text-3/#text-justify-property)
   (local ID `css-text`).
-- In `normal`/`pre-line`, an ASCII hyphen between ASCII letters in one text
-  node is a soft break after the hyphen. The whole word stays one shaped run
-  if it fits; otherwise the last fitting hyphen is used, or the first
-  unbreakable segment overflows. Fragments retain their source text node,
-  including during table intrinsic sizing and retained-document reflow.
+- In `normal`/`pre-line`, a leading ASCII hyphen before a digit and internal
+  hyphens between ASCII letters/digits are supported within one text node.
+  An internal hyphen is a soft break only before a letter, never before a
+  digit. Negative numbers and dates such as `-1,000.25` and `2026-10-31`
+  therefore remain unbroken. The whole word stays one shaped run if it fits;
+  otherwise the last fitting eligible hyphen is used, or the first unbreakable
+  segment overflows. Fragments retain their source text node, including during
+  table intrinsic sizing and retained-document reflow.
   See [CSS Text line breaking](https://drafts.csswg.org/css-text-3/#line-breaking)
-  (local ID `css-text`) and [Unicode line-break rules](https://www.unicode.org/reports/tr14/tr14-55.html#LB20a)
-  (local ID `unicode-linebreak`, Unicode 17, UAX 14 revision 55).
-- In `normal`/`pre-line`, a solidus between ASCII letters in one text node is
-  part of the unbroken shaped word, including when mixed with supported hyphen
-  breaks. It can overflow and contributes its full unbreakable segment width to
-  table sizing. This narrow behavior follows the
+  (local ID `css-text`) and Unicode 17
+  [LB20a](https://www.unicode.org/reports/tr14/tr14-55.html#LB20a),
+  [LB21](https://www.unicode.org/reports/tr14/tr14-55.html#LB21) and
+  [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) (local ID
+  `unicode-linebreak`, UAX 14 revision 55).
+- In `normal`/`pre-line`, a solidus between two ASCII letters or two ASCII
+  digits in one text node is part of the unbroken shaped word, including
+  `and/or`, `1/2` and `24/7` and mixtures with supported hyphen breaks. It can
+  overflow and contributes its full unbreakable segment width to table sizing.
+  This narrow behavior follows the
   [CSS Text interoperability guidance](https://drafts.csswg.org/css-text-3/#line-break-property)
-  (local ID `css-text`); it is not general URL or Unicode line breaking.
+  (local ID `css-text`) and Unicode 17
+  [LB13](https://www.unicode.org/reports/tr14/tr14-55.html#LB13) and
+  [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25)
+  (local ID `unicode-linebreak`); it is not general URL or Unicode line breaking.
 - In `normal`/`pre-line`, `.`, `,`, `:` and `;` between ASCII letters or digits
   in one text node stay in the unbroken shaped word. This includes
   `example.com`, `1,000.25` and `12:30`; space and supported hyphen breaks
@@ -280,6 +290,16 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   preserves spaces/forced newlines; `nowrap` still collapses whitespace.
   See [CSS Text white-space](https://drafts.csswg.org/css-text-3/#white-space-property)
   (local ID `css-text`). Script/bidi/control and missing-glyph failures remain.
+- In `normal`/`pre-line`, supported inline form controls provide soft-wrap
+  opportunities on either side, including next to a no-break space (U+00A0).
+  `pre`/`nowrap` do not soft-wrap at these boundaries. The surrounding
+  inline's whitespace mode governs the boundary, independently of the
+  control's own mode. Direct adjacency between a control and the supported
+  Unicode GL combining marks U+035C..U+0362 in a wrapping mode fails
+  explicitly because correct grouping can require unsupported backtracking;
+  separating spaces and nonwrapping modes remain supported. See
+  [atomic-inline wrapping](https://drafts.csswg.org/css-text-3/#atomic-compat-wrap)
+  (local ID `css-text`). This does not add general inline-block layout.
 - Left/start, right/end, center and bounded justification; baseline alignment across
   font sizes, line-height multipliers/px/normal, half-leading and inline struts.
   Negative leading is valid; an empty inline strut can affect an existing line
@@ -294,8 +314,9 @@ explicitly or those styles overridden.
 - Bidi/RTL/auto direction, non-English language-specific layout, script
   itemization, advanced script/fallback/emoji shaping.
 - Full Unicode line breaking, hyphenation and other punctuation-internal
-  opportunities. In wrapping modes, leading/trailing, repeated,
-  non-ASCII-adjacent or digit-adjacent hyphens and solidi, adjacent internal
+  opportunities. In wrapping modes, leading hyphens not followed by ASCII
+  digits, trailing/repeated or non-ASCII-adjacent hyphens, leading/trailing,
+  repeated, mixed letter/digit or non-ASCII-adjacent solidi, adjacent internal
   infix separators, non-ASCII-adjacent infix separators, unsupported neighbors
   of internal `@`, `_` or `+`, and other unsupported internal punctuation fail;
   nonwrapping pre/nowrap do not need this analysis.

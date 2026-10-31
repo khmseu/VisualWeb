@@ -3676,3 +3676,51 @@ Browserfaelle. Der Solution-Build, die Formatpruefung, der lokale V8-Smoke
 und alle 15.403 Solution-Tests bestehen. Der Review fand keine inhaltlichen
 Fehler; die abschliessende Diffpruefung erfolgte hier anhand der geaenderten
 Dateien. Commit, Push und CI stehen noch aus.
+
+**Commit und CI:** `fd119782c81d99d70dcb4d9137939da8f58344bc` wurde
+zusammen mit den zwei bestehenden Branch-Vorgaengern auf `origin/main`
+gepusht. Der Commit-Hook pruefte neun Dateien ohne Findings.
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/41227981413),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41227981447)
+und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41227981308)
+bestanden; Linux und Windows umfassten x64 und arm64.
+
+### KP-107 - Zahlen und Datumsangaben im Textlayout
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle: aktueller Zehn-Passen-Auftrag, [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [Textlayout](../docs/text-layout.md#ordinary-flow),
+  [Layouttests](../tests/Engine.Layout.Tests/LayoutTests.cs) und lokaler
+  Unicode-17-Cache `unicode-linebreak`, Regeln LB13, LB20a, LB21 und LB25.
+- Bezug: KP-106.
+
+**Belegte Auswahl:** Der bestehende Textpfad lehnt Bindestriche neben Ziffern
+und Solidus zwischen Ziffern ab; vorhandene Negativtests bestaetigen einen
+Teil dieser Grenze. Dadurch scheitern gewoehnliche negative Zahlen,
+Datumsangaben und Zahlenbrueche auf ansonsten einfachen Seiten.
+Unicode LB25 untersagt den Umbruch zwischen Bindestrich und nachfolgender
+Ziffer sowie innerhalb der ausgewaehlten Ziffer/Solidus/Ziffer-Folge.
+Ein Bindestrich vor einem ASCII-Buchstaben kann innerhalb eines solchen
+Worts dagegen weiterhin ein Umbruchpunkt sein. Die Korrektur muss daher auch
+die vorhandene Suche nach Bindestrichumbruechen und die intrinsische
+Tabellenbreite konsistent behandeln; allgemeiner Unicode-Umbruch bleibt offen.
+
+**Umsetzung und Review:** Fuehrendes `-` vor einer ASCII-Ziffer, interne
+Bindestriche zwischen ASCII-Buchstaben/Ziffern und Solidus zwischen zwei
+ASCII-Ziffern sind unterstuetzt. Nur interne Bindestriche vor einem Buchstaben
+bieten einen Umbruch. Ein Review zeigte einen zuvor bestehenden, nun fuer
+Zahlen sichtbaren Fehler an Inline-Control-Grenzen: normale Woerter wurden
+dort nicht korrekt umgebrochen. Die Korrektur nutzt den Whitespace-Modus der
+umgebenden Inline-Formatierung; `pre` und `nowrap` bleiben ungebrochen.
+Ein weiterer Review zeigte, dass direkte Nachbarschaft zu Unicode-GL-Zeichen
+fruehere Umbruchentscheidungen zuruecknehmen muesste. Statt eine unvollstaendige
+Backtracking-Implementierung vorzugeben, scheitert diese Kombination in
+umbruchfaehigen Modi explizit; Leerzeichen, U+00A0 und nicht umbrechende Modi
+bleiben unterstuetzt.
+
+**Lokale Validierung:** Die Tests wurden jeweils vor der Umsetzung beziehungsweise
+Reviewkorrektur rot ausgefuehrt. Danach bestehen die drei betroffenen Suites
+mit 734 Layout-, 54 Content- und 1.252 Browserfaellen sowie alle 15.753
+serialisierten Solution-Tests. Der Solution-Build, die Formatpruefung und
+der lokale V8-Smoke bestehen. Das sind 350 netto neue Solution-Faelle.
+Commit, Push und CI stehen noch aus.

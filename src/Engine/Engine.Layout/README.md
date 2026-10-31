@@ -1,7 +1,7 @@
 # Engine.Layout
 
 Phase-7 finite horizontal LTR normal-flow block/inline geometry and bounded
-space/internal-ASCII-hyphen line wrapping, with internal ASCII-letter solidi
+space/internal-ASCII-hyphen line wrapping, with selected ASCII solidi
 and bounded ASCII infix separators and email joiners retained in unbroken
 words. Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
@@ -42,18 +42,26 @@ row/group backgrounds, nested tables/widgets and other
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow
-geometry and shared shaping/text limits. In wrapping modes, only hyphens
-between ASCII letters in one text node add a break after the hyphen; a solidus
-between ASCII letters in one text node is retained without a soft break.
+geometry and shared shaping/text limits. In wrapping modes, a leading hyphen
+before an ASCII digit and internal hyphens between ASCII letters/digits in one
+text node are supported; only an internal hyphen before a letter is a soft
+break. A solidus between two ASCII letters or two ASCII digits stays unbroken,
+allowing dates, negative numbers and fractions without general numeric breaking.
 Likewise `.`, `,`, `:` and `;` between ASCII letters or digits in one text
 node remain unbroken, including `example.com`, `1,000.25` and `12:30`.
 Internal `@`, `_` and `+` between ASCII letters or digits in one text node
 also remain unbroken, including `first.last+tag@example.com` and
 `user_name@example.com`; this is not general email or URL line breaking.
 Repeated hyphen break analysis uses a shared work budget; leading/trailing,
-repeated, non-ASCII-adjacent and digit-adjacent solidi, other punctuation/Unicode-break
+repeated, mixed letter/digit and non-ASCII-adjacent solidi, other punctuation/Unicode-break
 exclusions (including adjacent or non-ASCII-adjacent internal infix separators
 and email joiners) and cross-node/style shaping restrictions remain.
+
+Supported inline form controls wrap on either side in wrapping whitespace modes,
+but not in `pre`/`nowrap`. Direct adjacency to U+035C..U+0362 glue in wrapping
+modes fails explicitly because line-break backtracking is not implemented;
+separating spaces and the U+00A0 atomic-boundary exception remain supported.
+General inline-block layout remains unsupported.
 
 `text-align:justify` distributes positive slack on soft-wrapped English text
 lines across collapsed ASCII spaces. Final/forced-break lines and lines without

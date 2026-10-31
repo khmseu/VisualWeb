@@ -8,13 +8,17 @@
 - Aktueller Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
-  Ausgangspunkt ist `1bf9b74`; der saubere Branch enthaelt bereits zwei
-  lokale Commits vor `origin/main`. Pass 1 ist in Arbeit: gewoehnliche
-  ASCII-E-Mail-Adressen sollen im vorhandenen begrenzten Textlayout nicht mehr
-  an internen `@`, `_` oder `+` zwischen ASCII-Buchstaben und Ziffern
-  scheitern. Die Umsetzung und 74 neue Faelle sind lokal validiert:
-  Solution-Build, alle 15.403 Solution-Tests, Formatpruefung und lokaler
-  V8-Smoke bestehen. Commit, Push und CI stehen noch aus.
+  Ausgangspunkt war `1bf9b74` mit zwei damals ungeschobenen lokalen Commits.
+  Pass 1 unterstuetzt begrenzte ASCII-E-Mail-Adressen im Textlayout; alle
+  15.403 Solution-Tests, Build, Formatpruefung und lokaler V8-Smoke bestanden.
+  Commit `fd11978` ist gepusht; Linux, Windows und CodeQL bestanden,
+  einschliesslich x64 und arm64. Pass 2 unterstuetzt begrenzte negative
+  Zahlen, Datumsangaben und Brueche sowie Umbrueche neben vorhandenen
+  Inline-Controls; direkte GL/Control-Nachbarschaft in Umbruchmodi scheitert
+  mangels Backtracking explizit
+  ([KP-107](./Kontextprotokoll.md#kp-107---zahlen-und-datumsangaben-im-textlayout)).
+  Build, Formatpruefung, lokaler V8-Smoke und alle 15.753 Solution-Tests
+  bestehen, darunter 350 netto neue Faelle. Commit, Push und CI stehen aus.
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).

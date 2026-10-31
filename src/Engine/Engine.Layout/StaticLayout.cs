@@ -78,11 +78,16 @@ public sealed record LayoutOptions
 /// Basic automatic tables follow local ID css2-tables,
 /// <see href="https://www.w3.org/TR/CSS22/tables.html#auto-table-layout">automatic table layout</see>,
 /// with canonical HTML boxes, separate borders and top-aligned cells only.
-/// Internal ASCII-letter hyphens use css-text
+/// Bounded ASCII alphanumeric hyphens use css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#line-breaking">line breaking</see> and unicode-linebreak
-/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">hyphen rules</see>.
-/// Internal ASCII-letter solidus uses the css-text
-/// <see href="https://drafts.csswg.org/css-text-3/#line-break-property">interoperable no-break guidance</see>.
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">LB20a</see>,
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB21">LB21</see>,
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB23">LB23</see> and
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see>.
+/// Internal ASCII-letter or ASCII-digit solidus uses the css-text
+/// <see href="https://drafts.csswg.org/css-text-3/#line-break-property">interoperable no-break guidance</see>
+/// and unicode-linebreak <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB13">LB13</see>
+/// and <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see>.
 /// ASCII infix separators between ASCII letters/digits follow unicode-linebreak
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB15d">LB15d</see>,
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see> and
@@ -93,6 +98,11 @@ public sealed record LayoutOptions
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see> and
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB28">LB28</see>.
 /// These finite cases do not imply general email, URL or Unicode line breaking.
+/// Atomic form-control wrapping follows css-text
+/// <see href="https://drafts.csswg.org/css-text-3/#atomic-compat-wrap">atomic inline wrap opportunities</see>,
+/// subject to the containing inline's supported white-space mode. Wrapping-mode GL
+/// (U+035C..U+0362 and following combining marks inheriting GL) beside a widget
+/// is rejected until line-break backtracking is supported; U+00A0 remains exempt.
 /// Bounded inter-word justification uses css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#text-align-property">text alignment</see> and
 /// <see href="https://drafts.csswg.org/css-text-3/#text-justify-property">justification methods</see>.
@@ -537,6 +547,17 @@ public static partial class StaticLayout
         private static double CollapseMargins(IReadOnlyList<double> margins)
             => Math.Max(0, margins.Max()) + Math.Min(0, margins.Min());
 
+        private static bool CanSoftWrap(string whitespace) => whitespace switch
+        {
+            "normal" or "pre-line" => true,
+            "nowrap" or "pre" => false,
+            _ => throw new UnsupportedLayoutException($"white-space:{whitespace} is outside the initial layout subset.")
+        };
+
+        // Other GL/WJ/ZWJ characters are rejected by the existing wrapping-text grammar;
+        // U+00A0 is explicitly exempted by the atomic-inline compatibility rule.
+        private static bool IsAtomicWrapGlue(char character) => character is >= '\u035c' and <= '\u0362';
+
         [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit inline-layout element and whitespace vocabulary keeps the finite supported grammar visible at this traversal boundary.")]
         private void Gather(DomNode node, CssComputedStyle inheritedStyle, List<InlineUnit> output, int depth)
         {
@@ -547,11 +568,7 @@ public static partial class StaticLayout
             {
                 ChargeCharacters(text.Data.Length);
                 var whitespace = ((CssKeyword)inheritedStyle["white-space"]).Value;
-                if (whitespace is not ("normal" or "nowrap" or "pre" or "pre-line"))
-                {
-                    throw new UnsupportedLayoutException($"white-space:{whitespace} is outside the initial layout subset.");
-                }
-                var canWrap = whitespace is not ("pre" or "nowrap");
+                var canWrap = CanSoftWrap(whitespace);
                 var word = new StringBuilder();
                 foreach (var c in text.Data.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'))
                 {
@@ -579,18 +596,24 @@ public static partial class StaticLayout
                     var value = word.ToString();
                     TextFont.ValidateLatin(value, cancellation);
                     var hasHyphenBreaks = false;
+                    var endsWithAtomicGlue = false;
                     if (canWrap)
                     {
                         for (var index = 0; index < value.Length; index++)
                         {
                             cancellation.ThrowIfCancellationRequested();
                             var c = value[index];
+                            if (IsAtomicWrapGlue(c)) { endsWithAtomicGlue = true; }
+                            else if (endsWithAtomicGlue
+                                && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark)
+                            { endsWithAtomicGlue = false; }
                             if (c == '/')
                             {
                                 if (index == 0 || index == value.Length - 1
-                                    || !char.IsAsciiLetter(value[index - 1]) || !char.IsAsciiLetter(value[index + 1]))
+                                    || !(char.IsAsciiLetter(value[index - 1]) && char.IsAsciiLetter(value[index + 1])
+                                        || char.IsAsciiDigit(value[index - 1]) && char.IsAsciiDigit(value[index + 1])))
                                 {
-                                    throw new UnsupportedLayoutException("Only internal solidus between ASCII letters is supported in wrapping text.");
+                                    throw new UnsupportedLayoutException("Only internal solidus between ASCII letters or ASCII digits is supported in wrapping text.");
                                 }
                                 continue;
                             }
@@ -600,12 +623,14 @@ public static partial class StaticLayout
                             }
                             if (c == '-')
                             {
-                                if (index == 0 || index == value.Length - 1
-                                    || !char.IsAsciiLetter(value[index - 1]) || !char.IsAsciiLetter(value[index + 1]))
+                                if (index == value.Length - 1
+                                    || (index == 0 ? !char.IsAsciiDigit(value[index + 1])
+                                        : !char.IsAsciiLetterOrDigit(value[index - 1])
+                                            || !char.IsAsciiLetterOrDigit(value[index + 1])))
                                 {
-                                    throw new UnsupportedLayoutException("Only internal hyphens between ASCII letters support line breaking.");
+                                    throw new UnsupportedLayoutException("Only a leading hyphen before an ASCII digit or an internal hyphen between ASCII letters or digits is supported in wrapping text.");
                                 }
-                                hasHyphenBreaks = true;
+                                hasHyphenBreaks |= char.IsAsciiLetter(value[index + 1]);
                                 continue;
                             }
                             if (index > 0 && index < value.Length - 1 && !char.IsLetterOrDigit(c)
@@ -618,7 +643,8 @@ public static partial class StaticLayout
                             }
                         }
                     }
-                    output.Add(new(text, inheritedStyle, value, UnitKind.Word, canWrap) { HasHyphenBreaks = hasHyphenBreaks });
+                    output.Add(new(text, inheritedStyle, value, UnitKind.Word, canWrap)
+                    { HasHyphenBreaks = hasHyphenBreaks, EndsWithAtomicGlue = endsWithAtomicGlue });
                     word.Clear();
                 }
             }
@@ -628,7 +654,9 @@ public static partial class StaticLayout
                 Check(element, depth);
                 if (element.LocalName is "input" or "button" or "textarea" or "select" && Display(element) == "inline-block")
                 {
-                    output.Add(new(null, Style(element), "", UnitKind.Widget, true) { Widget = element });
+                    // The surrounding inline's whitespace governs the atomic boundary, not the widget's contents.
+                    var whitespace = ((CssKeyword)inheritedStyle["white-space"]).Value;
+                    output.Add(new(null, Style(element), "", UnitKind.Widget, CanSoftWrap(whitespace)) { Widget = element });
                     return;
                 }
                 if (Display(element) != "inline")
@@ -672,8 +700,8 @@ public static partial class StaticLayout
             var advance = 0.0;
             var hasContent = false;
             InlineUnit? space = null;
-            var previousWord = false;
-            var previousWidget = false;
+            InlineUnit? previousWord = null;
+            var previousWidgetAllowsWrap = false;
             foreach (var unit in input)
             {
                 cancellation.ThrowIfCancellationRequested();
@@ -691,23 +719,31 @@ public static partial class StaticLayout
                 if (unit.Kind == UnitKind.Space)
                 {
                     space ??= unit;
-                    previousWord = false;
+                    previousWord = null;
                     continue;
                 }
                 if (unit.Kind == UnitKind.Break)
                 {
                     space = null;
                     Emit(true);
-                    previousWord = false;
-                    previousWidget = false;
+                    previousWord = null;
+                    previousWidgetAllowsWrap = false;
                     continue;
+                }
+                // Struts do not separate inline content, but spaces and forced breaks do.
+                // A GL/widget group can require reconsidering an earlier soft-wrap choice.
+                if (space is null
+                    && (unit.Kind == UnitKind.Widget && unit.Wrap && previousWord?.EndsWithAtomicGlue == true
+                        || unit.Kind == UnitKind.Word && previousWidgetAllowsWrap && IsAtomicWrapGlue(unit.Text[0])))
+                {
+                    throw new UnsupportedLayoutException("Unicode GL adjacent to an inline widget requires deferred line-break backtracking.");
                 }
                 if (unit.Kind == UnitKind.Widget)
                 {
                     var widget = unit.Widget ?? throw new InvalidOperationException("Inline widget is missing its element.");
                     var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width, widget);
                     var widgetGap = space is not null && hasContent ? Shape(" ", space.Style) : null;
-                    if (hasContent && (space?.Wrap == true || previousWidget)
+                    if (hasContent && (space?.Wrap == true || unit.Wrap && previousWord?.EndsWithAtomicGlue != true)
                         && advance + (widgetGap?.Width ?? 0) + widgetWidth > width)
                     {
                         Emit(false, softWrap: true);
@@ -722,24 +758,25 @@ public static partial class StaticLayout
                     pending.Add(new(null, Shape("", unit.Style), unit.Style, advance, widget, widgetWidth, widgetHeight));
                     advance += widgetWidth;
                     hasContent = true;
-                    previousWord = false;
-                    previousWidget = true;
+                    previousWord = null;
+                    previousWidgetAllowsWrap = unit.Wrap;
                     continue;
                 }
-                if (previousWord && unit.Kind == UnitKind.Word)
+                if (previousWord is not null && unit.Kind == UnitKind.Word)
                 {
                     throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
                 }
                 if (unit.HasHyphenBreaks)
                 {
                     PlaceHyphenatedWord(unit);
-                    previousWord = true;
-                    previousWidget = false;
+                    previousWord = unit;
+                    previousWidgetAllowsWrap = false;
                     continue;
                 }
                 var run = Shape(unit.Text, unit.Style);
                 var gap = space is not null && hasContent ? Shape(" ", space.Style) : null;
-                var breakable = space?.Wrap == true || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
+                var breakable = space?.Wrap == true || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])
+                    || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
                 if (hasContent && breakable && advance + (gap?.Width ?? 0) + run.Width > width)
                 {
                     Emit(false, softWrap: true);
@@ -754,8 +791,8 @@ public static partial class StaticLayout
                 pending.Add(new(unit.Source!, run, unit.Style, advance));
                 advance += run.Width;
                 hasContent = true;
-                previousWord = unit.Kind == UnitKind.Word;
-                previousWidget = false;
+                previousWord = unit.Kind == UnitKind.Word ? unit : null;
+                previousWidgetAllowsWrap = false;
             }
             if (hasContent) { Emit(false); }
             return output;
@@ -783,19 +820,21 @@ public static partial class StaticLayout
                     for (var index = 0; index < remaining.Length; index++)
                     {
                         cancellation.ThrowIfCancellationRequested();
-                        if (remaining[index] != '-') { continue; }
+                        if (remaining[index] != '-' || index == remaining.Length - 1
+                            || !char.IsAsciiLetter(remaining[index + 1])) { continue; }
                         var end = index + 1;
                         ChargeLineBreakWork(end);
                         var candidate = Shape(remaining[..end], unit.Style);
                         if (first is null) { first = candidate; firstEnd = end; }
                         if (candidate.Width <= available) { best = candidate; bestEnd = end; }
                     }
-                    if (best is null && hasContent && (space?.Wrap == true || previousWidget))
+                    if (best is null && hasContent && (space?.Wrap == true
+                        || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])))
                     {
                         Emit(false, softWrap: true);
                         space = null;
                         gap = null;
-                        previousWidget = false;
+                        previousWidgetAllowsWrap = false;
                         continue;
                     }
                     if (best is null)
@@ -813,7 +852,7 @@ public static partial class StaticLayout
                     ChargeLineBreakWork(remaining.Length - bestEnd);
                     remaining = remaining[bestEnd..];
                     gap = null;
-                    previousWidget = false;
+                    previousWidgetAllowsWrap = false;
                 }
 
                 void Place(ShapedRun run)
@@ -1059,6 +1098,7 @@ public static partial class StaticLayout
         {
             public DomElement? Widget { get; init; }
             public bool HasHyphenBreaks { get; init; }
+            public bool EndsWithAtomicGlue { get; init; }
         }
         private sealed record Placed(DomText? Source, ShapedRun Run, CssComputedStyle Style, double Advance,
             DomElement? Widget = null, double Width = 0, double Height = 0)

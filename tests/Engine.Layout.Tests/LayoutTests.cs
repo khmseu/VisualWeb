@@ -1675,6 +1675,300 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("-10", 15)]
+    [InlineData("-10", 10)]
+    [InlineData("-1,000.25", 45)]
+    [InlineData("-1,000.25", 20)]
+    [InlineData("2026-10-31", 50)]
+    [InlineData("2026-10-31", 24)]
+    [InlineData("1/2", 15)]
+    [InlineData("1/2", 10)]
+    [InlineData("24/7", 20)]
+    [InlineData("24/7", 10)]
+    [InlineData("a-1", 15)]
+    [InlineData("a-1", 10)]
+    [InlineData("-1/2", 10)]
+    [InlineData("1/2/3", 10)]
+    [InlineData("1-2", 10)]
+    public void BoundedNumericTextUnbreakableWordsKeepSourceAndExactGeometry(string text, double width)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var (document, styles) = Page("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}");
+            var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+            var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), width, 200,
+                cancellationToken: Cancellation).Root!, "x");
+            var fragment = Assert.Single(Assert.Single(box.Lines).Fragments);
+            Assert.Same(source, fragment.Source);
+            Assert.Equal(text, fragment.Run.Text);
+            Assert.Equal(text.Length * 5, fragment.Run.Width);
+            Assert.Equal(width, box.Content.Width);
+        }
+    }
+
+    [Theory]
+    [InlineData("1-a", 15, "1-a")]
+    [InlineData("1-a", 14, "1-|a")]
+    [InlineData("1-a", 5, "1-|a")]
+    [InlineData("a-1-b", 25, "a-1-b")]
+    [InlineData("a-1-b", 24, "a-1-|b")]
+    [InlineData("a-1-b", 20, "a-1-|b")]
+    [InlineData("a-1-b", 10, "a-1-|b")]
+    [InlineData("1-a-2-b", 35, "1-a-2-b")]
+    [InlineData("1-a-2-b", 34, "1-a-2-|b")]
+    [InlineData("1-a-2-b", 30, "1-a-2-|b")]
+    [InlineData("1-a-2-b", 20, "1-|a-2-|b")]
+    [InlineData("1-a-2-b", 10, "1-|a-2-|b")]
+    [InlineData("-1-a-2-b", 15, "-1-|a-2-|b")]
+    [InlineData("1/2-3-a/b", 20, "1/2-3-|a/b")]
+    [InlineData("A-9-Z", 10, "A-9-|Z")]
+    public void BoundedNumericTextBreaksOnlyAfterHyphensFollowedByLetters(
+        string text, double width, string expected)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var (document, styles) = Page("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}");
+            var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+            var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), width, 200,
+                cancellationToken: Cancellation).Root!, "x");
+            var fragments = box.Lines.SelectMany(line => line.Fragments).ToArray();
+            Assert.Equal(expected.Split('|'), box.Lines.Select(line =>
+                string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+            Assert.Equal(text, string.Concat(fragments.Select(fragment => fragment.Run.Text)));
+            Assert.All(fragments, fragment => Assert.Same(source, fragment.Source));
+        }
+    }
+
+    [Theory]
+    [InlineData("normal", "-10 1/2", 35, "-10 1/2")]
+    [InlineData("normal", "-10 1/2", 34, "-10|1/2")]
+    [InlineData("normal", "x 1-a", 20, "x 1-|a")]
+    [InlineData("normal", "x 1-a", 15, "x|1-a")]
+    [InlineData("normal", "x 1-a", 10, "x|1-|a")]
+    [InlineData("normal", "-10<br>1/2", 15, "-10|1/2")]
+    [InlineData("pre-line", "-10\n1/2", 15, "-10|1/2")]
+    [InlineData("pre-line", "a-1-b\n24/7", 20, "a-1-|b|24/7")]
+    public void BoundedNumericTextKeepsSpaceAndForcedBreakBehavior(
+        string mode, string html, double width, string expected)
+    {
+        var box = Find(Layout("<p id=x>" + html + "</p>", "#x{white-space:" + mode + "}", width).Root!, "x");
+        Assert.Equal(expected.Split('|'), box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Theory]
+    [InlineData("nowrap", "a-1-b", "a-1-b")]
+    [InlineData("nowrap", "a--b 1/a -ab", "a--b 1/a -ab")]
+    [InlineData("pre", "a-1-b\n24/7", "a-1-b|24/7")]
+    [InlineData("pre", "a--b 1/a -ab", "a--b 1/a -ab")]
+    public void BoundedNumericTextDoesNotAlterNonwrappingModes(string mode, string text, string expected)
+    {
+        var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}", 10).Root!, "x");
+        Assert.Equal(expected.Split('|'), box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Theory]
+    [InlineData("-ab")]
+    [InlineData("-")]
+    [InlineData("ab-")]
+    [InlineData("-1-")]
+    [InlineData("a--b")]
+    [InlineData("1--2")]
+    [InlineData("--10")]
+    [InlineData("-\u00e9")]
+    [InlineData("-\u00b2")]
+    [InlineData("\u00e9-1")]
+    [InlineData("1-\u00e9")]
+    [InlineData("\u00b2-1")]
+    [InlineData("1-\u00b2")]
+    [InlineData("/1")]
+    [InlineData("1/")]
+    [InlineData("1//2")]
+    [InlineData("1/2/")]
+    [InlineData("1/a")]
+    [InlineData("a/1")]
+    [InlineData("1/\u00e9")]
+    [InlineData("\u00e9/1")]
+    [InlineData("1/\u00b2")]
+    [InlineData("\u00b2/1")]
+    [InlineData("1 / 2")]
+    [InlineData("-<span>1</span>")]
+    [InlineData("a-<span>1</span>")]
+    [InlineData("1<span>-1</span>")]
+    [InlineData("1<span>-a</span>")]
+    [InlineData("1/<span>2</span>")]
+    [InlineData("1<span>/2</span>")]
+    [InlineData("1<span>/</span>2")]
+    public void BoundedNumericTextKeepsUnsupportedNeighborsAndNodeBoundaries(string text)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            Assert.Throws<UnsupportedLayoutException>(() =>
+                Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
+        }
+    }
+
+    [Theory]
+    [InlineData("-10")]
+    [InlineData("2026-10-31")]
+    [InlineData("1/2")]
+    [InlineData("24/7")]
+    [InlineData("a-1")]
+    public void BoundedNumericTextWithoutBreaksRetainsExactSharedLimits(string text)
+    {
+        var html = "<p>" + text + "</p>";
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = text.Length,
+            MaxShapedGlyphs = text.Length,
+            MaxShapingCalls = 2,
+            MaxLines = 1,
+            MaxLineBreakOperations = 1
+        };
+        Assert.NotNull(Layout(html, width: 5, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 5, options: exact with { MaxTextCharacters = text.Length - 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 5, options: exact with { MaxShapedGlyphs = text.Length - 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 5, options: exact with { MaxShapingCalls = 1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Layout(html, width: 5, options: exact with { MaxLineBreakOperations = 0 }));
+    }
+
+    [Theory]
+    [InlineData("a-1-b", 10, 5, 2, 16)]
+    [InlineData("1-a-2-b", 25, 9, 3, 43)]
+    public void BoundedNumericTextMixedBreakSearchRetainsExactSharedLimits(
+        string text, int glyphs, int calls, int lines, long work)
+    {
+        var html = "<p>" + text + "</p>";
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = text.Length,
+            MaxShapedGlyphs = glyphs,
+            MaxShapingCalls = calls,
+            MaxLines = lines,
+            MaxLineBreakOperations = work
+        };
+        Assert.NotNull(Layout(html, width: 10, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 10, options: exact with { MaxTextCharacters = text.Length - 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 10, options: exact with { MaxShapedGlyphs = glyphs - 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 10, options: exact with { MaxShapingCalls = calls - 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 10, options: exact with { MaxLines = lines - 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, width: 10, options: exact with { MaxLineBreakOperations = work - 1 }));
+        Assert.NotNull(Layout(html + html, width: 10, options: new() { MaxLineBreakOperations = work * 2 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html + html, width: 10, options: new() { MaxLineBreakOperations = work * 2 - 1 }));
+    }
+
+    [Theory]
+    [InlineData("-10", 10, 21, 15, "-10")]
+    [InlineData("1/2", 10, 21, 15, "1/2")]
+    [InlineData("24/7", 10, 26, 20, "24/7")]
+    [InlineData("2026-10-31", 10, 56, 50, "2026-10-31")]
+    [InlineData("a-1", 10, 21, 15, "a-1")]
+    [InlineData("1-a", 10, 16, 10, "1-|a")]
+    [InlineData("a-1-b", 10, 26, 20, "a-1-|b")]
+    [InlineData("a-1-b", 30, 30, 24, "a-1-|b")]
+    [InlineData("a-1-b", 31, 31, 25, "a-1-b")]
+    [InlineData("1-a-2-b", 10, 26, 20, "1-|a-2-|b")]
+    [InlineData("1-a-2-b", 36, 36, 30, "1-a-2-|b")]
+    [InlineData("1-a-2-b", 41, 41, 35, "1-a-2-b")]
+    [InlineData("1/2-3-a/b", 10, 36, 30, "1/2-3-|a/b")]
+    public void BoundedNumericTextTableIntrinsicAndFinalWidthsUseTheSameOpportunities(
+        string text, double viewport, double tableWidth, double cellWidth, string expected)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var root = UnorderedList("<table id=t><tr><td id=c>" + text + "</td></tr></table>",
+                "td{white-space:" + mode + "}", width: viewport).Root!;
+            var table = Find(root, "t");
+            var cell = Find(root, "c");
+            var source = Assert.IsType<DomText>(cell.Element.ChildNodes[0]);
+            Assert.Equal(tableWidth, table.Content.Width);
+            Assert.Equal(cellWidth, cell.Content.Width);
+            Assert.Equal(expected.Split('|'), cell.Lines.Select(line =>
+                string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+            Assert.All(cell.Lines.SelectMany(line => line.Fragments),
+                fragment => Assert.Same(source, fragment.Source));
+
+            var paragraph = Find(Layout("<p id=x>" + text + "</p>",
+                "#x{white-space:" + mode + "}", width: cellWidth).Root!, "x");
+            Assert.Equal(expected.Split('|'), paragraph.Lines.Select(line =>
+                string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+        }
+    }
+
+    [Fact]
+    public void BoundedNumericTextTableMeasurementAndFinalLayoutShareExactLimits()
+    {
+        const string html = "<table><tr><td>a-1-b</td></tr></table>";
+        var exact = new LayoutOptions
+        {
+            MaxBoxes = 6,
+            MaxNodes = 12,
+            MaxDepth = 7,
+            MaxLines = 5,
+            MaxTextCharacters = 10,
+            MaxShapedGlyphs = 25,
+            MaxShapingCalls = 12,
+            MaxLineBreakOperations = 38
+        };
+        Assert.NotNull(UnorderedList(html, width: 10, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxBoxes = 5 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxNodes = 11 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxDepth = 6 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxLines = 4 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxTextCharacters = 9 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxShapedGlyphs = 24 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxShapingCalls = 11 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, width: 10, options: exact with { MaxLineBreakOperations = 37 }));
+    }
+
+    [Theory]
+    [InlineData(false, "-10", "-10")]
+    [InlineData(true, "1/2", "1/2")]
+    [InlineData(false, "a-1-b", "a-1-b")]
+    [InlineData(false, "a-1-b", "a-1-")]
+    [InlineData(true, "a-1-b", "a-1-")]
+    public void BoundedNumericTextObservesCancellationDuringShapingAndTableMeasurement(
+        bool table, string text, string canceledText)
+    {
+        var html = table ? "<table><tr><td>" + text + "</td></tr></table>" : "<p>" + text + "</p>";
+        var document = HtmlParser.Parse("<!doctype html>" + html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        var shaper = new CancelOnTextShaper(cancellation, canceledText);
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            shaper, 10, 200, cancellationToken: cancellation.Token));
+        Assert.True(shaper.CanceledOnText);
+    }
+
+    [Fact]
+    public void BoundedNumericTextWrappingIsDeterministicAcrossRepeatedLayouts()
+    {
+        var (document, styles) = Page("<p id=x>1-a-2-b</p>");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var first = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 10, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var second = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 10, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        Assert.Equal(first.Lines.Select(line => line.Bounds), second.Lines.Select(line => line.Bounds));
+        Assert.Equal(first.Lines.SelectMany(line => line.Fragments)
+            .Select(fragment => (fragment.Run.Text, fragment.X, fragment.Baseline)),
+            second.Lines.SelectMany(line => line.Fragments)
+                .Select(fragment => (fragment.Run.Text, fragment.X, fragment.Baseline)));
+        Assert.All(second.Lines.SelectMany(line => line.Fragments), fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Theory]
     [InlineData("normal", "aa-bb", 25, "aa-bb")]
     [InlineData("normal", "aa-bb", 24, "aa-|bb")]
     [InlineData("normal", "aa-bb", 15, "aa-|bb")]
@@ -1731,8 +2025,6 @@ public sealed class LayoutTests
     [InlineData("-ab")]
     [InlineData("ab-")]
     [InlineData("a--b")]
-    [InlineData("1-a")]
-    [InlineData("a-1")]
     [InlineData("a-b//c")]
     [InlineData("a-<span>b</span>")]
     public void OtherHyphenAndCrossNodeCasesRemainExplicitlyUnsupported(string text) =>
