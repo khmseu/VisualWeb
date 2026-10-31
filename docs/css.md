@@ -295,6 +295,17 @@ complete HTML rendering stylesheet (controls have limited inline-block defaults
 and no UA borders/padding/fonts). Broader marker types,
 decoration and replaced-element sizing are not yet implemented.
 
+The [HTML phrasing-content rendering rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
+(local ID `html`) include `:link { color: #0000EE }` in the UA sheet. The
+existing `:link` matcher applies it to HTML `a` and `area` elements with an
+`href`, including empty, invalid or navigation-blocked values; it never
+consults history and treats every link as unvisited. Descendants inherit the
+color unless overridden. User, author, inline and important declarations, as
+well as `revert`, use the normal cascade. With the UA sheet disabled and no
+other color declaration, links inherit their parent's color or use the initial
+color. `:visited`, active and hover styling, cursor behavior and visible text
+decoration, including link underlining, remain unsupported.
+
 The [HTML phrasing-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) set `big` to `font-size:larger`, `small` to
 `font-size:smaller`, `dfn` to italic alongside `cite`/`em`/`i`/`var`, and

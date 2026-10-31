@@ -8,7 +8,11 @@ Selectors include `:scope` with explicit immutable `CssSelectorScope` roots
 `:any-link` matches HTML `a` and `area` elements with an `href` attribute,
 regardless of its value or navigation policy. `:link` matches the same elements,
 treating every link as unvisited without history access; `:visited` remains
-explicitly unsupported.
+explicitly unsupported. The [HTML phrasing-content UA rule](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
+(ID `html`) sets `:link { color: #0000EE }`. It uses the normal cascade and
+inheritance, including user/author/inline overrides and `revert`; disabling the
+UA sheet removes the default. Active/hover styling, cursor behavior and visible
+link decoration, including underlines, remain unsupported.
 `:nth-child(An+B of S)` and `:nth-last-child(An+B of S)` support strict complex
 selector lists, filtered inclusive element siblings and maximum argument
 specificity, sharing the original scope and matching budgets.
@@ -44,8 +48,8 @@ The [HTML phrasing-content UA rules](https://html.spec.whatwg.org/multipage/rend
 `dfn` the existing italic default and `tt` the existing monospace default.
 They use the parent's computed size and normal inheritance/cascade, and are
 absent when the UA sheet is disabled. Text shaping still requires exact
-configured faces; no fallback, synthesis, additional phrasing rules or
-layout/text support is implied.
+configured faces; no fallback, synthesis or additional layout/text support is
+implied.
 `text-decoration` and `text-decoration-line` accept only `none` or the supported
 CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`), with a
 non-inherited line value and the normal cascade. `revert-layer` remains

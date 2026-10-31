@@ -23,8 +23,13 @@
   bearbeitet fehlende HTML-UA-Schriftdefaults fuer `small`, `big`, `dfn` und
   `tt`. Build, Formatpruefung, lokale und sandboxed V8-Smokes, Linux-
   Sandbox-Smoke und alle 15.780 Solution-Tests bestehen, darunter 27 neue
-  Faelle; Commit, Push und CI stehen aus
-  ([KP-108](./Kontextprotokoll.md#kp-108---html-schriftdefaults)).
+  Faelle. Commit `e6eb02d` ist gepusht; Linux, Windows und CodeQL bestanden,
+  einschliesslich x64 und arm64
+  ([KP-108](./Kontextprotokoll.md#kp-108---html-schriftdefaults)). Pass 4
+  ergaenzt die fehlende HTML-UA-Farbe fuer unbesuchte Links. Build,
+  Formatpruefung, lokaler V8-Smoke und alle 15.806 Solution-Tests bestehen,
+  darunter 26 neue Faelle; Commit, Push und CI stehen aus
+  ([KP-109](./Kontextprotokoll.md#kp-109---standardfarbe-fuer-links)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).

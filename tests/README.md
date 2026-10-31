@@ -1,5 +1,14 @@
 # Tests
 
+Link-color UA regressions cover HTML `a`/`area` href presence, empty and
+blocked values, case, mutation/recomputation, inherited color, disabled UA
+styles, cascade/importance/`revert`, shared budgets and unsupported `:visited`.
+Native content pixels are compared with explicit blue and author-color
+references, including the absence of an underline. Local and process browser
+tests compare pixels with independent CSS references through hit testing,
+visible selection, fragment history and retained reflow, and verify that
+script-mutated hrefs recompute color without rerunning scripts on resize.
+
 Phrasing-font UA regressions cover `big`/`small` relative and nested sizes,
 `dfn` italic and `tt` monospace alongside the existing selector groups, including
 inheritance, author/user/inline/important cascade, `revert`, disabled UA styles,

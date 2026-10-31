@@ -3757,4 +3757,39 @@ Groessen, Cascade, konkrete Fontidentitaeten, native Pixel, fehlende
 Kursivschrift und erhaltene Links/Auswahl bei Resize in beiden Renderermodi ab.
 Solution-Build, Formatpruefung, lokale und sandboxed V8-Smokes sowie der Linux-
 Sandbox-Smoke bestanden. Alle 15.780 serialisierten Solution-Tests bestehen;
-das sind 27 neue Faelle. Commit, Push und CI stehen noch aus.
+das sind 27 neue Faelle.
+
+**Commit und CI:** `e6eb02def8f0582be81063a9b1d6a4e58f5eeaa4` wurde auf
+`origin/main` gepusht. Der Commit-Hook pruefte 13 Dateien ohne Findings.
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/41242550669),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41242550503)
+und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41242550755)
+bestanden; Linux und Windows umfassten x64 und arm64. Die CI meldete
+Node-20-Aktionsdeprecation, keinen Fehler.
+
+### KP-109 - Standardfarbe fuer Links
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quelle: aktueller Zehn-Passen-Auftrag,
+  [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [CSS-UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs) und lokaler
+  HTML-Cache, Abschnitt `#phrasing-content-3`.
+- Bezug: KP-108.
+
+**Auswahl (Ableitung):** Fuer lesbare einfache Seiten und erkennbare Navigation
+fehlt die HTML-UA-Standardfarbe `#0000EE` fuer `:link`; der vorhandene
+Matcher behandelt alle Links ohne Zugriff auf die History als unbesucht. Das
+Inkrement soll ausschliesslich diese Farbe und die vorhandene Cascade nutzen.
+Unterstreichung, besuchte/aktive Zustaende, Cursor und Navigationspolitik
+bleiben unveraendert.
+
+**Umsetzung und lokale Validierung:** Die UA-Regel setzt `:link` auf
+`#0000EE`. Neue zielgerichtete Tests scheiterten vor der Aenderung und
+bestanden danach; anschliessend bestanden 979 CSS-, 65 Content- und 1.262
+Browserfaelle. Sie pruefen Attributmutation, Cascade, native Pixel, lokale und
+Prozessrenderer, History und behaltenes Script-DOM ohne Historyabfrage fuer die
+Farbe. Solution-Build, Formatpruefung und lokaler V8-Smoke bestanden. Review
+verlangte anschliessend feste statt dynamisch gesuchter Budgetgrenzen: 64
+Assignments und 840 Match-Operationen fuer den Testbaum, je eine darunter
+scheitert. Alle 15.806 serialisierten Solution-Tests bestehen; das sind 26
+neue Faelle. Commit, Push und CI stehen noch aus.

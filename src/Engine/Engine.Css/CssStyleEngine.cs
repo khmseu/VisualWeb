@@ -40,7 +40,8 @@ public static class CssStyleEngine
 {
     /// <summary>Minimal static UA defaults, not the complete HTML rendering stylesheet.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#rendering">rendering</see>,
-    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list defaults</see>.
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list defaults</see>,
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, p, section, article, aside, nav, header, footer, main, address,
@@ -77,6 +78,7 @@ public static class CssStyleEngine
         code, kbd, samp, tt { font-family: monospace }
         big { font-size: larger }
         small { font-size: smaller }
+        :link { color: #0000EE }
         """;
 
     /// <summary>Finds a supported HTML list marker hint without accepting unsupported list types.</summary>

@@ -445,6 +445,17 @@ Its 27 new CSS, layout, native-content and local/process browser cases pass;
 the solution build, all 15,780 solution tests, solution formatting, local and
 confined V8 smokes, and Linux confinement smoke also pass locally.
 
+The HTML UA stylesheet now colors `:link` text `#0000EE`, so otherwise
+unstyled links on simple pages are visually distinguishable. The existing
+history-independent matcher treats every `a`/`area` with an `href` as
+unvisited, even when navigation to its value is blocked. Normal cascade and
+inheritance apply; disabling the UA sheet removes the default. Visited/active
+styling, cursors and link underlining remain unsupported. See the
+[link color scope](../docs/css.md#cascade-and-computed-values).
+Its 26 new CSS, native-content and local/process browser cases pass, including
+exact shared limits and scripted attribute recomputation. The solution build,
+all 15,806 solution tests, solution formatting and local V8 smoke pass.
+
 Standard named colors now cover all 148 opaque CSS Color 4 names, rather than
 only the 16 basic colors plus orange/rebeccapurple. Common ordinary stylesheet
 values such as lightgray, whitesmoke and darkslategray no longer reject a page.
