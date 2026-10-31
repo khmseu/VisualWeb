@@ -8,6 +8,7 @@ stroke-ellipse command for hollow circles, and existing rectangle commands
 for squares. Nested-list UA defaults and author styles use the same commands.
 Circle strokes remain inside their bounds and
 preserve the actual underlying center pixels.
+Decimal and ASCII alphabetic markers reuse the bounded glyph-run paint path.
 
 See the [painting guide](../../../docs/painting.md) for scope, ownership, budgets
 and offline evidence, the [project map](../../../docs/project-map.md) and

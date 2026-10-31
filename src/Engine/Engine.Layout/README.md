@@ -11,17 +11,19 @@ Unordered lists use block list-item boxes with separate outside marker geometry;
 nested/empty items and inherited marker suppression are bounded. HTML UA defaults
 use discs, circles and squares at increasing list depth. Circles and squares use
 the same outside geometry as discs; circles are hollow.
-Ordered lists add shaped decimal markers with independent `start`,
-`reversed` and `li value` numbering; scans and output share existing budgets.
-Legacy `type` hints support disc/circle/square/none on `ul`/`li` and `1` on
-`ol`/`li`; unsupported values still fail explicitly. Inside markers, other
+Lists also support shaped decimal and lower/upper ASCII alphabetic markers,
+including the `lower-latin`/`upper-latin` aliases, with independent `start`,
+`reversed` and `li value` numbering; nonpositive alphabetic ordinals use
+decimal fallback. Scans and output share existing budgets.
+Legacy `type` hints support disc/circle/square/none on `ul`/`li` and exact
+`1`/`a`/`A` on `ol`/`li`; unsupported values still fail explicitly. Inside markers, other
 marker styles and arbitrary list-item elements remain unsupported. See the
 guide for exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
 `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,
-`css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`, `css2-tables`,
-`unicode-linebreak`.
+`css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`,
+`css-counter-styles`, `css2-tables`, `unicode-linebreak`.
 See the [standards workflow](../../../docs/standards.md).
 Read the [text/layout guide](../../../docs/text-layout.md) for exact scope:
 non-root vertical margins must be zero while margin collapse is deferred;

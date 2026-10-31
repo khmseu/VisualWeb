@@ -294,7 +294,7 @@ public sealed class CascadeTests
     }
 
     [Theory]
-    [InlineData("list-style-type:lower-alpha")]
+    [InlineData("list-style-type:lower-roman")]
     [InlineData("list-style-position:inside")]
     [InlineData("list-style-image:url(marker.png)")]
     public void UnsupportedListStylesProduceDiagnostics(string declaration)
@@ -461,7 +461,7 @@ public sealed class CascadeTests
     [InlineData("<ul id=target type='di\u017fc'></ul>")]
     [InlineData("<ul id=target type=1></ul>")]
     [InlineData("<ol id=target type=circle></ol>")]
-    [InlineData("<li id=target type=a></li>")]
+    [InlineData("<li id=target type=i></li>")]
     [InlineData("<div id=target type=disc></div>")]
     [InlineData("<input id=target type=1>")]
     public void ListTypeHintsRejectUnsupportedOrNonAsciiAttributeValues(string html)
@@ -505,6 +505,97 @@ public sealed class CascadeTests
         canceled.Cancel();
         Assert.Throws<OperationCanceledException>(() =>
             CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
+    [InlineData("list-style-type:lower-alpha", "lower-alpha")]
+    [InlineData("list-style-type:UPPER-ALPHA", "upper-alpha")]
+    [InlineData("list-style-type:lower-latin", "lower-latin")]
+    [InlineData("list-style-type:upper-latin", "upper-latin")]
+    [InlineData("list-style:lower-alpha", "lower-alpha")]
+    [InlineData("list-style:outside upper-alpha none", "upper-alpha")]
+    [InlineData("list-style:none LOWER-LATIN", "lower-latin")]
+    [InlineData("list-style:upper-latin outside", "upper-latin")]
+    [InlineData("list-style:lower-\\61 lpha", "lower-alpha")]
+    public void AlphabeticListStylesSupportAliasesShorthandAndInheritance(string declaration, string expected)
+    {
+        var doc = Document("<ol id=parent><li id=child>x</li></ol>");
+        var styles = Compute(doc, new CssStyleSource("#parent{" + declaration + "}"));
+        Assert.Empty(styles.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), styles.Styles[doc.GetElementById("parent")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword(expected), Child(styles, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(styles, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(styles, doc)["list-style-image"]);
+    }
+
+    [Theory]
+    [InlineData("lower-alpha upper-alpha")]
+    [InlineData("lower-latin inside")]
+    [InlineData("upper-alpha url(marker.png)")]
+    [InlineData("upper-latin none none")]
+    public void InvalidAlphabeticShorthandDoesNotPartiallyOverrideEarlierStyles(string value)
+    {
+        var doc = Document("<ol><li id=child>x</li></ol>");
+        var styles = Compute(doc, new CssStyleSource("#child{list-style:square;list-style:" + value + "}"));
+        Assert.Single(styles.Diagnostics, diagnostic => diagnostic.Code == "invalid-property-value");
+        Assert.Equal(new CssKeyword("square"), Child(styles, doc)["list-style-type"]);
+    }
+
+    [Fact]
+    public void AlphabeticShorthandKeepsImportanceResetsAndAssignmentLimits()
+    {
+        var doc = Document("<ol><li id=child>x</li></ol>");
+        var important = Compute(doc, new CssStyleSource(
+            "#child{list-style:lower-alpha!important;list-style-type:upper-alpha}"));
+        Assert.Empty(important.Diagnostics);
+        Assert.Equal(new CssKeyword("lower-alpha"), Child(important, doc)["list-style-type"]);
+        var reset = Compute(doc, new CssStyleSource("#child{list-style:upper-alpha;list-style:outside}"));
+        Assert.Equal(new CssKeyword("disc"), Child(reset, doc)["list-style-type"]);
+        var inherited = Compute(doc, new CssStyleSource(
+            "ol{list-style:lower-latin}#child{list-style:upper-alpha;list-style:inherit}"));
+        Assert.Equal(new CssKeyword("lower-latin"), Child(inherited, doc)["list-style-type"]);
+        CssStyleSource[] source = [new("#child{list-style:lower-alpha outside none}")];
+        Assert.Empty(CssStyleEngine.Compute(doc, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 3 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation));
+        var hints = Document("<ol type=a><li type=A>x</li></ol>");
+        Assert.Empty(CssStyleEngine.Compute(hints, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(hints, includeUserAgent: false,
+            options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+    }
+
+    [Theory]
+    [InlineData("<ol id=target type=a><li>x</li></ol>", "lower-alpha")]
+    [InlineData("<ol id=target type=A><li>x</li></ol>", "upper-alpha")]
+    [InlineData("<ol><li id=target type=a>x</li></ol>", "lower-alpha")]
+    [InlineData("<ul><li id=target type=A>x</li></ul>", "upper-alpha")]
+    public void AlphabeticTypeHintsAreCaseSensitiveAuthorPresentationalHints(string html, string expected)
+    {
+        var doc = Document(html);
+        var target = doc.GetElementById("target")!;
+        var user = new CssStyleSource("#target{list-style-type:circle}", CssOrigin.User);
+        var hinted = Compute(doc, user);
+        Assert.Empty(hinted.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), hinted.Styles[target]["list-style-type"]);
+        var reverted = Compute(doc, user, new CssStyleSource("#target{list-style-type:revert}"));
+        Assert.Equal(new CssKeyword("circle"), reverted.Styles[target]["list-style-type"]);
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword(expected), withoutUa.Styles[target]["list-style-type"]);
+    }
+
+    [Theory]
+    [InlineData("<ul id=target type=a><li>x</li></ul>")]
+    [InlineData("<ol id=target type=' a'><li>x</li></ol>")]
+    [InlineData("<ol id=target type=aa><li>x</li></ol>")]
+    [InlineData("<ol id=target type='\u00e1'><li>x</li></ol>")]
+    [InlineData("<ol><li id=target type=i>x</li></ol>")]
+    public void AlphabeticHintsDoNotAcceptOtherElementsOrUnsupportedValues(string html)
+    {
+        var doc = Document(html);
+        Assert.False(CssStyleEngine.TryGetListTypeHint(doc.GetElementById("target")!, out var marker));
+        Assert.Null(marker);
     }
 
     [Theory]

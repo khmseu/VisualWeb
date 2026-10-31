@@ -53,6 +53,37 @@ public sealed class ScrollTests
     private static LoadedPage Document(string html = Html) => new(BrowserUrl.Parse("https://example.com/"), html, 200, []);
 
     [Theory]
+    [InlineData(false, "a", "lower-alpha")]
+    [InlineData(false, "A", "upper-alpha")]
+    [InlineData(true, "a", "lower-alpha")]
+    [InlineData(true, "A", "upper-alpha")]
+    public async Task ScriptedAlphabeticTypeHintsSurviveRetainedRepaint(bool process, string type, string marker)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 10000, executeInlineScripts: true);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        const string body = "<ol id=list start=26><li><a href=/next>x</a></li><li></li></ol>";
+        var viewport = new PageViewport(140, 20, 1);
+        var document = Document("<!doctype html><style>" + style + "</style>" + body
+            + "<script>document.getElementById('list').setAttribute('type','" + type + "')</script>");
+        var actual = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 20 }, Cancellation);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 120 }, Cancellation);
+        var reference = Document("<!doctype html><style>" + style + "ol{list-style-type:" + marker + "}</style>" + body);
+        var expected = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var expectedScrolled = await renderer.RenderRetainedAsync(reference, viewport with { ScrollY = 20 }, Cancellation);
+        var expectedResized = await renderer.RenderRetainedAsync(reference, viewport with { Width = 120 }, Cancellation);
+        Assert.Equal(40, actual.ScrollHeight);
+        Assert.Equal("https://example.com/next", Assert.Single(actual.LinkTargets).Url);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expectedScrolled.Frame.Pixels.ToArray(), scrolled.Frame.Pixels.ToArray());
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task ScriptedListTypeHintSurvivesLocalAndProcessRetainedRepaint(bool process)

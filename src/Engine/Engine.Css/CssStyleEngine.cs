@@ -30,6 +30,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see>.
 /// Finite marker values use css2-lists
 /// <see href="https://www.w3.org/TR/CSS22/generate.html#propdef-list-style-type">list style types</see>.
+/// Alphabetic values use css-counter-styles
+/// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">predefined styles</see>.
 /// Supported HTML list type hints enter the
 /// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
 /// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
@@ -89,6 +91,8 @@ public static class CssStyleEngine
         marker = element.LocalName switch
         {
             "ol" or "li" when type == "1" => "decimal",
+            "ol" or "li" when type == "a" => "lower-alpha",
+            "ol" or "li" when type == "A" => "upper-alpha",
             "ul" or "li" when type is { Length: 4 or 6 } => CssText.Lower(type) switch
             {
                 "disc" => "disc",

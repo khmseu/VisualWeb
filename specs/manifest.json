@@ -2,6 +2,16 @@
   "version": 1,
   "documents": [
     {
+      "id": "css-counter-styles",
+      "title": "CSS Counter Styles Level 3",
+      "url": "https://www.w3.org/TR/css-counter-styles-3/",
+      "file": "css-counter-styles.html",
+      "fetchedAt": "2026-10-31T10:42:11.8072844+00:00",
+      "checkedAt": "2026-10-31T10:42:11.8072844+00:00",
+      "eTag": null,
+      "lastModified": "2021-07-23T06:05:41+00:00"
+    },
+    {
       "id": "css2-tables",
       "title": "CSS 2.2 Tables",
       "url": "https://www.w3.org/TR/CSS22/tables.html",

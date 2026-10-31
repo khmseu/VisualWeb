@@ -33,8 +33,18 @@
   alle 15.097 Solution-Tests bestehen; der Gesamtformatter meldet nur drei
   auf `b47a5a0` reproduzierte Baseline-Findings. Zwei betreffen ungeaenderte
   Zeilen der geaenderten `StaticLayout.cs`; die anderen geaenderten C#-Dateien
-  bestehen eine separate Formatpruefung. Commit, Push und CI stehen noch aus
+  bestehen eine separate Formatpruefung. Commit `5beedb0` ist gepusht;
+  Linux, Windows und CodeQL bestanden, einschliesslich x64 und arm64
   ([KP-097](./Kontextprotokoll.md#kp-097---html-listentypen-als-praesentationshinweise)).
+  Pass 5 ergaenzt ASCII-Alphabetmarker fuer CSS `lower-alpha`/`upper-alpha`
+  und ihre `latin`-Aliase sowie die exakten HTML-Hinweise `type=a`/`type=A`.
+  Positive Ordinalwerte laufen bijektiv weiter; null und negative Werte
+  verwenden Dezimalmarker. Build, lokaler V8-Smoke und alle 15.151 Solution-
+  Tests bestehen. Der Gesamtformatter meldet nur drei auf `b47a5a0`
+  reproduzierte Baseline-Findings, davon zwei in ungeaenderten Zeilen der
+  geaenderten `StaticLayout.cs`; alle anderen geaenderten C#-Dateien bestehen
+  die separate Formatpruefung. Commit, Push und CI stehen noch aus
+  ([KP-098](./Kontextprotokoll.md#kp-098---alphabetische-listenmarker)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

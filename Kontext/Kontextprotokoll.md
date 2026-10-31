@@ -3339,3 +3339,48 @@ bereits auf `b47a5a0` reproduzierten Baseline-Findings; zwei davon betreffen
 ungeaenderte Zeilen in der hier geaenderten `StaticLayout.cs`. Alle anderen
 geaenderten C#-Dateien bestehen die separate Formatpruefung. Commit, Push
 und native CI-Pruefung stehen noch aus.
+
+**Commit, Push und CI:** `5beedb0` wurde auf `origin/main` gepusht; der
+Commit-Hook pruefte 14 Dateien ohne Findings.
+[Linux 41193019805](https://github.com/khmseu/VisualWeb/actions/runs/41193019805),
+[Windows 41193019939](https://github.com/khmseu/VisualWeb/actions/runs/41193019939)
+und [CodeQL 41193019708](https://github.com/khmseu/VisualWeb/actions/runs/41193019708)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-098 - Alphabetische Listenmarker
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [HTML-Listentypen](https://html.spec.whatwg.org/multipage/rendering.html#lists),
+  [vordefinierte alphabetische Zaehler](https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic)
+  und [bijektiver Algorithmus](https://www.w3.org/TR/css-counter-styles-3/#alphabetic-system).
+  Der neue `css-counter-styles`-Cache wurde am 2026-10-31 erfolgreich geladen;
+  die verwendeten `html`-/`css2-lists`-Caches waren frisch.
+
+**Belegte Auswahl und Umfang fuer Pass 5:** CSS und Layout lehnten
+`lower-alpha` und gaengige `<ol type=a>`-Listen zuvor explizit ab. Das
+Inkrement nutzt die vorhandene Listennummerierung und Textmarker-Pipeline fuer
+CSS `lower-alpha`/`upper-alpha` und die gleichwertigen `lower-latin`-/
+`upper-latin`-Stile sowie HTML `type=a`/`type=A` auf `ol`/`li`.
+Die Hinweise unterscheiden Gross-/Kleinschreibung. Positive Ordinalwerte
+werden bijektiv dargestellt; null und negative Werte nutzen Decimal-Fallback.
+Allgemeine CSS-Counter, benutzerdefinierte oder roemische Marker bleiben
+ausgenommen. Budgets, Fail-closed-Verhalten und Rendergrenzen bleiben erhalten.
+
+**Test-first und Umsetzung:** Vor der Implementierung scheiterten
+erwartungsgemaess 14 CSS-, 19 Layout-, ein Paint-, ein nativer Pixel- und vier
+lokale/Prozess-Browserfaelle. Nach der Umsetzung bestehen die gezielten
+Alphabetmarker- und weiterhin nicht unterstuetzten Listenfaelle. Der neue
+Pixelvergleich nutzt separat positionierten gewoehnlichen Text als Referenz.
+
+**Lokale Abschlusspruefung:** Der Solution-Build, lokaler V8-Smoke und alle
+15.151 Solution-Tests bestehen, darunter 913 CSS-, 218 Layout-, 60 Paint-,
+35 Content- und 1.224 Browserfaelle. Gegenueber Pass 4 sind dies netto
+54 weitere Testfaelle. Der erste V8-Smoke-Aufruf ohne das erforderliche
+`--local` endete mit einem Usage-Fehler; die Wiederholung mit `--local`
+bestand. Die erste Formatpruefung fand zwei neue Leerraumabweichungen im
+Layouttest; sie wurden korrigiert. Der erneute Solutionformatter meldet nur
+die drei auf `b47a5a0` reproduzierten Baseline-Findings, zwei davon auf
+ungeaenderten Zeilen der geaenderten `StaticLayout.cs`. Alle anderen
+geaenderten C#-Dateien bestehen die separate Formatpruefung. Commit, Push und
+native CI-Pruefung stehen noch aus.

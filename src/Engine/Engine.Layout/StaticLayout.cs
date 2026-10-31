@@ -17,7 +17,9 @@ public readonly record struct LayoutRect(double X, double Y, double Width, doubl
 public readonly record struct LayoutEdges(double Top, double Right, double Bottom, double Left);
 public sealed record LayoutTextFragment(DomText Source, ShapedRun Run, double X, double Baseline, CssComputedStyle Style);
 /// <summary>Shaped outside list marker, not selectable document text.</summary>
-/// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.</remarks>
+/// <remarks>Specs: css2-lists and css-counter-styles;
+/// <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see> and
+/// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">alphabetic styles</see>.</remarks>
 public sealed record LayoutTextMarker(ShapedRun Run, double X, double Baseline);
 public sealed record LayoutInlineWidget(DomElement Element, LayoutRect Bounds);
 public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments)
@@ -287,8 +289,9 @@ public static partial class StaticLayout
             if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: not "none" } markerType)
             {
                 var size = ((CssLength)style["font-size"]).Value;
-                var text = markerType.Value == "decimal"
-                    ? ordinals[element].ToString(System.Globalization.CultureInfo.InvariantCulture) + "." : "";
+                var isTextMarker = markerType.Value is "decimal" or "lower-alpha" or "upper-alpha"
+                    or "lower-latin" or "upper-latin";
+                var text = isTextMarker ? FormatListMarker(ordinals[element], markerType.Value) : "";
                 ChargeCharacters(text.Length);
                 var run = Shape(text, style);
                 var (ascent, descent) = Extents(run, style);
@@ -301,7 +304,7 @@ public static partial class StaticLayout
                     else if (markerType.Value == "circle") { circleMarker = bounds; }
                     else { squareMarker = bounds; }
                 }
-                else if (markerType.Value == "decimal")
+                else if (isTextMarker)
                 {
                     textMarker = new(run, Finite(contentX - 0.5 * size - run.Width), baseline);
                 }
@@ -337,6 +340,27 @@ public static partial class StaticLayout
 
                 inline.Clear();
             }
+        }
+
+        private static string FormatListMarker(long ordinal, string markerType)
+        {
+            if (markerType == "decimal" || ordinal <= 0)
+            {
+                return ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".";
+            }
+
+            // An Int64 needs at most 14 bijective base-26 letters plus the period.
+            Span<char> buffer = stackalloc char[15];
+            var index = buffer.Length;
+            buffer[--index] = '.';
+            var first = markerType is "lower-alpha" or "lower-latin" ? 'a' : 'A';
+            while (ordinal > 0)
+            {
+                ordinal--;
+                buffer[--index] = (char)(first + ordinal % 26);
+                ordinal /= 26;
+            }
+            return new string(buffer[index..]);
         }
 
         private void PrepareList(DomElement list)

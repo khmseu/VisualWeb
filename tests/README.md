@@ -16,6 +16,10 @@ local/process retained scroll and resize.
 Legacy list-type hint tests cover ASCII casing, presentational cascade and
 `revert`, snapshot mutation, exact assignment limits, explicit unsupported-type
 failures, numbering, native pixels, and scripted local/process retained repaint.
+Alphabetic marker tests cover both cases and aliases, case-sensitive HTML
+attributes, bijective wrap boundaries, decimal fallback, nested/reversed
+numbering, exact shared limits, native text-pixel equivalence and scripted
+local/process retained repaint.
 
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,
