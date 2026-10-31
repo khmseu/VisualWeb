@@ -3,6 +3,15 @@
 Phase-6 first-party CSS Syntax tokenization/parsing, static HTML selectors and
 typed computed styles. UA/user/author/inline cascade, !important, specificity,
 inheritance, CSS-wide keywords and initial block/inline properties are supported.
+The [HTML hidden UA rule](https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS)
+(ID `html`) sets `[hidden]:not([hidden=until-found i]):not(embed)` to
+`display:none` through the normal cascade, without `!important`. Empty, invalid
+and whitespace-padded values are ordinary hidden; the separate `until-found`
+keyword matches ASCII case only. Author/user/inline overrides, importance,
+`revert` and disabling the UA sheet retain their normal behavior. Rendered
+`until-found` elements and `<embed hidden>` still fail at layout's explicit
+unsupported boundaries; this rule does not change script/style processing or
+successful form values.
 Selectors include `:scope` with explicit immutable `CssSelectorScope` roots
 (Element, Document, DocumentFragment virtual root); stylesheets default to `:root`.
 `:any-link` matches HTML `a` and `area` elements with an `href` attribute,

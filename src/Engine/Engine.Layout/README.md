@@ -8,6 +8,16 @@ text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
+Normal HTML `hidden` uses the computed `display:none` path; author/user
+overrides and already-hidden ancestors behave as usual. Rendered
+`hidden=until-found` on non-`embed` elements fails explicitly using an exact
+ASCII-only keyword check; content-visibility and reveal are not implemented.
+Rendered `<embed hidden>` retains the separate specialized-layout failure.
+Atomic button/select descendants are checked under the existing node, depth and
+cancellation limits, even offscreen. A rendered select with a display-none
+descendant fails rather than altering option selectedness or submission; a
+display-none select and its subtree remain exempt.
+
 Unordered `ul` and `menu` lists use block list-item boxes with separate outside marker geometry;
 nested/empty items and inherited marker suppression are bounded. HTML UA defaults
 use discs, circles and squares at increasing list depth. Circles and squares use

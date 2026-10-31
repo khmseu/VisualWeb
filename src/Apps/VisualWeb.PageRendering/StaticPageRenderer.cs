@@ -308,7 +308,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             clampedRootScrollX, clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers, state.FocusTargetId);
         var nestedScrollContainers = CollectScrollContainers(layout.Root, scrollContainers, viewport.Width, viewport.Height,
             clampedRootScrollX, clampedRootScroll);
-        var (forms, controls) = PageForms.Collect(parsed.Document, page.Url, controlGeometry, labelGeometry, links.Count,
+        var (forms, controls) = PageForms.Collect(parsed.Document, styles, page.Url, controlGeometry, labelGeometry, links.Count,
             layout.ViewportWidth, layout.ViewportHeight, cancellationToken, state.FocusTargetId, page.BaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
@@ -317,12 +317,18 @@ public sealed class StaticPageRenderer : IPageRenderer
         {
             status += $" Post-parse inline scripts: {state.Scripts}; link-click listeners retained; no HTML scheduling/event loop.";
         }
+        // One visit budget covers both layout passes; completed ancestor chains are memoized per pass.
+        var maxFragmentAncestorVisits = 2L * ((long)options.Layout.MaxNodes + options.Layout.MaxShapingCalls
+            + options.Layout.MaxShapedGlyphs + options.Layout.MaxLines + options.Css.MaxElements + 1);
         var result = new BrowserPage(frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
         {
             ScrollWidth = scrollWidth,
             ScrollHeight = scrollHeight,
             LinkTargets = links,
-            FragmentTargets = CollectFragmentTargets(layout, scrollHeight, cancellationToken),
+            FragmentTargets = CollectFragmentTargets(parsed.Document, layout, scrollHeight,
+                (long)options.Html.MaxNodes + options.Css.MaxElements, options.Css.MaxElements,
+                3L * ((long)options.Html.MaxInputCharacters + options.Layout.MaxTextCharacters),
+                maxFragmentAncestorVisits, cancellationToken),
             Forms = forms,
             FormControls = controls,
             TextTargets = textTargets,
@@ -824,40 +830,142 @@ public sealed class StaticPageRenderer : IPageRenderer
         throw new PageNavigationException("Unsupported hyperlink target.");
     }
 
-    private static IReadOnlyList<PageFragmentTarget> CollectFragmentTargets(LayoutResult layout, double scrollHeight,
-        CancellationToken cancellationToken)
+    private static IReadOnlyList<PageFragmentTarget> CollectFragmentTargets(DomDocument document, LayoutResult layout,
+        double scrollHeight, long maxIdentityNodes, int maxIdentityElements, long maxIdentityCharacters,
+        long maxAncestorVisits, CancellationToken cancellationToken)
     {
         var targets = new List<PageFragmentTarget>();
         var namedTargets = new List<PageFragmentTarget>();
         var elements = new HashSet<DomElement>();
+        // Candidate keys retain DOM string references and may exceed wire limits:
+        // an earlier hidden ID or name can suppress all of their output.
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var names = new HashSet<string>(StringComparer.Ordinal);
+        var firstIds = new Dictionary<string, DomElement>(StringComparer.Ordinal);
+        var firstNames = new Dictionary<string, DomElement>(StringComparer.Ordinal);
+        var completedAncestors = new HashSet<DomElement>();
+        var ancestorPath = new Stack<DomElement>();
+        var collecting = true;
+        long identityCharacters = 0;
+        long ancestorVisits = 0;
         long bytes = 0;
         if (layout.Root is { } root) { Visit(root); }
-        targets.AddRange(namedTargets.Where(target => !ids.Contains(target.Id)));
+        // Only reserve identities for keys that could otherwise receive rendered geometry.
+        // The DOM-order scan still includes hidden elements and IDs that block legacy names.
+        if (ids.Count != 0 || names.Count != 0)
+        {
+            long visited = 0;
+            var pending = new Stack<(DomNode Parent, int Next)>();
+            pending.Push((document, 0));
+            while (pending.TryPop(out var entry))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (entry.Next == entry.Parent.ChildNodes.Count) { continue; }
+                pending.Push((entry.Parent, entry.Next + 1));
+                if (++visited > maxIdentityNodes)
+                { throw new PageNavigationException("Renderer fragment identity node scan limit exceeded."); }
+                var node = entry.Parent.ChildNodes[entry.Next];
+                if (node is DomElement element)
+                {
+                    if (element.GetAttribute("id") is { } id)
+                    {
+                        ChargeIdentity(id);
+                        if (ids.Contains(id) || names.Contains(id)) { firstIds.TryAdd(id, element); }
+                    }
+                    if (element.LocalName == "a" && element.GetAttribute("name") is { Length: > 0 } name)
+                    {
+                        ChargeIdentity(name);
+                        if (names.Contains(name)) { firstNames.TryAdd(name, element); }
+                    }
+                }
+                if (node.ChildNodes.Count > 0) { pending.Push((node, 0)); }
+            }
+            collecting = false;
+            elements.Clear();
+            completedAncestors.Clear();
+            if (layout.Root is { } renderedRoot) { Visit(renderedRoot); }
+        }
+        targets.AddRange(namedTargets);
         try { RendererProtocol.ValidateFragmentTargets(targets, scrollHeight); }
         catch (IpcProtocolException exception) { throw new PageNavigationException(exception.Message); }
         return targets.AsReadOnly();
 
         void Register(DomElement element, double y)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!elements.Add(element)) { return; }
-            AddTarget(element.GetAttribute("id"), ids, targets, y, allowEmpty: true);
-            if (element.LocalName == "a")
-            { AddTarget(element.GetAttribute("name"), names, namedTargets, y, allowEmpty: false); }
+            if (elements.Count > maxIdentityElements)
+            { throw new PageNavigationException("Renderer fragment identity element limit exceeded."); }
+            var id = element.GetAttribute("id");
+            var name = element.LocalName == "a" ? element.GetAttribute("name") : null;
+            if (collecting)
+            {
+                Reserve(id, ids, allowEmpty: true);
+                Reserve(name, names, allowEmpty: false);
+                return;
+            }
+            if (id is not null)
+            {
+                ChargeIdentity(id);
+                if (firstIds.TryGetValue(id, out var firstId) && ReferenceEquals(firstId, element))
+                { Emit(targets, id, y); }
+            }
+            if (name is { Length: > 0 })
+            {
+                ChargeIdentity(name);
+                if (!firstIds.ContainsKey(name) && firstNames.TryGetValue(name, out var firstName)
+                    && ReferenceEquals(firstName, element))
+                { Emit(namedTargets, name, y); }
+            }
         }
 
-        void AddTarget(string? id, HashSet<string> seen, List<PageFragmentTarget> destination, double y, bool allowEmpty)
+        void Reserve(string? id, HashSet<string> seen, bool allowEmpty)
         {
-            if (id is null || !allowEmpty && id.Length == 0 || !seen.Add(id)) { return; }
+            if (id is null || !allowEmpty && id.Length == 0) { return; }
+            ChargeIdentity(id);
+            seen.Add(id);
+        }
+
+        void ChargeIdentity(string value)
+        {
+            // These are references to DOM attribute strings, not protocol entries. Bound the
+            // cumulative hashing work across both layout passes and the DOM-order scan.
+            if (value.Length > maxIdentityCharacters - identityCharacters)
+            { throw new PageNavigationException("Renderer fragment identity text scan limit exceeded."); }
+            identityCharacters += value.Length;
+        }
+
+        void Emit(List<PageFragmentTarget> destination, string id, double y)
+        {
             if (targets.Count + namedTargets.Count >= RendererProtocol.MaxFragmentTargets)
             { throw new PageNavigationException("Renderer fragment target count limit exceeded."); }
             if (id.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("Renderer fragment target ID limit exceeded."); }
             bytes += System.Text.Encoding.UTF8.GetByteCount(id);
             if (bytes > RendererProtocol.MaxFragmentMetadataBytes)
-            { throw new PageNavigationException("Renderer fragment target metadata byte limit exceeded."); }
+            { throw new PageNavigationException("Renderer fragment target metadata byte limit exceeded. UTF-8 bytes."); }
             destination.Add(new(id, Math.Clamp(y, 0, scrollHeight)));
+        }
+
+        void RegisterAncestors(DomNode? node, double y)
+        {
+            for (; node is not null; node = node.ParentNode)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (++ancestorVisits > maxAncestorVisits)
+                { throw new PageNavigationException("Renderer fragment ancestor visit limit exceeded."); }
+                if (node is DomElement element)
+                {
+                    if (completedAncestors.Contains(element)) { break; }
+                    ancestorPath.Push(element);
+                }
+            }
+            while (ancestorPath.TryPop(out var element))
+            {
+                Register(element, y);
+                // A direct box registration alone does not establish that its ancestors were visited.
+                completedAncestors.Add(element);
+            }
         }
 
         void Visit(LayoutBox box)
@@ -871,14 +979,9 @@ public sealed class StaticPageRenderer : IPageRenderer
                 else if (item is LayoutLineItem line)
                 {
                     foreach (var fragment in line.Line.Fragments)
-                    {
-                        var ancestors = new Stack<DomElement>();
-                        for (var node = fragment.Source.ParentNode; node is not null; node = node.ParentNode)
-                        {
-                            if (node is DomElement element) { ancestors.Push(element); }
-                        }
-                        while (ancestors.TryPop(out var element)) { Register(element, line.Line.Bounds.Y); }
-                    }
+                    { RegisterAncestors(fragment.Source.ParentNode, line.Line.Bounds.Y); }
+                    foreach (var widget in line.Line.Widgets)
+                    { RegisterAncestors(widget.Element, widget.Bounds.Y); }
                 }
             }
         }

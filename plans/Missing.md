@@ -456,6 +456,24 @@ Its 26 new CSS, native-content and local/process browser cases pass, including
 exact shared limits and scripted attribute recomputation. The solution build,
 all 15,806 solution tests, solution formatting and local V8 smoke pass.
 
+The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
+the normal cascade. An override may make a hidden element visible, but
+descendants cannot escape an ancestor whose computed display remains `none`.
+Hidden controls remain eligible for submission under the normal successful-control
+rules, and hidden scripts/styles remain active. Button labels omit computed
+`display:none` descendants; a rendered select with such descendants fails
+explicitly because popup visibility is not yet separate from option selection
+and submission. The first matching DOM ID, or named anchor when no ID matches,
+blocks later duplicates from becoming fragment scroll targets even if hidden.
+Visible `hidden=until-found`, its reveal/`beforematch` behavior, and specialized
+`<embed hidden>` layout remain unsupported. See the
+[hidden rendering scope](../docs/css.md#cascade-and-computed-values)
+and [layout boundaries](../docs/text-layout.md#layout-entry-point).
+Widget and ancestor fragment targets use rendered geometry; protocol limits
+apply to emitted identities, while ancestor traversal is separately bounded and
+cancellable. The solution build, all 15,907 solution tests, format verification
+and local V8 smoke pass.
+
 Standard named colors now cover all 148 opaque CSS Color 4 names, rather than
 only the 16 basic colors plus orange/rebeccapurple. Common ordinary stylesheet
 values such as lightgray, whitesmoke and darkslategray no longer reject a page.

@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using VisualWeb.Core.Url;
+using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Ipc.Contracts;
 
@@ -24,7 +26,7 @@ internal static class PageForms
     [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the bounded form-subset collector; its ordered checks preserve visible unsupported-semantics diagnostics and shared quotas.")]
     [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit form-control and attribute literals document the supported subset at the collection boundary.")]
     public static (IReadOnlyList<PageForm> Forms, IReadOnlyList<PageFormControl> Controls) Collect(DomDocument document,
-        BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry,
+        CssStyleResult styles, BrowserUrl url, IReadOnlyDictionary<DomElement, (PageLinkRect Rect, int BeforeLink)> geometry,
         IReadOnlyDictionary<DomElement, IReadOnlyList<PageLinkRect>> labelGeometry, int linkCount,
         double width, double height, CancellationToken cancellationToken, Func<DomElement, int> focusTargetId,
         BrowserUrl? baseUrlOverride = null)
@@ -169,9 +171,8 @@ internal static class PageForms
             {
                 "submit" => element.GetAttribute("value") ?? "Submit",
                 "reset" when element.LocalName == "input" => element.GetAttribute("value") ?? "Reset",
-                "reset" => element.TextContent ?? "",
-                "button" => element.TextContent ?? "",
-                "inert" => element.LocalName == "button" ? element.TextContent ?? "" : element.GetAttribute("value") ?? "",
+                "reset" or "button" => ButtonLabel(element, styles, cancellationToken),
+                "inert" => element.LocalName == "button" ? ButtonLabel(element, styles, cancellationToken) : element.GetAttribute("value") ?? "",
                 _ => "",
             };
             var controlName = element.GetAttribute("name") ?? "";
@@ -238,6 +239,40 @@ internal static class PageForms
         {
             if (index >= 0) { errors[index] ??= $"Unsupported form semantics: {what}."; }
         }
+    }
+
+    private static string ButtonLabel(DomElement button, CssStyleResult styles, CancellationToken cancellationToken)
+    {
+        // Geometry is viewport-clipped; use styles rather than a missing rect to decide whether
+        // the button can render, so its label is already correct when it is scrolled into view.
+        for (DomNode? node = button; node is DomElement ancestor; node = node.ParentNode)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (styles.Styles[ancestor]["display"] is CssKeyword { Value: "none" }) { return ""; }
+        }
+        var result = new StringBuilder();
+        var pending = new Stack<(DomNode Parent, int Next)>();
+        pending.Push((button, 0));
+        while (pending.TryPop(out var entry))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (entry.Next == entry.Parent.ChildNodes.Count) { continue; }
+            pending.Push((entry.Parent, entry.Next + 1));
+            var child = entry.Parent.ChildNodes[entry.Next];
+            if (child is DomText text)
+            {
+                if (text.Data.Length > RendererProtocol.MaxTextCharacters - result.Length)
+                { throw new PageNavigationException("Renderer form control text limit exceeded."); }
+                result.Append(text.Data);
+            }
+            else if (child is DomElement element
+                && styles.Styles[element]["display"] is not CssKeyword { Value: "none" }
+                && element.ChildNodes.Count > 0)
+            {
+                pending.Push((element, 0));
+            }
+        }
+        return result.ToString();
     }
 
     private static DomElement? AssociatedLabelControl(DomElement label, IReadOnlyDictionary<string, DomElement> firstElementById)

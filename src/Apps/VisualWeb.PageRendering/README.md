@@ -81,6 +81,22 @@ clusters with clipped rectangles for browser-owned selection; it exposes no
 DOM identity. The shared IPC contract caps 4096 anchors, 64 rectangles per anchor,
 8192 characters per URL and 1 MiB serialized metadata locally and in workers.
 
+Fragment geometry comes from rendered boxes, text and inline widgets, including
+widget-only ancestors, but identity is reserved by the first matching DOM `id`
+in tree order, or by the first legacy `a[name]` only when no ID matches. A
+hidden first match therefore blocks later rendered duplicates and ID-to-name
+fallback without supplying scroll geometry. Only emitted identities consume
+the 4,096-target, 8,192-character and 1 MiB UTF-8/serialized-JSON protocol
+limits. Candidate storage is bounded by the CSS element limit, and cancellable
+scans use the HTML node limit plus the CSS element limit and a cumulative
+character-work cap of three times the sum of the HTML input and layout text
+limits. Each layout pass memoizes fully processed ancestor chains; direct box
+registration alone does not mark a chain complete. Both passes share an
+ancestor-visit cap of twice the sum of the layout node, shaping-call, shaped
+glyph and line limits, the CSS element limit, and one document node. Exceeding
+that independent work cap fails explicitly. Hidden-until-found reveal and
+`beforematch` are not implemented.
+
 `BrowserPage.Forms`/`FormControls` are data-only snapshots of the simple forms
 subset collected after optional script mutations: `form` action/error, and
 `input` text/search/email/tel/url/password/date/time/month/week/number/range/color/checkbox/radio/hidden/submit/reset/button, `textarea`, single-select `select`, plus `button` submit/reset and inert `button type=button`
@@ -96,6 +112,16 @@ applies the bounded sequential-order subset documented in the shell guide. Bound
 data-only label-text rectangles associate explicit `for` labels or the first
 supported labelable descendant with visible enabled controls; DOM identities do
 not cross IPC.
+Ordinary hidden controls and controls inside display-none subtrees remain in
+form metadata and successful submissions, but have no rendered rectangle or
+focus target. Atomic button labels omit display-none descendants according to
+computed styles, including when offscreen; author overrides remain visible.
+Rendered selects with display-none descendants fail explicitly because popup
+visibility cannot yet be separated from their option selectedness and values.
+[Selectedness](https://html.spec.whatwg.org/multipage/form-elements.html#selectedness-setting-algorithm)
+and [entry-list construction](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#constructing-form-data-set)
+do not exclude an option merely because it is hidden. Hidden selects retain
+all options and their normal selected/submission state.
 Unsupported semantics (POST/dialog, multipart/text-plain,
 non-UTF-8 `accept-charset`, unsupported `form=`
 owners on object, submitter overrides other than `formaction`, `formtarget` and `formnovalidate`, other input types, textarea pattern,
@@ -105,7 +131,7 @@ when that form is submitted. Select metadata reports `SelectRows` as the leading
 (multiple selects without such a size stay compact popups). Supported controls resolve `form=` to the first
 exact matching ID when it belongs to a form; unresolved/non-form IDs have no
 owner and never fall back to an ancestor. Controls without `form=` use the
-nearest ancestor form. `<output>` is form-associated but non-submittable and contributes no browser form snapshot. `<input type="button">` and `<button type="button">` are non-submittable and contribute no GET entry. Visible instances use bounded widget layout and are reported as inert `inert` controls, labelled by the input's `value` or the button's text content (empty when absent); activation never submits. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
+nearest ancestor form. `<output>` is form-associated but non-submittable and contributes no browser form snapshot. `<input type="button">` and `<button type="button">` are non-submittable and contribute no GET entry. Visible instances use bounded widget layout and are reported as inert `inert` controls, labelled by the input's `value` or the button's display-filtered text (empty when absent); activation never submits. A fieldset may itself carry `form=` without assigning its children to that form; script-visible fieldset ownership remains unavailable. Descendants of a disabled fieldset inherit disabled state
 except descendants of its first `legend` element child; nested fieldsets apply
 independently. Hyperlinks and form actions resolve against the first valid `<base href>`;
 forms without an action attribute or with an empty value default to the final

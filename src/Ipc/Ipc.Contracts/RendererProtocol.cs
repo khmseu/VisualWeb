@@ -812,10 +812,10 @@ public static class RendererProtocol
             { throw new IpcProtocolException("Invalid renderer fragment target ID or offset."); }
             bytes += Encoding.UTF8.GetByteCount(target.Id);
             if (bytes > MaxFragmentMetadataBytes)
-            { throw new IpcProtocolException("Renderer fragment target metadata byte limit exceeded."); }
+            { throw new IpcProtocolException("Renderer fragment target metadata byte limit exceeded. UTF-8 bytes."); }
         }
         if (JsonSerializer.SerializeToUtf8Bytes(targets).Length > MaxFragmentMetadataBytes)
-        { throw new IpcProtocolException("Renderer fragment target metadata byte limit exceeded."); }
+        { throw new IpcProtocolException("Renderer fragment target metadata byte limit exceeded. Serialized JSON bytes."); }
     }
 
     /// <summary>Checks form/control counts, owner indexes, kinds, string limits, action URLs, geometry and the JSON budget.</summary>

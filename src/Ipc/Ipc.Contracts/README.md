@@ -49,6 +49,10 @@ with nonempty bounded text, clipped viewport rectangles and a 1 MiB UTF-8 JSON
 budget. The browser uses this snapshot for browser-owned selection at exact
 HarfBuzz cluster boundaries; multi-character ligatures and combining clusters
 remain indivisible. No DOM identity or native object crosses IPC.
+`FragmentTargets` has at most 4,096 entries with 8,192-character IDs. Both the
+sum of their UTF-8 ID bytes and their serialized JSON are limited to 1 MiB.
+Limit diagnostics retain the existing common prefix and identify which byte
+guard failed.
 
 Version 48 adds unique bounded opaque per-document focus-target identities for
 links and eligible controls plus strictly scoped trusted focus/blur requests.

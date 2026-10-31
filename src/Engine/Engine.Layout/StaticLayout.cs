@@ -108,6 +108,8 @@ public sealed record LayoutOptions
 /// <see href="https://drafts.csswg.org/css-text-3/#text-justify-property">justification methods</see>.
 /// Supported legacy list type hints follow html
 /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list rendering</see>.
+/// Hidden-until-found and hidden embed rendering are explicitly unsupported; see html
+/// <see href="https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS">hidden elements</see>.
 /// Menu lists follow html <see href="https://html.spec.whatwg.org/multipage/grouping-content.html#the-menu-element">menu</see>.
 /// Margin collapse, bidi, floats, non-form replaced elements and complex line breaking fail explicitly.</remarks>
 public static partial class StaticLayout
@@ -171,6 +173,7 @@ public static partial class StaticLayout
         {
             cancellation.ThrowIfCancellationRequested();
             if (depth > options.MaxDepth) { throw new LayoutLimitException("Layout nesting limit exceeded."); }
+            CheckHiddenUntilFound(element);
             if (Display(element).StartsWith("table-", StringComparison.Ordinal) && !tableContext)
             { throw new UnsupportedLayoutException("Internal table boxes require the canonical table layout context."); }
             if (Style(element)["vertical-align"] is CssKeyword { Value: not "baseline" }
@@ -194,6 +197,8 @@ public static partial class StaticLayout
                     throw new UnsupportedLayoutException($"<input type={DomFormControls.InputType(element)}> requires unsupported widget layout.");
                 }
 
+                if (element.LocalName == "select" || element.LocalName == "button" && !block)
+                { CheckAtomicDescendants(element, depth); }
                 return;
             }
             if (Display(element) == "list-item"
@@ -213,6 +218,46 @@ public static partial class StaticLayout
                 || Display(element) == "table" && element.LocalName != "table")
             {
                 throw new UnsupportedLayoutException($"<{element.LocalName}> requires unsupported specialized layout.");
+            }
+        }
+
+        private static void CheckHiddenUntilFound(DomElement element)
+        {
+            if (element.LocalName != "embed" && element.GetAttribute("hidden") is { Length: 11 } value
+                && value.All(char.IsAscii) && value.Equals("until-found", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnsupportedLayoutException("hidden=until-found requires unsupported content-visibility and reveal layout.");
+            }
+        }
+
+        private void CheckAtomicDescendants(DomElement widget, int depth)
+        {
+            var pending = new Stack<(DomNode Parent, int Next, int Depth)>();
+            pending.Push((widget, 0, depth + 1));
+            while (pending.TryPop(out var entry))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (entry.Next == entry.Parent.ChildNodes.Count) { continue; }
+                pending.Push((entry.Parent, entry.Next + 1, entry.Depth));
+                Visit();
+                if (entry.Parent.ChildNodes[entry.Next] is DomElement element)
+                {
+                    if (Display(element) == "none")
+                    {
+                        if (widget.LocalName == "select")
+                        {
+                            throw new UnsupportedLayoutException(
+                                "Select controls with display:none descendants require unsupported option visibility layout.");
+                        }
+                        continue;
+                    }
+                    if (entry.Depth > options.MaxDepth) { throw new LayoutLimitException("Layout nesting limit exceeded."); }
+                    if (element.LocalName == "embed")
+                    { throw new UnsupportedLayoutException("<embed> requires unsupported specialized layout."); }
+                    CheckHiddenUntilFound(element);
+                    if (element.ChildNodes.Count > 0) { pending.Push((element, 0, entry.Depth + 1)); }
+                }
+                else if (entry.Depth > options.MaxDepth) { throw new LayoutLimitException("Layout nesting limit exceeded."); }
             }
         }
 

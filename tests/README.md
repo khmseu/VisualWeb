@@ -1,5 +1,26 @@
 # Tests
 
+Hidden-rendering regressions cover ordinary/empty/invalid/whitespace and exact
+ASCII `until-found` values, normal cascade/importance/`revert`, disabled UA
+styles, attribute mutation and exact shared CSS/layout limits. They compare
+native pixels and geometry with explicit `display:none` references; exercise
+root, list, table, input and descendant suppression; and reject rendered
+`until-found`, hidden embeds and unsupported hidden select options. Local and
+process browser tests cover absent link/selection/focus/fragment geometry,
+DOM-order fragment identity and scrolling, successful hidden form values,
+offscreen button label filtering and shell pixels, author overrides, stylesheet
+and script processing, and retained reflow without rerunning scripts.
+
+Fragment regressions cover inline input, button, textarea and select targets
+and their ancestors in local and process rendering, widget-offset scrolling,
+DOM-order ID/name precedence, and hidden winners. Exact and one-over emitted
+count and serialized-byte boundaries include overlapping ID/name and shadowed
+candidates; IPC tests also cover UTF-8 bytes and JSON escaping. Independent
+candidate node, element, character-work and cancellation limits are exercised.
+Deep shared-ancestor cases check linear visits, exact/one-over work limits,
+first geometry, hidden winners and cancellation in each layout pass; protocol
+diagnostics distinguish the UTF-8 and serialized-JSON guards.
+
 Link-color UA regressions cover HTML `a`/`area` href presence, empty and
 blocked values, case, mutation/recomputation, inherited color, disabled UA
 styles, cascade/importance/`revert`, shared budgets and unsupported `:visited`.

@@ -281,10 +281,15 @@ metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
 Relative and fragment URL components are preserved. Same-document fragment
 links update the URL-only history entry and scroll the retained document to a
-rendered element with the matching decoded `id`, or to rendered text inside an
+rendered element with the matching decoded `id`, or to rendered geometry of an
 `a[name]` legacy anchor when no ID matches; an empty fragment scrolls to the top.
-ID matches take precedence over named anchors. This does not fetch, reparse or
-rerun scripts. Unknown IDs and empty/unrendered named anchors do not scroll.
+Inline form widgets, and inline ancestors with only widget geometry, contribute
+their widget offsets.
+The first ID in DOM tree order takes precedence over every named anchor, even
+when that ID is hidden or unrendered; likewise the first matching name wins.
+If the winning element has no rendered geometry, later duplicates do not scroll.
+This does not fetch, reparse or rerun scripts. Unknown IDs and named anchors
+without rendered geometry do not scroll; `hidden=until-found` reveal is not implemented.
 Back/Forward between fragment entries for the
 retained document updates the URL and restores fragment scrolling without a load;
 cross-document traversal still reloads.
@@ -497,7 +502,11 @@ replaced-element layout remain unsupported.
 Fields, select controls and submit/reset/input buttons are drawn by a shell-owned overlay (white field or
 gray button, gray border, bounded ASCII text with `|` caret when focused),
 including button text; the renderer raster is untouched outside control
-rectangles. These defaults are bounded layout accommodations, not complete UA
+rectangles. Button labels omit display-none descendants, including hidden ones,
+while normal CSS overrides still apply. A rendered select with a display-none
+descendant fails explicitly until option visibility can be represented without
+changing selectedness or form data. Hidden controls retain successful values
+but receive no focus or hit geometry. These defaults are bounded layout accommodations, not complete UA
 widget sizing or styling. Tab/Shift+Tab visit visible, enabled controls merged in
 tree order with anchor groups; primary-clicking a visible text/search/email/tel/url/password/date/time/datetime-local/month/week/number field or textarea
 focuses it without starting page text selection; clicking within a supported

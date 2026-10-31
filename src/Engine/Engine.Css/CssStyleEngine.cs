@@ -41,6 +41,7 @@ public static class CssStyleEngine
     /// <summary>Minimal static UA defaults, not the complete HTML rendering stylesheet.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#rendering">rendering</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list defaults</see>,
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS">hidden elements</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
@@ -49,6 +50,7 @@ public static class CssStyleEngine
         input, button, textarea, select { display: inline-block }
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }
+        [hidden]:not([hidden=until-found i]):not(embed) { display: none }
         body { margin: 8px }
         p, blockquote, pre, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         :is(dir, dl, menu, ol, ul) :is(dir, dl, menu, ol, ul) { margin-top: 0; margin-bottom: 0 }

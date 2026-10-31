@@ -4,7 +4,7 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-10-31, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-01, Zeitzone Europe/Berlin (UTC+01:00).
 - Aktueller Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
@@ -28,8 +28,36 @@
   ([KP-108](./Kontextprotokoll.md#kp-108---html-schriftdefaults)). Pass 4
   ergaenzt die fehlende HTML-UA-Farbe fuer unbesuchte Links. Build,
   Formatpruefung, lokaler V8-Smoke und alle 15.806 Solution-Tests bestehen,
-  darunter 26 neue Faelle; Commit, Push und CI stehen aus
-  ([KP-109](./Kontextprotokoll.md#kp-109---standardfarbe-fuer-links)).
+  darunter 26 neue Faelle. Commit `154a304` ist gepusht; Linux, Windows
+  und CodeQL bestanden, einschliesslich x64 und arm64
+  ([KP-109](./Kontextprotokoll.md#kp-109---standardfarbe-fuer-links),
+  [KP-110](./Kontextprotokoll.md#kp-110---link-ci-und-auswahl-des-fuenften-inkrements)).
+  Pass 5 implementiert den gewoehnlichen HTML-`hidden`-Zustand ueber die
+  UA-Cascade und `display:none`; versteckte Controls bleiben nach den
+  regulaeren Regeln fuer Formulardaten beruecksichtigt. Buttonbeschriftungen
+  filtern nicht gerenderte Nachkommen, Fragmentziele beachten die
+  DOM-Reihenfolge. Gerenderte Selects mit `display:none`-Nachkommen,
+  sichtbares `hidden=until-found` und die
+  spezielle `<embed hidden>`-Darstellung scheitern explizit. 139 fokussierte
+  Faelle, Solution-Build, Formatpruefung und lokaler V8-Smoke bestanden fuer
+  den ersten Stand; der Review fand fehlende Inline-Widget-Fragmentziele und
+  doppelt belastete Fragment-ID-/Namensbudgets. Laut Implementierungsbericht
+  wurden beide korrigiert; 134 fokussierte Faelle, Build, Formatpruefung und
+  lokaler V8-Smoke bestehen fuer diesen Stand. Der Folge-Review bestaetigte
+  beide Korrekturen, fand aber unzureichend begrenzte wiederholte
+  Vorfahrenscans. Laut Implementierungsbericht merkt die Nachbesserung
+  vollstaendige Vorfahrenketten je Durchlauf und begrenzt die Besuche
+  gemeinsam; 55 fokussierte Browser- und 3 IPC-Faelle sowie Build,
+  Formatpruefung und lokaler V8-Smoke bestehen. Der Folge-Review ist
+  freigegeben; alle 15.907 Solution-Tests bestehen. Commit und CI stehen aus
+  ([KP-110](./Kontextprotokoll.md#kp-110---link-ci-und-auswahl-des-fuenften-inkrements),
+  [KP-111](./Kontextprotokoll.md#kp-111---hidden-darstellung-lokal-implementiert),
+  [KP-112](./Kontextprotokoll.md#kp-112---review-der-fragmentgrenzen),
+  [KP-113](./Kontextprotokoll.md#kp-113---korrektur-der-fragmentziele),
+  [KP-114](./Kontextprotokoll.md#kp-114---folge-review-der-vorfahrenscans),
+  [KP-115](./Kontextprotokoll.md#kp-115---begrenzte-vorfahrenscans),
+  [KP-116](./Kontextprotokoll.md#kp-116---reviewfreigabe-fuer-fragmentziele),
+  [KP-117](./Kontextprotokoll.md#kp-117---vollstaendige-hidden-validierung)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
@@ -705,6 +733,17 @@ abgelehnt und nicht geladen
   geprueft. Externe GitHub-Links sind Quellenverweise, keine Browser-Abnahmetests.
 
 ## Naechste Schritte
+
+**Aktueller Einstieg (2026-11-01):** Im laufenden Zehn-Passen-Auftrag sind
+vier Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
+HTML-`hidden` liegt mit Korrekturen zu den Fragment-Reviewbefunden lokal vor;
+Review und alle 15.907 Solution-Tests sind bestanden. Den Pass getrennt
+committen, pushen und die CI pruefen. Erst anschliessend die weitere
+Auswahl anhand des dann aktuellen [Trackers](../plans/Missing.md) treffen.
+Der aktuelle Stand und die Grenzen stehen oben sowie in
+[KP-117](./Kontextprotokoll.md#kp-117---vollstaendige-hidden-validierung).
+Die folgenden aelteren Schritte und Passnummern beschreiben fruehere Auftraege;
+sie sind keine zusaetzlichen aktuellen Arbeitsauftraege.
 
 1. Der nested-wheel-Pass (`overflow-x:hidden` + `overflow-y:auto`) ist in
    Commit `8aaf65c` gepusht; CodeQL, Linux development und Windows confinement

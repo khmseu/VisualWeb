@@ -126,19 +126,19 @@ public sealed class LinkColorDefaultsTests
     public void UserAgentRuleSharesExactAssignmentAndMatchingBudgetsAndCancellation()
     {
         var document = Parse("<a id=target href>text</a>");
-        // The UA sheet has 58 declarations; margin and padding expansion add six assignments.
-        // The four elements (html, head, body, a) each check 94 top-level selectors and
+        // The UA sheet has 59 declarations; margin and padding expansion add six assignments.
+        // The four elements (html, head, body, a) each check 95 top-level selectors and
         // 11 unmatched :is() subject alternatives, at two operations per simple selector.
-        const int assignments = 64;
-        const long matches = 840; // 4 * (94 + 11) * 2
+        const int assignments = 65;
+        const long matches = 848; // 4 * (95 + 11) * 2
         // The author rule adds one assignment and one two-operation selector per element.
-        const int authorAssignments = 65;
-        const long authorMatches = 848;
+        const int authorAssignments = 66;
+        const long authorMatches = 856;
         CssStyleSource[] author = [new("a{color:red}")];
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches - 1 }));
-        Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments }, author)); // 65 - 1
+        Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments }, author)); // 66 - 1
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches }, author));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = authorMatches - 1 }, author));
         var exact = Calculate(new() { MaxAssignments = assignments, MaxMatchOperations = matches });

@@ -295,6 +295,22 @@ complete HTML rendering stylesheet (controls have limited inline-block defaults
 and no UA borders/padding/fonts). Broader marker types,
 decoration and replaced-element sizing are not yet implemented.
 
+The [HTML hidden rendering rule](https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS)
+(local ID `html`) is
+`[hidden]:not([hidden=until-found i]):not(embed) { display:none }`. Attribute
+presence, including empty, invalid and whitespace-padded values, selects the
+ordinary hidden state; only the exact ASCII-case-insensitive `until-found`
+keyword selects the separate state. The declaration is normal UA CSS, not
+`!important`: user, author and inline declarations, importance and `revert`
+follow the existing cascade, and disabling the UA sheet disables the rule.
+`input[type=hidden i]` retains its separate important UA rule. `<embed>` is
+excluded because its specialized HTML layout is not implemented. Visible
+`hidden=until-found` also fails explicitly in layout rather than approximating
+content visibility or reveal; see [layout](text-layout.md#layout-entry-point).
+Style snapshots must be recomputed after attribute mutations. The rule only
+affects rendering, not discovery or processing of styles/scripts or successful
+form controls.
+
 The [HTML phrasing-content rendering rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) include `:link { color: #0000EE }` in the UA sheet. The
 existing `:link` matcher applies it to HTML `a` and `area` elements with an

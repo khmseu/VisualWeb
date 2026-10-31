@@ -97,6 +97,27 @@ flow order for painting, alongside the separate Children and Lines collections.
 Coordinates are absolute CSS pixels. These are geometry inputs for later paint,
 not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
 
+The normal UA `hidden` rule uses existing `display:none` suppression, including
+for roots, lists, tables and controls. An author/user override may
+make the element visible; descendants cannot escape an ancestor whose computed
+display is none. Computed styles are still needed for the entire DOM. The exact
+ASCII-case-insensitive `hidden=until-found` keyword on a rendered non-`embed`
+element fails at layout validation, including in atomic button/select content.
+Content-visibility, `beforematch`, find/fragment reveal and ancestor revealing
+are not implemented. Already `display:none` subtrees are skipped before that
+check; a rendered `<embed hidden>` instead retains the separate specialized
+layout failure. Non-ASCII lookalikes and whitespace-padded values are not the
+`until-found` keyword.
+
+Inline buttons and selects are atomic, so validation also scans their DOM
+descendants with the existing node, depth and cancellation limits, independent
+of viewport clipping. Browser button labels filter descendants whose computed
+display is none and honor overrides. A rendered select with a `display:none`
+descendant fails explicitly: the existing option model cannot hide popup rows
+without changing default/selected values or form submission. A select already
+suppressed by an ancestor or its own display remains available for successful
+form submission, including selected hidden options.
+
 ## Supported geometry
 
 ### Default unordered lists
@@ -350,16 +371,16 @@ FontSet registration and caller-owned font counts remain caller resource policy.
 
 LayoutOptions defaults:
 
-| Limit                                            |    Default |
-| ------------------------------------------------ | ---------: |
-| Nesting, including gathered text nodes           |        128 |
-| Generated block boxes                            |    100,000 |
-| Visited visible nodes                            |  1,000,000 |
-| Generated lines                                  |    100,000 |
-| Input text characters across gathered text nodes |  1,000,000 |
-| Glyphs returned across all shaping calls         |  1,000,000 |
-| Shaping calls, including spaces/struts           |    100,000 |
-| Hyphen line-break processing operations          | 10,000,000 |
+| Limit                                               |    Default |
+| --------------------------------------------------- | ---------: |
+| Nesting, including gathered text nodes              |        128 |
+| Generated block boxes                               |    100,000 |
+| Visited nodes, including atomic-widget child checks |  1,000,000 |
+| Generated lines                                     |    100,000 |
+| Input text characters across gathered text nodes    |  1,000,000 |
+| Glyphs returned across all shaping calls            |  1,000,000 |
+| Shaping calls, including spaces/struts              |    100,000 |
+| Hyphen line-break processing operations             | 10,000,000 |
 
 All limits are positive/configurable, tested at boundaries and throw typed
 limit exceptions. The shared line-break budget charges repeated whole-run

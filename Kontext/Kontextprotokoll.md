@@ -3793,3 +3793,218 @@ verlangte anschliessend feste statt dynamisch gesuchter Budgetgrenzen: 64
 Assignments und 840 Match-Operationen fuer den Testbaum, je eine darunter
 scheitert. Alle 15.806 serialisierten Solution-Tests bestehen; das sind 26
 neue Faelle. Commit, Push und CI stehen noch aus.
+
+### KP-110 - Link-CI und Auswahl des fuenften Inkrements
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: Commit `154a304c8f360971075c85ac55bd0de1b5ecc872`,
+  [Linux](https://github.com/khmseu/VisualWeb/actions/runs/41246409743),
+  [Windows](https://github.com/khmseu/VisualWeb/actions/runs/41246409817),
+  [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41246409858),
+  [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [CSS-UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs) und lokaler
+  HTML-Cache, Abschnitte `#the-hidden-attribute` und `#hiddenCSS`.
+- Bezug: KP-109.
+
+**Belegt:** Der Linkfarben-Commit ist auf `origin/main` gepusht. Die drei
+genannten CI-Laeufe bestanden; die Linux- und Windows-Jobs liefen jeweils fuer
+x64 und arm64. Dies ergaenzt den frueheren lokalen Status in KP-109.
+
+**Auswahl (Ableitung):** Gewoehnliche mit `hidden` markierte Inhalte werden
+derzeit nicht durch einen entsprechenden UA-Default ausgeblendet. Das ist ein
+konkreter Darstellungs- und Interaktionsfehler auf einfachen Seiten.
+Das laufende fuenfte Inkrement soll die HTML-UA-Regel fuer den gewoehnlichen
+Hidden-Zustand und die vorhandene `display:none`-Pipeline nutzen, einschliesslich
+der regulaeren Cascade. Das abweichende `hidden=until-found` benoetigt
+Content-Visibility und Aufdeckungsalgorithmen; sichtbare entsprechende Boxen
+sollen bis zu deren Implementierung explizit scheitern, statt falsch sichtbar
+oder vollstaendig verborgen zu werden. Die spezielle `<embed hidden>`-Semantik
+bleibt ebenfalls nicht unterstuetzt. Skripte und Styles in versteckten
+Bereichen sowie erfolgreiche Formulardaten duerfen nicht unterdrueckt werden.
+Implementierung, Review, Validierung, Commit und CI sind noch offen.
+
+**Integrationsrisiken (Belege und Ableitung):** Der atomare Inline-Widgetpfad
+in [StaticLayout](../src/Engine/Engine.Layout/StaticLayout.cs) traversiert
+Button-/Select-Nachkommen nicht wie gewoehnliche Inline-Inhalte.
+[PageForms](../src/Apps/VisualWeb.PageRendering/PageForms.cs) gewinnt
+Buttonbeschriftungen aus `TextContent` und flacht Select-Optionen ab;
+[ShellChrome](../src/Apps/VisualWeb.Browser/ShellChrome.cs) zeichnet diese
+Daten. Eine reine UA-Regel kann darum versteckte Widgetinhalte weiterhin
+sichtbar lassen oder `until-found` in einem Widget uebergehen. Versteckte
+Optionen duerfen nicht einfach entfernt oder als disabled markiert werden:
+die HTML-Selectedness- und Formdatenalgorithmen beruecksichtigen weiterhin
+ausgewaehlte, nicht deaktivierte Optionen. Sichtbarkeit, Auswahl und
+Formulardaten muessen getrennt bleiben oder die betreffende Widgetkombination
+muss explizit scheitern.
+
+[Fragmentziele](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs)
+werden derzeit aus dem Layout gesammelt; der HTML-Algorithmus
+`#find-a-potential-indicated-element` waehlt aber zuerst die passende ID in
+DOM-Reihenfolge, auch wenn sie nicht gerendert wird, und erst ohne ID einen
+passenden Ankernamen. Nach Einfuehrung des UA-Hidden-Defaults koennte daher
+eine spaetere sichtbare doppelte ID faelschlich zum Scrollziel werden.
+Regressionen und eine begrenzte, abbrechbare Korrektur dieser unmittelbar
+betroffenen Pfade sind zur laufenden Implementierung angefordert; deren
+Vorhandensein und Ergebnis sind noch nicht verifiziert.
+
+### KP-111 - Hidden-Darstellung lokal implementiert
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: Implementierungsbericht und Arbeitsbaum,
+  [Hidden-CSS](../tests/Engine.Css.Tests/HiddenDefaultsTests.cs),
+  [Hidden-Layout](../tests/Engine.Layout.Tests/HiddenLayoutTests.cs),
+  [Hidden-Content](../tests/Engine.Content.Tests/HiddenRenderingTests.cs),
+  [Hidden-Browser](../tests/VisualWeb.Browser.Tests/HiddenRenderingTests.cs),
+  [CSS-Grenzen](../docs/css.md#cascade-and-computed-values) und
+  [Layoutgrenzen](../docs/text-layout.md#layout-entry-point).
+- Bezug: KP-110.
+
+**Umsetzung (belegt durch Implementierungsbericht und Arbeitsbaum):** Die
+HTML-UA-Regel verwendet die bestehende Cascade und behandelt den
+`until-found`-Wert ausschliesslich ASCII-case-insensitive. Sichtbare
+`until-found`-Elemente und gerenderte `<embed hidden>` bleiben explizit
+unsupported. Versteckte Controls werden bei den Formulardaten weiterhin nach
+den regulaeren Erfolgsregeln beruecksichtigt; Buttonlabels filtern nach
+berechnetem Display, auch ausserhalb des Viewports. Gerenderte
+Selects mit `display:none`-Nachkommen scheitern explizit, statt deren
+Selectedness oder erfolgreiche Werte zu veraendern. Fragmentziele reservieren
+die erste ID beziehungsweise den ersten Namen in DOM-Reihenfolge, auch wenn
+das Element keine Box hat.
+
+**Lokale Validierung (Implementierungsbericht):** Die neuen Tests wurden vor
+der Umsetzung rot ausgefuehrt; 139 fokussierte CSS-, Layout-, Content- und
+Browserfaelle bestehen danach. Der Solution-Build ohne Restore, die
+Formatverifikation und der lokale V8-Smoke bestanden. Review und die
+serialisierte volle Solution-Testsuite laufen; Commit, Push und CI stehen aus.
+
+### KP-112 - Review der Fragmentgrenzen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Review im aktuellen Auftrag, Arbeitsbaum
+  [Fragment-Sammlung](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs)
+  und [IPC-Grenzen](../src/Ipc/Ipc.Contracts/RendererProtocol.cs).
+- Bezug: KP-111.
+
+**Reviewbefunde (belegt):** Inline-Widgets werden bei der Sammlung von
+Fragmentzielen nicht besucht. Eine sichtbare `input`-ID kann deshalb ein
+spaeteres Anker-`name` blockieren, ohne selbst ein scrollbares Ziel zu liefern.
+Ausserdem zaehlt die erste Reservierung identische ID- und Namensstrings
+getrennt; bereits 2.049 Anker mit jeweils gleicher ID und gleichem Namen
+ueberschreiten so die 4.096er Grenze, obwohl hoechstens 2.049 Ziele ausgegeben
+werden. Auch Kandidaten, die durch einen frueheren versteckten Treffer
+verdraengt werden, sind von der tatsaechlich ausgegebenen Metadatenmenge zu
+unterscheiden.
+
+**Laufender Auftrag:** Widgetelemente und relevante Vorfahren sollen ihre
+Layoutkoordinaten als Fragmentziele erhalten. Anzahl-, Text- und Bytegrenzen
+muessen die tatsaechlich ausgegebenen Ziele korrekt begrenzen; separate
+abbrechbare Knoten-/Arbeitsgrenzen duerfen dabei nicht entfallen. Feste
+Grenzwerttests, DOM-Schattenfaelle und lokale/Prozessrenderer sind angefordert.
+Der vor der Reviewantwort gestartete Volltest wurde wegen der erforderlichen
+Codekorrektur bewusst angehalten und muss nach der Korrektur neu laufen.
+Es ist weder eine vollstaendige Testfreigabe noch ein Commit belegt.
+
+### KP-113 - Korrektur der Fragmentziele
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Implementierungsbericht, Arbeitsbaum
+  [Fragment-Sammlung](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs),
+  [Browser-Regressionen](../tests/VisualWeb.Browser.Tests/FragmentTargetRegressionTests.cs)
+  und [IPC-Grenztests](../tests/Ipc.Tests/FragmentTargetProtocolTests.cs).
+- Bezug: KP-112.
+
+**Korrektur (Implementierungsbericht):** Inline-Widgets und ihre relevanten
+Vorfahren werden an den Widgetkoordinaten als Fragmentkandidaten erfasst.
+Anzahl- und Metadatengrenzen gelten fuer tatsaechlich ausgegebene Identitaeten;
+die Kandidaten- und DOM-Arbeit bleibt getrennt begrenzt und abbrechbar. Die
+IPC-Pruefung erfasst sowohl UTF-8-Daten als auch serialisierte JSON-Groesse.
+Die hinzugefuegten Browser-Regressionen scheiterten vor der Korrektur in
+14 Faellen.
+
+**Validierung und Status:** Laut Implementierungsbericht bestehen 134
+fokussierte CSS-, Layout-, Content-, IPC- und Browserfaelle, der Solution-Build,
+die Formatpruefung und der lokale V8-Smoke. Der Folge-Review wurde angefordert.
+Der nach KP-112 angehaltene serielle Volltest wurde neu gestartet und ist noch
+nicht abgeschlossen. Commit, Push und CI stehen aus.
+
+### KP-114 - Folge-Review der Vorfahrenscans
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Folge-Review im aktuellen Auftrag,
+  [Fragment-Sammlung](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs)
+  und [IPC-Grenztests](../tests/Ipc.Tests/FragmentTargetProtocolTests.cs).
+- Bezug: KP-112 und KP-113.
+
+**Reviewbefund (belegt):** Die Korrektur beruecksichtigt Widgets und belastet
+die Protokollgrenzen nur fuer ausgegebene Identitaeten. Wiederholte
+Vorfahrenscans pro Textfragment oder Widget werden jedoch durch die Grenzen
+fuer verschiedene Elemente und den spaeteren DOM-Scan nicht wirksam
+beschraenkt; verschachtelte Elemente und viele Fragmente koennen vermeidbare
+ueberproportionale Arbeit verursachen. Der UTF-8-Ueberlauf-Grenztest verletzt
+zugleich die JSON-Grenze und kann daher den jeweils ausloesenden Pruefpfad
+nicht unterscheiden.
+
+**Laufender Auftrag:** Die Vorfahrenarbeit soll wirksam begrenzt oder durch
+pro Durchlauf vollstaendig verarbeitete, gemerkte Vorfahrenketten reduziert
+werden, ohne Geometrie, DOM-Prioritaet oder Abbruchverhalten zu veraendern.
+Getrennte Grenz- und Abbruchtests sind angefordert. Der serielle Volltest
+wurde fuer die Nachbesserung bewusst gestoppt: 13 Projekte mit insgesamt
+14.597 Tests hatten zu diesem Zeitpunkt bestanden, der Browserlauf war noch
+nicht abgeschlossen. Eine volle Testfreigabe liegt nicht vor.
+
+### KP-115 - Begrenzte Vorfahrenscans
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Implementierungsbericht,
+  [Fragment-Sammlung](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs),
+  [Browser-Regressionen](../tests/VisualWeb.Browser.Tests/FragmentTargetRegressionTests.cs)
+  und [IPC-Grenztests](../tests/Ipc.Tests/FragmentTargetProtocolTests.cs).
+- Bezug: KP-114.
+
+**Nachbesserung (Implementierungsbericht):** Vollstaendig verarbeitete
+Vorfahrenketten werden je Layoutdurchlauf gemerkt und ein Stack wird
+wiederverwendet. Eine gemeinsame Besuchsgrenze ist aus vorhandenen Layout-
+und CSS-Limits abgeleitet und betraegt standardmaessig 4.600.002 Besuche
+ueber beide Durchlaeufe; ihr Ueberschreiten scheitert explizit. Die IPC-
+Grenzen fuer UTF-8-Daten und serialisiertes JSON haben unterscheidbare
+Diagnosesuffixe bei unveraendertem Exception-Typ und gemeinsamem Praefix.
+Vor der Aenderung scheiterten ein gezielter Grenzfall fuer Vorfahrenarbeit
+und ein Test fuer unterscheidbare IPC-Diagnosen.
+
+**Validierung und Status:** Laut Implementierungsbericht bestehen 55
+fokussierte Browser- und 3 IPC-Faelle, Solution-Build, Formatpruefung und
+lokaler V8-Smoke. Folge-Review und erneut gestarteter serieller Volltest
+stehen aus. Eine volle Testfreigabe, Commit, Push und CI sind noch nicht
+belegt.
+
+### KP-116 - Reviewfreigabe fuer Fragmentziele
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Folge-Review im aktuellen Auftrag,
+  [Fragment-Sammlung](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs)
+  und [Grenztests](../tests/VisualWeb.Browser.Tests/FragmentTargetRegressionTests.cs).
+- Bezug: KP-114 und KP-115.
+
+**Review (belegt):** Die Korrektur ist freigegeben: Vorfahrenketten werden
+pro Durchlauf vollstaendig und ohne direkte Boxregistrierungen als falsche
+Cachetreffer verarbeitet; die gemeinsame Grenze verwendet `long` mit
+Reserve gegenueber bestehenden CSS-/Layoutlimits. Die IPC-Grenzen sind
+einzeln testbar; ein Repository-Verbraucher der bisherigen vollstaendigen
+Diagnose wurde nicht gefunden. Nicht blockierende Testempfehlung: einen
+Abbruch nach einem Cachetreffer auch im zweiten Durchlauf separat abdecken.
+Der laufende Volltest, Commit, Push und CI stehen weiterhin aus.
+
+### KP-117 - Vollstaendige Hidden-Validierung
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erfolgreicher Lauf
+  `dotnet test VisualWeb.slnx --no-build -m:1 --logger 'console;verbosity=minimal'`,
+  Implementierungsbericht zu Build, Format und V8-Smoke sowie Review in KP-116.
+- Bezug: KP-110 bis KP-116.
+
+**Lokale Validierung (belegt):** Alle 15.907 Solution-Tests bestehen,
+darunter 1.310 Browser- und 199 IPC-Faelle; gegenueber Pass 4 sind es netto
+101 Tests mehr. Zuvor bestanden Solution-Build, Formatverifikation und
+lokaler V8-Smoke fuer denselben Code. Der Review ist freigegeben. Commit,
+Push und plattformspezifische CI stehen noch aus; die lokalen Ergebnisse
+belegen keine native Windows- oder arm64-Ausfuehrung.
