@@ -402,6 +402,16 @@
       "lastModified": "2026-10-02T23:14:53+00:00"
     },
     {
+      "id": "css-conditional-3",
+      "title": "CSS Conditional Rules Level 3",
+      "url": "https://www.w3.org/TR/css-conditional-3/",
+      "file": "css-conditional-3.html",
+      "fetchedAt": "2026-10-30T23:47:10.9550384+00:00",
+      "checkedAt": "2026-10-30T23:47:10.9550384+00:00",
+      "eTag": null,
+      "lastModified": "2024-08-13T02:47:17+00:00"
+    },
+    {
       "id": "css-mediaqueries-5",
       "title": "CSS Media Queries Level 5",
       "url": "https://www.w3.org/TR/mediaqueries-5/",

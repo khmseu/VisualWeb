@@ -2899,4 +2899,38 @@ Content 24 und alle 14.789 Solution-Tests bestehen; der Solution-Build hat
 null Warnungen und Fehler, und der lokale V8-Smoke besteht. Die
 Solution-Formatpruefung meldet nur die drei auf `ad0bca6` reproduzierten
 Baseline-Fehler; die geaenderten C#-Dateien bestehen die separate Pruefung.
-Commit und CI stehen noch aus.
+
+**Commit/Push:** `d473814` ist auf `origin/main`; der Commit-Hook pruefte zehn
+Dateien ohne Findings. [Linux 41145180513](https://github.com/khmseu/VisualWeb/actions/runs/41145180513),
+[Windows 41145180479](https://github.com/khmseu/VisualWeb/actions/runs/41145180479)
+und [CodeQL 41145180655](https://github.com/khmseu/VisualWeb/actions/runs/41145180655)
+bestanden; Windows umfasst x64 und ARM64.
+
+### KP-087 - Begrenzte Screen-Media-Regeln
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [CSS-Guide](../docs/css.md#screen-media-type-rules),
+  [PageRendering](../src/Apps/VisualWeb.PageRendering/README.md),
+  lokaler `css-conditional-3`- und `css-mediaqueries-5`-Cache sowie
+  CSS-, Content- und Browserregressionen.
+
+**Belegt:** Vor Pass 5 wurden alle CSS-`@media`-Gruppen diagnostiziert.
+Die bestehende Browserpolitik behandelt `all` und `screen` als anwendbar und
+`print` als nicht anwendbar. Der Standard definiert eine leere
+Media-Query-Liste als wahr. Der neu registrierte `css-conditional-3`-Cache
+wurde erfolgreich am 2026-10-30 um 23:47 UTC aktualisiert; die weiteren
+benoetigten Caches waren frisch.
+
+**Umsetzung und lokale Validierung:** Verschachtelte Gruppen mit diesen exakten Typen werden am
+urspruenglichen Cascade-Ort ausgewertet; aeussere Bedingungen muessen ebenfalls
+zutreffen. Print-Inhalte werden nicht semantisch ausgewertet; aktive
+verschachtelte Imports bleiben Diagnose und werden nie geladen. Bedingungen,
+Modifier und unbekannte Typen bleiben ausgeschlossen. Gemeinsame Grenzen
+zaehlen rekursive Tokenbesuche, Regeln und Zuweisungen; Abbruch wird beachtet.
+36 neue Regressionen umfassen 31 CSS-Faelle, einen nativen Content-Fall und
+vier Browser-Faelle, darunter lokale und Prozess-Renderer sowie ausbleibende
+Requests fuer verschachtelte Imports. Der Solution-Build hat null Warnungen und
+Fehler; CSS 748, Content 25, Browser 1.198 und alle 14.825 Solution-Tests
+bestehen. Geaenderte C#-Dateien bestehen die separate Formatpruefung; die
+vollstaendige Pruefung zeigt ausschliesslich die drei auf `ad0bca6`
+reproduzierten Baseline-Fehler. Commit, Push und CI stehen aus.

@@ -25,6 +25,10 @@ Saturation above 100 and lightness outside 0..100 remain explicit diagnostics.
 Supported lengths also include the CSS absolute units `in`, `cm`, `mm`, `Q`,
 `pt` and `pc`, converted to CSS pixels for all existing length-valued
 properties. This does not add viewport or additional font-relative units.
+Nested `@media` rules support only empty or comma-separated `all`, `screen`
+and `print` media-type lists in the screen-only renderer. Active groups retain
+cascade order; print-only groups are skipped. Feature queries, modifiers and
+other at-rules remain diagnostics; nested processing has its own shared budget.
 The finite color-only `background` shorthand accepts one color plus optional
 `none`, or `none` alone, and expands the supported background-color longhand.
 Images/layers and other background components remain explicit diagnostics;
@@ -37,7 +41,8 @@ diagnostics. This does not add font fallback or change native face selection.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,
-`css-color`, `css-sizing`, `css-backgrounds` and `html`.
+`css-color`, `css-sizing`, `css-backgrounds`, `css-conditional-3`,
+`css-mediaqueries-5` and `html`.
 Sources are in the [registry](../../../specs/manifest.json).
 See the [standards workflow](../../../docs/standards.md).
 

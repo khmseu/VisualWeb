@@ -48,7 +48,7 @@ internal static class CssImports
                 throw new PageNavigationException("CSS @import requires a document or stylesheet URL.");
             }
 
-            var (reference, applicability) = ImportReference(rule.Prelude);
+            var (reference, applicability) = ImportReference(rule.Prelude, cancellationToken);
             if (applicability != ImportApplicability.AppliesToScreen)
             {
                 ranges.Add((rule.Offset, rule.EndOffset));
@@ -87,9 +87,16 @@ internal static class CssImports
         return new(imports.AsReadOnly(), normalized);
     }
 
-    private static (string Reference, ImportApplicability Applicability) ImportReference(IReadOnlyList<CssToken> prelude)
+    private static (string Reference, ImportApplicability Applicability) ImportReference(IReadOnlyList<CssToken> prelude,
+        CancellationToken cancellationToken)
     {
-        var tokens = prelude.Where(token => token.Kind != CssTokenKind.Whitespace).ToArray();
+        var nonWhitespace = new List<CssToken>();
+        foreach (var token in prelude)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (token.Kind != CssTokenKind.Whitespace) { nonWhitespace.Add(token); }
+        }
+        var tokens = nonWhitespace.ToArray();
         int mediaStart;
         string reference;
         if (tokens.Length >= 1 && tokens[0].Kind is CssTokenKind.String or CssTokenKind.Url)
@@ -109,66 +116,11 @@ internal static class CssImports
             throw new PageNavigationException("CSS @import requires a valid string or url() value.");
         }
 
-        if (mediaStart == tokens.Length)
+        if (CssMediaTypeList.TryMatchesScreen(tokens[mediaStart..], out var applies, cancellationToken: cancellationToken))
         {
-            return (reference, ImportApplicability.AppliesToScreen);
-        }
-
-        if (mediaStart == tokens.Length)
-        {
-            return (reference, ImportApplicability.AppliesToScreen);
-        }
-
-        var mediaApplicability = ParseMediaTypes(tokens, mediaStart);
-        if (mediaApplicability is not null)
-        {
-            return (reference, mediaApplicability.Value);
+            return (reference, applies ? ImportApplicability.AppliesToScreen : ImportApplicability.DoesNotApplyToScreen);
         }
 
         throw new PageNavigationException("CSS @import supports optional media lists containing only exact all, screen, or print media types.");
-    }
-
-    private static ImportApplicability? ParseMediaTypes(IReadOnlyList<CssToken> tokens, int start)
-    {
-        var appliesToScreen = false;
-        var expectMediaType = true;
-        for (var index = start; index < tokens.Count; index++)
-        {
-            var token = tokens[index];
-            if (expectMediaType)
-            {
-                if (token.Kind != CssTokenKind.Ident)
-                {
-                    return null;
-                }
-
-                if (token.Value.Equals("all", StringComparison.OrdinalIgnoreCase)
-                    || token.Value.Equals("screen", StringComparison.OrdinalIgnoreCase))
-                {
-                    appliesToScreen = true;
-                }
-                else if (!token.Value.Equals("print", StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-
-                expectMediaType = false;
-                continue;
-            }
-
-            if (token.Kind != CssTokenKind.Comma)
-            {
-                return null;
-            }
-
-            expectMediaType = true;
-        }
-
-        if (expectMediaType)
-        {
-            return null;
-        }
-
-        return appliesToScreen ? ImportApplicability.AppliesToScreen : ImportApplicability.DoesNotApplyToScreen;
     }
 }

@@ -8,6 +8,29 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void ScreenMediaRulesMatchUnconditionalNativePixelsOnRetainedResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><div>Sample</div>";
+        var conditional = new[] { new CssStyleSource(
+            "*{margin:0}@media print{div{display:grid;background:red}}@media all{@media screen{div{width:80px;height:20px;background:blue}}}") };
+        var unconditional = new[] { new CssStyleSource("*{margin:0}div{width:80px;height:20px;background:blue}") };
+        var actual = OfflinePageRenderer.Render(html, conditional, text, fonts, 100, 40, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, unconditional, text, fonts, 100, 40, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, actual.Frame.Pixels.Span.Slice(5 * actual.Frame.Stride + 70 * 4, 4).ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, conditional, text, fonts, 90, 40, cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, unconditional, text, fonts, 90, 40,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void AnyLinkStylesReachNativePixelsAndRecomputeAfterHrefRemoval()
     {
         using var font = new TextFont(FontPath);

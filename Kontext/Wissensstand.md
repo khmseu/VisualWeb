@@ -149,7 +149,7 @@ C#-Dateien bestehen die separate Formatpruefung. Commit `c9e5f59` ist gepusht;
 Linux, Windows x64/ARM64 und CodeQL bestehen
 ([KP-085](./Kontextprotokoll.md#kp-085---begrenzte-hsl-farben)).
 
-**Pass 4 (Arbeitsstand):** Der statische Selektor `:any-link` erkennt HTML-`a`
+**Pass 4 (abgeschlossen):** Der statische Selektor `:any-link` erkennt HTML-`a`
 und `area` anhand eines vorhandenen `href`, auch bei leerem oder nicht
 navigierbarem Wert. Er wird von Stylesheets und DOM-Abfragen geteilt;
 Verlauf und Navigationsberechtigung bleiben unveraendert. Vor der Umsetzung
@@ -157,8 +157,21 @@ scheiterten 20 gezielte CSS-Faelle; danach bestehen 28 neue Regressionen,
 CSS 717, Scripting 351, Content 24 und alle 14.789 Solution-Tests. Der
 Solution-Build und der lokale V8-Smoke bestehen. Die Formatpruefung meldet
 nur die drei auf `ad0bca6` reproduzierten Baseline-Fehler; geaenderte
-C#-Dateien bestehen die separate Pruefung. Commit und CI stehen noch aus
+C#-Dateien bestehen die separate Pruefung. Commit `d473814` ist gepusht;
+Linux, Windows x64/ARM64 und CodeQL bestehen
 ([KP-086](./Kontextprotokoll.md#kp-086---statischer-any-link-selektor)).
+
+**Pass 5 (Arbeitsstand):** Verschachtelte CSS-`@media`-Gruppen unterstuetzen
+nur leere oder kommaseparierte `all`-/`screen`-/`print`-Listen fuer den
+bereits bestehenden Screen-Modus. Cascade-Reihenfolge, Syntaxdiagnosen,
+gemeinsame Arbeitsbudgets und die bisherige Import-Sicherheitsgrenze bleiben
+erhalten; Bedingungen und weitere Medientypen bleiben nicht unterstuetzt.
+36 neue Regressionen, CSS 748, Content 25, Browser 1.198 und alle 14.825
+Solution-Tests bestehen. Der Build hat null Warnungen/Fehler; geaenderte
+C#-Dateien bestehen die separate Formatpruefung. Die Solution-Formatpruefung
+meldet nur die drei auf `ad0bca6` reproduzierten Baseline-Findings.
+Commit, Push und CI stehen noch aus
+([KP-087](./Kontextprotokoll.md#kp-087---begrenzte-screen-media-regeln)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

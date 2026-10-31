@@ -23,7 +23,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 
 /// <summary>Renderer-local static style computation with explicit unsupported-feature diagnostics.</summary>
 /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#cascade">cascade</see>.
-/// No loading, mutation observation, dynamic state, layers, conditions or scripting.</remarks>
+/// Screen-only <see href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-media">@media</see> type lists use
+/// css-conditional-3 and css-mediaqueries-5. No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {
     /// <summary>Minimal static UA defaults, not the complete HTML rendering stylesheet.</summary>
@@ -178,29 +179,52 @@ public static class CssStyleEngine
             if (!Enum.IsDefined(source.Origin)) { throw new ArgumentOutOfRangeException(nameof(sources), "Unknown CSS origin."); }
             var sheet = CssSyntax.ParseStyleSheet(source.Text, context.Options, cancellationToken);
             Import(sheet.Diagnostics);
-            foreach (var rule in sheet.Rules)
+            var syntaxRuleCount = sheet.Rules.Count;
+            CompileRules(sheet.Rules, 0);
+
+            void CompileRules(IReadOnlyList<CssRule> sourceRules, int depth)
             {
-                context.Cancellation.ThrowIfCancellationRequested();
-                if (rule.AtName is not null)
+                if (depth > context.Options.MaxDepth) { throw new CssLimitException("CSS conditional rule depth limit exceeded."); }
+                foreach (var rule in sourceRules)
                 {
-                    context.Error("unsupported-at-rule", rule.Offset, $"@{rule.AtName} is not evaluated in the static subset.");
-                    continue;
+                    context.Cancellation.ThrowIfCancellationRequested();
+                    if (rule.AtName is not null)
+                    {
+                        if (CssText.Lower(rule.AtName) != "media")
+                        {
+                            context.Error("unsupported-at-rule", rule.Offset, $"@{rule.AtName} is not evaluated in the static subset.");
+                            continue;
+                        }
+                        if (rule.Block is null || !CssMediaTypeList.TryMatchesScreen(rule.Prelude, out var matches,
+                            context.Options, cancellationToken))
+                        {
+                            context.Error("unsupported-at-rule", rule.Offset,
+                                "@media requires a block and an empty or all/screen/print media-type list.");
+                            continue;
+                        }
+                        if (matches)
+                        {
+                            var nested = CssSyntax.Rules(rule.Block, context, topLevel: false, ref syntaxRuleCount);
+                            CompileRules(nested, depth + 1);
+                        }
+                        continue;
+                    }
+                    CssSelectorList selectors;
+                    try { selectors = CssSelectorList.Compile(rule.Prelude, context); }
+                    catch (FormatException exception)
+                    {
+                        context.Error("invalid-selector", rule.Offset, exception.Message);
+                        continue;
+                    }
+                    catch (UnsupportedCssException exception)
+                    {
+                        context.Error("unsupported-selector", exception.Offset, exception.Message);
+                        continue;
+                    }
+                    var declarations = CssSyntax.Declarations(rule.Block ?? [], context);
+                    if (rules.Count >= context.Options.MaxRules) { throw new CssLimitException("CSS compiled rule limit exceeded."); }
+                    rules.Add(new(selectors, CssProperties.Expand(declarations, context).AsReadOnly(), source.Origin, order++));
                 }
-                CssSelectorList selectors;
-                try { selectors = CssSelectorList.Compile(rule.Prelude, context); }
-                catch (FormatException exception)
-                {
-                    context.Error("invalid-selector", rule.Offset, exception.Message);
-                    continue;
-                }
-                catch (UnsupportedCssException exception)
-                {
-                    context.Error("unsupported-selector", exception.Offset, exception.Message);
-                    continue;
-                }
-                var declarations = CssSyntax.Declarations(rule.Block ?? [], context);
-                if (rules.Count >= context.Options.MaxRules) { throw new CssLimitException("CSS compiled rule limit exceeded."); }
-                rules.Add(new(selectors, CssProperties.Expand(declarations, context).AsReadOnly(), source.Origin, order++));
             }
         }
 

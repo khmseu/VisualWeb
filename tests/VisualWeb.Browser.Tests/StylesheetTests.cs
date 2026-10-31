@@ -221,7 +221,7 @@ public sealed class StylesheetTests
                 "https://example.test/page" => Text("""
                     <!doctype html><style>
                     @import 'all.css' all;
-                    @import 'screen.css' screen;
+                    @import 'screen.css' \73 creen;
                     @import 'screen-list.css' print, screen;
                     @import 'print.css' print;
                     @import 'print-list.css' print, print;
@@ -255,6 +255,28 @@ public sealed class StylesheetTests
         Assert.Equal("body{background-color:blue}", texts[1]);
         Assert.Equal("body{color:black}", texts[2]);
         Assert.Contains("body{margin:0}", texts[3], StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("print", false)]
+    [InlineData("screen", true)]
+    public async Task NestedMediaImportsAreNeverFetchedAndActiveOnesAreDiagnosed(string media, bool active)
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return Text($"<!doctype html><style>@media {media}{{@import 'never.css';p{{color:blue}}}}</style>",
+                "text/html");
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal(["https://example.test/page"], requests);
+        var document = HtmlParser.Parse(page.Html, cancellationToken: Cancellation).Document;
+        var styles = StaticPageRenderer.CollectStyles(document, cancellationToken: Cancellation,
+            documentUrl: page.Url, stylesheets: page.Stylesheets);
+        var result = CssStyleEngine.Compute(document, styles, cancellationToken: Cancellation);
+        Assert.Equal(active, result.Diagnostics.Any(d => d.Code == "unsupported-at-rule"));
     }
 
     [Fact]
@@ -558,6 +580,23 @@ public sealed class StylesheetTests
         var ex = await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(
             Page("<style>body{margin:0}</style><link rel=stylesheet href=missing.css>", "body{}"), Viewport, Cancellation));
         Assert.Contains("not provided", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MediaRulesApplyAcrossEmbeddedAndImportedStylesAndRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath) : new StaticPageRenderer(FontPath, 100000);
+        var page = Page("<style>body{margin:0;background:red}@media print{@import 'never.css';body{display:grid}}"
+            + "@media all{body{background:lime}}</style><link rel=stylesheet href=s.css>",
+            "@import 't.css' screen;@media screen{@media all{body{background:blue}}}",
+            "@media print{body{background:red}}");
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal(Blue, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(Blue, retained.Frame.Pixels.Span[..4].ToArray());
     }
 
     [Theory]

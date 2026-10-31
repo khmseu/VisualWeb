@@ -393,7 +393,7 @@ public sealed class CascadeTests
     public void UnsupportedFeaturesProduceDiagnosticsAndNeverExecuteOrFetch()
     {
         var doc = Document();
-        var result = Compute(doc, new CssStyleSource("@import 'http://example.com/x'; @media screen{p{color:blue}}" +
+        var result = Compute(doc, new CssStyleSource("@import 'http://example.com/x'; @media screen and (min-width:1px){p{color:blue}}" +
             "p:hover{color:blue} p{--x:red; color:var(--x);display:grid;width:calc(1px + 2px);animation:test; color:red}"));
         Assert.Equal(2, result.Diagnostics.Count(d => d.Code == "unsupported-at-rule"));
         Assert.Contains(result.Diagnostics, d => d.Code == "unsupported-selector");

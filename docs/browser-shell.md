@@ -790,7 +790,10 @@ Named stylesheet sets, non-CSS types and media outside that exact subset fail
 explicitly. Media lists that omit `all` and `screen` are ignored by this
 screen-only renderer: they neither
 fetch a linked print stylesheet nor apply an embedded print style block or
-its imports. Compound media queries remain unsupported and fail visibly.
+its imports. Nested CSS `@media` groups also support empty or exact
+`all`/`screen`/`print` lists, preserving cascade order and skipping print-only
+contents; nested imports are never fetched. Compound media queries remain
+unsupported and fail visibly.
 
 Bounded linked and imported stylesheets are brokered by the browser, never by renderers.
 `GetPageSource` parses the decoded document with the renderer's exact parser

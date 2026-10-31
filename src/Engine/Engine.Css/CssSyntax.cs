@@ -34,12 +34,14 @@ public sealed record CssOptions
     public int MaxStyleSources { get; init; } = 256;
     public int MaxRules { get; init; } = 100_000;
     public int MaxAssignments { get; init; } = 1_000_000;
+    public long MaxNestedRuleOperations { get; init; } = 10_000_000;
     public long MaxMatchOperations { get; init; } = 10_000_000;
 
     internal void Validate()
     {
         if (MaxInputCharacters <= 0 || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
-            || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0 || MaxMatchOperations <= 0)
+            || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
+            || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(CssOptions), "All CSS limits must be positive.");
         }
@@ -58,6 +60,7 @@ internal sealed class CssContext
     internal CancellationToken Cancellation { get; }
     internal List<CssDiagnostic> Diagnostics { get; } = [];
     private long operations;
+    private long nestedRuleOperations;
     private int matchDepth;
     private int assignments;
 
@@ -83,6 +86,13 @@ internal sealed class CssContext
     {
         Cancellation.ThrowIfCancellationRequested();
         if (++operations > Options.MaxMatchOperations) { throw new CssLimitException("CSS selector operation limit exceeded."); }
+    }
+
+    internal void NestedRuleStep()
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (++nestedRuleOperations > Options.MaxNestedRuleOperations)
+        { throw new CssLimitException("CSS nested rule processing limit exceeded."); }
     }
 
     internal void EnterMatch()
@@ -419,6 +429,13 @@ public static class CssSyntax
         var tokenizer = new CssTokenizer(input, context);
         var tokens = new List<CssToken>();
         for (var token = tokenizer.Read(); token.Kind != CssTokenKind.Eof; token = tokenizer.Read()) { tokens.Add(token); }
+        var ruleCount = 0;
+        var rules = Rules(tokens, context, topLevel: true, ref ruleCount);
+        return new(rules.AsReadOnly(), context.Diagnostics.AsReadOnly()) { NormalizedText = tokenizer.NormalizedInput };
+    }
+
+    internal static List<CssRule> Rules(IReadOnlyList<CssToken> tokens, CssContext context, bool topLevel, ref int ruleCount)
+    {
         var rules = new List<CssRule>();
         var position = 0;
         while (position < tokens.Count)
@@ -426,18 +443,24 @@ public static class CssSyntax
             context.Cancellation.ThrowIfCancellationRequested();
             var start = position;
             var first = tokens[position];
-            if (first.Kind is CssTokenKind.Whitespace or CssTokenKind.Cdo or CssTokenKind.Cdc) { position++; continue; }
+            if (first.Kind == CssTokenKind.Whitespace || (topLevel && (first.Kind is CssTokenKind.Cdo or CssTokenKind.Cdc)))
+            {
+                Charge();
+                position++;
+                continue;
+            }
             var at = first.Kind == CssTokenKind.AtKeyword ? first.Value : null;
-            if (at is not null) { position++; }
+            if (at is not null) { Charge(); position++; }
             var prelude = new List<CssToken>();
             List<CssToken>? block = null;
             var terminated = false;
             while (position < tokens.Count)
             {
+                Charge();
                 var token = tokens[position++];
                 if (token.Kind == CssTokenKind.OpenBrace)
                 {
-                    block = Component(tokens, ref position, token, context);
+                    block = Component(tokens, ref position, token, context, chargeNestedRules: !topLevel);
                     terminated = true;
                     break;
                 }
@@ -445,13 +468,14 @@ public static class CssSyntax
                 prelude.Add(token);
                 if (CssText.Opens(token.Kind))
                 {
-                    prelude.AddRange(Component(tokens, ref position, token, context));
+                    prelude.AddRange(Component(tokens, ref position, token, context, chargeNestedRules: !topLevel));
                     prelude.Add(new(CssText.Closing(token.Kind), "", token.Offset, ""));
                 }
             }
             if (at is not null || terminated)
             {
-                if (rules.Count >= context.Options.MaxRules) { throw new CssLimitException("CSS rule limit exceeded."); }
+                if (ruleCount >= context.Options.MaxRules) { throw new CssLimitException("CSS rule limit exceeded."); }
+                ruleCount++;
                 var last = tokens[Math.Max(start, position - 1)];
                 rules.Add(new(at, CssText.Trim(prelude).AsReadOnly(), block?.AsReadOnly(), first.Offset)
                 {
@@ -460,7 +484,12 @@ public static class CssSyntax
             }
             else { context.Error("eof-in-qualified-rule", first.Offset, "Qualified rule has no block."); }
         }
-        return new(rules.AsReadOnly(), context.Diagnostics.AsReadOnly()) { NormalizedText = tokenizer.NormalizedInput };
+        return rules;
+
+        void Charge()
+        {
+            if (!topLevel) { context.NestedRuleStep(); }
+        }
     }
 
     public static CssDeclarationList ParseDeclarations(string input, CssOptions? options = null, CancellationToken cancellationToken = default)
@@ -575,7 +604,8 @@ public static class CssSyntax
         return tokens;
     }
 
-    private static List<CssToken> Component(List<CssToken> tokens, ref int position, CssToken opening, CssContext context)
+    private static List<CssToken> Component(IReadOnlyList<CssToken> tokens, ref int position, CssToken opening,
+        CssContext context, bool chargeNestedRules = false)
     {
         var result = new List<CssToken>();
         var stack = new Stack<CssTokenKind>();
@@ -583,6 +613,7 @@ public static class CssSyntax
         while (position < tokens.Count)
         {
             context.Cancellation.ThrowIfCancellationRequested();
+            if (chargeNestedRules) { context.NestedRuleStep(); }
             var token = tokens[position++];
             if (token.Kind == stack.Peek())
             {

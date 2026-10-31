@@ -490,11 +490,20 @@ policy or exposing history. `:link` and `:visited` remain unsupported. See the
 the solution build and all 14,789 solution tests pass locally; local V8 smoke
 passes. Formatting reports only the three findings reproduced on base `ad0bca6`.
 
+The screen-only CSS engine now evaluates nested `@media` groups with an empty
+or comma-separated `all`/`screen`/`print` list. Active groups retain their
+cascade positions; print-only contents are skipped. Unsupported conditions and
+active nested imports remain diagnostics, and nested imports are never fetched.
+This does not implement feature queries, device-dependent evaluation or general
+conditional rules. See [screen media-type rules](../docs/css.md#screen-media-type-rules).
+Its 36 new regressions, solution build and all 14,825 solution tests pass locally.
+Formatting reports only the three findings reproduced on base `ad0bca6`.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented
   for adjacent block siblings and eligible parent/first-or-last block-child edges.
-- Media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope`, `:any-link` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, visited/dynamic state, namespaces and pseudo-elements remain missing.)
+- Conditional/feature-based media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope`, `:any-link` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, visited/dynamic state, namespaces and pseudo-elements remain missing.)
 - Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.

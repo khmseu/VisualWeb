@@ -14,6 +14,10 @@ Optional media lists containing exact `all`, `screen`, and `print` media types a
 supported for imports and stylesheet/link media attributes; lists that omit `all`
 and `screen` are ignored in this screen-only renderer. Other
 unsupported media queries, conditions, layers and late imports fail explicitly.
+Nested CSS `@media` groups use the same screen media types and preserve cascade
+order; an empty group prelude also matches. Inactive print contents are not
+evaluated, and nested `@import` rules are never fetched; active nested imports
+produce a CSS diagnostic.
 The renderer throws for
 unsupported link semantics or sources (for example, script-changed ones) whose text
 was not provided.

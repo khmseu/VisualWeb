@@ -27,11 +27,12 @@ remain the responsibility of the caller and the browser's PageRendering layer. T
 not automatically collect document style elements or fetch `link`/`@import`
 URLs. It never executes JavaScript.
 
-The browser's PageRendering layer separately supports recursive, unconditional
-leading `@import` rules from embedded and browser-fetched stylesheets. The
-browser broker fetches those resources; Engine.Css still receives an ordered,
-already-expanded source list and has no network dependency. Conditional imports,
-`layer` modifiers and late imports fail visibly.
+The browser's PageRendering layer separately supports recursive leading
+`@import` rules from embedded and browser-fetched stylesheets, including exact
+`all`, `screen` and `print` media-type lists. The browser broker fetches
+applicable resources; Engine.Css still receives an ordered, already-expanded
+source list and has no network dependency. Other conditional imports, `layer`
+modifiers and late imports fail visibly.
 
 The result is a read-only computed snapshot keyed by renderer-local DOM
 elements. It does not observe mutations: call Compute again after a DOM/style
@@ -52,11 +53,11 @@ dimension units and normalized source text are retained.
 declaration lists, retaining balanced flat component tokens rather than a
 CSSOM object model. It handles nested functions/blocks, semicolons within
 components, EOF block closure, trailing whitespace and `!important`.
-At-rules are retained by stylesheet syntax parsing but not evaluated by the
-style engine. Declaration-block at-rules and nested rules produce explicit
-diagnostics while following declarations remain parseable. CSS nesting,
-descriptor contexts and the optional Unicode-range tokenization extension
-are not implemented.
+At-rules are retained by stylesheet syntax parsing; the style engine evaluates
+only the bounded `@media` subset below. Declaration-block at-rules and nested
+style rules produce explicit diagnostics while following declarations remain
+parseable. CSS nesting, descriptor contexts and the optional Unicode-range
+tokenization extension are not implemented.
 
 Diagnostics contain a code, message and **normalized UTF-16 offset within the
 individual input**, not byte offsets or line/column positions. Results expose
@@ -67,6 +68,27 @@ expected selector failures, diagnoses and discards the affected whole rule.
 Unsupported properties/values diagnose and discard the declaration, never
 override an earlier valid declaration. Limit and cancellation exceptions
 propagate and do not return partial success.
+
+## Screen media-type rules
+
+The static style engine supports [`@media`](https://www.w3.org/TR/css-conditional-3/#at-ruledef-media)
+using only comma-separated `all`, `screen` and `print`
+[media types](https://www.w3.org/TR/mediaqueries-5/#media-types), with
+ASCII-case-insensitive identifiers and CSS escapes (official IDs
+`css-conditional-3` and `css-mediaqueries-5`). An empty media query list
+matches, as does a list containing `all` or `screen`; print-only lists do not.
+Matching groups may nest and are compiled at their original cascade positions.
+All enclosing groups must match. Print-only contents are not semantically
+evaluated, although the whole input is tokenized and component-depth limits
+apply. Conditions, modifiers, unknown media types and malformed lists produce
+diagnostics instead of a partial match. Other active nested at-rules, including
+`@import`, are diagnosed and never fetched. The browser's HTML media-attribute
+policy remains separate and unchanged.
+
+The shared `CssMediaTypeList.TryMatchesScreen` accepts already-tokenized lists,
+enforces `CssOptions.MaxTokens`, and distinguishes an unsupported list from a
+valid nonmatching one. Cancellation propagates; callers must surface a false
+return rather than treating it as a print-only match.
 
 ## Static selectors
 
@@ -243,17 +265,18 @@ values do not imply anonymous table generation or arbitrary CSS table layout.
 
 All CssOptions limits are positive and configurable:
 
-| Limit                                                              |    Default |
-| ------------------------------------------------------------------ | ---------: |
-| Input characters per individual CSS string, before normalization   |       4 Mi |
-| Non-EOF tokens per individual CSS string                           |  1,000,000 |
-| Component/selector nesting and selector evaluation depth           |        128 |
-| Diagnostics per parse / combined style computation                 |     10,000 |
-| Styled elements                                                    |    100,000 |
-| Style sources including the optional UA sheet                      |        256 |
-| Rules per parse / compiled rules across sources                    |    100,000 |
-| Expanded assignments across compiled sheets and inline styles      |  1,000,000 |
-| Selector evaluation operations across a computation / direct match | 10,000,000 |
+| Limit                                                                          |    Default |
+| ------------------------------------------------------------------------------ | ---------: |
+| Input characters per individual CSS string, before normalization               |       4 Mi |
+| Non-EOF tokens per individual CSS string                                       |  1,000,000 |
+| Component/selector nesting and selector evaluation depth                       |        128 |
+| Diagnostics per parse / combined style computation                             |     10,000 |
+| Styled elements                                                                |    100,000 |
+| Style sources including the optional UA sheet                                  |        256 |
+| Rules per parse, including active nested rules / compiled rules across sources |    100,000 |
+| Expanded assignments across compiled sheets and inline styles                  |  1,000,000 |
+| Nested rule token visits across all sources                                    | 10,000,000 |
+| Selector evaluation operations across a computation / direct match             | 10,000,000 |
 
 Exceeding any limit throws CssLimitException. Cancellation is checked during
 input/token scanning, parsing, compilation and matching. Numeric values outside
@@ -274,6 +297,7 @@ selectors/specificity, cascade origins, inline importance, shorthands,
 inheritance/computed units/colors, unsupported features and exact limits.
 
 Official locally cached documents: css-syntax, selectors, css-cascade,
+css-conditional-3, css-mediaqueries-5,
 css-values, css-box, css-display, css-fonts, css-text, css-color, css-sizing,
 css-backgrounds, and html's rendering chapter. See the
 [standards registry](../specs/manifest.json). Cache refresh is independent of
