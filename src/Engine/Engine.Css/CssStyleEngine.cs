@@ -27,6 +27,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// css-conditional-3 and css-mediaqueries-5. The none-only text-decoration subset uses css-text-decoration
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line values</see> and
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see>.
+/// Finite marker values use css2-lists
+/// <see href="https://www.w3.org/TR/CSS22/generate.html#propdef-list-style-type">list style types</see>.
 /// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {

@@ -3011,4 +3011,48 @@ anschliessend isoliert in beiden Varianten und im vollstaendigen Solution-Rerun.
 Die Ursache ist nicht belegt. Alle 14.888 Solution-Tests einschliesslich 36
 neuer Regressionen bestehen. Die geaenderten C#-Dateien bestehen die separate
 Formatpruefung; die Solution-Pruefung meldet nur drei auf `ad0bca6` belegte
-Baseline-Findings. Commit, Push und CI stehen noch aus.
+Baseline-Findings.
+
+**Commit/Push:** `ae43073` ist auf `origin/main`; der Commit-Hook pruefte zwoelf
+Dateien ohne verbleibende Findings und formatierte zwei Markdown-Guides.
+[Linux 41158465449](https://github.com/khmseu/VisualWeb/actions/runs/41158465449),
+[Windows 41158465259](https://github.com/khmseu/VisualWeb/actions/runs/41158465259)
+und [CodeQL 41158465217](https://github.com/khmseu/VisualWeb/actions/runs/41158465217)
+bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
+
+### KP-090 - Quadratische CSS-Listenmarker
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaeten](../plans/Missing.md#recommended-priority),
+  [Listenlayout](../docs/text-layout.md#default-unordered-lists),
+  `CssProperties`, `StaticLayout`, `DisplayListBuilder` und der lokale
+  `css2-lists`-Cache, zuletzt geprueft am 2026-10-28.
+
+**Belegt:** `list-style-type:square` und der Shorthand `list-style:square`
+werden derzeit diagnostiziert. Die vorhandenen ausserhalb stehenden Disc-
+Marker nutzen eine begrenzte Geometrie und die aktuelle Textfarbe. CSS 2.2
+definiert `square` als Listenmarker und ueberlaesst dessen genaue Darstellung
+der UA.
+
+**Auswahl fuer Pass 8:** Den CSS-Wert mit geerbter Cascade und dem bestehenden
+atomaren Shorthand unterstuetzen; ein ausgefuelltes Quadrat soll dieselben
+Outside-Geometrie-, Farb-, Budget-, Resize- und Prozesspfade wie der Disc-
+Marker nutzen. Legacy-HTML-`type`, Kreis-/weitere Marker und andere offene
+Listenfunktionen bleiben ausgeschlossen. Dies ist ein begrenztes Inkrement,
+keine Aussage allgemeiner CSS-Listenkonformitaet.
+
+**Umsetzung, fokussiert geprueft:** Sieben CSS-Positivfaelle scheiterten vor
+der Aenderung. Danach bestehen die fokussierten Cascade-/Budget-, Layout-,
+Native-Pixel-/Alpha-, Content- und lokalen/Prozess-Renderer-Tests sowie der
+Solution-Build. Quadrate bleiben von DOM-Text und geformten Dezimalmarkern
+getrennt; Leer-/verschachtelte/umgebrochene Elemente, Nummerierung,
+Shaping-/Paint-Budgets, Cancellation und Retained Scroll/Resize sind abgedeckt.
+Ein erster Vergleich der gesamten Frames vor und nach Scrollen scheiterte an
+abweichenden Grautoenen des Textes. Der praezisere Test prueft stattdessen alle
+36 roten Markerpixel exakt und vergleicht den Textbereich fuer jede Scrollposition
+gegen eine `list-style:none`-Referenz; beide Renderer bestehen. Vollstaendige
+CSS-, Layout-, Paint-, Content- und Browser-Suiten bestehen mit 796, 141, 42,
+28 bzw. 1.204 Tests. Der Build und alle 14.911 Solution-Tests bestehen,
+darunter 23 neue Regressionen. Die Solution-Formatpruefung meldet nur die
+drei auf `ad0bca6` reproduzierten Baseline-Findings; die uebrigen geaenderten
+C#-Dateien bestehen die separate Pruefung. Commit, Push und CI stehen noch aus.

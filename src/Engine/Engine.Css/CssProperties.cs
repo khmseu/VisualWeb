@@ -200,7 +200,7 @@ internal static class CssProperties
                     var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
                     if (keyword == "none") { noneCount++; }
                     else if (keyword == "outside" && position is null) { position = new CssKeyword(keyword); }
-                    else if (keyword is "disc" or "decimal" && type is null) { type = new CssKeyword(keyword); }
+                    else if (keyword is "disc" or "square" or "decimal" && type is null) { type = new CssKeyword(keyword); }
                     else { valid = false; }
                 }
                 if (!valid || noneCount > 2 || noneCount == 2 && type is not null) { Invalid(); continue; }
@@ -253,7 +253,7 @@ internal static class CssProperties
         if (name == "border-collapse") { return Keyword(keyword, "separate"); }
         if (name == "border-spacing") { return Length(token, false) is { Value: >= 0 } spacing ? spacing : null; }
         if (name == "vertical-align") { return Keyword(keyword, "baseline", "top"); }
-        if (name == "list-style-type") { return Keyword(keyword, "disc", "decimal", "none"); }
+        if (name == "list-style-type") { return Keyword(keyword, "disc", "square", "decimal", "none"); }
         if (name == "list-style-position") { return Keyword(keyword, "outside"); }
         if (name == "list-style-image") { return Keyword(keyword, "none"); }
         if (name is "overflow-x" or "overflow-y") { return Keyword(keyword, "visible", "hidden", "auto"); }

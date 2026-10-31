@@ -519,12 +519,14 @@ The current engine implements finite static block/inline rendering. Missing esse
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
 - Default unordered lists now render with outside disc bullets, including
   nested and empty items. UA items use `display:list-item`; inherited
-  `list-style-type:disc/decimal/none`, outside positioning and no marker image are
-  supported. Markers use bounded layout geometry and current-color ellipse
-  painting, not synthetic DOM text. Ordered lists now use separately shaped
+  `list-style-type:disc/square/decimal/none`, outside positioning and no marker
+  image are supported. Graphical markers use bounded geometry and current-color
+  ellipse or rectangle painting, not synthetic DOM text. Ordered lists use separately shaped
   decimal markers with `start`, `reversed` and `li value`; nested lists have
   independent numbering, hidden/non-list-items do not count, and marker
-  suppression preserves numbering. Numbering attributes accept HTML integer
+  suppression preserves numbering. CSS square markers reuse the same bounded
+  outside position and current-color paint as discs, using a filled rectangle;
+  nested UA defaults remain discs. Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` attributes except `ol type=1`,
   other marker styles, inside positioning and
@@ -536,12 +538,15 @@ The current engine implements finite static block/inline rendering. Missing esse
   local/process retained repainting; the solution build and all 14,253
   solution tests pass. Solution formatting still reports
   only the three existing findings reproduced on base commit `81bb414`.
-  The finite `list-style` shorthand now supports disc/decimal/none, outside
+  The finite `list-style` shorthand supports disc/square/decimal/none, outside
   positioning, image none, resets and CSS-wide keywords; invalid or unsupported
   components diagnose the complete declaration atomically instead of partially
-  applying values. Its 20 new CSS/native-content regressions, solution build
+  applying values. Its initial 20 CSS/native-content regressions, solution build
   and all 14,273 solution tests pass locally; formatting retains only the
   same three documented baseline findings.
+  The square-marker increment adds 23 CSS, layout, paint, content and browser
+  regressions. The solution build and all 14,911 solution tests pass locally;
+  formatting reports only the three findings reproduced on base `ad0bca6`.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common

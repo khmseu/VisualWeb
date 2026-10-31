@@ -8,7 +8,8 @@ Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
 Default unordered lists now use block list-item boxes with separate outside
 disc-marker geometry; nested/empty items and inherited marker suppression are
-bounded. Ordered lists add shaped decimal markers with independent `start`,
+bounded. The CSS `square` marker uses the same outside geometry as a disc.
+Ordered lists add shaped decimal markers with independent `start`,
 `reversed` and `li value` numbering; scans and output share existing budgets.
 Inside markers, other marker styles and arbitrary
 list-item elements remain unsupported. See the guide for exact geometry.

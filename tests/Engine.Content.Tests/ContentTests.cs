@@ -8,6 +8,39 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void SquareMarkersRenderSolidNativePixelsAndSurviveRetainedResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ul><li></li><li></li></ul>";
+        CssStyleSource[] styles = [new("*{margin:0;font-size:20px;line-height:20px}ul{list-style:square;color:red}")];
+        var rendered = OfflinePageRenderer.Render(html, styles, text, fonts, 100, 40, cancellationToken: Cancellation);
+        Assert.Empty(rendered.Styles.Diagnostics);
+        var markers = rendered.DisplayList.Commands.OfType<FillRectangle>().ToArray();
+        Assert.Equal(2, markers.Length);
+        Assert.All(markers, marker =>
+        {
+            Assert.Equal(new CssColor(255, 0, 0), marker.Color);
+            Assert.Equal(24, marker.Bounds.X);
+            Assert.Equal(6, marker.Bounds.Width);
+            Assert.Equal(6, marker.Bounds.Height);
+        });
+        Assert.Equal(markers[0].Bounds.Y + 20, markers[1].Bounds.Y);
+        var redPixels = Enumerable.Range(0, rendered.Frame.Size.Width * rendered.Frame.Size.Height).Count(index =>
+        {
+            var offset = index * 4;
+            return rendered.Frame.Pixels.Span[offset] == 0 && rendered.Frame.Pixels.Span[offset + 1] == 0
+                && rendered.Frame.Pixels.Span[offset + 2] == 255;
+        });
+        Assert.Equal(72, redPixels);
+        var resized = OfflinePageRenderer.RenderParsed(rendered.Html, styles, text, fonts, 80, 40,
+            cancellationToken: Cancellation);
+        Assert.Same(rendered.Html.Document, resized.Html.Document);
+        Assert.Equal(markers, resized.DisplayList.Commands.OfType<FillRectangle>());
+    }
+
+    [Fact]
     public void ScreenMediaRulesMatchUnconditionalNativePixelsOnRetainedResize()
     {
         using var font = new TextFont(FontPath);

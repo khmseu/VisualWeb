@@ -59,7 +59,7 @@ coordinate style-element/link loading separately. Unsupported features produce
 diagnostics rather than approximate behavior.
 
 The bounded list subset adds `display:list-item` and inherited longhands
-`list-style-type:disc/decimal/none`, `list-style-position:outside`, and
+`list-style-type:disc/square/decimal/none`, `list-style-position:outside`, and
 `list-style-image:none` (official ID `css2-lists`). UA `li` defaults to
 list-item. The `list-style` shorthand expands the same finite longhands,
 including resets, CSS-wide keywords and `none` ambiguity handling.

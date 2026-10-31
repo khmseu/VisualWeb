@@ -36,6 +36,10 @@ public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRec
     /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.
     /// The finite LTR subset uses a 0.3em disc and a 0.5em gap before the content edge.</remarks>
     public LayoutRect? DiscMarker { get; init; }
+    /// <summary>Outside square-marker bounds, separate from selectable document text.</summary>
+    /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.
+    /// The finite LTR subset uses a 0.3em square and a 0.5em gap before the content edge.</remarks>
+    public LayoutRect? SquareMarker { get; init; }
     public LayoutTextMarker? TextMarker { get; init; }
 }
 public sealed record LayoutResult(LayoutBox? Root, double ViewportWidth, double ViewportHeight);
@@ -268,7 +272,8 @@ public static partial class StaticLayout
                 else { Gather(child, style, inline, depth + 1); }
             }
             Flush();
-            LayoutRect? marker = null;
+            LayoutRect? discMarker = null;
+            LayoutRect? squareMarker = null;
             LayoutTextMarker? textMarker = null;
             if (Display(element) == "list-item" && style["list-style-type"] is CssKeyword { Value: not "none" } markerType)
             {
@@ -280,11 +285,17 @@ public static partial class StaticLayout
                 var (ascent, descent) = Extents(run, style);
                 var baseline = FirstBaseline(flow) ?? contentY + ascent;
                 if (flow.Count == 0) { cursor += ascent + descent; }
-                if (markerType.Value == "disc")
+                if (markerType.Value is "disc" or "square")
                 {
-                    marker = Rect(contentX - 0.8 * size, baseline - 0.5 * size, 0.3 * size, 0.3 * size);
+                    var bounds = Rect(contentX - 0.8 * size, baseline - 0.5 * size, 0.3 * size, 0.3 * size);
+                    if (markerType.Value == "disc") { discMarker = bounds; }
+                    else { squareMarker = bounds; }
                 }
-                else { textMarker = new(run, Finite(contentX - 0.5 * size - run.Width), baseline); }
+                else if (markerType.Value == "decimal")
+                {
+                    textMarker = new(run, Finite(contentX - 0.5 * size - run.Width), baseline);
+                }
+                else { throw new UnsupportedLayoutException($"Unsupported list marker '{markerType.Value}'."); }
             }
             var autoHeight = cursor - contentY;
             var contentHeight = cellWidth is not null ? Math.Max(definiteHeight ?? 0, autoHeight) : definiteHeight ?? autoHeight;
@@ -296,7 +307,8 @@ public static partial class StaticLayout
             return new(element, content, paddingBox, borderBox, margin, childBoxes.AsReadOnly(), blockLines.AsReadOnly())
             {
                 Flow = flow.AsReadOnly(),
-                DiscMarker = marker,
+                DiscMarker = discMarker,
+                SquareMarker = squareMarker,
                 TextMarker = textMarker
             };
 

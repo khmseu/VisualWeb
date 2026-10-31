@@ -58,6 +58,57 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void SquareMarkersKeepOutsideGeometryForWrappedNestedAndEmptyItems()
+    {
+        var root = UnorderedList("<ul id=parent><li id=a>a b</li><li id=b></li></ul>",
+            "#parent{list-style:square}", width: 50).Root!;
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+        Assert.Equal(new LayoutRect(40, 0, 10, 20), first.Content);
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), first.SquareMarker);
+        Assert.Equal(new LayoutRect(32, 23, 3, 3), second.SquareMarker);
+        Assert.Null(first.DiscMarker);
+        Assert.Null(first.TextMarker);
+        Assert.Equal(2, first.Lines.Count);
+        Assert.Equal("a b", first.Lines[0].Fragments[0].Source.Data);
+
+        var nested = UnorderedList("<ul><li id=outer><ul><li id=inner></li></ul></li></ul>",
+            "ul{list-style-type:square}").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nested, "outer").SquareMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nested, "inner").SquareMarker);
+        Assert.Equal(10, Find(nested, "inner").Content.Height);
+    }
+
+    [Fact]
+    public void SquareAndSuppressedMarkersDoNotAlterOrderedListNumbering()
+    {
+        var root = UnorderedList("<ol start=5><li id=a></li><li id=b></li><li id=c></li></ol>",
+            "#a{list-style:square}#b{list-style:none}").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(root, "a").SquareMarker);
+        Assert.Null(Find(root, "a").TextMarker);
+        Assert.Null(Find(root, "b").SquareMarker);
+        Assert.Null(Find(root, "b").TextMarker);
+        Assert.Null(Find(root, "c").SquareMarker);
+        Assert.Equal("7.", Find(root, "c").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void SquareMarkersShareShapingBudgetsAndCancellation()
+    {
+        const string html = "<ul><li></li><li></li></ul>";
+        const string css = "ul{list-style:square}";
+        Assert.NotNull(UnorderedList(html, css, options: new() { MaxShapingCalls = 2 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList(html, css, options: new() { MaxShapingCalls = 1 }));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var doc = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(doc, [new(css)], cancellationToken: Cancellation);
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(doc, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
+    [Fact]
     public void NestedEmptyAndWrappedUnorderedItemsRetainOneMarkerEach()
     {
         var nested = UnorderedList("<ul><li id=outer><ul><li id=inner></li></ul></li></ul>").Root!;

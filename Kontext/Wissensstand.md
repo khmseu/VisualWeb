@@ -187,7 +187,7 @@ Solution-Tests bestehen, darunter 27 neue Regressionen. Commit `e803d75` ist
 gepusht; Linux, Windows und CodeQL bestehen
 ([KP-088](./Kontextprotokoll.md#kp-088---bindestrichumbrueche)).
 
-**Pass 7 (lokale Umsetzung):** Das haeufige `text-decoration:none` blockierte
+**Pass 7 (abgeschlossen):** Das haeufige `text-decoration:none` blockierte
 als unbekannte CSS-Property ansonsten darstellbare Seiten. Fuer
 `text-decoration` und `text-decoration-line` sind jetzt ausschliesslich `none`
 und die vorhandenen CSS-weiten Werte `initial`, `inherit`, `unset` und `revert`
@@ -203,8 +203,24 @@ Ein vorheriger Browser-Gesamtlauf hatte einen Fehlschlag bei 1.202 Tests;
 der betroffene Test bestand danach isoliert und im Solution-Rerun. Ursache
 noch unbewiesen. Die geaenderten C#-Dateien bestehen die separate
 Formatpruefung; die Solution-Pruefung meldet die drei auf `ad0bca6`
-reproduzierten Baseline-Findings. Commit, Push und CI stehen noch aus
+reproduzierten Baseline-Findings. Commit `ae43073` ist gepusht; Linux, Windows
+und CodeQL bestehen
 ([KP-089](./Kontextprotokoll.md#kp-089---css-text-decoration-none)).
+
+**Pass 8 (lokale Umsetzung):** Als naechster einfacher Render-Blocker wurde
+`list-style-type:square` einschliesslich des vorhandenen `list-style`-
+Shorthands eingegrenzt. Der bestehende CSS-Parser diagnostiziert diesen Wert;
+das lokale CSS-2.2-Listenreferenzdokument laesst das genaue Aussehen der
+Markierung durch die UA festlegen. Ein ausgefuelltes Quadrat nutzt jetzt den
+bestehenden Outside-Markerabstand und die aktuelle Textfarbe; andere
+Markerarten und Legacy-HTML-`type` bleiben ausgeschlossen. Fokussierte
+Cascade-, Layout-, Pixel- und lokale/Prozess-Renderer-Tests sowie der Build
+bestehen. Vollstaendig bestehen 796 CSS-, 141 Layout-, 42 Paint-, 28
+Content- und 1.204 Browser-Tests sowie alle 14.911 Solution-Tests einschliesslich
+23 neuer Regressionen. Die Formatpruefung meldet nur die drei auf `ad0bca6`
+reproduzierten Baseline-Findings; die uebrigen geaenderten C#-Dateien bestehen
+die separate Pruefung. Commit, Push und CI stehen noch aus
+([KP-090](./Kontextprotokoll.md#kp-090---quadratische-css-listenmarker)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

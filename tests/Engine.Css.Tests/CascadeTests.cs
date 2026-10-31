@@ -137,6 +137,62 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("list-style-type:square")]
+    [InlineData("list-style-type:SqUaRe")]
+    [InlineData("list-style-type:sq\\75 are")]
+    [InlineData("list-style:square")]
+    [InlineData("list-style:none square outside")]
+    [InlineData("list-style:outside SQUARE none")]
+    [InlineData("list-style:square!important")]
+    public void SquareListStyleUsesTheCascadeAndInheritance(string declaration)
+    {
+        var doc = Document("<ul id=parent><li id=child>item</li></ul>");
+        var result = Compute(doc, new CssStyleSource("#parent{" + declaration + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("square"), result.Styles[doc.GetElementById("parent")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("square"), Child(result, doc)["list-style-type"]);
+        Assert.Equal(new CssKeyword("outside"), Child(result, doc)["list-style-position"]);
+        Assert.Equal(new CssKeyword("none"), Child(result, doc)["list-style-image"]);
+    }
+
+    [Fact]
+    public void SquareListStyleKeepsImportanceResetsAndExactAssignmentLimit()
+    {
+        var doc = Document("<ul id=parent><li id=child>item</li></ul>");
+        var important = Compute(doc, new CssStyleSource(
+            "#parent{list-style:square} #child{list-style-type:decimal!important;list-style:square}"));
+        Assert.Empty(important.Diagnostics);
+        Assert.Equal(new CssKeyword("decimal"), Child(important, doc)["list-style-type"]);
+        var squareImportant = Compute(doc, new CssStyleSource(
+            "#child{list-style:square!important;list-style-type:decimal}"));
+        Assert.Empty(squareImportant.Diagnostics);
+        Assert.Equal(new CssKeyword("square"), Child(squareImportant, doc)["list-style-type"]);
+        var reset = Compute(doc, new CssStyleSource("#child{list-style:square;list-style:outside}"));
+        Assert.Empty(reset.Diagnostics);
+        Assert.Equal(new CssKeyword("disc"), Child(reset, doc)["list-style-type"]);
+
+        var sources = new[] { new CssStyleSource("#child{list-style:square outside none}") };
+        Assert.Empty(CssStyleEngine.Compute(doc, sources, options: new() { MaxAssignments = 3 },
+            includeUserAgent: false, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, sources,
+            options: new() { MaxAssignments = 2 }, includeUserAgent: false, cancellationToken: Cancellation));
+    }
+
+    [Theory]
+    [InlineData("initial", "disc")]
+    [InlineData("inherit", "square")]
+    [InlineData("unset", "square")]
+    [InlineData("revert", "square")]
+    public void SquareListStyleUsesExistingCssWideKeywordSemantics(string keyword, string expected)
+    {
+        var doc = Document("<ul id=parent><li id=child>item</li></ul>");
+        var result = Compute(doc, new CssStyleSource(
+            "#parent{list-style:square}#child{list-style:decimal;list-style:" + keyword + "}"));
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), Child(result, doc)["list-style-type"]);
+    }
+
+    [Theory]
     [InlineData("list-style-type:lower-alpha")]
     [InlineData("list-style-type:circle")]
     [InlineData("list-style-position:inside")]
@@ -186,6 +242,9 @@ public sealed class CascadeTests
     [InlineData("decimal url(marker.png)")]
     [InlineData("inherit decimal")]
     [InlineData("circle")]
+    [InlineData("square decimal")]
+    [InlineData("square square")]
+    [InlineData("square inside")]
     public void InvalidListStyleShorthandNeverPartiallyOverridesLonghands(string value)
     {
         var doc = Document();

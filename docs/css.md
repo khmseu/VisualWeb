@@ -156,7 +156,8 @@ not listed above. No selector silently approximates these features.
 The bounded list subset gives `li` a UA `display:list-item` default,
 `ul` disc markers and `ol` decimal markers.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
-only disc/decimal/none markers, outside positioning and no marker image are supported.
+only disc/square/decimal/none markers, outside positioning and no marker image
+are supported.
 The `list-style` shorthand expands this same finite subset in any order,
 resets omitted longhands, and supports CSS-wide keywords. `none` suppresses
 the type and image unless the type is otherwise specified; `none decimal`
@@ -185,7 +186,7 @@ Supported longhands:
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                       |
 | Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                   |
-| Lists   | inherited `list-style-type`: disc/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                                             |
+| Lists   | inherited `list-style-type`: disc/square/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                                      |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                 |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                              |
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                    |

@@ -45,6 +45,41 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void SquareMarkersUseCurrentColorRectanglePixelsAndCommandBudget()
+    {
+        const string css = "ul{display:block;padding-left:20px;list-style:square}li{display:list-item;color:red}";
+        var list = Page("<ul><li></li></ul>", css);
+        Assert.Equal(new FillRectangle(new(12, 3, 3, 3), Red), Assert.Single(list.Commands));
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 12, 3));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 14, 5));
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 11, 3));
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 15, 5));
+        Assert.Equal(2, Page("<ul><li></li><li></li></ul>", css, new() { MaxCommands = 2 }).Commands.Count);
+        Assert.Throws<PaintLimitException>(() => Page("<ul><li></li><li></li></ul>",
+            css, new() { MaxCommands = 1 }));
+        var withText = Page("<ul><li>x</li></ul>", css);
+        Assert.IsType<FillRectangle>(withText.Commands[0]);
+        Assert.IsType<DrawGlyphRun>(withText.Commands[1]);
+    }
+
+    [Fact]
+    public void TranslucentSquareMarkersCompositeOverTheExistingBackground()
+    {
+        const string css = "ul{display:block;padding-left:20px;list-style:square;background:blue}"
+            + "li{display:list-item;color:rgba(255,0,0,.5)}";
+        var list = Page("<ul><li></li></ul>", css);
+        Assert.Equal(2, list.Commands.Count);
+        Assert.IsType<FillRectangle>(list.Commands[0]);
+        Assert.Equal(new FillRectangle(new(12, 3, 3, 3), new CssColor(255, 0, 0, 128)), list.Commands[1]);
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)128, (byte)0, (byte)127, (byte)255), Pixel(frame, 13, 4));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 11, 4));
+    }
+
+    [Fact]
     public void EllipseRasterizationValidatesGeometryBeforeDrawing()
     {
         using var fonts = new PaintFontRegistry();

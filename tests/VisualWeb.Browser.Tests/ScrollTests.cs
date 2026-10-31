@@ -82,6 +82,62 @@ public sealed class ScrollTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task SquareMarkersAndLinksSurviveLocalAndProcessScrollAndResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        const string html = """
+            <!doctype html><style>*{margin:0;font-size:20px;line-height:20px}
+            ul{list-style:MARKER;color:red}a{color:black}</style>
+            <ul><li><a href=/next>go</a></li><li><a href=/next>go</a></li></ul>
+            """;
+        var document = Document(html.Replace("MARKER", "square", StringComparison.Ordinal));
+        var viewport = new PageViewport(100, 20, 1);
+        var first = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal(40, first.ScrollHeight);
+        Assert.Equal(2, first.LinkTargets.Count);
+        Assert.All(first.LinkTargets, link => Assert.Equal("https://example.com/next", link.Url));
+        Assert.NotEmpty(first.LinkTargets[0].Rects);
+        Assert.Empty(first.LinkTargets[1].Rects);
+        var markerPixels = RedPixelOffsets(first.Frame);
+        Assert.Equal(36, markerPixels.Length);
+
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 20 }, Cancellation);
+        Assert.Equal(markerPixels, RedPixelOffsets(scrolled.Frame));
+        Assert.Empty(scrolled.LinkTargets[0].Rects);
+        Assert.NotEmpty(scrolled.LinkTargets[1].Rects);
+        Assert.Equal(first.LinkTargets.Select(link => link.FocusTargetId),
+            scrolled.LinkTargets.Select(link => link.FocusTargetId));
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 80 }, Cancellation);
+        Assert.Equal(40, resized.ScrollHeight);
+        Assert.Equal(80, resized.Frame.Size.Width);
+        Assert.NotEmpty(resized.LinkTargets[0].Rects);
+
+        var reference = Document(html.Replace("MARKER", "none", StringComparison.Ordinal));
+        var referenceFirst = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var referenceScrolled = await renderer.RenderRetainedAsync(reference, viewport with { ScrollY = 20 }, Cancellation);
+        Assert.Equal(TextPixels(referenceFirst.Frame), TextPixels(first.Frame));
+        Assert.Equal(TextPixels(referenceScrolled.Frame), TextPixels(scrolled.Frame));
+
+        static int[] RedPixelOffsets(RasterFrame frame) =>
+            Enumerable.Range(0, frame.Size.Width * frame.Size.Height).Where(index =>
+            {
+                var offset = index * 4;
+                return frame.Pixels.Span[offset] == 0 && frame.Pixels.Span[offset + 1] == 0
+                    && frame.Pixels.Span[offset + 2] == 255;
+            }).ToArray();
+        static byte[] TextPixels(RasterFrame frame) =>
+            Enumerable.Range(0, frame.Size.Height)
+                .SelectMany(y => frame.Pixels.Slice(y * frame.Stride + 40 * 4, 60 * 4).ToArray())
+                .ToArray();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task OrderedListNumbersSurviveLocalAndProcessRetainedRepaint(bool process)
     {
         using IPageRenderer renderer = process

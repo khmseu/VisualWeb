@@ -215,6 +215,10 @@ public static class DisplayListBuilder
             {
                 Add(new FillEllipse(marker, Color(box, "color")));
             }
+            if (box.SquareMarker is { Width: > 0, Height: > 0 } square)
+            {
+                Add(new FillRectangle(square, Color(box, "color")));
+            }
             if (box.TextMarker is { } textMarker)
             {
                 DrawText(textMarker.Run, textMarker.X, textMarker.Baseline, Color(box, "color"));

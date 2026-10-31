@@ -73,7 +73,9 @@ Default unordered-list markers are separate `FillEllipse` commands using the
 item's computed `color` and layout's bounded outside-marker rectangle. Skia
 draws antialiased solid discs after block backgrounds and before that item's
 text, without synthesizing DOM text, reshaping a bullet glyph or creating font
-resources. Marker commands share command limits, geometry preflight, viewport
+resources. Author-selected square markers instead use the same bounds and
+color in non-antialiased `FillRectangle` commands, including source-over alpha
+compositing. Marker commands share command limits, geometry preflight, viewport
 transforms and cancellation with other commands. The finite list scope is
 described in the [text/layout guide](text-layout.md#default-unordered-lists).
 Decimal markers use the same bounded glyph-run command builder as page text,
@@ -113,7 +115,7 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   from the native bitmap's actual stride.
 
 Images, gradients, advanced/differently colored borders, border radius,
-decorated inline boxes, text decoration, transforms, CSS opacity/blending,
+decorated inline boxes, visible text decoration, transforms, CSS opacity/blending,
 stacking contexts, general/nested overflow clipping, GPU rendering and
 browser UI are deferred. Unsupported CSS receives diagnostics and prevents
 rendering; unsupported visible border styles throw UnsupportedPaintException.
