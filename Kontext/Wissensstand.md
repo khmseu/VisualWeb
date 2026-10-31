@@ -237,7 +237,7 @@ separat. Commit `72f3d45` ist gepusht; Linux, Windows x64/ARM64 und CodeQL
 bestehen
 ([KP-091](./Kontextprotokoll.md#kp-091---ungebrochener-ascii-solidus)).
 
-**Pass 10 (lokal validiert):** Als naechster einfacher CSS-Blocker wird `:link`
+**Pass 10 (abgeschlossen):** Als naechster einfacher CSS-Blocker wurde `:link`
 bearbeitet. Der gemeinsame Matcher unterstuetzte bereits `:any-link`, lehnte
 `:link` aber zuvor explizit ab. Da kein Besuchsstatus an Engine.Css uebermittelt
 wird, erlaubt die lokale Selectors-Referenz aus Datenschutzgruenden, alle
@@ -248,8 +248,16 @@ bestehen. Der Build, lokale V8-Smoke, alle 816 CSS-, 352 Scripting-,
 30 Content-, 1.212 Browser- und 14.972 Solution-Tests bestehen; 30 neue
 Faelle ersetzen zwei alte Unsupported-Faelle. Die Formatpruefung meldet nur
 die drei auf `ad0bca6` reproduzierten Baseline-Findings; geaenderte C#-Dateien
-bestehen separat. Commit, Push und CI stehen noch aus
+bestehen separat. Commit `1215063` ist gepusht; Linux, Windows x64/ARM64 und
+CodeQL bestehen
 ([KP-092](./Kontextprotokoll.md#kp-092---datenschutzfreundlicher-link-selektor)).
+
+**Serie abgeschlossen:** Alle zehn angefragten Inkremente sind getrennt
+validiert, committed und auf `origin/main` gepusht; Linux, Windows und CodeQL
+bestehen fuer jeden Feature-Commit. Die zehn Commits sind `9f8aa41`, `e110697`,
+`c9e5f59`, `d473814`, `9864bad`, `e803d75`, `ae43073`, `137e779`, `72f3d45`
+und `1215063` (KP-083 bis KP-092). Dies schliesst nicht die breiteren, weiter
+offenen Prioritaeten in [Missing.md](../plans/Missing.md) ab.
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

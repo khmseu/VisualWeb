@@ -3135,5 +3135,14 @@ wurden nicht geaendert. Der Build, lokale V8-Smoke, alle 816 CSS-,
 352 Scripting-, 30 Content-, 1.212 Browser- und 14.972 Solution-Tests bestehen.
 30 neue Testfaelle ersetzen zwei alte Unsupported-Faelle. Die Solution-
 Formatpruefung meldet nur die drei auf `ad0bca6` reproduzierten Baseline-
-Findings; geaenderte C#-Dateien bestehen separat. Commit, Push und CI stehen
-noch aus.
+Findings; geaenderte C#-Dateien bestehen separat.
+
+**Commit/Push:** `1215063` ist auf `origin/main`; der Commit-Hook pruefte
+13 Dateien ohne Findings.
+[Linux 41167766360](https://github.com/khmseu/VisualWeb/actions/runs/41167766360),
+[Windows 41167766307](https://github.com/khmseu/VisualWeb/actions/runs/41167766307)
+und [CodeQL 41167766097](https://github.com/khmseu/VisualWeb/actions/runs/41167766097)
+bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
+Damit sind alle zehn Feature-Passen dieser Serie separat validiert,
+committed, gepusht und CI-geprueft. Die breiteren Trackerprioritaeten bleiben
+offen.
