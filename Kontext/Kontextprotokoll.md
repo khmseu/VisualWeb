@@ -2974,4 +2974,41 @@ noch, dass `a-b` scheitert, und wurde auf den weiter ausgeschlossenen Fall
 `-ab` korrigiert. Die Solution-Formatpruefung meldet nur die drei auf
 `ad0bca6` reproduzierten Baseline-Findings; die geaenderten Testdateien
 bestehen separat. Alle 14.852 Solution-Tests bestehen, darunter 27 neue
-Regressionen. Commit, Push und CI stehen noch aus.
+Regressionen.
+
+**Commit/Push:** `e803d75` ist auf `origin/main`; der Commit-Hook pruefte elf
+Dateien ohne verbleibende Findings und formatierte zwei Markdown-Guides.
+[Linux 41154970014](https://github.com/khmseu/VisualWeb/actions/runs/41154970014),
+[Windows 41154970042](https://github.com/khmseu/VisualWeb/actions/runs/41154970042)
+und [CodeQL 41154969674](https://github.com/khmseu/VisualWeb/actions/runs/41154969674)
+bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
+
+### KP-089 - CSS Text-Decoration None
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [CSS-Guide](../docs/css.md#cascade-and-computed-values),
+  `CssProperties` und [Prioritaeten](../plans/Missing.md#recommended-priority).
+
+**Belegt:** `text-decoration` und `text-decoration-line` sind nicht registriert;
+ein uebliches `a{text-decoration:none}` erzeugt deshalb derzeit eine
+CSS-Diagnose und blockiert die Darstellung. Sichtbare Textdekoration und
+UA-Link-Unterstreichung sind bisher nicht implementiert.
+
+**Umsetzung, lokal fokussiert geprueft:** Der frisch geladene Standard
+`css-text-decoration` definiert `text-decoration-line` als nicht vererbt mit
+initialem Wert `none`; `none` erzeugt keine Dekoration und verhindert keine
+vom Vorfahren propagierte Dekoration. Die gewaehlte Teilmenge nimmt nur `none`
+und CSS-weite Schluesselwoerter fuer beide Property-Formen in die Cascade auf.
+Sie approximiert keine sichtbare Dekoration; Linien, Stil, Farbe und Dicke
+bleiben nicht unterstuetzt. Unter den CSS-weiten Werten sind `initial`,
+`inherit`, `unset` und `revert` unterstuetzt, `revert-layer` bleibt Diagnose.
+Sechs positive CSS-Faelle scheiterten vor der Umsetzung; danach bestehen 33
+fokussierte CSS-Faelle, ein nativer Pixel-/Resizefall und je ein lokaler und
+Prozess-Renderer-Fall. Build sowie 781 CSS-, 27 Content- und 1.202 Browser-Tests
+bestehen. Ein Browser-Gesamtlauf waehrend paralleler Formatpruefungen scheiterte
+bei einem Lifecycle-Test (1.201/1.202 bestanden); der gleiche Test bestand
+anschliessend isoliert in beiden Varianten und im vollstaendigen Solution-Rerun.
+Die Ursache ist nicht belegt. Alle 14.888 Solution-Tests einschliesslich 36
+neuer Regressionen bestehen. Die geaenderten C#-Dateien bestehen die separate
+Formatpruefung; die Solution-Pruefung meldet nur drei auf `ad0bca6` belegte
+Baseline-Findings. Commit, Push und CI stehen noch aus.

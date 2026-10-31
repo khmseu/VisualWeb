@@ -24,7 +24,10 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// <summary>Renderer-local static style computation with explicit unsupported-feature diagnostics.</summary>
 /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#cascade">cascade</see>.
 /// Screen-only <see href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-media">@media</see> type lists use
-/// css-conditional-3 and css-mediaqueries-5. No loading, mutation observation, dynamic state, layers or scripting.</remarks>
+/// css-conditional-3 and css-mediaqueries-5. The none-only text-decoration subset uses css-text-decoration
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line values</see> and
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see>.
+/// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {
     /// <summary>Minimal static UA defaults, not the complete HTML rendering stylesheet.</summary>

@@ -173,7 +173,7 @@ meldet nur die drei auf `ad0bca6` reproduzierten Baseline-Findings.
 Commit `9864bad` ist gepusht; Linux, Windows x64/ARM64 und CodeQL bestehen
 ([KP-087](./Kontextprotokoll.md#kp-087---begrenzte-screen-media-regeln)).
 
-**Pass 6 (lokale Umsetzung):** Gewoehnliche ASCII-hyphenierte Woerter sind im
+**Pass 6 (abgeschlossen):** Gewoehnliche ASCII-hyphenierte Woerter sind im
 Wrapping-Modus umgesetzt: Weiche Umbrueche nach internen Bindestrichen
 zwischen ASCII-Buchstaben eines Textknotens teilen nur bei Bedarf den Shaping-Lauf.
 Wiederholte Analyse hat ein gemeinsames Arbeitsbudget; andere Interpunktions-
@@ -183,9 +183,28 @@ einschliesslich sichtbarer Textauswahl bestehen. Der Solution-Build sowie
 alle 138 Layout-, 26 Content- und 1.200 Browser-Tests bestehen. Die
 Solution-Formatpruefung meldet nur die drei auf `ad0bca6` reproduzierten
 Baseline-Findings; die geaenderten Testdateien bestehen separat. Alle 14.852
-Solution-Tests bestehen, darunter 27 neue Regressionen; Commit, Push und CI
-stehen noch aus
+Solution-Tests bestehen, darunter 27 neue Regressionen. Commit `e803d75` ist
+gepusht; Linux, Windows und CodeQL bestehen
 ([KP-088](./Kontextprotokoll.md#kp-088---bindestrichumbrueche)).
+
+**Pass 7 (lokale Umsetzung):** Das haeufige `text-decoration:none` blockierte
+als unbekannte CSS-Property ansonsten darstellbare Seiten. Fuer
+`text-decoration` und `text-decoration-line` sind jetzt ausschliesslich `none`
+und die vorhandenen CSS-weiten Werte `initial`, `inherit`, `unset` und `revert`
+umgesetzt; `revert-layer` bleibt ausgeschlossen. `none` erzeugt keine und
+verhindert keine vom Vorfahren stammende Dekoration. Sichtbare Linien und
+weitere Decoration-Longhands bleiben diagnostiziert; die UA unterstreicht Links
+noch nicht. Nach erfolgreichem Standard-Download bestehen 33 fokussierte
+CSS-Faelle, ein nativer Pixel-/Resizefall und je ein lokaler und
+Prozess-Renderer-Fall.
+Der Build sowie 781 CSS-, 27 Content- und 1.202 Browser-Tests bestehen;
+alle 14.888 Solution-Tests einschliesslich 36 neuer Regressionen sind gruen.
+Ein vorheriger Browser-Gesamtlauf hatte einen Fehlschlag bei 1.202 Tests;
+der betroffene Test bestand danach isoliert und im Solution-Rerun. Ursache
+noch unbewiesen. Die geaenderten C#-Dateien bestehen die separate
+Formatpruefung; die Solution-Pruefung meldet die drei auf `ad0bca6`
+reproduzierten Baseline-Findings. Commit, Push und CI stehen noch aus
+([KP-089](./Kontextprotokoll.md#kp-089---css-text-decoration-none)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt

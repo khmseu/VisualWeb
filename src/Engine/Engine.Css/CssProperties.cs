@@ -50,6 +50,7 @@ internal static class CssProperties
             ["font-style"] = new(new CssKeyword("normal"), true),
             ["line-height"] = new(new CssKeyword("normal"), true),
             ["text-align"] = new(new CssKeyword("start"), true),
+            ["text-decoration-line"] = new(new CssKeyword("none"), false),
             ["white-space"] = new(new CssKeyword("normal"), true),
             ["box-sizing"] = new(new CssKeyword("content-box"), false)
         };
@@ -207,6 +208,12 @@ internal static class CssProperties
                 Add(names[1], position ?? Registry[names[1]].Initial);
                 Add(names[2], Registry[names[2]].Initial);
             }
+            else if (name == "text-decoration")
+            {
+                var line = wide ?? Parse("text-decoration-line", declaration.Value);
+                if (line is null) { Invalid(); }
+                else { Add("text-decoration-line", line); }
+            }
             else if (Registry.ContainsKey(name))
             {
                 var parsed = wide ?? Parse(name, declaration.Value);
@@ -253,6 +260,7 @@ internal static class CssProperties
         if (name == "box-sizing") { return Keyword(keyword, "content-box", "border-box"); }
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
+        if (name == "text-decoration-line") { return Keyword(keyword, "none"); }
         if (name == "white-space") { return Keyword(keyword, "normal", "pre", "nowrap", "pre-wrap", "pre-line", "break-spaces"); }
         if (name == "font-weight")
         {

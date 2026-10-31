@@ -108,6 +108,26 @@ public sealed class LinkTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task NoTextDecorationStylesKeepLinksAndTextOnRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var document = Document("""
+            <!doctype html><style>*{margin:0}a{text-decoration:none}span{text-decoration-line:none}</style>
+            <a href='/next'>Visit <span>here</span></a>
+            """);
+        var first = await renderer.RenderAsync(document, new(160, 100, 1), Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal("https://example.com/next", Assert.Single(first.LinkTargets).Url);
+        Assert.Equal("Visit here", string.Concat(first.TextTargets.Select(target => target.Text)));
+        var resized = await renderer.RenderRetainedAsync(document, new(200, 100, 1), Cancellation);
+        Assert.Equal("https://example.com/next", Assert.Single(resized.LinkTargets).Url);
+        Assert.Equal("Visit here", string.Concat(resized.TextTargets.Select(target => target.Text)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void KeyboardTraversalScrollsOffscreenTextLinksIntoView(bool process)
     {
         var source = new ControllerTests.Source();

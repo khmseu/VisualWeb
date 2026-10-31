@@ -499,6 +499,16 @@ conditional rules. See [screen media-type rules](../docs/css.md#screen-media-typ
 Its 36 new regressions, solution build and all 14,825 solution tests pass locally.
 Formatting reports only the three findings reproduced on base `ad0bca6`.
 
+The finite CSS cascade accepts `text-decoration:none` and
+`text-decoration-line:none`, including the existing `initial`, `inherit`,
+`unset` and `revert` CSS-wide keywords. This prevents a common declaration from
+rejecting an otherwise renderable page, without adding or inhibiting any
+visible decoration. Line drawing, decoration style/color/
+thickness and default link underlines remain unsupported. See the
+[no-decoration scope](../docs/css.md#cascade-and-computed-values).
+Its 36 new regressions, solution build and all 14,888 solution tests pass locally.
+Formatting reports only the three findings reproduced on base `ad0bca6`.
+
 The current engine implements finite static block/inline rendering. Missing essentials include:
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented

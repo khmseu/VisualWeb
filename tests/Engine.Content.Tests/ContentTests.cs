@@ -218,6 +218,28 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void NoTextDecorationMatchesUndecoratedNativePixelsAndRetainedResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><a href='/next'>Visit <span>here</span></a>";
+        CssStyleSource[] withNone = [new("*{margin:0}a{text-decoration:none}span{text-decoration-line:none}")];
+        CssStyleSource[] ordinary = [new("*{margin:0}")];
+        var actual = OfflinePageRenderer.Render(html, withNone, text, fonts, 100, 40, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, ordinary, text, fonts, 100, 40, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, withNone, text, fonts, 60, 40,
+            cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, ordinary, text, fonts, 60, 40,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void AutomaticTablesPaintNativeCellBackgroundsAndRetainTheirParsedDocument()
     {
         using var font = new TextFont(FontPath);

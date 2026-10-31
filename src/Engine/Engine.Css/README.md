@@ -38,11 +38,17 @@ line-height and family using the existing longhand parsers. Size/family are
 mandatory; optional style/weight and slash line-height are supported.
 Non-normal variants/widths, oblique angles and system-font keywords remain
 diagnostics. This does not add font fallback or change native face selection.
+`text-decoration` and `text-decoration-line` accept only `none` or the supported
+CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`), with a
+non-inherited line value and the normal cascade. `revert-layer` remains
+unsupported. `none` neither adds nor inhibits ancestor decoration; visible
+lines and decoration style/color/thickness remain diagnostics, and the UA sheet
+does not underline links.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,
 `css-color`, `css-sizing`, `css-backgrounds`, `css-conditional-3`,
-`css-mediaqueries-5` and `html`.
+`css-mediaqueries-5`, `css-text-decoration` and `html`.
 Sources are in the [registry](../../../specs/manifest.json).
 See the [standards workflow](../../../docs/standards.md).
 

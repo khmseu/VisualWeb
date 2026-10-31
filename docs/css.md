@@ -181,17 +181,17 @@ computed color (or inherited color for the color property itself).
 
 Supported longhands:
 
-| Group   | Properties and supported values                                                                                                                                               |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                |
-| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                            |
-| Lists   | inherited `list-style-type`: disc/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                      |
-| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                          |
-| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                       |
-| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                             |
-| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors |
-| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique            |
-| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces     |
+| Group   | Properties and supported values                                                                                                                                                                      |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                       |
+| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                   |
+| Lists   | inherited `list-style-type`: disc/decimal/none; `list-style-position`: outside; `list-style-image`: none                                                                                             |
+| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                 |
+| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                              |
+| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                    |
+| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors                        |
+| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                   |
+| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. The finite `background` shorthand accepts one supported
@@ -208,7 +208,16 @@ non-normal variants/widths, oblique angles and system-font keywords remain
 unsupported whole-declaration diagnostics. Existing font units, family lists,
 CSS-wide keywords and relative weight/size computation are reused. The engine
 does not add other font longhands or expand its exact native face policy.
-Text-decoration shorthand remains deferred.
+The finite `text-decoration` shorthand and `text-decoration-line` accept only
+`none` and the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and
+`revert`), expanding to the non-inherited line longhand. `revert-layer` remains
+unsupported.
+`none` neither adds decoration nor inhibits a decoration from an ancestor;
+this subset cannot create any decorations. Visible lines and decoration
+style/color/thickness remain explicit diagnostics. The current UA sheet does
+not add link underlines. See the [line property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line)
+and [shorthand](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration)
+(local ID `css-text-decoration`).
 
 Length units are **px, in, cm, mm, Q, pt, pc, em, rem, %**, plus unitless zero.
 The [absolute units](https://www.w3.org/TR/css-values-4/#absolute-lengths)

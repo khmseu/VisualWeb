@@ -522,6 +522,16 @@
       "lastModified": "2026-10-02T23:14:53+00:00"
     },
     {
+      "id": "css-text-decoration",
+      "title": "CSS Text Decoration Module Level 3",
+      "url": "https://drafts.csswg.org/css-text-decor-3/",
+      "file": "css-text-decoration.html",
+      "fetchedAt": "2026-10-31T01:33:59.4956648+00:00",
+      "checkedAt": "2026-10-31T01:33:59.4956648+00:00",
+      "eTag": "\u00226ae3320c-3bf16\u0022",
+      "lastModified": "2026-10-29T11:46:20+00:00"
+    },
+    {
       "id": "css-fonts",
       "title": "CSS Fonts Level 4",
       "url": "https://drafts.csswg.org/css-fonts-4/",
