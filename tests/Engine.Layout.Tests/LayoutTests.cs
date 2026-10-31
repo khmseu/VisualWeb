@@ -227,13 +227,14 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("<ol type=i><li>x</li></ol>")]
+    [InlineData("<ol type=x><li>x</li></ol>")]
     [InlineData("<ol type=circle><li>x</li></ol>")]
     [InlineData("<ul type=1><li>x</li></ul>")]
     [InlineData("<ul type=a><li>x</li></ul>")]
+    [InlineData("<ul type=i><li>x</li></ul>")]
     [InlineData("<ul type='circle '><li>x</li></ul>")]
     [InlineData("<ul type='di\u017fc'><li>x</li></ul>")]
-    [InlineData("<ul><li type=i>x</li></ul>")]
+    [InlineData("<ul><li type=x>x</li></ul>")]
     [InlineData("<dir><li>x</li></dir>")]
     [InlineData("<menu><li>x</li></menu>")]
     [InlineData("<li>x</li>")]
@@ -244,7 +245,8 @@ public sealed class LayoutTests
     [InlineData("<ol type=circle><li>x</li></ol>")]
     [InlineData("<ul type=triangle><li>x</li></ul>")]
     [InlineData("<ul type=A><li>x</li></ul>")]
-    [InlineData("<ul><li type=i>x</li></ul>")]
+    [InlineData("<ul type=I><li>x</li></ul>")]
+    [InlineData("<ul><li type=x>x</li></ul>")]
     public void CircleCssDoesNotEnableUnsupportedLegacyHtmlTypeAttributes(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, "ul,ol,li{list-style:circle}"));
 
@@ -495,6 +497,142 @@ public sealed class LayoutTests
         const string large = "<ol type=a start=2147483647><li></li></ol>";
         Assert.NotNull(UnorderedList(large, options: new() { MaxTextCharacters = 18 }).Root);
         Assert.Throws<LayoutLimitException>(() => UnorderedList(large, options: new() { MaxTextCharacters = 17 }));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var document = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 100, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
+    [InlineData(1, "i.", "I.")]
+    [InlineData(3, "iii.", "III.")]
+    [InlineData(4, "iv.", "IV.")]
+    [InlineData(5, "v.", "V.")]
+    [InlineData(8, "viii.", "VIII.")]
+    [InlineData(9, "ix.", "IX.")]
+    [InlineData(10, "x.", "X.")]
+    [InlineData(14, "xiv.", "XIV.")]
+    [InlineData(19, "xix.", "XIX.")]
+    [InlineData(40, "xl.", "XL.")]
+    [InlineData(49, "xlix.", "XLIX.")]
+    [InlineData(90, "xc.", "XC.")]
+    [InlineData(99, "xcix.", "XCIX.")]
+    [InlineData(400, "cd.", "CD.")]
+    [InlineData(944, "cmxliv.", "CMXLIV.")]
+    [InlineData(1949, "mcmxlix.", "MCMXLIX.")]
+    [InlineData(1999, "mcmxcix.", "MCMXCIX.")]
+    [InlineData(3888, "mmmdccclxxxviii.", "MMMDCCCLXXXVIII.")]
+    [InlineData(3999, "mmmcmxcix.", "MMMCMXCIX.")]
+    public void RomanMarkersUseThePredefinedAdditiveStyles(int value, string lower, string upper)
+    {
+        var html = $"<ol start={value}><li id=x></li></ol>";
+        var lowerRoot = UnorderedList(html, "ol{list-style-type:lower-roman}").Root!;
+        var upperRoot = UnorderedList(html, "ol{list-style-type:upper-roman}").Root!;
+        Assert.Equal(lower, Find(lowerRoot, "x").TextMarker!.Run.Text);
+        Assert.Equal(upper, Find(upperRoot, "x").TextMarker!.Run.Text);
+    }
+
+    [Theory]
+    [InlineData("lower-roman", false)]
+    [InlineData("upper-roman", true)]
+    public void RomanMarkersMatchAnIndependentPlaceValueTableAcrossTheirEntireRange(string style, bool upper)
+    {
+        string[] thousands = ["", "M", "MM", "MMM"];
+        string[] hundreds = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"];
+        string[] tens = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"];
+        string[] ones = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+        var html = "<ol id=list>" + string.Concat(Enumerable.Repeat("<li></li>", 3999)) + "</ol>";
+        var list = Find(UnorderedList(html, "ol{list-style-type:" + style + "}").Root!, "list");
+        Assert.Equal(3999, list.Children.Count);
+        for (var value = 1; value <= 3999; value++)
+        {
+            var expected = thousands[value / 1000] + hundreds[value / 100 % 10]
+                + tens[value / 10 % 10] + ones[value % 10] + ".";
+            Assert.Equal(upper ? expected : expected.ToLowerInvariant(), list.Children[value - 1].TextMarker!.Run.Text);
+        }
+    }
+
+    [Theory]
+    [InlineData("-2147483648", "-2147483648.")]
+    [InlineData("-1", "-1.")]
+    [InlineData("0", "0.")]
+    [InlineData("4000", "4000.")]
+    [InlineData("2147483647", "2147483647.")]
+    public void RomanMarkersUseDecimalFallbackOutsideThePredefinedRange(string start, string expected)
+    {
+        var lower = UnorderedList($"<ol type=i start={start}><li id=x></li></ol>").Root!;
+        var upper = UnorderedList($"<ol type=I start={start}><li id=x></li></ol>").Root!;
+        Assert.Equal(expected, Find(lower, "x").TextMarker!.Run.Text);
+        Assert.Equal(expected, Find(upper, "x").TextMarker!.Run.Text);
+    }
+
+    [Theory]
+    [InlineData("lower-roman")]
+    [InlineData("upper-roman")]
+    public void RomanCssStylesUseDecimalFallbackOnUnorderedItems(string style)
+    {
+        var root = UnorderedList("<ul><li value=0 id=zero></li><li value=4000 id=large></li></ul>",
+            "ul{list-style:" + style + "}").Root!;
+        Assert.Equal("0.", Find(root, "zero").TextMarker!.Run.Text);
+        Assert.Equal("4000.", Find(root, "large").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void RomanHintsPreserveReversedNumberingOverridesAndNestedCounters()
+    {
+        var root = UnorderedList("""
+            <ol type=I reversed start=11>
+            <li id=first><ol type=i start=3><li id=nested></li><li id=nested-next></li></ol></li>
+            <li id=lower type=i value=4></li><li id=hidden></li><li id=none></li>
+            <li id=next></li><li id=alpha type=a value=27></li><li id=last></li></ol>
+            """, "#hidden{display:none}#none{list-style:none}").Root!;
+        Assert.Equal("XI.", Find(root, "first").TextMarker!.Run.Text);
+        Assert.Equal("iii.", Find(root, "nested").TextMarker!.Run.Text);
+        Assert.Equal("iv.", Find(root, "nested-next").TextMarker!.Run.Text);
+        Assert.Equal("iv.", Find(root, "lower").TextMarker!.Run.Text);
+        Assert.Null(TryFind(root, "hidden"));
+        Assert.Null(Find(root, "none").TextMarker);
+        Assert.Equal("II.", Find(root, "next").TextMarker!.Run.Text);
+        Assert.Equal("aa.", Find(root, "alpha").TextMarker!.Run.Text);
+        Assert.Equal("XXVI.", Find(root, "last").TextMarker!.Run.Text);
+        var boundary = UnorderedList("<ol type=I start=3999><li id=a></li><li id=b></li></ol>").Root!;
+        Assert.Equal("MMMCMXCIX.", Find(boundary, "a").TextMarker!.Run.Text);
+        Assert.Equal("4000.", Find(boundary, "b").TextMarker!.Run.Text);
+        var beyondInt = UnorderedList("<ol type=i start=2147483647><li></li><li id=x></li></ol>").Root!;
+        Assert.Equal("2147483648.", Find(beyondInt, "x").TextMarker!.Run.Text);
+        var overridden = UnorderedList("<ol type=i><li id=x></li></ol>", "ol{list-style:upper-roman}").Root!;
+        Assert.Equal("I.", Find(overridden, "x").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void RomanStyleWorksOnUnorderedItemsWithOutsideTextGeometry()
+    {
+        var root = UnorderedList("<ul><li id=x value=49></li></ul>", "ul{list-style:upper-roman}").Root!;
+        var item = Find(root, "x");
+        Assert.Equal("XLIX.", item.TextMarker!.Run.Text);
+        Assert.Equal(10, item.TextMarker.X);
+        Assert.Equal(8, item.TextMarker.Baseline);
+        Assert.Null(item.DiscMarker);
+        Assert.Empty(item.Lines);
+        Assert.Equal(10, item.Content.Height);
+    }
+
+    [Fact]
+    public void RomanMarkersChargeExactTextGlyphAndShapingBudgets()
+    {
+        const string html = "<ol type=I start=3888><li></li></ol>";
+        Assert.NotNull(UnorderedList(html, options: new()
+        {
+            MaxTextCharacters = 20,
+            MaxShapedGlyphs = 16,
+            MaxShapingCalls = 1
+        }).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxTextCharacters = 19 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxShapedGlyphs = 15 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<ol type=i><li></li><li></li></ol>", options: new() { MaxShapingCalls = 1 }));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         var document = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;

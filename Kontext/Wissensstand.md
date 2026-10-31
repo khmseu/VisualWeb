@@ -43,8 +43,19 @@
   Tests bestehen. Der Gesamtformatter meldet nur drei auf `b47a5a0`
   reproduzierte Baseline-Findings, davon zwei in ungeaenderten Zeilen der
   geaenderten `StaticLayout.cs`; alle anderen geaenderten C#-Dateien bestehen
-  die separate Formatpruefung. Commit, Push und CI stehen noch aus
+  die separate Formatpruefung. Commit `0e71eb6` ist gepusht; Linux, Windows
+  und CodeQL bestanden, einschliesslich x64 und arm64
   ([KP-098](./Kontextprotokoll.md#kp-098---alphabetische-listenmarker)).
+  Pass 6 ergaenzt die CSS-Marker `lower-roman`/`upper-roman` und die exakten
+  HTML-Hinweise `type=i`/`type=I`; nur Werte 1 bis 3999 nutzen roemische
+  Darstellung, sonst gilt der CSS-Decimal-Fallback. Erweiterte ueberstrichene
+  Formen sind nicht implementiert. Die gezielten Regressionen bestehen,
+  einschliesslich aller 3.999 Werte beider Schreibweisen gegen eine
+  unabhaengige Stellenwerttabelle. Solution-Build, lokaler V8-Smoke und alle
+  15.212 Solution-Tests bestehen; der Solutionformatter meldet nur die drei
+  bekannten Baseline-Findings und die uebrigen geaenderten C#-Dateien bestehen
+  die gezielte Formatpruefung. Commit, Push und CI stehen noch aus
+  ([KP-099](./Kontextprotokoll.md#kp-099---roemische-listenmarker)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

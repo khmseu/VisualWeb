@@ -8,6 +8,26 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void RomanListMarkerMatchesIndependentlyPositionedNativeTextPixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        CssStyleSource[] style = [new("*{margin:0;font-size:20px;line-height:20px;color:red}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><ol type=i start=4><li></li></ol>",
+            style, text, fonts, 100, 30, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(
+            "<!doctype html><div style='width:30px;text-align:right'>iv.</div>",
+            style, text, fonts, 100, 30, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        var marker = Assert.Single(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        var ordinaryText = Assert.Single(expected.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(ordinaryText.Glyphs, marker.Glyphs);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Contains(actual.Frame.Pixels.ToArray(), channel => channel < 255);
+    }
+
+    [Fact]
     public void AlphabeticListMarkerMatchesIndependentlyPositionedNativeTextPixels()
     {
         using var font = new TextFont(FontPath);

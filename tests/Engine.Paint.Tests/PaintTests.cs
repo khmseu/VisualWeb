@@ -378,6 +378,25 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void RomanMarkersUsePositionedGlyphCommandsAndSharedPaintLimits()
+    {
+        const string css = "ol{display:block;padding-left:40px;list-style-type:lower-roman}li{display:list-item;color:red}";
+        var list = Page("<ol start=4><li>x</li><li></li></ol>", css);
+        var runs = list.Commands.OfType<DrawGlyphRun>().ToArray();
+        Assert.Equal(3, runs.Length);
+        Assert.Equal(new ushort[] { 'i', 'v', '.' }, runs[0].Glyphs.Select(glyph => glyph.Id));
+        Assert.Equal(new[] { 20.0, 25, 30 }, runs[0].Glyphs.Select(glyph => glyph.X));
+        Assert.Equal((ushort)'x', Assert.Single(runs[1].Glyphs).Id);
+        Assert.Equal(new ushort[] { 'v', '.' }, runs[2].Glyphs.Select(glyph => glyph.Id));
+        Assert.Equal(new[] { 25.0, 30 }, runs[2].Glyphs.Select(glyph => glyph.X));
+        Assert.All(runs[2].Glyphs, glyph => Assert.Equal(18, glyph.Y));
+        Assert.Equal(Red, runs[2].Color);
+        Assert.Throws<PaintLimitException>(() => Page("<ol start=4><li></li></ol>", css, new() { MaxGlyphs = 2 }));
+        Assert.Throws<PaintLimitException>(() =>
+            Page("<ol><li></li><li></li></ol>", css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
     public void BackgroundAndSolidBordersHaveExactNonOverlappingCommands()
     {
         var list = Page("<div></div>", "div{width:10px;height:10px;padding:2px;border:1px solid red;background-color:blue}");

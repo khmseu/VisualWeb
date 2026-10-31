@@ -61,9 +61,9 @@ coordinate style-element/link loading separately. Unsupported features produce
 diagnostics rather than approximate behavior.
 
 The bounded list subset adds `display:list-item` and inherited longhands
-`list-style-type:disc/circle/square/decimal/none/lower-alpha/upper-alpha/lower-latin/upper-latin`,
+`list-style-type:disc/circle/square/decimal/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman`,
 `list-style-position:outside`, and
-`list-style-image:none` (official ID `css2-lists`). UA `li` defaults to
+`list-style-image:none` (official IDs `css2-lists` and `css-counter-styles`). UA `li` defaults to
 list-item. The `list-style` shorthand expands the same finite longhands,
 including resets, CSS-wide keywords and `none` ambiguity handling.
 HTML UA marker defaults select discs, circles or squares according to list
@@ -74,7 +74,7 @@ For horizontal writing, HTML UA list block margins are represented by 1em
 top/bottom margins on outer `dir`/`dl`/`menu`/`ol`/`ul` and zero on list
 descendants of any of those types. Author and user cascade remain unchanged.
 List `type` hints support `disc`/`circle`/`square`/`none` on `ul`/`li` and
-exact `1`, `a` and `A` on `ol`/`li`, with the author presentational hint origin, `revert` semantics
+exact `1`, `a`, `A`, `i` and `I` on `ol`/`li`, with the author presentational hint origin, `revert` semantics
 and shared expanded-assignment budget described in the guide.
 
 The finite table properties add canonical table/group/row/cell displays,

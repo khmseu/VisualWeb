@@ -11,12 +11,13 @@ Unordered lists use block list-item boxes with separate outside marker geometry;
 nested/empty items and inherited marker suppression are bounded. HTML UA defaults
 use discs, circles and squares at increasing list depth. Circles and squares use
 the same outside geometry as discs; circles are hollow.
-Lists also support shaped decimal and lower/upper ASCII alphabetic markers,
+Lists also support shaped decimal, lower/upper ASCII alphabetic and Roman markers,
 including the `lower-latin`/`upper-latin` aliases, with independent `start`,
 `reversed` and `li value` numbering; nonpositive alphabetic ordinals use
-decimal fallback. Scans and output share existing budgets.
+decimal fallback. Roman ordinals outside 1..3999 use decimal fallback rather
+than extended overlined forms. Scans and output share existing budgets.
 Legacy `type` hints support disc/circle/square/none on `ul`/`li` and exact
-`1`/`a`/`A` on `ol`/`li`; unsupported values still fail explicitly. Inside markers, other
+`1`/`a`/`A`/`i`/`I` on `ol`/`li`; unsupported values still fail explicitly. Inside markers, other
 marker styles and arbitrary list-item elements remain unsupported. See the
 guide for exact geometry.
 

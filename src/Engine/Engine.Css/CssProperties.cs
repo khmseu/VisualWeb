@@ -306,7 +306,8 @@ internal static class CssProperties
 
     private static bool IsListStyleType(string keyword) =>
         keyword is "disc" or "circle" or "square" or "decimal" or "none"
-            or "lower-alpha" or "upper-alpha" or "lower-latin" or "upper-latin";
+            or "lower-alpha" or "upper-alpha" or "lower-latin" or "upper-latin"
+            or "lower-roman" or "upper-roman";
 
     private static CssKeyword? Keyword(string keyword, params string[] allowed) => allowed.Contains(keyword, StringComparer.Ordinal)
         ? new(keyword) : null;

@@ -529,12 +529,14 @@ The current engine implements finite static block/inline rendering. Missing esse
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
 - Default unordered lists now render with outside markers, including
   nested and empty items. UA items use `display:list-item`; inherited
-  `list-style-type:disc/circle/square/decimal/none/lower-alpha/upper-alpha`
-  and their `lower-latin`/`upper-latin` aliases, outside positioning and no marker
-  image are supported. Graphical markers use bounded geometry and current-color
+  `list-style-type:disc/circle/square/decimal/none`, the alphabetic and Roman
+  styles `lower-alpha`/`upper-alpha`/`lower-roman`/`upper-roman` and the
+  `lower-latin`/`upper-latin` aliases, outside positioning and no marker image
+  are supported. Graphical markers use bounded geometry and current-color
   ellipse or rectangle painting, not synthetic DOM text. Ordered lists use separately shaped
-  decimal or ASCII alphabetic markers with `start`, `reversed` and `li value`;
+  decimal, ASCII alphabetic or Roman markers with `start`, `reversed` and `li value`;
   alphabetic ordinals wrap bijectively and fall back to decimal at zero or below.
+  Roman styles use decimal fallback outside 1..3999, not extended overlines.
   Nested lists have
   independent numbering, hidden/non-list-items do not count, and marker
   suppression preserves numbering. CSS square and hollow circle markers reuse
@@ -549,7 +551,7 @@ The current engine implements finite static block/inline rendering. Missing esse
   Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` hints support ASCII-case-insensitive disc/circle/square/none
-  on `ul`/`li` and exact `1`, `a` and `A` on `ol`/`li`, using the author presentational
+  on `ul`/`li` and exact `1`, `a`, `A`, `i` and `I` on `ol`/`li`, using the author presentational
   hint origin and shared CSS assignment budget. Unsupported/malformed type
   values, other marker styles, inside positioning and arbitrary list-item
   elements remain explicit failures. See the
@@ -595,6 +597,12 @@ The current engine implements finite static block/inline rendering. Missing esse
   solution formatter reports only the three findings reproduced on base
   `b47a5a0`, including two unchanged lines of `StaticLayout.cs`; the other
   changed C# files pass a separate format check.
+  The Roman-marker increment adds 61 net regression cases across CSS, layout,
+  paint, native content and local/process browser rendering, including all
+  3,999 values in both Roman styles against an independent reference. The
+  solution build, local V8 smoke and all 15,212 solution tests pass; solution
+  formatting reports only the same three baseline findings, with all other
+  changed C# files passing a targeted format check.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common

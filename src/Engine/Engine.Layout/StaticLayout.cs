@@ -19,7 +19,8 @@ public sealed record LayoutTextFragment(DomText Source, ShapedRun Run, double X,
 /// <summary>Shaped outside list marker, not selectable document text.</summary>
 /// <remarks>Specs: css2-lists and css-counter-styles;
 /// <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see> and
-/// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">alphabetic styles</see>.</remarks>
+/// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">alphabetic styles</see> and
+/// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-numeric">Roman styles</see>.</remarks>
 public sealed record LayoutTextMarker(ShapedRun Run, double X, double Baseline);
 public sealed record LayoutInlineWidget(DomElement Element, LayoutRect Bounds);
 public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments)
@@ -102,6 +103,12 @@ public static partial class StaticLayout
 
     private sealed partial class Builder
     {
+        private static readonly (int Value, string Symbol)[] RomanSymbols =
+        [
+            (1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"),
+            (90, "XC"), (50, "L"), (40, "XL"), (10, "X"), (9, "IX"),
+            (5, "V"), (4, "IV"), (1, "I")
+        ];
         private readonly CssStyleResult styles;
         private readonly ITextShaper shaper;
         private readonly LayoutOptions options;
@@ -290,7 +297,7 @@ public static partial class StaticLayout
             {
                 var size = ((CssLength)style["font-size"]).Value;
                 var isTextMarker = markerType.Value is "decimal" or "lower-alpha" or "upper-alpha"
-                    or "lower-latin" or "upper-latin";
+                    or "lower-latin" or "upper-latin" or "lower-roman" or "upper-roman";
                 var text = isTextMarker ? FormatListMarker(ordinals[element], markerType.Value) : "";
                 ChargeCharacters(text.Length);
                 var run = Shape(text, style);
@@ -344,9 +351,31 @@ public static partial class StaticLayout
 
         private static string FormatListMarker(long ordinal, string markerType)
         {
-            if (markerType == "decimal" || ordinal <= 0)
+            var roman = markerType is "lower-roman" or "upper-roman";
+            if (markerType == "decimal" || ordinal <= 0 || roman && ordinal > 3999)
             {
                 return ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".";
+            }
+
+            if (roman)
+            {
+                // The longest value in the supported Roman range is 15 letters, plus the period.
+                Span<char> result = stackalloc char[16];
+                var length = 0;
+                var lower = markerType == "lower-roman";
+                foreach (var (value, symbol) in RomanSymbols)
+                {
+                    while (ordinal >= value)
+                    {
+                        foreach (var character in symbol)
+                        {
+                            result[length++] = lower ? char.ToLowerInvariant(character) : character;
+                        }
+                        ordinal -= value;
+                    }
+                }
+                result[length++] = '.';
+                return new string(result[..length]);
             }
 
             // An Int64 needs at most 14 bijective base-26 letters plus the period.

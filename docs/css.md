@@ -171,9 +171,10 @@ five list types, including across intermediate elements. These physical
 properties are the horizontal-writing equivalent of HTML's block margins;
 they do not add vertical writing support.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
-only disc/circle/square/decimal/none and the alphabetic `lower-alpha`,
-`upper-alpha`, `lower-latin` and `upper-latin` markers, outside positioning and
-no marker image are supported. The two `latin` names are aliases for the
+only disc/circle/square/decimal/none, the alphabetic `lower-alpha`,
+`upper-alpha`, `lower-latin` and `upper-latin`, and the `lower-roman`/
+`upper-roman` markers, outside positioning and no marker image are supported.
+The two `latin` names are aliases for the
 corresponding `alpha` styles, but computed values retain the specified name.
 The `list-style` shorthand expands this same finite subset in any order,
 resets omitted longhands, and supports CSS-wide keywords. `none` suppresses
@@ -186,8 +187,9 @@ of `ul` or `ol`; the UA rules do not enable `dir`/`menu` list layout.
 
 The supported [HTML list `type` hints](https://html.spec.whatwg.org/multipage/rendering.html#lists)
 (local ID `html`) map ASCII-case-insensitive `disc`, `circle`, `square` and
-`none` on `ul` or `li` to their corresponding styles, and exact `1`, `a` and
-`A` on `ol` or `li` to decimal, lower-alpha and upper-alpha respectively.
+`none` on `ul` or `li` to their corresponding styles, and exact `1`, `a`,
+`A`, `i` and `I` on `ol` or `li` to decimal, lower-alpha, upper-alpha,
+lower-roman and upper-roman respectively.
 The letter values are case-sensitive. They enter the
 [author presentational hint origin](https://www.w3.org/TR/css-cascade-5/#preshint)
 (local ID `css-cascade`): above normal user styles, below all normal author
@@ -216,7 +218,7 @@ Supported longhands:
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                       |
 | Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                   |
-| Lists   | inherited `list-style-type`: disc/circle/square/decimal/none/lower-alpha/upper-alpha/lower-latin/upper-latin; `list-style-position`: outside; `list-style-image`: none                               |
+| Lists   | inherited `list-style-type`: disc/circle/square/decimal/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none       |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                 |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                              |
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                    |

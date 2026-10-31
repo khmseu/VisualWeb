@@ -132,7 +132,7 @@ width or enter selectable DOM text. Their metric shaping shares the existing
 shaping-call budgets; traversal and painting retain cancellation and limits.
 The LTR-only scope and explicitly registered font policy remain unchanged.
 
-### Decimal and alphabetic list markers
+### Decimal, alphabetic and Roman list markers
 
 Visible block `ol` containers and their direct list-item `li` children support
 outside decimal markers (`1.`, `2.`, etc.) and ASCII alphabetic markers through
@@ -141,7 +141,11 @@ outside decimal markers (`1.`, `2.`, etc.) and ASCII alphabetic markers through
 [predefined counter styles](https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic)
 and [bijective algorithm](https://www.w3.org/TR/css-counter-styles-3/#alphabetic-system)
 (local ID `css-counter-styles`) use decimal fallback for zero and negative
-ordinals. Each list has independent numbering;
+ordinals. The predefined `lower-roman` and `upper-roman` styles use additive
+Roman numerals for ordinals 1 through 3999 and decimal fallback outside that
+range; extended overlined forms illustrated in HTML for 4000 and above are
+not implemented. See the [predefined numeric styles](https://www.w3.org/TR/css-counter-styles-3/#simple-numeric)
+(local ID `css-counter-styles`). Each list has independent numbering;
 `start`, boolean `reversed`, and `li value` use the HTML integer-parsing and
 [ordinal-value algorithms](https://html.spec.whatwg.org/multipage/grouping-content.html#the-li-element)
 (local ID `html`). Only rendered `display:list-item` children participate;
@@ -150,11 +154,12 @@ Without a valid `start`, reversed lists start at their rendered item count.
 Invalid integer syntax falls back as specified; successfully parsed values
 outside signed 32-bit range fail with `LayoutLimitException`. Automatic
 increments/decrements can continue beyond that attribute range without wrapping.
-`ol` and `li` accept the exact presentational hints `type=1`, `type=a` and
-`type=A` for decimal, lowercase and uppercase alphabetic markers respectively;
-other `ol` types remain explicit failures.
+`ol` and `li` accept the exact presentational hints `type=1`, `type=a`,
+`type=A`, `type=i` and `type=I` for decimal, lowercase and uppercase
+alphabetic, and lowercase and uppercase Roman markers respectively; other
+`ol` types remain explicit failures.
 
-The decimal and alphabetic styles also work on supported unordered items, including
+The decimal, alphabetic and Roman styles also work on supported unordered items, including
 `li value` resets. Nested `ol` defaults remain decimal; nested `ul` defaults
 follow the list-ancestor rules above.
 Text markers are shaped with the item's registered font and color, aligned
@@ -164,8 +169,8 @@ DOM text, or enter selection/hit-test metadata. Empty marked items retain a
 font-strut height. Attribute scanning and marker output share text limits;
 numbering scans share node/cancellation limits, while marker shaping/painting
 share the existing call, glyph and command limits. No general CSS counters,
-custom counter styles, inside markers, Roman markers or general list ownership
-are implied.
+custom counter styles, inside markers, extended Roman forms or general list
+ownership are implied.
 
 ### Basic automatic tables
 

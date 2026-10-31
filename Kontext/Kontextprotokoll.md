@@ -3384,3 +3384,42 @@ die drei auf `b47a5a0` reproduzierten Baseline-Findings, zwei davon auf
 ungeaenderten Zeilen der geaenderten `StaticLayout.cs`. Alle anderen
 geaenderten C#-Dateien bestehen die separate Formatpruefung. Commit, Push und
 native CI-Pruefung stehen noch aus.
+
+**Commit, Push und CI:** `0e71eb6` wurde auf `origin/main` gepusht; der
+Commit-Hook formatierte den CSS-Guide und das Manifest und pruefte danach
+21 Dateien ohne Findings.
+[Linux 41195621206](https://github.com/khmseu/VisualWeb/actions/runs/41195621206),
+[Windows 41195621644](https://github.com/khmseu/VisualWeb/actions/runs/41195621644)
+und [CodeQL 41195621019](https://github.com/khmseu/VisualWeb/actions/runs/41195621019)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-099 - Roemische Listenmarker
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [HTML-Listentypen](https://html.spec.whatwg.org/multipage/rendering.html#lists)
+  und [vordefinierte numerische Zaehler](https://www.w3.org/TR/css-counter-styles-3/#simple-numeric).
+  Die lokalen `css-counter-styles`-, `css2-lists`- und `html`-Caches waren frisch.
+
+**Belegte Auswahl und Umfang fuer Pass 6:** Nach den Alphabetmarkern lehnten
+CSS und Layout weiterhin gaengige `lower-roman`-/`upper-roman`-Stile und
+`<ol type=i>` explizit ab. Die bestehende Textmarker-Pipeline erhaelt die
+CSS-additiven roemischen Stile und die exakten, case-sensitiven HTML-Hinweise
+`type=i`/`type=I` auf `ol`/`li`. Die normativ vordefinierte CSS-Spanne
+1 bis 3999 nutzt roemische Zeichen; ausserhalb gilt Decimal-Fallback.
+Die in HTML fuer 4000+ beispielhaft gezeigten ueberstrichenen Erweiterungen,
+allgemeine CSS-Counter und weitere Markerstile bleiben ausgenommen.
+
+**Test-first und Umsetzung:** Vor der Implementierung scheiterten
+erwartungsgemaess 12 CSS-, 27 Layout-, ein Paint-, ein nativer Pixel- und vier
+lokale/Prozess-Browserfaelle. Nach der Umsetzung bestehen gezielte Tests und
+ein Vergleich aller 3.999 Werte beider Schreibweisen mit einer unabhaengigen
+Stellenwerttabelle.
+
+**Lokale Abschlusspruefung:** Der Solution-Build, lokale V8-Smoke und alle
+15.212 Solution-Tests bestehen, darunter 935 CSS-, 251 Layout-, 61 Paint-,
+36 Content- und 1.228 Browserfaelle. Gegenueber Pass 5 sind dies netto
+61 weitere Testfaelle. Der Solutionformatter meldet nur die drei auf
+`b47a5a0` reproduzierten Baseline-Findings, zwei auf unveraenderten Zeilen
+der geaenderten `StaticLayout.cs`. Alle uebrigen geaenderten C#-Dateien
+bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus.
