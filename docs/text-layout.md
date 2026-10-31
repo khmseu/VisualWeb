@@ -239,6 +239,15 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   table sizing. This narrow behavior follows the
   [CSS Text interoperability guidance](https://drafts.csswg.org/css-text-3/#line-break-property)
   (local ID `css-text`); it is not general URL or Unicode line breaking.
+- In `normal`/`pre-line`, `.`, `,`, `:` and `;` between ASCII letters or digits
+  in one text node stay in the unbroken shaped word. This includes
+  `example.com`, `1,000.25` and `12:30`; space and supported hyphen breaks
+  remain available around the word. Intrinsic table sizing includes the full
+  unbroken segment. See Unicode 17
+  [LB15d](https://www.unicode.org/reports/tr14/tr14-55.html#LB15d),
+  [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) and
+  [LB29](https://www.unicode.org/reports/tr14/tr14-55.html#LB29) (local ID
+  `unicode-linebreak`). This is not general punctuation or URL line breaking.
 - white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
   explicit br breaks. Preserved tabs/form feeds are unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
@@ -262,7 +271,8 @@ explicitly or those styles overridden.
   itemization, advanced script/fallback/emoji shaping.
 - Full Unicode line breaking, hyphenation and other punctuation-internal
   opportunities. In wrapping modes, leading/trailing, repeated,
-  non-ASCII-adjacent or digit-adjacent hyphens and solidi, and unsupported
+  non-ASCII-adjacent or digit-adjacent hyphens and solidi, adjacent internal
+  infix separators, non-ASCII-adjacent infix separators and other unsupported
   internal punctuation fail; nonwrapping pre/nowrap do not need this analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.

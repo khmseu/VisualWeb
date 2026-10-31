@@ -30,6 +30,9 @@ local/process retained repaint.
 Menu-list tests cover UA block/padding, unordered and ordered nesting, numeric
 and item-type markers, exact limits, unsupported contexts, native pixel
 equivalence and scripted local/process retained repaint with links.
+ASCII infix-separator tests cover letter/digit pairs, shaping and hyphen
+budgets, table intrinsic sizing, explicit exclusions, native pixels, and
+local/process link selection across retained reflow.
 
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,

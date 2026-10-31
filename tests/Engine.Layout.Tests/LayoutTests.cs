@@ -1141,6 +1141,149 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("a.b")]
+    [InlineData("a.1")]
+    [InlineData("1.b")]
+    [InlineData("1.2")]
+    [InlineData("a,b")]
+    [InlineData("a,1")]
+    [InlineData("1,b")]
+    [InlineData("1,2")]
+    [InlineData("a:b")]
+    [InlineData("a:1")]
+    [InlineData("1:b")]
+    [InlineData("1:2")]
+    [InlineData("a;b")]
+    [InlineData("a;1")]
+    [InlineData("1;b")]
+    [InlineData("1;2")]
+    [InlineData("A.B")]
+    [InlineData("A:9")]
+    [InlineData("9;Z")]
+    public void AsciiInfixSeparatorsBetweenLettersAndDigitsRemainUnbroken(string text)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            var (document, styles) = Page("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}");
+            var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+            var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 10, 200,
+                cancellationToken: Cancellation).Root!, "x");
+            var fragment = Assert.Single(Assert.Single(box.Lines).Fragments);
+            Assert.Same(source, fragment.Source);
+            Assert.Equal(text, fragment.Run.Text);
+            Assert.Equal(15, fragment.Run.Width);
+            Assert.Equal(10, box.Content.Width);
+        }
+    }
+
+    [Theory]
+    [InlineData("normal", "example.com", 55, "example.com")]
+    [InlineData("normal", "example.com", 20, "example.com")]
+    [InlineData("normal", "v1.2.3", 15, "v1.2.3")]
+    [InlineData("normal", "1,000.25", 20, "1,000.25")]
+    [InlineData("normal", "12:30:45", 20, "12:30:45")]
+    [InlineData("normal", "e.g.", 10, "e.g.")]
+    [InlineData("normal", "go example.com", 55, "go|example.com")]
+    [InlineData("normal", "a.b-c", 20, "a.b-|c")]
+    [InlineData("normal", "a-b.c", 10, "a-|b.c")]
+    [InlineData("normal", "a/b.c-d", 30, "a/b.c-|d")]
+    [InlineData("pre-line", "a:b\nc;d", 10, "a:b|c;d")]
+    public void AsciiInfixRunsKeepExistingSpaceAndHyphenBreaks(
+        string mode, string text, double width, string expected)
+    {
+        var box = Find(Layout("<p id=x>" + text + "</p>", "#x{white-space:" + mode + "}", width).Root!, "x");
+        var lines = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(expected.Split('|'), lines);
+    }
+
+    [Fact]
+    public void AsciiInfixRunsRetainTableIntrinsicWidthsAndHyphenSegmentation()
+    {
+        var unbroken = UnorderedList("<table id=t><tr><td id=c>a.b</td></tr></table>", width: 10).Root!;
+        Assert.Equal(21, Find(unbroken, "t").Content.Width);
+        Assert.Equal(15, Find(unbroken, "c").Content.Width);
+        Assert.Equal("a.b", Assert.Single(Assert.Single(Find(unbroken, "c").Lines).Fragments).Run.Text);
+
+        var mixed = UnorderedList("<table id=t><tr><td id=c>a.b-c</td></tr></table>", width: 10).Root!;
+        Assert.Equal(26, Find(mixed, "t").Content.Width);
+        Assert.Equal(20, Find(mixed, "c").Content.Width);
+        Assert.Equal(["a.b-", "c"], Find(mixed, "c").Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Fact]
+    public void AsciiInfixHyphenBreaksPreserveSourceIdentity()
+    {
+        var (document, styles) = Page("<p id=x>aa.bb-cc</p>");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 30, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var fragments = box.Lines.SelectMany(line => line.Fragments).ToArray();
+        Assert.Equal(["aa.bb-", "cc"], fragments.Select(fragment => fragment.Run.Text));
+        Assert.All(fragments, fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Theory]
+    [InlineData("a..b")]
+    [InlineData("a,,b")]
+    [InlineData("a::b")]
+    [InlineData("a;;b")]
+    [InlineData("a.\u00e9")]
+    [InlineData("\u00e9.a")]
+    [InlineData("a._b")]
+    [InlineData("a<span>.</span>b")]
+    [InlineData("a.<span>b</span>")]
+    public void OtherInfixPunctuationAndCrossNodeCasesRemainUnsupported(string text)
+    {
+        foreach (var mode in new[] { "normal", "pre-line" })
+        {
+            Assert.Throws<UnsupportedLayoutException>(() =>
+                Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
+        }
+    }
+
+    [Fact]
+    public void AsciiInfixRunsShareExactTextShapingAndHyphenWorkLimits()
+    {
+        var exact = new LayoutOptions
+        {
+            MaxTextCharacters = 3,
+            MaxShapedGlyphs = 3,
+            MaxShapingCalls = 2,
+            MaxLines = 1,
+            MaxLineBreakOperations = 1
+        };
+        Assert.NotNull(Layout("<p>a.b</p>", width: 10, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a.b</p>", width: 10,
+            options: exact with { MaxTextCharacters = 2 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a.b</p>", width: 10,
+            options: exact with { MaxShapedGlyphs = 2 }));
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>a.b</p>", width: 10,
+            options: exact with { MaxShapingCalls = 1 }));
+        Assert.NotNull(Layout("<p>a.b c.d</p>", width: 15, options: new() { MaxLines = 2 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout("<p>a.b c.d</p>", width: 15, options: new() { MaxLines = 1 }));
+
+        var mixed = new LayoutOptions { MaxLineBreakOperations = 29 };
+        Assert.NotNull(Layout("<p>aa-bb.cc</p>", width: 25, options: mixed).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb.cc</p>", width: 25,
+            options: mixed with { MaxLineBreakOperations = 28 }));
+        Assert.NotNull(Layout("<p>aa-bb.cc</p><p>aa-bb.cc</p>", width: 25,
+            options: mixed with { MaxLineBreakOperations = 58 }).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa-bb.cc</p><p>aa-bb.cc</p>", width: 25,
+            options: mixed with { MaxLineBreakOperations = 57 }));
+    }
+
+    [Fact]
+    public void AsciiInfixRunsObserveCancellationFromTheShaper()
+    {
+        var (document, styles) = Page("<p>a.b</p>");
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            new CancelingShaper(cancellation), 10, 200, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
     [InlineData("normal", "a/b", 10, "a/b")]
     [InlineData("normal", "and/or", 15, "and/or")]
     [InlineData("normal", "aa/bb", 25, "aa/bb")]

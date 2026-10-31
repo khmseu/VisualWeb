@@ -3499,3 +3499,45 @@ Layout-/Paint-Budgets.
 `b47a5a0` reproduzierten Baseline-Findings, zwei auf unveraenderten Zeilen
 der geaenderten `StaticLayout.cs`. Alle uebrigen geaenderten C#-Dateien
 bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus.
+
+**Commit und CI:** `54b85f5` wurde auf `origin/main` gepusht; der Commit-Hook
+pruefte 17 Dateien ohne Findings. [Linux 41203260363](https://github.com/khmseu/VisualWeb/actions/runs/41203260363),
+[Windows 41203260361](https://github.com/khmseu/VisualWeb/actions/runs/41203260361)
+und [CodeQL 41203259846](https://github.com/khmseu/VisualWeb/actions/runs/41203259846)
+bestanden. Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-103 - ASCII-Infixtrennzeichen im Text
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  Unicode 17 [LB15d](https://www.unicode.org/reports/tr14/tr14-55.html#LB15d),
+  [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) und
+  [LB29](https://www.unicode.org/reports/tr14/tr14-55.html#LB29). Der lokale
+  `unicode-linebreak`-Cache wurde am 2026-10-31 geprueft.
+
+**Belegte Auswahl und Umfang fuer Pass 9:** Im normalen Zeilenumbruch lehnte
+das Layout zuvor gaengige sichtbare Texte wie `example.com`, `1,000.25` und
+`12:30` ab. Die begrenzte Erweiterung behaelt `.`, `,`, `:` und `;` zwischen
+ASCII-Buchstaben/Ziffern desselben Textknotens innerhalb eines geformten
+untrennbaren Segments. Leerzeichen- und unterstuetzte Bindestrichumbrueche,
+Tabellenbreiten und gemeinsame Budgets bleiben bestehen. Benachbarte interne
+Trennzeichen, Nicht-ASCII-Nachbarn, Textknotengrenzen und allgemeiner Unicode-
+oder URL-Umbruch bleiben ausserhalb dieses Inkrements.
+
+**Test-first und Umsetzung:** Vor der Implementierung scheiterten erwartungs-
+gemaess 28 Layout-, drei native Pixel- und zwei lokale/Prozess-Browserfaelle.
+Nach der Umsetzung bestehen gezielte Tests; eine zwischenzeitliche Verletzung
+der Font-Threadbindung im neuen asynchronen Test wurde durch Disposal vor dem
+ersten `await` behoben.
+
+**Lokale Abschlusspruefung:** Der Solution-Build, lokale V8-Smoke und alle
+15.308 Solution-Tests bestehen, darunter 320 Layout-, 41 Content- und 1.234
+Browserfaelle. Gegenueber Pass 8 sind dies 48 neue Faelle. Ein vorheriger
+paralleler Solutionlauf scheiterte am unveraenderten V8-Microtask-Test durch
+eine Deadline; ein anschliessender Lauf mit `-m:1` bestand den V8-Teil, aber
+scheiterte an einer unveraenderten Browser-Navigationsdeadline. Beide Tests
+bestanden einzeln und der dritte, serialisierte Solutionlauf vollstaendig.
+Der Solutionformatter meldet nur die drei auf `b47a5a0` reproduzierten
+Baseline-Findings, zwei auf unveraenderten Zeilen der geaenderten
+`StaticLayout.cs`. Alle geaenderten Testdateien bestehen die separate
+Formatpruefung. Commit, Push und CI stehen noch aus.

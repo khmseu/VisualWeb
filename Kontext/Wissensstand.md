@@ -73,8 +73,19 @@
   APIs bleiben ausgenommen. Build, lokaler V8-Smoke und alle 15.260 Solution-
   Tests bestehen, darunter 13 netto neue Faelle; der Gesamtformatter meldet nur
   die drei bekannten Baseline-Findings und die uebrigen geaenderten C#-Dateien
-  bestehen die separate Formatpruefung. Commit, Push und CI stehen noch aus
+  bestehen die separate Formatpruefung. Commit `54b85f5` ist gepusht; Linux,
+  Windows und CodeQL bestanden, einschliesslich x64 und arm64
   ([KP-102](./Kontextprotokoll.md#kp-102---menu-listenlayout)).
+  Pass 9 erweitert die begrenzte Textformatierung: `.`, `,`, `:` und `;`
+  zwischen ASCII-Buchstaben oder Ziffern in einem Textknoten bleiben auch bei
+  Zeilenumbruch ungetrennt. Beispiele wie `example.com`, `1,000.25` und `12:30`
+  scheitern nicht mehr; allgemeiner Unicode-Umbruch und andere Kontexte bleiben
+  ausgenommen. Build, lokaler V8-Smoke und alle 15.308 Solution-Tests bestehen,
+  darunter 48 neue Faelle; zwei zwischenzeitliche Deadlinetests bestanden
+  einzeln und im letzten serialisierten Lauf. Der Gesamtformatter meldet nur
+  die drei bekannten Baseline-Findings, geaenderte Testdateien bestehen separat.
+  Commit, Push und CI stehen noch aus
+  ([KP-103](./Kontextprotokoll.md#kp-103---ascii-infixtrennzeichen-im-text)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

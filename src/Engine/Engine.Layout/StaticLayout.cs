@@ -83,6 +83,10 @@ public sealed record LayoutOptions
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">hyphen rules</see>.
 /// Internal ASCII-letter solidus uses the css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#line-break-property">interoperable no-break guidance</see>.
+/// ASCII infix separators between ASCII letters/digits follow unicode-linebreak
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB15d">LB15d</see>,
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB25">LB25</see> and
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB29">LB29</see>.
 /// Supported legacy list type hints follow html
 /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list rendering</see>.
 /// Menu lists follow html <see href="https://html.spec.whatwg.org/multipage/grouping-content.html#the-menu-element">menu</see>.
@@ -598,7 +602,8 @@ public static partial class StaticLayout
                             if (index > 0 && index < value.Length - 1 && !char.IsLetterOrDigit(c)
                                 && char.GetUnicodeCategory(c) is not System.Globalization.UnicodeCategory.NonSpacingMark
                                 && c is not ('\'' or '\u2019' or '\u00A0')
-                                && !(c == '.' && char.IsAsciiDigit(value[index - 1]) && char.IsAsciiDigit(value[index + 1])))
+                                && !(c is '.' or ',' or ':' or ';'
+                                    && char.IsAsciiLetterOrDigit(value[index - 1]) && char.IsAsciiLetterOrDigit(value[index + 1])))
                             {
                                 throw new UnsupportedLayoutException("Internal punctuation needs deferred Unicode line-break analysis.");
                             }

@@ -624,9 +624,13 @@ spaces/forced breaks and horizontal overflow remain mode-appropriate.
 ASCII letters in one text node, with bounded break-search work and retained
 source identity. A solidus between ASCII letters in one text node stays in
 the same unbroken segment; this also works with supported hyphen breaks.
-Other solidus forms, punctuation/Unicode-break algorithms, cross-node word
-shaping, unsupported scripts/bidi/controls and missing-font handling remain
-unsupported.
+The ASCII infix separators `.`, `,`, `:` and `;` between ASCII letters/digits
+in one text node likewise stay unbroken, allowing `example.com`, `1,000.25`
+and `12:30` without changing space/hyphen breaks or intrinsic sizing.
+Other solidus forms, unsupported internal infix contexts (including adjacent
+separators or non-ASCII neighbors), broader punctuation/Unicode-break algorithms,
+cross-node word shaping, unsupported scripts/bidi/controls and missing-font
+handling remain unsupported.
 See [ordinary text flow](../docs/text-layout.md#ordinary-flow).
 The earlier nonwrapping increment's 17 new regressions, solution build and all
 14,357 solution tests pass; formatting retains only the three established
@@ -641,6 +645,12 @@ explicit exclusions, mixed hyphen work limits, table sizing, native pixels and
 local/process retained link selection. The solution build, all 171 Layout,
 29 Content, 1,206 Browser and 14,944 solution tests pass locally. Formatting
 reports only the same three baseline findings; changed test files pass separately.
+The ASCII infix-separator increment adds 48 layout, native-content and
+local/process browser regression cases. Its solution build, local V8 smoke and
+all 15,308 solution tests pass; the solution formatter reports only the three
+baseline findings, with changed test files passing a targeted check. Earlier
+full runs each hit an unchanged V8 or browser deadline test; both passed
+individually and the subsequent serialized full run passed.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one spacing length, top-aligned text/block cells and
