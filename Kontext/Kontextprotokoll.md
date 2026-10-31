@@ -3148,3 +3148,27 @@ bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
 Damit sind alle zehn Feature-Passen dieser Serie separat validiert,
 committed, gepusht und CI-geprueft. Die breiteren Trackerprioritaeten bleiben
 offen.
+
+### KP-093 - WebDriver-Debugging und spaetere Standards
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-10-31.
+- Quelle: Nutzeranweisung in Sitzung `536d8ea3-d700-4290-8f49-f103f68a75f3`;
+  [AI-Standardsreferenzen](../docs/AI-standards.md).
+- Bezug: REQ-011; ergaenzt die Prioritaeten aus KP-065.
+
+**Nutzerangabe und Plananpassung:** Unterstuetzung fuer WebDriver und/oder
+WebDriver BiDi koennte fuer das Debugging des Browsers sehr hilfreich sein.
+Der Plan empfiehlt sie als moegliches prioritaetsuebergreifendes Hilfsmittel;
+welches Protokoll und welcher Umfang gewaehlt werden, bleibt offen.
+
+**Nutzeranweisung:** WAI-ARIA und WebMCP sollen als niedriger priorisierte
+Ziele genannt werden. Sie wurden unter den weitergehenden Standards ergaenzt.
+Der Fokus auf einfache Websites und die bestehenden Sicherheitsgrenzen bleiben
+bestehen. Dies ist eine Prioritaetsanpassung, keine Implementierungs- oder
+Konformitaetszusage.
+
+**Validierung vor Commit:** `git diff --check` und
+`dotnet test VisualWeb.slnx --no-build` bestanden; der Solutiontest nutzte
+vorhandene Buildausgaben und fuehrte 14.972 Tests erfolgreich aus. Ein neues
+Browserfeature wurde damit nicht validiert.

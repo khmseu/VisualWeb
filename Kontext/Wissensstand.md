@@ -4,12 +4,15 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-10-30, Zeitzone Europe/Berlin (UTC+01:00).
-- Aktuelle Serie: Der neue Auftrag vom 2026-10-30 ist unter
-  [Auftrag und Ziel](#auftrag-und-ziel) und KP-083 erfasst. Der Auftrag vom
-  2026-10-28 (KP-066 bis KP-082) ist abgeschlossen. Aeltere Serienstaende und deren
-  damalige naechste Schritte bleiben unten als historische Evidenz erhalten,
-  nicht als aktueller Arbeitsauftrag. Alte Quellen wurden nicht pauschal neu geprueft.
+- Dokumentationsdatum: 2026-10-31, Zeitzone Europe/Berlin (UTC+01:00).
+- Aktueller Auftrag: Debugging-Protokolle als moegliche Entwicklungsunterstuetzung
+  und WAI-ARIA/WebMCP als niedrigere Prioritaeten dokumentieren
+  ([KP-093](./Kontextprotokoll.md#kp-093---webdriver-debugging-und-spaetere-standards)).
+  Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
+  der Auftrag vom 2026-10-28 (KP-066 bis KP-082) sind abgeschlossen. Aeltere
+  Serienstaende und deren damalige naechste Schritte bleiben unten als historische
+  Evidenz erhalten, nicht als aktueller Arbeitsauftrag. Alte Quellen wurden nicht
+  pauschal neu geprueft.
 - Rekonstruktionsstand: teilweise; Originalauftrag ab 2026-10-04,
   ausgewaehlte Entscheidungen bis 2026-10-22 nachvollzogen.
 - Aelterer Artefaktstand: `c39b6d3` (`feat(browser): confirm typed cross-origin
@@ -111,7 +114,17 @@ Die Umordnung ist keine Freigabe fuer beliebige untrusted Websites und
 startet keine neue Implementierung
 ([KP-065](./Kontextprotokoll.md#kp-065---einfache-websites-zuerst)).
 
-**Aktueller Implementierungsauftrag (2026-10-30):** Der Nutzer hat erneut die
+**Prioritaetsergaenzung REQ-011 (Nutzeranweisung, 2026-10-31):** WebDriver
+und/oder WebDriver BiDi werden als potenziell hilfreiches, prioritaetsuebergreifendes
+Debugging-Werkzeug vorgeschlagen; Protokollwahl und Umfang bleiben offen.
+WAI-ARIA und WebMCP sind explizite niedrigere Prioritaeten. Dies ist keine
+Implementierungs- oder Konformitaetszusage; der Fokus auf einfache Websites und
+die bestehenden Schutzgrenzen bleiben erhalten. Vor dem Commit bestanden
+`git diff --check` und `dotnet test VisualWeb.slnx --no-build` mit 14.972 Tests
+auf vorhandenen Buildausgaben; ein neues Feature wurde damit nicht validiert
+([KP-093](./Kontextprotokoll.md#kp-093---webdriver-debugging-und-spaetere-standards)).
+
+**Implementierungsauftrag vom 2026-10-30 (abgeschlossen):** Der Nutzer hat erneut die
 Missing-Prioritaetsimplementierung mit zehn Passen aufgerufen. Jeder Pass soll
 ein eigenes testbares Inkrement nach Trackerprioritaet enthalten und vor dem
 naechsten Pass validiert, committed, gepusht und hinsichtlich CI geprueft werden.

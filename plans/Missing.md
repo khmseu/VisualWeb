@@ -663,6 +663,11 @@ styling, images, working links, scrolling and basic forms. Choose small,
 testable increments that remove concrete blockers on representative pages;
 do not require completion of an entire subsystem before improving another.
 
+Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
+the browser. Consider it as a cross-cutting development aid alongside the
+priorities below; the choice of protocol and its scope remain open. See the
+[AI standards references](../docs/AI-standards.md) for related specifications.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on
@@ -685,7 +690,8 @@ do not require completion of an entire subsystem before improving another.
    before claiming safe browsing of arbitrary untrusted sites. Completing this
    entire backlog is not a prerequisite for simple-site compatibility work.
 6. **Broader standards, accessibility, advanced layout/media/APIs and release
-   engineering** as coverage expands beyond simple websites.
+   engineering** as coverage expands beyond simple websites. WAI-ARIA support
+   and WebMCP are lower-priority targets.
 
 Preserve existing confinement, request restrictions, explicit development
 opt-ins and fail-closed behavior throughout all priorities. Add the security
@@ -695,7 +701,8 @@ simple websites are safe to browse untrusted. Validate each increment with
 focused regressions and representative offline simple-site fixtures.
 
 _Priority order updated on 2026-10-28 to favor simple-site usability first;
-this is a work-order change, not a new implementation or validation claim._
+debugging and later targets clarified on 2026-10-31. These are work-order
+changes, not new implementation or validation claims._
 
 *Status cross-checked against the implementation and subsystem guides on
 2026-10-19. Native Linux x64/ARM64 and Windows x64/ARM64 CI passed for commit
