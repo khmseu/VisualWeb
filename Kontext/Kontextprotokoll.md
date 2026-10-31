@@ -3259,3 +3259,44 @@ Solution-Formatpruefung meldet ausschliesslich die drei auf `b47a5a0`
 reproduzierten Baseline-Findings in `StaticLayout.cs` und `ShellChrome.cs`;
 alle geaenderten C#-Dateien bestehen die separate Formatpruefung.
 Commit, Push und CI sind noch offen.
+
+**Commit, Push und CI:** `3189f7e` wurde auf `origin/main` gepusht; der
+Commit-Hook pruefte 15 Dateien ohne Findings.
+[Linux 41188860902](https://github.com/khmseu/VisualWeb/actions/runs/41188860902)
+und [CodeQL 41188860960](https://github.com/khmseu/VisualWeb/actions/runs/41188860960)
+bestanden. [Windows 41188860971](https://github.com/khmseu/VisualWeb/actions/runs/41188860971)
+bestand ebenfalls; Linux und Windows umfassten jeweils x64 und arm64.
+
+### KP-096 - UA-Abstaende fuer verschachtelte Listen
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [HTML-Listen-Rendering](https://html.spec.whatwg.org/multipage/rendering.html#lists),
+  lokaler `html`-Cache, zuletzt geprueft am 2026-10-04, sowie
+  `CssStyleEngine.UserAgentStyleSheet` und vorhandene Layouttests.
+
+**Belegte Auswahl fuer Pass 3:** Das HTML-UA-Stylesheet sieht fuer
+`dir`/`dl`/`menu`/`ol`/`ul` 1em Blockrand vor, aber null innerhalb eines
+beliebigen dieser Listenelemente. Bisher behalten verschachtelte `ul`/`ol`/`dl`
+ihre 1em und erzeugen sichtbare Luecken; `dir` und `menu` haben keinen solchen
+CSS-Default. Der kleine Inkrementumfang ist die horizontale Entsprechung
+mittels vorhandener physischer Margins, ohne neue List-Layouts oder vertikale
+Schreibrichtung. Autoren-/Nutzer-Cascade bleibt bestehen.
+
+**Test-first:** Vor der Regel scheiterten erwartungsgemaess neun CSS-Faelle,
+ein Layoutfall, ein nativer Pixelfall und zwei lokale/Prozess-Browserfaelle.
+Die UA-Regel wurde anschliessend ergaenzt; gruene Tests und weitere
+Validierung stehen noch aus.
+
+**Umsetzung und lokale Pruefung:** Die UA-Regeln setzen 1em obere/untere
+Margins fuer alle fuenf Listentypen und null fuer verschachtelte Listen.
+`dl` zaehlt fuer Abstaende, aber unveraendert nicht als Marker-Vorfahre.
+Autoren und Nutzer koennen die Werte in der normalen Cascade ueberschreiben;
+`dir`/`menu`-List-Layouts und vertikale Schreibrichtung bleiben ausgenommen.
+
+Die 16 neuen CSS-Faelle, ein Layout-, ein nativer Pixel- und zwei
+Browserfaelle bestehen, ebenso der Solution-Build, 870 CSS-, 184 Layout-,
+33 Content-, 1.218 Browser- und alle 15.065 Solution-Tests. Der
+Solutionformatter meldet nur die drei auf `b47a5a0` reproduzierten
+Baseline-Findings; alle geaenderten C#-Dateien bestehen die separate
+Formatpruefung. Commit, Push und CI sind noch offen.

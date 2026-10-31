@@ -68,6 +68,9 @@ HTML UA marker defaults select discs, circles or squares according to list
 ancestor depth; nested ordered lists remain decimal. `dir`/`menu` participate
 in these CSS rules without adding support for their list layout or legacy
 `type` attributes. Broader list styles remain unsupported.
+For horizontal writing, HTML UA list block margins are represented by 1em
+top/bottom margins on outer `dir`/`dl`/`menu`/`ol`/`ul` and zero on list
+descendants of any of those types. Author and user cascade remain unchanged.
 
 The finite table properties add canonical table/group/row/cell displays,
 `table-layout:auto`, inherited `border-collapse:separate` and single-length

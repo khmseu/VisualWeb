@@ -165,6 +165,11 @@ circle with one, and square with two or more; `dir`, `menu`, `ol` and `ul`
 all count as list ancestors, including across intermediate elements.
 Ordered lists remain decimal at every depth. Author/user cascade and disabling
 the UA sheet retain their existing semantics.
+The same HTML rules give outer `dir`, `dl`, `menu`, `ol` and `ul` 1em top and
+bottom margins and reset both margins to zero for descendants of any of those
+five list types, including across intermediate elements. These physical
+properties are the horizontal-writing equivalent of HTML's block margins;
+they do not add vertical writing support.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
 only disc/circle/square/decimal/none markers, outside positioning and no marker image
 are supported.

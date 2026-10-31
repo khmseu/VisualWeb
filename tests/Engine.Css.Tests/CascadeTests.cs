@@ -361,6 +361,55 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("<ul id=target></ul>", 16)]
+    [InlineData("<ol id=target></ol>", 16)]
+    [InlineData("<dl id=target></dl>", 16)]
+    [InlineData("<dir id=target></dir>", 16)]
+    [InlineData("<menu id=target></menu>", 16)]
+    [InlineData("<ul></ul><ol id=target></ol>", 16)]
+    [InlineData("<div><ul id=target></ul></div>", 16)]
+    [InlineData("<ul><li><ul id=target></ul></li></ul>", 0)]
+    [InlineData("<ol><li><div><ul id=target></ul></div></li></ol>", 0)]
+    [InlineData("<ul><li><ol id=target></ol></li></ul>", 0)]
+    [InlineData("<dl><dd><ul id=target></ul></dd></dl>", 0)]
+    [InlineData("<ul><li><dl id=target></dl></li></ul>", 0)]
+    [InlineData("<dir><menu id=target></menu></dir>", 0)]
+    [InlineData("<menu><dir id=target></dir></menu>", 0)]
+    [InlineData("<dl><dd><dl id=target></dl></dd></dl>", 0)]
+    public void ListUaVerticalMarginsDependOnListAncestry(string html, double expected)
+    {
+        var doc = Document(html);
+        var result = Compute(doc);
+        Assert.Empty(result.Diagnostics);
+        var style = result.Styles[doc.GetElementById("target")!];
+        Assert.Equal(new CssLength(expected, "px"), style["margin-top"]);
+        Assert.Equal(new CssLength(expected, "px"), style["margin-bottom"]);
+    }
+
+    [Fact]
+    public void ListUaMarginsRespectFontSizeCascadeAndDisabledUaStyles()
+    {
+        var doc = Document("<ul id=outer><li><ol id=nested><li>x</li></ol></li></ul>");
+        var sized = Compute(doc, new CssStyleSource("#outer{font-size:20px}#nested{font-size:12px}"));
+        Assert.Empty(sized.Diagnostics);
+        Assert.Equal(new CssLength(20, "px"), sized.Styles[doc.GetElementById("outer")!]["margin-top"]);
+        Assert.Equal(new CssLength(0, "px"), sized.Styles[doc.GetElementById("nested")!]["margin-top"]);
+        Assert.Equal(new CssLength(0, "px"), sized.Styles[doc.GetElementById("nested")!]["margin-bottom"]);
+
+        var author = Compute(doc, new CssStyleSource("ol{margin-top:3px;margin-bottom:4px}"));
+        Assert.Empty(author.Diagnostics);
+        Assert.Equal(new CssLength(3, "px"), author.Styles[doc.GetElementById("nested")!]["margin-top"]);
+        Assert.Equal(new CssLength(4, "px"), author.Styles[doc.GetElementById("nested")!]["margin-bottom"]);
+        var userImportant = Compute(doc, new CssStyleSource("ol{margin-top:7px!important}", CssOrigin.User),
+            new CssStyleSource("ol{margin-top:8px!important}"));
+        Assert.Empty(userImportant.Diagnostics);
+        Assert.Equal(new CssLength(7, "px"), userImportant.Styles[doc.GetElementById("nested")!]["margin-top"]);
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Empty(withoutUa.Diagnostics);
+        Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[doc.GetElementById("outer")!]["margin-top"]);
+    }
+
+    [Theory]
     [InlineData("none", "none")]
     [InlineData("none none", "none")]
     [InlineData("outside", "disc")]

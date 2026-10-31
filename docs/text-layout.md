@@ -107,6 +107,8 @@ outside markers. UA styles give lists 40px left padding and items
 circles with one list ancestor, and squares with two or more list ancestors.
 `ol`, `ul`, `dir` and `menu` count as ancestors, but `dir`/`menu` list layout
 itself remains unsupported.
+HTML UA vertical margins are 1em on outer lists and zero on lists nested within
+`dir`, `dl`, `menu`, `ol` or `ul`; author styles may override those defaults.
 Authors may instead select `list-style-type:circle` or `list-style-type:square`,
 or the corresponding `list-style` shorthand, on supported unordered or ordered
 items; inherited hollow circles and solid squares use the same outside bounds

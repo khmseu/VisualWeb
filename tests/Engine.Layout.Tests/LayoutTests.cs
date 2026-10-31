@@ -195,6 +195,28 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void NestedUaListMarginsDoNotInsertExtraVerticalGaps()
+    {
+        var document = HtmlParser.Parse(
+            "<!doctype html><ul id=outer><li id=first>a<ul id=nested><li id=inner>b</li></ul></li><li id=next>c</li></ul>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document,
+            [new("html,body{margin:0}*{font-size:10px;line-height:10px}")], cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+        var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 200, 200,
+            cancellationToken: Cancellation).Root!;
+        var first = Find(root, "first");
+        var nested = Find(root, "nested");
+        var inner = Find(root, "inner");
+        var next = Find(root, "next");
+        Assert.Equal(0, nested.Margin.Top);
+        Assert.Equal(0, nested.Margin.Bottom);
+        Assert.Equal(first.Lines[0].Bounds.Y + 10, inner.Content.Y);
+        Assert.Equal(inner.Content.Y + 10, next.Content.Y);
+        Assert.Equal(30, Find(root, "outer").Content.Height);
+    }
+
+    [Fact]
     public void HiddenAndSuppressedMarkersDoNotAppear()
     {
         var root = UnorderedList("<ul><li id=a>a</li><li id=b>b</li><li id=c>c</li></ul>",

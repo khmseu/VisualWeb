@@ -10,6 +10,9 @@ and retained local/process browser scroll and resize.
 Nested-list UA regressions cover mixed list ancestor depths, author/user
 cascade, disabled UA styles, layout geometry and native pixels in offline and
 local/process retained rendering.
+Nested-list UA margin regressions cover the five HTML list ancestor types,
+outer font-relative margins, cascade overrides, layout gaps, native pixels and
+local/process retained scroll and resize.
 
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,

@@ -15,8 +15,16 @@
   vorhandenen Kreis- und Quadratmarkern. Der Build und alle 15.045 Solution-
   Tests bestehen; die drei bereits auf `b47a5a0` reproduzierten
   Format-Baseline-Findings bestehen unveraendert. Die geaenderten C#-Dateien
-  bestehen eine separate Formatpruefung. Commit, Push und CI stehen noch aus
+  bestehen eine separate Formatpruefung. Commit `3189f7e` ist gepusht;
+  Linux, Windows und CodeQL bestanden, einschliesslich x64 und arm64
   ([KP-095](./Kontextprotokoll.md#kp-095---ua-marker-fuer-verschachtelte-listen)).
+  Pass 3 bearbeitet HTML-UA-Aussenabstaende fuer verschachtelte Listen:
+  ausserhalb einer anderen Liste 1em, innerhalb null; direkte CSS-/Layout- und
+  Renderingregressionen wurden zuerst angelegt und scheiterten wie erwartet.
+  Der Build und alle 15.065 Solution-Tests bestehen; die geaenderten
+  C#-Dateien bestehen die separate Formatpruefung. Der Gesamtformatter meldet
+  nur die drei bekannten Baseline-Findings. Commit, Push und CI stehen noch aus
+  ([KP-096](./Kontextprotokoll.md#kp-096---ua-abstaende-fuer-verschachtelte-listen)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

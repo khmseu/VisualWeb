@@ -55,6 +55,35 @@ public sealed class ScrollTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task NestedUaListMarginsSurviveLocalAndProcessRetainedRepaint(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        const string body = "<ul><li>one<ul id=nested><li>two</li></ul></li><li>three</li></ul>";
+        const string style = "html,body{margin:0}*{font-size:20px;line-height:20px;color:red}";
+        var viewport = new PageViewport(160, 60, 1);
+        var document = Document("<!doctype html><style>" + style + "</style>" + body);
+        var actual = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 140 }, Cancellation);
+        var scrolled = await renderer.RenderRetainedAsync(document, viewport with { ScrollY = 25 }, Cancellation);
+
+        var reference = Document("<!doctype html><style>" + style + "#nested{margin-top:0;margin-bottom:0}</style>" + body);
+        var expected = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var expectedResized = await renderer.RenderRetainedAsync(reference, viewport with { Width = 140 }, Cancellation);
+        var expectedScrolled = await renderer.RenderRetainedAsync(reference, viewport with { ScrollY = 25 }, Cancellation);
+        Assert.True(actual.ScrollHeight > viewport.Height);
+        Assert.Equal(expected.ScrollHeight, actual.ScrollHeight);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+        Assert.Equal(expectedScrolled.Frame.Pixels.ToArray(), scrolled.Frame.Pixels.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NestedDefaultListMarkersSurviveLocalAndProcessRetainedResize(bool process)
     {
         using IPageRenderer renderer = process

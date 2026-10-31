@@ -8,6 +8,23 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void NestedUaListMarginsMatchExplicitZeroMarginPixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ul><li>one<ul id=nested><li>two</li></ul></li><li>three</li></ul>";
+        const string style = "html,body{margin:0}*{font-size:20px;line-height:20px;color:red}";
+        var actual = OfflinePageRenderer.Render(html, [new(style)], text, fonts, 160, 100,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(html, [new(style + "#nested{margin-top:0;margin-bottom:0}")],
+            text, fonts, 160, 100, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.NotEmpty(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void NestedDefaultListMarkersProduceDistinctNativePixels()
     {
         using var font = new TextFont(FontPath);

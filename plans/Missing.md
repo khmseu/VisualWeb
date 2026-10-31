@@ -539,7 +539,10 @@ The current engine implements finite static block/inline rendering. Missing esse
   rectangle or a single clipped, inset outline command respectively. The
   HTML UA marker defaults now use circles with one list ancestor and squares
   with two or more; ordered lists remain decimal, author styles still override
-  UA rules, and `dir`/`menu` participate only in the CSS ancestor rules.
+  UA rules, and `dir`/`menu` participate only in CSS list rules.
+  HTML UA list margins are 1em above and below outer lists and zero on
+  descendants of `dir`/`dl`/`menu`/`ol`/`ul`; vertical writing and
+  `dir`/`menu` list layout remain unsupported.
   Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` attributes except `ol type=1`,
@@ -571,6 +574,10 @@ The current engine implements finite static block/inline rendering. Missing esse
   default. The solution build and all 15,045 solution tests pass locally;
   formatting reports only those same three baseline findings, while all
   C# files changed in this increment pass a targeted format check.
+  The nested-UA margin increment adds 20 CSS/layout/content/browser
+  regression cases. The solution build and all 15,065 solution tests pass;
+  formatting reports only the same three baseline findings, and changed C#
+  files pass a targeted format check.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common
