@@ -39,7 +39,7 @@ Nested sources require attention independently of the parser's MIT notice:
   cites Unicode 17
   [DerivedBidiClass.txt](https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedBidiClass.txt).
   UnicodeTables also cites the Wikipedia
-  [Bidi_Class template](https://en.wikipedia.org/wiki/Template:Bidi_Class_(Unicode))
+  [Bidi_Class template](<https://en.wikipedia.org/wiki/Template:Bidi_Class_(Unicode)>)
   for its enum descriptions. Verification required: establish the generated
   inputs, any copied descriptive material, and their applicable Unicode or
   other upstream license/attribution requirements. Separate terms for these

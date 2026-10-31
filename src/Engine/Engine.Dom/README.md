@@ -55,5 +55,5 @@ deferred. See the [HTML/DOM guide](../../../docs/html-dom.md).
 The optional [scripting foundation](../../../docs/scripting.md) wraps a finite
 title/ID/textContent subset without importing these nodes as CLR objects.
 
-Official source: https://dom.spec.whatwg.org/ (ID `dom`); HTML defines
+Official source: <https://dom.spec.whatwg.org/> (ID `dom`); HTML defines
 additional element behavior. See the [standards workflow](../../../docs/standards.md).

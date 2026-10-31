@@ -1,10 +1,10 @@
-## Plan: Monorepo Foundation for a C# Web Browser
+# Plan: Monorepo Foundation for a C# Web Browser
 
 Establish a .NET 10 monorepo with one project per browser subsystem behind standards-referencing interfaces, then build a minimal static HTML/CSS browser with tabs and multiple windows on Linux (X11 + Wayland) and Windows. The architecture is multi-process from day one (one renderer process per tab), with V8 as the planned JavaScript engine, and a locally cached, monthly-refreshed library of the official specifications that both humans and AI agents can discover.
 
 > **Historical status:** The phase descriptions below record the approved scope and evidence at each milestone; they are not a current capability matrix. Consult the [project map](../docs/project-map.md), subsystem guides, and [remaining-work tracker](Missing.md) for current implementation status and limitations.
 
-**Phase 1 delivered**
+## Phase 1 delivered
 
 - .NET 10.0.401 SDK pin, shared build/package configuration, a 22-project solution and VS Code tasks.
 - Browser subsystems are empty libraries; app entry points and runtime isolation remain later-phase work. No premature scripting API or native dependency is added.
@@ -12,7 +12,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Root AGENTS.md, indexed architecture/standards/decision docs and per-project READMEs.
 - The solution build is the all-project smoke check rather than a recursive build inside a unit test. Runtime execution applies only to implemented tooling.
 
-**Decisions (approved)**
+## Decisions (approved)
 
 - Phase 9 delivered: SDL-drawn address/tab chrome, GET static HTML navigation,
   transactional URL-only history, tabs and multiple windows in an explicitly
@@ -101,7 +101,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Standards cache: `specs/` holds local copies of the referenced specifications, with a manifest recording source URL and fetch date; a refresh tool re-downloads entries older than 30 days. This is independent of the test suites.
 - Agent discoverability: root `AGENTS.md` plus `docs/` index pointing at architecture docs, the spec manifest, project map, build/test commands, and conventions; per-project `README.md` files.
 
-**Repository Layout**
+## Repository Layout
 
 - `src/Platform/` — `Platform.Abstractions`, `Platform.Linux` (X11 + Wayland via SDL3), `Platform.Windows`.
 - `src/Core/` — `Core.Primitives`, `Core.Url`, `Core.Encoding`, `Core.Mime`.
@@ -113,7 +113,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - `specs/` — cached standards documents + `manifest.json`.
 - `docs/` — architecture, ADRs, project map, spec index.
 
-**Phases (10)**
+## Phases (10)
 
 1. **Phase 1: Repository Scaffolding, Spec Cache, Agent Docs**
    - **Objective:** Buildable empty monorepo with shared build config, standards cache tooling, and agent-discoverable documentation.
@@ -170,7 +170,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
     - **Tests to Write:** Message round-trip serialization, transport tests, `RendererCrash_OnlyAffectsItsTab`.
     - **Steps:** Red; implement; green.
 
-**Post-MVP Roadmap**
+## Post-MVP Roadmap
 
 - Approved phase 10a delivers explicit unsandboxed process separation first:
   private bounded/versioned IPC, browser-owned GET, renderer-owned native page
@@ -288,7 +288,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Site isolation (process per site), accessibility tree, GPU compositing.
 - WPT conformance runner in CI.
 
-**Open Questions**
+### Open Questions
 
 1. Extend the finite post-parse inline subset toward standards-compliant HTML
    script scheduling, error reporting and event-loop lifecycles.

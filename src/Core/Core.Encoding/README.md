@@ -16,6 +16,6 @@ TextDecoder bindings, statistical/locale sniffing and parser-time encoding
 changes are not implemented.
 See the [core guide](../../../docs/core.md) for details and tests.
 
-Official sources: https://encoding.spec.whatwg.org/ (ID `encoding`) and
-https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding (ID `html`).
+Official sources: <https://encoding.spec.whatwg.org/> (ID `encoding`) and
+<https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding> (ID `html`).
 See the [standards workflow](../../../docs/standards.md).

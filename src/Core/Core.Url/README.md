@@ -14,5 +14,5 @@ page-initiated document-origin inheritance is selected by `LoadedPage`, not by
 the URL facade. No setters or URLSearchParams are exposed.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
 
-Official source: https://url.spec.whatwg.org/ (manifest ID `url`, local
+Official source: <https://url.spec.whatwg.org/> (manifest ID `url`, local
 `specs/cache/url.html`). See the [standards workflow](../../../docs/standards.md).

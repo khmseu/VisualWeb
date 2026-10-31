@@ -146,7 +146,9 @@ weitere Quellen nicht rekonstruiert.
 - Bezug: REQ-002, Q-003.
 
 **Nutzerangabe auf GitHub:** #6 fordert Windows-Paritaet mit Linux;
-#8 ARM-Paritaet mit Intel. Begruendung ueber diese Paritaetsforderung hinaus
+
+## 8 ARM-Paritaet mit Intel. Begruendung ueber diese Paritaetsforderung hinaus
+
 nicht ueberliefert.
 
 **Belegt:** PR #1-3 betreffen Windows-Confinement/Parity/Smokes; PR #4 native
@@ -669,9 +671,9 @@ gruen.
 **Status / naechste Schritte:** Implementierung und lokale Validierung sind
 abgeschlossen und als Commit `b9e421c` nach `origin/main` gepusht. Die
 Remote-CI ist fuer Linux development
-(https://github.com/khmseu/VisualWeb/actions/runs/39871989779), Windows
-confinement (https://github.com/khmseu/VisualWeb/actions/runs/39871990125)
-und CodeQL (https://github.com/khmseu/VisualWeb/actions/runs/39871989047)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39871989779>), Windows
+confinement (<https://github.com/khmseu/VisualWeb/actions/runs/39871990125>)
+und CodeQL (<https://github.com/khmseu/VisualWeb/actions/runs/39871989047>)
 erfolgreich; Pass 2 ist abgeschlossen. Danach gegen den aktualisierten
 Tracker eine neue actionable Pass-3-Aenderung bestimmen; keine Tabellenansicht
 oder breite Priority-3-Fertigstellung behaupten.
@@ -706,9 +708,9 @@ ohne Warnungen/Fehler und `dotnet test VisualWeb.slnx --no-build` bestanden.
 Projektbezogenes Format ist gruen; die globale Formatpruefung meldet dieselben
 unveraenderten Findings in `StaticLayout.cs` und `ShellChrome.cs`. Commit
 `a06ae04` wurde nach `origin/main` gepusht. Die CI ist fuer Linux development
-(https://github.com/khmseu/VisualWeb/actions/runs/39874104917), Windows
-confinement (https://github.com/khmseu/VisualWeb/actions/runs/39874105011)
-und CodeQL (https://github.com/khmseu/VisualWeb/actions/runs/39874104981)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39874104917>), Windows
+confinement (<https://github.com/khmseu/VisualWeb/actions/runs/39874105011>)
+und CodeQL (<https://github.com/khmseu/VisualWeb/actions/runs/39874104981>)
 erfolgreich.
 
 **Status / naechste Schritte:** Pass 3 ist abgeschlossen. Im aktualisierten
@@ -751,9 +753,9 @@ weiterhin vorhandene Findings in `src/Engine/Engine.Layout/StaticLayout.cs`
 und `src/Apps/VisualWeb.Browser/ShellChrome.cs`; diese Dateien sind in diesem
 Pass unveraendert. Commit `a8deada` wurde nach `origin/main` gepusht. CI ist
 fuer CodeQL
-(https://github.com/khmseu/VisualWeb/actions/runs/39877063714), Linux
-development (https://github.com/khmseu/VisualWeb/actions/runs/39877063320) und
-Windows confinement (https://github.com/khmseu/VisualWeb/actions/runs/39877063319)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39877063714>), Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/39877063320>) und
+Windows confinement (<https://github.com/khmseu/VisualWeb/actions/runs/39877063319>)
 erfolgreich.
 
 **Status / naechste Schritte:** Pass 4 ist abgeschlossen. Pass 5 gegen den
@@ -793,9 +795,9 @@ Projektbezogene Formatpruefung bestanden. Die Solution-Formatpruefung meldet
 weiterhin die vorhandenen Findings in `StaticLayout.cs` und `ShellChrome.cs`;
 diese Dateien sind unveraendert. Commit `d823ba1` wurde nach `origin/main`
 gepusht. CI ist fuer CodeQL
-(https://github.com/khmseu/VisualWeb/actions/runs/39879836031), Linux
-development (https://github.com/khmseu/VisualWeb/actions/runs/39879837214) und
-Windows confinement (https://github.com/khmseu/VisualWeb/actions/runs/39879837211)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39879836031>), Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/39879837214>) und
+Windows confinement (<https://github.com/khmseu/VisualWeb/actions/runs/39879837211>)
 erfolgreich.
 
 **Status / naechste Schritte:** Pass 5 ist abgeschlossen. Pass 6 erneut anhand
@@ -836,9 +838,9 @@ meldet weiterhin Findings in `StaticLayout.cs` und `ShellChrome.cs`; beide
 Dateien sind identisch zu `HEAD` und nicht Teil dieses Passes. Commit
 `255664e` wurde nach `origin/main` gepusht; Linux-, Windows- und Push-CI
 sind erfolgreich: CodeQL
-(https://github.com/khmseu/VisualWeb/actions/runs/39881851199), Linux
-development (https://github.com/khmseu/VisualWeb/actions/runs/39881852620) und
-Windows confinement (https://github.com/khmseu/VisualWeb/actions/runs/39881851209).
+(<https://github.com/khmseu/VisualWeb/actions/runs/39881851199>), Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/39881852620>) und
+Windows confinement (<https://github.com/khmseu/VisualWeb/actions/runs/39881851209>).
 
 **Status / naechste Schritte:** Pass 6 ist abgeschlossen. Pass 7 erneut anhand
 des aktualisierten Trackers waehlen.
@@ -876,10 +878,10 @@ Geaenderte-Dateien-Formatpruefung bestanden. Die Solution-Formatpruefung
 meldet weiterhin die unveraenderten Findings in `StaticLayout.cs` und
 `ShellChrome.cs`; beide Dateien sind identisch zu `HEAD` und nicht Teil dieses
 Passes. Commit `5920866` wurde nach `origin/main` gepusht. CodeQL
-(https://github.com/khmseu/VisualWeb/actions/runs/39884466048), Linux
-development (https://github.com/khmseu/VisualWeb/actions/runs/39884466100)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39884466048>), Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/39884466100>)
 und Windows confinement
-(https://github.com/khmseu/VisualWeb/actions/runs/39884466055) sind erfolgreich.
+(<https://github.com/khmseu/VisualWeb/actions/runs/39884466055>) sind erfolgreich.
 
 **Status / naechste Schritte:** Pass 7 ist abgeschlossen. Pass 8 aus dem
 aktualisierten Tracker waehlen.
@@ -923,10 +925,10 @@ Tests bleiben offline.
 der geaenderten C#-Dateien bestanden. Die Solution-Formatpruefung zeigt
 weiterhin die nicht geaenderten Findings in `StaticLayout.cs` und
 `ShellChrome.cs`. Commit `7d030ab` wurde am 2026-10-23 gepusht. CodeQL
-(https://github.com/khmseu/VisualWeb/actions/runs/39886409310) und Linux
-development (https://github.com/khmseu/VisualWeb/actions/runs/39886409413)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39886409310>) und Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/39886409413>)
 sowie Windows confinement
-(https://github.com/khmseu/VisualWeb/actions/runs/39886409409) sind
+(<https://github.com/khmseu/VisualWeb/actions/runs/39886409409>) sind
 erfolgreich.
 
 **Status / naechste Schritte:** Pass 8 ist implementiert, lokal validiert,
@@ -970,10 +972,10 @@ Warnungen/Fehler, `dotnet test VisualWeb.slnx --no-build` und geaenderte-
 Dateien-Formatpruefung bestanden. Solution-Formatpruefung zeigt weiterhin
 die Findings in `StaticLayout.cs` und `ShellChrome.cs`; beide Dateien sind
 unveraendert gegen den HEAD-Basisstand. Commit `c51811a` wurde gepusht. CodeQL
-(https://github.com/khmseu/VisualWeb/actions/runs/39888443886), Linux
-development (https://github.com/khmseu/VisualWeb/actions/runs/39888444229)
+(<https://github.com/khmseu/VisualWeb/actions/runs/39888443886>), Linux
+development (<https://github.com/khmseu/VisualWeb/actions/runs/39888444229>)
 und Windows confinement
-(https://github.com/khmseu/VisualWeb/actions/runs/39888444402) sind
+(<https://github.com/khmseu/VisualWeb/actions/runs/39888444402>) sind
 erfolgreich.
 
 **Status / naechste Schritte:** Pass 9 ist lokal validiert, committed und
@@ -985,7 +987,7 @@ gepusht und CI-gruen. Pass 10 aus dem aktualisierten Tracker waehlen.
 - Ereignisdatum: 2026-10-23.
 - Erfassungsart: laufend dokumentiert; Pass 10 committed, gepusht und mit
   erfolgreicher abschliessender CI abgeschlossen.
-- Quelle: aktualisierter `plans/Missing.md`, HTML/DOM-Guide, Engine.Html
+- Quelle: aktualisierter <plans/Missing.md>, HTML/DOM-Guide, Engine.Html
   README, lokaler `html`-Standardcache, Parser/Testquellen und Validierung.
 - Bezug: REQ-005, DEC-012, Q-010 und Pass 10 des Zehn-Passen-Auftrags; folgt
   auf KP-025.

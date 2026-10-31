@@ -1,6 +1,6 @@
 # Vendored Dubzer.WhatwgUrl
 
-Source: https://github.com/Dubzer/Dubzer.WhatwgUrl
+Source: <https://github.com/Dubzer/Dubzer.WhatwgUrl>
 Release: 1.1.0
 Commit: `d8483ab0a64085b5642402e27e2671fddbc412da`
 License: [MIT](LICENSE.txt). Original namespaces, notices, and generated tables

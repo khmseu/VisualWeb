@@ -23,6 +23,6 @@ Scripts are tokenized as text, never executed.
 See the [HTML/DOM guide](../../../docs/html-dom.md) for exact supported/deferred
 features, caller decoding policy, limits and conformance evidence.
 
-Official source: https://html.spec.whatwg.org/multipage/parsing.html (ID `html`;
+Official source: <https://html.spec.whatwg.org/multipage/parsing.html> (ID `html`;
 the cache holds the single-page standard).
 See the [standards workflow](../../../docs/standards.md).
