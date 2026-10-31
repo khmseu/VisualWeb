@@ -102,12 +102,15 @@ not pixels, hit-testing, accessibility, IPC identities or an OS sandbox.
 ### Default unordered lists
 
 Visible block `ul` containers and their direct `li` children now support
-outside disc markers. UA styles give lists 40px left padding and items
-`display:list-item`; each nested list uses the same disc default.
+outside markers. UA styles give lists 40px left padding and items
+`display:list-item`; unordered lists default to discs at the outermost level,
+circles with one list ancestor, and squares with two or more list ancestors.
+`ol`, `ul`, `dir` and `menu` count as ancestors, but `dir`/`menu` list layout
+itself remains unsupported.
 Authors may instead select `list-style-type:circle` or `list-style-type:square`,
 or the corresponding `list-style` shorthand, on supported unordered or ordered
 items; inherited hollow circles and solid squares use the same outside bounds
-as discs. This does not change nested UA defaults.
+as discs. Authors can override the nested UA defaults.
 `list-style-type:none` suppresses a marker, and `display:block` on an item
 removes its list-item semantics. Hidden items produce neither geometry nor
 markers. Legacy `type` attributes except `ol type=1`, other marker styles,
@@ -140,7 +143,8 @@ increments/decrements can continue beyond that attribute range without wrapping.
 `ol type=1` is accepted; other legacy types fail explicitly.
 
 `list-style-type:decimal` also works on supported unordered items, including
-`li value` resets. UA rules reset nested `ul` to disc and nested `ol` to decimal.
+`li value` resets. Nested `ol` defaults remain decimal; nested `ul` defaults
+follow the list-ancestor rules above.
 Decimal markers are shaped with the item's registered font and color, aligned
 to its first in-flow baseline (or font strut when empty), and right-aligned
 0.5em before the content edge. They do not consume line wrapping width, become

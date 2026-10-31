@@ -64,7 +64,10 @@ The bounded list subset adds `display:list-item` and inherited longhands
 `list-style-image:none` (official ID `css2-lists`). UA `li` defaults to
 list-item. The `list-style` shorthand expands the same finite longhands,
 including resets, CSS-wide keywords and `none` ambiguity handling.
-Nested `ul` UA defaults remain discs; broader list styles remain unsupported.
+HTML UA marker defaults select discs, circles or squares according to list
+ancestor depth; nested ordered lists remain decimal. `dir`/`menu` participate
+in these CSS rules without adding support for their list layout or legacy
+`type` attributes. Broader list styles remain unsupported.
 
 The finite table properties add canonical table/group/row/cell displays,
 `table-layout:auto`, inherited `border-collapse:separate` and single-length

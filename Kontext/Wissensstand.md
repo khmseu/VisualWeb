@@ -8,9 +8,15 @@
 - Aktueller Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
-  Pass 1 ist lokal implementiert und validiert: das zuvor abgelehnte
-  CSS-Listenmarker-Keyword `circle` erzeugt einen hohlen Marker durch CSS,
-  Layout und Paint. Commit, Push und CI-Pruefung stehen noch aus.
+  Pass 1 ist lokal und in CI validiert: das zuvor abgelehnte CSS-Listenmarker-
+  Keyword `circle` erzeugt einen hohlen Marker durch CSS, Layout und Paint.
+  Commit `58afc50` ist gepusht; Linux, Windows und CodeQL bestanden.
+  Pass 2 implementiert die HTML-UA-Defaults fuer verschachtelte Listen mit den
+  vorhandenen Kreis- und Quadratmarkern. Der Build und alle 15.045 Solution-
+  Tests bestehen; die drei bereits auf `b47a5a0` reproduzierten
+  Format-Baseline-Findings bestehen unveraendert. Die geaenderten C#-Dateien
+  bestehen eine separate Formatpruefung. Commit, Push und CI stehen noch aus
+  ([KP-095](./Kontextprotokoll.md#kp-095---ua-marker-fuer-verschachtelte-listen)).
   Die am 2026-10-30 angeforderte Zehn-Passen-Serie (KP-083 bis KP-092) und
   der anschliessende Dokumentationsauftrag (KP-093) sind abgeschlossen.
   Aeltere Serienstaende und deren damalige naechste Schritte bleiben unten als

@@ -158,8 +158,13 @@ not listed above. No selector silently approximates these features.
 
 ## Cascade and computed values
 
-The bounded list subset gives `li` a UA `display:list-item` default,
-`ul` disc markers and `ol` decimal markers.
+The bounded list subset gives `li` a UA `display:list-item` default and
+`ol` decimal markers. Following the [HTML list rendering rules](https://html.spec.whatwg.org/multipage/rendering.html#lists)
+(local ID `html`), `ul`/`dir`/`menu` default to disc with no list ancestor,
+circle with one, and square with two or more; `dir`, `menu`, `ol` and `ul`
+all count as list ancestors, including across intermediate elements.
+Ordered lists remain decimal at every depth. Author/user cascade and disabling
+the UA sheet retain their existing semantics.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
 only disc/circle/square/decimal/none markers, outside positioning and no marker image
 are supported.
@@ -170,9 +175,8 @@ therefore retains decimal markers. Duplicate components or unsupported values
 (inside, images, other marker types) diagnose the whole declaration without
 partially changing longhands.
 Layout currently accepts visible list-item boxes only for direct `li` children
-of `ul` or `ol`; accepting a computed value does not imply general list-item layout.
-The `circle` keyword is author-selectable, but nested `ul` UA defaults remain
-`disc`, and it does not enable legacy HTML `type` attributes.
+of `ul` or `ol`; the UA rules do not enable `dir`/`menu` list layout or legacy
+HTML `type` attributes.
 
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
 UA < user < author precedence, important author < user < UA precedence, inline

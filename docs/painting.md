@@ -69,13 +69,14 @@ ReadOnlyMemory; IPixelSurface does not retain presentation memory.
 
 ## Paint order and supported output
 
-Default unordered-list markers are separate `FillEllipse` commands using the
-item's computed `color` and layout's bounded outside-marker rectangle. Skia
-draws antialiased solid discs after block backgrounds and before that item's
+Outermost default unordered-list markers are separate `FillEllipse` commands
+using the item's computed `color` and layout's bounded outside-marker rectangle.
+Skia draws antialiased solid discs after block backgrounds and before that item's
 text, without synthesizing DOM text, reshaping a bullet glyph or creating font
-resources. Author-selected square markers instead use the same bounds and
-color in non-antialiased `FillRectangle` commands, including source-over alpha
-compositing. Author-selected circles use one data-only `StrokeEllipse` command
+resources. Square markers, including the default for deeper nested unordered
+lists, instead use the same bounds and color in non-antialiased `FillRectangle`
+commands, including source-over alpha compositing. Circles, including the
+one-ancestor nested default, use one data-only `StrokeEllipse` command
 with a stroke one quarter of the diameter: its antialiased centerline is inset
 by half the stroke, clipped to the declared bounds and drawn once with
 source-over color. Its center therefore retains the actual underlying pixels,

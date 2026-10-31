@@ -7,6 +7,10 @@ opaque/translucent backgrounds, large root and nested scroll offsets (including
 fractional root offsets), clipping and fill-state restoration; offline content
 and retained local/process browser scroll and resize.
 
+Nested-list UA regressions cover mixed list ancestor depths, author/user
+cascade, disabled UA styles, layout geometry and native pixels in offline and
+local/process retained rendering.
+
 Phase-11v clone tests cover shallow/deep supported node interfaces, ordered
 attributes, UTF-16/comment/PI/doctype payloads, detached independent children,
 native Document mode/owner remapping, fresh wrapper IDs and uncopied listeners.

@@ -33,7 +33,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 public static class CssStyleEngine
 {
     /// <summary>Minimal static UA defaults, not the complete HTML rendering stylesheet.</summary>
-    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#rendering">rendering</see>.
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#rendering">rendering</see>,
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list marker defaults</see>.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, p, section, article, aside, nav, header, footer, main, address,
@@ -45,8 +46,10 @@ public static class CssStyleEngine
         p, blockquote, pre, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         blockquote { margin-left: 40px; margin-right: 40px }
         ul, ol { padding-left: 40px }
-        ul { list-style-type: disc }
+        dir, menu, ul { list-style-type: disc }
         ol { list-style-type: decimal }
+        :is(dir, menu, ol, ul) :is(dir, menu, ul) { list-style-type: circle }
+        :is(dir, menu, ol, ul) :is(dir, menu, ol, ul) :is(dir, menu, ul) { list-style-type: square }
         li { display: list-item }
         table { display: table; border-spacing: 2px }
         tbody { display: table-row-group }

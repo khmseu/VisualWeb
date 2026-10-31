@@ -7,10 +7,10 @@ computed CSS snapshots and an injected text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.
 
-Default unordered lists now use block list-item boxes with separate outside
-disc-marker geometry; nested/empty items and inherited marker suppression are
-bounded. The CSS `circle` and `square` markers use the same outside geometry
-as a disc; circles are hollow and do not change nested UA defaults.
+Unordered lists use block list-item boxes with separate outside marker geometry;
+nested/empty items and inherited marker suppression are bounded. HTML UA defaults
+use discs, circles and squares at increasing list depth. Circles and squares use
+the same outside geometry as discs; circles are hollow.
 Ordered lists add shaped decimal markers with independent `start`,
 `reversed` and `li value` numbering; scans and output share existing budgets.
 Inside markers, legacy `type` attributes other than `ol type=1`, other marker

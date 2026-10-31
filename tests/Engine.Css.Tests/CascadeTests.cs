@@ -220,8 +220,8 @@ public sealed class CascadeTests
             "#parent{list-style:circle!important}#child{list-style:square;list-style-type:circle!important;list-style-type:decimal}"));
         Assert.Empty(important.Diagnostics);
         Assert.Equal(new CssKeyword("circle"), Child(important, doc)["list-style-type"]);
-        Assert.Equal(new CssKeyword("disc"), important.Styles[doc.GetElementById("nested")!]["list-style-type"]);
-        Assert.Equal(new CssKeyword("disc"), important.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("circle"), important.Styles[doc.GetElementById("nested")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("circle"), important.Styles[doc.GetElementById("inner")!]["list-style-type"]);
 
         var inherited = Compute(doc, new CssStyleSource("#parent{list-style:circle}#nested{list-style:inherit}"));
         Assert.Empty(inherited.Diagnostics);
@@ -304,16 +304,60 @@ public sealed class CascadeTests
     }
 
     [Fact]
-    public void OrderedListsDefaultToDecimalAndNestedUnorderedListsResetToDisc()
+    public void OrderedListsDefaultToDecimalAndNestedUnorderedListsDefaultToCircle()
     {
         var doc = Document("<ol id=parent><li id=child><ul id=nested><li id=inner>x</li></ul></li></ol>");
         var styles = Compute(doc);
         Assert.Empty(styles.Diagnostics);
         Assert.Equal(new CssKeyword("decimal"), Child(styles, doc)["list-style-type"]);
-        Assert.Equal(new CssKeyword("disc"), styles.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("circle"), styles.Styles[doc.GetElementById("inner")!]["list-style-type"]);
         var overridden = Compute(doc, new CssStyleSource("#nested{list-style-type:decimal}"));
         Assert.Empty(overridden.Diagnostics);
         Assert.Equal(new CssKeyword("decimal"), overridden.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+    }
+
+    [Theory]
+    [InlineData("<ul id=target><li>x</li></ul>", "disc")]
+    [InlineData("<ul><li>x</li></ul><ul id=target><li>y</li></ul>", "disc")]
+    [InlineData("<div><ul id=target><li>x</li></ul></div>", "disc")]
+    [InlineData("<ul><li><ul id=target><li>x</li></ul></li></ul>", "circle")]
+    [InlineData("<ol><li><div><ul id=target><li>x</li></ul></div></li></ol>", "circle")]
+    [InlineData("<ul><li><ul><li><ul id=target><li>x</li></ul></li></ul></li></ul>", "square")]
+    [InlineData("<ol><li><ol><li><ul id=target><li>x</li></ul></li></ol></li></ol>", "square")]
+    [InlineData("<ul><li><ul><li><ul><li><ul id=target><li>x</li></ul></li></ul></li></ul></li></ul>", "square")]
+    [InlineData("<ul><li><ul><li><ol id=target><li>x</li></ol></li></ul></li></ul>", "decimal")]
+    [InlineData("<menu id=target><li>x</li></menu>", "disc")]
+    [InlineData("<dir><ul id=target><li>x</li></ul></dir>", "circle")]
+    [InlineData("<ol><li><menu id=target><li>x</li></menu></li></ol>", "circle")]
+    [InlineData("<menu><ol><li><ul id=target><li>x</li></ul></li></ol></menu>", "square")]
+    public void NestedListMarkerDefaultsFollowHtmlListAncestors(string html, string expected)
+    {
+        var doc = Document(html);
+        var result = Compute(doc);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["list-style-type"]);
+    }
+
+    [Fact]
+    public void NestedListDefaultsRespectAuthorUserAndDisabledUaStyles()
+    {
+        var doc = Document("<ul id=parent><li><ul id=nested><li id=inner>x</li></ul></li></ul>");
+        var overriddenParent = Compute(doc, new CssStyleSource("#parent{list-style:square}"));
+        Assert.Empty(overriddenParent.Diagnostics);
+        Assert.Equal(new CssKeyword("square"), overriddenParent.Styles[doc.GetElementById("parent")!]["list-style-type"]);
+        Assert.Equal(new CssKeyword("circle"), overriddenParent.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+
+        var author = Compute(doc, new CssStyleSource("ul{list-style:none}"));
+        Assert.Empty(author.Diagnostics);
+        Assert.Equal(new CssKeyword("none"), author.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+        var userImportant = Compute(doc, new CssStyleSource("ul{list-style-type:decimal!important}", CssOrigin.User),
+            new CssStyleSource("ul{list-style-type:square!important}"));
+        Assert.Empty(userImportant.Diagnostics);
+        Assert.Equal(new CssKeyword("decimal"), userImportant.Styles[doc.GetElementById("inner")!]["list-style-type"]);
+
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Empty(withoutUa.Diagnostics);
+        Assert.Equal(new CssKeyword("disc"), withoutUa.Styles[doc.GetElementById("inner")!]["list-style-type"]);
     }
 
     [Theory]

@@ -536,8 +536,11 @@ The current engine implements finite static block/inline rendering. Missing esse
   independent numbering, hidden/non-list-items do not count, and marker
   suppression preserves numbering. CSS square and hollow circle markers reuse
   the same bounded outside position and current color as discs, using a filled
-  rectangle or a single clipped, inset outline command respectively; nested UA
-  defaults remain discs. Numbering attributes accept HTML integer
+  rectangle or a single clipped, inset outline command respectively. The
+  HTML UA marker defaults now use circles with one list ancestor and squares
+  with two or more; ordered lists remain decimal, author styles still override
+  UA rules, and `dir`/`menu` participate only in the CSS ancestor rules.
+  Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` attributes except `ol type=1`,
   other marker styles, inside positioning and
@@ -564,6 +567,10 @@ The current engine implements finite static block/inline rendering. Missing esse
   The solution build and all 15,025 solution tests pass locally, with 53 net new
   cases. Solution formatting reports only the three findings reproduced on
   base commit `b47a5a0`; other changed C# files pass separately.
+  The subsequent nested-UA increment changes the earlier all-disc nested
+  default. The solution build and all 15,045 solution tests pass locally;
+  formatting reports only those same three baseline findings, while all
+  C# files changed in this increment pass a targeted format check.
 - Transforms, gradients, rounded borders, stacking contexts, and advanced compositing.
 
 Nonwrapping `white-space:pre/nowrap` now accepts supported Latin/common

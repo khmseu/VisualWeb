@@ -8,6 +8,32 @@ namespace VisualWeb.Engine.Content.Tests;
 public sealed class ContentTests
 {
     [Fact]
+    public void NestedDefaultListMarkersProduceDistinctNativePixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><ul><li><ul><li><ul><li></li></ul></li></ul></li></ul>";
+        CssStyleSource[] styles = [new("*{margin:0;font-size:20px;line-height:20px;color:red}")];
+        var page = OfflinePageRenderer.Render(html, styles, text, fonts, 160, 30, cancellationToken: Cancellation);
+        Assert.Empty(page.Styles.Diagnostics);
+        var disc = Assert.Single(page.DisplayList.Commands.OfType<FillEllipse>());
+        var circle = Assert.Single(page.DisplayList.Commands.OfType<StrokeEllipse>());
+        var square = Assert.Single(page.DisplayList.Commands.OfType<FillRectangle>());
+        Assert.Equal(24, disc.Bounds.X);
+        Assert.Equal(64, circle.Bounds.X);
+        Assert.Equal(104, square.Bounds.X);
+        Assert.Equal(disc.Bounds.Y, circle.Bounds.Y);
+        Assert.Equal(circle.Bounds.Y, square.Bounds.Y);
+        var y = (int)Math.Floor(circle.Bounds.Y + circle.Bounds.Height / 2);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, Pixel(27, y));
+        Assert.Equal(new byte[] { 255, 255, 255, 255 }, Pixel(67, y));
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, Pixel(107, y));
+
+        byte[] Pixel(int x, int row) => page.Frame.Pixels.Span.Slice(row * page.Frame.Stride + x * 4, 4).ToArray();
+    }
+
+    [Fact]
     public void CircleMarkersKeepTransparentCentersAndSurviveRetainedResize()
     {
         using var font = new TextFont(FontPath);

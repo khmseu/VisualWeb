@@ -3213,3 +3213,49 @@ ausschliesslich die drei vor der Aenderung auf `b47a5a0` reproduzierten
 Fehler in `StaticLayout.cs` und `ShellChrome.cs`; die anderen geaenderten
 C#-Dateien bestehen die separate Formatpruefung. Commit, Push und CI sind
 noch nicht erfolgt.
+
+**Commit, Push und CI:** `58afc50` wurde auf `origin/main` gepusht. Der
+Commit-Hook pruefte 21 Dateien ohne Findings.
+[Linux 41186648618](https://github.com/khmseu/VisualWeb/actions/runs/41186648618),
+[Windows 41186648617](https://github.com/khmseu/VisualWeb/actions/runs/41186648617)
+und [CodeQL 41186648345](https://github.com/khmseu/VisualWeb/actions/runs/41186648345)
+bestanden; Linux und Windows umfassten jeweils x64 und ARM64.
+Die vorherige [Linux-Ausfuehrung auf `b47a5a0`](https://github.com/khmseu/VisualWeb/actions/runs/41182521918)
+scheiterte dagegen auf ARM64, weil
+`CanceledInFlightRetainedProcessExchangeDrainsAndKeepsDocumentAndChannel`
+keine erwartete `OperationCanceledException` erhielt. Eine Ursache ist nicht
+nachgewiesen; der aktuelle Lauf bestand, ohne diese vorbestehende Teststelle
+zu aendern.
+
+### KP-095 - UA-Marker fuer verschachtelte Listen
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Trackerprioritaet](../plans/Missing.md#recommended-priority),
+  [HTML-Listen-Rendering](https://html.spec.whatwg.org/multipage/rendering.html#lists),
+  lokaler `html`-Cache, zuletzt geprueft am 2026-10-04, sowie
+  `CssStyleEngine.UserAgentStyleSheet` und vorhandene CSS-/Layouttests.
+
+**Belegte Auswahl fuer Pass 2:** Ungeordnete verschachtelte Listen erhalten
+derzeit stets einen Disc-Marker, obwohl die HTML-UA-Empfehlung bei einer
+Listen-Umgebung `circle` und bei mindestens zwei Listen-Umgebungen `square`
+vorsieht. Beide Formen sind nach KP-094 verfuegbar. Geplant ist ausschliesslich
+die entsprechende endliche UA-Markerregel; geordnete Listen bleiben dezimal,
+Autorenregeln haben weiterhin ihren Cascade-Vorrang, und weder die
+Layoutunterstuetzung fuer `dir`/`menu` noch Legacy-HTML-Attribute werden
+erweitert. Die Default-Aenderung wird durch CSS-, Layout- und Offline-
+Renderingtests explizit geprueft. Implementierung und Validierung sind offen.
+
+**Umsetzung und lokale Pruefung:** Die UA-Regeln waehlen Disc ohne,
+Circle mit einem und Square mit mindestens zwei Listen-Vorfahren. `ol`
+bleibt dezimal; `dir`/`menu` zaehlen fuer CSS, ihre Listen-Layouts und
+Legacy-Typattribute bleiben nicht unterstuetzt. Tests decken gemischte
+Vorfahren, Zwischencontainer, Geschwister, Cascade und deaktiviertes UA-CSS
+ab, ausserdem Layoutgeometrie, native Pixel und Retained Resize in lokalem und
+Prozess-Renderer.
+
+Der Solution-Build, 854 CSS-, 183 Layout- und 32 Content-Tests, zwei
+fokussierte Browserfaelle und alle 15.045 Solution-Tests bestehen. Die
+Solution-Formatpruefung meldet ausschliesslich die drei auf `b47a5a0`
+reproduzierten Baseline-Findings in `StaticLayout.cs` und `ShellChrome.cs`;
+alle geaenderten C#-Dateien bestehen die separate Formatpruefung.
+Commit, Push und CI sind noch offen.

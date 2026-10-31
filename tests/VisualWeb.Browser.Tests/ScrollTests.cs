@@ -55,6 +55,33 @@ public sealed class ScrollTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task NestedDefaultListMarkersSurviveLocalAndProcessRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 10000);
+        const string body = "<ul><li><ul><li><ul><li></li></ul></li></ul></li></ul>";
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        const string explicitMarkers = "ul ul{list-style-type:circle}ul ul ul{list-style-type:square}";
+        var document = Document("<!doctype html><style>" + style + "</style>" + body);
+        var viewport = new PageViewport(160, 30, 1);
+        var actual = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 140 }, Cancellation);
+
+        var reference = Document("<!doctype html><style>" + style + explicitMarkers + "</style>" + body);
+        var expected = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var expectedResized = await renderer.RenderRetainedAsync(reference, viewport with { Width = 140 }, Cancellation);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+        Assert.Equal(expected.ScrollHeight, actual.ScrollHeight);
+        Assert.Contains(actual.Frame.Pixels.Span.ToArray(), value => value == 0);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task UnorderedListMarkersSurviveLocalAndProcessRetainedRepaint(bool process)
     {
         using IPageRenderer renderer = process

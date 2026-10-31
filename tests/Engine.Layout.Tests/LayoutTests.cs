@@ -126,10 +126,10 @@ public sealed class LayoutTests
         Assert.Equal(10, second.Content.Height);
 
         const string nestedHtml = "<ul id=outer-list><li id=outer><ul id=inner-list><li id=inner></li></ul></li></ul>";
-        var nestedDefault = UnorderedList(nestedHtml, "#outer-list{list-style:circle}").Root!;
-        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nestedDefault, "outer").CircleMarker);
-        Assert.Null(Find(nestedDefault, "inner").CircleMarker);
-        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nestedDefault, "inner").DiscMarker);
+        var nestedDefault = UnorderedList(nestedHtml, "#outer-list{list-style:square}").Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nestedDefault, "outer").SquareMarker);
+        Assert.Null(Find(nestedDefault, "inner").DiscMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nestedDefault, "inner").CircleMarker);
         var nestedCircle = UnorderedList(nestedHtml, "#outer-list,#inner-list{list-style-type:circle}").Root!;
         Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nestedCircle, "outer").CircleMarker);
         Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nestedCircle, "inner").CircleMarker);
@@ -174,11 +174,24 @@ public sealed class LayoutTests
     {
         var nested = UnorderedList("<ul><li id=outer><ul><li id=inner></li></ul></li></ul>").Root!;
         Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(nested, "outer").DiscMarker);
-        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nested, "inner").DiscMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(nested, "inner").CircleMarker);
         Assert.Equal(10, Find(nested, "inner").Content.Height);
         var wrapped = Find(UnorderedList("<ul><li id=x>a b</li></ul>", width: 50).Root!, "x");
         Assert.Equal(2, wrapped.Lines.Count);
         Assert.Equal(new LayoutRect(32, 3, 3, 3), wrapped.DiscMarker);
+    }
+
+    [Fact]
+    public void NestedDefaultMarkersUseDiscCircleThenSquareWithoutChangingGeometry()
+    {
+        var root = UnorderedList(
+            "<ul><li id=a><ul><li id=b><ul><li id=c><ul><li id=d></li></ul></li></ul></li></ul></li></ul>",
+            width: 200).Root!;
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(root, "a").DiscMarker);
+        Assert.Equal(new LayoutRect(72, 3, 3, 3), Find(root, "b").CircleMarker);
+        Assert.Equal(new LayoutRect(112, 3, 3, 3), Find(root, "c").SquareMarker);
+        Assert.Equal(new LayoutRect(152, 3, 3, 3), Find(root, "d").SquareMarker);
+        Assert.Equal(10, root.Content.Height);
     }
 
     [Fact]
@@ -197,6 +210,8 @@ public sealed class LayoutTests
     [InlineData("<ul type=circle><li>x</li></ul>")]
     [InlineData("<ol type=circle><li>x</li></ol>")]
     [InlineData("<ul><li type=circle>x</li></ul>")]
+    [InlineData("<dir><li>x</li></dir>")]
+    [InlineData("<menu><li>x</li></menu>")]
     [InlineData("<li>x</li>")]
     public void UnimplementedListKindsRemainExplicitFailures(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
@@ -283,14 +298,14 @@ public sealed class LayoutTests
     public void NestedListCountersAreIndependentAndDecimalOverridesWorkOnUnorderedLists()
     {
         var root = UnorderedList("""
-            <ol start=5><li id=a><ul><li id=disc></li></ul>
+            <ol start=5><li id=a><ul><li id=circle></li></ul>
             <ol reversed><li id=nested></li><li></li></ol></li><li id=b></li></ol>
             <ul id=decimal><li value=8 id=c></li><li id=d></li></ul>
             """, "#decimal{list-style-type:decimal}").Root!;
         Assert.Equal("5.", Find(root, "a").TextMarker!.Run.Text);
         Assert.Equal("6.", Find(root, "b").TextMarker!.Run.Text);
         Assert.Equal("2.", Find(root, "nested").TextMarker!.Run.Text);
-        Assert.NotNull(Find(root, "disc").DiscMarker);
+        Assert.NotNull(Find(root, "circle").CircleMarker);
         Assert.Equal("8.", Find(root, "c").TextMarker!.Run.Text);
         Assert.Equal("9.", Find(root, "d").TextMarker!.Run.Text);
     }
