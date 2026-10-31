@@ -22,6 +22,48 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task LinkQueriesAndStylesObserveLifecycleMutationsOnRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title>
+            <style>*{margin:0}a{display:block;width:80px;height:20px;background:red}:link{background:blue}</style>
+            <a id=first href="https://example.test/one">First</a><a id=second>Second</a>
+            <script>
+            let first=document.getElementById('first'),second=document.getElementById('second');
+            let before=document.querySelectorAll(':link');
+            document.addEventListener('DOMContentLoaded',()=>{
+                first.removeAttribute('href');second.setAttribute('href','https://example.test/next');
+                if(before.length!==1||before[0]!==first||first.matches(':link')
+                    ||document.querySelector(':link')!==second||!second.matches(':link'))
+                    throw Error('link mutation or snapshot');
+                document.title='link-live';
+            });
+            </script>
+            """);
+        var viewport = new PageViewport(100, 50, 1);
+        var rendered = await renderer.RenderAsync(page, viewport, Cancellation);
+        Assert.Equal("link-live", rendered.Title);
+        Assert.Equal("https://example.test/next", Assert.Single(rendered.LinkTargets).Url);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 },
+            rendered.Frame.Pixels.Span.Slice(5 * rendered.Frame.Stride + 70 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 },
+            rendered.Frame.Pixels.Span.Slice(25 * rendered.Frame.Stride + 70 * 4, 4).ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var retained = await renderer.RenderRetainedAsync(page, new(90, 50, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal("https://example.test/next", Assert.Single(retained.LinkTargets).Url);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 },
+            retained.Frame.Pixels.Span.Slice(5 * retained.Frame.Stride + 70 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 255, 0, 0, 255 },
+            retained.Frame.Pixels.Span.Slice(25 * retained.Frame.Stride + 70 * 4, 4).ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task DoctypeMetadataGuidesLifecyclePaintWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

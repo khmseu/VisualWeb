@@ -189,6 +189,84 @@ public sealed class LinkTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task UnvisitedLinkStylesRenderAndRetainLinkGeometry(bool process)
+    {
+        using IPageRenderer renderer = process ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var document = Document("""
+            <!doctype html><style>
+            *{margin:0}a{display:block;width:80px;height:20px;background:red}:link{background:blue}
+            </style><a href='/next'>Visit</a><a>Plain</a>
+            """);
+        var page = await renderer.RenderAsync(document, new(100, 45, 1), Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        Assert.Equal("https://example.com/next", Assert.Single(page.LinkTargets).Url);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 },
+            page.Frame.Pixels.Span.Slice(5 * page.Frame.Stride + 70 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 0, 0, 255, 255 },
+            page.Frame.Pixels.Span.Slice(25 * page.Frame.Stride + 70 * 4, 4).ToArray());
+        var resized = await renderer.RenderRetainedAsync(document, new(90, 45, 1), Cancellation);
+        Assert.Equal("https://example.com/next", Assert.Single(resized.LinkTargets).Url);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 },
+            resized.Frame.Pixels.Span.Slice(5 * resized.Frame.Stride + 70 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 0, 0, 255, 255 },
+            resized.Frame.Pixels.Span.Slice(25 * resized.Frame.Stride + 70 * 4, 4).ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LinkStylesDoNotExposeFragmentHistory(bool process)
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(100, 50, 1);
+        controller.Navigate(tab.Id, "https://example.com/final/index.html");
+        source.Requests[0].Completion.SetResult(Document("""
+            <!doctype html><style>
+            *{margin:0}a{display:block;width:80px;height:20px;background:red}:link{background:blue}
+            #spacer{height:80px}
+            </style><a href='#end'>Visit</a><div id=spacer></div><div id=end>End</div>
+            """));
+        PumpUntil(() => controller.Page(tab.Id) is not null);
+        var first = controller.Page(tab.Id)!;
+        AssertBlue(first);
+        var link = Assert.Single(first.LinkTargets);
+        Assert.True(controller.ActivateLink(tab.Id, link.X + 1, link.Y + 1, viewport));
+        Assert.EndsWith("#end", tab.History.Current!.Href, StringComparison.Ordinal);
+        PumpUntil(() => !ReferenceEquals(first, controller.Page(tab.Id)));
+        var visited = controller.Page(tab.Id)!;
+        Assert.True(controller.ScrollY(tab.Id) > 0);
+        controller.Back(tab.Id);
+        PumpUntil(() => !ReferenceEquals(visited, controller.Page(tab.Id)));
+        Assert.Equal(0, controller.ScrollY(tab.Id));
+        AssertBlue(controller.Page(tab.Id)!);
+        Assert.Single(source.Requests);
+
+        static void AssertBlue(BrowserPage page) =>
+            Assert.Equal(new byte[] { 255, 0, 0, 255 },
+                page.Frame.Pixels.Span.Slice(5 * page.Frame.Stride + 70 * 4, 4).ToArray());
+
+        void PumpUntil(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do
+            {
+                controller.Pump(_ => viewport);
+                if (condition()) { return; }
+                Thread.Sleep(5);
+            } while (DateTime.UtcNow < deadline);
+            Assert.Null(tab.Error);
+            Assert.True(condition());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void KeyboardTraversalScrollsOffscreenTextLinksIntoView(bool process)
     {
         var source = new ControllerTests.Source();

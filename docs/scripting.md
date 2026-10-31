@@ -882,8 +882,9 @@ functional selectors. Invalid selector syntax/tokenization throws a native
 JavaScript SyntaxError, not yet a DOMException. Unsupported features fail
 explicitly with TypeError instead of silently returning no matches: dynamic
 state, namespaces, `:has` and pseudo-elements remain
-deferred. `:any-link` reflects current HTML `a`/`area` `href` presence without
-access to visited state; `:link` and `:visited` remain unsupported. `:scope`
+deferred. `:any-link` and `:link` reflect current HTML `a`/`area` `href`
+presence without access to visited state; all links are treated as unvisited
+and `:visited` remains unsupported. `:scope`
 is supported as described below. Rejecting pseudo-elements
 rather than returning an empty list is an
 intentional finite-subset deviation. No selector cache, live collections,

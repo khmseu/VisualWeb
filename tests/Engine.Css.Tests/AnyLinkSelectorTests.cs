@@ -132,7 +132,6 @@ public sealed class AnyLinkSelectorTests
     }
 
     [Theory]
-    [InlineData(":link")]
     [InlineData(":visited")]
     [InlineData(":any-link()")]
     public void VisitedStateAndFunctionalSyntaxRemainUnsupported(string selector)

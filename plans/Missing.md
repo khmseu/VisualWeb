@@ -485,10 +485,20 @@ locally. Formatting reports only the three findings reproduced on base `ad0bca6`
 The static `:any-link` pseudo-class matches HTML `a` and `area` elements with
 an `href` attribute in stylesheets and DOM queries. It follows current attribute
 presence, including empty or non-navigable values, without changing navigation
-policy or exposing history. `:link` and `:visited` remain unsupported. See the
+policy or exposing history. See the
 [static selector scope](../docs/css.md#static-selectors). Its 28 regressions,
 the solution build and all 14,789 solution tests pass locally; local V8 smoke
 passes. Formatting reports only the three findings reproduced on base `ad0bca6`.
+
+The static `:link` pseudo-class now matches the same HTML hyperlinks, treating
+all links as unvisited without consulting browsing history. This
+privacy-preserving policy follows Selectors Level 4; `:visited` remains an
+explicit unsupported selector, including in mixed selector lists. CSS cascade,
+live DOM queries and retained page rendering share the existing matcher.
+The increment adds 30 regression cases and removes two obsolete unsupported-selector cases.
+The solution build, local V8 smoke, all 816 CSS, 352 Scripting, 30 Content,
+1,212 Browser and 14,972 solution tests pass locally. Formatting reports only
+the three findings reproduced on base `ad0bca6`; changed C# files pass separately.
 
 The screen-only CSS engine now evaluates nested `@media` groups with an empty
 or comma-separated `all`/`screen`/`print` list. Active groups retain their
@@ -513,7 +523,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 
 - Flexbox, grid, broader tables, floats and positioning; margin collapse is implemented
   for adjacent block siblings and eligible parent/first-or-last block-child edges.
-- Conditional/feature-based media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope`, `:any-link` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, visited/dynamic state, namespaces and pseudo-elements remain missing.)
+- Conditional/feature-based media queries, custom properties, calculations, modern selectors, and broader CSS properties. (`:scope`, `:any-link`, `:link` and filtered `:nth-child(An+B of S)`/`:nth-last-child(An+B of S)` are supported for stylesheets and DOM queries; `:has`, visited/dynamic state, namespaces and pseudo-elements remain missing.)
 - Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.

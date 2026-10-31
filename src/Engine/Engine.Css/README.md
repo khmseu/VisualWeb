@@ -6,8 +6,9 @@ inheritance, CSS-wide keywords and initial block/inline properties are supported
 Selectors include `:scope` with explicit immutable `CssSelectorScope` roots
 (Element, Document, DocumentFragment virtual root); stylesheets default to `:root`.
 `:any-link` matches HTML `a` and `area` elements with an `href` attribute,
-regardless of its value or navigation policy. `:link` and `:visited` remain
-unsupported without visited-state semantics.
+regardless of its value or navigation policy. `:link` matches the same elements,
+treating every link as unvisited without history access; `:visited` remains
+explicitly unsupported.
 `:nth-child(An+B of S)` and `:nth-last-child(An+B of S)` support strict complex
 selector lists, filtered inclusive element siblings and maximum argument
 specificity, sharing the original scope and matching budgets.

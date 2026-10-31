@@ -115,6 +115,11 @@ Supported:
   matches HTML `a` and `area` elements with an `href` attribute, including
   empty or non-navigable values. Matching follows current attribute presence,
   independently of history and navigation authorization.
+- [`:link`](https://drafts.csswg.org/selectors-4/#link-pseudo) matches the
+  same hyperlinks as `:any-link`, treating all links as unvisited. No browsing
+  history is supplied to the matcher. This privacy-preserving policy is
+  described in Selectors Level 4 (local ID `selectors`); `:visited` remains
+  explicitly unsupported, including in selector lists containing `:link`.
 - [`:scope`](https://drafts.csswg.org/selectors-4/#the-scope-pseudo) with
   pseudo-class specificity `(0,1,0)`. Without a scoping root (stylesheets and
   scope-less matching) it equals `:root`. An Element scope matches that element;
@@ -147,7 +152,7 @@ Selectors 2/3 and currently deployed browser behavior; the test states the
 chosen standard explicitly.
 
 Unsupported: namespaces/column combinators, pseudo-elements, `:has`, `of` clauses
-on `:nth-of-type`/`:nth-last-of-type`, visited-state selectors `:link`/`:visited`,
+on `:nth-of-type`/`:nth-last-of-type`, the visited-state selector `:visited`,
 dynamic/interactive pseudo-classes and other pseudo-classes
 not listed above. No selector silently approximates these features.
 

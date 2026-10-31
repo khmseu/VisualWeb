@@ -63,15 +63,17 @@ public sealed class ContentTests
         Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
     }
 
-    [Fact]
-    public void AnyLinkStylesReachNativePixelsAndRecomputeAfterHrefRemoval()
+    [Theory]
+    [InlineData(":any-link")]
+    [InlineData(":link")]
+    public void LinkStylesReachNativePixelsAndRecomputeAfterHrefRemoval(string selector)
     {
         using var font = new TextFont(FontPath);
         var text = new FontSet(); text.Register("serif", font);
         using var fonts = new PaintFontRegistry(); fonts.Register(font);
         const string html = "<!doctype html><a id=live href>Link</a><a>Plain</a>";
         var actualStyles = new[] { new CssStyleSource(
-            "*{margin:0}a{display:block;width:80px;height:20px;background:red}:any-link{background:blue}") };
+            "*{margin:0}a{display:block;width:80px;height:20px;background:red}" + selector + "{background:blue}") };
         var equivalentStyles = new[] { new CssStyleSource(
             "*{margin:0}a{display:block;width:80px;height:20px;background:red}a[href]{background:blue}") };
         var actual = OfflinePageRenderer.Render(html, actualStyles, text, fonts, 100, 45, cancellationToken: Cancellation);

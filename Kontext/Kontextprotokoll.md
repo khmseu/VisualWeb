@@ -3096,4 +3096,44 @@ Prozess-Rendererfall bestehen. Der Build sowie alle 171 Layout-, 29 Content-,
 1.206 Browser- und 14.944 Solution-Tests bestehen, darunter 33 neue
 Regressionen. Die Solution-Formatpruefung meldet nur die drei auf `ad0bca6`
 reproduzierten Baseline-Findings; geaenderte Testdateien bestehen separat.
-Commit, Push und CI stehen noch aus.
+
+**Commit/Push:** `72f3d45` ist auf `origin/main`; der Commit-Hook pruefte
+neun Dateien ohne Findings.
+[Linux 41164586900](https://github.com/khmseu/VisualWeb/actions/runs/41164586900),
+[Windows 41164586890](https://github.com/khmseu/VisualWeb/actions/runs/41164586890)
+und [CodeQL 41164586771](https://github.com/khmseu/VisualWeb/actions/runs/41164586771)
+bestanden; Linux und Windows umfassen jeweils x64 und ARM64.
+
+### KP-092 - Datenschutzfreundlicher Link-Selektor
+
+- Dokumentiert am: 2026-10-31, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaeten](../plans/Missing.md#recommended-priority),
+  [CSS-Selektoren](../docs/css.md#static-selectors), `CssSelectorList`,
+  lokaler `selectors`-Cache, zuletzt geprueft am 2026-10-04.
+
+**Belegt:** Der gemeinsame statische Matcher akzeptierte `:any-link` fuer
+HTML-`a` und `area` mit `href`, lehnte aber `:link` und `:visited` ab.
+Selectors Level 4 nennt als Datenschutzansatz, alle Links als unbesucht zu
+behandeln. Engine.Css erhaelt keinen Besuchsstatus.
+
+**Auswahl fuer Pass 10:** `:link` soll dieselbe aktuelle `href`-Pruefung wie
+`:any-link` teilen, unabhaengig von History und Navigationsberechtigung.
+`:visited` bleibt explizit nicht unterstuetzt; es wird kein Besuchsstatus
+eingefuehrt oder zwischen Prozessen weitergegeben. Testen sollen CSS-Cascade,
+Mutation, begrenzte DOM-Abfragen sowie Content- und Browser-Rendering.
+
+**Umsetzung, fokussiert geprueft:** Zuvor scheiterten 21 neue CSS-Faelle.
+Der gemeinsame Matcher behandelt `:link` und `:any-link` gleich; `:visited`
+und `:link()` bleiben diagnostiziert. Die fokussierten Tests fuer CSS,
+Scripting, native Pixel und lokale/Prozess-Renderer bestehen, einschliesslich
+Lebenszyklusmutation, Retained Resize und Fragment-History. Ein erster lokaler
+Lifecycle-Test ueberschritt das zu klein konfigurierte Test-Rasterbudget;
+nach angemessener Testkonfiguration bestanden beide Renderer. Ein erster
+History-Test erwartete einen Repaint ohne Scroll-Aenderung; mit tatsaechlichem
+Fragment-Scrollen und Rueckkehr bestehen beide Renderer. Produktgrenzen
+wurden nicht geaendert. Der Build, lokale V8-Smoke, alle 816 CSS-,
+352 Scripting-, 30 Content-, 1.212 Browser- und 14.972 Solution-Tests bestehen.
+30 neue Testfaelle ersetzen zwei alte Unsupported-Faelle. Die Solution-
+Formatpruefung meldet nur die drei auf `ad0bca6` reproduzierten Baseline-
+Findings; geaenderte C#-Dateien bestehen separat. Commit, Push und CI stehen
+noch aus.

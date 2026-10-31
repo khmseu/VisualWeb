@@ -223,7 +223,7 @@ die separate Pruefung. Commit `137e779` ist gepusht; Linux, Windows und CodeQL
 bestehen
 ([KP-090](./Kontextprotokoll.md#kp-090---quadratische-css-listenmarker)).
 
-**Pass 9 (lokal validiert):** Im umbruchfaehigen Text blockierten zuvor auch
+**Pass 9 (abgeschlossen):** Im umbruchfaehigen Text blockierten zuvor auch
 gewoehnliche ASCII-Woerter wie `and/or`. CSS Text empfiehlt fuer Browser-
 Interoperabilitaet keinen Umbruch zwischen Solidus und folgendem Buchstaben;
 ein lokaler Chromium-Vergleich bestaetigt dies fuer untersuchte Beispiele.
@@ -233,8 +233,23 @@ knotenuebergreifende Faelle bleiben ausgeschlossen. Der Build, 171 Layout-,
 29 Content-, 1.206 Browser- und alle 14.944 Solution-Tests bestehen,
 darunter 33 neue Regressionen. Die Formatpruefung meldet nur drei auf
 `ad0bca6` reproduzierte Baseline-Findings; die geaenderten Testdateien bestehen
-separat. Commit, Push und CI stehen noch aus
+separat. Commit `72f3d45` ist gepusht; Linux, Windows x64/ARM64 und CodeQL
+bestehen
 ([KP-091](./Kontextprotokoll.md#kp-091---ungebrochener-ascii-solidus)).
+
+**Pass 10 (lokal validiert):** Als naechster einfacher CSS-Blocker wird `:link`
+bearbeitet. Der gemeinsame Matcher unterstuetzte bereits `:any-link`, lehnte
+`:link` aber zuvor explizit ab. Da kein Besuchsstatus an Engine.Css uebermittelt
+wird, erlaubt die lokale Selectors-Referenz aus Datenschutzgruenden, alle
+Links als unbesucht zu behandeln. `:link` teilt die bestehende HTML-`a`-/
+`area`-`href`-Pruefung; `:visited` bleibt ausdruecklich nicht unterstuetzt.
+Fokussierte Tests einschliesslich Fragment-History und Lifecycle-Mutation
+bestehen. Der Build, lokale V8-Smoke, alle 816 CSS-, 352 Scripting-,
+30 Content-, 1.212 Browser- und 14.972 Solution-Tests bestehen; 30 neue
+Faelle ersetzen zwei alte Unsupported-Faelle. Die Formatpruefung meldet nur
+die drei auf `ad0bca6` reproduzierten Baseline-Findings; geaenderte C#-Dateien
+bestehen separat. Commit, Push und CI stehen noch aus
+([KP-092](./Kontextprotokoll.md#kp-092---datenschutzfreundlicher-link-selektor)).
 
 **Abgeschlossener Implementierungsauftrag (2026-10-28):** Zehn getrennt validierte,
 committete und gepushte Passen mit CI-Pruefung sind angefragt
