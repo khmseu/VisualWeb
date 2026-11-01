@@ -482,6 +482,15 @@ CSS, HTML, layout, native-content and local/process browser tests pass;
 the solution build, all 15,943 solution tests, format verification and local
 V8 smoke also pass. Broader whitespace algorithms remain unsupported.
 
+HTML `search` now receives the standard UA `display:block` default through
+the normal cascade. The existing parser closes an open paragraph at its start,
+and ordinary block and form descendants use the existing layout path instead
+of being rejected as block descendants of an inline. Focused CSS, layout,
+native-content and local/process browser tests pass, including process-backed
+GET submission and exact matched-selector limits. The solution build, all 15,953
+solution tests, format verification and local V8 smoke also pass. This adds no
+search widget or new form, accessibility or layout algorithm.
+
 Standard named colors now cover all 148 opaque CSS Color 4 names, rather than
 only the 16 basic colors plus orange/rebeccapurple. Common ordinary stylesheet
 values such as lightgray, whitesmoke and darkslategray no longer reject a page.

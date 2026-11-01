@@ -4165,3 +4165,220 @@ CI-Pruefung stehen noch aus.
 Marginmessungen sowie der positive `listing`-Skriptfall im Volltest enthalten.
 Zusammen mit Build, Formatpruefung und lokalem V8-Smoke ist Pass 6 lokal
 geprueft; Commit, Push und CI stehen noch aus.
+
+### KP-127 - Rohtext-Commit und CI-Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Commit `e4d0b79c802f54c46fe1dcb4e9d072430a2d5cd9`,
+  erfolgreicher Push und GitHub-Actions-Laufliste fuer exakt diesen Commit.
+- Bezug: KP-126.
+
+**Status (belegt):** Pass 6 ist als
+`feat(css): add legacy preformatted HTML defaults` committed und gepusht.
+Der Commit-Hook formatierte das Kontextprotokoll und meldete keine Probleme.
+[Linux](https://github.com/khmseu/VisualWeb/actions/runs/41260543324) und
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41260543078)
+sind gestartet, [Windows](https://github.com/khmseu/VisualWeb/actions/runs/41260543198)
+ist eingereiht. Ergebnisse und damit der sechste CI-Abschluss stehen noch aus.
+
+### KP-128 - Rohtext-CodeQL erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: erfolgreicher [CodeQL-Lauf](https://github.com/khmseu/VisualWeb/actions/runs/41260543078)
+  fuer Commit `e4d0b79`.
+- Bezug: KP-127.
+
+**Status (belegt):** CodeQL besteht fuer C#, Actions und JavaScript/TypeScript.
+Der Lauf meldet die angekuendigte `ubuntu-latest`-Umstellung als Warnung.
+Linux- und Windows-CI stehen noch aus.
+
+### KP-129 - Rohtext-Linux-CI erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: erfolgreicher [Linux-Lauf](https://github.com/khmseu/VisualWeb/actions/runs/41260543324)
+  fuer Commit `e4d0b79`.
+- Bezug: KP-127 und KP-128.
+
+**Status (belegt):** Linux x64 und arm64 bestehen mit Build, Solution-Tests,
+Confinement- und Ressourcen-Smokes, lokalem und confined V8-Smoke sowie
+Browser-Smokes. CodeQL besteht ebenfalls; Windows-CI steht noch aus.
+
+### KP-130 - Windows-x64-Testfehler
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: fehlgeschlagener erster Versuch des
+  [Windows-Laufs](https://github.com/khmseu/VisualWeb/actions/runs/41260543198),
+  [Shell-Test](../tests/VisualWeb.Browser.Tests/ShellTests.cs) und
+  [Eingabezustand](../src/Apps/VisualWeb.Browser/DevelopmentShell.cs);
+  Baseline ist Commit `37dc296`.
+- Bezug: KP-127 bis KP-129.
+
+**Befund (belegt):** Windows arm64 bestand; Windows x64 scheiterte nach 30s in
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`.
+Die Diagnose zeigt mehrfach wiederholte Requests und eine ausstehende
+Navigationsbestaetigung; nachfolgende x64-Smokes wurden uebersprungen.
+Weder der betroffene Test noch der Browser-Code wurden in Pass 6 geaendert.
+Der erste Windows-Lauf der Baseline war erfolgreich.
+
+**Einordnung (Ableitung, noch nicht bewiesen):** Der Test sendet wiederholt
+Return, auch ohne ausstehende Bestaetigung; das kann bei fokussiertem Link
+erneute Navigationen ausloesen. Ob der beobachtete Fehler durch diesen
+Timingpfad oder die neue Aenderung ausgeloest wurde, ist offen.
+Ein zweiter Versuch des aktuellen Windows-Laufs und ein wiederholter
+[Baseline-x64-Lauf](https://github.com/khmseu/VisualWeb/actions/runs/41254701319)
+wurden gestartet. Pass 6 bleibt bis zur Klaerung offen.
+
+### KP-131 - Windows-Wiederholungen erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: zweiter Versuch des
+  [aktuellen Windows-Laufs](https://github.com/khmseu/VisualWeb/actions/runs/41260543198)
+  fuer `e4d0b79` und des
+  [Baseline-Laufs](https://github.com/khmseu/VisualWeb/actions/runs/41254701319)
+  fuer `37dc296`; GitHub-Actions-API mit exakter Commit-ID und Jobschritten.
+- Bezug: KP-130.
+
+**Status (belegt):** Beide Wiederholungen bestehen auf Windows x64;
+fuer den aktuellen Commit bestehen auch arm64, native Sandbox-/V8-Smokes,
+Solution-Tests und die uebrigen Browser-Smokes. Linux und CodeQL bestehen
+ebenfalls. Der unveraenderte Baseline-Test scheiterte in dieser Wiederholung
+nicht, daher ist die Ursache des ersten Fehlers nicht durch diesen Lauf
+bewiesen. Ein gezielter Versuch mit verzoegertem Testtransport soll den
+vermuteten Timingpfad auf dem Baseline-Stand pruefen; dabei eingefuegte
+Testinstrumentierung darf nicht im Arbeitsstand verbleiben.
+
+### KP-132 - Baseline-Timingversuch vorbereitet
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: temporaerer Arbeitsstand und Diff gegen `37dc296`.
+- Bezug: KP-130 und KP-131.
+
+**Versuchsaufbau (belegt):** Fuer einen begrenzten lokalen Reproduktionsversuch
+entspricht das UA-Stylesheet temporaer dem Baseline-Commit. Im unveraenderten
+Shell-Test ist lediglich vor dem Einreihen des ersten HTTPS-Requests eine
+Transportverzoegerung von 100ms eingefuegt; der Diff dieser zwei Dateien gegen
+die Baseline zeigt nur diese Instrumentierung. Der Test soll damit den
+vermuteten Enter-/Navigations-Timingpfad provozieren. Vor weiteren Arbeiten
+muessen die drei UA-Selektorgruppen auf Commit `e4d0b79` zurueckgestellt,
+die Testverzoegerung entfernt und beide Dateien gegen diesen Commit geprueft
+werden. Ein Ergebnis liegt noch nicht vor.
+
+### KP-133 - Baseline-Timingversuch beendet
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: fokussierter lokaler Release-Test mit dem in KP-132 beschriebenen
+  Baseline-Stylesheet und kuenstlicher 100ms-Transportverzoegerung.
+- Bezug: KP-130 bis KP-132.
+
+**Ergebnis (belegt):** Der instrumentierte Baseline-Test scheiterte nach
+35 Sekunden mit `Resource load exceeded its deadline`. Er zeigte dabei nicht
+die mehrfachen Requests des urspruenglichen Windows-Fehlers. Der Versuch
+belegt daher einen unter kuenstlicher Verzoegerung fehlschlagenden
+Baseline-Test, aber nicht die Ursache oder denselben Mechanismus des
+Windows-Timeouts. Beide temporaer geaenderten Codedateien wurden wieder auf
+Commit `e4d0b79` gesetzt und durch einen leeren Diff geprueft. Ein normaler
+lokaler Release-Test nach dem Ruecksetzen steht noch aus.
+
+### KP-134 - Pass 6 CI-gruen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erfolgreicher unveraenderter fokussierter lokaler Release-Test
+  nach Ruecknahme der Instrumentierung und GitHub-Actions-Ergebnisse fuer
+  Commit `e4d0b79` aus KP-129 und KP-131.
+- Bezug: KP-130 bis KP-133.
+
+**Status (belegt):** Der unveraenderte Shell-Test besteht lokal nach erneutem
+Release-Build. Linux, Windows und CodeQL bestehen fuer den sechsten Commit;
+Windows x64 bestand im zweiten Versuch nach dem in KP-130 dokumentierten
+ersten Timeout. Der kuenstlich verzoegerte Baseline-Versuch hatte ein anderes
+Fehlerbild; die genaue Ursache des urspruenglichen Windows-Fehlers bleibt
+offen und wird nicht als behoben behauptet. Sechs von zehn angeforderten
+Inkrementen sind committed, gepusht und CI-gruen; als Naechstes ist anhand
+des Trackers das siebte zu bestimmen.
+
+### KP-135 - Search-Blockdefault ausgewaehlt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [HTML-Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs),
+  [Inline-Layoutgrenze](../src/Engine/Engine.Layout/StaticLayout.cs) und
+  gecachter HTML-Standard `#flow-content-3`; `html` und `css-display`
+  wurden zuletzt am 2026-10-04 geprueft und sind noch innerhalb von 30 Tagen.
+- Bezug: KP-134.
+
+**Auswahl (Ableitung):** HTML `search` ist im Parser bereits ein Blockstart,
+bekommt aber im UA-Stylesheet kein `display:block`. Ein `search` mit
+Block- oder Formularnachkommen kann deshalb an der vorhandenen expliziten
+Inline-Layoutgrenze scheitern. Der HTML-Standard fordert die Blockdarstellung.
+Pass 7 soll sie durch die normale Cascade ergaenzen und Parser, CSS,
+Blocklayout, Formulare und lokales/Prozess-Rendering gezielt pruefen. Keine
+neuen Formular-, Accessibility- oder Layoutalgorithmen werden daraus
+abgeleitet. Umsetzung, Review, Tests, Commit und CI stehen aus.
+
+### KP-136 - Search-Blockdefault implementiert
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs),
+  [CSS-Tests](../tests/Engine.Css.Tests/SearchDefaultsTests.cs),
+  [Layout-Tests](../tests/Engine.Layout.Tests/SearchDefaultsTests.cs),
+  [Content-Tests](../tests/Engine.Content.Tests/SearchDefaultsTests.cs),
+  [Browser-Tests](../tests/VisualWeb.Browser.Tests/SearchDefaultsTests.cs)
+  und Implementierungsbericht dieser Sitzung.
+- Bezug: KP-135.
+
+**Umsetzung (belegt):** `search` steht in der bestehenden UA-Blockregel;
+Parser-, Formular- und Layoutalgorithmen wurden nicht geaendert. CSS-, Layout-,
+native Content- und lokale/Prozess-Browser-Regressionen wurden vor der
+Implementierung rot und danach gruen ausgefuehrt. Die festen globalen
+CSS-Matchinggrenzen erhoehen sich bei vier Elementen um acht Operationen.
+CSS (1.011), Layout (776) und Content (73) bestehen vollstaendig;
+33 fokussierte Browserfaelle, Solution-Build, Format und lokaler V8-Smoke
+bestehen laut Bericht.
+
+**Review (belegt):** Prozessgerendertes Formular-Metadaten- und Resize-Verhalten
+ist getestet; die GET-Absendung wurde bisher nur lokal durch den Controller
+geprueft. Eine Prozess-GET-Regression, ein direkter Standardanker in der
+oeffentlichen XML-Dokumentation und ein exakter Matchingfall fuer `search`
+werden ergaenzt. Abschliessender Volltest, Commit und CI stehen aus.
+
+### KP-137 - Search-Review ergaenzt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [CSS-Regressionen](../tests/Engine.Css.Tests/SearchDefaultsTests.cs),
+  [Formular-Regressionen](../tests/VisualWeb.Browser.Tests/FormTests.cs),
+  [UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs) und
+  Implementierungsbericht dieser Sitzung.
+- Bezug: KP-136.
+
+**Review-Folge (belegt):** Die Formular-Regression prueft nun lokale und
+Prozessrenderer durch `BrowserController` bis zum kodierten GET-Request und
+abgeschlossenen Navigationscommit. Der passende HTML-Standardanker steht in
+der oeffentlichen XML-Dokumentation und im CSS-Guide. Ein eigener
+`search`-Matchingtest prueft feste exakte und um eins unterschrittene
+Selektor-/Assignmentgrenzen sowie Cancellation. 39 fokussierte CSS- und
+vier fokussierte Browserfaelle sowie die Formatpruefung bestehen laut
+Bericht; der Diff wurde geprueft. Abschliessender Solution-Build, Volltest,
+Commit und CI stehen aus.
+
+### KP-138 - Search-Volltest gestartet
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: erfolgreicher `dotnet build VisualWeb.slnx` und gestarteter
+  serieller `dotnet test VisualWeb.slnx --no-build -m:1` in dieser Sitzung.
+- Bezug: KP-137.
+
+**Status (belegt):** Der Solution-Build nach den Review-Ergaenzungen besteht
+ohne Warnungen oder Fehler. Der abschliessende Volltest laeuft; Ergebnis,
+Commit, Push und CI stehen noch aus.
+
+### KP-139 - Search-Volltest bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: abgeschlossener `dotnet test VisualWeb.slnx --no-build -m:1`
+  in dieser Sitzung; alle 14 Testprojekte bestanden ohne uebersprungene Faelle.
+- Bezug: KP-137 und KP-138.
+
+**Validierung (belegt):** Die vollstaendige Solution-Suite besteht mit
+15.953 Tests. Build, Formatpruefung und lokaler V8-Smoke sind ebenfalls fuer
+den dokumentierten Stand erfolgreich. Commit, Push und CI stehen noch aus.

@@ -289,8 +289,10 @@ size keywords map to 9/10/13/16/18/24/32/48px; larger/smaller scale by 1.2;
 thin/medium/thick borders are 1/3/5px. Colors are clamped and rounded to 8-bit
 sRGB/alpha channels, not high-precision color-management values. The minimal
 UA sheet handles ordinary blocks/head metadata, body margin, headings,
-paragraphs/lists, emphasis and monospace text, plus `form { display: block }`
-and `input[type=hidden i] { display: none !important }`; it is **not** the
+paragraphs/lists, emphasis and monospace text, plus `form` and `search` as
+normal UA `display: block` elements ([HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3),
+local ID `html`, checked 2026-10-04), and
+`input[type=hidden i] { display: none !important }`; it is **not** the
 complete HTML rendering stylesheet (controls have limited inline-block defaults
 and no UA borders/padding/fonts). Broader marker types,
 decoration and replaced-element sizing are not yet implemented.

@@ -1,5 +1,9 @@
 # Tests
 
+Search-element regressions cover CSS cascade and fixed matching budgets,
+parser/layout geometry, native offline and local/process browser rendering,
+retained resize and existing GET form submission tests.
+
 Hidden-rendering regressions cover ordinary/empty/invalid/whitespace and exact
 ASCII `until-found` values, normal cascade/importance/`revert`, disabled UA
 styles, attribute mutation and exact shared CSS/layout limits. They compare

@@ -40,13 +40,14 @@ public static class CssStyleEngine
 {
     /// <summary>Minimal static UA defaults, not the complete HTML rendering stylesheet.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#rendering">rendering</see>,
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow content defaults</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list defaults</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS">hidden elements</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, p, section, article, aside, nav, header, footer, main, address,
-        blockquote, pre, listing, xmp, plaintext, h1, h2, h3, h4, h5, h6, ul, ol, menu, li, dl, dt, dd, figure, figcaption, hr, form { display: block }
+        blockquote, pre, listing, xmp, plaintext, h1, h2, h3, h4, h5, h6, ul, ol, menu, li, dl, dt, dd, figure, figcaption, hr, form, search { display: block }
         input, button, textarea, select { display: inline-block }
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }

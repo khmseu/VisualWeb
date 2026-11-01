@@ -67,13 +67,40 @@
   native Content- und lokale/Prozess-Browser-Tests sowie Build, Format und
   lokaler V8-Smoke bestehen; die Review-Ergaenzungen bestehen fokussiert.
   Der abschliessende Volltest mit den Ergaenzungen besteht mit 15.943
-  Faellen, ebenso die abschliessende Formatpruefung; Commit und CI stehen aus
+  Faellen, ebenso die abschliessende Formatpruefung. Commit `e4d0b79` ist
+  gepusht; Linux, Windows und CodeQL bestehen fuer diesen Commit.
+  Windows x64 scheiterte zunaechst an einem Timeout in einem unveraenderten
+  Shell-Test; Wiederholungen des aktuellen und des vorherigen Commits
+  bestehen. Ein kuenstlich verzoegerter Baseline-Versuch scheiterte ebenfalls,
+  jedoch mit anderem Deadline-Fehler; die genaue Ursache des urspruenglichen
+  Windows-Timeouts bleibt offen. Alle temporaeren Codeaenderungen sind
+  entfernt, gegen `e4d0b79` geprueft und der normale lokale Release-Test
+  besteht
   ([KP-121](./Kontextprotokoll.md#kp-121---rohtextdarstellung-als-sechstes-inkrement),
   [KP-122](./Kontextprotokoll.md#kp-122---rohtextdefaults-implementiert),
   [KP-123](./Kontextprotokoll.md#kp-123---review-regressionen-ergaenzt),
   [KP-124](./Kontextprotokoll.md#kp-124---review-regressionen-validiert),
   [KP-125](./Kontextprotokoll.md#kp-125---formatpruefung-erfolgreich),
-  [KP-126](./Kontextprotokoll.md#kp-126---rohtext-volltest-erfolgreich)).
+  [KP-126](./Kontextprotokoll.md#kp-126---rohtext-volltest-erfolgreich),
+  [KP-127](./Kontextprotokoll.md#kp-127---rohtext-commit-und-ci-start),
+  [KP-128](./Kontextprotokoll.md#kp-128---rohtext-codeql-erfolgreich),
+  [KP-129](./Kontextprotokoll.md#kp-129---rohtext-linux-ci-erfolgreich),
+  [KP-130](./Kontextprotokoll.md#kp-130---windows-x64-testfehler),
+  [KP-131](./Kontextprotokoll.md#kp-131---windows-wiederholungen-erfolgreich),
+  [KP-132](./Kontextprotokoll.md#kp-132---baseline-timingversuch-vorbereitet),
+  [KP-133](./Kontextprotokoll.md#kp-133---baseline-timingversuch-beendet),
+  [KP-134](./Kontextprotokoll.md#kp-134---pass-6-ci-gruen)).
+  Pass 7 ergaenzt die fehlende HTML-UA-Blockdarstellung von `search`:
+  Der Parser behandelt es bereits als Blockstart, Block- und Formular-
+  Nachkommen nutzen nun das vorhandene Blocklayout. Fokussierte Tests, Build,
+  Format und lokaler V8-Smoke bestehen; die Review-Ergaenzungen bestehen
+  fokussiert, der abschliessende Build und alle 15.953 Solution-Tests
+  bestehen. Commit, Push und CI stehen aus
+  ([KP-135](./Kontextprotokoll.md#kp-135---search-blockdefault-ausgewaehlt),
+  [KP-136](./Kontextprotokoll.md#kp-136---search-blockdefault-implementiert),
+  [KP-137](./Kontextprotokoll.md#kp-137---search-review-ergaenzt),
+  [KP-138](./Kontextprotokoll.md#kp-138---search-volltest-gestartet),
+  [KP-139](./Kontextprotokoll.md#kp-139---search-volltest-bestanden)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
@@ -751,19 +778,39 @@ abgelehnt und nicht geladen
 ## Naechste Schritte
 
 **Aktueller Einstieg (2026-11-01):** Im laufenden Zehn-Passen-Auftrag sind
-fuenf Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
+sechs Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
 HTML-`hidden` ist nach Review und 15.907 erfolgreichen Solution-Tests als
 `37dc296` gepusht; Linux, Windows und CodeQL bestehen. Pass 6 hat die
 HTML-UA-Darstellung von `listing`, `plaintext` und `xmp` ergaenzt und
 fokussiert geprueft. Die Review-Ergaenzungen und alle 15.943 Solution-Tests
-bestehen; Commit und CI stehen aus.
+bestehen. Commit `e4d0b79` ist gepusht; CodeQL, Linux-CI und der zweite
+Windows-Versuch bestehen. Der kuenstlich verzoegerte Baseline-Test schlug mit
+einem anderen Deadline-Fehler fehl; sein genauer Zusammenhang zum ersten
+Windows-Fehler ist offen. Die temporaere Instrumentierung wurde entfernt;
+der unveraenderte lokale Release-Test besteht. Pass 7 hat den UA-Blockdefault
+fuer HTML `search` implementiert und fokussiert geprueft; die Review-
+Ergaenzungen, der abschliessende Build und alle 15.953 Solution-Tests
+bestehen. Commit, Push und CI stehen aus
+([KP-135](./Kontextprotokoll.md#kp-135---search-blockdefault-ausgewaehlt),
+[KP-136](./Kontextprotokoll.md#kp-136---search-blockdefault-implementiert),
+[KP-137](./Kontextprotokoll.md#kp-137---search-review-ergaenzt),
+[KP-138](./Kontextprotokoll.md#kp-138---search-volltest-gestartet),
+[KP-139](./Kontextprotokoll.md#kp-139---search-volltest-bestanden)).
 Der aktuelle Stand und die Grenzen stehen oben sowie in
 [KP-121](./Kontextprotokoll.md#kp-121---rohtextdarstellung-als-sechstes-inkrement)
 [KP-122](./Kontextprotokoll.md#kp-122---rohtextdefaults-implementiert)
 [KP-123](./Kontextprotokoll.md#kp-123---review-regressionen-ergaenzt),
 [KP-124](./Kontextprotokoll.md#kp-124---review-regressionen-validiert)
 [KP-125](./Kontextprotokoll.md#kp-125---formatpruefung-erfolgreich)
-und [KP-126](./Kontextprotokoll.md#kp-126---rohtext-volltest-erfolgreich).
+[KP-126](./Kontextprotokoll.md#kp-126---rohtext-volltest-erfolgreich)
+[KP-127](./Kontextprotokoll.md#kp-127---rohtext-commit-und-ci-start)
+[KP-128](./Kontextprotokoll.md#kp-128---rohtext-codeql-erfolgreich)
+[KP-129](./Kontextprotokoll.md#kp-129---rohtext-linux-ci-erfolgreich)
+[KP-130](./Kontextprotokoll.md#kp-130---windows-x64-testfehler)
+[KP-131](./Kontextprotokoll.md#kp-131---windows-wiederholungen-erfolgreich)
+[KP-132](./Kontextprotokoll.md#kp-132---baseline-timingversuch-vorbereitet)
+[KP-133](./Kontextprotokoll.md#kp-133---baseline-timingversuch-beendet)
+und [KP-134](./Kontextprotokoll.md#kp-134---pass-6-ci-gruen).
 Die folgenden aelteren Schritte und Passnummern beschreiben fruehere Auftraege;
 sie sind keine zusaetzlichen aktuellen Arbeitsauftraege.
 

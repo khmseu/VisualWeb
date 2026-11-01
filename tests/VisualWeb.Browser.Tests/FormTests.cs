@@ -1776,6 +1776,56 @@ public sealed class FormTests
         </form>
         """;
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SearchElementFormRetainsGetOwnershipAndSubmission(bool process)
+    {
+        const string url = "https://example.com/final/index.html";
+        const string submitted = "https://example.com/find?q=a+b%2B%C3%A9&go=yes";
+        const string body = "<search><div>Find</div><form action='/find'><input type=search name=q value='a b+\u00e9'><button name=go value=yes>Go</button></form></search>";
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(() => source, () => Renderer(process));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(200, 400, 1);
+        controller.Navigate(tab.Id, url);
+        Assert.Equal(url, Assert.Single(source.Requests).Url.Href);
+        source.Requests[0].Completion.SetResult(Document(body, url));
+        PumpUntilComplete();
+
+        var page = controller.Page(tab.Id)!;
+        Assert.Equal("https://example.com/find", Assert.Single(page.Forms).Action);
+        Assert.Equal(2, page.FormControls.Count);
+        Assert.All(page.FormControls, control => Assert.Equal(0, control.Form));
+        Assert.Equal("search", page.FormControls[0].Kind);
+        Assert.Equal("q", page.FormControls[0].Name);
+        Assert.Equal("a b+\u00e9", page.FormControls[0].Value);
+        Assert.Equal("go", page.FormControls[1].Name);
+        Assert.Equal("yes", page.FormControls[1].Value);
+        Assert.True(controller.FocusControl(tab.Id, 0));
+        Assert.True(controller.ActivateFocusedLink(tab.Id, viewport));
+        Assert.Equal(2, source.Requests.Count);
+        Assert.Equal(submitted, source.Requests[1].Url.Href);
+        Assert.False(source.Requests[1].Token.IsCancellationRequested);
+        source.Requests[1].Completion.SetResult(Document("<div>Results</div>", submitted));
+        PumpUntilComplete();
+        Assert.Equal(submitted, tab.History.Current!.Href);
+
+        void PumpUntilComplete()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            while (tab.IsLoading && DateTime.UtcNow < deadline)
+            {
+                Cancellation.ThrowIfCancellationRequested();
+                controller.Pump(_ => viewport);
+                Thread.Sleep(5);
+            }
+            controller.Pump(_ => viewport);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
+    }
+
     [Fact]
     public void TypedValuesUseImplicitDefaultButtonAndUrlencodedGetNavigation()
     {

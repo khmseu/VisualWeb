@@ -108,6 +108,9 @@ after-after-body modes. Supported behavior includes:
   `Engine.Layout` supports a [bounded automatic table subset](text-layout.md#basic-automatic-tables);
   parser support for captions/columns does not imply layout support.
 
+The existing block-start parsing of `<search>` closes an open `p` and retains
+ordinary nested content; its block rendering is a separate UA CSS default.
+
 Simple `form` elements use the form element pointer: `<form>` closes an open
 `p`, a nested `<form>` reports `nested-form` and is ignored, and `</form>`
 without an in-scope pointer reports `unexpected-form-end-tag`. A matching
