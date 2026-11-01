@@ -36,7 +36,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Supported HTML list type and flow-content alignment hints enter the
 /// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
-/// Div alignment hints use <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow-content rules</see>.
+/// Center-element and div alignment hints use
+/// <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow-content rules</see>.
 /// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
 /// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
 /// Spec: html; font size uses <see href="https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size">legacy font size parsing</see>
@@ -53,7 +54,7 @@ public static class CssStyleEngine
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
-        html, body, div, p, section, article, aside, nav, header, footer, main, address,
+        html, body, div, center, p, section, article, aside, nav, header, footer, main, address,
         blockquote, pre, listing, xmp, plaintext, h1, h2, h3, h4, h5, h6, ul, ol, menu, li, dl, dt, dd, figure, figcaption, hr, form, search { display: block }
         input, button, textarea, select { display: inline-block }
         input[type=hidden i] { display: none !important }
@@ -128,6 +129,7 @@ public static class CssStyleEngine
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table rendering hints</see>.</remarks>
     private static string? GetAlignHint(DomElement element)
     {
+        if (element.LocalName == "center") { return "center"; }
         if (element.LocalName != "div"
             && element.LocalName is not ("p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6"))
         {

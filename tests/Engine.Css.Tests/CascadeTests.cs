@@ -511,6 +511,24 @@ public sealed class CascadeTests
         Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["text-align"]);
     }
 
+    [Fact]
+    public void CenterElementUsesCenterPresentationalHintAndBlockUaDefault()
+    {
+        var doc = Document("<center id=target align=right><span id=child>x</span></center>");
+        var target = doc.GetElementById("target")!;
+        var child = doc.GetElementById("child")!;
+        var user = new CssStyleSource("center{text-align:right}", CssOrigin.User);
+        var result = Compute(doc, user);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("block"), result.Styles[target]["display"]);
+        Assert.Equal(new CssKeyword("center"), result.Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("center"), result.Styles[child]["text-align"]);
+        Assert.Equal(new CssKeyword("left"), Compute(doc, user, new("center{text-align:left}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("right"), Compute(doc, user, new("center{text-align:revert}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("center"),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation).Styles[target]["text-align"]);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(" right")]
@@ -552,7 +570,6 @@ public sealed class CascadeTests
     }
 
     [Theory]
-    [InlineData("center")]
     [InlineData("table")]
     [InlineData("span")]
     public void OtherElementsDoNotGetAlignHints(string tag)

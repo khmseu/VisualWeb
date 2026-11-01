@@ -208,7 +208,9 @@ map `align=left`, `right`, `center`, `middle` and `justify` on `div`, with
 unsupported values are ignored. These hints use the same cascade, assignment
 budget and recomputation rules as list hints. The separate legacy behavior that
 adjusts over-constrained descendant margins is not implemented. Alignment on
-`center`, tables and other elements is not added by this subset. Justification
+tables and other elements remains unsupported. The HTML `center` element is a
+block by default and supplies a `text-align:center` presentational hint; legacy
+alignment behavior beyond this text hint remains unsupported. Justification
 retains the layout limitations documented in the text guide.
 
 The [HTML `font color` hint](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)

@@ -12,11 +12,11 @@ public sealed class SearchDefaultsTests
         var cancellation = TestContext.Current.CancellationToken;
         var document = HtmlParser.Parse("<!doctype html><search id=x>text</search>", cancellationToken: cancellation).Document;
         var search = document.GetElementById("x")!;
-        // html, head, body and search each evaluate all 105 top-level selectors,
+        // html, head, body and search each evaluate all 106 top-level selectors,
         // plus 11 :is() subject alternatives; each simple selector takes two steps.
-        // The matching search type selector is included in those 105 checks.
-        const long matches = 4 * (105 + 11) * 2;
-        // 59 UA declarations expand to 65 assignments (four-sided shorthands).
+        // The matching search type selector is included in those 106 checks.
+        const long matches = 4 * (106 + 11) * 2;
+        // 59 matching UA declarations expand to 65 assignments (four-sided shorthands).
         const int assignments = 65;
         // One author selector is checked on all four elements and adds one assignment.
         const long authorMatches = matches + 4 * 2;

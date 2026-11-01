@@ -126,14 +126,14 @@ public sealed class LinkColorDefaultsTests
     public void UserAgentRuleSharesExactAssignmentAndMatchingBudgetsAndCancellation()
     {
         var document = Parse("<a id=target href>text</a>");
-        // The UA sheet has 59 declarations; margin and padding expansion add six assignments.
-        // The four elements (html, head, body, a) each check 105 top-level selectors and
+        // The page matches 59 UA declarations; margin and padding expansion add six assignments.
+        // The four elements (html, head, body, a) each check 106 top-level selectors and
         // 11 unmatched :is() subject alternatives, at two operations per simple selector.
         const int assignments = 65;
-        const long matches = 928; // 4 * (105 + 11) * 2
+        const long matches = 936; // 4 * (106 + 11) * 2
         // The author rule adds one assignment and one two-operation selector per element.
         const int authorAssignments = 66;
-        const long authorMatches = 936;
+        const long authorMatches = 944;
         CssStyleSource[] author = [new("a{color:red}")];
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));

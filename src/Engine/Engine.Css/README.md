@@ -114,8 +114,10 @@ and shared expanded-assignment budget described in the guide.
 HTML `align` on `p` and `h1`–`h6` supports the exact ASCII-case-insensitive
 values left/right/center/justify as `text-align` hints. The `div` flow-content
 rule supports left/right/center/middle/justify; `middle` maps to `center`.
-These hints use the same cascade and budget. The separate legacy behavior that
-adjusts over-constrained descendant margins is not implemented. See the
+The `center` element is block-level by default and supplies a `center`
+`text-align` hint. These hints use the same cascade and budget. The separate
+legacy behavior that adjusts over-constrained descendant margins is not
+implemented. See the
 [HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
 and [flow-content hints](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`).
