@@ -944,6 +944,29 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void ColspanCellsPaintAcrossTheirCoveredColumnsLikeEquivalentCells()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}"
+            + "table{width:40px;border-spacing:0}td{padding:0;height:20px;background-color:blue}";
+        CssStyleSource[] styles = [new(style)];
+        const string spanning = "<!doctype html><table><tr><td colspan=2>A</td></tr>"
+            + "<tr><td>B</td><td>C</td></tr></table>";
+        const string equivalent = "<!doctype html><table><tr><td>A</td><td></td></tr>"
+            + "<tr><td>B</td><td>C</td></tr></table>";
+
+        var actual = OfflinePageRenderer.Render(spanning, styles, text, fonts, 40, 40,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(equivalent, styles, text, fonts, 40, 40,
+            cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void SimpleLegacyDoctypeDocumentReachesAnOfflineNativeFrame()
     {
         using var font = new TextFont(FontPath);

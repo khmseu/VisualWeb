@@ -852,6 +852,71 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void AutomaticTablesDistributeSpanningCellIntrinsicConstraintsAcrossCoveredColumns()
+    {
+        const string html = """
+            <table id=t><tr><td id=span colspan=2>aaaa aa</td></tr>
+            <tr><td id=a>a</td><td id=b>b</td></tr></table>
+            """;
+        const string css = "table{border-spacing:2px}";
+        var root = UnorderedList(html, css).Root!;
+        var span = Find(root, "span");
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+
+        Assert.Equal(span.BorderBox.X, first.BorderBox.X);
+        Assert.Equal(first.BorderBox.Width, second.BorderBox.Width);
+        Assert.Equal(first.BorderBox.X + first.BorderBox.Width + 2, second.BorderBox.X);
+        Assert.Equal(first.BorderBox.Width + second.BorderBox.Width + 2, span.BorderBox.Width);
+
+        var narrow = UnorderedList(html, css, width: 20).Root!;
+        Assert.Equal(26, Find(narrow, "t").Content.Width);
+        Assert.Equal(22, Find(narrow, "span").BorderBox.Width);
+        Assert.Equal(10, Find(narrow, "a").BorderBox.Width);
+        Assert.Equal(10, Find(narrow, "b").BorderBox.Width);
+    }
+
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData("0", 1)]
+    [InlineData("-2", 1)]
+    [InlineData("invalid", 1)]
+    [InlineData(" 2suffix", 2)]
+    [InlineData("2", 2)]
+    [InlineData("1001", 1000)]
+    public void TableColumnSpansUseBoundedHtmlParsing(string? value, int columns)
+    {
+        var attribute = value is null ? string.Empty : $" colspan='{value}'";
+        var html = $"<table><tr><td{attribute}>x</td></tr></table>";
+        Assert.NotNull(UnorderedList(html, options: new() { MaxTableColumns = columns }).Root);
+    }
+
+    [Fact]
+    public void TableColumnSpanLimitAndAttributeTextBudgetFailBeforeGridAllocation()
+    {
+        const string span = "<table><tr><td colspan=2>x</td></tr></table>";
+        Assert.NotNull(UnorderedList(span, options: new()
+        {
+            MaxTableColumns = 2,
+            MaxTableColumnOperations = 10
+        }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList(span, options: new() { MaxTableColumns = 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<table><tr><td>a</td><td>b</td></tr></table>",
+                options: new() { MaxTableColumns = 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList(span, options: new() { MaxTableColumnOperations = 9 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<table><tr><td colspan=0001>x</td></tr></table>",
+                options: new() { MaxTextCharacters = 3 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            UnorderedList("<table></table>", options: new() { MaxTableColumns = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            UnorderedList("<table></table>", options: new() { MaxTableColumnOperations = 0 }));
+    }
+
+    [Fact]
     public void ExplicitTableWidthDistributesSurplusAndHonorsWrapperAutoMargins()
     {
         var root = UnorderedList("<table id=t><tr><td id=a>aa bb</td><td id=b>x</td></tr>"
@@ -980,7 +1045,7 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("<table><tr><td colspan=2>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td rowspan=2>x</td></tr></table>", "")]
     [InlineData("<table><tr><td rowspan=0>x</td></tr></table>", "")]
     [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "")]

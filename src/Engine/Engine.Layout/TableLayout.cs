@@ -7,7 +7,9 @@ public static partial class StaticLayout
 {
     private sealed partial class Builder
     {
-        private sealed record TableRow(DomElement Element, IReadOnlyList<DomElement> Cells);
+        private const int MaxHtmlColumnSpan = 1000;
+        private sealed record TableCell(DomElement Element, int Column, int ColumnSpan);
+        private sealed record TableRow(DomElement Element, IReadOnlyList<TableCell> Cells);
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
         private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing);
 
@@ -17,7 +19,9 @@ public static partial class StaticLayout
             var style = Style(table);
             RejectTableAttributes(table);
             RequireAutoHeight(style);
+            var spacing = ((CssLength)style["border-spacing"]).Value;
             var groups = new List<TableGroup>();
+            var columnCount = 0;
             foreach (var group in TableChildren(table))
             {
                 var display = Display(group);
@@ -31,25 +35,28 @@ public static partial class StaticLayout
                     if (row.LocalName != "tr" || Display(row) != "table-row")
                     { throw new UnsupportedLayoutException("Table row groups require tr rows."); }
                     CheckTablePart(row, depth + 2);
-                    var cells = new List<DomElement>();
+                    var positionedCells = new List<TableCell>();
+                    var column = 0;
                     foreach (var cell in TableChildren(row))
                     {
                         if (cell.LocalName is not ("td" or "th") || Display(cell) != "table-cell")
                         { throw new UnsupportedLayoutException("Table rows require td/th cells."); }
-                        foreach (var attribute in new[] { "colspan", "rowspan" })
-                        {
-                            if (cell.GetAttribute(attribute) is { } span && span != "1")
-                            { throw new UnsupportedLayoutException("Table cells spanning rows or columns are unsupported."); }
-                        }
+                        if (cell.GetAttribute("rowspan") is { } rowSpan && rowSpan != "1")
+                        { throw new UnsupportedLayoutException("Table cells spanning rows are unsupported."); }
+                        var columnSpan = ParseColumnSpan(cell.GetAttribute("colspan"));
+                        if (columnSpan > options.MaxTableColumns - column)
+                        { throw new LayoutLimitException("Table column limit exceeded."); }
                         RejectTableAttributes(cell);
                         var cellStyle = Style(cell);
                         if (cellStyle["vertical-align"] is not CssKeyword { Value: "top" }
                             || Edges(cellStyle, "margin", 0) != default
                             || cellStyle["max-height"] is not CssKeyword { Value: "none" })
                         { throw new UnsupportedLayoutException("Table cells require top alignment, zero margins and no maximum height."); }
-                        cells.Add(cell);
+                        positionedCells.Add(new(cell, column, columnSpan));
+                        column += columnSpan;
                     }
-                    rows.Add(new(row, cells.AsReadOnly()));
+                    columnCount = Math.Max(columnCount, column);
+                    rows.Add(new(row, positionedCells.AsReadOnly()));
                 }
                 groups.Add(new(group, rows.AsReadOnly()));
             }
@@ -62,20 +69,62 @@ public static partial class StaticLayout
                 "table-footer-group" => 2,
                 _ => 1
             }).ToList();
-            var count = groups.SelectMany(g => g.Rows).Select(r => r.Cells.Count).DefaultIfEmpty().Max();
-            var minimum = new double[count];
-            var maximum = new double[count];
+            var minimum = new double[columnCount];
+            var maximum = new double[columnCount];
+            Dictionary<int, List<(int Column, double Minimum, double Maximum)>>? spanningConstraints = null;
+            List<int>? spanOrder = null;
             foreach (var row in groups.SelectMany(g => g.Rows))
             {
-                for (var index = 0; index < row.Cells.Count; index++)
+                foreach (var cell in row.Cells)
                 {
-                    var intrinsic = Intrinsic(row.Cells[index], depth + 3, cell: true);
-                    minimum[index] = Math.Max(minimum[index], intrinsic.Minimum);
-                    maximum[index] = Math.Max(maximum[index], intrinsic.Maximum);
+                    var intrinsic = Intrinsic(cell.Element, depth + 3, cell: true);
+                    if (cell.ColumnSpan == 1)
+                    {
+                        minimum[cell.Column] = Math.Max(minimum[cell.Column], intrinsic.Minimum);
+                        maximum[cell.Column] = Math.Max(maximum[cell.Column], intrinsic.Maximum);
+                    }
+                    else
+                    {
+                        spanningConstraints ??= [];
+                        spanOrder ??= [];
+                        if (!spanningConstraints.TryGetValue(cell.ColumnSpan, out var constraints))
+                        {
+                            constraints = [];
+                            spanningConstraints.Add(cell.ColumnSpan, constraints);
+                            spanOrder.Add(cell.ColumnSpan);
+                        }
+                        constraints.Add((cell.Column, intrinsic.Minimum, intrinsic.Maximum));
+                    }
                 }
             }
-            var spacing = ((CssLength)style["border-spacing"]).Value;
-            var gaps = count == 0 ? 0 : Finite((count + 1.0) * spacing);
+            if (spanOrder is not null && spanningConstraints is not null)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                spanOrder.Sort();
+                foreach (var span in spanOrder)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    foreach (var constraint in spanningConstraints[span])
+                    {
+                        cancellation.ThrowIfCancellationRequested();
+                        var spanGaps = Finite((span - 1.0) * spacing);
+                        var requiredMinimum = Math.Max(0, constraint.Minimum - spanGaps);
+                        var minimumDeficit = Math.Max(0, requiredMinimum - SumColumns(minimum, constraint.Column, span));
+                        var minimumShare = minimumDeficit / span;
+                        var requiredMaximum = Math.Max(requiredMinimum, constraint.Maximum - spanGaps);
+                        var maximumDeficit = Math.Max(0, requiredMaximum - SumColumns(maximum, constraint.Column, span));
+                        var maximumShare = maximumDeficit / span;
+                        ChargeTableColumnWork(span);
+                        for (var index = constraint.Column; index < constraint.Column + span; index++)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            minimum[index] = Finite(minimum[index] + minimumShare);
+                            maximum[index] = Finite(Math.Max(minimum[index], maximum[index] + maximumShare));
+                        }
+                    }
+                }
+            }
+            var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing);
             var min = Finite(minimum.Sum() + gaps);
             var max = Finite(maximum.Sum() + gaps);
             var available = ContentWidth(style, containingWidth);
@@ -83,10 +132,45 @@ public static partial class StaticLayout
                 ? Math.Min(Math.Max(min, available), max) : Math.Max(min, available);
             var flexibility = max - min;
             var ratio = flexibility > 0 ? Math.Min(1, (width - min) / flexibility) : 0;
-            var extra = count > 0 ? Math.Max(0, width - max) / count : 0;
-            for (var index = 0; index < count; index++)
-            { minimum[index] = Finite(minimum[index] + ratio * (maximum[index] - minimum[index]) + extra); }
+            var extra = columnCount > 0 ? Math.Max(0, width - max) / columnCount : 0;
+            ChargeTableColumnWork(columnCount);
+            for (var index = 0; index < columnCount; index++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                minimum[index] = Finite(minimum[index] + ratio * (maximum[index] - minimum[index]) + extra);
+            }
             return new(groups.AsReadOnly(), minimum, Finite(width), spacing);
+        }
+
+        private int ParseColumnSpan(string? raw)
+        {
+            if (raw is null) { return 1; }
+            ChargeCharacters(raw.Length);
+            var index = 0;
+            while (index < raw.Length && raw[index] is ' ' or '\t' or '\n' or '\f' or '\r')
+            { cancellation.ThrowIfCancellationRequested(); index++; }
+            var negative = index < raw.Length && raw[index] == '-';
+            if (index < raw.Length && raw[index] is '+' or '-') { index++; }
+            if (index == raw.Length || !char.IsAsciiDigit(raw[index])) { return 1; }
+            var value = 0;
+            while (index < raw.Length && char.IsAsciiDigit(raw[index]))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                value = Math.Min(1001, value * 10 + raw[index++] - '0');
+            }
+            return negative || value == 0 ? 1 : Math.Min(value, MaxHtmlColumnSpan);
+        }
+
+        private double SumColumns(double[] columns, int start, int count)
+        {
+            var sum = 0.0;
+            ChargeTableColumnWork(count);
+            for (var index = start; index < start + count; index++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                sum = Finite(sum + columns[index]);
+            }
+            return sum;
         }
 
         private IEnumerable<DomElement> TableChildren(DomElement parent)
@@ -217,15 +301,16 @@ public static partial class StaticLayout
                 {
                     var cells = new List<LayoutBox>();
                     var cellX = x + plan.Spacing;
-                    for (var index = 0; index < row.Cells.Count; index++)
+                    foreach (var cell in row.Cells)
                     {
-                        var cell = row.Cells[index];
-                        var style = Style(cell);
-                        var padding = Edges(style, "padding", plan.Columns[index]);
-                        var border = Edges(style, "border", plan.Columns[index], "-width");
-                        var contentWidth = Math.Max(0, plan.Columns[index] - padding.Left - padding.Right - border.Left - border.Right);
-                        cells.Add(Block(cell, cellX, cursor, plan.Columns[index], null, depth + 3, cellWidth: contentWidth));
-                        cellX = Finite(cellX + plan.Columns[index] + plan.Spacing);
+                        var width = Finite(SumColumns(plan.Columns, cell.Column, cell.ColumnSpan)
+                            + (cell.ColumnSpan - 1) * plan.Spacing);
+                        var style = Style(cell.Element);
+                        var padding = Edges(style, "padding", width);
+                        var border = Edges(style, "border", width, "-width");
+                        var contentWidth = Math.Max(0, width - padding.Left - padding.Right - border.Left - border.Right);
+                        cells.Add(Block(cell.Element, cellX, cursor, width, null, depth + 3, cellWidth: contentWidth));
+                        cellX = Finite(cellX + width + plan.Spacing);
                     }
                     var height = cells.Select(cell => cell.BorderBox.Height).DefaultIfEmpty().Max();
                     for (var index = 0; index < cells.Count; index++)

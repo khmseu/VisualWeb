@@ -44,10 +44,13 @@ Read the [text/layout guide](../../../docs/text-layout.md) for exact scope:
 non-root vertical margins must be zero while margin collapse is deferred;
 unsupported advanced layouts throw rather than return approximate geometry.
 
-Canonical HTML tables support bounded automatic intrinsic columns, separate
-borders, one spacing length and top-aligned text/block cells. Table/cell
-backgrounds and ordinary borders reuse existing flow. Spans, captions/columns,
-row/group backgrounds, nested tables/widgets and other
+Canonical HTML tables support bounded automatic intrinsic columns, equal
+minimum/maximum constraint distribution for horizontal `colspan`, separate
+borders, one spacing length and top-aligned text/block cells. The total
+materialized grid is capped by `LayoutOptions.MaxTableColumns`; HTML `rowspan`
+remains unsupported, and repeated track visits share
+`LayoutOptions.MaxTableColumnOperations`. Table/cell backgrounds and ordinary
+borders reuse existing flow. Captions/columns, row/group backgrounds, nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify

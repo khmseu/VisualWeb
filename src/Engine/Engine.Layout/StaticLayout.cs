@@ -55,6 +55,12 @@ public sealed record LayoutOptions
 {
     public int MaxDepth { get; init; } = 128;
     public int MaxBoxes { get; init; } = 100_000;
+    /// <summary>Maximum columns materialized in a canonical HTML table grid.</summary>
+    /// <remarks>Specs: css2-tables; <see href="https://www.w3.org/TR/CSS22/tables.html#auto-table-layout">automatic table layout</see>;
+    /// html; <see href="https://html.spec.whatwg.org/multipage/tabular-data.html#forming-a-table">table grid</see>.</remarks>
+    public int MaxTableColumns { get; init; } = 100_000;
+    /// <summary>Maximum table-grid track operations across intrinsic sizing and arrangement.</summary>
+    public long MaxTableColumnOperations { get; init; } = 10_000_000;
     public int MaxNodes { get; init; } = 1_000_000;
     public int MaxLines { get; init; } = 100_000;
     public int MaxTextCharacters { get; init; } = 1_000_000;
@@ -63,8 +69,9 @@ public sealed record LayoutOptions
     public long MaxLineBreakOperations { get; init; } = 10_000_000;
     internal void Validate()
     {
-        if (MaxDepth <= 0 || MaxBoxes <= 0 || MaxNodes <= 0 || MaxLines <= 0 || MaxTextCharacters <= 0
-            || MaxShapedGlyphs <= 0 || MaxShapingCalls <= 0 || MaxLineBreakOperations <= 0)
+        if (MaxDepth <= 0 || MaxBoxes <= 0 || MaxTableColumns <= 0 || MaxTableColumnOperations <= 0
+            || MaxNodes <= 0 || MaxLines <= 0 || MaxTextCharacters <= 0 || MaxShapedGlyphs <= 0
+            || MaxShapingCalls <= 0 || MaxLineBreakOperations <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(LayoutOptions), "All layout limits must be positive.");
         }
@@ -140,7 +147,7 @@ public static partial class StaticLayout
         private readonly LayoutOptions options;
         private readonly CancellationToken cancellation;
         private int nodes, boxes, lines, characters, glyphs, calls;
-        private long lineBreakOperations;
+        private long lineBreakOperations, tableColumnOperations;
         private readonly Dictionary<DomElement, long> ordinals = new(ReferenceEqualityComparer.Instance);
 
         internal Builder(CssStyleResult styles, ITextShaper shaper, LayoutOptions options, CancellationToken cancellation)
@@ -1083,6 +1090,14 @@ public static partial class StaticLayout
             if (count > options.MaxLineBreakOperations - lineBreakOperations)
             { throw new LayoutLimitException("Layout line-break processing limit exceeded."); }
             lineBreakOperations += count;
+        }
+
+        private void ChargeTableColumnWork(int count)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (count > options.MaxTableColumnOperations - tableColumnOperations)
+            { throw new LayoutLimitException("Table column processing limit exceeded."); }
+            tableColumnOperations += count;
         }
 
         private void Visit()

@@ -206,9 +206,18 @@ Canonical HTML `table`/`thead`/`tbody`/`tfoot`/`tr`/`td`/`th` boxes support
 content-sized automatic columns, separate borders and one nonnegative
 `border-spacing` length. See [CSS 2.2 automatic table layout](https://www.w3.org/TR/CSS22/tables.html#auto-table-layout)
 (local ID `css2-tables`). Each column takes its cells' maximum minimum/maximum
-intrinsic widths. Auto tables shrink toward maximum content width without
-shrinking below minimum content; explicit table width is a minimum. Available
-growth is proportional between intrinsic bounds, then equal beyond them.
+intrinsic widths. A cell with a bounded positive `colspan` contributes minimum
+and maximum intrinsic constraints across all covered columns; each deficit is
+shared equally, processing spans from shortest to longest. HTML's bounded
+`colspan` parsing maps absent, invalid and zero values to one and caps values
+at 1000. The total materialized grid is separately bounded by
+`LayoutOptions.MaxTableColumns` (default 100,000), checked before column
+arrays are allocated. Repeated track visits during sizing and arrangement share
+`LayoutOptions.MaxTableColumnOperations` (default 10,000,000). Span attribute
+scans share the text-character and cancellation budgets. Auto tables shrink
+toward maximum content width without shrinking below minimum content; explicit
+table width is a minimum. Available growth is proportional between intrinsic
+bounds, then equal beyond them.
 CSS 2.2 permits UA-defined automatic distribution; this is a finite policy,
 not a claim of matching every browser.
 
@@ -220,7 +229,7 @@ UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
 is not synthesized. Measurement and arrangement share node, text, shaping,
 line, glyph, box, depth and cancellation budgets.
 
-Explicit failures remain for spans other than absent/exact `1`, captions,
+Explicit failures remain for `rowspan` other than absent/exact `1`, captions,
 columns/colgroups, anonymous or arbitrary CSS tables, nested tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, other cell alignments, nonzero cell margins, cell maximum height,

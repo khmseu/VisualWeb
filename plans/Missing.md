@@ -495,6 +495,21 @@ and explicit failure when no listed face is registered. The full solution
 suite (16,120 tests), solution build (zero warnings/errors) and formatting
 verification also pass.
 
+Canonical table layout now supports bounded horizontal `colspan` without
+`rowspan`. Spanned cells contribute intrinsic minimum/maximum constraints that
+are shared equally across covered columns in increasing span order; arrangement
+uses the combined track widths and internal spacing. HTML values default or
+cap per the bounded parsing rules, and `LayoutOptions.MaxTableColumns` (default
+100,000) rejects oversized grids before allocation. Repeated track work shares
+`LayoutOptions.MaxTableColumnOperations` (default 10,000,000); attribute
+scanning retains the shared text and cancellation budgets. Focused layout tests
+cover geometry, parsing, caps and attribute limits; native Content pixels match
+an equivalent unspanned grid. Remaining table gaps include `rowspan`, captions/columns,
+anonymous/arbitrary tables, and other listed exclusions. Layout (807), Content
+(92), solution build (zero warnings/errors), all 16,130 solution tests and
+solution formatting verification pass with the final sparse-allocation
+implementation. The separate commit, push and CI results remain pending.
+
 The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
 the normal cascade. An override may make a hidden element visible, but
 descendants cannot escape an ancestor whose computed display remains `none`.
@@ -820,9 +835,13 @@ Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one spacing length, top-aligned text/block cells and
 table/cell backgrounds through ordinary paint flow. Explicit table width and
 cell heights act as minima; header/footer groups are ordered around body groups.
-Spans, captions/columns, anonymous/arbitrary CSS tables, collapsed borders,
-fixed layout, nested tables/widgets, percentages inside cells, row/group
-backgrounds and legacy presentation attributes remain unsupported. See the
+Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
+constraints equally across tracks; the total column grid is capped by
+`LayoutOptions.MaxTableColumns` before allocation and repeated track work by
+`LayoutOptions.MaxTableColumnOperations`. `rowspan`, captions/columns,
+anonymous/arbitrary CSS tables, collapsed borders, fixed layout, nested
+tables/widgets, percentages inside cells, row/group backgrounds and legacy
+presentation attributes remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
 exact work limits and cancellation, native pixels, and local/process
