@@ -118,12 +118,12 @@ public sealed class HiddenDefaultsTests
     public void MatchedHiddenRuleSharesExactCssBudgetsAndCancellation()
     {
         var document = Parse("<a id=target hidden href>text</a>");
-        // Four elements: the hidden selector costs 2 operations on each nonmatch and
-        // 8 on the hidden anchor, including both :not() argument matches.
+        // The figure margin selector adds 2 operations per element to the existing
+        // UA sheet; the hidden selector adds 2 on nonmatches and 8 on the target.
         const int assignments = 65;
-        const long matches = 942; // 4 * (106 + 11) * 2 + 3 * 2 + 8 - 8
+        const long matches = 950; // 4 * (107 + 11) * 2 + 3 * 2 + 8 - 8
         CssStyleSource[] author = [new("a{display:block}")];
-        const long authorMatches = 950;
+        const long authorMatches = 958;
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches - 1 }));

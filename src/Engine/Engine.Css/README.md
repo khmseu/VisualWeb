@@ -126,6 +126,10 @@ HTML table rendering also maps ASCII-case-insensitive `table[align=center]`
 to `margin-left:auto` and `margin-right:auto` hints in the supported horizontal
 LTR subset. Other table alignment values remain unsupported.
 
+The HTML flow-content defaults give `figure` 40px left/right margins in the
+supported horizontal LTR subset; these remain normal UA declarations that
+author CSS may override.
+
 The finite table properties add canonical table/group/row/cell displays,
 `table-layout:auto`, inherited `border-collapse:separate` and single-length
 `border-spacing`, plus `vertical-align:baseline/top` (ID `css2-tables`).

@@ -874,6 +874,20 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void FigureUserAgentMarginsInsetItsContentInHorizontalLayout()
+    {
+        var document = HtmlParser.Parse("<!doctype html><figure id=f>caption</figure>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, [new("*{font-size:10px;line-height:10px}")],
+            cancellationToken: Cancellation);
+        var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 200, 200,
+            cancellationToken: Cancellation).Root!;
+
+        Assert.Equal(48, Find(root, "f").Content.X);
+        Assert.Equal(104, Find(root, "f").Content.Width);
+    }
+
+    [Fact]
     public void EmptyTablesAndMissingCellsPreserveGridSpacingWithoutInventingBoxes()
     {
         var empty = Find(UnorderedList("<table id=t></table>").Root!, "t");

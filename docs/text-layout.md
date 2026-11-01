@@ -338,6 +338,9 @@ empty grid slots. Empty grids have zero intrinsic content size.
 Default body and paragraph vertical margins participate in sibling and
 eligible parent-edge collapse. Fonts with bold/italic styles must be configured
 explicitly or those styles overridden.
+In the horizontal LTR subset, HTML `figure` uses 40px left/right user-agent
+margins, which reduce its available content width; captions use ordinary block
+flow without specialized figure layout.
 
 ## Explicit deferred cases
 

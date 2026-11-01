@@ -157,6 +157,25 @@ public sealed class CascadeTests
         Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[menu]["padding-left"]);
     }
 
+    [Fact]
+    public void FigureReceivesHtmlInlineMarginsThroughTheUserAgentCascade()
+    {
+        var doc = Document("<figure id=parent>caption</figure>");
+        var figure = doc.GetElementById("parent")!;
+        var defaults = Compute(doc);
+        Assert.Empty(defaults.Diagnostics);
+        Assert.Equal(new CssLength(40, "px"), defaults.Styles[figure]["margin-left"]);
+        Assert.Equal(new CssLength(40, "px"), defaults.Styles[figure]["margin-right"]);
+
+        var authored = Compute(doc, new CssStyleSource("#parent{margin-left:7px;margin-right:9px}"));
+        Assert.Equal(new CssLength(7, "px"), authored.Styles[figure]["margin-left"]);
+        Assert.Equal(new CssLength(9, "px"), authored.Styles[figure]["margin-right"]);
+
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[figure]["margin-left"]);
+        Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[figure]["margin-right"]);
+    }
+
     [Theory]
     [InlineData("list-style-type:square")]
     [InlineData("list-style-type:SqUaRe")]

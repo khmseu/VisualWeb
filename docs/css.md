@@ -390,6 +390,11 @@ downstream exclusions are documented in the
 [table layout subset](text-layout.md#basic-automatic-tables). Accepted display
 values do not imply anonymous table generation or arbitrary CSS table layout.
 
+The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
+(local ID `html`) give `figure` 40px inline margins. The horizontal LTR subset
+maps these to `margin-left` and `margin-right`; the regular cascade can override
+them, and disabling the UA sheet removes them.
+
 ## Limits and cancellation
 
 All CssOptions limits are positive and configurable:
