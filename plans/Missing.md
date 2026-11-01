@@ -606,11 +606,14 @@ The earlier none-only parser increment added 36 regressions; this extension
 adds CSS default/cascade, native underline-pixel and descendant-propagation
 coverage. CSS (1,102), Paint (65) and Content (88) tests pass. The full
 solution build has zero warnings/errors and formatting verification passes.
-The full solution test run passed 16,076 tests but failed the unchanged
+The changed-tree full suite passes all 16,077 tests on retry; the full base
+suite at `3d00c0f` passes all 16,072 tests. An earlier local full run and the
+first Windows x64 CI run each timed out in the unchanged
 `UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` browser
-test. That test and all 176 `ShellTests` pass when run alone on both the
-changed tree and base commit `3d00c0f`; the cause of the solution-run failure
-is unresolved and is not claimed to be baseline. CI is pending. See the
+test. The test passes in isolation on both trees; the local full-suite retry
+and Windows x64 CI rerun also pass. No root cause is established. Commit
+[`c6f13b1`](https://github.com/khmseu/VisualWeb/commit/c6f13b1257f96dfd278624a2a1a9e634a178d0fd)
+is pushed; Linux, Windows x64/arm64 and CodeQL CI pass. See the
 [text-decoration scope](../docs/css.md#cascade-and-computed-values).
 
 The current engine implements finite static block/inline rendering. Missing essentials include:
