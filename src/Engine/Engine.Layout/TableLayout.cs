@@ -123,7 +123,8 @@ public static partial class StaticLayout
             if (new[] { "width", "height", "border", "cellpadding", "cellspacing", "valign", "nowrap" }
                     .Any(attribute => element.GetAttribute(attribute) is not null)
                 || element.GetAttribute("align") is not null
-                    && !CssStyleEngine.HasSupportedTableCenterAlignmentHint(element))
+                    && !CssStyleEngine.HasSupportedTableCenterAlignmentHint(element)
+                    && !CssStyleEngine.HasSupportedTableCellAlignmentHint(element))
             { throw new UnsupportedLayoutException("Legacy table presentation attributes require unsupported presentational hints; use supported CSS."); }
         }
 

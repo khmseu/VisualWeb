@@ -309,6 +309,33 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void TableCellCenterAlignHintMatchesExplicitCssAcrossRetainedResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}table{width:100px;border-spacing:0}td{padding:0}";
+        CssStyleSource[] actualStyle = [new(style)];
+        const string html = "<!doctype html><table><tr><td align=CeNtEr>cell</td></tr></table>";
+        const string reference = "<!doctype html><table><tr><td>cell</td></tr></table>";
+        CssStyleSource[] expectedStyle = [new(style + "td{text-align:center}")];
+        var actual = OfflinePageRenderer.Render(html, actualStyle, text, fonts, 160, 80,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(reference, expectedStyle, text, fonts, 160, 80,
+            cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, actualStyle, text, fonts, 200, 80,
+            cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, expectedStyle, text, fonts, 200, 80,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Same(expected.Html.Document, expectedResized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void NestedUaListMarginsMatchExplicitZeroMarginPixels()
     {
         using var font = new TextFont(FontPath);

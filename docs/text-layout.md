@@ -228,9 +228,12 @@ nonautomatic table/row/group heights, row/group sizing/decorations/backgrounds,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 `cellspacing`, `valign`, `nowrap`). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
-subset; left/right floating, other table alignment values and row/cell
-`align` remain unsupported. Hidden parts are omitted; missing cells leave
-empty grid slots. Empty grids have zero intrinsic content size.
+subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
+`left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
+maps to `center`. Row/group `align`, left/right table floats, other table
+alignment values, `valign` and vertical cell alignment remain unsupported.
+Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
+have zero intrinsic content size.
 
 ### Ordinary flow
 

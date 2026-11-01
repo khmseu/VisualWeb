@@ -204,12 +204,15 @@ The [HTML paragraph and heading alignment hints](https://html.spec.whatwg.org/mu
 (local ID `html`) map `align=left`, `right`, `center` and `justify` on `p` and
 `h1` through `h6` to `text-align`. The [flow-content div hints](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 map `align=left`, `right`, `center`, `middle` and `justify` on `div`, with
-`middle` mapping to `center`. Matching is ASCII-case-insensitive and does not trim;
-unsupported values are ignored. These hints use the same cascade, assignment
-budget and recomputation rules as list hints. The separate legacy behavior that
-adjusts over-constrained descendant margins is not implemented. Alignment on
-table cells and other elements remains unsupported. The HTML `center` element
-is a block by default and supplies a `text-align:center` presentational hint.
+`middle` mapping to `center`. The [table-cell hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
+map `align=left`, `right`, `center`, `middle` and `justify` on `td` and `th`
+to `text-align`, with `middle` mapping to `center`. Matching is
+ASCII-case-insensitive and does not trim; unsupported values are ignored.
+These hints use the same cascade, assignment budget and recomputation rules as
+list hints. The separate legacy behavior that adjusts over-constrained
+descendant margins is not implemented. Table row/group hints and alignment on
+other elements remain unsupported. The HTML `center` element is a block by
+default and supplies a `text-align:center` presentational hint.
 The table rendering rules also support ASCII-case-insensitive
 `table[align=center]` as `margin-left:auto;margin-right:auto` in the
 horizontal LTR layout subset. Other table alignment values and legacy

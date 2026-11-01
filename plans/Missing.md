@@ -831,9 +831,15 @@ HTML `figure` now receives 40px left/right user-agent margins in the supported
 horizontal LTR subset; its captions remain ordinary block flow. HTML
 `address` now defaults to italic through the UA sheet and still requires an
 explicitly registered italic face for rendering.
-Legacy over-constrained descendant-margin alignment, table left/right floats,
-other table alignment attributes and alignment on other elements remain
-unsupported.
+The HTML table-cell `align` attribute now maps `left`, `right`, `center`,
+`middle` and `justify` on `td`/`th` to `text-align`, with ASCII-case-insensitive
+matching and `middle` mapped to `center`. Row/group alignment, `valign`,
+vertical cell alignment, legacy over-constrained descendant-margin alignment,
+table left/right floats and other alignment targets remain unsupported.
+This increment adds 14 CSS cascade cases, 13 layout acceptance/rejection cases
+and one retained-resize pixel regression. CSS (1,116), Layout (798), Content
+(89), the solution build (zero warnings/errors), all 16,105 solution tests and
+format verification pass.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

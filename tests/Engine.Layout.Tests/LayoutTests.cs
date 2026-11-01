@@ -873,6 +873,23 @@ public sealed class LayoutTests
         Assert.Equal(65, Find(root, "t").Content.Width);
     }
 
+    [Theory]
+    [InlineData("td", "left")]
+    [InlineData("td", "right")]
+    [InlineData("td", "center")]
+    [InlineData("td", "middle")]
+    [InlineData("td", "justify")]
+    [InlineData("th", "left")]
+    [InlineData("th", "right")]
+    [InlineData("th", "center")]
+    [InlineData("th", "middle")]
+    [InlineData("th", "justify")]
+    public void SupportedTableCellAlignHintsAreAcceptedByLayout(string tag, string align)
+    {
+        var html = $"<table><tr><{tag} align='{align}'>x</{tag}></tr></table>";
+        Assert.NotNull(UnorderedList(html).Root);
+    }
+
     [Fact]
     public void FigureUserAgentMarginsInsetItsContentInHorizontalLayout()
     {
@@ -972,6 +989,9 @@ public sealed class LayoutTests
     [InlineData("<table width=100><tr><td>x</td></tr></table>", "")]
     [InlineData("<table align=left><tr><td>x</td></tr></table>", "")]
     [InlineData("<table align='center '><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><tbody align=left><tr><td>x</td></tr></tbody></table>", "")]
+    [InlineData("<table><tr align=center><td>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td align='middle '>x</td></tr></table>", "")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:baseline}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "table{height:100px}")]

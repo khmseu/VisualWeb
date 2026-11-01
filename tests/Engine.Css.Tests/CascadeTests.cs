@@ -543,6 +543,51 @@ public sealed class CascadeTests
         Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["text-align"]);
     }
 
+    [Theory]
+    [InlineData("td", "LeFt", "left")]
+    [InlineData("td", "RiGhT", "right")]
+    [InlineData("td", "CeNtEr", "center")]
+    [InlineData("td", "MiDdLe", "center")]
+    [InlineData("td", "JuStIfY", "justify")]
+    [InlineData("th", "LeFt", "left")]
+    [InlineData("th", "RiGhT", "right")]
+    [InlineData("th", "CeNtEr", "center")]
+    [InlineData("th", "MiDdLe", "center")]
+    [InlineData("th", "JuStIfY", "justify")]
+    public void TableCellAlignHintsAcceptSupportedAsciiValues(string tag, string value, string expected)
+    {
+        var doc = Document($"<table><tr><{tag} id=target align='{value}'>x</{tag}></tr></table>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["text-align"]);
+    }
+
+    [Fact]
+    public void TableCellAlignHintUsesPresentationalCascadeAndAssignmentBudget()
+    {
+        var doc = Document("<table><tr><td id=target align=center>x</td></tr></table>");
+        var target = doc.GetElementById("target")!;
+        var user = new CssStyleSource("td{text-align:right}", CssOrigin.User);
+        Assert.Equal(new CssKeyword("center"),
+            CssStyleEngine.Compute(doc, [user], includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("left"),
+            CssStyleEngine.Compute(doc, [user, new("td{text-align:left}")], includeUserAgent: false,
+                cancellationToken: Cancellation).Styles[target]["text-align"]);
+        Assert.Empty(CssStyleEngine.Compute(doc, [new("td{color:red}")], includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, [new("td{color:red}")],
+            includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+        target.SetAttribute("align", "right");
+        Assert.Equal(new CssKeyword("right"),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["text-align"]);
+        target.RemoveAttribute("align");
+        Assert.Equal(new CssKeyword("start"),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["text-align"]);
+    }
+
     [Fact]
     public void CenterElementUsesCenterPresentationalHintAndBlockUaDefault()
     {
@@ -635,11 +680,22 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("tbody")]
+    [InlineData("thead")]
+    [InlineData("tr")]
     [InlineData("table")]
     [InlineData("span")]
     public void OtherElementsDoNotGetAlignHints(string tag)
     {
-        var doc = Document($"<{tag} id=target align=right>x</{tag}>");
+        var body = tag switch
+        {
+            "table" => "<table id=target align=right><tr><td>x</td></tr></table>",
+            "thead" => "<table><thead id=target align=right><tr><th>x</th></tr></thead></table>",
+            "tbody" => "<table><tbody id=target align=right><tr><td>x</td></tr></tbody></table>",
+            "tr" => "<table><tr id=target align=right><td>x</td></tr></table>",
+            _ => $"<{tag} id=target align=right>x</{tag}>"
+        };
+        var doc = Document(body);
         var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
         Assert.Equal(new CssKeyword("start"), result.Styles[doc.GetElementById("target")!]["text-align"]);
     }
