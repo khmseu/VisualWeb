@@ -138,7 +138,8 @@
   Effekte bleiben ausdruecklich ausgeschlossen. `mark` wird erst nach Layout-/
   Paint-Regressions als End-to-End-Fall integriert (KP-201). Pass 3 ist lokal
   validiert: Build ohne Warnungen, 16.154 Solution-Tests und Formatpruefung
-  bestehen; Commit und CI stehen aus.
+  bestehen. Commit `7bd6e99` ist gepusht; Linux/Windows x64+arm64 und CodeQL-CI
+  bestehen ebenfalls (KP-202).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

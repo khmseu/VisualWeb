@@ -5620,4 +5620,18 @@ atomic-inline support. It is not a user decision about broader CSS behavior.
 per-line rectangles and painting emits them before line text, ancestor-first.
 The HTML `mark` UA background/text defaults are covered by cascade and rendered
 pixel regressions. Build passed with zero warnings, all 16,154 solution tests
-passed, and format verification passed. Commit and CI are pending.
+passed, and format verification passed. Commit `7bd6e99` is pushed; Linux x64/
+arm64, Windows x64/arm64 and CodeQL checks passed
+([Linux](https://github.com/khmseu/VisualWeb/actions/runs/41359886765),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41359886868),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41359886768)).
+
+### KP-202 - Pass 3 CI green
+
+- Documented on: 2026-11-01, Europe/Berlin.
+- Source: GitHub Actions for commit `7bd6e992b2220121110e6b2f72fd11eea3813594`.
+- Related: KP-201; Pass 3 of the ten-pass request.
+
+**Verified:** Linux x64/arm64, Windows x64/arm64 and CodeQL jobs all completed
+successfully. The implementation and local validation recorded in KP-201 are
+therefore CI-verified on these targets.

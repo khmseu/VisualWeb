@@ -651,6 +651,10 @@ author overrides remain in the normal cascade. See the [layout](../docs/text-lay
 Validation: the full solution build passed with zero warnings, all 16,154
 solution tests passed, and `dotnet format VisualWeb.slnx --verify-no-changes
 --no-restore --exclude third_party` passed.
+Commit `7bd6e99` is pushed. Linux x64/arm64, Windows x64/arm64 and CodeQL
+checks passed ([Linux](https://github.com/khmseu/VisualWeb/actions/runs/41359886765),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41359886868),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41359886768)).
 
 The earlier underline-only parser increment added 36 regressions and its
 extension added CSS default/cascade, native underline-pixel and descendant-
