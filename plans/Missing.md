@@ -504,11 +504,17 @@ cap per the bounded parsing rules, and `LayoutOptions.MaxTableColumns` (default
 `LayoutOptions.MaxTableColumnOperations` (default 10,000,000); attribute
 scanning retains the shared text and cancellation budgets. Focused layout tests
 cover geometry, parsing, caps and attribute limits; native Content pixels match
-an equivalent unspanned grid. Remaining table gaps include `rowspan`, captions/columns,
-anonymous/arbitrary tables, and other listed exclusions. Layout (807), Content
-(92), solution build (zero warnings/errors), all 16,130 solution tests and
-solution formatting verification pass with the final sparse-allocation
-implementation. The separate commit, push and CI results remain pending.
+an equivalent unspanned grid. Remaining table gaps include `rowspan`,
+captions/columns, anonymous/arbitrary tables, and other listed exclusions.
+Layout (807), Content (92), solution build (zero warnings/errors), all 16,130
+solution tests and solution formatting verification pass. Commit `3e568b1` is
+pushed; Linux, Windows confinement and CodeQL CI pass (runs 41342219697,
+41342219768 and 41342218952).
+
+Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
+table-layer order beneath cells. Layout (807), Content (93), the
+zero-warning solution build, all 16,131 solution tests and solution formatting
+verification pass locally.
 
 The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
 the normal cascade. An override may make a hidden element visible, but
@@ -832,15 +838,16 @@ smoke and all 15,329 solution tests pass, including 338 Layout, 42 Content and
 findings on unchanged lines; all changed test files pass a targeted check.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
-separate borders, one spacing length, top-aligned text/block cells and
-table/cell backgrounds through ordinary paint flow. Explicit table width and
-cell heights act as minima; header/footer groups are ordered around body groups.
+separate borders, one spacing length, top-aligned text/block cells, and
+table/cell background colors and solid borders through ordinary paint flow.
+Explicit table width and cell heights act as minima. Header/footer groups are
+ordered around body groups.
 Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
 constraints equally across tracks; the total column grid is capped by
 `LayoutOptions.MaxTableColumns` before allocation and repeated track work by
 `LayoutOptions.MaxTableColumnOperations`. `rowspan`, captions/columns,
 anonymous/arbitrary CSS tables, collapsed borders, fixed layout, nested
-tables/widgets, percentages inside cells, row/group backgrounds and legacy
+tables/widgets, percentages inside cells and legacy
 presentation attributes remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
@@ -848,6 +855,13 @@ exact work limits and cancellation, native pixels, and local/process
 scroll/link/retained resize behavior. Build, touched suites and all 14,340
 solution tests pass locally. Formatting reports only the three established
 baseline findings, not new table findings.
+
+Pass 10 accepts row-group and row `background-color` on canonical tables.
+Existing parent-before-child paint traversal paints these layers below cells,
+so transparent cells reveal row colors and row spacing reveals the group color.
+Margins, padding, borders, row/group sizing and column backgrounds remain
+unsupported. Layout (807), Content (93), the zero-warning solution build, all
+16,131 solution tests and solution formatting verification pass locally.
 
 **A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
 

@@ -967,6 +967,28 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void AutomaticTablesPaintRowAndGroupBackgroundLayers()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><table><tbody><tr><td></td></tr><tr><td></td></tr></tbody></table>";
+        CssStyleSource[] styles =
+        [
+            new("*{margin:0}table{width:40px;border-spacing:4px;background-color:yellow}"
+                + "tbody{background-color:green}tr{background-color:red}td{width:32px;height:20px;padding:0}")
+        ];
+
+        var result = OfflinePageRenderer.Render(html, styles, text, fonts, 50, 50,
+            cancellationToken: Cancellation);
+
+        Assert.Empty(result.Styles.Diagnostics);
+        Assert.Equal(new byte[] { 0, 0, 255, 255 }, result.Frame.Pixels.Span.Slice(5 * result.Frame.Stride + 5 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 0, 128, 0, 255 }, result.Frame.Pixels.Span.Slice(25 * result.Frame.Stride + 5 * 4, 4).ToArray());
+        Assert.Equal(new byte[] { 0, 255, 255, 255 }, result.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Fact]
     public void SimpleLegacyDoctypeDocumentReachesAnOfflineNativeFrame()
     {
         using var font = new TextFont(FontPath);

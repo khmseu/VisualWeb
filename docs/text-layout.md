@@ -224,7 +224,8 @@ not a claim of matching every browser.
 Header groups precede ordinary groups and footer groups follow them.
 Cells are top-aligned and equalized to the row's maximum border-box height;
 specified cell height is a minimum. Cell block margins do not collapse through
-cell edges. Table/cell backgrounds and solid borders use ordinary paint flow.
+cell edges. Table, row-group, row and cell `background-color` layers paint in
+CSS 2.2 order; solid borders use the existing paint flow.
 UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
 is not synthesized. Measurement and arrangement share node, text, shaping,
 line, glyph, box, depth and cancellation budgets.
@@ -233,7 +234,7 @@ Explicit failures remain for `rowspan` other than absent/exact `1`, captions,
 columns/colgroups, anonymous or arbitrary CSS tables, nested tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, other cell alignments, nonzero cell margins, cell maximum height,
-nonautomatic table/row/group heights, row/group sizing/decorations/backgrounds,
+nonautomatic table/row/group heights, row/group sizing/decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 `cellspacing`, `valign`, `nowrap`). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR

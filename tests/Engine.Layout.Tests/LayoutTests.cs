@@ -1060,9 +1060,19 @@ public sealed class LayoutTests
     [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:baseline}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "table{height:100px}")]
-    [InlineData("<table><tr><td>x</td></tr></table>", "tr{background-color:red}")]
     public void UnsupportedTableFeaturesFailInsteadOfReturningApproximateGeometry(string html, string css) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, css));
+
+    [Fact]
+    public void TableRowAndGroupBackgroundsRemainInTheSupportedGrid()
+    {
+        var root = UnorderedList(
+            "<table><tbody id=group><tr id=row><td>x</td></tr></tbody></table>",
+            "#group{background-color:green}#row{background-color:red}").Root!;
+
+        Assert.Single(Find(root, "group").Children);
+        Assert.Single(Find(root, "row").Children);
+    }
 
     [Fact]
     public void WidthPaddingBorderAndAutoMarginsFollowContainingBlockEquation()

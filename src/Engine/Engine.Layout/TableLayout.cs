@@ -197,9 +197,8 @@ public static partial class StaticLayout
                 || style["min-width"] is not CssKeyword { Value: "auto" }
                 || style["max-width"] is not CssKeyword { Value: "none" }
                 || Edges(style, "margin", 0) != default || Edges(style, "padding", 0) != default
-                || Edges(style, "border", 0, "-width") != default
-                || style["background-color"] is not CssColor { Alpha: 0 })
-            { throw new UnsupportedLayoutException("Row groups and rows require automatic sizing and no decoration/background."); }
+                || Edges(style, "border", 0, "-width") != default)
+            { throw new UnsupportedLayoutException("Row groups and rows require automatic sizing without margins, padding or borders."); }
         }
 
         private static void RejectTableAttributes(DomElement element)
