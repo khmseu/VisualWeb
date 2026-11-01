@@ -899,6 +899,37 @@ public sealed class ContentTests
         Assert.Empty(disabled.DisplayList.Commands.OfType<DrawUnderline>());
     }
 
+    [Theory]
+    [InlineData("del")]
+    [InlineData("s")]
+    [InlineData("strike")]
+    public void DeletionElementDefaultsPaintLineThroughAndAllowAuthorOverride(string tag)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        CssStyleSource[] styles = [new("*{margin:0;font-size:30px;line-height:1}")];
+        var actual = OfflinePageRenderer.Render(
+            $"<!doctype html><{tag}>Removed text</{tag}>", styles, text, fonts, 220, 60,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(
+            "<!doctype html><span style='text-decoration:line-through'>Removed text</span>",
+            styles, text, fonts, 220, 60, cancellationToken: Cancellation);
+        CssStyleSource[] disabledStyles = [.. styles, new($"{tag}{{text-decoration:none}}")];
+        var disabled = OfflinePageRenderer.Render(
+            $"<!doctype html><{tag}>Removed text</{tag}>", disabledStyles, text, fonts, 220, 60,
+            cancellationToken: Cancellation);
+        var plain = OfflinePageRenderer.Render(
+            "<!doctype html><span>Removed text</span>", styles, text, fonts, 220, 60,
+            cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Contains(actual.DisplayList.Commands, command => command is DrawLineThrough);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(plain.Frame.Pixels.ToArray(), disabled.Frame.Pixels.ToArray());
+        Assert.Empty(disabled.DisplayList.Commands.OfType<DrawLineThrough>());
+    }
+
     [Fact]
     public void NoTextDecorationMatchesUndecoratedNativePixelsAndRetainedResize()
     {

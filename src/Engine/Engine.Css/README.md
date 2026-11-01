@@ -79,12 +79,15 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 (ID `html`) give `listing`, `xmp` and `plaintext` the same block display,
 1em vertical margins, monospace family and preserved whitespace as `pre`.
 They use the normal cascade and require an explicitly configured face.
-`text-decoration` and `text-decoration-line` accept `none`, `underline` and
+`text-decoration` and `text-decoration-line` accept `none`, `underline`,
+`line-through` and
 the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`),
 with a non-inherited line value and the normal cascade. `revert-layer` remains
 unsupported. `none` neither adds nor inhibits ancestor decoration. Paint uses
 the decorating ancestor's computed color and the registered shaping font's
-OpenType underline metrics. Overline, line-through, other decoration
+OpenType underline metrics; line-through uses the exact registered font's
+OpenType strikeout metrics. HTML `del`, `s` and `strike` receive the
+line-through UA default. Overline, other decoration
 style/color/thickness values, atomic-inline decoration and skip-ink remain
 unsupported.
 

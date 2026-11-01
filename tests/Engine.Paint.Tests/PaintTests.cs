@@ -136,6 +136,22 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void LineThroughUsesTheDecoratingAncestorColorAndDescendantNoneDoesNotCancelIt()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:line-through}span{color:red;text-decoration:none}";
+        var list = Page(html, css);
+        var glyph = Assert.Single(list.Commands.OfType<DrawGlyphRun>());
+        var lineThrough = Assert.Single(list.Commands.OfType<DrawLineThrough>());
+
+        Assert.Equal(Red, glyph.Color);
+        Assert.Equal(Blue, lineThrough.Color);
+        Assert.Equal(glyph.FontIdentity, lineThrough.FontIdentity);
+        Assert.Equal(glyph.FontSize, lineThrough.FontSize);
+        Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
     public void UnderlineRasterizesWithRegisteredFontMetricsAndPreflightsItsResources()
     {
         using var font = new TextFont(FontPath);
@@ -767,6 +783,33 @@ public sealed class PaintTests
         var forgedRoot = layout.Root with { Children = [forgedBody], Flow = [new LayoutBlockItem(forgedBody)] };
         Assert.Throws<InvalidOperationException>(() => DisplayListBuilder.Build(layout with { Root = forgedRoot }, styles,
             cancellationToken: Cancellation));
+    }
+
+    [Fact]
+    public void LineThroughRasterizesWithRegisteredFontMetricsAndPreflightsItsResources()
+    {
+        using var font = new TextFont(FontPath);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        var lineThrough = new DrawLineThrough(font.Identity, 20, Red, 2, 20, 20);
+        var list = new DisplayList(40, 40, [lineThrough]);
+
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Contains(Enumerable.Range(0, frame.Size.Height).SelectMany(y =>
+                Enumerable.Range(0, frame.Size.Width).Select(x => Pixel(frame, x, y))),
+            pixel => pixel.R > pixel.G && pixel.R > pixel.B);
+        const double longPageOffset = 9_999_980;
+        var scrolled = CpuRasterizer.Render(new(40, 40,
+            [lineThrough with { Baseline = longPageOffset }]), fonts, scrollY: longPageOffset - 10,
+            cancellationToken: Cancellation);
+        Assert.Contains(Enumerable.Range(0, scrolled.Size.Height).SelectMany(y =>
+                Enumerable.Range(0, scrolled.Size.Width).Select(x => Pixel(scrolled, x, y))),
+            pixel => pixel.R > pixel.G && pixel.R > pixel.B);
+        Assert.Throws<UnsupportedPaintException>(() => CpuRasterizer.Render(
+            new(40, 40, [lineThrough with { FontIdentity = "unregistered" }]), fonts,
+            cancellationToken: Cancellation));
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(
+            new(40, 40, [lineThrough with { X = 1e10 }]), fonts, cancellationToken: Cancellation));
     }
 
     [Fact]

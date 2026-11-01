@@ -626,27 +626,33 @@ conditional rules. See [screen media-type rules](../docs/css.md#screen-media-typ
 Its 36 new regressions, solution build and all 14,825 solution tests pass locally.
 Formatting reports only the three findings reproduced on base `ad0bca6`.
 
-The finite CSS cascade accepts `none` and `underline` for the
+The finite CSS cascade accepts `none`, `underline` and `line-through` for the
 `text-decoration` shorthand and `text-decoration-line`, including the existing
 `initial`, `inherit`, `unset` and `revert` CSS-wide keywords. The UA `:link`
-rule supplies both its unvisited blue color and an underline. Paint draws
-static text-fragment underlines with the decorating ancestor's computed color
-and exact registered font metrics; a descendant `none` does not cancel an
-ancestor decoration. Overline, line-through, other decoration style/color/
-thickness values, atomic-inline decoration and skip-ink remain unsupported.
-The earlier none-only parser increment added 36 regressions; this extension
-adds CSS default/cascade, native underline-pixel and descendant-propagation
-coverage. CSS (1,102), Paint (65) and Content (88) tests pass. The full
-solution build has zero warnings/errors and formatting verification passes.
-The changed-tree full suite passes all 16,077 tests on retry; the full base
-suite at `3d00c0f` passes all 16,072 tests. An earlier local full run and the
-first Windows x64 CI run each timed out in the unchanged
-`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` browser
-test. The test passes in isolation on both trees; the local full-suite retry
-and Windows x64 CI rerun also pass. No root cause is established. Commit
-[`c6f13b1`](https://github.com/khmseu/VisualWeb/commit/c6f13b1257f96dfd278624a2a1a9e634a178d0fd)
-is pushed; Linux, Windows x64/arm64 and CodeQL CI pass. See the
-[text-decoration scope](../docs/css.md#cascade-and-computed-values).
+rule supplies both its unvisited blue color and an underline; `del`, `s` and
+`strike` receive the HTML line-through default. Paint uses each decorating
+ancestor's color and exact registered OpenType metrics for underlines and
+line-throughs; descendant `none` does not cancel an ancestor decoration, and
+missing line-through metrics fail explicitly. Overline, other decoration
+style/color/thickness values, atomic-inline decoration and skip-ink remain
+unsupported.
+
+The earlier underline-only parser increment added 36 regressions and its
+extension added CSS default/cascade, native underline-pixel and descendant-
+propagation coverage. CSS (1,102), Paint (65) and Content (88) tests passed;
+the solution build and formatting verification passed. The changed-tree full
+suite passed 16,077 tests on retry and the base suite at `3d00c0f` passed
+16,072. An earlier local full run and first Windows x64 CI run timed out in the
+unchanged `UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`
+test; both the local full-suite retry and Windows x64 CI rerun passed, but no
+root cause was established. Commit `c6f13b1` was pushed and Linux, Windows
+x64/arm64 and CodeQL CI passed.
+
+This line-through increment adds CSS default/cascade, paint-command/metric,
+native pixel/scroll and retained content-pixel coverage. Focused CSS (1,134),
+Paint (67) and Content (96) suites pass. The solution build succeeds with zero
+warnings, all 16,141 solution tests pass, and solution formatting verification
+passes. Commit, push and CI status remain to be verified.
 
 The current engine implements finite static block/inline rendering. Missing essentials include:
 

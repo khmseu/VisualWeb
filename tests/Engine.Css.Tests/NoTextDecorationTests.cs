@@ -41,11 +41,34 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration:underline")]
     [InlineData("text-decoration-line:underline")]
     [InlineData("text-decoration:UNDERLINE")]
-    public void UnderlineIsTheOnlyVisibleLineValue(string declaration)
+    [InlineData("text-decoration:line-through")]
+    [InlineData("text-decoration-line:line-through")]
+    [InlineData("text-decoration:LINE-THROUGH")]
+    public void SupportedVisibleLineValuesAreAccepted(string declaration)
     {
         var (result, style) = Compute(declaration);
         Assert.Empty(result.Diagnostics);
-        Assert.Equal(new CssKeyword("underline"), style["text-decoration-line"]);
+        Assert.Equal(new CssKeyword(declaration.Contains("line-through", StringComparison.OrdinalIgnoreCase)
+            ? "line-through" : "underline"), style["text-decoration-line"]);
+    }
+
+    [Theory]
+    [InlineData("del")]
+    [InlineData("s")]
+    [InlineData("strike")]
+    public void DeletionElementsHaveLineThroughUaDefaults(string tag)
+    {
+        var document = HtmlParser.Parse($"<!doctype html><{tag} id=x>Removed</{tag}>",
+            cancellationToken: Cancellation).Document;
+        var element = document.GetElementById("x")!;
+        var defaults = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        var overridden = CssStyleEngine.Compute(document, [new($"{tag}{{text-decoration:none}}")],
+            cancellationToken: Cancellation);
+
+        Assert.Empty(defaults.Diagnostics);
+        Assert.Empty(overridden.Diagnostics);
+        Assert.Equal(new CssKeyword("line-through"), defaults.Styles[element]["text-decoration-line"]);
+        Assert.Equal(new CssKeyword("none"), overridden.Styles[element]["text-decoration-line"]);
     }
 
     [Fact]
@@ -68,7 +91,6 @@ public sealed class NoTextDecorationTests
 
     [Theory]
     [InlineData("text-decoration:overline")]
-    [InlineData("text-decoration:line-through")]
     [InlineData("text-decoration:blink")]
     [InlineData("text-decoration:none underline")]
     [InlineData("text-decoration:none solid")]

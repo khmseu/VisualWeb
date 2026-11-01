@@ -35,6 +35,10 @@ public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCom
 /// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">underline</see>.</remarks>
 public sealed record DrawUnderline(string FontIdentity, double FontSize, CssColor Color,
     double X, double Baseline, double Width) : PaintCommand;
+/// <summary>A bounded line-through using the registered font's OpenType strikeout metrics.</summary>
+/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line-through</see>.</remarks>
+public sealed record DrawLineThrough(string FontIdentity, double FontSize, CssColor Color,
+    double X, double Baseline, double Width) : PaintCommand;
 /// <summary>A bounded solid ellipse used by disc list markers.</summary>
 /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.</remarks>
 public sealed record FillEllipse(LayoutRect Bounds, CssColor Color) : PaintCommand;
@@ -265,11 +269,20 @@ public static class DisplayListBuilder
                             fragment.Style["color"] as CssColor ?? throw new UnsupportedPaintException("Unresolved text color."));
                         if (fragment.Run.Width > 0)
                         {
-                            foreach (var decoration in Underlines(fragment.Source))
+                            foreach (var (decoration, decorationLine) in Decorations(fragment.Source))
                             {
-                                Add(new DrawUnderline(fragment.Run.FontIdentity, fragment.Run.FontSize,
-                                    decoration["color"] as CssColor ?? throw new UnsupportedPaintException("Unresolved underline color."),
-                                    fragment.X, fragment.Baseline, fragment.Run.Width));
+                                var color = decoration["color"] as CssColor
+                                    ?? throw new UnsupportedPaintException("Unresolved text decoration color.");
+                                if (decorationLine == "underline")
+                                {
+                                    Add(new DrawUnderline(fragment.Run.FontIdentity, fragment.Run.FontSize,
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width));
+                                }
+                                else
+                                {
+                                    Add(new DrawLineThrough(fragment.Run.FontIdentity, fragment.Run.FontSize,
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width));
+                                }
                             }
                         }
                     }
@@ -295,7 +308,7 @@ public static class DisplayListBuilder
             }
             if (glyphs.Count != 0) { Add(new DrawGlyphRun(run.FontIdentity, run.FontSize, color, glyphs, limits)); }
         }
-        IEnumerable<CssComputedStyle> Underlines(DomText source)
+        IEnumerable<(CssComputedStyle Style, string Line)> Decorations(DomText source)
         {
             var depth = 0;
             DomNode? current = source.ParentNode;
@@ -305,7 +318,8 @@ public static class DisplayListBuilder
                 if (++depth > limits.MaxDepth) { throw new PaintLimitException("Text decoration ancestry limit exceeded."); }
                 var style = styles.Styles.TryGetValue(element, out var computed) ? computed
                     : throw new InvalidOperationException("Paint styles are incomplete or stale.");
-                if (style["text-decoration-line"] is CssKeyword { Value: "underline" }) { yield return style; }
+                if (style["text-decoration-line"] is CssKeyword { Value: "underline" or "line-through" } line)
+                { yield return (style, line.Value); }
                 current = element.ParentNode;
             }
         }

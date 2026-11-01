@@ -125,9 +125,13 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   ancestor's computed color; no fallback metric is invented. Raster preflight
   validates the font, metric and finite geometry before framebuffer allocation.
   Ancestor decoration continues through in-flow text even when a descendant
-  computes `text-decoration-line:none`. This does not decorate atomic inline
-  content, draw overlines/line-throughs, support skip-ink, or implement other
-  decoration style/color/thickness values.
+  computes `text-decoration-line:none`. The bounded CSS `line-through` uses a
+  `DrawLineThrough` command and the exact registered font's OpenType strikeout
+  position/thickness metrics with the decorating ancestor's color; missing
+  metrics fail before framebuffer allocation. It likewise propagates through
+  in-flow text despite descendant `none`. Neither decoration covers atomic
+  inline content or supports skip-ink, other decoration lines, or style/color/
+  thickness values.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS
   viewport. Fractional physical coverage uses Skia's non-antialiased rectangle/
@@ -138,7 +142,7 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   from the native bitmap's actual stride.
 
 Images, gradients, advanced/differently colored borders, border radius,
-overlines, line-throughs, decoration styles/colors/thicknesses and skip-ink,
+overlines, decoration styles/colors/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
 diagnostics and prevents rendering; unsupported visible border styles throw

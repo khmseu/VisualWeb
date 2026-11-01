@@ -9,9 +9,10 @@ for squares. Nested-list UA defaults and author styles use the same commands.
 Circle strokes remain inside their bounds and
 preserve the actual underlying center pixels.
 Decimal (including zero-padded), ASCII alphabetic and Roman markers reuse the bounded glyph-run paint path.
-The finite `underline` text decoration uses the exact registered font's
-OpenType underline metrics and the decorating ancestor's computed color;
-other decoration lines and styles remain unsupported.
+Finite `underline` and `line-through` decorations use the exact registered
+font's corresponding OpenType metrics and the decorating ancestor's computed
+color. Missing required metrics fail explicitly; other decoration lines and
+styles remain unsupported.
 
 See the [painting guide](../../../docs/painting.md) for scope, ownership, budgets
 and offline evidence, the [project map](../../../docs/project-map.md) and
