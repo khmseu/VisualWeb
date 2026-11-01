@@ -4807,3 +4807,43 @@ Tests der beruehrten Subsysteme nach der Reviewkorrektur. Build,
 Formatpruefung und lokaler V8-Smoke bestanden bereits gemaess KP-164.
 Der begrenzte Nachweis zum Abbruch mitten im Scan bleibt gemaess KP-163
 offen. Commit, Push und zugehoerige CI-Ergebnisse stehen aus.
+
+### KP-166 - Altschriftgroesse Commit und CI Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Commit `80e9dac92a4b00ec788324c55f30bcc3049c952c`, erfolgreicher
+  Push sowie GitHub-Actions-Liste und Workflow-Details fuer genau diesen
+  Commit.
+- Bezug: KP-165.
+
+**Status (belegt):** Der zehnte Durchgang ist als
+`feat(css): support HTML font size hints` committed und gepusht; der
+Commit-Hook pruefte 13 Dateien ohne Befund. Bei der ersten Abfrage lief
+Linux (`41281804096`); Windows (`41281804036`) und der Push-Check
+(`41281803519`) waren eingereiht. Workflow-Details identifizierten letzteren
+anschliessend als laufendes CodeQL. Abschliessende Ergebnisse stehen aus.
+
+### KP-167 - Altschriftgroesse Linux und CodeQL bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossene GitHub-Actions-Laeufe `41281804096` und
+  `41281803519` fuer Commit `80e9dac92a4b00ec788324c55f30bcc3049c952c`.
+- Bezug: KP-166.
+
+**Status (belegt):** Linux x64 und arm64 sowie alle drei CodeQL-Analysen
+bestehen. Der Windows-Lauf ist noch nicht abgeschlossen; dessen Ergebnis
+steht aus.
+
+### KP-168 - Altschriftgroesse Windows und Auftrag abgeschlossen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossener GitHub-Actions-Lauf `41281804036` fuer Commit
+  `80e9dac92a4b00ec788324c55f30bcc3049c952c`; KP-161 und KP-167.
+- Bezug: KP-165 bis KP-167.
+
+**Status (belegt):** Windows x64 und arm64 bestehen fuer den zehnten Commit.
+Damit bestehen Linux, Windows und CodeQL fuer alle zehn separaten, gepushten
+Inkremente. Der letzte lokale Volltest besteht mit 16.043 Faellen; fruehere
+lokale Navigationstestfehler und ihre ungeklarten Ursachen bleiben gemaess
+KP-146 bis KP-151 und KP-157 bis KP-158 dokumentiert. Die
+Mid-Scan-Cancellation ist gemaess KP-163 nicht deterministisch getestet.

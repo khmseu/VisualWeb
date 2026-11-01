@@ -163,11 +163,16 @@
   Beim direkten Review wurden zwei zeitabhaengige Cancellation-Tests entfernt;
   lange Eingaben und vorab abgebrochene Verarbeitung bleiben getestet, ein
   deterministischer Abbruch mitten im Scan ist nicht nachgewiesen.
-  Commit und CI stehen aus
+  Commit `80e9dac` ist gepusht; Linux und Windows bestehen jeweils auf
+  x64 und arm64, ebenso CodeQL. Damit sind alle zehn angeforderten
+  Inkremente committed, gepusht und CI-gruen
   ([KP-162](./Kontextprotokoll.md#kp-162---altschriftgroesse-als-zehntes-inkrement),
   [KP-163](./Kontextprotokoll.md#kp-163---altschriftgroesse-implementiert-und-reviewt),
   [KP-164](./Kontextprotokoll.md#kp-164---altschriftgroesse-validierung-laeuft),
-  [KP-165](./Kontextprotokoll.md#kp-165---altschriftgroesse-volltest-bestanden)).
+  [KP-165](./Kontextprotokoll.md#kp-165---altschriftgroesse-volltest-bestanden),
+  [KP-166](./Kontextprotokoll.md#kp-166---altschriftgroesse-commit-und-ci-start),
+  [KP-167](./Kontextprotokoll.md#kp-167---altschriftgroesse-linux-und-codeql-bestanden),
+  [KP-168](./Kontextprotokoll.md#kp-168---altschriftgroesse-windows-und-auftrag-abgeschlossen)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
