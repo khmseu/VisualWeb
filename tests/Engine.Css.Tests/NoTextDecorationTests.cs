@@ -34,11 +34,39 @@ public sealed class NoTextDecorationTests
     {
         var (result, style) = Compute(property + ":" + keyword);
         Assert.Empty(result.Diagnostics);
-        Assert.Equal(new CssKeyword("none"), style["text-decoration-line"]);
+        Assert.Equal(new CssKeyword(keyword == "revert" ? "underline" : "none"), style["text-decoration-line"]);
     }
 
     [Theory]
     [InlineData("text-decoration:underline")]
+    [InlineData("text-decoration-line:underline")]
+    [InlineData("text-decoration:UNDERLINE")]
+    public void UnderlineIsTheOnlyVisibleLineValue(string declaration)
+    {
+        var (result, style) = Compute(declaration);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("underline"), style["text-decoration-line"]);
+    }
+
+    [Fact]
+    public void LinksUnderlineByDefaultAndTheAuthorCanDisableTheDecoration()
+    {
+        var document = HtmlParser.Parse("<!doctype html><a id=link href='/next'>Visit</a>",
+            cancellationToken: Cancellation).Document;
+        var link = document.GetElementById("link")!;
+        var ua = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        var author = CssStyleEngine.Compute(document, [new("a{text-decoration:none}")],
+            cancellationToken: Cancellation);
+        var disabled = CssStyleEngine.Compute(document, includeUserAgent: false,
+            cancellationToken: Cancellation);
+
+        Assert.Equal(new CssKeyword("underline"), ua.Styles[link]["text-decoration-line"]);
+        Assert.Empty(author.Diagnostics);
+        Assert.Equal(new CssKeyword("none"), author.Styles[link]["text-decoration-line"]);
+        Assert.Equal(new CssKeyword("none"), disabled.Styles[link]["text-decoration-line"]);
+    }
+
+    [Theory]
     [InlineData("text-decoration:overline")]
     [InlineData("text-decoration:line-through")]
     [InlineData("text-decoration:blink")]
@@ -49,7 +77,6 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration:none,none")]
     [InlineData("text-decoration:inherit none")]
     [InlineData("text-decoration:revert-layer")]
-    [InlineData("text-decoration-line:underline")]
     [InlineData("text-decoration-line:overline")]
     [InlineData("text-decoration-line:revert-layer")]
     [InlineData("text-decoration-style:solid")]
@@ -73,7 +100,7 @@ public sealed class NoTextDecorationTests
             [new("a{text-decoration:none;text-decoration-line:none}")],
             includeUserAgent: false, options: exact, cancellationToken: Cancellation));
         var invalid = CssStyleEngine.Compute(document,
-            [new("a{text-decoration:underline;text-decoration:none}")],
+            [new("a{text-decoration:overline;text-decoration:none}")],
             includeUserAgent: false, options: exact, cancellationToken: Cancellation);
         Assert.Single(invalid.Diagnostics);
     }

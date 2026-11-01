@@ -258,7 +258,7 @@ Supported longhands:
 | Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                                   |
 | Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors                                       |
 | Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                                  |
-| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces                |
+| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none/underline; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces      |
 
 The layout stage implements `text-align:justify` only for the bounded English
 inter-word policy described in [ordinary text flow](text-layout.md#ordinary-flow).
@@ -280,14 +280,17 @@ non-normal variants/widths, oblique angles and system-font keywords remain
 unsupported whole-declaration diagnostics. Existing font units, family lists,
 CSS-wide keywords and relative weight/size computation are reused. The engine
 does not add other font longhands or expand its exact native face policy.
-The finite `text-decoration` shorthand and `text-decoration-line` accept only
-`none` and the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and
-`revert`), expanding to the non-inherited line longhand. `revert-layer` remains
-unsupported.
-`none` neither adds decoration nor inhibits a decoration from an ancestor;
-this subset cannot create any decorations. Visible lines and decoration
-style/color/thickness remain explicit diagnostics. The current UA sheet does
-not add link underlines. See the [line property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line)
+The finite `text-decoration` shorthand and `text-decoration-line` accept
+`none`, `underline`, and the supported CSS-wide keywords (`initial`, `inherit`,
+`unset`, and `revert`), expanding to the non-inherited line longhand.
+`revert-layer` remains unsupported. `none` does not inhibit a decoration
+originating on an ancestor. The UA `:link` rule supplies both the standard
+unvisited blue color and an underline through the ordinary cascade. Underlines
+are painted on static text fragments using the decorating ancestor's computed
+color and the exact registered font's OpenType underline metrics; they continue
+through in-flow descendants, and descendant `none` cannot cancel them.
+Overline, line-through, other decoration styles/colors/thicknesses, decoration
+of atomic inline content and skip-ink are unsupported diagnostics. See the [line property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line)
 and [shorthand](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration)
 (local ID `css-text-decoration`).
 
@@ -354,15 +357,15 @@ affects rendering, not discovery or processing of styles/scripts or successful
 form controls.
 
 The [HTML phrasing-content rendering rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
-(local ID `html`) include `:link { color: #0000EE }` in the UA sheet. The
-existing `:link` matcher applies it to HTML `a` and `area` elements with an
+(local ID `html`) include `:link { color: #0000EE; text-decoration: underline }`
+in the UA sheet. The existing `:link` matcher applies it to HTML `a` and `area` elements with an
 `href`, including empty, invalid or navigation-blocked values; it never
 consults history and treats every link as unvisited. Descendants inherit the
 color unless overridden. User, author, inline and important declarations, as
 well as `revert`, use the normal cascade. With the UA sheet disabled and no
 other color declaration, links inherit their parent's color or use the initial
-color. `:visited`, active and hover styling, cursor behavior and visible text
-decoration, including link underlining, remain unsupported.
+color. `:visited`, active and hover styling and cursor behavior remain
+unsupported.
 
 The [HTML phrasing-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) set `big` to `font-size:larger`, `small` to

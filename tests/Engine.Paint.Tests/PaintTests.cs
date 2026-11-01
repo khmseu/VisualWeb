@@ -119,6 +119,49 @@ public sealed class PaintTests
             CpuRasterizer.Render(list, fonts, cancellationToken: canceled.Token));
     }
 
+    [Fact]
+    public void UnderlineUsesTheDecoratingAncestorColorAndDescendantNoneDoesNotCancelIt()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:underline}span{color:red;text-decoration:none}";
+        var list = Page(html, css);
+        var glyph = Assert.Single(list.Commands.OfType<DrawGlyphRun>());
+        var underline = Assert.Single(list.Commands.OfType<DrawUnderline>());
+
+        Assert.Equal(Red, glyph.Color);
+        Assert.Equal(Blue, underline.Color);
+        Assert.Equal(glyph.FontIdentity, underline.FontIdentity);
+        Assert.Equal(glyph.FontSize, underline.FontSize);
+        Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
+    public void UnderlineRasterizesWithRegisteredFontMetricsAndPreflightsItsResources()
+    {
+        using var font = new TextFont(FontPath);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        var underline = new DrawUnderline(font.Identity, 20, Red, 2, 20, 20);
+        var list = new DisplayList(40, 40, [underline]);
+
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Contains(Enumerable.Range(0, frame.Size.Height).SelectMany(y =>
+                Enumerable.Range(0, frame.Size.Width).Select(x => Pixel(frame, x, y))),
+            pixel => pixel.R == 255 && pixel.G == 0 && pixel.B == 0);
+        const double longPageOffset = 9_999_980;
+        var scrolled = CpuRasterizer.Render(new(40, 40,
+            [underline with { Baseline = longPageOffset }]), fonts, scrollY: longPageOffset,
+            cancellationToken: Cancellation);
+        Assert.Contains(Enumerable.Range(0, scrolled.Size.Height).SelectMany(y =>
+                Enumerable.Range(0, scrolled.Size.Width).Select(x => Pixel(scrolled, x, y))),
+            pixel => pixel.R == 255 && pixel.G == 0 && pixel.B == 0);
+        Assert.Throws<UnsupportedPaintException>(() => CpuRasterizer.Render(
+            new(40, 40, [underline with { FontIdentity = "unregistered" }]), fonts,
+            cancellationToken: Cancellation));
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(
+            new(40, 40, [underline with { X = 1e10 }]), fonts, cancellationToken: Cancellation));
+    }
+
     [Theory]
     [InlineData(0, 0, 255, 255)]
     [InlineData(20, 200, 30, 128)]

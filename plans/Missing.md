@@ -450,7 +450,8 @@ unstyled links on simple pages are visually distinguishable. The existing
 history-independent matcher treats every `a`/`area` with an `href` as
 unvisited, even when navigation to its value is blocked. Normal cascade and
 inheritance apply; disabling the UA sheet removes the default. Visited/active
-styling, cursors and link underlining remain unsupported. See the
+styling and cursor behavior remain unsupported. The UA link underline is
+described with the bounded text-decoration support below. See the
 [link color scope](../docs/css.md#cascade-and-computed-values).
 Its 26 new CSS, native-content and local/process browser cases pass, including
 exact shared limits and scripted attribute recomputation. The solution build,
@@ -593,15 +594,24 @@ conditional rules. See [screen media-type rules](../docs/css.md#screen-media-typ
 Its 36 new regressions, solution build and all 14,825 solution tests pass locally.
 Formatting reports only the three findings reproduced on base `ad0bca6`.
 
-The finite CSS cascade accepts `text-decoration:none` and
-`text-decoration-line:none`, including the existing `initial`, `inherit`,
-`unset` and `revert` CSS-wide keywords. This prevents a common declaration from
-rejecting an otherwise renderable page, without adding or inhibiting any
-visible decoration. Line drawing, decoration style/color/
-thickness and default link underlines remain unsupported. See the
-[no-decoration scope](../docs/css.md#cascade-and-computed-values).
-Its 36 new regressions, solution build and all 14,888 solution tests pass locally.
-Formatting reports only the three findings reproduced on base `ad0bca6`.
+The finite CSS cascade accepts `none` and `underline` for the
+`text-decoration` shorthand and `text-decoration-line`, including the existing
+`initial`, `inherit`, `unset` and `revert` CSS-wide keywords. The UA `:link`
+rule supplies both its unvisited blue color and an underline. Paint draws
+static text-fragment underlines with the decorating ancestor's computed color
+and exact registered font metrics; a descendant `none` does not cancel an
+ancestor decoration. Overline, line-through, other decoration style/color/
+thickness values, atomic-inline decoration and skip-ink remain unsupported.
+The earlier none-only parser increment added 36 regressions; this extension
+adds CSS default/cascade, native underline-pixel and descendant-propagation
+coverage. CSS (1,102), Paint (65) and Content (88) tests pass. The full
+solution build has zero warnings/errors and formatting verification passes.
+The full solution test run passed 16,076 tests but failed the unchanged
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` browser
+test. That test and all 176 `ShellTests` pass when run alone on both the
+changed tree and base commit `3d00c0f`; the cause of the solution-run failure
+is unresolved and is not claimed to be baseline. CI is pending. See the
+[text-decoration scope](../docs/css.md#cascade-and-computed-values).
 
 The current engine implements finite static block/inline rendering. Missing essentials include:
 

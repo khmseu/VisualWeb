@@ -1,4 +1,5 @@
 using VisualWeb.Engine.Css;
+using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Layout;
 using VisualWeb.Engine.Text;
 
@@ -30,6 +31,10 @@ public sealed record PaintOptions
 
 public abstract record PaintCommand;
 public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCommand;
+/// <summary>A bounded underline using the registered font's OpenType underline metrics.</summary>
+/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">underline</see>.</remarks>
+public sealed record DrawUnderline(string FontIdentity, double FontSize, CssColor Color,
+    double X, double Baseline, double Width) : PaintCommand;
 /// <summary>A bounded solid ellipse used by disc list markers.</summary>
 /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.</remarks>
 public sealed record FillEllipse(LayoutRect Bounds, CssColor Color) : PaintCommand;
@@ -258,6 +263,15 @@ public static class DisplayListBuilder
                     {
                         DrawText(fragment.Run, fragment.X, fragment.Baseline,
                             fragment.Style["color"] as CssColor ?? throw new UnsupportedPaintException("Unresolved text color."));
+                        if (fragment.Run.Width > 0)
+                        {
+                            foreach (var decoration in Underlines(fragment.Source))
+                            {
+                                Add(new DrawUnderline(fragment.Run.FontIdentity, fragment.Run.FontSize,
+                                    decoration["color"] as CssColor ?? throw new UnsupportedPaintException("Unresolved underline color."),
+                                    fragment.X, fragment.Baseline, fragment.Run.Width));
+                            }
+                        }
                     }
                 }
                 else { throw new InvalidOperationException("Unknown layout flow item."); }
@@ -280,6 +294,20 @@ public static class DisplayListBuilder
                 x += glyph.Advance;
             }
             if (glyphs.Count != 0) { Add(new DrawGlyphRun(run.FontIdentity, run.FontSize, color, glyphs, limits)); }
+        }
+        IEnumerable<CssComputedStyle> Underlines(DomText source)
+        {
+            var depth = 0;
+            DomNode? current = source.ParentNode;
+            while (current is DomElement element)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (++depth > limits.MaxDepth) { throw new PaintLimitException("Text decoration ancestry limit exceeded."); }
+                var style = styles.Styles.TryGetValue(element, out var computed) ? computed
+                    : throw new InvalidOperationException("Paint styles are incomplete or stale.");
+                if (style["text-decoration-line"] is CssKeyword { Value: "underline" }) { yield return style; }
+                current = element.ParentNode;
+            }
         }
     }
 }

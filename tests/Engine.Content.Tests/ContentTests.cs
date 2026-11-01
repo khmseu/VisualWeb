@@ -851,13 +851,35 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void LinkUnderlineUsesFontMetricsAndAnAuthorCanDisableIt()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string link = "<!doctype html><a href='/next'>Visit</a>";
+        const string plain = "<!doctype html><span>Visit</span>";
+        CssStyleSource[] baseStyles = [new("*{margin:0;font-size:30px;line-height:1}")];
+        CssStyleSource[] plainStyles = [.. baseStyles, new("span{color:#0000ee}")];
+        CssStyleSource[] disabledStyles = [.. baseStyles, new("a{text-decoration:none}")];
+
+        var actual = OfflinePageRenderer.Render(link, baseStyles, text, fonts, 120, 50, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(plain, plainStyles, text, fonts, 120, 50, cancellationToken: Cancellation);
+        var disabled = OfflinePageRenderer.Render(link, disabledStyles, text, fonts, 120, 50, cancellationToken: Cancellation);
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(new CssColor(0, 0, 238), Assert.Single(actual.DisplayList.Commands.OfType<DrawUnderline>()).Color);
+        Assert.NotEqual(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expected.Frame.Pixels.ToArray(), disabled.Frame.Pixels.ToArray());
+        Assert.Empty(disabled.DisplayList.Commands.OfType<DrawUnderline>());
+    }
+
+    [Fact]
     public void NoTextDecorationMatchesUndecoratedNativePixelsAndRetainedResize()
     {
         using var font = new TextFont(FontPath);
         var text = new FontSet(); text.Register("serif", font);
         using var fonts = new PaintFontRegistry(); fonts.Register(font);
-        const string html = "<!doctype html><a href='/next'>Visit <span>here</span></a>";
-        CssStyleSource[] withNone = [new("*{margin:0}a{text-decoration:none}span{text-decoration-line:none}")];
+        const string html = "<!doctype html><span>Visit <span>here</span></span>";
+        CssStyleSource[] withNone = [new("*{margin:0}span{text-decoration:none}span span{text-decoration-line:none}")];
         CssStyleSource[] ordinary = [new("*{margin:0}")];
         var actual = OfflinePageRenderer.Render(html, withNone, text, fonts, 100, 40, cancellationToken: Cancellation);
         var expected = OfflinePageRenderer.Render(html, ordinary, text, fonts, 100, 40, cancellationToken: Cancellation);

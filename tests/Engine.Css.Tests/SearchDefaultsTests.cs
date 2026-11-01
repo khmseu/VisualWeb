@@ -16,8 +16,9 @@ public sealed class SearchDefaultsTests
         // plus 11 :is() subject alternatives; each simple selector takes two steps.
         // The matching search type selector is included in those 108 checks.
         const long matches = 4 * (108 + 11) * 2;
-        // 60 matching UA declarations expand to 66 assignments (four-sided shorthands).
-        const int assignments = 66;
+        // The extra UA link-decoration assignment is compiled with the other 60 matching UA declarations.
+        // Four-sided shorthands bring the bounded assignment count to 67.
+        const int assignments = 67;
         // One author selector is checked on all four elements and adds one assignment.
         const long authorMatches = matches + 4 * 2;
         CssStyleSource[] author = [new("search{display:inline}")];

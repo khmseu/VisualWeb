@@ -126,19 +126,20 @@ public sealed class LinkColorDefaultsTests
     public void UserAgentRuleSharesExactAssignmentAndMatchingBudgetsAndCancellation()
     {
         var document = Parse("<a id=target href>text</a>");
-        // The page matches 60 UA declarations; margin and padding expansion add six assignments.
+        // The page matches 61 UA declarations including the new :link underline;
+        // margin and padding expansion bring the assignment total to 67.
         // The four elements (html, head, body, a) each check 108 top-level selectors and
         // 11 unmatched :is() subject alternatives, at two operations per simple selector.
-        const int assignments = 66;
+        const int assignments = 67;
         const long matches = 952; // 4 * (108 + 11) * 2
         // The author rule adds one assignment and one two-operation selector per element.
-        const int authorAssignments = 67;
+        const int authorAssignments = 68;
         const long authorMatches = 960;
         CssStyleSource[] author = [new("a{color:red}")];
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches - 1 }));
-        Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments }, author)); // 66 - 1
+        Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments }, author));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches }, author));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = authorMatches - 1 }, author));
         var exact = Calculate(new() { MaxAssignments = assignments, MaxMatchOperations = matches });

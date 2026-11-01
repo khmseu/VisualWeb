@@ -25,7 +25,7 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// <summary>Renderer-local static style computation with explicit unsupported-feature diagnostics.</summary>
 /// <remarks>Spec: css-cascade; <see href="https://www.w3.org/TR/css-cascade-5/#cascade">cascade</see>.
 /// Screen-only <see href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-media">@media</see> type lists use
-/// css-conditional-3 and css-mediaqueries-5. The none-only text-decoration subset uses css-text-decoration
+/// css-conditional-3 and css-mediaqueries-5. The underline-only text-decoration subset uses css-text-decoration
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line values</see> and
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see>.
 /// Finite marker values use css2-lists
@@ -91,7 +91,7 @@ public static class CssStyleEngine
         code, kbd, samp, tt { font-family: monospace }
         big { font-size: larger }
         small { font-size: smaller }
-        :link { color: #0000EE }
+        :link { color: #0000EE; text-decoration: underline }
         """;
 
     /// <summary>Finds a supported HTML list marker hint without accepting unsupported list types.</summary>

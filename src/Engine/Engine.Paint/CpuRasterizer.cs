@@ -141,6 +141,16 @@ public static class CpuRasterizer
                     ArgumentNullException.ThrowIfNull(fill.Color);
                     Rect(fill.Bounds);
                     break;
+                case DrawUnderline underline:
+                    ArgumentException.ThrowIfNullOrWhiteSpace(underline.FontIdentity);
+                    ArgumentNullException.ThrowIfNull(underline.Color);
+                    var underlineBounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
+                    Rect(underlineBounds);
+                    var localUnderline = Rect(new(0, 0, underlineBounds.Width, underlineBounds.Height));
+                    if ((underlineBounds.Width > 0 && localUnderline.Left >= localUnderline.Right)
+                        || localUnderline.Top >= localUnderline.Bottom)
+                    { throw new PaintLimitException("Underline geometry exceeds Skia's numeric precision."); }
+                    break;
                 case FillEllipse ellipse:
                     ArgumentNullException.ThrowIfNull(ellipse.Color);
                     Rect(ellipse.Bounds);
@@ -203,6 +213,22 @@ public static class CpuRasterizer
                 paint.Color = Color(fill.Color);
                 paint.IsAntialias = false;
                 canvas.DrawRect(Rect(fill.Bounds), paint);
+            }
+            else if (command is DrawUnderline underline)
+            {
+                var bounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
+                canvas.Save();
+                try
+                {
+                    canvas.ResetMatrix();
+                    canvas.Scale(deviceScale);
+                    canvas.Translate(RelativeCoordinate(bounds.X - scrollX),
+                        RelativeCoordinate(bounds.Y - activeScrollY));
+                    paint.Color = Color(underline.Color);
+                    paint.IsAntialias = true;
+                    canvas.DrawRect(Rect(new(0, 0, bounds.Width, bounds.Height)), paint);
+                }
+                finally { canvas.Restore(); }
             }
             else if (command is FillEllipse ellipse)
             {
@@ -282,6 +308,19 @@ public static class CpuRasterizer
         return new(pixels, size, stride);
     }
     private static SKColor Color(CssColor color) => new(color.Red, color.Green, color.Blue, color.Alpha);
+    private static LayoutRect UnderlineBounds(DrawUnderline underline, SKTypeface typeface)
+    {
+        if (!double.IsFinite(underline.FontSize) || underline.FontSize <= 0 || underline.FontSize > 4096)
+        { throw new UnsupportedPaintException("Underline requires a positive supported font size."); }
+        var size = Math.Round(underline.FontSize * 64, MidpointRounding.AwayFromZero) / 64;
+        using var font = new SKFont(typeface, Float(size)) { Hinting = SKFontHinting.None };
+        font.GetFontMetrics(out var metrics);
+        if (metrics.UnderlinePosition is not { } position
+            || metrics.UnderlineThickness is not { } thickness
+            || !float.IsFinite(position) || !float.IsFinite(thickness) || thickness <= 0)
+        { throw new UnsupportedPaintException("The registered font lacks usable underline metrics."); }
+        return new(underline.X, underline.Baseline + position, underline.Width, thickness);
+    }
     private static float Float(double value)
     {
         if (!double.IsFinite(value) || value is < -1e9 or > 1e9)

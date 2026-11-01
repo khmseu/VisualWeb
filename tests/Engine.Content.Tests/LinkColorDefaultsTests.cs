@@ -22,7 +22,7 @@ public sealed class LinkColorDefaultsTests
         text.Register("serif", font);
         using var fonts = new PaintFontRegistry();
         fonts.Register(font);
-        CssStyleSource[] styles = [new("*{margin:0}body{font-size:28px;line-height:1}")];
+        CssStyleSource[] styles = [new("*{margin:0}body{font-size:28px;line-height:1}a{text-decoration:none}")];
         var actual = OfflinePageRenderer.Render(
             "<!doctype html><p><a href='" + href + "'><span>Sample</span></a></p>",
             styles, text, fonts, 220, 60, cancellationToken: Cancellation);
@@ -48,7 +48,7 @@ public sealed class LinkColorDefaultsTests
         using var fonts = new PaintFontRegistry();
         fonts.Register(font);
         CssStyleSource[] common =
-            [new("*{margin:0}html,body,p{display:block}body{font-size:28px;line-height:1}")];
+            [new("*{margin:0}html,body,p{display:block}body{font-size:28px;line-height:1}a{text-decoration:none}")];
         const string link = "<!doctype html><p><a href='/next'><span>Sample</span></a></p>";
         var overridden = OfflinePageRenderer.Render(link,
             [.. common, new("a{color:#cb2040}")], text, fonts, 220, 60, cancellationToken: Cancellation);

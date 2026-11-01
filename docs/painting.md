@@ -119,6 +119,15 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   reshaped Unicode strings**. Both use font sizes
   quantized to 1/64 CSS pixel. Text uses grayscale antialiasing, subpixel
   positions and no hinting; rectangles are not antialiased.
+- The bounded CSS `underline` line uses a `DrawUnderline` command after each
+  qualifying text fragment. It resolves the exact registered shaping font and
+  uses that face's OpenType underline position/thickness plus the decorating
+  ancestor's computed color; no fallback metric is invented. Raster preflight
+  validates the font, metric and finite geometry before framebuffer allocation.
+  Ancestor decoration continues through in-flow text even when a descendant
+  computes `text-decoration-line:none`. This does not decorate atomic inline
+  content, draw overlines/line-throughs, support skip-ink, or implement other
+  decoration style/color/thickness values.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS
   viewport. Fractional physical coverage uses Skia's non-antialiased rectangle/
@@ -129,11 +138,12 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   from the native bitmap's actual stride.
 
 Images, gradients, advanced/differently colored borders, border radius,
-decorated inline boxes, visible text decoration, transforms, CSS opacity/blending,
-stacking contexts, general/nested overflow clipping, GPU rendering and
-browser UI are deferred. Unsupported CSS receives diagnostics and prevents
-rendering; unsupported visible border styles throw UnsupportedPaintException.
-This is a finite static subset, not general CSS painting conformance.
+overlines, line-throughs, decoration styles/colors/thicknesses and skip-ink,
+transforms, CSS opacity/blending, stacking contexts, general/nested overflow
+clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
+diagnostics and prevents rendering; unsupported visible border styles throw
+UnsupportedPaintException. This is a finite static subset, not general CSS
+painting conformance.
 
 ## Budgets and native boundaries
 

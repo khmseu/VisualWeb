@@ -29,9 +29,11 @@ regardless of its value or navigation policy. `:link` matches the same elements,
 treating every link as unvisited without history access; `:visited` remains
 explicitly unsupported. The [HTML phrasing-content UA rule](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (ID `html`) sets `:link { color: #0000EE }`. It uses the normal cascade and
-inheritance, including user/author/inline overrides and `revert`; disabling the
-UA sheet removes the default. Active/hover styling, cursor behavior and visible
-link decoration, including underlines, remain unsupported.
+inheritance. The same rule sets `text-decoration:underline`; the non-inherited
+decoration is painted on static text fragments and cannot be canceled by a
+descendant's `none`. User/author/inline overrides and `revert` use the normal
+cascade; disabling the UA sheet removes both defaults. Active/hover styling
+and cursor behavior remain unsupported.
 `:nth-child(An+B of S)` and `:nth-last-child(An+B of S)` support strict complex
 selector lists, filtered inclusive element siblings and maximum argument
 specificity, sharing the original scope and matching budgets.
@@ -73,12 +75,14 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 (ID `html`) give `listing`, `xmp` and `plaintext` the same block display,
 1em vertical margins, monospace family and preserved whitespace as `pre`.
 They use the normal cascade and require an explicitly configured face.
-`text-decoration` and `text-decoration-line` accept only `none` or the supported
-CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`), with a
-non-inherited line value and the normal cascade. `revert-layer` remains
-unsupported. `none` neither adds nor inhibits ancestor decoration; visible
-lines and decoration style/color/thickness remain diagnostics, and the UA sheet
-does not underline links.
+`text-decoration` and `text-decoration-line` accept `none`, `underline` and
+the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`),
+with a non-inherited line value and the normal cascade. `revert-layer` remains
+unsupported. `none` neither adds nor inhibits ancestor decoration. Paint uses
+the decorating ancestor's computed color and the registered shaping font's
+OpenType underline metrics. Overline, line-through, other decoration
+style/color/thickness values, atomic-inline decoration and skip-ink remain
+unsupported.
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,
