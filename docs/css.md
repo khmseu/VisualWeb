@@ -394,6 +394,13 @@ configured family/weight/style face, including an italic face for default
 `dfn`. Other HTML phrasing rules, unsupported text-node/style boundaries inside
 unbroken words, and the existing text/layout exclusions remain unchanged.
 
+The same HTML phrasing-content section gives `mark` a yellow background and
+black text through ordinary UA declarations. Author rules can override both
+properties. Its background paints only for the bounded text-backed inline
+fragment subset documented in the
+[layout guide](text-layout.md#ordinary-flow); inline widgets and other
+unsupported inline decoration still fail explicitly.
+
 Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
 layers, conditional rules (including media/supports/container), imports/`@font-face`,
 logical properties, positioning, flex/grid and broader table display, animations,

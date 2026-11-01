@@ -13,6 +13,10 @@ Finite `underline` and `line-through` decorations use the exact registered
 font's corresponding OpenType metrics and the decorating ancestor's computed
 color. Missing required metrics fail explicitly; other decoration lines and
 styles remain unsupported.
+Text-backed inline solid backgrounds use ordered `FillRectangle` fragments
+before line text and inside existing scroll clips. They share the display-list
+command budget; inline-widget/line-break backgrounds and non-color background
+effects remain unsupported.
 
 See the [painting guide](../../../docs/painting.md) for scope, ownership, budgets
 and offline evidence, the [project map](../../../docs/project-map.md) and

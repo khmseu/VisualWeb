@@ -136,6 +136,24 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void InlineBackgroundFragmentsPaintAncestorFirstBeforeLineText()
+    {
+        var list = Page("<p><span>A <b>B</b> C</span></p>",
+            "span{background-color:red}b{background-color:blue}");
+
+        Assert.Equal(new[]
+        {
+            new FillRectangle(new(0, 0, 25, 10), Red),
+            new FillRectangle(new(10, 0, 5, 10), Blue)
+        }, list.Commands.OfType<FillRectangle>());
+        var lastBackground = Array.FindLastIndex(list.Commands.ToArray(), command => command is FillRectangle);
+        var firstText = Array.FindIndex(list.Commands.ToArray(), command => command is DrawGlyphRun);
+        Assert.True(lastBackground >= 0 && firstText > lastBackground);
+        Assert.Throws<PaintLimitException>(() => Page("<p><span>x</span></p>",
+            "span{background-color:red}", new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
     public void LineThroughUsesTheDecoratingAncestorColorAndDescendantNoneDoesNotCancelIt()
     {
         const string html = "<div><span>x</span></div>";

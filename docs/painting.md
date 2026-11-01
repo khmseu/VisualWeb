@@ -109,6 +109,13 @@ across gaps; no collapsed-border or broader table-layer painting is implied.
   inline text. LayoutBox.Flow preserves anonymous inline groups interleaved
   with block children, avoiding a geometry sort or painting all parent text
   before its intervening child block.
+- Solid backgrounds on bounded text-backed inline fragments are emitted as
+  `FillRectangle` commands before all text on their line, with ancestor
+  fragments before nested descendants. Their line-flow placement keeps them
+  inside existing scroll clips; layout's fragment-work limit and
+  `PaintOptions.MaxCommands` bound generation and display-list storage. Inline
+  widget/line-break backgrounds, padding/borders/margins, images, gradients,
+  clipping and corner effects remain unsupported.
 - Physical solid borders use nonoverlapping rectangular strips. Visible sides
   must have the same color; differing colors need deferred corner joins.
   Translucent same-color corners are composited once, not double blended.

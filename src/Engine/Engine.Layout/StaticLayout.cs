@@ -16,6 +16,12 @@ public sealed class LayoutLimitException(string message) : Exception(message);
 public readonly record struct LayoutRect(double X, double Y, double Width, double Height);
 public readonly record struct LayoutEdges(double Top, double Right, double Bottom, double Left);
 public sealed record LayoutTextFragment(DomText Source, ShapedRun Run, double X, double Baseline, CssComputedStyle Style);
+/// <summary>Solid-color background geometry for one inline element's fragment on a line.</summary>
+/// <remarks>Specs: css2-visual and css-backgrounds;
+/// <see href="https://www.w3.org/TR/CSS22/visuren.html#inline-boxes">inline boxes</see> and
+/// <see href="https://drafts.csswg.org/css-backgrounds-3/#background-color">background-color</see>.
+/// The bounded layout subset emits rectangular text-backed fragments only.</remarks>
+public sealed record LayoutInlineBackground(LayoutRect Bounds, CssColor Color);
 /// <summary>Shaped outside list marker, not selectable document text.</summary>
 /// <remarks>Specs: css2-lists and css-counter-styles;
 /// <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see> and
@@ -26,6 +32,8 @@ public sealed record LayoutInlineWidget(DomElement Element, LayoutRect Bounds);
 public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyList<LayoutTextFragment> Fragments)
 {
     public IReadOnlyList<LayoutInlineWidget> Widgets { get; init; } = Array.Empty<LayoutInlineWidget>();
+    /// <summary>Inline backgrounds in ancestor-before-descendant paint order.</summary>
+    public IReadOnlyList<LayoutInlineBackground> InlineBackgrounds { get; init; } = Array.Empty<LayoutInlineBackground>();
 }
 [SuppressMessage("Sonar", "S2094", Justification = "This intentional marker record is the closed layout-flow contract that distinguishes block and line items without mutable state.")]
 public abstract record LayoutFlowItem;
@@ -67,11 +75,13 @@ public sealed record LayoutOptions
     public int MaxShapedGlyphs { get; init; } = 1_000_000;
     public int MaxShapingCalls { get; init; } = 100_000;
     public long MaxLineBreakOperations { get; init; } = 10_000_000;
+    /// <summary>Maximum inline background owner visits across all line fragments.</summary>
+    public long MaxInlineBackgroundOperations { get; init; } = 1_000_000;
     internal void Validate()
     {
         if (MaxDepth <= 0 || MaxBoxes <= 0 || MaxTableColumns <= 0 || MaxTableColumnOperations <= 0
             || MaxNodes <= 0 || MaxLines <= 0 || MaxTextCharacters <= 0 || MaxShapedGlyphs <= 0
-            || MaxShapingCalls <= 0 || MaxLineBreakOperations <= 0)
+            || MaxShapingCalls <= 0 || MaxLineBreakOperations <= 0 || MaxInlineBackgroundOperations <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(LayoutOptions), "All layout limits must be positive.");
         }
@@ -147,7 +157,7 @@ public static partial class StaticLayout
         private readonly LayoutOptions options;
         private readonly CancellationToken cancellation;
         private int nodes, boxes, lines, characters, glyphs, calls;
-        private long lineBreakOperations, tableColumnOperations;
+        private long lineBreakOperations, tableColumnOperations, inlineBackgroundOperations;
         private readonly Dictionary<DomElement, long> ordinals = new(ReferenceEqualityComparer.Instance);
 
         internal Builder(CssStyleResult styles, ITextShaper shaper, LayoutOptions options, CancellationToken cancellation)
@@ -611,7 +621,8 @@ public static partial class StaticLayout
         private static bool IsAtomicWrapGlue(char character) => character is >= '\u035c' and <= '\u0362';
 
         [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The explicit inline-layout element and whitespace vocabulary keeps the finite supported grammar visible at this traversal boundary.")]
-        private void Gather(DomNode node, CssComputedStyle inheritedStyle, List<InlineUnit> output, int depth)
+        private void Gather(DomNode node, CssComputedStyle inheritedStyle, List<InlineUnit> output, int depth,
+            InlineBackgroundOwner? backgroundOwners = null)
         {
             cancellation.ThrowIfCancellationRequested();
             Visit();
@@ -630,14 +641,20 @@ public static partial class StaticLayout
                         EmitWord();
                         if (c == '\n' && whitespace is "pre" or "pre-line")
                         {
-                            output.Add(new(text, inheritedStyle, "", UnitKind.Break, false));
+                            output.Add(new(text, inheritedStyle, "", UnitKind.Break, false)
+                            { Backgrounds = backgroundOwners });
                         }
                         else if (whitespace == "pre")
                         {
                             if (c != ' ') { throw new UnsupportedLayoutException("Preserved tabs/form feeds require deferred tab-stop handling."); }
-                            output.Add(new(text, inheritedStyle, " ", UnitKind.PreservedSpace, false));
+                            output.Add(new(text, inheritedStyle, " ", UnitKind.PreservedSpace, false)
+                            { Backgrounds = backgroundOwners });
                         }
-                        else { output.Add(new(text, inheritedStyle, " ", UnitKind.Space, whitespace != "nowrap")); }
+                        else
+                        {
+                            output.Add(new(text, inheritedStyle, " ", UnitKind.Space, whitespace != "nowrap")
+                            { Backgrounds = backgroundOwners });
+                        }
                     }
                     else { word.Append(c); }
                 }
@@ -696,7 +713,11 @@ public static partial class StaticLayout
                         }
                     }
                     output.Add(new(text, inheritedStyle, value, UnitKind.Word, canWrap)
-                    { HasHyphenBreaks = hasHyphenBreaks, EndsWithAtomicGlue = endsWithAtomicGlue });
+                    {
+                        Backgrounds = backgroundOwners,
+                        HasHyphenBreaks = hasHyphenBreaks,
+                        EndsWithAtomicGlue = endsWithAtomicGlue
+                    });
                     word.Clear();
                 }
             }
@@ -706,9 +727,14 @@ public static partial class StaticLayout
                 Check(element, depth);
                 if (element.LocalName is "input" or "button" or "textarea" or "select" && Display(element) == "inline-block")
                 {
+                    var widgetStyle = Style(element);
+                    if (backgroundOwners is not null || widgetStyle["background-color"] is not CssColor { Alpha: 0 })
+                    {
+                        throw new UnsupportedLayoutException("Backgrounds on or around atomic inline widgets require deferred widget paint geometry.");
+                    }
                     // The surrounding inline's whitespace governs the atomic boundary, not the widget's contents.
                     var whitespace = ((CssKeyword)inheritedStyle["white-space"]).Value;
-                    output.Add(new(null, Style(element), "", UnitKind.Widget, CanSoftWrap(whitespace)) { Widget = element });
+                    output.Add(new(null, widgetStyle, "", UnitKind.Widget, CanSoftWrap(whitespace)) { Widget = element });
                     return;
                 }
                 if (Display(element) != "inline")
@@ -731,16 +757,21 @@ public static partial class StaticLayout
                 }
                 if (element.LocalName == "br")
                 {
+                    if (style["background-color"] is CssColor { Alpha: > 0 })
+                    {
+                        throw new UnsupportedLayoutException("Backgrounds on line-break elements require deferred break-fragment geometry.");
+                    }
                     output.Add(new(null, style, "", UnitKind.Break, false));
                     return;
                 }
-                if (style["background-color"] is not CssColor { Alpha: 0 })
+                var currentBackgrounds = backgroundOwners;
+                if (style["background-color"] is CssColor { Alpha: > 0 } background)
                 {
-                    throw new UnsupportedLayoutException("Inline backgrounds require deferred inline-fragment paint geometry.");
+                    currentBackgrounds = new(element, background, backgroundOwners);
                 }
-                output.Add(new(null, style, "", UnitKind.Strut, false));
-                foreach (var child in element.ChildNodes) { Gather(child, style, output, depth + 1); }
-                output.Add(new(null, style, "", UnitKind.EndStrut, false));
+                output.Add(new(null, style, "", UnitKind.Strut, false) { InlineElement = element });
+                foreach (var child in element.ChildNodes) { Gather(child, style, output, depth + 1, currentBackgrounds); }
+                output.Add(new(null, style, "", UnitKind.EndStrut, false) { InlineElement = element });
             }
         }
 
@@ -748,7 +779,7 @@ public static partial class StaticLayout
         {
             var output = new List<LayoutLine>();
             var pending = new List<Placed>();
-            var activeInline = new List<CssComputedStyle>();
+            var activeInline = new List<(DomElement Element, CssComputedStyle Style)>();
             var advance = 0.0;
             var hasContent = false;
             InlineUnit? space = null;
@@ -759,8 +790,9 @@ public static partial class StaticLayout
                 cancellation.ThrowIfCancellationRequested();
                 if (unit.Kind == UnitKind.Strut)
                 {
-                    activeInline.Add(unit.Style);
-                    pending.Add(new(null, Shape("", unit.Style), unit.Style, advance));
+                    var element = unit.InlineElement ?? throw new InvalidOperationException("Inline strut is missing its element.");
+                    activeInline.Add((element, unit.Style));
+                    pending.Add(new(null, Shape("", unit.Style), unit.Style, advance) { InlineElement = element });
                     continue;
                 }
                 if (unit.Kind == UnitKind.EndStrut)
@@ -803,7 +835,8 @@ public static partial class StaticLayout
                     }
                     if (widgetGap is not null)
                     {
-                        pending.Add(new(space!.Source!, widgetGap, space.Style, advance) { JustificationSpace = true });
+                        pending.Add(new(space!.Source!, widgetGap, space.Style, advance)
+                        { Backgrounds = space.Backgrounds, JustificationSpace = true });
                         advance += widgetGap.Width;
                     }
                     space = null;
@@ -836,11 +869,12 @@ public static partial class StaticLayout
                 }
                 if (gap is not null)
                 {
-                    pending.Add(new(space!.Source!, gap, space.Style, advance) { JustificationSpace = true });
+                    pending.Add(new(space!.Source!, gap, space.Style, advance)
+                    { Backgrounds = space.Backgrounds, JustificationSpace = true });
                     advance += gap.Width;
                 }
                 space = null;
-                pending.Add(new(unit.Source!, run, unit.Style, advance));
+                pending.Add(new(unit.Source!, run, unit.Style, advance) { Backgrounds = unit.Backgrounds });
                 advance += run.Width;
                 hasContent = true;
                 previousWord = unit.Kind == UnitKind.Word ? unit : null;
@@ -911,11 +945,12 @@ public static partial class StaticLayout
                 {
                     if (gap is not null)
                     {
-                        pending.Add(new(space!.Source!, gap, space.Style, advance) { JustificationSpace = true });
+                        pending.Add(new(space!.Source!, gap, space.Style, advance)
+                        { Backgrounds = space.Backgrounds, JustificationSpace = true });
                         advance += gap.Width;
                     }
                     space = null;
-                    pending.Add(new(unit.Source!, run, unit.Style, advance));
+                    pending.Add(new(unit.Source!, run, unit.Style, advance) { Backgrounds = unit.Backgrounds });
                     advance += run.Width;
                     hasContent = true;
                 }
@@ -927,14 +962,20 @@ public static partial class StaticLayout
                 if (++lines > options.MaxLines) { throw new LayoutLimitException("Layout line limit exceeded."); }
                 var strut = Shape("", blockStyle);
                 var (ascent, descent) = Extents(strut, blockStyle);
+                var inlineStruts = new Dictionary<DomElement, (double Ascent, double Descent)>(ReferenceEqualityComparer.Instance);
                 foreach (var placed in pending)
                 {
+                    cancellation.ThrowIfCancellationRequested();
                     if (placed.Widget is not null)
                     {
                         ascent = Math.Max(ascent, placed.Height);
                         continue;
                     }
                     var extents = Extents(placed.Run, placed.Style);
+                    if (placed.InlineElement is { } inlineElement && !inlineStruts.TryAdd(inlineElement, extents))
+                    {
+                        throw new InvalidOperationException("An inline element has duplicate line struts.");
+                    }
                     ascent = Math.Max(ascent, extents.Ascent);
                     descent = Math.Max(descent, extents.Descent);
                 }
@@ -944,16 +985,89 @@ public static partial class StaticLayout
                 var baseline = y + ascent;
                 var fragments = pending.Where(p => p.Source is not null).Select(p => new LayoutTextFragment(p.Source!, p.Run,
                     x + offset + p.Advance, baseline, p.Style)).ToList().AsReadOnly();
+                var inlineBackgrounds = InlineBackgroundFragments(inlineStruts, x, offset, baseline);
                 var widgets = pending.Where(placed => placed.Widget is not null).Select(placed =>
                     new LayoutInlineWidget(placed.Widget!, Rect(x + offset + placed.Advance, y + ascent - placed.Height,
                         placed.Width, placed.Height))).ToArray();
                 output.Add(new LayoutLine(Rect(x, y, width, ascent + descent), Finite(baseline), fragments)
-                { Widgets = Array.AsReadOnly(widgets) });
+                {
+                    Widgets = Array.AsReadOnly(widgets),
+                    InlineBackgrounds = Array.AsReadOnly(inlineBackgrounds)
+                });
                 y += ascent + descent;
                 pending.Clear();
                 advance = 0;
                 hasContent = false;
-                foreach (var style in activeInline) { pending.Add(new(null, Shape("", style), style, 0)); }
+                foreach (var (element, style) in activeInline)
+                {
+                    pending.Add(new(null, Shape("", style), style, 0) { InlineElement = element });
+                }
+            }
+
+            LayoutInlineBackground[] InlineBackgroundFragments(
+                Dictionary<DomElement, (double Ascent, double Descent)> inlineStruts,
+                double lineX, double lineOffset, double lineBaseline)
+            {
+                var boundsByOwner = new Dictionary<InlineBackgroundOwner, LayoutRect>(ReferenceEqualityComparer.Instance);
+                var orderedOwners = new List<InlineBackgroundOwner>();
+                var ownerChain = new List<InlineBackgroundOwner>();
+                foreach (var placed in pending)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (placed.Source is null || placed.Backgrounds is null) { continue; }
+                    if (placed.Run.Width <= 0)
+                    {
+                        if (placed.Run.Glyphs.Count != 0)
+                        {
+                            throw new UnsupportedLayoutException("Inline backgrounds on zero-advance text require deferred ink bounds.");
+                        }
+                        continue;
+                    }
+                    ownerChain.Clear();
+                    for (var owner = placed.Backgrounds; owner is not null; owner = owner.Parent)
+                    {
+                        ChargeInlineBackgroundOperation();
+                        ownerChain.Add(owner);
+                    }
+                    for (var index = ownerChain.Count - 1; index >= 0; index--)
+                    {
+                        var owner = ownerChain[index];
+                        if (!inlineStruts.TryGetValue(owner.Element, out var extents))
+                        {
+                            throw new InvalidOperationException("Inline background is missing its line strut.");
+                        }
+                        var height = extents.Ascent + extents.Descent;
+                        if (height <= 0)
+                        {
+                            throw new UnsupportedLayoutException("Inline backgrounds require positive inline line-box height.");
+                        }
+                        var bounds = Rect(lineX + lineOffset + placed.Advance,
+                            lineBaseline - extents.Ascent, placed.Run.Width, height);
+                        if (boundsByOwner.TryGetValue(owner, out var previous))
+                        {
+                            if (previous.Y != bounds.Y || previous.Height != bounds.Height)
+                            {
+                                throw new InvalidOperationException("Inline background fragments disagree on line geometry.");
+                            }
+                            var left = Math.Min(previous.X, bounds.X);
+                            var right = Math.Max(previous.X + previous.Width, bounds.X + bounds.Width);
+                            boundsByOwner[owner] = Rect(left, bounds.Y, right - left, bounds.Height);
+                        }
+                        else
+                        {
+                            boundsByOwner.Add(owner, bounds);
+                            orderedOwners.Add(owner);
+                        }
+                    }
+                }
+                var result = new LayoutInlineBackground[orderedOwners.Count];
+                for (var index = 0; index < orderedOwners.Count; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    var owner = orderedOwners[index];
+                    result[index] = new(boundsByOwner[owner], owner.Color);
+                }
+                return result;
             }
 
             void Justify()
@@ -1100,6 +1214,14 @@ public static partial class StaticLayout
             tableColumnOperations += count;
         }
 
+        private void ChargeInlineBackgroundOperation()
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (inlineBackgroundOperations >= options.MaxInlineBackgroundOperations)
+            { throw new LayoutLimitException("Inline background fragment processing limit exceeded."); }
+            inlineBackgroundOperations++;
+        }
+
         private void Visit()
         {
             cancellation.ThrowIfCancellationRequested();
@@ -1154,15 +1276,20 @@ public static partial class StaticLayout
         private static LayoutRect Rect(double x, double y, double width, double height)
             => new(Finite(x), Finite(y), Finite(width), Finite(height));
         private enum UnitKind { Word, Space, PreservedSpace, Break, Strut, EndStrut, Widget }
+        private sealed record InlineBackgroundOwner(DomElement Element, CssColor Color, InlineBackgroundOwner? Parent);
         private sealed record InlineUnit(DomText? Source, CssComputedStyle Style, string Text, UnitKind Kind, bool Wrap)
         {
             public DomElement? Widget { get; init; }
+            public DomElement? InlineElement { get; init; }
+            public InlineBackgroundOwner? Backgrounds { get; init; }
             public bool HasHyphenBreaks { get; init; }
             public bool EndsWithAtomicGlue { get; init; }
         }
         private sealed record Placed(DomText? Source, ShapedRun Run, CssComputedStyle Style, double Advance,
             DomElement? Widget = null, double Width = 0, double Height = 0)
         {
+            public DomElement? InlineElement { get; init; }
+            public InlineBackgroundOwner? Backgrounds { get; init; }
             public bool JustificationSpace { get; init; }
         }
     }

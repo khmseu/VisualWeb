@@ -5400,3 +5400,224 @@ und CodeQL Run
 [41344903219](https://github.com/khmseu/VisualWeb/actions/runs/41344903219)
 sind erfolgreich. Die zehn getrennten angeforderten Implementierungspassen
 sind damit abgeschlossen; die breite Tabellen-Prioritaet selbst bleibt offen.
+
+### KP-192 - Neuer Zehn-Pass-Lauf und Auswahl Pass 1
+
+- Dokumentiert am: 2026-11-01, 21:30, Europe/Berlin (UTC+01:00).
+- Quellen: aktuelle Nutzereingabe `/missing-priority-implementation` mit
+  Argument `10`, `plans/Missing.md` Abschnitt 5,
+  `docs/css.md#cascade-and-computed-values`, `docs/painting.md`,
+  `src/Engine/Engine.Css/CssProperties.cs`,
+  `src/Engine/Engine.Paint/DisplayList.cs`,
+  `tests/Engine.Css.Tests/NoTextDecorationTests.cs` und
+  `specs/manifest.json`.
+- Bezug: KP-191; neuer Lauf nach Abschluss der vorherigen zehn Inkremente.
+
+**Nutzerangabe:** Der Nutzer hat die Skill-Ausfuehrung erneut mit zehn
+Inkrementen aufgerufen. Status: Auftrag; zehn neue getrennte Passes sind
+angefordert.
+
+**Auswahl (Ableitung):** Prioritaet 1 verlangt lesbare einfache statische
+Seiten mit gewoehnlicher Formatierung. CSS `line-through` ist als fehlend
+vermerkt und wird von der vorhandenen CSS-Kaskade ausdruecklich diagnostiziert.
+Pass 1 erweitert den bestehenden text-decoration-/Paint-Pfad eng um
+`line-through` sowie die HTML-UA-Defaults fuer `del`, `s` und `strike`.
+Andere Dekorationslinien, Stile, Farben, Strichstaerken und atomare Inhalte
+bleiben ausserhalb. Der lokale CSS-Text-Decoration-Cache ist am 2026-10-31,
+der HTML-Cache am 2026-10-04 geprueft; beide sind am Dokumentationstag
+innerhalb von 30 Tagen. Kein Standards-Refresh ist erforderlich.
+
+### KP-193 - Line-through implementiert, lokal validiert und gepusht
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: Commit `f7a83d56255dee67551bb2d7a19a3e2c96400a96`,
+  `plans/Missing.md`, CSS-/Paint-/Content-Testlaeufe,
+  Solution-Build, Volltest und Formatpruefung.
+- Bezug: KP-192.
+
+**Belegt:** CSS akzeptiert nun `line-through`; die HTML-UA-Defaults fuer
+`del`, `s` und `strike` setzen die Dekoration. Der Paint-Pfad verwendet den
+exakten registrierten Font und dessen OpenType-Strikeout-Metriken; fehlende
+Metriken bleiben ein sichtbarer Paintfehler. CSS-, Paint- und Content-Tests
+(1.134, 67, 96) bestehen. Der Solution-Build besteht mit null Warnungen, alle
+16.141 Solution-Tests und `dotnet format VisualWeb.slnx --verify-no-changes
+--no-restore --exclude third_party` bestehen. Commit `f7a83d5` ist auf `main`
+gepusht. Linux, Windows und CodeQL CI laufen zum Zeitpunkt dieses Eintrags.
+
+**Grenzen:** Overline, weitere Dekorationsstile/Farben/Strichstaerken,
+atomare Inline-Inhalte und skip-ink bleiben unsupported. Kein Standards-
+Refresh war notwendig: CSS-Text-Decoration- und HTML-Cache waren innerhalb
+von 30 Tagen aktuell.
+
+### KP-194 - Pass 1 CI-gruen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: GitHub Actions fuer `f7a83d56255dee67551bb2d7a19a3e2c96400a96`.
+- Bezug: KP-193 und der Zehn-Pass-Auftrag.
+
+**Belegt:** Linux development Run
+[41350401406](https://github.com/khmseu/VisualWeb/actions/runs/41350401406),
+Windows confinement Run
+[41350401385](https://github.com/khmseu/VisualWeb/actions/runs/41350401385)
+und CodeQL Run
+[41350401525](https://github.com/khmseu/VisualWeb/actions/runs/41350401525)
+sind erfolgreich. Linux und Windows x64/arm64 Jobs sowie alle CodeQL Jobs
+bestanden. Pass 1 ist damit abgeschlossen.
+
+**Status:** Pass 1 ist lokal validiert, committet, gepusht und CI-gruen.
+Pass 2 muss anhand des aktualisierten `plans/Missing.md` gewaehlt werden.
+
+### KP-195 - Pass 2 waehlt HTML-Unterstreichungsdefaults fuer ins und u
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `plans/Missing.md` Prioritaet 1,
+  `specs/cache/html.html` Rendering Abschnitt `phrasing-content-3`,
+  `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Css/README.md`,
+  `tests/Engine.Css.Tests/NoTextDecorationTests.cs` und
+  `tests/Engine.Content.Tests/ContentTests.cs`.
+- Bezug: KP-194; Pass 1 ist vollstaendig abgeschlossen.
+
+**Belegt:** Die lokale HTML-Cache-Datei enthaelt im Phrasing-content UA
+stylesheet `ins, u { text-decoration: underline }`; der aktuelle CSS UA sheet
+implementiert die benachbarte `del, s, strike`-Regel, aber nicht `ins, u`.
+`text-decoration:underline` und native Paint-Metriken sind bereits vorhanden.
+
+**Auswahl (Ableitung):** Pass 2 fuellt eng diese fehlenden HTML-UA-Defaults
+ueber den bestehenden Kaskaden-/Underline-Pfad. Er ergaenzt CSS- und
+Content-Pixel-Regressions fuer beide Tags und Autor-Overrides. Er fuehrt
+keine neue Dekorationsart oder Layout-/Paint-Approximation ein.
+
+### KP-196 - Pass 2 implementiert, lokal validiert und gepusht
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: Commit `de767583957c526161b4ebc888bdf48e212b8e31`,
+  `plans/Missing.md`, CSS-/Content-Testlaeufe, Solution-Build, Volltest,
+  Formatpruefung und GitHub Actions.
+- Bezug: KP-195.
+
+**Belegt:** Der UA stylesheet umfasst jetzt `ins, u { text-decoration:
+underline }` gemaess lokaler WHATWG-HTML-Quelle `phrasing-content-3`. CSS
+(1.136) und Content (98) fokussierte Tests bestehen. Solution-Build (0
+Warnungen), Volltest (16.145) und `dotnet format VisualWeb.slnx
+--verify-no-changes --no-restore --exclude third_party` bestehen. Commit
+`de76758` ist gepusht. Linux, Windows und CodeQL CI laufen zum Zeitpunkt
+dieses Eintrags.
+
+**Grenzen:** Keine neue Dekorationsart oder Paint-Approximation; die vorhandene
+Underline-Implementierung, registrierten Fonts und Grenzen bleiben unveraendert.
+
+### KP-197 - Pass 2 CI-gruen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: GitHub Actions fuer `de767583957c526161b4ebc888bdf48e212b8e31`.
+- Bezug: KP-196 und der Zehn-Pass-Auftrag.
+
+**Belegt:** Linux development Run
+[41353660149](https://github.com/khmseu/VisualWeb/actions/runs/41353660149),
+Windows confinement Run
+[41353660225](https://github.com/khmseu/VisualWeb/actions/runs/41353660225)
+und CodeQL Run
+[41353659617](https://github.com/khmseu/VisualWeb/actions/runs/41353659617)
+sind erfolgreich. Linux und Windows x64/arm64 Jobs sowie alle CodeQL Jobs
+bestanden. Pass 2 ist damit abgeschlossen.
+
+**Status:** Zwei von zehn angeforderten Passes sind lokal validiert,
+committet, gepusht und CI-gruen. Pass 3 ist nach erneutem Tracker-Abgleich
+in KP-198 ausgewaehlt.
+
+### KP-198 - Pass 3 waehlt die HTML-mark-Hervorhebung
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `plans/Missing.md` Prioritaet 1,
+  `specs/cache/html.html` Rendering Abschnitt `phrasing-content-3`,
+  `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Css/README.md`,
+  `tests/Engine.Css.Tests/` und `tests/Engine.Content.Tests/`.
+- Bezug: KP-197; zwei vorangegangene Inkremente sind abgeschlossen.
+
+**Belegt:** Die lokale HTML Rendering-Quelle enthaelt `mark { background:
+yellow; color: black }` und kommentiert die Farben als anpassbaren Vorschlag.
+Die CSS UA sheet implementiert noch keine `mark`-Regel. Der Versuch einer
+CSS-/Content-Regression bestaetigt, dass ein inline `background-color` bei
+`StaticLayout.Builder.Gather` mit `UnsupportedLayoutException` abbricht:
+`Inline backgrounds require deferred inline-fragment paint geometry.` Die CSS
+Testgruppe bestand (1.137), der Content-Lauf scheiterte an dieser bestehenden
+Grenze. Eine CSS-only-Defaultregel wuerde damit Markup unrenderbar machen.
+
+**Auswahl (Ableitung):** Pass 3 fuegt den konkreten UA-Stil fuer `mark`
+hinzu, testet computed defaults und Autor-Overrides sowie vergleicht native
+Pixels mit gleichwertigem explizitem CSS. Es erweitert weder CSS-Farbsyntax
+noch Mal-/Layoutverhalten. Diese Auswahl ist durch die Layout-Grenze nicht
+als kleiner, sicherer CSS-Inkrement umsetzbar.
+
+### KP-199 - Mark-Default blockiert an Inline-Hintergrundgrenze
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `src/Engine/Engine.Layout/StaticLayout.cs` im `Gather`-Pfad,
+  fehlgeschlagener fokussierter Content-Test waehrend der Mark-Erprobung und
+  wiederhergestellter Arbeitsbaum.
+- Bezug: KP-198.
+
+**Belegt:** Inline-Elemente mit nichttransparentem `background-color` werden
+absichtlich abgelehnt, weil Inline-Fragment-Paintgeometrie fehlt. Der native
+Content-Test fuer das normative `mark`-Default reproduziert genau diesen
+Fehler. Die uncommitteten Mark-Codeaenderungen wurden entfernt; es gibt keinen
+Mark-Commit und Pass 2 bleibt der letzte abgeschlossene Pass.
+
+**Entscheidung:** In der folgenden Nachfrage waehlt der Nutzer, zuerst
+begrenzte Inline-Hintergrundfragmentgeometrie umzusetzen (KP-200).
+
+### KP-200 - Inline-Hintergrundgeometrie ausdruecklich ausgewaehlt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quelle: Nutzerantwort auf die konkrete Frage zum Layout-/Paint-Umfang.
+- Bezug: KP-199.
+
+**Nutzerangabe:** "Implement bounded inline background fragment geometry".
+
+**Entscheidung:** Pass 3 darf den groesseren, roadmap-kompatiblen Layout-/Paint-
+Umfang fuer korrekte begrenzte Inline-Hintergruende umsetzen. `mark` bleibt
+Integrationsregression, aber keine Abkuerzung ueber eine CSS-only-Regel. Der
+konkrete Umfang muss vor der Implementierung an bestehenden Layoutgrenzen,
+Standards und Kostenkontrollen festgelegt werden.
+
+**Status:** Die ausdrueckliche Nutzerentscheidung wurde in KP-201 innerhalb
+der dort dokumentierten Grenzen umgesetzt. Keine weitere Verhaltenswahl ist
+offen.
+
+### KP-201 - Bounded inline-background scope defined
+
+- Documented on: 2026-11-01, Europe/Berlin.
+- Sources: cached `specs/cache/css2-visual.html` section 9.2.2
+  (`#inline-boxes`) and inline formatting section 9.4.2
+  (`#inline-formatting`); cached `specs/cache/css-backgrounds.html`
+  background positioning/fragment references; `StaticLayout`, `DisplayList`,
+  and their guides.
+- Related: KP-200; Pass 3 of the ten-pass request.
+
+**Verified:** CSS 2.2 defines inline boxes as splittable across line boxes;
+the existing layout keeps padding, borders, and margins on inline boxes
+unsupported. CSS Backgrounds identifies inline boxes on multiple lines as
+fragmented boxes. The relevant cached documents were checked on 2026-10-04,
+within the repository's 30-day refresh window on this date.
+
+**Implemented boundary:** Support nontransparent solid
+`background-color` for non-replaced inline text content only. Emit one
+rectangular background fragment per such inline element per line, merging its
+laid-out text/space advances; paint fragments before line text, with ancestor
+backgrounds before nested descendants. Apply an explicit shared work limit.
+Keep inline padding/borders/margins, backgrounds around or on atomic widgets,
+line-break backgrounds, nonpositive inline line boxes, and image/gradient/clip/
+radius behavior unsupported. Add the HTML `mark` UA color only as an end-to-end
+regression after fragment layout and paint work.
+
+**Agreement:** This is the bounded engineering scope chosen to implement the
+user-approved geometry request without claiming general inline decoration or
+atomic-inline support. It is not a user decision about broader CSS behavior.
+
+**Implementation and local validation:** Layout now records bounded, merged
+per-line rectangles and painting emits them before line text, ancestor-first.
+The HTML `mark` UA background/text defaults are covered by cascade and rendered
+pixel regressions. Build passed with zero warnings, all 16,154 solution tests
+passed, and format verification passed. Commit and CI are pending.

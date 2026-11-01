@@ -92,6 +92,11 @@ the exact registered font's OpenType strikeout metrics, and HTML `del`, `s`
 and `strike` receive its UA default. Overline, other decoration
 style/color/thickness values, atomic-inline decoration and skip-ink remain
 unsupported.
+The same HTML phrasing-content rules give `mark` a yellow
+`background-color` and black `color` through the normal cascade. Layout and
+paint support this only for bounded text-backed inline fragments; see the
+[layout guide](../../../docs/text-layout.md#ordinary-flow) and
+[painting guide](../../../docs/painting.md).
 
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,

@@ -638,6 +638,20 @@ fail explicitly. Overline, other decoration
 style/color/thickness values, atomic-inline decoration and skip-ink remain
 unsupported.
 
+Bounded solid inline `background-color` now creates one merged rectangular
+fragment per text-backed non-replaced inline element and line. Fragments use
+laid-out text/space advances, paint before their line's text with ancestor
+layers first, and are limited by `LayoutOptions.MaxInlineBackgroundOperations`
+(default 1,000,000). Inline margins/padding/borders and backgrounds on or around
+atomic widgets or line breaks remain explicit failures; image/gradient
+backgrounds, clipping, radii and zero-advance ink remain unsupported. The HTML
+`mark` UA default integrates this path with yellow background and black text;
+author overrides remain in the normal cascade. See the [layout](../docs/text-layout.md#ordinary-flow),
+[CSS](../docs/css.md) and [painting](../docs/painting.md) guides.
+Validation: the full solution build passed with zero warnings, all 16,154
+solution tests passed, and `dotnet format VisualWeb.slnx --verify-no-changes
+--no-restore --exclude third_party` passed.
+
 The earlier underline-only parser increment added 36 regressions and its
 extension added CSS default/cascade, native underline-pixel and descendant-
 propagation coverage. CSS (1,102), Paint (65) and Content (88) tests passed;

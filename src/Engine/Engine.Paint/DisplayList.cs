@@ -114,7 +114,7 @@ public sealed class DisplayList
     }
 }
 
-/// <summary>Generate static backgrounds, physical solid borders and positioned glyph runs.</summary>
+/// <summary>Generate block and inline-fragment backgrounds, physical solid borders and positioned glyph runs.</summary>
 /// <remarks>Specs: css2-paint/css-backgrounds;
 /// <see href="https://www.w3.org/TR/CSS22/zindex.html">normal-flow painting</see>,
 /// <see href="https://www.w3.org/TR/css-backgrounds-3/#special-backgrounds">canvas backgrounds</see>.</remarks>
@@ -263,6 +263,10 @@ public static class DisplayListBuilder
                 else if (item is LayoutLineItem line)
                 {
                     if (!lines.Remove(line.Line)) { throw new InvalidOperationException("Layout flow contains an absent or duplicate line."); }
+                    foreach (var background in line.Line.InlineBackgrounds)
+                    {
+                        Add(new FillRectangle(background.Bounds, background.Color));
+                    }
                     foreach (var fragment in line.Line.Fragments)
                     {
                         DrawText(fragment.Run, fragment.X, fragment.Baseline,

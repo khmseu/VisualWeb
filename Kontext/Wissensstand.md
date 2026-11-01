@@ -5,7 +5,7 @@
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
 - Dokumentationsdatum: 2026-11-01, Zeitzone Europe/Berlin (UTC+01:00).
-- Neuer aktueller Auftrag: am 2026-11-01 wurden zehn weitere getrennte
+- Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
   KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten
   PointerEvents bleiben wegen des dokumentierten Event-Grenzenkonflikts
@@ -108,6 +108,37 @@
   [KP-178](./Kontextprotokoll.md#kp-178---pass-4-waehlt-html-figure-raender),
   [KP-179](./Kontextprotokoll.md#kp-179---pass-5-waehlt-und-implementiert-address-schriftstil),
   [KP-180](./Kontextprotokoll.md#kp-180---pass-6-waehlt-begrenzte-textunterstreichung)).
+- Aktueller Auftrag: Der Nutzer hat `/missing-priority-implementation` mit
+  Argument `10` erneut aufgerufen; dieser Lauf umfasst zehn neue, jeweils
+  getrennt zu validierende, zu committende und zu pushende Inkremente. Die
+  vorherigen zehn Inkremente sind abgeschlossen und kein Ersatz fuer diesen
+  neuen Lauf. Pass 1 waehlt begrenzte CSS-`line-through`-Dekoration plus die
+  HTML-Defaults fuer `del`, `s` und `strike`, aufbauend auf dem vorhandenen
+  Underline-Pfad. Pass 1 ist als `f7a83d5` committet und gepusht; Solution-
+  Build (0 Warnungen), alle 16.141 Solution-Tests und Formatpruefung bestehen.
+  Linux/Windows x64+arm64 und CodeQL-CI bestehen ebenfalls
+  ([KP-194](./Kontextprotokoll.md#kp-194---pass-1-ci-gruen)). Pass 2 waehlt
+  als naechsten kleinen Priority-1-Schritt den HTML-UA-Unterstrich fuer
+  `ins` und `u`; Commit `de76758` ist gepusht. CSS (1.136), Content (98),
+  Build (0 Warnungen), Volltest (16.145) und Formatpruefung bestehen lokal.
+  Linux/Windows x64+arm64 und CodeQL-CI bestehen ebenfalls
+  ([KP-197](./Kontextprotokoll.md#kp-197---pass-2-ci-gruen)).
+  Pass 3 pruefte die fehlende HTML-UA-Hervorhebung fuer `mark`; die
+  Content-Regression scheitert an der expliziten Layout-Grenze fuer Inline-
+  Hintergruende. Eine CSS-only-Regel wuerde markierte Seiten fehlschlagen
+  lassen; Implementierung und Tests wurden entfernt. Der Nutzer hat entschieden,
+  zuerst begrenzte Inline-Hintergrundfragmentgeometrie umzusetzen; der
+  `mark`-Default bleibt Integrationsregression vorgesehen
+  ([KP-200](./Kontextprotokoll.md#kp-200---inline-hintergrundgeometrie-ausdruecklich-ausgewaehlt)).
+  Der Umsetzungsumfang beschraenkt sich auf nichttransparente Vollfarben fuer
+  texttragende, nicht ersetzte Inline-Elemente: eine zusammengefasste rechteckige
+  Geometrie je Inline-Element und Zeile, mit begrenzter Fragmentarbeit und
+  Paint vor dem Zeilentext. Inline-Margins/Padding/Borders, atomare Widgets,
+  Line-Break-Elemente, nichtpositive Boxhoehen und Bild-/Gradient-/Clip-/Radius-
+  Effekte bleiben ausdruecklich ausgeschlossen. `mark` wird erst nach Layout-/
+  Paint-Regressions als End-to-End-Fall integriert (KP-201). Pass 3 ist lokal
+  validiert: Build ohne Warnungen, 16.154 Solution-Tests und Formatpruefung
+  bestehen; Commit und CI stehen aus.
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

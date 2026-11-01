@@ -2669,6 +2669,72 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void InlineBackgroundsProduceOneMergedFragmentPerWrappedLine()
+    {
+        var paragraph = Find(Layout("<p id=p><span>ab cd ef</span></p>",
+            "span{background-color:red}", width: 20).Root!, "p");
+
+        Assert.Equal(3, paragraph.Lines.Count);
+        Assert.Equal(new LayoutInlineBackground(new(0, 0, 10, 10), new CssColor(255, 0, 0)),
+            Assert.Single(paragraph.Lines[0].InlineBackgrounds));
+        Assert.Equal(new LayoutInlineBackground(new(0, 10, 10, 10), new CssColor(255, 0, 0)),
+            Assert.Single(paragraph.Lines[1].InlineBackgrounds));
+        Assert.Equal(new LayoutInlineBackground(new(0, 20, 10, 10), new CssColor(255, 0, 0)),
+            Assert.Single(paragraph.Lines[2].InlineBackgrounds));
+    }
+
+    [Fact]
+    public void NestedInlineBackgroundsMergeTextAndKeepAncestorPaintOrder()
+    {
+        var paragraph = Find(Layout("<p id=p><span>A <b>B</b> C</span></p>",
+            "span{background-color:red}b{background-color:blue}").Root!, "p");
+
+        Assert.Equal(new[]
+        {
+            new LayoutInlineBackground(new(0, 0, 25, 10), new CssColor(255, 0, 0)),
+            new LayoutInlineBackground(new(10, 0, 5, 10), new CssColor(0, 0, 255))
+        }, paragraph.Lines.Single().InlineBackgrounds);
+    }
+
+    [Fact]
+    public void InlineBackgroundWorkLimitBoundsOwnerVisits()
+    {
+        const string html = "<p id=p><span>a b</span></p>";
+        const string css = "span{background-color:red}";
+        var exact = Layout(html, css, options: new() { MaxInlineBackgroundOperations = 3 });
+        Assert.Single(Find(exact.Root!, "p").Lines.Single().InlineBackgrounds);
+        Assert.Throws<LayoutLimitException>(() =>
+            Layout(html, css, options: new() { MaxInlineBackgroundOperations = 2 }));
+    }
+
+    [Theory]
+    [InlineData("<p><span><input></span></p>", "span{background-color:red}input{display:inline-block}")]
+    [InlineData("<p><input></p>", "input{display:inline-block;background-color:red}")]
+    public void InlineBackgroundsOnOrAroundWidgetsRemainUnsupported(string html, string css)
+    {
+        var exception = Assert.Throws<UnsupportedLayoutException>(() => Layout(html, css));
+        Assert.Equal("Backgrounds on or around atomic inline widgets require deferred widget paint geometry.",
+            exception.Message);
+    }
+
+    [Fact]
+    public void InlineBackgroundRejectsNonpositiveFragmentHeight()
+    {
+        var exception = Assert.Throws<UnsupportedLayoutException>(() =>
+            Layout("<p><span>x</span></p>", "span{background-color:red;line-height:0}"));
+        Assert.Equal("Inline backgrounds require positive inline line-box height.", exception.Message);
+    }
+
+    [Fact]
+    public void BackgroundOnLineBreakRemainsExplicitlyUnsupported()
+    {
+        var exception = Assert.Throws<UnsupportedLayoutException>(() =>
+            Layout("<p><br></p>", "br{background-color:red}"));
+        Assert.Equal("Backgrounds on line-break elements require deferred break-fragment geometry.",
+            exception.Message);
+    }
+
+    [Fact]
     public void InlineFormControlsAreAtomicAndWrapWithTextFlow()
     {
         var root = Layout("<body id=container><input id=a><input id=b></body>",
@@ -2692,7 +2758,6 @@ public sealed class LayoutTests
     [InlineData("<p>\t</p>", "p{white-space:pre}")]
     [InlineData("<p>-ab</p>", "")]
     [InlineData("<p lang=de>x</p>", "")]
-    [InlineData("<span>x</span>", "span{background-color:red}")]
     [InlineData("<p>a <span>bb cc</span></p>", "span{white-space:nowrap}")]
     [InlineData("<img>", "")]
     [InlineData("<input>", "")]

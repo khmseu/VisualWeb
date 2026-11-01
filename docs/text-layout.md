@@ -347,6 +347,21 @@ have zero intrinsic content size.
   font sizes, line-height multipliers/px/normal, half-leading and inline struts.
   Negative leading is valid; an empty inline strut can affect an existing line
   but does not create a standalone visible line.
+- Nontransparent solid `background-color` on text-backed, non-replaced inline
+  elements produces one merged rectangular fragment per element per line,
+  spanning its laid-out text and retained spaces. The rectangle uses that
+  element's inline strut extents; wrapped elements therefore have independent
+  per-line fragments. `LayoutOptions.MaxInlineBackgroundOperations` (default
+  1,000,000) bounds owner visits and generated fragments. Inline margins,
+  padding and borders remain unsupported; backgrounds on/around atomic widgets
+  or line breaks, zero-advance ink, and nonpositive fragment heights fail
+  explicitly. This does not implement image/gradient backgrounds, clipping,
+  radii or general inline box decorations. See CSS 2.2
+  [inline boxes](https://www.w3.org/TR/CSS22/visuren.html#inline-boxes) and
+  [inline formatting](https://www.w3.org/TR/CSS22/visuren.html#inline-formatting)
+  (local ID `css2-visual`), plus CSS Backgrounds
+  [`background-color`](https://drafts.csswg.org/css-backgrounds-3/#background-color)
+  (local ID `css-backgrounds`).
 
 Default body and paragraph vertical margins participate in sibling and
 eligible parent-edge collapse. Fonts with bold/italic styles must be configured
@@ -371,8 +386,9 @@ flow without specialized figure layout.
 - Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab
   stops, other justification opportunities/methods, `text-align-last`,
   `text-justify` and cross-node/style shaping inside an unbroken word.
-- Margin collapse, floats, positioning, inline-block, decorated inline boxes
-  (including backgrounds), tables beyond the subset above, ruby, broader list markers, replaced elements,
+- Margin collapse, floats, positioning, general inline-block, inline margins/
+  padding/borders, backgrounds on or around atomic widgets, tables beyond the
+  subset above, ruby, broader list markers, replaced elements,
   general controls, images/media/iframes and specialized element layout.
   The bounded forms subset lays out `input` text/search/email/tel/url/password/date/time/month/week/number/range/checkbox/radio/submit/reset/button,
   `textarea`, `select`, and `button` controls through finite inline-block fallbacks;

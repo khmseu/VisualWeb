@@ -55,7 +55,8 @@ public static class CssStyleEngine
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow content defaults</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list defaults</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS">hidden elements</see>,
-    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>.
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>,
+    /// including the <c>mark</c> highlight colors.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, center, p, section, article, aside, nav, header, footer, main, address,
@@ -97,6 +98,7 @@ public static class CssStyleEngine
         :link { color: #0000EE; text-decoration: underline }
         ins, u { text-decoration: underline }
         del, s, strike { text-decoration: line-through }
+        mark { background-color: yellow; color: black }
         """;
 
     /// <summary>Finds a supported HTML list marker hint without accepting unsupported list types.</summary>

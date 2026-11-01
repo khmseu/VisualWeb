@@ -76,6 +76,41 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void MarkHighlightDefaultMatchesExplicitCssPixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet();
+        text.Register("serif", font);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        CssStyleSource[] styles = [new("*{margin:0;font-size:30px;line-height:1}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><p><mark>Sample</mark></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(
+            "<!doctype html><p><span style='background-color:yellow;color:black'>Sample</span></p>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var background = Assert.Single(actual.DisplayList.Commands.OfType<FillRectangle>());
+        Assert.Equal(new CssColor(255, 255, 0), background.Color);
+        Assert.Equal(2, actual.DisplayList.Commands.Count);
+        Assert.IsType<FillRectangle>(actual.DisplayList.Commands[0]);
+        Assert.IsType<DrawGlyphRun>(actual.DisplayList.Commands[1]);
+        var pixels = actual.Frame.Pixels.Span;
+        var hasYellow = false;
+        for (var index = 0; index < pixels.Length; index += 4)
+        {
+            if (pixels[index] == 0 && pixels[index + 1] == 255 && pixels[index + 2] == 255 && pixels[index + 3] == 255)
+            {
+                hasYellow = true;
+                break;
+            }
+        }
+        Assert.True(hasYellow);
+    }
+
+    [Fact]
     public void NestedPhrasingRelativeSizesMatchExplicitCssNativePixels()
     {
         using var font = new TextFont(FontPath);

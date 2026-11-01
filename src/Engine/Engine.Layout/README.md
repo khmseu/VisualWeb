@@ -87,3 +87,11 @@ opportunities remain start-aligned. Expanded glyph advances retain source and
 selection geometry; U+00A0 on a line needing expansion and missing space glyphs
 fail explicitly. Scans share the line-break work and cancellation budgets.
 Other justification methods and properties remain unsupported.
+
+Nontransparent solid `background-color` on non-replaced inline text is emitted
+as one merged rectangular fragment per inline element and line.
+`LayoutOptions.MaxInlineBackgroundOperations` defaults to 1,000,000 and bounds
+fragment-owner visits. Inline margins/padding/borders and backgrounds on or
+around atomic widgets or line breaks remain explicit failures; the subset adds no image,
+gradient, clipping or corner behavior. See the
+[layout guide](../../../docs/text-layout.md#ordinary-flow).
