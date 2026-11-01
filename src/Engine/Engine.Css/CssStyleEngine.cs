@@ -38,6 +38,9 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
 /// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
 /// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
+/// Spec: html; font size uses <see href="https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size">legacy font size parsing</see>
+/// and the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing hint</see>;
+/// spec: css-fonts; <see href="https://www.w3.org/TR/css-fonts-4/#font-size-prop">font-size</see>.
 /// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {
@@ -179,6 +182,16 @@ public static class CssStyleEngine
                 {
                     context.Assignment();
                     Add(new("color", color, false, 0), CssOrigin.Author, false, new(), -1,
+                        presentationalHint: true);
+                }
+            }
+            if (element.LocalName == "font" && element.GetAttribute("size") is { } sizeAttribute)
+            {
+                context.FontSizeCharacters(sizeAttribute.Length);
+                if (HtmlLegacyFontSize.Parse(sizeAttribute, context.Cancellation) is { } size)
+                {
+                    context.Assignment();
+                    Add(new("font-size", size, false, 0), CssOrigin.Author, false, new(), -1,
                         presentationalHint: true);
                 }
             }

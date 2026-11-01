@@ -143,13 +143,31 @@
   `257f0b1` reproduziert andere Fehler desselben Tests, nicht aber die genaue
   aktuelle Meldung. Drei aktuelle fokussierte Wiederholungen bestehen. Die
   Ursache des Volltestfehlers bleibt offen. Der abschliessende Build und
-  die Formatpruefung bestehen; Commit und CI stehen aus
+  die Formatpruefung bestehen; Commit `03025fb` ist gepusht, Linux, Windows
+  und CodeQL bestehen fuer diesen Commit
   ([KP-154](./Kontextprotokoll.md#kp-154---altfarbhint-als-neuntes-inkrement),
   [KP-155](./Kontextprotokoll.md#kp-155---altfarbhint-implementiert),
   [KP-156](./Kontextprotokoll.md#kp-156---altfarbe-format-und-smoke-bestanden),
   [KP-157](./Kontextprotokoll.md#kp-157---uir-volltestfehler),
   [KP-158](./Kontextprotokoll.md#kp-158---uir-baseline-timingversuch),
-  [KP-159](./Kontextprotokoll.md#kp-159---altfarbe-abschlusspruefung)).
+  [KP-159](./Kontextprotokoll.md#kp-159---altfarbe-abschlusspruefung),
+  [KP-160](./Kontextprotokoll.md#kp-160---altfarbe-commit-und-ci-start),
+  [KP-161](./Kontextprotokoll.md#kp-161---altfarbe-ci-bestanden)).
+  Fuer Pass 10 ist der bisher fehlende HTML-Hinweis `font[size]` ausgewaehlt.
+  Er ist gegenueber der Farbaenderung ein eigener Groessen- und Layoutpfad:
+  Die HTML-Regel verarbeitet vorzeichenbehaftete Altwerte und bildet sie
+  auf vorhandene absolute CSS-Schriftgroessen ab. Nach dem Review bestehen
+  alle 16.043 Solution-Tests (darunter 1.083 CSS-, 79 Content- und
+  1.333 Browser-Faelle), der Solution-Build, die Formatpruefung und der
+  lokale V8-Smoke.
+  Beim direkten Review wurden zwei zeitabhaengige Cancellation-Tests entfernt;
+  lange Eingaben und vorab abgebrochene Verarbeitung bleiben getestet, ein
+  deterministischer Abbruch mitten im Scan ist nicht nachgewiesen.
+  Commit und CI stehen aus
+  ([KP-162](./Kontextprotokoll.md#kp-162---altschriftgroesse-als-zehntes-inkrement),
+  [KP-163](./Kontextprotokoll.md#kp-163---altschriftgroesse-implementiert-und-reviewt),
+  [KP-164](./Kontextprotokoll.md#kp-164---altschriftgroesse-validierung-laeuft),
+  [KP-165](./Kontextprotokoll.md#kp-165---altschriftgroesse-volltest-bestanden)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).

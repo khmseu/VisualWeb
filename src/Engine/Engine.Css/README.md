@@ -4,9 +4,12 @@ Phase-6 first-party CSS Syntax tokenization/parsing, static HTML selectors and
 typed computed styles. UA/user/author/inline cascade, !important, specificity,
 inheritance, CSS-wide keywords and initial block/inline properties are supported.
 HTML `font color` uses the full bounded legacy-color algorithm at the author
-presentational hint origin; `font face` and `font size` are not implemented.
-The per-computation `MaxFontColorAttributeCharacters` limit counts raw UTF-16
-attribute units, including invalid values, before parsing.
+presentational hint origin. HTML `font size` uses the
+[legacy font size algorithm](https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size)
+(local ID `html`) and the existing CSS absolute-size mapping; `font face` is
+not implemented. Independent per-computation `MaxFontColorAttributeCharacters`
+and `MaxFontSizeAttributeCharacters` limits count raw UTF-16 attribute units,
+including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-10-04) include `search { display:block }`
 as a normal, disableable UA declaration; it introduces no search widget.

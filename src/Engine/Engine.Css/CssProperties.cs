@@ -22,6 +22,19 @@ internal sealed record CssAssignment(string Name, CssValue Value, bool Important
 
 internal static class CssProperties
 {
+    internal static CssLength? AbsoluteFontSize(string keyword) => keyword switch
+    {
+        "xx-small" => new(9, "px"),
+        "x-small" => new(10, "px"),
+        "small" => new(13, "px"),
+        "medium" => new(16, "px"),
+        "large" => new(18, "px"),
+        "x-large" => new(24, "px"),
+        "xx-large" => new(32, "px"),
+        "xxx-large" => new(48, "px"),
+        _ => null
+    };
+
     private static readonly HashSet<string> Wide = new(["initial", "inherit", "unset", "revert"], StringComparer.Ordinal);
     private static readonly string[] Sides = ["top", "right", "bottom", "left"];
     internal static readonly IReadOnlyDictionary<string, CssProperty> Registry = CreateRegistry();
@@ -271,20 +284,7 @@ internal static class CssProperties
         if (name.EndsWith("-style", StringComparison.Ordinal)) { return BorderStyles.Contains(keyword) ? new CssKeyword(keyword) : null; }
         if (name == "font-size")
         {
-            if (keyword is "xx-small" or "x-small" or "small" or "medium" or "large" or "x-large" or "xx-large" or "xxx-large")
-            {
-                return new CssLength(keyword switch
-                {
-                    "xx-small" => 9,
-                    "x-small" => 10,
-                    "small" => 13,
-                    "medium" => 16,
-                    "large" => 18,
-                    "x-large" => 24,
-                    "xx-large" => 32,
-                    _ => 48
-                }, "px");
-            }
+            if (AbsoluteFontSize(keyword) is { } size) { return size; }
             if (keyword is "larger" or "smaller") { return new CssKeyword(keyword); }
         }
         if (name == "line-height")

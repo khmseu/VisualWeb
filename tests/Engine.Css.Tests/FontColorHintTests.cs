@@ -74,7 +74,7 @@ public sealed class FontColorHintTests
         var plain = CssStyleEngine.Compute(document, includeUserAgent: false, cancellationToken: Cancellation);
         Assert.Equal(new CssColor(255, 0, 0), plain.Styles[child]["color"]);
         Assert.Equal(plain.Styles[font.ParentNode as DomElement ?? throw new InvalidOperationException()]["font-family"], plain.Styles[font]["font-family"]);
-        Assert.Equal(plain.Styles[font.ParentNode as DomElement ?? throw new InvalidOperationException()]["font-size"], plain.Styles[font]["font-size"]);
+        Assert.Equal(new CssLength(48, "px"), plain.Styles[font]["font-size"]);
         Assert.Equal(new CssColor(255, 0, 0), Color(document, font, new CssStyleSource("font{color:blue}", CssOrigin.User)));
         Assert.Equal(new CssColor(255, 0, 0), Color(document, font, new CssStyleSource("font{color:blue}", CssOrigin.UserAgent)));
         Assert.Equal(new CssColor(0, 128, 0), Color(document, font, new CssStyleSource("font{color:green}")));

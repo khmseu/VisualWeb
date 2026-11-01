@@ -216,7 +216,14 @@ not CSS color syntax: for example `chucknorris` becomes `#c00000`, while
 empty and ASCII-case-insensitive `transparent` fail; whitespace-only inputs
 produce black. The hint uses the same cascade, assignment budget, inheritance,
 and recomputation behavior as the other hints, including without the UA sheet.
-The obsolete `font face` and `font size` attributes remain unsupported.
+The [HTML `font size` hint](https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size)
+(local ID `html`) skips ASCII whitespace, accepts an optional sign and initial
+ASCII digits, and ignores trailing characters. Unsigned values are absolute;
+signed values are relative to 3, not the parent's size. The result is clamped
+to 1–7 and mapped from `x-small` through `xxx-large` using the existing CSS
+absolute-size policy. Missing digits produce no hint. The hint uses the same
+cascade, inheritance, mutation and assignment rules, independent of the UA
+sheet. `font face` remains unsupported.
 
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
 UA < user < author presentational hint < author precedence, important author < user < UA precedence, inline
@@ -383,6 +390,7 @@ All CssOptions limits are positive and configurable:
 | ------------------------------------------------------------------------------ | ---------: |
 | Input characters per individual CSS string, before normalization               |       4 Mi |
 | Aggregate raw UTF-16 characters in `font color` attributes per computation     |       4 Mi |
+| Aggregate raw UTF-16 characters in `font size` attributes per computation      |       4 Mi |
 | Non-EOF tokens per individual CSS string                                       |  1,000,000 |
 | Component/selector nesting and selector evaluation depth                       |        128 |
 | Diagnostics per parse / combined style computation                             |     10,000 |
@@ -398,9 +406,10 @@ input/token scanning, parsing, compilation and matching. Numeric values outside
 the finite `double` range are diagnosed, including color components; finite
 numeric overflow during computation also fails explicitly. Whole-string
 processing and these limits are not a total memory budget or an OS sandbox.
-The font color limit (`MaxFontColorAttributeCharacters`) is checked before
-processing each attribute, including invalid values, and long whitespace scans
-honor cancellation. Other direct DOM construction and arbitrarily large DOM
+The independent font color and size limits (`MaxFontColorAttributeCharacters`
+and `MaxFontSizeAttributeCharacters`) are checked before processing each
+attribute, including invalid values; long whitespace and digit scans honor
+cancellation. Other direct DOM construction and arbitrarily large DOM
 attribute values remain the caller's responsibility.
 
 ## Offline evidence and standards

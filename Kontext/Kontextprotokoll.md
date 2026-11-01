@@ -4704,3 +4704,106 @@ Formatpruefung erneut. Der Tracker nennt die bestandenen Schwerpunktchecks,
 den fehlgeschlagenen Volltest und die begrenzte Baseline-Evidenz, ohne die
 Ursache als geklaert darzustellen. Das abgeschlossene Inkrement ist bereit
 fuer einen Commit mit demselben Validierungshinweis; Push und CI stehen aus.
+
+### KP-160 - Altfarbe Commit und CI Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Commit `03025fbd7a343454d07a19965c34a3c11acbec44`, erfolgreicher
+  Push und GitHub-Actions-Liste fuer genau diesen Commit.
+- Bezug: KP-157 bis KP-159.
+
+**Status (belegt):** Pass 9 ist als `feat(css): support HTML font color hints`
+committed und gepusht. Der Committext nennt den fehlgeschlagenen Volltest
+und die begrenzte Baseline-Evidenz; der Commit-Hook formatierte das
+Kontextprotokoll und pruefte zwoelf Dateien ohne Befund. Linux
+(`41278101650`) und Windows (`41278101643`) laufen, der weitere Push-Check
+(`41278101452`) ist eingereiht. Ergebnisse und Pass 10 stehen aus.
+
+### KP-161 - Altfarbe CI bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossene GitHub-Actions-Laeufe `41278101650`,
+  `41278101643` und `41278101452` fuer Commit
+  `03025fbd7a343454d07a19965c34a3c11acbec44`.
+- Bezug: KP-160.
+
+**Status (belegt):** Linux, Windows und CodeQL bestehen fuer den neunten
+Commit; Linux und Windows decken jeweils x64 und arm64 ab. Neun von zehn
+angeforderten Inkrementen sind committed, gepusht und CI-gruen. Der lokale
+Volltestfehler und die begrenzten Baseline-Versuche bleiben gemaess KP-157
+und KP-158 dokumentiert. Das zehnte Inkrement ist noch auszuwaehlen.
+
+### KP-162 - Altschriftgroesse als zehntes Inkrement
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Tracker](../plans/Missing.md#recommended-priority),
+  [CSS-Groessenverarbeitung](../src/Engine/Engine.Css/CssProperties.cs),
+  [Textguide](../docs/text-layout.md) und lokale Standards `html`
+  `#rules-for-parsing-a-legacy-font-size` sowie `css-fonts`; beide zuletzt
+  geprueft 2026-10-04.
+- Bezug: KP-154, KP-161.
+
+**Auswahl (Ableitung):** Der bisher fehlende Praesentationshinweis
+`font[size]` ist ein getrenntes statisches Renderinginkrement nach
+`font[color]`: Er betrifft Schriftgroesse, Zeilen und Glyphengeometrie und
+benoetigt eine andere HTML-Parsingregel. Diese verarbeitet ASCII-Leerraum,
+optionale Vorzeichen und fuehrende Ziffern, begrenzt auf 1 bis 7 und ordnet
+vorhandene absolute CSS-Groessen zu; relative Altwerte rechnen mit Basis 3,
+nicht der Elterngroesse. Die bestehende Groessentabelle soll wiederverwendet
+werden. Cascade, Ressourcenlimits, Cancellation, mutierte Attribute und
+Renderergebnisse sind zu testen. `font[face]` bleibt ausserhalb des Umfangs;
+Umsetzung und Validierung stehen aus.
+
+### KP-163 - Altschriftgroesse implementiert und reviewt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Implementierungsbericht, direkter Review von
+  [Altgroessenparser](../src/Engine/Engine.Css/HtmlLegacyFontSize.cs),
+  [CSS-Tests](../tests/Engine.Css.Tests/FontSizeHintTests.cs),
+  [Content-Test](../tests/Engine.Content.Tests/FontSizeHintTests.cs) und
+  [Browser-Tests](../tests/VisualWeb.Browser.Tests/FontSizeHintTests.cs).
+- Bezug: KP-162.
+
+**Status (belegt):** `font[size]` verwendet die HTML-Altgroessenregel und
+die extrahierte vorhandene CSS-Schluesselworttabelle; die neue Groessengrenze
+zaehlt rohe UTF-16-Zeichen aggregiert und unabhaengig von der Farbgrenze.
+Laut Implementierungsbericht bestanden zunaechst 1.085 CSS-Faelle, alle
+79 Content-Faelle und zwei lokale/Prozess-Browser-Faelle. Der erste
+Test-first-Lauf scheiterte beim Kompilieren wegen der noch fehlenden Option;
+begonnene Content-/Browser-Red-Laeufe wurden nach Timeout beendet.
+
+**Review (belegt):** Zwei Tests mit `CancelAfter(1ms)` und grossen
+Teststrings konnten vor dem Scan abbrechen und waren schedulingabhaengig;
+sie wurden entfernt statt daraus einen deterministischen Mid-Scan-Nachweis
+abzuleiten. Grosse fuehrende Leerzeichen und Nullen, exakte Budgets und
+vorherige Cancellation bleiben getestet; der Parser prueft Cancellation
+waehrend laengerer Scans. Ein deterministischer Test fuer einen Abbruch
+mitten im Scan ist offen. Die Tests nach dieser Aenderung und die
+abschliessende Gesamtvalidierung stehen aus.
+
+### KP-164 - Altschriftgroesse Validierung laeuft
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: ausgefuehrte lokale CSS-, Build-, Format- und V8-Befehle nach
+  der Reviewkorrektur; Start des seriellen Solution-Volltests.
+- Bezug: KP-163.
+
+**Status (belegt):** Alle 1.083 CSS-Tests bestehen nach Entfernen der zwei
+zeitabhaengigen Tests. Der Solution-Build endet mit null Warnungen und
+Fehlern; `dotnet format --verify-no-changes` und der lokale V8-Smoke bestehen.
+Der serielle Volltest laeuft. Aussagen zu dessen Ergebnis, zu Commit und CI
+stehen noch aus.
+
+### KP-165 - Altschriftgroesse Volltest bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossener serieller Solution-Volltest mit `--no-build -m:1`
+  nach dem Build und dem Review aus KP-163; Exit-Code 0.
+- Bezug: KP-163 und KP-164.
+
+**Status (belegt):** Alle 16.043 Solution-Tests bestehen, einschliesslich
+1.083 CSS-, 79 Content- und 1.333 Browser-Faellen. Damit bestehen auch die
+Tests der beruehrten Subsysteme nach der Reviewkorrektur. Build,
+Formatpruefung und lokaler V8-Smoke bestanden bereits gemaess KP-164.
+Der begrenzte Nachweis zum Abbruch mitten im Scan bleibt gemaess KP-163
+offen. Commit, Push und zugehoerige CI-Ergebnisse stehen aus.

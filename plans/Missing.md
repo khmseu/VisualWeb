@@ -459,8 +459,8 @@ all 15,806 solution tests, solution formatting and local V8 smoke pass.
 HTML `<font color>` now supplies a bounded presentational color hint using the
 full HTML legacy color algorithm, including non-CSS malformed values, rather
 than CSS color parsing. Normal cascade, inheritance and recomputation apply;
-aggregate raw attribute processing has a configurable limit. `font face` and
-`font size` remain unsupported. See [CSS hint scope](../docs/css.md#cascade-and-computed-values).
+aggregate raw attribute processing has a configurable limit. `font face`
+remains unsupported. See [CSS hint scope](../docs/css.md#cascade-and-computed-values).
 All 1,053 CSS and 78 Content tests, focused local/process browser cases,
 solution build, formatting and local V8 smoke pass. The serial full run passed
 16,009 cases but failed the unchanged
@@ -471,6 +471,17 @@ upgraded request, the same base test intermittently failed from duplicate
 requests or a resource deadline. Those failures do not reproduce the exact
 pending-authorization symptom or prove its cause. Three current focused
 repetitions passed, and the temporary baseline worktree was removed.
+
+HTML `<font size>` now supplies a separate bounded presentational hint using
+the HTML legacy size algorithm and existing CSS absolute-size mapping.
+Signed sizes are relative to 3 rather than the parent; parsing, cascade,
+inheritance and recomputation are covered through native rendering and
+local/process retained resize. An independent configurable aggregate raw UTF-16
+budget bounds size attribute work. The solution build, all 16,043 solution
+tests, formatting and local V8 smoke pass. Long inputs and pre-cancelled
+computations are tested, but cancellation specifically during a scan has not
+been deterministically tested. `font face` and broader font support remain open;
+this increment does not complete the priority.
 
 The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
 the normal cascade. An override may make a hidden element visible, but
