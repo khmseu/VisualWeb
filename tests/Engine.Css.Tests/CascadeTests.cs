@@ -500,6 +500,8 @@ public sealed class CascadeTests
     [Theory]
     [InlineData("LeFt", "left")]
     [InlineData("RiGhT", "right")]
+    [InlineData("CeNtEr", "center")]
+    [InlineData("MiDdLe", "center")]
     [InlineData("JuStIfY", "justify")]
     public void DivAlignHintAcceptsOnlyItsSupportedAsciiValues(string value, string expected)
     {
@@ -511,11 +513,10 @@ public sealed class CascadeTests
 
     [Theory]
     [InlineData("")]
-    [InlineData("center")]
-    [InlineData("middle")]
     [InlineData(" right")]
     [InlineData("left ")]
     [InlineData("JustifyX")]
+    [InlineData("leftover")]
     public void UnsupportedDivAlignHintsAreIgnored(string value)
     {
         var doc = Document($"<div id=target align='{value}'>x</div>");

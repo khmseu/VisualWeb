@@ -203,8 +203,8 @@ remain explicit layout failures, even if an author rule overrides them.
 The [HTML paragraph and heading alignment hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
 (local ID `html`) map `align=left`, `right`, `center` and `justify` on `p` and
 `h1` through `h6` to `text-align`. The [flow-content div hints](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
-map `align=left`, `right` and `justify` on `div`; `center` and `middle` are not
-accepted for `div`. Matching is ASCII-case-insensitive and does not trim;
+map `align=left`, `right`, `center`, `middle` and `justify` on `div`, with
+`middle` mapping to `center`. Matching is ASCII-case-insensitive and does not trim;
 unsupported values are ignored. These hints use the same cascade, assignment
 budget and recomputation rules as list hints. The separate legacy behavior that
 adjusts over-constrained descendant margins is not implemented. Alignment on

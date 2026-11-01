@@ -214,10 +214,12 @@ public sealed class ContentTests
     }
 
     [Theory]
-    [InlineData("left")]
-    [InlineData("right")]
-    [InlineData("justify")]
-    public void DivAlignHintMatchesAuthoredNativePixelsAcrossRetainedResize(string align)
+    [InlineData("left", "left")]
+    [InlineData("right", "right")]
+    [InlineData("center", "center")]
+    [InlineData("middle", "center")]
+    [InlineData("justify", "justify")]
+    public void DivAlignHintMatchesAuthoredNativePixelsAcrossRetainedResize(string align, string expectedAlign)
     {
         using var font = new TextFont(FontPath);
         var text = new FontSet(); text.Register("serif", font);
@@ -226,7 +228,7 @@ public sealed class ContentTests
         var actualStyle = new CssStyleSource[] { new(style) };
         var html = "<!doctype html><div align=" + align + ">aa <a href=/next>bb</a> cc dd</div>";
         const string reference = "<!doctype html><div>aa <a href=/next>bb</a> cc dd</div>";
-        CssStyleSource[] expectedStyle = [new(style + "div{text-align:" + align + "}")];
+        CssStyleSource[] expectedStyle = [new(style + "div{text-align:" + expectedAlign + "}")];
         var actual = OfflinePageRenderer.Render(html, actualStyle, text, fonts, 70, 100, cancellationToken: Cancellation);
         var expected = OfflinePageRenderer.Render(reference, expectedStyle, text, fonts, 70, 100, cancellationToken: Cancellation);
 

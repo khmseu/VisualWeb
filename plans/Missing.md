@@ -809,8 +809,8 @@ baseline findings, not new table findings.
 **A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
 
 HTML `div[align]` now supplies the bounded `text-align` presentational hints
-`left`, `right` and `justify`, with ASCII-case-insensitive matching through the
-existing cascade. `center` and `middle` remain ignored for `div`; legacy
+`left`, `right`, `center`, `middle` and `justify`, with ASCII-case-insensitive
+matching and `middle` mapped to `center` through the existing cascade. Legacy
 over-constrained descendant-margin alignment, table alignment and other
 elements remain unsupported.
 

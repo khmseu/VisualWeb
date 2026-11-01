@@ -113,7 +113,7 @@ exact `1`, `a`, `A`, `i` and `I` on `ol`/`li`, with the author presentational hi
 and shared expanded-assignment budget described in the guide.
 HTML `align` on `p` and `h1`–`h6` supports the exact ASCII-case-insensitive
 values left/right/center/justify as `text-align` hints. The `div` flow-content
-rule supports left/right/justify; center and middle are ignored for `div`.
+rule supports left/right/center/middle/justify; `middle` maps to `center`.
 These hints use the same cascade and budget. The separate legacy behavior that
 adjusts over-constrained descendant margins is not implemented. See the
 [HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
