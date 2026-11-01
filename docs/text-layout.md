@@ -226,8 +226,11 @@ percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, other cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, row/group sizing/decorations/backgrounds,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
-`cellspacing`, `align`, `valign`, `nowrap`). Hidden parts are omitted; missing
-cells leave empty grid slots. Empty grids have zero intrinsic content size.
+`cellspacing`, `valign`, `nowrap`). The table's ASCII-case-insensitive
+`align=center` hint centers it using auto inline margins in the horizontal LTR
+subset; left/right floating, other table alignment values and row/cell
+`align` remain unsupported. Hidden parts are omitted; missing cells leave
+empty grid slots. Empty grids have zero intrinsic content size.
 
 ### Ordinary flow
 

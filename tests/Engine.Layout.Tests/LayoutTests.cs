@@ -862,6 +862,18 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void CenterTableAlignHintCentersExplicitWidthTable()
+    {
+        var document = HtmlParser.Parse("<!doctype html><table id=t align=CeNtEr><tr><td>x</td></tr></table>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, [new("table{width:65px}")], cancellationToken: Cancellation);
+        var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 200,
+            cancellationToken: Cancellation).Root!;
+        Assert.Equal(17.5, Find(root, "t").Content.X);
+        Assert.Equal(65, Find(root, "t").Content.Width);
+    }
+
+    [Fact]
     public void EmptyTablesAndMissingCellsPreserveGridSpacingWithoutInventingBoxes()
     {
         var empty = Find(UnorderedList("<table id=t></table>").Root!, "t");
@@ -944,6 +956,8 @@ public sealed class LayoutTests
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
     [InlineData("<table><tr><td><input></td></tr></table>", "")]
     [InlineData("<table width=100><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table align=left><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table align='center '><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:baseline}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "table{height:100px}")]

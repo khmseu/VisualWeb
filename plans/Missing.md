@@ -812,8 +812,10 @@ HTML `div[align]` now supplies the bounded `text-align` presentational hints
 `left`, `right`, `center`, `middle` and `justify`, with ASCII-case-insensitive
 matching and `middle` mapped to `center` through the existing cascade. Legacy
 HTML `center` is block-level by default and supplies the same bounded
-`text-align:center` presentational hint. Legacy over-constrained
-descendant-margin alignment, table alignment and other elements remain
+`text-align:center` presentational hint. `table[align=center]` supplies
+horizontal auto-margin hints, centering supported explicit-width tables.
+Legacy over-constrained descendant-margin alignment, table left/right floats,
+other table alignment attributes and alignment on other elements remain
 unsupported.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.

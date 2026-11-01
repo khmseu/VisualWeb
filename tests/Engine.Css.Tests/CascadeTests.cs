@@ -530,6 +530,39 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("center")]
+    [InlineData("CeNtEr")]
+    public void TableAlignCenterUsesAutoMarginsAtPresentationalHintOrigin(string align)
+    {
+        var doc = Document($"<table id=target align='{align}'></table>");
+        var target = doc.GetElementById("target")!;
+        var user = new CssStyleSource("table{margin-left:5px;margin-right:7px}", CssOrigin.User);
+        var result = Compute(doc, user);
+        Assert.Equal(new CssKeyword("auto"), result.Styles[target]["margin-left"]);
+        Assert.Equal(new CssKeyword("auto"), result.Styles[target]["margin-right"]);
+        Assert.Equal(new CssLength(5, "px"),
+            Compute(doc, user, new("table{margin-left:5px;margin-right:7px}")).Styles[target]["margin-left"]);
+        Assert.Equal(new CssKeyword("auto"),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+            .Styles[target]["margin-left"]);
+        Assert.True(CssStyleEngine.HasSupportedTableCenterAlignmentHint(target));
+    }
+
+    [Theory]
+    [InlineData("left")]
+    [InlineData("center ")]
+    [InlineData("middle")]
+    public void UnsupportedTableAlignValuesDoNotProduceHints(string align)
+    {
+        var doc = Document($"<table id=target align='{align}'></table>");
+        var target = doc.GetElementById("target")!;
+        Assert.False(CssStyleEngine.HasSupportedTableCenterAlignmentHint(target));
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(0, "px"), result.Styles[target]["margin-left"]);
+        Assert.Equal(new CssLength(0, "px"), result.Styles[target]["margin-right"]);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData(" right")]
     [InlineData("left ")]

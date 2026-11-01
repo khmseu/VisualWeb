@@ -38,6 +38,7 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
 /// Center-element and div alignment hints use
 /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow-content rules</see>.
+/// Table centering hints use the table alignment rule in tables-2.
 /// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
 /// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
 /// Spec: html; font size uses <see href="https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size">legacy font size parsing</see>
@@ -124,6 +125,16 @@ public static class CssStyleEngine
         return marker is not null;
     }
 
+    /// <summary>Reports whether the bounded centered-table alignment hint applies.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table alignment hints</see>.</remarks>
+    public static bool HasSupportedTableCenterAlignmentHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName == "table"
+            && element.GetAttribute("align") is { Length: 6 } align
+            && CssText.Lower(align) == "center";
+    }
+
     /// <summary>Finds the supported flow-content text alignment hints.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow content hints</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table rendering hints</see>.</remarks>
@@ -183,6 +194,15 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("list-style-type", new CssKeyword(marker), false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (HasSupportedTableCenterAlignmentHint(element))
+            {
+                context.Assignment();
+                Add(new("margin-left", new CssKeyword("auto"), false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+                context.Assignment();
+                Add(new("margin-right", new CssKeyword("auto"), false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetAlignHint(element) is { } align)

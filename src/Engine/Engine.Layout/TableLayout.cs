@@ -120,8 +120,10 @@ public static partial class StaticLayout
 
         private static void RejectTableAttributes(DomElement element)
         {
-            if (new[] { "width", "height", "border", "cellpadding", "cellspacing", "align", "valign", "nowrap" }
-                .Any(attribute => element.GetAttribute(attribute) is not null))
+            if (new[] { "width", "height", "border", "cellpadding", "cellspacing", "valign", "nowrap" }
+                    .Any(attribute => element.GetAttribute(attribute) is not null)
+                || element.GetAttribute("align") is not null
+                    && !CssStyleEngine.HasSupportedTableCenterAlignmentHint(element))
             { throw new UnsupportedLayoutException("Legacy table presentation attributes require unsupported presentational hints; use supported CSS."); }
         }
 

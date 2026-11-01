@@ -122,6 +122,10 @@ implemented. See the
 and [flow-content hints](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`).
 
+HTML table rendering also maps ASCII-case-insensitive `table[align=center]`
+to `margin-left:auto` and `margin-right:auto` hints in the supported horizontal
+LTR subset. Other table alignment values remain unsupported.
+
 The finite table properties add canonical table/group/row/cell displays,
 `table-layout:auto`, inherited `border-collapse:separate` and single-length
 `border-spacing`, plus `vertical-align:baseline/top` (ID `css2-tables`).
