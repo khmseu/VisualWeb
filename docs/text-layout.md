@@ -246,6 +246,10 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
 - Shaped unbroken words, collapsing spaces, wrapping at spaces and supported
   internal hyphens, and overflow of unbreakable text. Exact fits do not wrap.
   Line-edge collapsible spaces drop.
+- HTML `align` hints on `p` and `h1`–`h6` select the existing left, right,
+  center and justify paths; they do not add layout behavior. See
+  [HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
+  (local ID `html`) and the [CSS guide](css.md).
 - `text-align:justify` uses an English inter-word policy: positive remaining
   width on a soft-wrapped line is distributed equally across its collapsed
   ASCII space fragments. Lines without such opportunities remain start-aligned;

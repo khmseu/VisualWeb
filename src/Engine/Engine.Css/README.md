@@ -104,6 +104,11 @@ descendants of any of those types. Author and user cascade remain unchanged.
 List `type` hints support `disc`/`circle`/`square`/`none` on `ul`/`li` and
 exact `1`, `a`, `A`, `i` and `I` on `ol`/`li`, with the author presentational hint origin, `revert` semantics
 and shared expanded-assignment budget described in the guide.
+HTML `align` on `p` and `h1`–`h6` supports the exact ASCII-case-insensitive
+values left/right/center/justify as `text-align` hints, with the same cascade
+and budget. Other elements and malformed values are ignored. See
+[HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
+(local ID `html`).
 
 The finite table properties add canonical table/group/row/cell displays,
 `table-layout:auto`, inherited `border-collapse:separate` and single-length

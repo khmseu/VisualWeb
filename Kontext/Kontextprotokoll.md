@@ -4382,3 +4382,183 @@ Commit, Push und CI stehen noch aus.
 **Validierung (belegt):** Die vollstaendige Solution-Suite besteht mit
 15.953 Tests. Build, Formatpruefung und lokaler V8-Smoke sind ebenfalls fuer
 den dokumentierten Stand erfolgreich. Commit, Push und CI stehen noch aus.
+
+### KP-140 - Search-Commit und CI-Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Commit `087954f1ccb028a781fef462aa08313737056c85`, erfolgreicher
+  Push und GitHub-Actions-Liste fuer genau diesen Commit.
+- Bezug: KP-139.
+
+**Status (belegt):** Pass 7 ist als `feat(css): render search elements as blocks`
+committed und gepusht. Der Commit-Hook pruefte 15 Dateien ohne Befund.
+Linux (`41266224349`) und Windows (`41266224341`) laufen; CodeQL
+(`41266223985`) ist eingereiht. Ergebnisse und Pass 8 stehen aus.
+
+### KP-141 - Search-CI bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossene GitHub-Actions-Laeufe `41266224349`,
+  `41266224341` und `41266223985` fuer Commit
+  `087954f1ccb028a781fef462aa08313737056c85`.
+- Bezug: KP-140.
+
+**Status (belegt):** Linux, Windows und CodeQL bestehen fuer den siebten
+Commit. Sieben von zehn angeforderten Inkrementen sind damit committed,
+gepusht und CI-gruen; Pass 8 wird anhand des aktuellen Trackers bestimmt.
+
+### KP-142 - Absatz- und Ueberschriftenausrichtung ausgewaehlt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [CSS-Cascade](../src/Engine/Engine.Css/CssStyleEngine.cs),
+  [Textlayout](../docs/text-layout.md#ordinary-flow) und lokal gecachter
+  HTML-Standard `#tables-2`; `html` und `css-text` wurden am 2026-10-04
+  zuletzt geprueft und sind noch innerhalb von 30 Tagen.
+- Bezug: KP-141.
+
+**Auswahl (Ableitung):** Der Parser bewahrt `align` auf `p` und `h1` bis
+`h6`, aber die CSS-Engine ignoriert es. Der HTML-Standard beschreibt fuer
+`left`, `right`, `center` und `justify` ASCII-insensitive
+Praesentationshinweise; vorhandene Cascade und Textlayout unterstuetzen diese
+Werte bereits. Pass 8 soll den konkreten Sichtbarkeitsfehler beheben und
+Cascade, Budget, Mutation und lokale/Prozessdarstellung pruefen.
+`center`, `div align` und Tabellen-Alignment brauchen gesonderte Algorithmen
+und werden nicht als implementiert behauptet. Tests, Commit und CI stehen aus.
+
+### KP-143 - Ausrichtung implementiert und reviewt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [CSS-Cascade](../src/Engine/Engine.Css/CssStyleEngine.cs),
+  [CSS-Tests](../tests/Engine.Css.Tests/CascadeTests.cs),
+  [Layout-Tests](../tests/Engine.Layout.Tests/LayoutTests.cs),
+  [Content-Tests](../tests/Engine.Content.Tests/ContentTests.cs),
+  [Browser-Tests](../tests/VisualWeb.Browser.Tests/ScrollTests.cs),
+  Implementierungs- und unabhaengiger Reviewbericht sowie Solution-Build
+  in dieser Sitzung.
+- Bezug: KP-142.
+
+**Umsetzung und Review (belegt):** Gueltige Absatz- und
+Ueberschriftenattribute gehen als Autoren-Praesentationshinweise in die
+vorhandene Cascade und das gemeinsame Assignmentbudget ein. Vor der
+Implementierung scheiterten neun fokussierte Faelle; anschliessend bestanden
+laut Implementierungsbericht alle 1.033 CSS-Projekttests sowie 29 fokussierte
+Layout-, fuenf Content- und sechs Browserfaelle. Geprueft werden auch genaue
+Zeilengeometrie, Mutation, Native-Pixel, lokales/Prozess-Resize und die
+erhaltene Justify-Grenze. Der unabhaengige Review fand keine behebbaren
+Probleme; der Solution-Build besteht ohne Warnungen und Fehler.
+Gesamtformatierung, Volltest, Commit und CI stehen noch aus.
+
+### KP-144 - Format und V8-Smoke bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erfolgreiche Gesamtformatpruefung und
+  `dotnet run --no-build --project tools/V8Smoke -- --local` in dieser Sitzung.
+- Bezug: KP-143.
+
+**Status (belegt):** Die gesamte Formatpruefung und der lokale native
+V8-Smoke bestehen. Der vollstaendige serielle Solution-Test, Commit, Push
+und CI stehen noch aus.
+
+### KP-145 - Ausrichtung-Volltest laeuft
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: laufender `dotnet test VisualWeb.slnx --no-build -m:1`
+  in dieser Sitzung.
+- Bezug: KP-144.
+
+**Status (belegt):** Der serielle Volltest hat die ersten 13 Testprojekte
+ohne Fehler abgeschlossen und fuehrt das Browser-Testprojekt aus. Das
+abschliessende Ergebnis, Commit, Push und CI stehen aus.
+
+### KP-146 - Browser-Volltestfehler
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: fehlgeschlagener Solution-Test aus KP-145 und unveraenderter
+  [Shell-Test](../tests/VisualWeb.Browser.Tests/ShellTests.cs).
+- Bezug: KP-143 bis KP-145; frueherer anderer Navigationstest in KP-130.
+
+**Ergebnis (belegt):** 15.986 Testfaelle bestehen, einer scheitert:
+`CrossOriginFormWaitsForConfirmationWithoutRevealingQueryInAddressBar` sendet
+den erwarteten zweiten Request, behaelt aber die Quell-URL als History-Eintrag.
+Der Test und der Browser-Navigationscode sind gegenueber `087954f` unveraendert.
+Die Ursache und ein Zusammenhang zur Aenderung sind nicht bewiesen; fokussierte
+und Baseline-Versuche stehen aus. Der Fehler ist nicht derselbe wie der
+Windows-Test aus KP-130, auch wenn beide wiederholt Return senden.
+
+### KP-147 - Baselineversuch vorbereitet
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: fuenf fokussierte Wiederholungen des betroffenen Tests und
+  isolierter temporaerer Git-Worktree `.baseline-pass8-087954f` auf
+  Commit `087954f` in dieser Sitzung.
+- Bezug: KP-146.
+
+**Status (belegt):** Alle fuenf fokussierten Wiederholungen im aktuellen
+Arbeitsstand bestehen. Der Baseline-Worktree wurde getrennt angelegt; sein
+erster `--no-restore`-Versuch meldete die fehlenden Projektassets, woraufhin
+die erforderliche Wiederherstellung und der fokussierte Baseline-Test
+gestartet wurden. Das Ergebnis steht aus; der temporaere Worktree ist nach
+Abschluss gezielt zu entfernen.
+
+### KP-148 - Baseline-Timingreproduktion
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: fokussierter Test auf Commit `087954f` im isolierten Worktree,
+  zwei temporaere testseitige Timingvarianten und anschliessend gepruefter
+  sauberer und entfernter Worktree.
+- Bezug: KP-146 und KP-147.
+
+**Ergebnis (belegt):** Der unveraenderte fokussierte Baseline-Test besteht.
+Mit ausschliesslich testseitig eingefuegter 150ms-Verzoegerung vor dem
+Einreihen externer Requests scheitert derselbe Test auf der Baseline an
+derselben History-Assertion wie im aktuellen Volltest. Bleibt die Verzoegerung
+bestehen, aber sendet die Testschleife Return nur bei ausstehender
+Bestaetigung, besteht der Test. Das belegt einen reproduzierbaren
+Baseline-Timingpfad; die genaue Ursache des urspruenglichen nicht
+instrumentierten Fehlers bleibt offen. Der Hauptarbeitsstand erhielt keine
+Testkorrektur, der temporaere Worktree und seine Instrumentierung sind entfernt.
+Eine vollstaendige Wiederholung steht aus.
+
+### KP-149 - Volltest-Wiederholung laeuft
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: laufender `dotnet test VisualWeb.slnx --no-build -m:1`
+  in dieser Sitzung.
+- Bezug: KP-148.
+
+**Status (belegt):** In der Wiederholung bestehen die ersten 13
+Testprojekte; das Browser-Testprojekt laeuft noch. Das Gesamtergebnis und
+anschliessend Commit, Push und CI stehen aus.
+
+### KP-150 - Zweiter Browser-Volltestfehler
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossene Solution-Test-Wiederholung aus KP-149 und
+  Baseline-Timingversuch aus KP-132 und KP-133.
+- Bezug: KP-146 bis KP-149.
+
+**Ergebnis (belegt):** In der Wiederholung bestanden 15.986 Faelle; der
+unveraenderte `UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`
+scheiterte mit `Resource load exceeded its deadline`. Derselbe Test und
+Deadline-Fehler wurden bereits auf Baseline `37dc296` mit einem testseitigen
+100ms-Transportverzug reproduziert (KP-133). Die genaue Ursache des
+uninstrumentierten Fehlers ist damit nicht bewiesen. Die erste Volltestserie
+scheiterte an einem anderen, ebenfalls unter Verzoegerung auf Baseline
+reproduzierten Shell-Test (KP-148). Die eigentlichen Ausrichtungsregressionen,
+Build, Format, V8-Smoke und Review bestehen; gezielte Wiederholung beider
+Shell-Tests, Commit, Push und CI stehen aus.
+
+### KP-151 - Navigationstests fokussiert bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: drei kombinierte fokussierte Wiederholungen beider Shell-Tests
+  nach den Volltestfehlern in dieser Sitzung.
+- Bezug: KP-148 und KP-150.
+
+**Status (belegt):** Beide unveraenderten Navigationstests bestehen in allen
+drei Wiederholungen. Die beiden Volltestlaeufe bleiben dennoch dokumentiert
+fehlgeschlagen; die genaue Ursache ihrer uninstrumentierten Fehler ist offen.
+Aufgrund der reproduzierten Baseline-Fehler und bestandenen
+Ausrichtungsregressionen kann das getrennte Inkrement mit explizitem Hinweis
+im Committext committed und anschliessend in CI geprueft werden.

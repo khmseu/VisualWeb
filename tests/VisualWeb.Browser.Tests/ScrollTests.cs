@@ -202,6 +202,36 @@ public sealed class ScrollTests
     }
 
     [Theory]
+    [InlineData(false, "center")]
+    [InlineData(true, "center")]
+    [InlineData(false, "justify")]
+    [InlineData(true, "justify")]
+    public async Task ScriptedAlignHintMatchesAuthoredCssAcrossRetainedResize(bool process, string align)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 10000, executeInlineScripts: true);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        const string body = "<p id=target>aa <a href=/next>bb</a> cc dd ee</p>";
+        var viewport = new PageViewport(80, 100, 1);
+        var document = Document("<!doctype html><style>" + style + "</style>" + body
+            + "<script>document.getElementById('target').setAttribute('align','" + align + "')</script>");
+        var actual = await renderer.RenderAsync(document, viewport, Cancellation);
+        renderer.CommitDocument(document.DocumentId);
+        var resized = await renderer.RenderRetainedAsync(document, viewport with { Width = 100 }, Cancellation);
+        var reference = Document("<!doctype html><style>" + style + "p{text-align:" + align + "}</style>" + body);
+        var expected = await renderer.RenderAsync(reference, viewport, Cancellation);
+        renderer.CommitDocument(reference.DocumentId);
+        var expectedResized = await renderer.RenderRetainedAsync(reference, viewport with { Width = 100 }, Cancellation);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+        Assert.Equal(Assert.Single(expected.LinkTargets).Rects, Assert.Single(actual.LinkTargets).Rects);
+        Assert.Equal(Assert.Single(expectedResized.LinkTargets).Rects, Assert.Single(resized.LinkTargets).Rects);
+        Assert.Equal(expected.TextTargets.Select(t => t.Rect), actual.TextTargets.Select(t => t.Rect));
+        Assert.Equal(expectedResized.TextTargets.Select(t => t.Rect), resized.TextTargets.Select(t => t.Rect));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task NestedUaListMarginsSurviveLocalAndProcessRetainedRepaint(bool process)

@@ -478,6 +478,115 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("p")]
+    [InlineData("h1")]
+    [InlineData("h2")]
+    [InlineData("h3")]
+    [InlineData("h4")]
+    [InlineData("h5")]
+    [InlineData("h6")]
+    public void ParagraphAndHeadingAlignHintsAcceptOnlySupportedAsciiValues(string tag)
+    {
+        foreach (var (value, expected) in new[] { ("LeFt", "left"), ("RiGhT", "right"),
+                     ("CeNtEr", "center"), ("JuStIfY", "justify") })
+        {
+            var doc = Document($"<{tag} id=target align='{value}'>x</{tag}>");
+            var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+            Assert.Empty(result.Diagnostics);
+            Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["text-align"]);
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" center")]
+    [InlineData("center ")]
+    [InlineData("\tcenter")]
+    [InlineData("middle")]
+    [InlineData("ju\u017ftify")]
+    [InlineData("r\u0131ght")]
+    public void InvalidAlignHintsAreIgnored(string value)
+    {
+        var doc = Document("<p id=target>x</p>");
+        doc.GetElementById("target")!.SetAttribute("align", value);
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false,
+            options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword("start"), result.Styles[doc.GetElementById("target")!]["text-align"]);
+    }
+
+    [Fact]
+    public void VeryLongAlignValueIsIgnored()
+    {
+        var doc = Document("<p id=target>x</p>");
+        var target = doc.GetElementById("target")!;
+        target.SetAttribute("align", new string('A', 100_000));
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword("start"), result.Styles[target]["text-align"]);
+    }
+
+    [Theory]
+    [InlineData("div")]
+    [InlineData("center")]
+    [InlineData("table")]
+    [InlineData("span")]
+    public void OtherElementsDoNotGetAlignHints(string tag)
+    {
+        var doc = Document($"<{tag} id=target align=right>x</{tag}>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword("start"), result.Styles[doc.GetElementById("target")!]["text-align"]);
+    }
+
+    [Fact]
+    public void AlignHintParticipatesInCascadeInheritanceAndSnapshots()
+    {
+        var doc = Document("<p id=target align=center><span id=child>x</span></p>");
+        var target = doc.GetElementById("target")!;
+        var child = doc.GetElementById("child")!;
+        var user = new CssStyleSource("p{text-align:right}", CssOrigin.User);
+        var before = Compute(doc, user);
+        Assert.Equal(new CssKeyword("center"), before.Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("center"), before.Styles[child]["text-align"]);
+        Assert.Equal(new CssKeyword("left"), Compute(doc, user, new("*{text-align:left}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("right"), Compute(doc, user, new("p{text-align:revert}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("right"), Compute(doc, new("p{text-align:right!important}", CssOrigin.User),
+            new("p{text-align:left!important}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("justify"), Compute(doc, new("p{text-align:justify!important}", CssOrigin.UserAgent),
+            new("p{text-align:right!important}", CssOrigin.User),
+            new("p{text-align:left!important}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("left"), Compute(doc, user,
+            new("p{text-align:left!important}")).Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("start"), Compute(doc, new("p{text-align:revert!important}", CssOrigin.User),
+            new("p{text-align:left!important}")).Styles[target]["text-align"]);
+        target.SetAttribute("style", "text-align:justify");
+        Assert.Equal(new CssKeyword("justify"), Compute(doc, user).Styles[target]["text-align"]);
+        target.SetAttribute("style", "text-align:revert");
+        Assert.Equal(new CssKeyword("right"), Compute(doc, user).Styles[target]["text-align"]);
+        target.RemoveAttribute("style");
+        target.SetAttribute("align", "left");
+        var changed = Compute(doc, user);
+        target.RemoveAttribute("align");
+        var removed = Compute(doc, user);
+        Assert.Equal(new CssKeyword("center"), before.Styles[child]["text-align"]);
+        Assert.Equal(new CssKeyword("left"), changed.Styles[child]["text-align"]);
+        Assert.Equal(new CssKeyword("right"), removed.Styles[child]["text-align"]);
+    }
+
+    [Fact]
+    public void AlignHintsShareAssignmentBudgetWithListHintsAndCancellation()
+    {
+        var doc = Document("<ul type=disc><li><p align=right>x</p><p align=' left'>y</p></li></ul>");
+        CssStyleSource[] source = [new("p{text-align:left}")];
+        Assert.Empty(CssStyleEngine.Compute(doc, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 3 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, source, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() =>
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
     [InlineData("<ul id=target type='circle '></ul>")]
     [InlineData("<ul id=target type='di\u017fc'></ul>")]
     [InlineData("<ul id=target type=1></ul>")]

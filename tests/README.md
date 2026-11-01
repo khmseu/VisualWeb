@@ -66,6 +66,10 @@ local/process retained scroll and resize.
 Legacy list-type hint tests cover ASCII casing, presentational cascade and
 `revert`, snapshot mutation, exact assignment limits, explicit unsupported-type
 failures, numbering, native pixels, and scripted local/process retained repaint.
+Paragraph/heading alignment hint tests cover all seven tags and four values,
+invalid values and other tags, cascade and snapshots, shared limits, exact
+wrapped line geometry and the no-break-space failure boundary, native pixels,
+and scripted local/process retained resize with link and selection geometry.
 Alphabetic marker tests cover both cases and aliases, case-sensitive HTML
 attributes, bijective wrap boundaries, decimal fallback, nested/reversed
 numbering, exact shared limits, native text-pixel equivalence and scripted

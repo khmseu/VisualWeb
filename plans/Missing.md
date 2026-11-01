@@ -728,6 +728,30 @@ dates, fractions, mixed hyphen opportunities, intrinsic widths, whitespace,
 explicit glue rejection and retained selection. The solution build, all 15,753
 solution tests, solution formatting and local V8 smoke pass.
 
+HTML `align` presentational hints on `p` and `h1`–`h6` now map exact
+ASCII-case-insensitive left/right/center/justify values to the existing
+`text-align` cascade and layout paths. Invalid values and other elements are
+ignored. Focused CSS, layout, native-content and local/process browser tests
+cover cascade, assignment limits, mutation, wrapped geometry and retained
+resize; no broader alignment behavior is added. See
+[HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
+(local ID `html`).
+Focused validation: CSS align filter 21 passed; layout alignment/justification
+filter 29 passed; native-content alignment/justification filter 5 passed;
+local/process browser alignment/justification filter 6 passed. The CSS project
+regressions also passed (1,033 cases), and formatting verification of the
+modified C# files passed. An initial complete run passed 15,986 cases and
+failed one unchanged shell form-navigation test. The same assertion failed on
+base commit `087954f` with a test-only 150ms external-transport delay, and
+passed with that delay when Return was sent only for pending confirmations;
+the exact cause of the original failure remains unproven. A complete rerun
+passed 15,986 cases and failed the unchanged
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` shell test
+with a resource deadline. That same test and deadline were reproduced on
+baseline `37dc296` with a test-only 100ms transport delay; the precise cause
+of either uninstrumented full-run failure is not established. Both tests
+passed three subsequent focused repetitions.
+
 The previously rejected `text-align:justify` now supports bounded English
 inter-word justification on soft-wrapped lines. Collapsed ASCII spaces absorb
 equal shares of positive slack; final and forced-break lines remain

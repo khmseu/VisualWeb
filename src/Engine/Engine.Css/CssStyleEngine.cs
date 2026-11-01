@@ -33,8 +33,9 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Alphabetic and Roman values use css-counter-styles
 /// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">alphabetic styles</see> and
 /// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-numeric">numeric styles</see>.
-/// Supported HTML list type hints enter the
+/// Supported HTML list type and paragraph/heading alignment hints enter the
 /// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
+/// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
 /// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {
@@ -116,6 +117,25 @@ public static class CssStyleEngine
         return marker is not null;
     }
 
+    /// <summary>Finds the supported paragraph and heading alignment hints.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">tables rendering hints</see>.</remarks>
+    private static string? GetAlignHint(DomElement element)
+    {
+        if (element.LocalName is not ("p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6"))
+        {
+            return null;
+        }
+        var align = element.GetAttribute("align");
+        return align is { Length: 4 or 5 or 6 or 7 } ? CssText.Lower(align) switch
+        {
+            "left" => "left",
+            "right" => "right",
+            "center" => "center",
+            "justify" => "justify",
+            _ => null
+        } : null;
+    }
+
     public static CssStyleResult Compute(DomDocument document, IEnumerable<CssStyleSource>? sources = null,
         bool includeUserAgent = true, CssOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -142,6 +162,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("list-style-type", new CssKeyword(marker), false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetAlignHint(element) is { } align)
+            {
+                context.Assignment();
+                Add(new("text-align", new CssKeyword(align), false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (element.GetAttribute("style") is { } inline)

@@ -200,6 +200,14 @@ each supported hint consumes one expanded-assignment budget unit. Recompute
 styles after attribute mutations. Unsupported or malformed list `type` values
 remain explicit layout failures, even if an author rule overrides them.
 
+The [HTML alignment hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
+(local ID `html`) map `align=left`, `right`, `center` and `justify` on
+`p` and `h1` through `h6` to `text-align`. Matching is ASCII-case-insensitive
+and does not trim; other values are ignored. They use the same hint cascade,
+assignment budget and recomputation rules as list hints. Alignment on `div`,
+`center`, tables and other elements is not added by this subset. Justification
+retains the layout limitations documented in the text guide.
+
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
 UA < user < author presentational hint < author precedence, important author < user < UA precedence, inline
 styles above selector-based declarations of the same origin/importance,

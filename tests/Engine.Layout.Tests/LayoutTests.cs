@@ -2435,6 +2435,31 @@ public sealed class LayoutTests
         Assert.Equal(expected, box.Lines[0].Fragments[0].X);
     }
 
+    [Theory]
+    [InlineData("left", 0, 0)]
+    [InlineData("center", 1, 16)]
+    [InlineData("right", 2, 32)]
+    [InlineData("justify", 0, 0)]
+    public void AlignHintPositionsWrappedAndLastLinesExactly(string align, double firstX, double lastX)
+    {
+        var box = Find(Layout("<p id=x align=" + align + ">aa bb cc dd</p>", width: 42).Root!, "x");
+        Assert.Equal(2, box.Lines.Count);
+        Assert.Equal(firstX, box.Lines[0].Fragments[0].X);
+        Assert.Equal(lastX, Assert.Single(box.Lines[1].Fragments).X);
+        if (align == "justify")
+        {
+            Assert.Equal([0, 10, 16, 26, 32], box.Lines[0].Fragments.Select(f => f.X));
+            Assert.Equal(42, box.Lines[0].Fragments[^1].X + box.Lines[0].Fragments[^1].Run.Width);
+        }
+    }
+
+    [Fact]
+    public void JustifyAlignHintPreservesUnsupportedNoBreakSpaceBoundary()
+    {
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            Layout("<p align=justify>a\u00a0b c d</p>", width: 28));
+    }
+
     [Fact]
     public void MixedFontRunsAlignBaselinesAndRespectLeading()
     {

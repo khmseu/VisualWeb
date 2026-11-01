@@ -95,12 +95,38 @@
   Nachkommen nutzen nun das vorhandene Blocklayout. Fokussierte Tests, Build,
   Format und lokaler V8-Smoke bestehen; die Review-Ergaenzungen bestehen
   fokussiert, der abschliessende Build und alle 15.953 Solution-Tests
-  bestehen. Commit, Push und CI stehen aus
+  bestehen. Commit `087954f` ist gepusht; Linux, Windows und CodeQL bestehen
+  fuer genau diesen Stand
   ([KP-135](./Kontextprotokoll.md#kp-135---search-blockdefault-ausgewaehlt),
   [KP-136](./Kontextprotokoll.md#kp-136---search-blockdefault-implementiert),
   [KP-137](./Kontextprotokoll.md#kp-137---search-review-ergaenzt),
   [KP-138](./Kontextprotokoll.md#kp-138---search-volltest-gestartet),
-  [KP-139](./Kontextprotokoll.md#kp-139---search-volltest-bestanden)).
+  [KP-139](./Kontextprotokoll.md#kp-139---search-volltest-bestanden),
+  [KP-140](./Kontextprotokoll.md#kp-140---search-commit-und-ci-start),
+  [KP-141](./Kontextprotokoll.md#kp-141---search-ci-bestanden)).
+  Pass 8 implementiert die HTML-Praesentationshinweise `align` auf Absaetzen
+  und Ueberschriften. Fokussierte CSS-, Layout-, Content- und Browser-Tests
+  bestehen; der unabhaengige Review ist freigegeben und Solution-Build,
+  Gesamtformatierung und lokaler V8-Smoke bestehen. Im Volltest scheiterte ein
+  unveraenderter Browser-Navigationstest; 15.986 Faelle bestanden. Fuenf
+  fokussierte Wiederholungen bestehen. Auf der isolierten Baseline reproduzierte
+  ein testseitiger 150ms-Transportverzug dieselbe Assertion; mit Return nur
+  bei ausstehendem Dialog bestand der Versuch. Die genaue Ursache des
+  urspruenglichen Fehlers bleibt offen. Die Volltest-Wiederholung bestand
+  ebenfalls 15.986 Faelle und scheiterte am anderen, auf Baseline `37dc296`
+  mit Verzoegerung und gleichem Deadline-Fehler reproduzierten Shell-Test.
+  Beide Tests bestehen in drei anschliessenden fokussierten Wiederholungen.
+  Ursachen der uninstrumentierten Fehler bleiben offen; Commit und CI stehen aus
+  ([KP-142](./Kontextprotokoll.md#kp-142---absatz-und-ueberschriftenausrichtung-ausgewaehlt),
+  [KP-143](./Kontextprotokoll.md#kp-143---ausrichtung-implementiert-und-reviewt),
+  [KP-144](./Kontextprotokoll.md#kp-144---format-und-v8-smoke-bestanden),
+  [KP-145](./Kontextprotokoll.md#kp-145---ausrichtung-volltest-laeuft),
+  [KP-146](./Kontextprotokoll.md#kp-146---browser-volltestfehler),
+  [KP-147](./Kontextprotokoll.md#kp-147---baselineversuch-vorbereitet),
+  [KP-148](./Kontextprotokoll.md#kp-148---baseline-timingreproduktion),
+  [KP-149](./Kontextprotokoll.md#kp-149---volltest-wiederholung-laeuft),
+  [KP-150](./Kontextprotokoll.md#kp-150---zweiter-browser-volltestfehler),
+  [KP-151](./Kontextprotokoll.md#kp-151---navigationstests-fokussiert-bestanden)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
@@ -778,7 +804,7 @@ abgelehnt und nicht geladen
 ## Naechste Schritte
 
 **Aktueller Einstieg (2026-11-01):** Im laufenden Zehn-Passen-Auftrag sind
-sechs Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
+sieben Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
 HTML-`hidden` ist nach Review und 15.907 erfolgreichen Solution-Tests als
 `37dc296` gepusht; Linux, Windows und CodeQL bestehen. Pass 6 hat die
 HTML-UA-Darstellung von `listing`, `plaintext` und `xmp` ergaenzt und
@@ -790,12 +816,37 @@ Windows-Fehler ist offen. Die temporaere Instrumentierung wurde entfernt;
 der unveraenderte lokale Release-Test besteht. Pass 7 hat den UA-Blockdefault
 fuer HTML `search` implementiert und fokussiert geprueft; die Review-
 Ergaenzungen, der abschliessende Build und alle 15.953 Solution-Tests
-bestehen. Commit, Push und CI stehen aus
+bestehen. Commit `087954f` ist gepusht; Linux, Windows und CodeQL bestehen
+fuer diesen Commit. Pass 8 soll die bereits geparsten HTML-`align`-Attribute
+auf `p` und `h1` bis `h6` ueber vorhandene CSS-Praesentationshinweise und
+Textausrichtung und ist fokussiert getestet. Review, Solution-Build,
+Gesamtformatierung und lokaler V8-Smoke bestehen. Im Volltest schlug ein
+unveraenderter Browser-Navigationstest fehl, waehrend 15.986 Faelle bestanden.
+Fuenf fokussierte Wiederholungen bestehen. Ein verzoegerter Baseline-Versuch
+reproduziert dieselbe Assertion; gezieltes Return nur bei Dialog besteht.
+Die genaue Ursache des urspruenglichen Fehlers bleibt offen. Die Volltest-
+Wiederholung bestand 15.986 Faelle und scheiterte am anderen, bereits auf
+Baseline `37dc296` mit Transportverzug und gleichem Deadline-Fehler
+reproduzierten Shell-Test. Beide Tests bestehen in drei fokussierten
+Wiederholungen. Ursachen der uninstrumentierten Fehler bleiben offen; Commit
+und CI stehen aus
 ([KP-135](./Kontextprotokoll.md#kp-135---search-blockdefault-ausgewaehlt),
 [KP-136](./Kontextprotokoll.md#kp-136---search-blockdefault-implementiert),
 [KP-137](./Kontextprotokoll.md#kp-137---search-review-ergaenzt),
 [KP-138](./Kontextprotokoll.md#kp-138---search-volltest-gestartet),
-[KP-139](./Kontextprotokoll.md#kp-139---search-volltest-bestanden)).
+[KP-139](./Kontextprotokoll.md#kp-139---search-volltest-bestanden),
+[KP-140](./Kontextprotokoll.md#kp-140---search-commit-und-ci-start),
+[KP-141](./Kontextprotokoll.md#kp-141---search-ci-bestanden),
+[KP-142](./Kontextprotokoll.md#kp-142---absatz-und-ueberschriftenausrichtung-ausgewaehlt),
+[KP-143](./Kontextprotokoll.md#kp-143---ausrichtung-implementiert-und-reviewt),
+[KP-144](./Kontextprotokoll.md#kp-144---format-und-v8-smoke-bestanden),
+[KP-145](./Kontextprotokoll.md#kp-145---ausrichtung-volltest-laeuft),
+[KP-146](./Kontextprotokoll.md#kp-146---browser-volltestfehler),
+[KP-147](./Kontextprotokoll.md#kp-147---baselineversuch-vorbereitet),
+[KP-148](./Kontextprotokoll.md#kp-148---baseline-timingreproduktion),
+[KP-149](./Kontextprotokoll.md#kp-149---volltest-wiederholung-laeuft),
+[KP-150](./Kontextprotokoll.md#kp-150---zweiter-browser-volltestfehler),
+[KP-151](./Kontextprotokoll.md#kp-151---navigationstests-fokussiert-bestanden)).
 Der aktuelle Stand und die Grenzen stehen oben sowie in
 [KP-121](./Kontextprotokoll.md#kp-121---rohtextdarstellung-als-sechstes-inkrement)
 [KP-122](./Kontextprotokoll.md#kp-122---rohtextdefaults-implementiert)
