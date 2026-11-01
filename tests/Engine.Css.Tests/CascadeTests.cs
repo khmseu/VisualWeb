@@ -176,6 +176,19 @@ public sealed class CascadeTests
         Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[figure]["margin-right"]);
     }
 
+    [Fact]
+    public void AddressUsesHtmlItalicUserAgentStyleAndAuthorOverride()
+    {
+        var doc = Document("<address id=parent>Contact</address>");
+        var address = doc.GetElementById("parent")!;
+        Assert.Equal(new CssKeyword("italic"), Compute(doc).Styles[address]["font-style"]);
+        Assert.Equal(new CssKeyword("normal"),
+            Compute(doc, new CssStyleSource("#parent{font-style:normal}")).Styles[address]["font-style"]);
+        Assert.Equal(new CssKeyword("normal"),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+            .Styles[address]["font-style"]);
+    }
+
     [Theory]
     [InlineData("list-style-type:square")]
     [InlineData("list-style-type:SqUaRe")]

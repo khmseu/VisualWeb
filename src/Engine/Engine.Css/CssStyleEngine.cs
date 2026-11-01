@@ -86,6 +86,7 @@ public static class CssStyleEngine
         h6 { font-size: .67em; margin-top: 2.33em; margin-bottom: 2.33em; font-weight: bold }
         b, strong { font-weight: bolder }
         i, em, cite, dfn, var { font-style: italic }
+        address { font-style: italic }
         pre, listing, xmp, plaintext { white-space: pre; font-family: monospace }
         code, kbd, samp, tt { font-family: monospace }
         big { font-size: larger }

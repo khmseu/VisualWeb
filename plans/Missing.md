@@ -815,7 +815,9 @@ HTML `center` is block-level by default and supplies the same bounded
 `text-align:center` presentational hint. `table[align=center]` supplies
 horizontal auto-margin hints, centering supported explicit-width tables.
 HTML `figure` now receives 40px left/right user-agent margins in the supported
-horizontal LTR subset; its captions remain ordinary block flow.
+horizontal LTR subset; its captions remain ordinary block flow. HTML
+`address` now defaults to italic through the UA sheet and still requires an
+explicitly registered italic face for rendering.
 Legacy over-constrained descendant-margin alignment, table left/right floats,
 other table alignment attributes and alignment on other elements remain
 unsupported.

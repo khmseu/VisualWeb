@@ -52,6 +52,30 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void AddressDefaultMatchesExplicitItalicWithTheConfiguredFace()
+    {
+        using var regular = new TextFont(FontPath);
+        using var italic = new TextFont(Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans-Italic.ttf"));
+        var text = new FontSet();
+        text.Register("serif", regular);
+        text.Register("serif", italic, style: "italic");
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(regular);
+        fonts.Register(italic);
+        CssStyleSource[] styles = [new("*{margin:0;font-size:30px;line-height:1}")];
+        var actual = OfflinePageRenderer.Render("<!doctype html><address>Contact</address>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render("<!doctype html><address style='font-style:italic'>Contact</address>",
+            styles, text, fonts, 240, 90, cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Empty(expected.Styles.Diagnostics);
+        var run = Assert.Single(actual.DisplayList.Commands.OfType<DrawGlyphRun>());
+        Assert.Equal(italic.Identity, run.FontIdentity);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void NestedPhrasingRelativeSizesMatchExplicitCssNativePixels()
     {
         using var font = new TextFont(FontPath);

@@ -394,6 +394,9 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 (local ID `html`) give `figure` 40px inline margins. The horizontal LTR subset
 maps these to `margin-left` and `margin-right`; the regular cascade can override
 them, and disabling the UA sheet removes them.
+The same rules set `address` to italic. This does not synthesize a face: page
+rendering requires an explicitly registered italic font, as it does for other
+default-italic elements.
 
 ## Limits and cancellation
 

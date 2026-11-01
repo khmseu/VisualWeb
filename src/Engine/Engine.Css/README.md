@@ -128,7 +128,8 @@ LTR subset. Other table alignment values remain unsupported.
 
 The HTML flow-content defaults give `figure` 40px left/right margins in the
 supported horizontal LTR subset; these remain normal UA declarations that
-author CSS may override.
+author CSS may override. `address` defaults to italic, subject to the same
+normal cascade and exact-face font requirements as other italic elements.
 
 The finite table properties add canonical table/group/row/cell displays,
 `table-layout:auto`, inherited `border-collapse:separate` and single-length
