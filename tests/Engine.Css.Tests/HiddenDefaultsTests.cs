@@ -119,12 +119,12 @@ public sealed class HiddenDefaultsTests
     {
         var document = Parse("<a id=target hidden href>text</a>");
         // The figure margin and address style selectors add 4 operations per element;
-        // deletion defaults add three selectors per element; the hidden selector adds
+        // decoration defaults are included among the 113 top-level selectors; the hidden selector adds
         // 2 on nonmatches and 8 on the target.
-        const int assignments = 68;
-        const long matches = 982; // 4 * (111 + 11) * 2 + 3 * 2 + 8 - 8
+        const int assignments = 69;
+        const long matches = 998; // 4 * (113 + 11) * 2 + 3 * 2 + 8 - 8
         CssStyleSource[] author = [new("a{display:block}")];
-        const long authorMatches = 990;
+        const long authorMatches = 1006;
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches - 1 }));

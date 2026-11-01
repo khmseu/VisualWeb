@@ -629,11 +629,12 @@ Formatting reports only the three findings reproduced on base `ad0bca6`.
 The finite CSS cascade accepts `none`, `underline` and `line-through` for the
 `text-decoration` shorthand and `text-decoration-line`, including the existing
 `initial`, `inherit`, `unset` and `revert` CSS-wide keywords. The UA `:link`
-rule supplies both its unvisited blue color and an underline; `del`, `s` and
-`strike` receive the HTML line-through default. Paint uses each decorating
-ancestor's color and exact registered OpenType metrics for underlines and
-line-throughs; descendant `none` does not cancel an ancestor decoration, and
-missing line-through metrics fail explicitly. Overline, other decoration
+rule supplies both its unvisited blue color and an underline; `ins` and `u`
+also receive the HTML underline default, while `del`, `s` and `strike` receive
+the HTML line-through default. Paint uses each decorating ancestor's color and
+exact registered OpenType metrics for underlines and line-throughs; descendant
+`none` does not cancel an ancestor decoration, and missing line-through metrics
+fail explicitly. Overline, other decoration
 style/color/thickness values, atomic-inline decoration and skip-ink remain
 unsupported.
 
@@ -648,11 +649,17 @@ test; both the local full-suite retry and Windows x64 CI rerun passed, but no
 root cause was established. Commit `c6f13b1` was pushed and Linux, Windows
 x64/arm64 and CodeQL CI passed.
 
-This line-through increment adds CSS default/cascade, paint-command/metric,
-native pixel/scroll and retained content-pixel coverage. Focused CSS (1,134),
-Paint (67) and Content (96) suites pass. The solution build succeeds with zero
-warnings, all 16,141 solution tests pass, and solution formatting verification
-passes. Commit, push and CI status remain to be verified.
+Pass 1 adds CSS line-through cascade/defaults, paint-command/metric, native
+pixel/scroll and retained content-pixel coverage. Focused CSS (1,134), Paint
+(67) and Content (96) suites pass. The solution build has zero warnings, all
+16,141 solution tests pass, and formatting verification passes. Commit
+`f7a83d5` is pushed; Linux, Windows x64/arm64 and CodeQL CI pass (runs
+41350401406, 41350401385 and 41350401525).
+
+Pass 2 adds the HTML UA underline defaults for `ins` and `u` through the
+existing cascade and paint path. CSS (1,136) and Content (98), the zero-warning
+solution build, all 16,145 solution tests and solution formatting verification
+pass locally. Commit, push and CI status remain to be verified.
 
 The current engine implements finite static block/inline rendering. Missing essentials include:
 

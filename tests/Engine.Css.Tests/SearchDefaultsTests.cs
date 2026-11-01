@@ -12,13 +12,13 @@ public sealed class SearchDefaultsTests
         var cancellation = TestContext.Current.CancellationToken;
         var document = HtmlParser.Parse("<!doctype html><search id=x>text</search>", cancellationToken: cancellation).Document;
         var search = document.GetElementById("x")!;
-        // html, head, body and search each evaluate all 111 top-level selectors,
+        // html, head, body and search each evaluate all 113 top-level selectors,
         // plus 11 :is() subject alternatives; each simple selector takes two steps.
-        // The matching search type selector is included in those 111 checks.
-        const long matches = 4 * (111 + 11) * 2;
-        // The extra UA link-decoration and deletion-default assignments are compiled with
-        // the other matching UA declarations. Four-sided shorthands bring the total to 68.
-        const int assignments = 68;
+        // The matching search type selector is included in those 113 checks.
+        const long matches = 4 * (113 + 11) * 2;
+        // The extra UA link-decoration and phrasing-decoration assignments are compiled with
+        // the other matching UA declarations. Four-sided shorthands bring the total to 69.
+        const int assignments = 69;
         // One author selector is checked on all four elements and adds one assignment.
         const long authorMatches = matches + 4 * 2;
         CssStyleSource[] author = [new("search{display:inline}")];

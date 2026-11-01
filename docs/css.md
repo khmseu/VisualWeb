@@ -297,7 +297,9 @@ originating on an ancestor. The UA `:link` rule supplies both the standard
 unvisited blue color and an underline through the ordinary cascade. Underlines
 are painted on static text fragments using the decorating ancestor's computed
 color and the exact registered font's OpenType underline metrics; they continue
-through in-flow descendants, and descendant `none` cannot cancel them.
+through in-flow descendants, and descendant `none` cannot cancel them. The
+HTML [phrasing-content UA stylesheet](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
+also underlines `ins` and `u`.
 Line-throughs likewise use the decorating ancestor's color and exact registered
 font's OpenType strikeout position/thickness metrics; a font without usable
 metrics fails during painting. The HTML UA defaults give `del`, `s` and

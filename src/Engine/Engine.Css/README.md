@@ -85,9 +85,11 @@ the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`),
 with a non-inherited line value and the normal cascade. `revert-layer` remains
 unsupported. `none` neither adds nor inhibits ancestor decoration. Paint uses
 the decorating ancestor's computed color and the registered shaping font's
-OpenType underline metrics; line-through uses the exact registered font's
-OpenType strikeout metrics. HTML `del`, `s` and `strike` receive the
-line-through UA default. Overline, other decoration
+OpenType underline metrics. The HTML
+[phrasing-content UA rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
+(local ID `html`) give `ins` and `u` the underline default. Line-through uses
+the exact registered font's OpenType strikeout metrics, and HTML `del`, `s`
+and `strike` receive its UA default. Overline, other decoration
 style/color/thickness values, atomic-inline decoration and skip-ink remain
 unsupported.
 

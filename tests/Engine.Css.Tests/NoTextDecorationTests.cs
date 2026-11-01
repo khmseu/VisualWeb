@@ -71,6 +71,24 @@ public sealed class NoTextDecorationTests
         Assert.Equal(new CssKeyword("none"), overridden.Styles[element]["text-decoration-line"]);
     }
 
+    [Theory]
+    [InlineData("ins")]
+    [InlineData("u")]
+    public void InsertionElementsHaveUnderlineUaDefaults(string tag)
+    {
+        var document = HtmlParser.Parse($"<!doctype html><{tag} id=x>Inserted</{tag}>",
+            cancellationToken: Cancellation).Document;
+        var element = document.GetElementById("x")!;
+        var defaults = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        var overridden = CssStyleEngine.Compute(document, [new($"{tag}{{text-decoration:none}}")],
+            cancellationToken: Cancellation);
+
+        Assert.Empty(defaults.Diagnostics);
+        Assert.Empty(overridden.Diagnostics);
+        Assert.Equal(new CssKeyword("underline"), defaults.Styles[element]["text-decoration-line"]);
+        Assert.Equal(new CssKeyword("none"), overridden.Styles[element]["text-decoration-line"]);
+    }
+
     [Fact]
     public void LinksUnderlineByDefaultAndTheAuthorCanDisableTheDecoration()
     {

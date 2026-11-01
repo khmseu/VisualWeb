@@ -95,6 +95,7 @@ public static class CssStyleEngine
         big { font-size: larger }
         small { font-size: smaller }
         :link { color: #0000EE; text-decoration: underline }
+        ins, u { text-decoration: underline }
         del, s, strike { text-decoration: line-through }
         """;
 
