@@ -481,8 +481,19 @@ local/process retained resize. An independent configurable aggregate raw UTF-16
 budget bounds size attribute work. The solution build, all 16,043 solution
 tests, formatting and local V8 smoke pass. Long inputs and pre-cancelled
 computations are tested, but cancellation specifically during a scan has not
-been deterministically tested. `font face` and broader font support remain open;
-this increment does not complete the priority.
+been deterministically tested. At the end of that increment `font face` and
+broader font support remained open; that increment did not complete the priority.
+
+HTML `<font face>` now supplies a bounded presentational `font-family` hint
+parsed with the existing CSS family grammar. Valid family lists follow the
+normal author-hint cascade, inheritance and recomputation; the shaper checks
+listed names in order against explicitly registered faces, without implicit
+fallback, downloads or synthesis. A separate aggregate raw UTF-16 budget counts
+invalid as well as valid attributes. CSS tests (1,129) and Content tests (91)
+pass, including native pixel comparison, retained resize, exact UTF-16 units,
+and explicit failure when no listed face is registered. The full solution
+suite (16,120 tests), solution build (zero warnings/errors) and formatting
+verification also pass.
 
 The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
 the normal cascade. An override may make a hidden element visible, but

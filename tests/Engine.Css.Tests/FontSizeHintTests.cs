@@ -74,7 +74,9 @@ public sealed class FontSizeHintTests
         Assert.Equal(new CssLength(18, "px"), plain.Styles[child]["font-size"]);
         Assert.Equal(new CssColor(255, 0, 0), plain.Styles[child]["color"]);
         Assert.Equal(new CssLength(18, "px"), CssStyleEngine.Compute(document, cancellationToken: Cancellation).Styles[child]["font-size"]);
-        Assert.Equal(plain.Styles[(DomElement)font.ParentNode!]["font-family"], plain.Styles[font]["font-family"]);
+        Assert.Equal(["serif"], Assert.IsType<CssFontFamilies>(plain.Styles[(DomElement)font.ParentNode!]["font-family"]).Names);
+        Assert.Equal(["monospace"], Assert.IsType<CssFontFamilies>(plain.Styles[font]["font-family"]).Names);
+        Assert.Equal(["monospace"], Assert.IsType<CssFontFamilies>(plain.Styles[child]["font-family"]).Names);
         Assert.Equal(new CssLength(18, "px"), Size(document, font, new CssStyleSource("font{font-size:30px}", CssOrigin.User)));
         Assert.Equal(new CssLength(18, "px"), Size(document, font, new CssStyleSource("font{font-size:30px}", CssOrigin.UserAgent)));
         Assert.Equal(new CssLength(31, "px"), Size(document, font, new CssStyleSource("font{font-size:31px}")));

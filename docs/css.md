@@ -234,7 +234,13 @@ signed values are relative to 3, not the parent's size. The result is clamped
 to 1–7 and mapped from `x-small` through `xxx-large` using the existing CSS
 absolute-size policy. Missing digits produce no hint. The hint uses the same
 cascade, inheritance, mutation and assignment rules, independent of the UA
-sheet. `font face` remains unsupported.
+sheet. The legacy `font face` attribute is parsed as a bounded CSS font-family
+list and applied at the author presentational-hint origin. Malformed lists
+create no hint; descendants inherit valid lists, and later style recomputation
+reads current attributes. The shaper checks listed families in order against
+explicitly registered faces only. No implicit family fallback, font loading or
+synthetic face selection is added; if no listed family has a matching registered
+face, text shaping fails explicitly. This does not implement CSS `@font-face`.
 
 [CssStyleEngine](../src/Engine/Engine.Css/CssStyleEngine.cs) implements normal
 UA < user < author presentational hint < author precedence, important author < user < UA precedence, inline
@@ -383,7 +389,7 @@ configured family/weight/style face, including an italic face for default
 unbroken words, and the existing text/layout exclusions remain unchanged.
 
 Unsupported in Engine.Css: custom properties/var()/env(), calculations, cascade
-layers, conditional rules (including media/supports/container), imports/font-face,
+layers, conditional rules (including media/supports/container), imports/`@font-face`,
 logical properties, positioning, flex/grid and broader table display, animations,
 transitions, other modern color spaces/functions and unlisted properties/units.
 The browser applies the limited `@import` preprocessing described above before
@@ -412,6 +418,7 @@ All CssOptions limits are positive and configurable:
 | ------------------------------------------------------------------------------ | ---------: |
 | Input characters per individual CSS string, before normalization               |       4 Mi |
 | Aggregate raw UTF-16 characters in `font color` attributes per computation     |       4 Mi |
+| Aggregate raw UTF-16 characters in `font face` attributes per computation      |       4 Mi |
 | Aggregate raw UTF-16 characters in `font size` attributes per computation      |       4 Mi |
 | Non-EOF tokens per individual CSS string                                       |  1,000,000 |
 | Component/selector nesting and selector evaluation depth                       |        128 |
@@ -428,11 +435,11 @@ input/token scanning, parsing, compilation and matching. Numeric values outside
 the finite `double` range are diagnosed, including color components; finite
 numeric overflow during computation also fails explicitly. Whole-string
 processing and these limits are not a total memory budget or an OS sandbox.
-The independent font color and size limits (`MaxFontColorAttributeCharacters`
-and `MaxFontSizeAttributeCharacters`) are checked before processing each
-attribute, including invalid values; long whitespace and digit scans honor
-cancellation. Other direct DOM construction and arbitrarily large DOM
-attribute values remain the caller's responsibility.
+The independent font color, face and size limits (`MaxFontColorAttributeCharacters`,
+`MaxFontFaceAttributeCharacters` and `MaxFontSizeAttributeCharacters`) are checked
+before processing each attribute, including invalid values; long scans honor
+cancellation. Other direct DOM construction and arbitrarily large DOM attribute
+values remain the caller's responsibility.
 
 ## Offline evidence and standards
 

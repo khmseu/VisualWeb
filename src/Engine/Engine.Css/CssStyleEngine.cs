@@ -41,6 +41,9 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Table centering hints use the table alignment rule in tables-2.
 /// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
 /// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
+/// HTML font face hints use the phrasing rule and
+/// <see href="https://www.w3.org/TR/css-fonts-4/#font-family-prop">CSS font-family syntax</see>.
+/// Spec: html, css-fonts.
 /// Spec: html; font size uses <see href="https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size">legacy font size parsing</see>
 /// and the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing hint</see>;
 /// spec: css-fonts; <see href="https://www.w3.org/TR/css-fonts-4/#font-size-prop">font-size</see>.
@@ -239,6 +242,16 @@ public static class CssStyleEngine
                 {
                     context.Assignment();
                     Add(new("font-size", size, false, 0), CssOrigin.Author, false, new(), -1,
+                        presentationalHint: true);
+                }
+            }
+            if (element.LocalName == "font" && element.GetAttribute("face") is { } faceAttribute)
+            {
+                context.FontFaceCharacters(faceAttribute.Length);
+                if (HtmlLegacyFontFace.Parse(faceAttribute, context.Options, context.Cancellation) is { } families)
+                {
+                    context.Assignment();
+                    Add(new("font-family", families, false, 0), CssOrigin.Author, false, new(), -1,
                         presentationalHint: true);
                 }
             }

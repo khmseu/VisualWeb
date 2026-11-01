@@ -29,6 +29,9 @@ public sealed record CssOptions
     public int MaxInputCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate UTF-16 units in font color attributes per style computation.</summary>
     public int MaxFontColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate UTF-16 units in font face attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">font face hint</see>.</remarks>
+    public int MaxFontFaceAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate raw UTF-16 units in font size attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size">legacy font size</see>.</remarks>
     public int MaxFontSizeAttributeCharacters { get; init; } = 4 * 1024 * 1024;
@@ -44,7 +47,8 @@ public sealed record CssOptions
 
     internal void Validate()
     {
-        if (MaxInputCharacters <= 0 || MaxFontColorAttributeCharacters <= 0 || MaxFontSizeAttributeCharacters <= 0 || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
+        if (MaxInputCharacters <= 0 || MaxFontColorAttributeCharacters <= 0 || MaxFontFaceAttributeCharacters <= 0
+            || MaxFontSizeAttributeCharacters <= 0 || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
             || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
         {
@@ -69,6 +73,7 @@ internal sealed class CssContext
     private int matchDepth;
     private int assignments;
     private int fontColorCharacters;
+    private int fontFaceCharacters;
     private int fontSizeCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
@@ -116,6 +121,9 @@ internal sealed class CssContext
 
     internal void FontColorCharacters(int length)
         => AttributeCharacters(length, ref fontColorCharacters, Options.MaxFontColorAttributeCharacters, "color");
+
+    internal void FontFaceCharacters(int length)
+        => AttributeCharacters(length, ref fontFaceCharacters, Options.MaxFontFaceAttributeCharacters, "face");
 
     internal void FontSizeCharacters(int length)
         => AttributeCharacters(length, ref fontSizeCharacters, Options.MaxFontSizeAttributeCharacters, "size");

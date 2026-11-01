@@ -7,8 +7,12 @@ HTML `font color` uses the full bounded legacy-color algorithm at the author
 presentational hint origin. HTML `font size` uses the
 [legacy font size algorithm](https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size)
 (local ID `html`) and the existing CSS absolute-size mapping; `font face` is
-not implemented. Independent per-computation `MaxFontColorAttributeCharacters`
-and `MaxFontSizeAttributeCharacters` limits count raw UTF-16 attribute units,
+parsed as a bounded CSS font-family list at the author presentational-hint
+origin. The text shaper checks listed families in order against explicitly
+registered faces; there is no implicit fallback, font loading, synthesis or CSS
+`@font-face` support. Independent per-computation
+`MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters` and
+`MaxFontSizeAttributeCharacters` limits count raw UTF-16 attribute units,
 including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-10-04) include `search { display:block }`

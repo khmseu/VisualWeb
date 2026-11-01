@@ -175,7 +175,7 @@ internal static class CssProperties
                     { Invalid(); continue; }
                     line = parsedLine;
                 }
-                if (Families(value.Skip(index).ToArray()) is not { } families) { Invalid(); continue; }
+                if (ParseFamilies(value.Skip(index).ToArray()) is not { } families) { Invalid(); continue; }
                 Add(names[0], style ?? Registry[names[0]].Initial);
                 Add(names[1], weight ?? Registry[names[1]].Initial);
                 Add(names[2], size);
@@ -253,7 +253,7 @@ internal static class CssProperties
         var tokens = input.Where(t => t.Kind != CssTokenKind.Whitespace).ToList();
         if (tokens.Count == 0) { return null; }
         if (name is "color" or "background-color" || name.EndsWith("-color", StringComparison.Ordinal)) { return Color(tokens); }
-        if (name == "font-family") { return Families(input); }
+        if (name == "font-family") { return ParseFamilies(input); }
         if (tokens.Count != 1) { return null; }
         var token = tokens[0];
         var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
@@ -334,7 +334,7 @@ internal static class CssProperties
         };
     }
 
-    private static CssFontFamilies? Families(IReadOnlyList<CssToken> tokens)
+    internal static CssFontFamilies? ParseFamilies(IReadOnlyList<CssToken> tokens)
     {
         var names = new List<string>();
         var current = new List<CssToken>();
