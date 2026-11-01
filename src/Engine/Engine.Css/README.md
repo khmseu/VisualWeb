@@ -59,6 +59,10 @@ They use the parent's computed size and normal inheritance/cascade, and are
 absent when the UA sheet is disabled. Text shaping still requires exact
 configured faces; no fallback, synthesis or additional layout/text support is
 implied.
+The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
+(ID `html`) give `listing`, `xmp` and `plaintext` the same block display,
+1em vertical margins, monospace family and preserved whitespace as `pre`.
+They use the normal cascade and require an explicitly configured face.
 `text-decoration` and `text-decoration-line` accept only `none` or the supported
 CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`), with a
 non-inherited line value and the normal cascade. `revert-layer` remains

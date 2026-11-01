@@ -1129,6 +1129,87 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("listing")]
+    [InlineData("xmp")]
+    [InlineData("plaintext")]
+    public void LegacyPreDefaultsPreserveSpacesBreaksAndOverflowLikePre(string tag)
+    {
+        const string text = " a  b\nc  d ";
+        var expected = Find(UnorderedList("<pre id=x>" + text, width: 10).Root!, "x");
+        var actual = Find(UnorderedList("<" + tag + " id=x>" + text, width: 10).Root!, "x");
+        Assert.Equal(expected.Content, actual.Content);
+        Assert.Equal(2, actual.Lines.Count);
+        Assert.Equal(expected.Lines.Select(line => string.Concat(line.Fragments.Select(f => f.Run.Text))),
+            actual.Lines.Select(line => string.Concat(line.Fragments.Select(f => f.Run.Text))));
+        Assert.Equal(new[] { " a  b", "c  d " },
+            actual.Lines.Select(line => string.Concat(line.Fragments.Select(f => f.Run.Text))));
+        Assert.True(actual.Lines[0].Fragments.Sum(f => f.Run.Width) > actual.Content.Width);
+    }
+
+    [Theory]
+    [InlineData("listing")]
+    [InlineData("xmp")]
+    [InlineData("plaintext")]
+    public void LegacyPreUserAgentMarginsUseInheritedFontSizeAndMatchPre(string tag)
+    {
+        var (expectedContainer, expected) = Build("pre");
+        var (actualContainer, actual) = Build(tag);
+
+        Assert.Equal(8, actualContainer.BorderBox.Y); // The body keeps its UA margin.
+        Assert.Equal(9, actualContainer.Content.Y); // The border prevents margin collapse.
+        Assert.Equal(23, actual.Margin.Top);
+        Assert.Equal(23, actual.Margin.Bottom);
+        Assert.Equal(32, actual.BorderBox.Y);
+        Assert.Equal(46, actual.BorderBox.Height);
+        Assert.Equal(92, actualContainer.Content.Height); // 23 + two 23px lines + 23.
+        Assert.Equal(expected.Margin, actual.Margin);
+        Assert.Equal(expected.BorderBox, actual.BorderBox);
+        Assert.Equal(expected.Content, actual.Content);
+        Assert.Equal(expectedContainer.Content, actualContainer.Content);
+        Assert.Equal(new[] { "a  b", "c d" },
+            actual.Lines.Select(line => string.Concat(line.Fragments.Select(f => f.Run.Text))));
+
+        static (LayoutBox Container, LayoutBox Preformatted) Build(string element)
+        {
+            // End at EOF so plaintext receives the same content without apparent closing tags.
+            var document = HtmlParser.Parse("<!doctype html><div id=container><" + element + " id=x>a  b\nc d",
+                cancellationToken: Cancellation).Document;
+            var styles = CssStyleEngine.Compute(document,
+                [new("body{font-size:23px;line-height:23px}#container{border:1px solid}")],
+                cancellationToken: Cancellation);
+            Assert.Empty(styles.Diagnostics);
+            var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 200,
+                cancellationToken: Cancellation).Root!;
+            return (Find(root, "container"), Find(root, "x"));
+        }
+    }
+
+    [Theory]
+    [InlineData("listing")]
+    [InlineData("xmp")]
+    [InlineData("plaintext")]
+    public void LegacyPreLayoutUsesExistingLimitsAndCancellation(string tag)
+    {
+        string html = "<" + tag + " id=x>x";
+        Assert.NotNull(UnorderedList(html, options: new()
+        {
+            MaxBoxes = 3,
+            MaxLines = 1,
+            MaxTextCharacters = 1,
+            MaxShapedGlyphs = 1,
+            MaxShapingCalls = 2
+        }).Root);
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html, options: new() { MaxBoxes = 2 }));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html + "y", options: new() { MaxTextCharacters = 1 }));
+        var doc = HtmlParser.Parse("<!doctype html>" + html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(doc, [new("*{margin:0}")], cancellationToken: Cancellation);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() =>
+            StaticLayout.Layout(doc, styles, new MetricsShaper(), 100, 200, cancellationToken: canceled.Token));
+    }
+
+    [Theory]
     [InlineData("nowrap", 1, "a-b c/d")]
     [InlineData("pre", 2, "  a-b  c/d  ")]
     public void NonWrappingPunctuationKeepsExistingWhitespaceAndForcedBreakSemantics(

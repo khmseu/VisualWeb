@@ -77,6 +77,9 @@ after-after-body modes. Supported behavior includes:
   paragraphs, block starts and scoped end tags.
 - List-item and definition-list implied closures, pre/listing/textarea first-LF
   handling, void elements and ignored self-closing flags on non-void HTML.
+- `listing` parses ordinary child markup; `xmp` uses RAWTEXT until its end tag,
+  while `plaintext` consumes the rest of the input as literal text. Neither
+  literal mode interprets apparent links, styles or scripts as elements.
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
 - A bounded `select` subset containing direct `option` and `optgroup` children, with text only inside options.

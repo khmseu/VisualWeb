@@ -4008,3 +4008,160 @@ darunter 1.310 Browser- und 199 IPC-Faelle; gegenueber Pass 4 sind es netto
 lokaler V8-Smoke fuer denselben Code. Der Review ist freigegeben. Commit,
 Push und plattformspezifische CI stehen noch aus; die lokalen Ergebnisse
 belegen keine native Windows- oder arm64-Ausfuehrung.
+
+### KP-118 - Hidden-Commit und CI-Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Git-Commit `37dc296454966046d7e5fc3ece5d319922b6d7d3`,
+  Push nach `origin/main`, laufende CI
+  [Linux](https://github.com/khmseu/VisualWeb/actions/runs/41254701310),
+  [Windows](https://github.com/khmseu/VisualWeb/actions/runs/41254701319)
+  und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41254701159).
+- Bezug: KP-117.
+
+**Status (belegt):** Pass 5 ist getrennt committed und gepusht. Der Commit-Hook
+formatierte [text-layout.md](../docs/text-layout.md) und meldete danach keine
+Probleme. Die drei CI-Laeufe wurden fuer exakt diesen Commit gestartet und
+sind noch nicht abgeschlossen. Die naechste Prioritaet wird erst nach
+erfolgreicher CI ausgewaehlt.
+
+### KP-119 - Hidden-Linux und CodeQL erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erfolgreiche Watcher fuer
+  [Linux](https://github.com/khmseu/VisualWeb/actions/runs/41254701310)
+  und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41254701159);
+  [Windows](https://github.com/khmseu/VisualWeb/actions/runs/41254701319)
+  ist noch nicht abgeschlossen.
+- Bezug: KP-118, Commit `37dc296`.
+
+**CI-Status (belegt):** Linux x64 und arm64 bestehen mit Build, Solution-Tests,
+Confinement- und V8-Smokes. CodeQL besteht fuer C#, Actions und
+JavaScript/TypeScript. Die Linux-Jobs melden eine bestehende Node-20-
+Aktionswarnung; CodeQL meldet die angekuendigte `ubuntu-latest`-Umstellung.
+Beide sind Warnungen, keine fehlgeschlagenen Schritte. Windows-CI und die
+Auswahl des sechsten Inkrements stehen noch aus.
+
+### KP-120 - Hidden-Windows-CI erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erfolgreicher
+  [Windows-Lauf](https://github.com/khmseu/VisualWeb/actions/runs/41254701319)
+  sowie die erneut geprueften CI-Laeufe fuer Commit `37dc296`.
+- Bezug: KP-118 und KP-119.
+
+**CI-Status (belegt):** Windows x64 und arm64 bestehen mit Build,
+Solution-Tests, CPU-Pressure-Recovery und den nativen Sandbox- und V8-Smokes.
+Damit bestehen Linux, Windows und CodeQL fuer exakt den gepushten Commit.
+Fuenf von zehn angeforderten Inkrementen sind abgeschlossen; als Naechstes
+ist ein weiteres nicht implementiertes Prioritaetsinkrement anhand des
+Trackers zu bestimmen.
+
+### KP-121 - Rohtextdarstellung als sechstes Inkrement
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [HTML-Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs) und lokaler
+  Standard `html`, Abschnitt `#flow-content-3` (geprueft 2026-10-04;
+  innerhalb der 30-Tage-Frist).
+- Bezug: KP-120.
+
+**Auswahl (Ableitung aus Tracker und Code):** Der Parser verarbeitet
+`listing`, `xmp` und `plaintext` bereits mit ihren jeweiligen Textmodi, doch
+die UA-Styles fehlen. Der gecachte HTML-Standard gibt fuer alle drei
+Blockdarstellung, 1em-Blockabstaende, Monospace und `white-space:pre` vor.
+Als sechstes Inkrement soll diese end-to-end sichtbare Rohtextdarstellung die
+bestehenden Pre-Layout- und Cascade-Regeln wiederverwenden. Grenzen wie
+Fontregistrierung, nicht unterstuetzte Tabstops und allgemeinere
+Whitespace-/Textalgorithmen bleiben unveraendert. Parserunterschiede zwischen
+den drei Elementen und inertem Rohtext sollen regressionstested werden.
+`noscript` und `pre-wrap` sind eigenstaendige, groessere Restluecken; ihre
+Bearbeitung wird durch diese Auswahl nicht als erledigt dargestellt.
+
+**Status:** Auswahl getroffen; Umsetzung, gezielte Tests, Review, Volltest,
+Commit und CI stehen aus.
+
+### KP-122 - Rohtextdefaults implementiert
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [UA-Stylesheet](../src/Engine/Engine.Css/CssStyleEngine.cs),
+  [CSS-Regressionen](../tests/Engine.Css.Tests/LegacyPreDefaultsTests.cs),
+  [Content-Regressionen](../tests/Engine.Content.Tests/LegacyPreDefaultsTests.cs),
+  [Browser-Regressionen](../tests/VisualWeb.Browser.Tests/LegacyPreDefaultsTests.cs)
+  und der Implementierungsbericht dieser Sitzung.
+- Bezug: KP-121.
+
+**Umsetzung (belegt):** `listing`, `xmp` und `plaintext` verwenden die
+bestehenden UA-Regeln fuer Blockdarstellung, 1em-Vertikalabstand, Monospace
+und `white-space:pre`. Die vorhandenen Parsermodi bleiben unveraendert.
+Regressionsfaelle behandeln Cascade, feste CSS-Arbeitsgrenzen, Parsermodi,
+Layout/Overflow, native Pixel, Ressourcensuche und lokales beziehungsweise
+Prozess-Rendering mit Resize und optierter Skriptausfuehrung. Die CSS- und
+Layout-Regressionsfaelle wurden vor der Umsetzung rot ausgefuehrt; Parser-,
+Content- und Browserfaelle wurden danach ergaenzt.
+
+**Validierung und Review (belegt):** Die fokussierten Tests bestehen laut
+Bericht fuer CSS (45), HTML (1), Layout (6), Content (6) und Browser (9).
+Solution-Build ohne Restore, Formatpruefung und lokaler V8-Smoke bestehen.
+Der Volltest laeuft. Das Review verlangt zusaetzlich direkte Assertions der
+Standardwerte und Messungen ohne Margin-Reset sowie den positiven
+Skriptfall innerhalb von `listing`. Diese Ergaenzungen, ihre Tests, der
+vollstaendige Review, Commit und CI stehen noch aus.
+
+### KP-123 - Review-Regressionen ergaenzt
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [CSS-Regressionen](../tests/Engine.Css.Tests/LegacyPreDefaultsTests.cs),
+  [Layout-Regressionen](../tests/Engine.Layout.Tests/LayoutTests.cs) und
+  [Browser-Regressionen](../tests/VisualWeb.Browser.Tests/LegacyPreDefaultsTests.cs).
+- Bezug: KP-122.
+
+**Review-Folge (belegt):** Die neuen Faelle pruefen die konkreten UA-Werte und
+1em-Aufloesung bei geerbten 23px, die tatsaechliche Layoutgeometrie mit
+unveraenderten UA-Abstaenden sowie die optierte Ausfuehrung eines `listing`-
+Skripts lokal und im Prozess einschliesslich Resize. Sie wurden geschrieben
+und gelesen, aber noch nicht gebaut oder ausgefuehrt. Der parallel gestartete
+Volltest verwendet noch den vorherigen Build; danach muessen die Ergaenzungen
+gezielt und im abschliessenden Volltest validiert werden.
+
+### KP-124 - Review-Regressionen validiert
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erfolgreicher erster serieller Solution-Testlauf (15.938 Faelle),
+  erneuter `dotnet build VisualWeb.slnx`, fokussierte Testlaeufe und lokaler
+  `V8Smoke` in dieser Sitzung.
+- Bezug: KP-123.
+
+**Validierung (belegt):** Der erste Volltest bestand vor dem Build der
+Review-Ergaenzungen. Der anschliessende Solution-Build bestand ohne
+Warnungen; die neuen beziehungsweise erweiterten Testgruppen bestehen fuer
+CSS (9), Layout (9) und Browser (8). Der explizite lokale V8-Smoke besteht
+erneut. Der abschliessende Volltest mit den neu gebauten Ergaenzungen und die
+Formatpruefung laufen; Commit und CI stehen aus.
+
+### KP-125 - Formatpruefung erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: erfolgreicher Lauf von `dotnet format VisualWeb.slnx
+--verify-no-changes --no-restore --exclude third_party` nach den
+  Review-Ergaenzungen.
+- Bezug: KP-124.
+
+**Status (belegt):** Die abschliessende Formatpruefung besteht. Der zweite
+serielle Solution-Testlauf ist weiterhin aktiv; dessen Ergebnis, Commit und
+CI-Pruefung stehen noch aus.
+
+### KP-126 - Rohtext-Volltest erfolgreich
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: erfolgreicher serieller Lauf `dotnet test VisualWeb.slnx --no-build
+-m:1 --logger 'console;verbosity=minimal'` nach dem Build der
+  Review-Ergaenzungen.
+- Bezug: KP-123 bis KP-125.
+
+**Validierung (belegt):** Alle 15.943 Solution-Tests bestehen, darunter
+774 Layout- und 1.321 Browserfaelle. Damit sind die direkten UA-Wert- und
+Marginmessungen sowie der positive `listing`-Skriptfall im Volltest enthalten.
+Zusammen mit Build, Formatpruefung und lokalem V8-Smoke ist Pass 6 lokal
+geprueft; Commit, Push und CI stehen noch aus.

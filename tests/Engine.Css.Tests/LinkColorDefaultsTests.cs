@@ -127,13 +127,13 @@ public sealed class LinkColorDefaultsTests
     {
         var document = Parse("<a id=target href>text</a>");
         // The UA sheet has 59 declarations; margin and padding expansion add six assignments.
-        // The four elements (html, head, body, a) each check 95 top-level selectors and
+        // The four elements (html, head, body, a) each check 104 top-level selectors and
         // 11 unmatched :is() subject alternatives, at two operations per simple selector.
         const int assignments = 65;
-        const long matches = 848; // 4 * (95 + 11) * 2
+        const long matches = 920; // 4 * (104 + 11) * 2
         // The author rule adds one assignment and one two-operation selector per element.
         const int authorAssignments = 66;
-        const long authorMatches = 856;
+        const long authorMatches = 928;
         CssStyleSource[] author = [new("a{color:red}")];
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));

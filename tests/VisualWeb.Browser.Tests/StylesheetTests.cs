@@ -20,6 +20,47 @@ public sealed class StylesheetTests
     private static readonly byte[] Red = [0, 0, 255, 255];
     private static readonly byte[] Lime = [0, 255, 0, 255];
 
+    [Theory]
+    [InlineData("xmp")]
+    [InlineData("plaintext")]
+    public async Task RawLegacyMarkupDoesNotDiscoverStylesheets(string tag)
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsoluteUri switch
+            {
+                "https://example.test/page" => Text("<!doctype html><" + tag
+                    + "><link rel=stylesheet href=/fake.css><script src=/fake.js></script>", "text/html"),
+                _ => throw new InvalidOperationException("Unexpected resource request.")
+            };
+        }));
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal(["https://example.test/page"], requests);
+        Assert.Empty(page.Stylesheets);
+    }
+
+    [Fact]
+    public async Task ListingMarkupStillDiscoversItsStylesheet()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsoluteUri switch
+            {
+                "https://example.test/page" => Text(
+                    "<!doctype html><listing><link rel=stylesheet href=/live.css></listing>", "text/html"),
+                "https://example.test/live.css" => Text("body{color:red}", "text/css"),
+                _ => throw new InvalidOperationException("Unexpected resource request.")
+            };
+        }));
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/page"), Cancellation);
+        Assert.Equal(["https://example.test/page", "https://example.test/live.css"], requests);
+        Assert.Single(page.Stylesheets);
+    }
+
     [Fact]
     public async Task BrowserFetchesLinkedStylesheetsRelativeToTheFinalRedirectedDocumentUrl()
     {

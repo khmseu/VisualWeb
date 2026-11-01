@@ -16,6 +16,9 @@ unsupported. Legacy doctypes preserve public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and
 additional quirks-layout behavior is not implied.
+`listing` parses normal markup and strips its first LF; `xmp` is RAWTEXT until
+its closing tag, and `plaintext` consumes the rest as literal text. Apparent
+links, scripts and styles in those literal modes are not DOM elements.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.

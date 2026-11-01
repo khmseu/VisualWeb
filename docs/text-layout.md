@@ -309,6 +309,8 @@ cells leave empty grid slots. Empty grids have zero intrinsic content size.
   including URLs, hyphens and internal punctuation, without introducing soft
   breaks. Overflow remains measurable for document scrolling. `pre` still
   preserves spaces/forced newlines; `nowrap` still collapses whitespace.
+  The UA defaults for `listing`, `xmp` and `plaintext` use this same `pre`
+  path, with an explicitly registered monospace face.
   See [CSS Text white-space](https://drafts.csswg.org/css-text-3/#white-space-property)
   (local ID `css-text`). Script/bidi/control and missing-glyph failures remain.
 - In `normal`/`pre-line`, supported inline form controls provide soft-wrap

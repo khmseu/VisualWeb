@@ -41,6 +41,11 @@ fixture itself is monospaced. Missing italic faces and unsupported cross-style
 unbroken words still fail explicitly. Local and process browser tests check
 links and visible selection across retained reflow without another fetch.
 
+Legacy preformatted regressions compare `listing`, `xmp` and `plaintext` UA
+styles and deterministic layout with `pre`, exercise parser mode distinctions
+and native pixels, and check literal markup, links and opted-in script behavior
+through local and process rendering with retained resize.
+
 List marker regressions cover finite CSS circle longhand/shorthand cascade,
 inheritance and invalid-value atomicity; wrapped, nested and empty layout with
 existing numbering and limits; single-composite native outline pixels over

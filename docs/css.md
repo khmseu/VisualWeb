@@ -295,6 +295,13 @@ complete HTML rendering stylesheet (controls have limited inline-block defaults
 and no UA borders/padding/fonts). Broader marker types,
 decoration and replaced-element sizing are not yet implemented.
 
+The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
+(local ID `html`) style `listing`, `xmp` and `plaintext` like `pre`: block
+display, 1em physical top and bottom margins, monospace family and
+`white-space:pre`. These are normal UA declarations, subject to the usual
+cascade, `hidden` and UA-sheet disabling. The family still requires an
+explicitly registered face.
+
 The [HTML hidden rendering rule](https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS)
 (local ID `html`) is
 `[hidden]:not([hidden=until-found i]):not(embed) { display:none }`. Attribute

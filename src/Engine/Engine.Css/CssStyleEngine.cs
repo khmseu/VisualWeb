@@ -46,13 +46,13 @@ public static class CssStyleEngine
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, p, section, article, aside, nav, header, footer, main, address,
-        blockquote, pre, h1, h2, h3, h4, h5, h6, ul, ol, menu, li, dl, dt, dd, figure, figcaption, hr, form { display: block }
+        blockquote, pre, listing, xmp, plaintext, h1, h2, h3, h4, h5, h6, ul, ol, menu, li, dl, dt, dd, figure, figcaption, hr, form { display: block }
         input, button, textarea, select { display: inline-block }
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }
         [hidden]:not([hidden=until-found i]):not(embed) { display: none }
         body { margin: 8px }
-        p, blockquote, pre, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
+        p, blockquote, pre, listing, xmp, plaintext, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         :is(dir, dl, menu, ol, ul) :is(dir, dl, menu, ol, ul) { margin-top: 0; margin-bottom: 0 }
         blockquote { margin-left: 40px; margin-right: 40px }
         ul, ol, menu { padding-left: 40px }
@@ -76,7 +76,7 @@ public static class CssStyleEngine
         h6 { font-size: .67em; margin-top: 2.33em; margin-bottom: 2.33em; font-weight: bold }
         b, strong { font-weight: bolder }
         i, em, cite, dfn, var { font-style: italic }
-        pre { white-space: pre; font-family: monospace }
+        pre, listing, xmp, plaintext { white-space: pre; font-family: monospace }
         code, kbd, samp, tt { font-family: monospace }
         big { font-size: larger }
         small { font-size: smaller }

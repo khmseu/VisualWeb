@@ -49,7 +49,8 @@
   vollstaendige Vorfahrenketten je Durchlauf und begrenzt die Besuche
   gemeinsam; 55 fokussierte Browser- und 3 IPC-Faelle sowie Build,
   Formatpruefung und lokaler V8-Smoke bestehen. Der Folge-Review ist
-  freigegeben; alle 15.907 Solution-Tests bestehen. Commit und CI stehen aus
+  freigegeben; alle 15.907 Solution-Tests bestehen. Commit `37dc296` ist
+  gepusht; Linux, Windows und CodeQL bestehen, einschliesslich x64 und arm64
   ([KP-110](./Kontextprotokoll.md#kp-110---link-ci-und-auswahl-des-fuenften-inkrements),
   [KP-111](./Kontextprotokoll.md#kp-111---hidden-darstellung-lokal-implementiert),
   [KP-112](./Kontextprotokoll.md#kp-112---review-der-fragmentgrenzen),
@@ -57,7 +58,22 @@
   [KP-114](./Kontextprotokoll.md#kp-114---folge-review-der-vorfahrenscans),
   [KP-115](./Kontextprotokoll.md#kp-115---begrenzte-vorfahrenscans),
   [KP-116](./Kontextprotokoll.md#kp-116---reviewfreigabe-fuer-fragmentziele),
-  [KP-117](./Kontextprotokoll.md#kp-117---vollstaendige-hidden-validierung)).
+  [KP-117](./Kontextprotokoll.md#kp-117---vollstaendige-hidden-validierung),
+  [KP-118](./Kontextprotokoll.md#kp-118---hidden-commit-und-ci-start),
+  [KP-119](./Kontextprotokoll.md#kp-119---hidden-linux-und-codeql-erfolgreich),
+  [KP-120](./Kontextprotokoll.md#kp-120---hidden-windows-ci-erfolgreich)).
+  Pass 6 ergaenzt die HTML-UA-Defaults fuer `listing`, `plaintext` und `xmp`
+  ueber die vorhandenen `pre`-Regeln. Gezielte CSS-, Parser-, Layout-,
+  native Content- und lokale/Prozess-Browser-Tests sowie Build, Format und
+  lokaler V8-Smoke bestehen; die Review-Ergaenzungen bestehen fokussiert.
+  Der abschliessende Volltest mit den Ergaenzungen besteht mit 15.943
+  Faellen, ebenso die abschliessende Formatpruefung; Commit und CI stehen aus
+  ([KP-121](./Kontextprotokoll.md#kp-121---rohtextdarstellung-als-sechstes-inkrement),
+  [KP-122](./Kontextprotokoll.md#kp-122---rohtextdefaults-implementiert),
+  [KP-123](./Kontextprotokoll.md#kp-123---review-regressionen-ergaenzt),
+  [KP-124](./Kontextprotokoll.md#kp-124---review-regressionen-validiert),
+  [KP-125](./Kontextprotokoll.md#kp-125---formatpruefung-erfolgreich),
+  [KP-126](./Kontextprotokoll.md#kp-126---rohtext-volltest-erfolgreich)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
@@ -735,13 +751,19 @@ abgelehnt und nicht geladen
 ## Naechste Schritte
 
 **Aktueller Einstieg (2026-11-01):** Im laufenden Zehn-Passen-Auftrag sind
-vier Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
-HTML-`hidden` liegt mit Korrekturen zu den Fragment-Reviewbefunden lokal vor;
-Review und alle 15.907 Solution-Tests sind bestanden. Den Pass getrennt
-committen, pushen und die CI pruefen. Erst anschliessend die weitere
-Auswahl anhand des dann aktuellen [Trackers](../plans/Missing.md) treffen.
+fuenf Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
+HTML-`hidden` ist nach Review und 15.907 erfolgreichen Solution-Tests als
+`37dc296` gepusht; Linux, Windows und CodeQL bestehen. Pass 6 hat die
+HTML-UA-Darstellung von `listing`, `plaintext` und `xmp` ergaenzt und
+fokussiert geprueft. Die Review-Ergaenzungen und alle 15.943 Solution-Tests
+bestehen; Commit und CI stehen aus.
 Der aktuelle Stand und die Grenzen stehen oben sowie in
-[KP-117](./Kontextprotokoll.md#kp-117---vollstaendige-hidden-validierung).
+[KP-121](./Kontextprotokoll.md#kp-121---rohtextdarstellung-als-sechstes-inkrement)
+[KP-122](./Kontextprotokoll.md#kp-122---rohtextdefaults-implementiert)
+[KP-123](./Kontextprotokoll.md#kp-123---review-regressionen-ergaenzt),
+[KP-124](./Kontextprotokoll.md#kp-124---review-regressionen-validiert)
+[KP-125](./Kontextprotokoll.md#kp-125---formatpruefung-erfolgreich)
+und [KP-126](./Kontextprotokoll.md#kp-126---rohtext-volltest-erfolgreich).
 Die folgenden aelteren Schritte und Passnummern beschreiben fruehere Auftraege;
 sie sind keine zusaetzlichen aktuellen Arbeitsauftraege.
 

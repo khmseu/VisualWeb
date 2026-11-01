@@ -9,6 +9,27 @@ public sealed class TreeTests
     private static HtmlParseResult Parse(string input, HtmlParserOptions? options = null) =>
         HtmlParser.Parse(input, options, TestContext.Current.CancellationToken);
 
+    [Fact]
+    public void LegacyPreElementsRetainTheirDistinctParsingModes()
+    {
+        var listing = Parse("<!doctype html><listing id=x>\n<a id=live href=/next>live</a></listing>").Document;
+        var listElement = listing.GetElementById("x")!;
+        Assert.Equal("live", listElement.TextContent);
+        Assert.Equal("a", listing.GetElementById("live")!.LocalName);
+
+        var xmp = Parse("<!doctype html><xmp id=x>\n<a id=fake href=/next>&amp;</a></xmp><a id=live>live</a>").Document;
+        var raw = xmp.GetElementById("x")!;
+        Assert.Equal("\n<a id=fake href=/next>&amp;</a>", Assert.IsType<DomText>(Assert.Single(raw.ChildNodes)).Data);
+        Assert.Null(xmp.GetElementById("fake"));
+        Assert.NotNull(xmp.GetElementById("live"));
+
+        var plaintext = Parse("<!doctype html><plaintext id=x>\n<a id=fake>text</a></plaintext><a id=live>live</a>").Document;
+        Assert.Equal("\n<a id=fake>text</a></plaintext><a id=live>live</a>",
+            Assert.IsType<DomText>(Assert.Single(plaintext.GetElementById("x")!.ChildNodes)).Data);
+        Assert.Null(plaintext.GetElementById("fake"));
+        Assert.Null(plaintext.GetElementById("live"));
+    }
+
     public static IEnumerable<object[]> Cases()
     {
         foreach (var file in Directory.EnumerateFiles(Path.Combine(AppContext.BaseDirectory, "Data", "tree"), "*.dat").Order())

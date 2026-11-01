@@ -474,6 +474,14 @@ apply to emitted identities, while ancestor traversal is separately bounded and
 cancellable. The solution build, all 15,907 solution tests, format verification
 and local V8 smoke pass.
 
+The HTML UA stylesheet gives `listing`, `xmp` and `plaintext` the existing
+`pre` block, 1em vertical margin, monospace and preserved-whitespace defaults.
+Their distinct parser modes remain unchanged: `listing` parses ordinary markup,
+while apparent markup inside `xmp` and `plaintext` remains literal. Focused
+CSS, HTML, layout, native-content and local/process browser tests pass;
+the solution build, all 15,943 solution tests, format verification and local
+V8 smoke also pass. Broader whitespace algorithms remain unsupported.
+
 Standard named colors now cover all 148 opaque CSS Color 4 names, rather than
 only the 16 basic colors plus orange/rebeccapurple. Common ordinary stylesheet
 values such as lightgray, whitesmoke and darkslategray no longer reject a page.

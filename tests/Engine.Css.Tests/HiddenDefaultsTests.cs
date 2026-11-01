@@ -121,9 +121,9 @@ public sealed class HiddenDefaultsTests
         // Four elements: the hidden selector costs 2 operations on each nonmatch and
         // 8 on the hidden anchor, including both :not() argument matches.
         const int assignments = 65;
-        const long matches = 854; // previous 840 + 3 * 2 + 8
+        const long matches = 926; // 4 * (104 + 11) * 2 + 3 * 2 + 8 - 8
         CssStyleSource[] author = [new("a{display:block}")];
-        const long authorMatches = 862;
+        const long authorMatches = 934;
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches - 1 }));
