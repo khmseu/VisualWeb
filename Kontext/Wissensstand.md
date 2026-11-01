@@ -5,7 +5,110 @@
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
 - Dokumentationsdatum: 2026-11-01, Zeitzone Europe/Berlin (UTC+01:00).
-- Aktueller Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
+- Neuer aktueller Auftrag: am 2026-11-01 wurden zehn weitere getrennte
+  Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
+  KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten
+  PointerEvents bleiben wegen des dokumentierten Event-Grenzenkonflikts
+  unveraendert. Pass 1 waehlt als kleinen Prioritaet-1-Schritt die vorhandene
+  HTML-`div[align]`-Luecke ueber die CSS-Autoren-Presentational-Hint-Kaskade.
+  Nach dem CI-gruenen Commit `87bdcdd` zeigte ein erneuter Abgleich mit dem
+  lokalen HTML-Standard, dass `center`/`middle` ebenfalls fuer `div` gelten;
+  die erste Aenderung hatte sie faelschlich ausgeschlossen. Die gekoppelte
+  Korrektur besteht gezielte CSS- (1.093) und Content- (84) Tests,
+  Solution-Build, Volltest (16.058) und Formatpruefung. Der Korrekturcommit
+  `0cd05e6` ist gepusht; Linux, Windows und CodeQL bestehen. Damit ist Pass 1
+  abgeschlossen. Pass 2 ist als begrenzte CSS-Unterstuetzung fuer das
+  HTML-`center`-Element ausgewaehlt; es soll das vorhandene Block-Parsing mit
+  Center-Hint und passenden Regressionen in CSS/Content ergaenzen. CSS
+  (1.093), Content (85), Solution-Build, Volltest (16.059) und Formatpruefung
+  bestehen. `f984eaf` ist gepusht; Linux, Windows x64/arm64 und CodeQL
+  bestehen. Der erste Windows-x64-Lauf traf eine bekannte Duplicate-Request-
+  Timing-Flake im unveraenderten Browser-Test; nur der fehlgeschlagene Job
+  wurde erneut ausgefuehrt und bestand (KP-173/KP-175). Pass 2 ist
+  abgeschlossen; acht Inkremente verbleiben. Pass 3 waehlt `table align=center`
+  als begrenzten Praesentationshinweis auf vorhandenen Auto-Margen; Layout-
+  Freigabe und Tabellengeometrie werden getestet. `left`/`right` Floats und
+  sonstige Legacy-Tabellenattribute bleiben unsupported (KP-176). Die
+  Implementierung ist als Commit `eac7974` gepusht. CSS-Cascade- (1.098),
+  Layout- (784) und Content-Pixeltests (86) bestehen; Solution-Build
+  (0 Warnungen/Fehler), Volltest (16.068) und Formatpruefung bestehen.
+  Linux x64/arm64, Windows x64/arm64 und CodeQL bestehen; sieben Inkremente
+  verbleiben (KP-177). Pass 4 ergaenzt die fehlenden 40px Inline-Margen von
+  HTML-`figure` im horizontalen LTR-Subset. CSS-Cascade (1.099), Layout-
+  Geometrie (785), Solution-Build, Volltest (16.070) und Formatpruefung
+  bestehen. `c34ed4c` ist gepusht; Linux x64/arm64, Windows x64/arm64 und
+  CodeQL bestehen (KP-178). Pass 5 ergaenzt den HTML-`address`-UA-Default
+  `font-style:italic` mit normaler Kaskade und ohne Font-Synthese. CSS (1.100),
+  Content (87), Solution-Build, Volltest (16.072) und Formatpruefung bestehen.
+  `3d00c0f` ist gepusht; Linux x64/arm64, Windows x64/arm64 und CodeQL bestehen.
+  Fuenf Inkremente verbleiben (KP-179). Pass 6 implementiert die begrenzte
+  sichtbare Unterstreichung fuer CSS-`underline` und den HTML-`:link`-Default.
+  `none` hebt Vorfahren-Dekoration nicht auf; weitere Linienwerte und
+  Dekorationsstile bleiben unsupported. CSS (1.102), Paint (65), Content (88),
+  Solution-Build und Formatpruefung bestehen; der geaenderte Volltest besteht
+  auf Retry mit 16.077 Faellen, der Basis-Volltest `3d00c0f` mit 16.072. Der
+  erste lokale Volltest und der erste Windows-x64-CI-Lauf trafen jeweils
+  denselben Timeout im unveraenderten Browser-Navigationstest. Beide
+  Volltest-Retries bestanden; Windows x64/arm64, Linux und CodeQL sind gruen.
+  Keine Ursache ist nachgewiesen. `c6f13b1` ist gepusht; vier Inkremente
+  verbleiben ([KP-180](./Kontextprotokoll.md#kp-180---pass-6-waehlt-begrenzte-textunterstreichung),
+  [KP-181](./Kontextprotokoll.md#kp-181---pass-6-lokal-implementiert-und-validiert),
+  [KP-182](./Kontextprotokoll.md#kp-182---pass-6-gepusht-und-ci-gruen)). Der
+  Tracker-Abschluss `7fdf2bb` ist ebenfalls gepusht und CI-gruen. Pass 7 waehlt
+  als naechsten kleinen Tabellen-Rendering-Schritt die HTML-`align`-Hints
+  `left`/`right`/`center`/`middle`/`justify` auf `td` und `th`; Row-/Group-
+  Alignment und vertikale Zellpositionierung bleiben ausserhalb. Der lokale
+  HTML-Cache (ID `html`, `checkedAt` 2026-10-04) ist innerhalb der 30-Tage-
+  Frist. `c3f64a5` ist lokal validiert und gepusht: CSS (1.116), Layout (798),
+  Content (89), Solution-Build (0 Warnungen/Fehler), Volltest (16.105) und
+  Formatpruefung bestehen. Linux x64/arm64, Windows x64/arm64 und CodeQL-CI
+  bestehen (KP-184). Pass 8 implementiert das begrenzte `<font face>`-Hint:
+  CSS-Familienlisten, Author-Presentational-Hint-Kaskade, Vererbung,
+  Rekalkulation und aggregiertes rohes UTF-16-Budget. Die registrierte
+  Font-Auswahl prueft explizit gelistete Familien in Reihenfolge; kein
+  impliziter Fallback, Download oder Synthese. CSS (1.129), Content (91),
+  Solution-Build (0 Warnungen/Fehler), Volltest (16.120) und Formatpruefung
+  bestehen. `5b5379e` ist gepusht; Linux, Windows x64/arm64 und CodeQL-CI
+  sind gruen. Danach verbleiben zwei Inkremente
+  ([KP-185](./Kontextprotokoll.md#kp-185---pass-8-waehlt-begrenzten-html-font-face-hint),
+  [KP-186](./Kontextprotokoll.md#kp-186---pass-8-implementiert-begrenzter-html-font-face-hint)).
+  Nur explizit aufgefuehrte und registrierte Familien kommen in Betracht
+  ([KP-187](./Kontextprotokoll.md#kp-187---pass-9-waehlt-begrenzte-html-colspan-tabellen)).
+  Pass 9 implementiert nun horizontal begrenztes `colspan` mit gleichmaessig
+  verteilten Intrinsic-Constraints, HTML-Fallback-/Obergrenzen, explizitem
+  `rowspan`-Fehler, `MaxTableColumns` (100.000) und gemeinsamem
+  `MaxTableColumnOperations` (10.000.000). Die getrennten Limits verfeinern den
+  frueheren Vorschlag, das Spaltenlimit an `MaxBoxes` zu binden, weil Grid-
+  Dimension und Track-Arbeit nicht Layoutboxen zaehlen
+  ([KP-188](./Kontextprotokoll.md#kp-188---pass-9-implementiert-begrenzte-horizontale-colspan-geometrie)).
+  Layout (807),
+  Content (92), Solution-Build (0 Warnungen/Fehler), Formatpruefung und finaler
+  Volltest (16.130) bestehen. Die Span-Gruppierung ist bedarfsgesteuert, sodass
+  Tabellen ohne Spans keinen festen Bucket-Array-Overhead erhalten. `3e568b1`
+  ist gepusht; Linux, Windows confinement und CodeQL-CI bestehen
+  ([KP-189](./Kontextprotokoll.md#kp-189---pass-9-committet-gepusht-und-ci-gruen)).
+  Pass 10 ist als eng begrenzte Ableitung aus Prioritaet 1 gewaehlt: Zeilen-
+  und Zeilengruppen-`background-color` auf kanonischen Tabellen. Die lokale
+  CSS-2.2-Quelle beschreibt deren Hintergrundebenen; Layout (807), Content
+  (93), Solution-Build, Formatpruefung und Volltest (16.131) bestehen.
+  `69c902a` ist gepusht; Linux, Windows confinement und CodeQL-CI sind gruen.
+  Damit sind alle zehn getrennten Inkremente abgeschlossen; `rowspan`,
+  Captions/Spalten, arbitrary tables und weitere Tabellenfeatures bleiben
+  ausdruecklich offen
+  ([KP-190](./Kontextprotokoll.md#kp-190---pass-10-waehlt-und-validiert-tabellenhintergrundebenen),
+  [KP-191](./Kontextprotokoll.md#kp-191---pass-10-committet-gepusht-und-ci-gruen)).
+  ([KP-183](./Kontextprotokoll.md#kp-183---pass-7-waehlt-tabellenzell-align-hints),
+  [KP-184](./Kontextprotokoll.md#kp-184---pass-7-lokal-validiert-und-gepusht)).
+  ([KP-169](./Kontextprotokoll.md#kp-169---neuer-auftrag-und-div-ausrichtung),
+  [KP-173](./Kontextprotokoll.md#kp-173---div-zentrierungsregel-korrigieren),
+  [KP-174](./Kontextprotokoll.md#kp-174---div-zentrierung-korrigiert-und-validiert),
+  [KP-175](./Kontextprotokoll.md#kp-175---pass-2-waehlt-begrenzte-center-element-ausrichtung),
+  [KP-176](./Kontextprotokoll.md#kp-176---pass-3-waehlt-table-aligncenter),
+  [KP-177](./Kontextprotokoll.md#kp-177---pass-3-implementiert-und-gepusht),
+  [KP-178](./Kontextprotokoll.md#kp-178---pass-4-waehlt-html-figure-raender),
+  [KP-179](./Kontextprotokoll.md#kp-179---pass-5-waehlt-und-implementiert-address-schriftstil),
+  [KP-180](./Kontextprotokoll.md#kp-180---pass-6-waehlt-begrenzte-textunterstreichung)).
+- Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
   Ausgangspunkt war `1bf9b74` mit zwei damals ungeschobenen lokalen Commits.
@@ -1038,7 +1141,7 @@ lesen; alte Windows-Fehlerberichte sind keine aktuelle Fehlermeldung.
 > den konkreten Umfang und stoppe bei ungeklaerter wesentlicher Policy,
 > bewahre DEC-004 bis DEC-007 und halte beide Sichten aktuell.
 
-## Aktueller Stand: Pass 9 der Zehn-Passen-Serie
+## Historischer Zwischenstand: Pass 9 der Zehn-Passen-Serie
 
 Pass 6, explizite Top-Level-`data:`-Bestaetigung, ist auf `origin/main`
 abgeschlossen; die CI war nach erfolgreichem Windows-ARM64-Rerun gruen. Die

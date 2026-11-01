@@ -4847,3 +4847,556 @@ Inkremente. Der letzte lokale Volltest besteht mit 16.043 Faellen; fruehere
 lokale Navigationstestfehler und ihre ungeklarten Ursachen bleiben gemaess
 KP-146 bis KP-151 und KP-157 bis KP-158 dokumentiert. Die
 Mid-Scan-Cancellation ist gemaess KP-163 nicht deterministisch getestet.
+
+### KP-169 - Neuer Auftrag und div-Ausrichtung
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: aktuelle Nutzeranweisung zur Ausfuehrung des Skills mit zehn Passen;
+  [Prioritaetsfolge](../plans/Missing.md#recommended-priority), lokaler HTML-Cache
+  `specs/cache/html.html` (ID `html`, geprueft 2026-10-04), implementierte
+  CSS-Ausrichtungslogik, fokussierte Tests und lokale Validierungsbefehle.
+- Bezug: KP-062 und KP-168.
+
+**Nutzerangabe:** Eine neue ausdrueckliche Anweisung fordert zehn weitere
+Missing-Prioritaets-Passen. Damit ist der fruehere allgemeine Stopp aus KP-062
+fuer neue Arbeit aufgehoben. Die zuvor ausgewaehlten automatischen
+`pointerout`/`pointerover`-Page-Events bleiben wegen des dokumentierten
+Konflikts mit der geltenden Scripting-Grenze unimplementiert.
+
+**Auswahl (Ableitung):** Pass 1 nimmt die naechste kleine
+Prioritaet-1-Renderingluecke: `div[align]`. Die lokale HTML-Regel erlaubt
+ASCII-case-insensitiv `left`, `right` und `justify` als text-align-Hints.
+Der separate Algorithmus zum Ausrichten ueberbestimmter Nachfahrenraender
+bleibt ausserhalb. Diese Inkrementauswahl ist keine separate Nutzerfreigabe.
+
+**Validierung (belegt):** Es bestehen 1.092 CSS- und 82 Content-Tests, der
+Solution-Build ohne Warnungen/Fehler, alle 16.055 Solution-Tests sowie die
+Formatpruefung. Der Test deckt Cascade, Vererbung, mutierte Attribute,
+Assignment-Budget, ungueltige Werte, exakte Pixel und retained resize ab.
+Commit und Push sind erfolgt; CI ist noch ausstehend.
+
+### KP-170 - Div-Ausrichtung Commit und CI-Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: Commit `87bdcdd879a43c0b0a14d10170a7a3e9fb724d17`, erfolgreicher
+  Push und GitHub Actions fuer genau diesen Commit.
+- Bezug: KP-169.
+
+**Status (belegt):** Pass 1 ist als
+`feat(css): support div text alignment hints` committed und auf `origin/main`
+gepusht. Der Push-Check (`41302403774`) und Linux development
+(`41302403997`) bestehen. Windows confinement (`41302404146`) laeuft noch.
+
+### KP-171 - Div-Ausrichtung Linux und CodeQL bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: abgeschlossene GitHub-Actions-Laeufe `41302403774` und
+  `41302403997` fuer Commit `87bdcdd879a43c0b0a14d10170a7a3e9fb724d17`.
+- Bezug: KP-170.
+
+**Status (belegt):** Push-on-main/CodeQL und Linux development bestehen,
+einschliesslich Linux x64 und arm64. Windows x64/arm64 confinement laeuft;
+Pass 1 steht bis dahin aus dem CI-gruenen Status aus.
+
+### KP-172 - Div-Ausrichtung Windows und Pass 1 abgeschlossen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: abgeschlossener GitHub-Actions-Lauf `41302404146` fuer Commit
+  `87bdcdd879a43c0b0a14d10170a7a3e9fb724d17`; KP-169 bis KP-171.
+- Bezug: KP-170 und KP-171.
+
+**Status (belegt):** Windows confinement besteht auf x64 und arm64. Damit
+bestehen Push-on-main/CodeQL, Linux x64/arm64 und Windows x64/arm64 fuer
+Commit `87bdcdd`. Pass 1 ist abgeschlossen; neun der angeforderten zehn
+Passen verbleiben. Der Volltest bestand lokal mit 16.055 Tests.
+
+### KP-173 - Div-Zentrierungsregel korrigieren
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: erneute direkte Pruefung von
+  `specs/cache/html.html`, Abschnitt `flow-content-3`, Zeilen 99745-99748,
+  gegen die neue Implementierung und Dokumentation aus KP-169 bis KP-172.
+- Bezug: KP-169 und KP-172.
+
+**Korrektur (belegt):** Die HTML-Regel nennt gemeinsam das `center`-Element
+und `div[align]` mit ASCII-case-insensitivem Wert `center` oder `middle` als
+text-align-center-Presentational-Hints. Pass 1 hatte beide Werte fuer `div`
+faelschlich als ungueltig dokumentiert und getestet. Der CI-gruene Commit
+`87bdcdd` bleibt unveraendert; bevor eine weitere Prioritaet beginnt, wird
+die eng gekoppelte Regression in einem Folgecommit korrigiert und validiert.
+
+### KP-174 - Div-Zentrierung korrigiert und validiert
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: lokaler Diff fuer die CSS-Hinweislogik, Tests, CSS-Dokumentation und
+  `plans/Missing.md`; gezielte und vollstaendige Tests, Build und Formatpruefung.
+- Bezug: KP-173.
+
+**Status (belegt):** `div[align=center]` und `div[align=middle]` werden nun
+als `text-align:center` behandelt; Tests decken ASCII-case-insensitive Werte,
+Pixelgleichheit und Resize-Retention ab. CSS (1.093), Content (84),
+Solution-Build (0 Warnungen/Fehler), der Volltest (16.058), `git diff --check`
+und `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` bestehen. Commit `0cd05e6` ist nach `origin/main` gepusht. Die
+zugehoerige CodeQL- (`41304298103`), Linux- (`41304297991`) und
+Windows-CI (`41304297971`) ist erfolgreich; damit ist Pass 1 abgeschlossen
+und Pass 2 kann gegen den aktualisierten Tracker beginnen. Kontextdateien
+bleiben absichtlich ausserhalb des Featurecommits.
+
+### KP-175 - Pass 2 waehlt begrenzte Center-Element-Ausrichtung
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: `plans/Missing.md` Abschnitt 5 (Center-Ausrichtung explizit offen),
+  `docs/css.md`, `src/Engine/Engine.Css/README.md`,
+  `CssStyleEngine.UserAgentStyleSheet` und lokale HTML-Regel
+  `flow-content-3` (geprueft 2026-10-04).
+- Bezug: KP-174.
+
+**Auswahl und Begruendung:** Der aktualisierte Tracker priorisiert lesbare
+statische HTML-Seiten und nennt Center-Ausrichtung ausdruecklich als nicht
+unterstuetzt. Der Parser kennt `center` bereits als Absatz-schliessendes
+Blockelement, die CSS-UA-Liste und Alignment-Hint-Erkennung enthalten es aber
+nicht. Pass 2 ergaenzt deshalb nur das Block-Default und die begrenzte
+`text-align:center`-Presentational-Hint-Regel; Tabellen-/Descendant-
+Margin-Alignment und breitere HTML-Recovery bleiben ausserhalb des Schritts.
+
+**Implementierungsstatus (belegt):** CSS (1.093) und Content (85) Tests,
+Solution-Build (0 Warnungen/Fehler), Volltest (16.059) und Formatpruefung
+bestehen. Beim ersten CSS-Lauf machten die
+geplanten UA-Selektor-Ergaenzungen drei exakte Match-Budgettests fruehzeitig
+fehlschlagen; deren nachweisbare Kosten wurden um acht Operationen je vier
+getestete Elemente angepasst, und der fokussierte Lauf besteht.
+
+**Commit/CI-Status (belegt):** `f984eaf` ist nach `origin/main` gepusht.
+Linux (`41306757552`) und CodeQL (`41306757722`) bestehen. Im Windows-Lauf
+(`41306757555`) schlug x64 im unveraenderten Browser-Test
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` mit
+duplizierten Requests fehl; arm64 bestand die Solution-Tests und Smokes. Der
+gleiche Test ist in KP-173 als timing-sensitiv mit Duplikaten auf Basiscommit
+`257f0b1` nachgewiesen; der direkte Basiscommit `0cd05e6` hatte ebenfalls
+gruenes Windows-CI. Nach Retry bestand der vollstaendige Windows-Lauf auf
+x64 und arm64. Damit sind Linux, Windows und CodeQL fuer `f984eaf` gruen; Pass
+2 ist abgeschlossen und acht angeforderte Inkremente verbleiben.
+
+### KP-176 - Pass 3 waehlt table align=center
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: `plans/Missing.md` Abschnitt 5 nennt Table-Alignment und
+  Tabellen-Praesentationsattribute als offen; `docs/css.md`,
+  `docs/text-layout.md`, `Engine.Layout/TableLayout.cs` und die lokale
+  HTML-Regel `tables-2` (manifest `html`, geprueft 2026-10-04).
+- Bezug: KP-175.
+
+**Auswahl und Begrenzung:** Die naechste Arbeit bleibt bei Prioritaet 1
+(gewoehnliche statische Seiten und einfache Tabellen). Die HTML-Regel mappt
+ASCII-case-insensitives `table[align=center]` auf automatische Inline-Margen;
+CSS/Layout bieten bereits physische Auto-Margen fuer Tabellen. Pass 3
+unterstuetzt nur den center-Wert als Hint und gibt ihn fuer Layout frei.
+Float-Alignment (`left`/`right`), weitere Tabellenattribute und Zell-/Gruppen-
+Alignment bleiben explizit unsupported.
+
+### KP-177 - Pass 3 implementiert und gepusht
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: Commit `eac7974`; geaenderte CSS-/Layout-Implementierung, Tests,
+  Guides und `plans/Missing.md`.
+- Bezug: KP-176.
+
+**Umsetzung:** `table[align=center]` erzeugt ASCII-case-insensitive
+`margin-left:auto`-/`margin-right:auto`-Presentational-Hints auf Autorenebene.
+Das Layout laesst nur diesen Tabellenwert durch seinen Legacy-Attributfilter;
+andere Werte und Attribute bleiben unsupported. CSS-Cascade-, Geometrie- und
+Content-Pixeltests bestaetigen Cascade-Prioritaet, 17.5px Zentrierung fuer
+eine 65px-Tabelle in 100px Breite sowie identische Pixel nach Retained Resize.
+Tracker und CSS-/Layout-Dokumentation grenzen den horizontalen LTR-Subset ein.
+
+**Validierung und Status:** CSS 1.098, Layout 784 und Content 86 fokussierte
+Tests bestehen; Solution-Build hat 0 Warnungen/Fehler, der Volltest besteht
+mit 16.068 Tests, und Formatpruefung besteht. `eac7974` ist auf `main`
+gepusht. Linux x64/arm64, Windows x64/arm64 und CodeQL bestehen
+([Linux](https://github.com/khmseu/VisualWeb/actions/runs/41311357870),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41311357851),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41311357681)).
+Pass 3 ist abgeschlossen; sieben angeforderte Inkremente verbleiben.
+
+### KP-178 - Pass 4 waehlt HTML-Figure-Raender
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quelle: `plans/Missing.md` Abschnitt 5, CSS-`UserAgentStyleSheet`,
+  CSS-/Layouttests und lokale HTML-Regel `flow-content-3` (manifest `html`,
+  checked 2026-10-04).
+- Bezug: KP-177.
+
+**Auswahl und Begrenzung:** Als naechster Prioritaet-1-Schritt werden die
+fehlenden 40px-Inline-Margen des HTML-`figure`-Elements ergaenzt. Die lokale
+HTML-UA-Regel setzt `margin-inline:40px`; in VisualWebs horizontalem LTR-Subset
+werden nur `margin-left` und `margin-right` verwendet. Vorhandenes Block-
+Display, Block-Margen und Caption-Flow bleiben unveraendert.
+
+**Umsetzung und Validierung:** Die UA-Regel gruppiert `figure` mit
+`blockquote`. CSS-Tests bestaetigen je 40px, Author-Override und UA-Opt-out;
+Layout misst bei 200px Viewport 48px Startposition und 104px Inhaltsbreite.
+CSS 1.099, Layout 785, Solution-Build (0 Warnungen/Fehler), Volltest (16.070)
+und Formatpruefung bestehen. Commit `c34ed4c` ist gepusht; die CI fuer Linux
+x64/arm64, Windows x64/arm64 und CodeQL ist gruen
+([Linux](https://github.com/khmseu/VisualWeb/actions/runs/41314591869),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41314591978),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41314591888)).
+Pass 4 ist abgeschlossen; sechs angeforderte Inkremente verbleiben.
+
+### KP-179 - Pass 5 waehlt und implementiert address-Schriftstil
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [HTML-UA-Regeln](../src/Engine/Engine.Css/CssStyleEngine.cs),
+  [CSS-Kaskadentests](../tests/Engine.Css.Tests/CascadeTests.cs),
+  [Content-Pixeltest](../tests/Engine.Content.Tests/ContentTests.cs) und
+  lokaler HTML-Standard `flow-content-3` (manifest `html`, geprueft 2026-10-04).
+- Bezug: KP-178.
+
+**Auswahl und Begrenzung:** Das HTML-Element `address` erhaelt den fehlenden
+UA-Standard `font-style:italic` ueber die bestehende CSS-Kaskade. Das ist
+keine Font-Synthese; fuer die native Darstellung muss weiterhin eine passende
+italic Face explizit registriert sein.
+
+**Validierung und Status (belegt):** CSS (1.100), Content (87), Solution-Build
+(0 Warnungen/Fehler), Volltest (16.072) und Formatpruefung bestehen.
+Der Pixeltest vergleicht den UA-Default mit explizitem italic CSS und bestaetigt
+die konfigurierte italic Face. Commit `3d00c0f` ist gepusht; Linux x64/arm64,
+Windows x64/arm64 und CodeQL bestehen
+([Linux](https://github.com/khmseu/VisualWeb/actions/runs/41317091582),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41317091556),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41317091751)).
+Fuenf angeforderte Inkremente verbleiben.
+
+### KP-180 - Pass 6 waehlt begrenzte Textunterstreichung
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [Textdekorationsgrenze](../docs/css.md#cascade-and-computed-values),
+  CSS-/Paint-Guides und lokaler Standard
+  `css-text-decoration` (manifest geprueft 2026-10-31).
+- Bezug: KP-179.
+
+**Auswahl (Ableitung aus Tracker und Code):** Sichtbare Link-Unterstreichung
+ist als konkrete Lesbarkeitsluecke dokumentiert. Das naechste Inkrement
+unterstuetzt nur `underline` samt HTML-`:link`-Default und normaler Kaskade;
+die Dekoration wird fuer statische Textfragmente gezeichnet. `none` bleibt
+gueltig, loescht aber keine Unterstreichung eines Vorfahren. Overline,
+Durchstreichung, weitere Stil-/Farb-/Dickenwerte und Skip-Ink bleiben
+unsupported.
+
+**Status:** Auswahl getroffen. Implementierung, fokussierte CSS-/Paint-/Content-
+Regressionen, Tracker-/Guide-Updates, Solution-Validierung, Commit, Push und
+CI stehen aus.
+
+### KP-181 - Pass 6 lokal implementiert und validiert
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: `src/Engine/Engine.Css/CssProperties.cs`,
+  `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Paint/DisplayList.cs`,
+  `src/Engine/Engine.Paint/CpuRasterizer.cs`,
+  CSS-/Paint-/Content-Tests, subsystem guides und
+  `plans/Missing.md`; lokaler Standard `css-text-decoration` aus dem Cache
+  (Manifest `checkedAt` 2026-10-31).
+- Ersetzt KP-180 als aktuellen Arbeitsstatus; die Auswahl und ihre Begruendung
+  bleiben dort historisch erhalten.
+
+**Umsetzung (belegt):** `underline` ist nun der einzige sichtbare
+`text-decoration-line`-Wert. Die HTML-`:link`-UA-Regel setzt zusaetzlich zum
+blauen Link-Default eine Unterstreichung. `DisplayListBuilder` uebertraegt
+Dekorationen von Vorfahren auf statische Textfragmente, nutzt die Farbe des
+dekorierenden Vorfahren und laesst ein Nachkommen-`none` die Linie nicht
+aufheben. `CpuRasterizer` verwendet die registrierte exakte Font-Face und
+deren OpenType-Unterstreichungsmetriken; Font-/Geometriepreflight erfolgt vor
+Framebuffer-Allokation und Scroll-Rebasing bewahrt Linien auf langen Seiten.
+Overline, Durchstreichung, andere Dekorationswerte, Skip-Ink und atomare
+Inline-Inhalte bleiben ausserhalb dieses begrenzten Paint-Pfads.
+
+**Lokale Validierung (belegt):** CSS 1.102, Paint 65 und Content 88 Tests
+bestehen; Solution-Build (0 Warnungen/Fehler) und Formatpruefung bestehen.
+Der Volltest bestand 16.076 Faelle und schlug bei
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` in
+`VisualWeb.Browser.Tests` fehl. Die einzelne Probe sowie alle 176
+`ShellTests` bestehen separat auf dem geaenderten Stand und auf dem Basis-
+Commit `3d00c0f`; damit ist die Ursache des einen Volltestfehlers nicht
+nachgewiesen und wird nicht als Baselinefehler behauptet. Push und CI stehen
+noch aus; nach Pass 6 bleiben vier angeforderte Inkremente.
+
+### KP-182 - Pass 6 gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: lokale Volltestlaeufe auf dem geaenderten Stand und Basis
+  `3d00c0f`; GitHub Actions fuer Commit `c6f13b1`.
+- Bezug: KP-180, KP-181 und der Zehn-Passen-Auftrag.
+
+**Validierungsergaenzung:** Ein erneuter lokaler Volltest besteht mit 16.077
+Tests; der vollstaendige Testlauf auf dem Basis-Commit `3d00c0f` besteht mit
+16.072 Tests. Der erste lokale Volltestlauf und der erste Windows-x64-CI-Lauf
+hatten jeweils einen 30-Sekunden-Timeout bei
+`ShellTests.UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`
+(Windows: `tests/VisualWeb.Browser.Tests/ShellTests.cs:1011`, Wait-Helfer
+Zeile 1036). Der Test besteht separat auf beiden Stands; der lokale Volltest
+und der vollstaendige Windows-x64-Job bestanden beim erneuten Lauf. Das
+belegt eine nicht reproduzierte Timing-Abweichung, aber keine bestimmte
+Ursache.
+
+**Commit und CI:** Feature-Commit `c6f13b1` (`feat(paint): render bounded text
+underlines`) ist auf `origin/main`. Linux development
+(<https://github.com/khmseu/VisualWeb/actions/runs/41325060517>), Windows
+confinement einschliesslich erfolgreichem x64-Rerun und arm64
+(<https://github.com/khmseu/VisualWeb/actions/runs/41325060638>) sowie CodeQL
+(<https://github.com/khmseu/VisualWeb/actions/runs/41325060437>) sind gruen.
+Pass 6 ist abgeschlossen; vier angeforderte Inkremente bleiben. Der naechste
+Pass ist nach dem aktuellen `plans/Missing.md` neu auszuwaehlen.
+
+### KP-183 - Pass 7 waehlt Tabellenzell-align-Hints
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: `plans/Missing.md` Prioritaetsfolge und Tabellen-/CSS-Abschnitte,
+  `docs/css.md`, `docs/text-layout.md`, `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  vorhandene CSS-/Content-Tests und `specs/cache/html.html#tables-2`.
+- Bezug: KP-182 und der Zehn-Passen-Auftrag.
+
+**Auswahl (Ableitung, keine neue Nutzerentscheidung):** Die Empfehlung setzt
+gewoehnliche Tabellen fuer einfache statische Seiten vor fortgeschrittene
+Interaktion. Der Missing-Tracker und CSS-/Layout-Guides benennen HTML
+Zeilen-/Zell-`align` bislang als unsupported. Die CSS-UA-Hints unterstuetzen
+bereits `div`, `p`, Ueberschriften und `center`; `table[align=center]` ist ein
+separater Auto-Margin-Hint. Vorhandenes CSS-/Layout-Verhalten kann
+`text-align` in Table-Cell-Boxen verarbeiten.
+
+**Belegte Standardsregel:** `specs/manifest.json` nennt fuer HTML
+`checkedAt=2026-10-04`; am 2026-11-01 ist dies innerhalb der 30-Tage-Frist,
+also kein Refresh erforderlich. Der lokale `html#tables-2`-Abschnitt
+(Zeilen 100344-100374) bildet fuer `thead`/`tbody`/`tfoot`/`tr`/`td`/`th` die
+ASCII-case-insensitiven `align`-Werte `center`/`middle`, `left`, `right` und
+`justify` auf `text-align` ab. `middle` wird zu `center`.
+
+**Begrenzter Pass-7-Umfang:** Die direkte Auswahl ist, nur fuer `td` und `th`
+diese fuenf Textausrichtungswerte als begrenzte HTML-Presentational-Hints
+anzunehmen und in den bestehenden Cascade-/Assignment-Budget-/Recompute-Pfad
+einzuordnen. Zeilen-/Gruppen-Elemente, andere Attributwerte, `valign`,
+vertikale Zellpositionierung und Tabellengeometrie bleiben unveraendert. Das
+ist ein konkreter, testbarer Teil der offenen Tabellenkompatibilitaet; keine
+fehlende Nutzerentscheidung blockiert die Implementierung.
+
+**Status:** Umfang gewaehlt; HTML-Cache und CSS-/Layout-Guides geprueft.
+Implementierung, fokussierte Cascade-/Pixelregressionen, Tracker-/Guide-
+Updates, Build/Tests/Format, Commit, Push und CI stehen aus.
+
+### KP-184 - Pass 7 lokal validiert und gepusht
+
+- Dokumentiert am: 2026-11-01, 18:19, Europe/Berlin (CET, UTC+01:00).
+- Quellen: Commit `c3f64a5`, `plans/Missing.md`, geaenderte CSS-/Layout-/
+  Content-Tests, Build-, Volltest- und Formatlaeufe sowie GitHub Actions fuer
+  Commit `c3f64a5`.
+- Bezug: KP-183 und Pass 7 des Zehn-Passen-Auftrags.
+
+**Belegt:** `GetAlignHint` erkennt die fuenf HTML-Werte fuer `td`/`th` und
+ordnet sie der bestehenden presentational-hint Cascade zu. Die Tabellenlayout-
+Validierung liess zuvor nur `table[align=center]` zu; der neue eng begrenzte
+Cell-Helper erlaubt nur gueltige Zell-Hints. Row-/Group-Werte und ungueltige
+Zellwerte bleiben abgewiesen. CSS-, Layout- und Content-Regressionen pruefen
+die Wertabbildung, Cascade/Budgets/Neuberechnung, Fail-closed-Grenzen sowie
+Pixelgleichheit ueber Resize.
+
+**Validierung:** CSS (1.116), Layout (798) und Content (89) fokussierte Tests
+bestanden. `dotnet build VisualWeb.slnx` bestand ohne Warnungen/Fehler;
+`dotnet test VisualWeb.slnx --no-build` bestand mit 16.105 Tests;
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestanden.
+
+**Persistenz:** Die neun Pass-7-Code-, Test-, Tracker- und Guide-Dateien sind
+als `c3f64a5` (`feat(layout): support bounded table-cell align hints`)
+committet und nach `origin/main` gepusht. Kontextdateien blieben ausserhalb
+des Commits. Linux development (x64/arm64), Windows confinement (x64/arm64)
+und CodeQL sind erfolgreich: [Linux](https://github.com/khmseu/VisualWeb/actions/runs/41330691857),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/41330691889),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/41330692054).
+
+### KP-185 - Pass 8 waehlt begrenzten HTML-font-face-Hint
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `plans/Missing.md` Abschnitt 5, `docs/css.md`, `src/Engine/Engine.Css/README.md`,
+  `specs/manifest.json` (`html`, `checkedAt=2026-10-04`) und
+  `specs/cache/html.html#phrasing-content-3`.
+- Bezug: KP-184 und der Zehn-Passen-Auftrag.
+
+**Belegt:** Tracker und CSS-Dokumentation benennen `<font face>` als
+unsupported. Der lokale HTML-Standard ordnet den Attributwert als
+`font-family`-Presentational-Hint ein. Der vorhandene CSS-Familienparser und
+die registrierte Font-Auswahl koennen geordnete Familienwerte verwenden. Der
+HTML-Cache ist am 2026-11-01 innerhalb der 30-Tage-Frist; ein Refresh ist
+nicht erforderlich.
+
+**Auswahl (Ableitung):** Pass 8 soll nur `<font face>` auf gueltige
+`font-family`-Familienlisten abbilden, durch denselben author-presentational-
+hint-Cascade-/Budget-/Recompute-Pfad. Ein eigener aggregierter UTF-16-
+Attributbudgetzaehler soll lange und ungueltige Werte begrenzen. Die
+vorhandene geordnete Familienliste prueft ausschliesslich explizit
+registrierte Faces; fehlen alle angegebenen Faces, bleibt der bestehende
+Shaper-Fehler. Es gibt keinen Font-Download, impliziten Familienfallback oder
+Synthese. Dies ergaenzt den Tracker-Punkt mit ueberschaubarem Verhalten und
+erfordert keine weitere Nutzerentscheidung.
+
+**Status:** Auswahl; Implementierung und Ergebnis in KP-186.
+
+### KP-186 - Pass 8 implementiert: begrenzter HTML-font-face-Hint
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `src/Engine/Engine.Css/HtmlLegacyFontFace.cs`,
+  `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `tests/Engine.Css.Tests/FontFaceHintTests.cs`,
+  `tests/Engine.Content.Tests/FontFaceHintTests.cs`,
+  `docs/css.md`, `src/Engine/Engine.Css/README.md` und `plans/Missing.md`.
+- Bezug: KP-185; Auswahl auf CSS-Familiengrammatik und registrierte Faces
+  bleibt unveraendert.
+
+**Belegt:** `<font face>` wird nun als CSS-Familienliste geparst und ueber
+denselben Author-Presentational-Hint-Cascadepfad angewendet. Der CSS-
+Familienparser ist geteilt; ein eigener pro-Compute-Zaehler begrenzt rohe
+UTF-16-Attribute vor Parsing. Tests decken Familienlisten, ungueltige Werte,
+Cascade, Vererbung, Mutationen, Limit und Cancellation sowie native Pixel,
+retained resize und das Ausbleiben impliziten Fallbacks ab.
+
+**Status:** CSS (1.129) und Content (91) fokussierte Tests bestehen; der volle
+Solution-Testlauf besteht mit 16.120 Faellen. Solution-Build (0
+Warnungen/Fehler) und Formatpruefung bestehen. `plans/Missing.md` und Feature-
+Commit `5b5379e` sind gepusht. Linux, Windows x64/arm64 und CodeQL-CI bestehen
+(Runs 41334613254, 41334613191, 41334612748). Zwei Inkremente verbleiben.
+Diese Kontextdateien bleiben ausserhalb des Feature-Commits.
+
+### KP-187 - Pass 9 waehlt begrenzte HTML-colspan-Tabellen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `plans/Missing.md` Abschnitt 5 / Prioritaet 1,
+  `docs/text-layout.md#basic-automatic-tables`,
+  `src/Engine/Engine.Layout/TableLayout.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `specs/cache/css2-tables.html#auto-table-layout`,
+  `specs/cache/html.html#forming-a-table` und `specs/manifest.json`.
+- Bezug: KP-186 und der Zehn-Passen-Auftrag.
+
+**Belegt:** Der Tracker nennt Tabellen-Spans weiterhin als fehlend; der
+Layoutpfad weist aktuell jedes `colspan` ausser exakt `1` ab. Der lokale
+CSS2-Tabellenalgorithmus verlangt bei Mehrspaltenzellen Mindest- und
+Maximalbreiten ueber die betroffenen Spalten zu verteilen und erlaubt eine
+ungefaehr gleichmaessige Aufteilung. Der HTML-Algorithmus setzt fehlende,
+ungueltige oder Null-`colspan`-Werte auf 1 und begrenzt Werte auf 1000.
+`css2-tables` wurde am 2026-10-28, `html` am 2026-10-04 geprueft; beide sind
+innerhalb der 30-Tage-Frist.
+
+**Auswahl (Ableitung):** Pass 9 implementiert nur horizontales `colspan` auf
+kanonischen HTML-Tabellen, ohne `rowspan`, mit bestehendem Intrinsic-Layout
+und deterministischer gleichmaessiger Defizitverteilung. Grosse resultierende
+Spaltenzahlen muessen vor Allokation am vorhandenen Layout-Boxbudget scheitern;
+Attributscan/Cancellation bleiben begrenzt. Dies schliesst einen direkten
+Tabellen-Kompatibilitaetsblocker im hoechsten empfohlenen Simple-Page-Pfad.
+Die Verteilung ist keine offene Nutzerentscheidung, da CSS2 sie normativ
+ungefaehr gleichmaessig zulaesst.
+
+**Status:** Auswahl getroffen; Implementierung, Layout-/Content-Regressionen,
+Guide-/Tracker-Updates, lokale Validierung, separater Commit, Push und CI stehen
+aus. `rowspan` bleibt explizit unsupported.
+
+### KP-188 - Pass 9 implementiert begrenzte horizontale colspan-Geometrie
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `src/Engine/Engine.Layout/TableLayout.cs`,
+  `src/Engine/Engine.Layout/StaticLayout.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `tests/Engine.Content.Tests/ContentTests.cs`,
+  `docs/text-layout.md`, `src/Engine/Engine.Layout/README.md`,
+  `plans/Missing.md` und die fokussierten/lokalen Testlaeufe.
+- Bezug: Auswahl KP-187; der Zehn-Passen-Auftrag.
+
+**Ableitung / Umsetzungsentscheidung:** Die in KP-187 vorgeschlagene
+Spaltenbegrenzung ueber `MaxBoxes` wird bei der Implementierung verfeinert:
+Boxanzahl, materialisierte Grid-Spalten und wiederholte Track-Arbeit sind
+verschiedene Ressourcen. `LayoutOptions.MaxTableColumns` begrenzt daher die
+Grid-Allokation auf standardmaessig 100.000 Spalten; die gemeinsamen
+Track-Besuche erhalten mit `MaxTableColumnOperations` ein separates Limit von
+10.000.000. Das ist eine Implementierungsableitung, keine ausdruecklich
+eingeholte Nutzerauswahl. Beide Grenzen werden vor bzw. waehrend der Arbeit
+geprueft.
+
+**Belegt:** Kanonische Tabellen platzieren horizontale Zellen anhand des
+geparsten `colspan`; HTML-Standardfaelle (fehlend/ungueltig/Null => 1,
+Obergrenze 1000) sind begrenzt. Spanned minimum/maximum intrinsic constraints
+werden deterministisch nach wachsender Spanne gleich verteilt, und
+Arrangement schliesst interne Border-Spacing-Luecken ein. `rowspan` bleibt
+explizit unsupported. Layouttests pruefen Geometrie, Parsing, beide
+Ressourcenlimits, Attributbudget und die weiter aktive `rowspan`-Ablehnung;
+Content-Pixel entsprechen einem ungespannten Vergleichsgrid. Die fokussierten
+Layout- (807) und Content-Suiten (92) sowie der Solution-Build (0
+Warnungen/Fehler), die Formatpruefung und der finale Volltest mit 16.130 Tests
+bestehen. Die Span-Gruppierung wird bedarfsgesteuert angelegt, sodass Tabellen
+ohne Spans keinen festen Bucket-Array-Overhead erhalten. Separater Commit,
+Push und CI sind noch ausstehend.
+
+### KP-189 - Pass 9 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: Commit `3e568b1`, `plans/Missing.md` und GitHub Actions fuer den
+  vollstaendigen Commit `3e568b194c6c7b8e155ad19eb12efcfc3e8d016f`.
+- Bezug: KP-187/KP-188 und der Zehn-Passen-Auftrag.
+
+**Belegt:** Der begrenzte HTML-`colspan`-Schritt wurde als
+`feat(layout): support bounded horizontal table spans` committed und auf
+`origin/main` gepusht. Linux development Run
+[41342219697](https://github.com/khmseu/VisualWeb/actions/runs/41342219697),
+Windows confinement Run
+[41342219768](https://github.com/khmseu/VisualWeb/actions/runs/41342219768)
+und CodeQL Run
+[41342218952](https://github.com/khmseu/VisualWeb/actions/runs/41342218952)
+sind erfolgreich. Damit ist der in KP-187/KP-188 offene Commit-/CI-Status
+ersetzt; `rowspan` bleibt unsupported.
+
+### KP-190 - Pass 10 waehlt und validiert Tabellenhintergrundebenen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: `plans/Missing.md` Abschnitt 5 / Prioritaet 1,
+  `docs/text-layout.md#basic-automatic-tables`,
+  `specs/cache/css2-tables.html#table-layers`,
+  `specs/manifest.json`, `src/Engine/Engine.Layout/TableLayout.cs`,
+  `src/Engine/Engine.Paint/DisplayList.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `tests/Engine.Content.Tests/ContentTests.cs` und die lokalen Testlaeufe.
+- Bezug: KP-189 und der Zehn-Passen-Auftrag.
+
+**Auswahl (Ableitung):** Nach `colspan` nennt der aktualisierte Tracker
+Tabellenkompatibilitaet weiter als Prioritaet 1; der naechste kleine,
+beobachtbare Layoutschritt ist `background-color` fuer kanonische Tabellen-
+Zeilengruppen und Zeilen. Das ist eine Auswahl aus Tracker und Codebeleg, keine
+ausdrueckliche Nutzerwahl dieses konkreten Features und keine Freigabe einer
+breiteren Tabellenimplementierung.
+
+**Belegt:** Der lokal am 2026-10-28 gepruefte CSS-2.2-Tabellentext beschreibt
+die Tabelle/Zeilengruppen/Zeilen/Zellen als geordnete Hintergrundebenen.
+Layout erzeugt bereits Zeilen- und Gruppenboxen, der Painter traversiert
+Eltern vor Kindern; die Umsetzung entfernt deshalb nur die bisherige
+Hintergrundablehnung fuer diese Boxen. Layout- (807) und Content-Suiten (93),
+der Solution-Build (0 Warnungen/Fehler), `dotnet format` und die volle
+Solution-Suite mit 16.131 Tests bestehen. Native Pixeltests bestaetigen die
+Zeilenfarbe durch transparente Zellen, die Gruppenfarbe in der Zeilenluecke
+und den Tabellenhintergrund. Row-/Gruppengroesse, Raender, Padding,
+Zeilen-/Gruppen-Alignment sowie Spaltenhintergruende bleiben unsupported.
+
+### KP-191 - Pass 10 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin.
+- Quellen: Commit `69c902a` und GitHub Actions fuer den vollstaendigen Commit
+  `69c902ad401e9523fd3c613e45d02e3fa87e22d7`.
+- Bezug: KP-190 und der Zehn-Passen-Auftrag.
+
+**Belegt:** Pass 10 wurde als `feat(layout): paint table row background layers`
+committed und auf `origin/main` gepusht. Linux development Run
+[41344903468](https://github.com/khmseu/VisualWeb/actions/runs/41344903468),
+Windows confinement Run
+[41344903443](https://github.com/khmseu/VisualWeb/actions/runs/41344903443)
+und CodeQL Run
+[41344903219](https://github.com/khmseu/VisualWeb/actions/runs/41344903219)
+sind erfolgreich. Die zehn getrennten angeforderten Implementierungspassen
+sind damit abgeschlossen; die breite Tabellen-Prioritaet selbst bleibt offen.
