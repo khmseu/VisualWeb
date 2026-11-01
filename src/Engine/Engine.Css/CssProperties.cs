@@ -493,6 +493,8 @@ internal static class CssProperties
         return result;
     }
 
+    internal static CssColor? NamedColor(string name) => Colors.GetValueOrDefault(name);
+
     private static readonly Dictionary<string, CssColor> Colors = new(StringComparer.Ordinal)
     {
         ["aliceblue"] = new(240, 248, 255),

@@ -27,6 +27,8 @@ public sealed record CssDiagnostic(string Code, int Offset, string Message);
 public sealed record CssOptions
 {
     public int MaxInputCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate UTF-16 units in font color attributes per style computation.</summary>
+    public int MaxFontColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     public int MaxTokens { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
     public int MaxDiagnostics { get; init; } = 10_000;
@@ -39,7 +41,7 @@ public sealed record CssOptions
 
     internal void Validate()
     {
-        if (MaxInputCharacters <= 0 || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
+        if (MaxInputCharacters <= 0 || MaxFontColorAttributeCharacters <= 0 || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
             || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
         {
@@ -63,6 +65,7 @@ internal sealed class CssContext
     private long nestedRuleOperations;
     private int matchDepth;
     private int assignments;
+    private int fontColorCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
     internal CssSelectorScope? Scope { get; }
@@ -105,6 +108,14 @@ internal sealed class CssContext
     {
         Cancellation.ThrowIfCancellationRequested();
         if (++assignments > Options.MaxAssignments) { throw new CssLimitException("CSS expanded assignment limit exceeded."); }
+    }
+
+    internal void FontColorCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxFontColorAttributeCharacters - fontColorCharacters)
+        { throw new CssLimitException("CSS font color attribute character limit exceeded."); }
+        fontColorCharacters += length;
     }
 }
 

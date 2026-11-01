@@ -456,6 +456,22 @@ Its 26 new CSS, native-content and local/process browser cases pass, including
 exact shared limits and scripted attribute recomputation. The solution build,
 all 15,806 solution tests, solution formatting and local V8 smoke pass.
 
+HTML `<font color>` now supplies a bounded presentational color hint using the
+full HTML legacy color algorithm, including non-CSS malformed values, rather
+than CSS color parsing. Normal cascade, inheritance and recomputation apply;
+aggregate raw attribute processing has a configurable limit. `font face` and
+`font size` remain unsupported. See [CSS hint scope](../docs/css.md#cascade-and-computed-values).
+All 1,053 CSS and 78 Content tests, focused local/process browser cases,
+solution build, formatting and local V8 smoke pass. The serial full run passed
+16,009 cases but failed the unchanged
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` test while
+authorization remained pending after all expected requests. The unmodified
+test passed on base `257f0b1`; with a test-only 150 ms delay before its first
+upgraded request, the same base test intermittently failed from duplicate
+requests or a resource deadline. Those failures do not reproduce the exact
+pending-authorization symptom or prove its cause. Three current focused
+repetitions passed, and the temporary baseline worktree was removed.
+
 The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
 the normal cascade. An override may make a hidden element visible, but
 descendants cannot escape an ancestor whose computed display remains `none`.

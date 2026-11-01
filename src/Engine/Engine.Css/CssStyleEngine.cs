@@ -36,6 +36,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Supported HTML list type and paragraph/heading alignment hints enter the
 /// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
+/// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
+/// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
 /// No loading, mutation observation, dynamic state, layers or scripting.</remarks>
 public static class CssStyleEngine
 {
@@ -169,6 +171,16 @@ public static class CssStyleEngine
                 context.Assignment();
                 Add(new("text-align", new CssKeyword(align), false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
+            }
+            if (element.LocalName == "font" && element.GetAttribute("color") is { } colorAttribute)
+            {
+                context.FontColorCharacters(colorAttribute.Length);
+                if (HtmlLegacyColor.Parse(colorAttribute, context.Cancellation) is { } color)
+                {
+                    context.Assignment();
+                    Add(new("color", color, false, 0), CssOrigin.Author, false, new(), -1,
+                        presentationalHint: true);
+                }
             }
             if (element.GetAttribute("style") is { } inline)
             {

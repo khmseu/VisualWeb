@@ -116,7 +116,8 @@
   ebenfalls 15.986 Faelle und scheiterte am anderen, auf Baseline `37dc296`
   mit Verzoegerung und gleichem Deadline-Fehler reproduzierten Shell-Test.
   Beide Tests bestehen in drei anschliessenden fokussierten Wiederholungen.
-  Ursachen der uninstrumentierten Fehler bleiben offen; Commit und CI stehen aus
+  Ursachen der uninstrumentierten Fehler bleiben offen. Commit `257f0b1` ist
+  gepusht; Linux, Windows und CodeQL bestehen fuer diesen Commit
   ([KP-142](./Kontextprotokoll.md#kp-142---absatz-und-ueberschriftenausrichtung-ausgewaehlt),
   [KP-143](./Kontextprotokoll.md#kp-143---ausrichtung-implementiert-und-reviewt),
   [KP-144](./Kontextprotokoll.md#kp-144---format-und-v8-smoke-bestanden),
@@ -126,7 +127,29 @@
   [KP-148](./Kontextprotokoll.md#kp-148---baseline-timingreproduktion),
   [KP-149](./Kontextprotokoll.md#kp-149---volltest-wiederholung-laeuft),
   [KP-150](./Kontextprotokoll.md#kp-150---zweiter-browser-volltestfehler),
-  [KP-151](./Kontextprotokoll.md#kp-151---navigationstests-fokussiert-bestanden)).
+  [KP-151](./Kontextprotokoll.md#kp-151---navigationstests-fokussiert-bestanden),
+  [KP-152](./Kontextprotokoll.md#kp-152---ausrichtung-commit-und-ci-start),
+  [KP-153](./Kontextprotokoll.md#kp-153---ausrichtung-ci-bestanden)).
+  Pass 9 implementiert die HTML-Altfarbzuordnung von `font[color]` mit der
+  eigenstaendigen Altfarbregel, der vorhandenen CSS-Namenstabelle und einer
+  gemeinsamen Grenze fuer rohe Attributzeichen. Laut Implementierungsbericht
+  bestehen alle 1.053 CSS-Faelle sowie fokussierte Content- und Browser-
+  Tests; der direkte Review fand bisher keinen offenen Fehler. Der Solution-
+  Build, die gesamte Formatpruefung, alle 78 Content-Tests und der lokale
+  V8-Smoke bestehen. Im seriellen Volltest bestanden 16.009 Faelle; der
+  unveraenderte UIR-Navigationstest scheiterte mit ausstehender Autorisierung; ein
+  frueherer Fehler desselben Tests hatte eine andere Deadline-Meldung. Der
+  unveraenderte Baseline-Test besteht; ein testseitiger 150ms-Verzug auf
+  `257f0b1` reproduziert andere Fehler desselben Tests, nicht aber die genaue
+  aktuelle Meldung. Drei aktuelle fokussierte Wiederholungen bestehen. Die
+  Ursache des Volltestfehlers bleibt offen. Der abschliessende Build und
+  die Formatpruefung bestehen; Commit und CI stehen aus
+  ([KP-154](./Kontextprotokoll.md#kp-154---altfarbhint-als-neuntes-inkrement),
+  [KP-155](./Kontextprotokoll.md#kp-155---altfarbhint-implementiert),
+  [KP-156](./Kontextprotokoll.md#kp-156---altfarbe-format-und-smoke-bestanden),
+  [KP-157](./Kontextprotokoll.md#kp-157---uir-volltestfehler),
+  [KP-158](./Kontextprotokoll.md#kp-158---uir-baseline-timingversuch),
+  [KP-159](./Kontextprotokoll.md#kp-159---altfarbe-abschlusspruefung)).
 - Vorheriger Auftrag: am 2026-10-31 erneut zehn getrennt validierte, committed,
   gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-094](./Kontextprotokoll.md#kp-094---erneuter-zehn-passen-auftrag)).
@@ -804,7 +827,7 @@ abgelehnt und nicht geladen
 ## Naechste Schritte
 
 **Aktueller Einstieg (2026-11-01):** Im laufenden Zehn-Passen-Auftrag sind
-sieben Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
+acht Inkremente committed, gepusht und CI-gruen. Pass 5 zu gewoehnlichem
 HTML-`hidden` ist nach Review und 15.907 erfolgreichen Solution-Tests als
 `37dc296` gepusht; Linux, Windows und CodeQL bestehen. Pass 6 hat die
 HTML-UA-Darstellung von `listing`, `plaintext` und `xmp` ergaenzt und
@@ -829,7 +852,8 @@ Wiederholung bestand 15.986 Faelle und scheiterte am anderen, bereits auf
 Baseline `37dc296` mit Transportverzug und gleichem Deadline-Fehler
 reproduzierten Shell-Test. Beide Tests bestehen in drei fokussierten
 Wiederholungen. Ursachen der uninstrumentierten Fehler bleiben offen; Commit
-und CI stehen aus
+`257f0b1` ist gepusht; Linux, Windows und CodeQL bestehen fuer diesen Commit.
+Als Naechstes wird Pass 9 anhand des Trackers bestimmt
 ([KP-135](./Kontextprotokoll.md#kp-135---search-blockdefault-ausgewaehlt),
 [KP-136](./Kontextprotokoll.md#kp-136---search-blockdefault-implementiert),
 [KP-137](./Kontextprotokoll.md#kp-137---search-review-ergaenzt),
@@ -846,7 +870,9 @@ und CI stehen aus
 [KP-148](./Kontextprotokoll.md#kp-148---baseline-timingreproduktion),
 [KP-149](./Kontextprotokoll.md#kp-149---volltest-wiederholung-laeuft),
 [KP-150](./Kontextprotokoll.md#kp-150---zweiter-browser-volltestfehler),
-[KP-151](./Kontextprotokoll.md#kp-151---navigationstests-fokussiert-bestanden)).
+[KP-151](./Kontextprotokoll.md#kp-151---navigationstests-fokussiert-bestanden),
+[KP-152](./Kontextprotokoll.md#kp-152---ausrichtung-commit-und-ci-start),
+[KP-153](./Kontextprotokoll.md#kp-153---ausrichtung-ci-bestanden)).
 Der aktuelle Stand und die Grenzen stehen oben sowie in
 [KP-121](./Kontextprotokoll.md#kp-121---rohtextdarstellung-als-sechstes-inkrement)
 [KP-122](./Kontextprotokoll.md#kp-122---rohtextdefaults-implementiert)

@@ -4562,3 +4562,145 @@ fehlgeschlagen; die genaue Ursache ihrer uninstrumentierten Fehler ist offen.
 Aufgrund der reproduzierten Baseline-Fehler und bestandenen
 Ausrichtungsregressionen kann das getrennte Inkrement mit explizitem Hinweis
 im Committext committed und anschliessend in CI geprueft werden.
+
+### KP-152 - Ausrichtung-Commit und CI-Start
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Commit `257f0b10bb5073b6f887c2f3715a878d18ae7da8`, erfolgreicher
+  Push und GitHub-Actions-Liste fuer genau diesen Commit.
+- Bezug: KP-150 und KP-151.
+
+**Status (belegt):** Pass 8 ist als `feat(css): honor paragraph alignment hints`
+committed und gepusht; der Committext nennt beide fehlgeschlagenen Volltests
+und die begrenzten Baseline-Reproduktionen. Der Commit-Hook pruefte zwoelf
+Dateien ohne Befund. Linux (`41272020066`), Windows (`41272020142`) und
+CodeQL (`41272019951`) laufen; ihre Ergebnisse stehen aus.
+
+### KP-153 - Ausrichtung-CI bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: abgeschlossene GitHub-Actions-Laeufe `41272020066`,
+  `41272020142` und `41272019951` fuer Commit
+  `257f0b10bb5073b6f887c2f3715a878d18ae7da8`.
+- Bezug: KP-152.
+
+**Status (belegt):** Linux, Windows und CodeQL bestehen fuer den achten
+Commit. Acht von zehn angeforderten Inkrementen sind committed, gepusht und
+CI-gruen. Die beiden lokalen Volltestfehler und ihre begrenzten Baseline-
+Reproduktionen bleiben gemaess KP-150 dokumentiert; Pass 9 wird anhand des
+Trackers bestimmt.
+
+### KP-154 - Altfarbhint als neuntes Inkrement
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: [Prioritaetsfolge](../plans/Missing.md#recommended-priority),
+  [HTML-Parser](../src/Engine/Engine.Html/HtmlParser.cs),
+  [CSS-Cascade](../src/Engine/Engine.Css/CssStyleEngine.cs) und lokale
+  HTML-Spezifikation `html`, Abschnitte `#phrasing-content-3` und
+  `#rules-for-parsing-a-legacy-colour-value`, geprueft 2026-10-04.
+- Bezug: KP-106 und KP-153.
+
+**Auswahl (Ableitung):** Als naechstes kleines Renderinginkrement soll
+`font[color]` nach der eigenstaendigen HTML-Altfarbregel in die vorhandene
+Praesentationshinweis-Cascade eingehen. Die bestehende CSS-Namenstabelle ist
+wiederverwendbar; die Altfarbregel unterscheidet sich aber von der CSS-Farb-
+Syntax. Leere und transparente Werte, Umwandlungsgrenzen, Ressourcenbudgets,
+Vererbung und Renderergebnisse erfordern eigene Tests. Die Umsetzung und
+ihre Validierung stehen aus; `font[face]` und `font[size]` sind nicht Teil
+dieses Inkrements.
+
+**Alternative (belegt, zurueckgestellt):** `dir`-Listen koennen nicht ohne
+weiteres wie `ul` behandelt werden, da HTML `dir` nicht in die UA-Regel zum
+Ruecksetzen des Listenzaehlers aufnimmt. `overflow-wrap:break-word` benoetigt
+zusaetzlich erhaltene Wortformung und Graphemgrenzen, nicht bloss das Teilen
+und erneute Formen von Text. Beide Punkte bleiben gesonderte Folgearbeit; es
+wurde kein Verhalten dafuer hinzugefuegt.
+
+### KP-155 - Altfarbhint implementiert
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: Implementierungsbericht, direkter Review von
+  [Altfarbparser](../src/Engine/Engine.Css/HtmlLegacyColor.cs),
+  [CSS-Tests](../tests/Engine.Css.Tests/FontColorHintTests.cs),
+  [Content-Test](../tests/Engine.Content.Tests/FontColorHintTests.cs),
+  [Browser-Tests](../tests/VisualWeb.Browser.Tests/FontColorHintTests.cs) und
+  erfolgreicher `dotnet build VisualWeb.slnx --no-restore`.
+- Bezug: KP-154.
+
+**Status (belegt):** `font[color]` nutzt die HTML-Altfarbverarbeitung und
+die vorhandene Namenstabelle innerhalb der Praesentationshinweis-Cascade;
+der neue positive CSS-Optionswert begrenzt rohe UTF-16-Attributzeichen
+aggregiert pro Stilberechnung. Laut Implementierungsbericht scheiterten im
+Test-first-Lauf 13 gezielte Faelle wie erwartet; anschliessend bestanden
+alle 1.053 CSS-Tests sowie sechs fokussierte Content- und acht fokussierte
+Browser-Faelle. Die neuen Tests pruefen unter anderem Grenzwerte,
+Vererbung, Mutation, Native-Pixel und lokalen/Prozess-Resize. Abbruch waehrend
+langer Leerraumscans wird im Code geprueft; der Test deckt bisher nur
+vorherige Cancellation ab. Der direkte Review der Aenderung fand bisher
+keinen offenen Fehler. Der Solution-Build bestand mit null Warnungen und
+Fehlern. Gesamtformatierung, Volltest, V8-Smoke, Commit und CI stehen aus.
+
+### KP-156 - Altfarbe Format und Smoke bestanden
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party`, kompletter Content-Projekttest, lokaler V8-Smoke
+  und laufender serieller Solution-Test in dieser Sitzung.
+- Bezug: KP-155.
+
+**Status (belegt):** Gesamtformatierung und lokaler nativer V8-Smoke bestehen;
+alle 78 Content-Tests bestehen. Der serielle Solution-Test laeuft und hat
+die ersten CSS-, Content-, Core- und DOM-Projekte bestanden; sein Ergebnis,
+Commit und CI stehen noch aus.
+
+### KP-157 - UIR-Volltestfehler
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: laufender serieller Solution-Test und unveraenderter
+  [UIR-Shell-Test](../tests/VisualWeb.Browser.Tests/ShellTests.cs).
+- Bezug: KP-150 und KP-156.
+
+**Status (belegt):** Im Browser-Projekt des Volltests
+scheiterte `UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`
+nach 30 Sekunden Wartezeit. Alle drei erwarteten Requests waren beobachtet,
+aber der Tab stand noch auf `Checking navigation authorization` mit der
+Quell-URL. Derselbe Test scheiterte bereits in KP-150 mit anderer
+Deadline-Meldung; die damals verzoegerte Baseline-Reproduktion belegt nicht
+die genaue Ursache oder dieses neue Symptom. Der Volltest endete mit
+16.009 bestandenen und einem fehlgeschlagenen Fall. Ein isolierter Worktree
+auf `257f0b1` ist vorbereitet; nach einem fehlgeschlagenen Versuch ohne
+Projektassets wurden dort die fehlenden Abhaengigkeiten wiederhergestellt.
+Der Baseline-Versuch fuer den aktuellen Fehler steht aus.
+
+### KP-158 - UIR Baseline-Timingversuch
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: isolierter Worktree auf `257f0b1`, fokussierte unveraenderte und
+  testseitig verzoegerte Baseline-Laeufe sowie drei fokussierte aktuelle
+  Wiederholungen.
+- Bezug: KP-157.
+
+**Ergebnis (belegt):** Der unveraenderte Test besteht auf der Baseline.
+Wird dort testseitig vor dem ersten HTTPS-Request um 150ms verzoegert,
+scheitert derselbe Test in zwei Versuchen an zusaetzlichen Requests und
+einmal an einem Resource-Deadline-Fehler; ein vierter Versuch besteht.
+Dies belegt einen weiteren timinganfaelligen Baseline-Pfad, reproduziert
+jedoch nicht die konkrete ausstehende Autorisierung aus KP-157. Drei
+unveraenderte aktuelle fokussierte Wiederholungen bestehen. Der genaue
+Grund des urspruenglichen Volltestfehlers bleibt offen; im Hauptarbeitsstand
+wurde kein Navigationstest geaendert. Die temporaere Testaenderung wurde
+entfernt, der Worktree als sauber geprueft und gezielt entfernt.
+
+### KP-159 - Altfarbe Abschlusspruefung
+
+- Dokumentiert am: 2026-11-01, Europe/Berlin (UTC+01:00).
+- Quellen: erneuter Solution-Build, erneute Gesamtformatpruefung und
+  [Tracker](../plans/Missing.md) nach KP-158.
+- Bezug: KP-155 bis KP-158.
+
+**Status (belegt):** Nach Ergaenzung der oeffentlichen HTML-Standardverweise
+bestehen der Solution-Build mit null Warnungen und die gesamte
+Formatpruefung erneut. Der Tracker nennt die bestandenen Schwerpunktchecks,
+den fehlgeschlagenen Volltest und die begrenzte Baseline-Evidenz, ohne die
+Ursache als geklaert darzustellen. Das abgeschlossene Inkrement ist bereit
+fuer einen Commit mit demselben Validierungshinweis; Push und CI stehen aus.
