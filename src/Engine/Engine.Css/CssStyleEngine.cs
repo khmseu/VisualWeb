@@ -33,9 +33,10 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Alphabetic and Roman values use css-counter-styles
 /// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">alphabetic styles</see> and
 /// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-numeric">numeric styles</see>.
-/// Supported HTML list type and paragraph/heading alignment hints enter the
+/// Supported HTML list type and flow-content alignment hints enter the
 /// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
+/// Div alignment hints use <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow-content rules</see>.
 /// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
 /// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
 /// Spec: html; font size uses <see href="https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size">legacy font size parsing</see>
@@ -122,15 +123,27 @@ public static class CssStyleEngine
         return marker is not null;
     }
 
-    /// <summary>Finds the supported paragraph and heading alignment hints.</summary>
-    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">tables rendering hints</see>.</remarks>
+    /// <summary>Finds the supported flow-content text alignment hints.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow content hints</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table rendering hints</see>.</remarks>
     private static string? GetAlignHint(DomElement element)
     {
-        if (element.LocalName is not ("p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6"))
+        if (element.LocalName != "div"
+            && element.LocalName is not ("p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6"))
         {
             return null;
         }
         var align = element.GetAttribute("align");
+        if (element.LocalName == "div")
+        {
+            return align is { Length: 4 or 5 or 7 } ? CssText.Lower(align) switch
+            {
+                "left" => "left",
+                "right" => "right",
+                "justify" => "justify",
+                _ => null
+            } : null;
+        }
         return align is { Length: 4 or 5 or 6 or 7 } ? CssText.Lower(align) switch
         {
             "left" => "left",

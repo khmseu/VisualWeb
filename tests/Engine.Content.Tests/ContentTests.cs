@@ -213,6 +213,31 @@ public sealed class ContentTests
         Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
     }
 
+    [Theory]
+    [InlineData("left")]
+    [InlineData("right")]
+    [InlineData("justify")]
+    public void DivAlignHintMatchesAuthoredNativePixelsAcrossRetainedResize(string align)
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}";
+        var actualStyle = new CssStyleSource[] { new(style) };
+        var html = "<!doctype html><div align=" + align + ">aa <a href=/next>bb</a> cc dd</div>";
+        const string reference = "<!doctype html><div>aa <a href=/next>bb</a> cc dd</div>";
+        CssStyleSource[] expectedStyle = [new(style + "div{text-align:" + align + "}")];
+        var actual = OfflinePageRenderer.Render(html, actualStyle, text, fonts, 70, 100, cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(reference, expectedStyle, text, fonts, 70, 100, cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, actualStyle, text, fonts, 100, 100, cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, expectedStyle, text, fonts, 100, 100, cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
     [Fact]
     public void NestedUaListMarginsMatchExplicitZeroMarginPixels()
     {

@@ -498,6 +498,32 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("LeFt", "left")]
+    [InlineData("RiGhT", "right")]
+    [InlineData("JuStIfY", "justify")]
+    public void DivAlignHintAcceptsOnlyItsSupportedAsciiValues(string value, string expected)
+    {
+        var doc = Document($"<div id=target align='{value}'>x</div>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["text-align"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("center")]
+    [InlineData("middle")]
+    [InlineData(" right")]
+    [InlineData("left ")]
+    [InlineData("JustifyX")]
+    public void UnsupportedDivAlignHintsAreIgnored(string value)
+    {
+        var doc = Document($"<div id=target align='{value}'>x</div>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssKeyword("start"), result.Styles[doc.GetElementById("target")!]["text-align"]);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData(" center")]
     [InlineData("center ")]
@@ -525,7 +551,6 @@ public sealed class CascadeTests
     }
 
     [Theory]
-    [InlineData("div")]
     [InlineData("center")]
     [InlineData("table")]
     [InlineData("span")]
@@ -569,6 +594,26 @@ public sealed class CascadeTests
         Assert.Equal(new CssKeyword("center"), before.Styles[child]["text-align"]);
         Assert.Equal(new CssKeyword("left"), changed.Styles[child]["text-align"]);
         Assert.Equal(new CssKeyword("right"), removed.Styles[child]["text-align"]);
+    }
+
+    [Fact]
+    public void DivAlignHintUsesPresentationalCascadeAndAssignmentBudget()
+    {
+        var doc = Document("<div id=target align=right><p id=child>x</p></div>");
+        var target = doc.GetElementById("target")!;
+        var child = doc.GetElementById("child")!;
+        var user = new CssStyleSource("div{text-align:left}", CssOrigin.User);
+        var before = Compute(doc, user);
+        Assert.Equal(new CssKeyword("right"), before.Styles[target]["text-align"]);
+        Assert.Equal(new CssKeyword("right"), before.Styles[child]["text-align"]);
+        Assert.Equal(new CssKeyword("left"), Compute(doc, user, new("div{text-align:left}")).Styles[target]["text-align"]);
+        target.SetAttribute("align", "justify");
+        Assert.Equal(new CssKeyword("justify"), Compute(doc, user).Styles[target]["text-align"]);
+        CssStyleSource[] author = [new("div{color:red}")];
+        Assert.Empty(CssStyleEngine.Compute(doc, author, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, author, includeUserAgent: false,
+            options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
     }
 
     [Fact]
