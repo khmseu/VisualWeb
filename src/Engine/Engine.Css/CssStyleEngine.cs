@@ -76,6 +76,7 @@ public static class CssStyleEngine
         :is(dir, menu, ol, ul) :is(dir, menu, ol, ul) :is(dir, menu, ul) { list-style-type: square }
         li { display: list-item }
         table { display: table; border-spacing: 2px }
+        caption { display: table-caption }
         tbody { display: table-row-group }
         thead { display: table-header-group }
         tfoot { display: table-footer-group }

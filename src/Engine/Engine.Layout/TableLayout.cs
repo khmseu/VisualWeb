@@ -14,7 +14,10 @@ public static partial class StaticLayout
         private sealed record TableCell(DomElement Element, int Column, int ColumnSpan, int RowSpan);
         private sealed record TableRow(DomElement Element, IReadOnlyList<TableCell> Cells);
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
-        private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing);
+        private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing,
+            DomElement? Caption);
+        private sealed record ArrangedTable(IReadOnlyList<LayoutBox> Children, double Height,
+            LayoutRect? WrapperBounds, LayoutTableBoxGeometry? TableBoxGeometry);
 
         // css2-tables: automatic layout permits UA-defined distribution between intrinsic constraints.
         private TablePlan PlanTable(DomElement table, double containingWidth, int depth)
@@ -24,13 +27,46 @@ public static partial class StaticLayout
             RequireAutoHeight(style);
             var spacing = ((CssLength)style["border-spacing"]).Value;
             var groups = new List<TableGroup>();
+            var tableChildren = new List<DomElement>();
+            DomElement? caption = null;
+            var captionSeen = false;
+            var elementSeen = false;
+            foreach (var node in table.ChildNodes)
+            {
+                Visit();
+                if (node is DomElement child)
+                {
+                    var display = Display(child);
+                    if (child.LocalName == "caption")
+                    {
+                        if (captionSeen || elementSeen)
+                        { throw new UnsupportedLayoutException("Only one first-child HTML caption is supported."); }
+                        captionSeen = true;
+                        elementSeen = true;
+                        if (display != "none")
+                        {
+                            if (display != "table-caption")
+                            { throw new UnsupportedLayoutException("HTML captions require display:table-caption."); }
+                            Check(child, depth + 1, block: true, tableContext: true);
+                            caption = child;
+                        }
+                    }
+                    else
+                    {
+                        elementSeen = true;
+                        if (display != "none") { tableChildren.Add(child); }
+                    }
+                }
+                else if (node is DomText text && !IsCollapsibleWhitespace(text.Data))
+                { throw new UnsupportedLayoutException("Non-whitespace content requires unsupported anonymous table boxes."); }
+            }
             var columnCount = 0;
-            foreach (var group in TableChildren(table))
+            foreach (var group in tableChildren)
             {
                 var display = Display(group);
                 if (group.LocalName is not ("thead" or "tbody" or "tfoot")
                     || display is not ("table-header-group" or "table-row-group" or "table-footer-group"))
-                { throw new UnsupportedLayoutException("Tables require explicit HTML row groups; captions, columns and anonymous table boxes are unsupported."); }
+                { throw new UnsupportedLayoutException("Tables require explicit HTML row groups; columns and anonymous table boxes are unsupported."); }
                 CheckTablePart(group, depth + 1);
                 var pendingRows = new List<PendingTableRow>();
                 foreach (var row in TableChildren(group))
@@ -138,7 +174,7 @@ public static partial class StaticLayout
                 cancellation.ThrowIfCancellationRequested();
                 minimum[index] = Finite(minimum[index] + ratio * (maximum[index] - minimum[index]) + extra);
             }
-            return new(groups.AsReadOnly(), minimum, Finite(width), spacing);
+            return new(groups.AsReadOnly(), minimum, Finite(width), spacing, caption);
         }
 
         private List<TableRow> PositionTableCells(IReadOnlyList<PendingTableRow> sourceRows, out int columnCount)
@@ -366,9 +402,17 @@ public static partial class StaticLayout
                 .DefaultIfEmpty().Max();
         }
 
-        private (IReadOnlyList<LayoutBox> Groups, double Height) ArrangeTable(TablePlan plan, double x, double y, int depth)
+        private ArrangedTable ArrangeTable(TablePlan plan, double x, double y, int depth,
+            double wrapperX, double wrapperY, double wrapperWidth, LayoutEdges tablePadding, LayoutEdges tableBorder)
         {
             var groups = new List<LayoutBox>();
+            LayoutBox? caption = null;
+            if (plan.Caption is { } captionElement)
+            {
+                caption = Block(captionElement, wrapperX, wrapperY, wrapperWidth, null, depth + 1, tableContext: true);
+                var captionTableBorderY = Finite(caption.BorderBox.Y + caption.BorderBox.Height + caption.Margin.Bottom);
+                y = Finite(captionTableBorderY + tableBorder.Top + tablePadding.Top);
+            }
             var rowSpacing = plan.Columns.Length > 0 ? plan.Spacing : 0;
             var cursor = y + rowSpacing;
             foreach (var group in plan.Groups)
@@ -443,7 +487,22 @@ public static partial class StaticLayout
                 groups.Add(TableBox(group.Element, Rect(x + plan.Spacing, groupY, Math.Max(0, plan.Width - 2 * plan.Spacing), groupHeight),
                     rows, depth + 1));
             }
-            return (groups.AsReadOnly(), Finite(cursor - y));
+            var tableHeight = Finite(cursor - y);
+            if (caption is null) { return new(groups.AsReadOnly(), tableHeight, null, null); }
+
+            var tableBorderY = Finite(y - tablePadding.Top - tableBorder.Top);
+            var tablePaddingBox = Rect(x - tablePadding.Left, y - tablePadding.Top,
+                plan.Width + tablePadding.Left + tablePadding.Right,
+                tableHeight + tablePadding.Top + tablePadding.Bottom);
+            var tableBorderBox = Rect(wrapperX, tableBorderY, wrapperWidth,
+                tableHeight + tablePadding.Top + tablePadding.Bottom + tableBorder.Top + tableBorder.Bottom);
+            var tableGeometry = new LayoutTableBoxGeometry(
+                Rect(x, y, plan.Width, tableHeight), tablePaddingBox, tableBorderBox);
+            var wrapperHeight = Finite(Math.Max(0, tableBorderBox.Y + tableBorderBox.Height - wrapperY));
+            var children = new LayoutBox[groups.Count + 1];
+            children[0] = caption;
+            for (var index = 0; index < groups.Count; index++) { children[index + 1] = groups[index]; }
+            return new(children, wrapperHeight, Rect(wrapperX, wrapperY, wrapperWidth, wrapperHeight), tableGeometry);
         }
 
         private LayoutBox TableBox(DomElement element, LayoutRect bounds, List<LayoutBox> children, int depth)
@@ -535,6 +594,14 @@ public static partial class StaticLayout
                 Content = ShiftRect(box.Content),
                 PaddingBox = ShiftRect(box.PaddingBox),
                 BorderBox = ShiftRect(box.BorderBox),
+                TableBoxGeometry = box.TableBoxGeometry is { } tableGeometry
+                    ? tableGeometry with
+                    {
+                        Content = ShiftRect(tableGeometry.Content),
+                        PaddingBox = ShiftRect(tableGeometry.PaddingBox),
+                        BorderBox = ShiftRect(tableGeometry.BorderBox)
+                    }
+                    : null,
                 Children = children,
                 Lines = lines,
                 Flow = flow,

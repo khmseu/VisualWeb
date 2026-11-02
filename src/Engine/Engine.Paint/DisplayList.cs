@@ -172,7 +172,9 @@ public static class DisplayListBuilder
             }
             void TableLayers(LayoutBox table, int depth)
             {
-                var groups = table.Children;
+                foreach (var caption in table.Children.Where(child => child.Element.LocalName == "caption"))
+                { Background(caption, depth + 1); }
+                var groups = table.Children.Where(child => child.Element.LocalName != "caption").ToArray();
                 foreach (var group in groups)
                 {
                     Check(depth + 1);
@@ -204,7 +206,7 @@ public static class DisplayListBuilder
             void BackgroundLayer(LayoutBox box)
             {
                 if (box != root && box != propagated && Color(box, "background-color") is { Alpha: > 0 } background)
-                { Add(new FillRectangle(box.BorderBox, background)); }
+                { Add(new FillRectangle(box.TableBoxGeometry?.BorderBox ?? box.BorderBox, background)); }
                 Border(box);
             }
             void WithClip(LayoutBox box, Action paintChildren)
@@ -238,8 +240,8 @@ public static class DisplayListBuilder
         void Border(LayoutBox box)
         {
             var style = Style(box);
-            var b = box.BorderBox;
-            var p = box.PaddingBox;
+            var b = box.TableBoxGeometry?.BorderBox ?? box.BorderBox;
+            var p = box.TableBoxGeometry?.PaddingBox ?? box.PaddingBox;
             var sides = new[]
             {
                 ("top", new LayoutRect(b.X, b.Y, b.Width, p.Y - b.Y), p.Y - b.Y),

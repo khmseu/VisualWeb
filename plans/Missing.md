@@ -513,7 +513,7 @@ and height work has the separate
 limit (default 1,000,000). Attribute scanning retains the shared text and
 cancellation budgets. Focused layout tests cover geometry, row-group clipping,
 HTML parsing and limits; paint tests verify overlapping row/cell background
-order. Remaining table gaps include captions/columns, anonymous/arbitrary
+order. Remaining table gaps include columns, anonymous/arbitrary
 tables, and other listed exclusions.
 The preceding `colspan` increment remains recorded in commit `3e568b1`:
 layout (807), Content (92), all 16,130 solution tests, solution build and
@@ -530,6 +530,15 @@ solution tests and solution formatting verification pass locally. Commit
 first Windows arm64 run hit a duplicate-request failure in the unrelated
 `UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` browser
 test, and the isolated arm64 rerun passed (run 41367865554).
+
+Pass 5 implements one first-element-child HTML caption above a canonical
+table. `display:table-caption` is accepted and supplied by the UA stylesheet;
+the wrapper matches the table border-edge width, and caption content does not
+affect intrinsic columns. Caption and table backgrounds/borders use separate
+geometry. `caption-side`, bottom captions, columns/colgroups and the other
+documented table exclusions remain unsupported. CSS (1,139), layout (823)
+and paint (70) focused suites pass locally; solution-wide validation and CI
+remain pending.
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the

@@ -540,6 +540,19 @@ public sealed class PaintTests
             cellBackground.Bounds.Y + cellBackground.Bounds.Height));
     }
 
+    [Fact]
+    public void CaptionAndTableBackgroundsUseSeparateWrapperAndTableBoxes()
+    {
+        const string html = "<table><caption>Title</caption><tbody><tr><td>x</td></tr></tbody></table>";
+        var list = Page(html,
+            "table{display:table;background-color:red}caption{display:table-caption;background-color:blue}" +
+            "tbody{display:table-row-group}tr{display:table-row}td{display:table-cell;vertical-align:top}");
+        var table = Assert.Single(list.Commands.OfType<FillRectangle>(), fill => fill.Color == Red);
+        var caption = Assert.Single(list.Commands.OfType<FillRectangle>(), fill => fill.Color == Blue);
+
+        Assert.True(caption.Bounds.Y + caption.Bounds.Height <= table.Bounds.Y);
+    }
+
     [Theory]
     [InlineData("html{background-color:red} body{background-color:blue}", 255, 0, 0)]
     [InlineData("body{background-color:blue}", 0, 0, 255)]

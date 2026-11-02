@@ -5705,3 +5705,76 @@ Windows-arm64 attempt failed only in the unrelated browser test
 concurrent request assertion observed duplicate requests; the isolated
 Windows-arm64 rerun passed, including the full solution test and smoke steps.
 The transient failure and successful retry are recorded rather than hidden.
+
+### KP-206 - Pass 5 caption layout scope remains open
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: `plans/Missing.md`, `docs/text-layout.md`,
+  `src/Engine/Engine.Layout/TableLayout.cs`,
+  `src/Engine/Engine.Css/CssProperties.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `specs/cache/html.html#the-caption-element`,
+  `specs/cache/css2-tables.html#caption-position`, and
+  `specs/manifest.json` entries `html` and `css2-tables`.
+- Related: Pass 5 of the ten-pass request and Q-024.
+
+**Belegt:** The tracker identifies table captions as an unimplemented table
+layout gap. The HTML parser already builds caption elements in table context
+(historical KP-020), but `TableLayout` still rejects them; the layout
+regression suite asserts that failure. The CSS parser does not accept
+`display: table-caption` or `caption-side`. HTML requires a caption as the
+first element child of a table. CSS 2.2 defines top and bottom positions with
+top as the initial value and places captions as normal block boxes in a table
+wrapper whose width is the table's border-edge width. The cached HTML source
+was checked 2026-10-04 and CSS 2.2 on 2026-10-28, both within 30 days on this
+documentation date.
+
+**Vorschlag, nicht beschlossen:** Define Pass 5 as one HTML caption laid out
+above the canonical table using the existing table width, without changing
+intrinsic column sizing, with the necessary `display: table-caption` support;
+keep bottom placement and `caption-side` unsupported. Alternatively, include
+both top/bottom positions and the bounded `caption-side: top|bottom` CSS
+property, which is more compatible but expands the CSS and layout surface. The
+user must choose one scope or block further actions. No caption behavior has
+been implemented in this pass.
+
+### KP-207 - Pass 5 top-only caption scope selected
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Source: explicit user selection of “Top-only (recommended)” in response to
+  Q-024 in the current session; this entry is its durable summary.
+- Related: DEC-028, Q-024 and KP-206.
+
+**User decision:** Support one HTML caption above the canonical table, with
+`display: table-caption` and the CSS initial top position. The wrapper width
+uses the table's border-edge width, and caption content does not change
+intrinsic column sizing. Do not add `caption-side` or bottom placement in this
+pass.
+
+**Status:** Implemented in KP-208. The selected scope is complete; preserve
+explicit failures outside this caption subset.
+
+### KP-208 - Pass 5 top-only table caption implemented and locally validated
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: `src/Engine/Engine.Css/CssProperties.cs`,
+  `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Layout/TableLayout.cs`,
+  `src/Engine/Engine.Layout/StaticLayout.cs`,
+  `src/Engine/Engine.Paint/DisplayList.cs`,
+  the CSS/layout/paint regression tests, `docs/css.md`,
+  `docs/text-layout.md`, `docs/painting.md`, project READMEs and
+  `plans/Missing.md`.
+- Related: DEC-028, Q-024, KP-206/KP-207 and the ten-pass request.
+
+**Belegt:** CSS accepts `display:table-caption`, and the UA stylesheet assigns
+it to `caption`. The canonical table layout accepts one first-element-child
+HTML caption above the table, with wrapper width equal to the table's
+border-edge width; caption intrinsic content does not participate in column
+sizing. Separate table-box geometry keeps table background/border painting
+from extending over the caption. `caption-side`, bottom placement and other
+table exclusions remain unsupported.
+
+**Validierung:** CSS (1,139), Layout (823), Paint (70) and all 16,168 solution
+tests pass. The solution build has zero warnings/errors; formatting
+verification and `git diff --check` pass. Commit, push and CI remain pending.

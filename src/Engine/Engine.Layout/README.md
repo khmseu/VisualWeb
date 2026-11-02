@@ -54,12 +54,15 @@ are shared evenly across covered rows. The materialized columns are capped by
 [`LayoutOptions.MaxTableRowSpanOperations`](./StaticLayout.cs). Table,
 row-group and row backgrounds
 paint before cell backgrounds so later rows cannot cover spanning cells.
-Captions/columns, nested tables/widgets and other
+One first-child HTML caption with `display:table-caption` is laid out above
+the table at the table's border-edge width; caption content does not affect
+intrinsic column sizing. Bottom captions, `caption-side`, columns/colgroups,
+nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify
-values to text alignment; row/group hints and vertical alignment remain
-unsupported.
+values to text alignment; row/group hints and vertical-alignment values other
+than top remain unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

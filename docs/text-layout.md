@@ -236,22 +236,28 @@ including internal row spacing, is distributed evenly across its covered rows.
 Cell block margins do not collapse through cell edges. Table, row-group and
 row backgrounds paint before cell backgrounds, so later rows cannot cover a
 spanning cell; solid borders use the existing paint flow.
+One first-element-child HTML `caption` is supported above the table when it
+computes to `display: table-caption`. Its wrapper uses the table border-edge
+width, while the caption does not affect intrinsic column sizing; caption and
+table backgrounds/borders retain separate geometry. This is the initial
+top-only position: `caption-side` and bottom captions remain unsupported.
 UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
 is not synthesized. Measurement and arrangement share node, text, shaping,
 line, glyph, box, depth and cancellation budgets.
 
-Explicit failures remain for captions, columns/colgroups, anonymous or
-arbitrary CSS tables, nested tables/widgets,
+Explicit failures remain for columns/colgroups, anonymous or arbitrary CSS
+tables, nested tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, other cell alignments, nonzero cell margins, cell maximum height,
-nonautomatic table/row/group heights, row/group sizing/decorations,
+nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 `cellspacing`, `valign`, `nowrap`). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
 maps to `center`. Row/group `align`, left/right table floats, other table
-alignment values, `valign` and vertical cell alignment remain unsupported.
+alignment values, `valign` and vertical-alignment values other than `top`
+remain unsupported.
 Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
 have zero intrinsic content size.
 

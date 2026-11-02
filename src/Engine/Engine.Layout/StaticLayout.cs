@@ -39,10 +39,14 @@ public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyLis
 public abstract record LayoutFlowItem;
 public sealed record LayoutBlockItem(LayoutBox Box) : LayoutFlowItem;
 public sealed record LayoutLineItem(LayoutLine Line) : LayoutFlowItem;
+/// <summary>Table-box geometry when a table's layout box also represents its caption wrapper.</summary>
+/// <remarks>Spec: css2-tables; <see href="https://www.w3.org/TR/CSS22/tables.html#model">table wrapper and table box</see>.</remarks>
+public sealed record LayoutTableBoxGeometry(LayoutRect Content, LayoutRect PaddingBox, LayoutRect BorderBox);
 public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRect PaddingBox,
     LayoutRect BorderBox, LayoutEdges Margin, IReadOnlyList<LayoutBox> Children, IReadOnlyList<LayoutLine> Lines)
 {
     public IReadOnlyList<LayoutFlowItem> Flow { get; init; } = Array.Empty<LayoutFlowItem>();
+    public LayoutTableBoxGeometry? TableBoxGeometry { get; init; }
     /// <summary>Outside disc-marker bounds, separate from selectable document text.</summary>
     /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.
     /// The finite LTR subset uses a 0.3em disc and a 0.5em gap before the content edge.</remarks>
@@ -285,9 +289,9 @@ public static partial class StaticLayout
         [SuppressMessage("Sonar", "S1192:String literals should not be duplicated", Justification = "The repeated CSS box-model vocabulary is intentionally local to the bounded block-formatting calculation.")]
         private LayoutBox Block(DomElement element, double containingX, double top, double containingWidth,
             double? containingHeight, int depth, bool isRoot = false, bool suppressTopMargin = false,
-            bool suppressBottomMargin = false, double? cellWidth = null)
+            bool suppressBottomMargin = false, double? cellWidth = null, bool tableContext = false)
         {
-            Check(element, depth, block: true, tableContext: cellWidth is not null);
+            Check(element, depth, block: true, tableContext: cellWidth is not null || tableContext);
             Visit();
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             var style = Style(element);
@@ -344,6 +348,8 @@ public static partial class StaticLayout
             var blockLines = new List<LayoutLine>();
             var flow = new List<LayoutFlowItem>();
             var inline = new List<InlineUnit>();
+            LayoutTableBoxGeometry? tableBoxGeometry = null;
+            LayoutRect? tableWrapperBounds = null;
             var cursor = contentY;
             double? previousBlockBottomMargin = null;
             if (element.LocalName == "input")
@@ -353,10 +359,17 @@ public static partial class StaticLayout
             }
             if (table is not null)
             {
-                var arranged = ArrangeTable(table, contentX, contentY, depth);
-                childBoxes.AddRange(arranged.Groups);
-                flow.AddRange(arranged.Groups.Select(group => new LayoutBlockItem(group)));
-                cursor += arranged.Height;
+                var arranged = ArrangeTable(table, contentX, contentY, depth,
+                    borderX, borderY, width + horizontal, padding, border);
+                childBoxes.AddRange(arranged.Children);
+                flow.AddRange(arranged.Children.Select(child => new LayoutBlockItem(child)));
+                if (arranged.WrapperBounds is { } wrapperBounds)
+                {
+                    tableBoxGeometry = arranged.TableBoxGeometry;
+                    tableWrapperBounds = wrapperBounds;
+                    cursor = wrapperBounds.Y + wrapperBounds.Height;
+                }
+                else { cursor += arranged.Height; }
             }
             foreach (var child in table is not null || element.LocalName is "input" or "textarea" or "select" ? [] : element.ChildNodes)
             {
@@ -414,9 +427,16 @@ public static partial class StaticLayout
             var paddingBox = Rect(contentX - padding.Left, contentY - padding.Top,
                 width + padding.Left + padding.Right, contentHeight + padding.Top + padding.Bottom);
             var borderBox = Rect(borderX, borderY, width + horizontal, contentHeight + vertical);
+            if (tableWrapperBounds is { } wrapper)
+            {
+                content = wrapper;
+                paddingBox = wrapper;
+                borderBox = wrapper;
+            }
             return new(element, content, paddingBox, borderBox, margin, childBoxes.AsReadOnly(), blockLines.AsReadOnly())
             {
                 Flow = flow.AsReadOnly(),
+                TableBoxGeometry = tableBoxGeometry,
                 DiscMarker = discMarker,
                 CircleMarker = circleMarker,
                 SquareMarker = squareMarker,

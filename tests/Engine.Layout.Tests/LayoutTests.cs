@@ -994,6 +994,44 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void TopCaptionUsesTableWrapperWidthWithoutChangingIntrinsicColumns()
+    {
+        const string html = """
+            <table id=t><caption id=caption>one two three four</caption>
+            <tbody><tr><td>x</td></tr></tbody></table>
+            """;
+        const string tableCss = "table{border:2px solid red;padding:3px}";
+        const string css = tableCss + "caption{border:1px solid blue;padding:2px}";
+        var root = UnorderedList(html, css).Root!;
+        var table = Find(root, "t");
+        var caption = Find(root, "caption");
+        var tableBox = Assert.IsType<LayoutTableBoxGeometry>(table.TableBoxGeometry);
+        var withoutCaption = UnorderedList("<table id=t><tbody><tr><td>x</td></tr></tbody></table>",
+            tableCss).Root!;
+        var plainTable = Find(withoutCaption, "t");
+
+        Assert.Equal(table.BorderBox.Y, caption.BorderBox.Y);
+        Assert.Equal(table.BorderBox.Width, caption.BorderBox.Width);
+        Assert.Equal(table.BorderBox.Width, tableBox.BorderBox.Width);
+        Assert.True(caption.BorderBox.Height > 10);
+        Assert.Equal(caption.BorderBox.Y + caption.BorderBox.Height + caption.Margin.Bottom,
+            tableBox.BorderBox.Y);
+        Assert.Equal(plainTable.BorderBox.Width, tableBox.BorderBox.Width);
+        Assert.True(table.BorderBox.Height > tableBox.BorderBox.Height);
+    }
+
+    [Fact]
+    public void HiddenTopCaptionDoesNotCreateCaptionWrapperGeometry()
+    {
+        var root = UnorderedList(
+            "<table id=t><caption id=caption>Title</caption><tbody><tr><td>x</td></tr></tbody></table>",
+            "caption{display:none}").Root!;
+
+        Assert.Null(Find(root, "t").TableBoxGeometry);
+        Assert.Null(TryFind(root, "caption"));
+    }
+
+    [Fact]
     public void ExplicitTableWidthDistributesSurplusAndHonorsWrapperAutoMargins()
     {
         var root = UnorderedList("<table id=t><tr><td id=a>aa bb</td><td id=b>x</td></tr>"
@@ -1122,7 +1160,7 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "caption{display:block}")]
     [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
     [InlineData("<table><tr><td><input></td></tr></table>", "")]

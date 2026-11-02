@@ -260,7 +260,7 @@ internal static class CssProperties
         if (name == "display")
         {
             return Keyword(keyword, "none", "block", "inline", "inline-block", "list-item",
-                "table", "table-row-group", "table-header-group", "table-footer-group", "table-row", "table-cell");
+                "table", "table-caption", "table-row-group", "table-header-group", "table-footer-group", "table-row", "table-cell");
         }
         if (name == "table-layout") { return Keyword(keyword, "auto"); }
         if (name == "border-collapse") { return Keyword(keyword, "separate"); }

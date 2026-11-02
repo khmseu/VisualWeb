@@ -17,6 +17,8 @@ Text-backed inline solid backgrounds use ordered `FillRectangle` fragments
 before line text and inside existing scroll clips. They share the display-list
 command budget; inline-widget/line-break backgrounds and non-color background
 effects remain unsupported.
+Table captions use separate wrapper and table-box geometry, keeping the table's
+background and border from covering its supported top caption.
 
 See the [painting guide](../../../docs/painting.md) for scope, ownership, budgets
 and offline evidence, the [project map](../../../docs/project-map.md) and

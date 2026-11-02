@@ -218,6 +218,10 @@ The table rendering rules also support ASCII-case-insensitive
 horizontal LTR layout subset. Other table alignment values and legacy
 descendant-margin behavior remain unsupported. Justification retains the
 layout limitations documented in the text guide.
+The UA stylesheet gives `caption` `display:table-caption`; layout supports
+one first-element-child caption at the initial top position. The finite display
+property accepts `table-caption`, but `caption-side` and bottom captions remain
+unsupported.
 
 The [HTML `font color` hint](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) uses the full
