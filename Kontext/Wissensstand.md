@@ -161,8 +161,10 @@
   und bottom bleiben unsupported (DEC-028/KP-207/KP-208). CSS (1.139),
   Layout (823), Paint (70) und alle 16.168 Solution-Tests bestehen lokal;
   Solution-Build (0 Warnungen/Fehler), Formatpruefung und `git diff --check`
-  bestehen ebenfalls. Commit/Push und CI stehen noch aus. Die lokalen HTML-
-  und CSS-2.2-Quellen waren am 2026-11-02 innerhalb der 30-Tage-Frist.
+  bestehen ebenfalls. Commit `b0d0441` ist gepusht; Linux-Entwicklung,
+  Windows-Confinement und Push-on-main-CI bestehen (Runs 41387361158,
+  41387361276 und 41387360887). Die lokalen HTML- und CSS-2.2-Quellen waren
+  am 2026-11-02 innerhalb der 30-Tage-Frist.
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

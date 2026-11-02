@@ -537,8 +537,12 @@ the wrapper matches the table border-edge width, and caption content does not
 affect intrinsic columns. Caption and table backgrounds/borders use separate
 geometry. `caption-side`, bottom captions, columns/colgroups and the other
 documented table exclusions remain unsupported. CSS (1,139), layout (823)
-and paint (70) focused suites pass locally; solution-wide validation and CI
-remain pending.
+and paint (70) focused suites pass locally. The zero-warning solution build,
+all 16,168 solution tests and formatting verification pass. Commit `b0d0441`
+is pushed; Linux development, Windows confinement and Push on main workflows
+pass (runs [41387361158](https://github.com/khmseu/VisualWeb/actions/runs/41387361158),
+[41387361276](https://github.com/khmseu/VisualWeb/actions/runs/41387361276)
+and [41387360887](https://github.com/khmseu/VisualWeb/actions/runs/41387360887)).
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the
