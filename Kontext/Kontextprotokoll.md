@@ -5785,3 +5785,61 @@ Windows confinement
 and Push on main
 ([41387360887](https://github.com/khmseu/VisualWeb/actions/runs/41387360887))
 workflows pass.
+
+### KP-209 - Pass 6 table-column scope needs user choice
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: `plans/Missing.md` priority 1 and section 5,
+  `src/Engine/Engine.Layout/TableLayout.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `specs/cache/css2-tables.html#auto-table-layout`,
+  `specs/cache/html.html#the-colgroup-element`,
+  `specs/cache/html.html#the-col-element` and `specs/manifest.json`.
+- Related: ten-pass request, KP-208 and open question Q-025.
+
+**Belegt:** The tracker continues to prioritize ordinary table rendering and
+lists columns/colgroups as a table-layout gap. `PlanTable` currently rejects
+them. CSS 2.2 automatic layout uses column widths and column-group widths as
+constraints; HTML defines bounded positive `span` values for `colgroup` and
+`col`. The cached HTML and CSS 2.2 sources are within the 30-day refresh
+window on this date.
+
+**Offen:** Column sizing constraints and column/column-group background
+painting are independently useful but require different implementation and
+paint behavior. Q-025 asks which bounded increment to implement first; no
+column behavior has been changed in this pass.
+
+**Status:** Q-025 was resolved by the user's selection recorded in KP-210.
+
+### KP-210 - Pass 6 bounded column-width scope selected
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Source: explicit user selection of “widths” in response to Q-025 in the
+  current session; this entry is its durable summary.
+- Related: KP-208/KP-209 and the ten-pass request.
+
+**User decision:** Support bounded positive HTML `span` expansion for
+`colgroup`/`col` and absolute CSS width constraints in automatic table column
+sizing. Percentage widths and column/column-group backgrounds remain outside
+this increment.
+
+**Status:** Selected, not implemented. Define exact accepted absolute CSS
+lengths from existing CSS/layout behavior, preserve table and operation
+budgets, and keep unsupported cases explicit.
+
+### KP-211 - Pass 6 column widths implemented; focused tests pass
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Source: verified working-tree implementation, focused test results, and
+  updated guides/tracker in the current session.
+- Related: Q-025/KP-209/KP-210 and the ten-pass request.
+
+**Belegt:** `colgroup`/`col` now contribute bounded HTML-span tracks to
+automatic table layout. Nonnegative column widths computed to CSS pixels
+constrain track minimum and maximum widths; group widths raise the minimum
+across their tracks. Supported `em`/`rem` lengths resolve through CSS first.
+Percentage widths and column/column-group backgrounds still fail explicitly.
+CSS tests (1,140) and layout tests (834) pass; the solution build has zero
+warnings/errors and format verification passes. Guides, project READMEs and
+`plans/Missing.md` describe the supported subset. All 15,786 solution tests
+pass. Commit, push and CI remain pending.

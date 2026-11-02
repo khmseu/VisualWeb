@@ -165,6 +165,13 @@
   Windows-Confinement und Push-on-main-CI bestehen (Runs 41387361158,
   41387361276 und 41387360887). Die lokalen HTML- und CSS-2.2-Quellen waren
   am 2026-11-02 innerhalb der 30-Tage-Frist.
+  Pass 6 implementiert inzwischen kanonische Column-/Column-Group-Displays,
+  begrenzte HTML-`span`-Tracks und absolute CSS-Breitenconstraints fuer
+  automatische Tabellen. Prozentbreiten und Spaltenhintergruende bleiben
+  ausgeschlossen (Q-025/KP-209/KP-210/KP-211). CSS (1.140) und Layout (834)
+  bestehen fokussiert; Solution-Build (0 Warnungen/Fehler) und Formatpruefung
+  bestehen ebenfalls. Der Volltest besteht (15.786 Tests). Commit, Push und CI
+  stehen noch aus.
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

@@ -221,7 +221,9 @@ layout limitations documented in the text guide.
 The UA stylesheet gives `caption` `display:table-caption`; layout supports
 one first-element-child caption at the initial top position. The finite display
 property accepts `table-caption`, but `caption-side` and bottom captions remain
-unsupported.
+unsupported. The UA stylesheet also gives `colgroup` and `col` their canonical
+`table-column-group` and `table-column` display values; layout supports their
+bounded HTML spans and the documented automatic-table width constraints.
 
 The [HTML `font color` hint](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) uses the full
@@ -263,7 +265,7 @@ Supported longhands:
 
 | Group   | Properties and supported values                                                                                                                                                                                             |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block, list-item, table, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                                              |
+| Display | `display`: none, block, inline, inline-block, list-item, table, table-caption, table-column-group, table-column, table-row-group, table-header-group, table-footer-group, table-row, table-cell                             |
 | Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                                          |
 | Lists   | inherited `list-style-type`: disc/circle/square/decimal/decimal-leading-zero/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none         |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                                        |
@@ -417,7 +419,8 @@ Canonical HTML tables now receive their finite table display defaults, 2px
 spacing, and 1px top-aligned cell padding. Automatic column sizing and explicit
 downstream exclusions are documented in the
 [table layout subset](text-layout.md#basic-automatic-tables). Accepted display
-values do not imply anonymous table generation or arbitrary CSS table layout.
+values include captions and column/group boxes, but do not imply anonymous
+table generation or arbitrary CSS table layout.
 
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`) give `figure` 40px inline margins. The horizontal LTR subset

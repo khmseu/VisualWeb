@@ -852,6 +852,61 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void ColumnWidthsRaiseTrackMinimumAndMaximumWidths()
+    {
+        const string html = """
+            <table id=t><colgroup><col style="width:30px"><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(43, Find(root, "t").Content.Width);
+        Assert.Equal(30, Find(root, "a").BorderBox.Width);
+        Assert.Equal(7, Find(root, "b").BorderBox.Width);
+    }
+
+    [Fact]
+    public void RelativeColumnWidthsUseTheirComputedPixelValues()
+    {
+        const string html = """
+            <table id=t><colgroup><col style="width:2em"></colgroup>
+            <tr><td id=a>x</td></tr></table>
+            """;
+        var root = UnorderedList(html, "table{font-size:10px}").Root!;
+
+        Assert.Equal(24, Find(root, "t").Content.Width);
+        Assert.Equal(20, Find(root, "a").BorderBox.Width);
+    }
+
+    [Fact]
+    public void ColumnSpanAppliesItsWidthToEveryGeneratedTrack()
+    {
+        const string html = """
+            <table id=t><colgroup><col span=2 style="width:15px"></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(36, Find(root, "t").Content.Width);
+        Assert.Equal(15, Find(root, "a").BorderBox.Width);
+        Assert.Equal(15, Find(root, "b").BorderBox.Width);
+    }
+
+    [Fact]
+    public void ColumnGroupWidthIsDistributedAcrossItsColumns()
+    {
+        const string html = """
+            <table id=t><colgroup style="width:45pt"><col><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(66, Find(root, "t").Content.Width);
+        Assert.Equal(30, Find(root, "a").BorderBox.Width);
+        Assert.Equal(30, Find(root, "b").BorderBox.Width);
+    }
+
+    [Fact]
     public void AutomaticTablesDistributeSpanningCellIntrinsicConstraintsAcrossCoveredColumns()
     {
         const string html = """
@@ -891,6 +946,23 @@ public sealed class LayoutTests
         Assert.NotNull(UnorderedList(html, options: new() { MaxTableColumns = columns }).Root);
     }
 
+    [Theory]
+    [InlineData("<colgroup span='{0}'></colgroup>")]
+    [InlineData("<colgroup><col span='{0}'></col></colgroup>")]
+    public void ColumnElementSpansUseBoundedHtmlParsing(string template)
+    {
+        foreach (var (value, columns) in new (string? Value, int Columns)[]
+        {
+            (null, 1), ("0", 1), ("invalid", 1), (" 2suffix", 2), ("2", 2), ("1001", 1000)
+        })
+        {
+            var attribute = value is null ? string.Empty : value;
+            var html = "<table>" + string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                template, attribute) + "<tbody><tr><td>x</td></tr></tbody></table>";
+            Assert.NotNull(UnorderedList(html, options: new() { MaxTableColumns = columns }).Root);
+        }
+    }
+
     [Fact]
     public void TableColumnSpanLimitAndAttributeTextBudgetFailBeforeGridAllocation()
     {
@@ -909,6 +981,18 @@ public sealed class LayoutTests
             UnorderedList(span, options: new() { MaxTableColumnOperations = 9 }));
         Assert.Throws<LayoutLimitException>(() =>
             UnorderedList("<table><tr><td colspan=0001>x</td></tr></table>",
+                options: new() { MaxTextCharacters = 3 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<table><colgroup><col span=2 style='width:5px'></colgroup><tr><td>x</td></tr></table>",
+                options: new() { MaxTableColumnOperations = 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<table><colgroup span=2></colgroup><tr><td>x</td></tr></table>",
+                options: new() { MaxTableColumns = 1 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<table><colgroup style='width:60px'><col><col></colgroup><tr><td>x</td><td>y</td></tr></table>",
+                options: new() { MaxTableColumnOperations = 3 }));
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList("<table><colgroup><col span=0001></colgroup><tr><td>x</td></tr></table>",
                 options: new() { MaxTextCharacters = 3 }));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             UnorderedList("<table></table>", options: new() { MaxTableColumns = 0 }));
@@ -1161,7 +1245,12 @@ public sealed class LayoutTests
 
     [Theory]
     [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "caption{display:block}")]
-    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "col{width:50%}")]
+    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "colgroup{width:50%}")]
+    [InlineData("<table><colgroup width=20><col></colgroup><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><colgroup><col span=2></colgroup><tr><td>x</td></tr></table>", "colgroup{background-color:red}")]
+    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "col{background-color:red}")]
+    [InlineData("<table><colgroup span=2><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
     [InlineData("<table><tr><td><input></td></tr></table>", "")]
     [InlineData("<table width=100><tr><td>x</td></tr></table>", "")]

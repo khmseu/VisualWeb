@@ -77,6 +77,8 @@ public static class CssStyleEngine
         li { display: list-item }
         table { display: table; border-spacing: 2px }
         caption { display: table-caption }
+        colgroup { display: table-column-group }
+        col { display: table-column }
         tbody { display: table-row-group }
         thead { display: table-header-group }
         tfoot { display: table-footer-group }

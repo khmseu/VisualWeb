@@ -114,6 +114,18 @@ public sealed class CascadeTests
         Assert.NotEmpty(Compute(doc, new CssStyleSource("caption{caption-side:bottom}")).Diagnostics);
     }
 
+    [Fact]
+    public void ColumnElementsUseCanonicalTableDisplayDefaults()
+    {
+        var doc = Document("<table><colgroup id=group><col id=column></colgroup><tr><td>x</td></tr></table>");
+        var result = Compute(doc);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("table-column-group"),
+            result.Styles[doc.GetElementById("group")!]["display"]);
+        Assert.Equal(new CssKeyword("table-column"),
+            result.Styles[doc.GetElementById("column")!]["display"]);
+    }
+
     [Theory]
     [InlineData("border-spacing:-1px")]
     [InlineData("border-spacing:10%")]

@@ -513,7 +513,8 @@ and height work has the separate
 limit (default 1,000,000). Attribute scanning retains the shared text and
 cancellation budgets. Focused layout tests cover geometry, row-group clipping,
 HTML parsing and limits; paint tests verify overlapping row/cell background
-order. Remaining table gaps include columns, anonymous/arbitrary
+order. Remaining table gaps include column backgrounds, percentage widths,
+anonymous/arbitrary
 tables, and other listed exclusions.
 The preceding `colspan` increment remains recorded in commit `3e568b1`:
 layout (807), Content (92), all 16,130 solution tests, solution build and
@@ -535,14 +536,22 @@ Pass 5 implements one first-element-child HTML caption above a canonical
 table. `display:table-caption` is accepted and supplied by the UA stylesheet;
 the wrapper matches the table border-edge width, and caption content does not
 affect intrinsic columns. Caption and table backgrounds/borders use separate
-geometry. `caption-side`, bottom captions, columns/colgroups and the other
-documented table exclusions remain unsupported. CSS (1,139), layout (823)
+geometry. `caption-side`, bottom captions and other documented table
+exclusions remained unsupported at the end of Pass 5. CSS (1,139), layout (823)
 and paint (70) focused suites pass locally. The zero-warning solution build,
 all 16,168 solution tests and formatting verification pass. Commit `b0d0441`
 is pushed; Linux development, Windows confinement and Push on main workflows
 pass (runs [41387361158](https://github.com/khmseu/VisualWeb/actions/runs/41387361158),
 [41387361276](https://github.com/khmseu/VisualWeb/actions/runs/41387361276)
 and [41387360887](https://github.com/khmseu/VisualWeb/actions/runs/41387360887)).
+
+Pass 6 adds canonical column/group displays and bounded HTML `span` expansion
+for `colgroup`/`col`. Nonnegative CSS widths computed to pixels on a column
+constrain that track's minimum and maximum; a group width raises the minimum
+across its tracks, shared evenly. Percentage widths and backgrounds on either element
+remain unsupported. CSS (1,140), Layout (834), the zero-warning solution build and
+format verification pass locally. The complete solution test run passes
+(15,786 tests).
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the

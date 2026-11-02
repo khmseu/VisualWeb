@@ -202,9 +202,9 @@ ownership are implied.
 
 ### Basic automatic tables
 
-Canonical HTML `table`/`thead`/`tbody`/`tfoot`/`tr`/`td`/`th` boxes support
-content-sized automatic columns, separate borders and one nonnegative
-`border-spacing` length. See [CSS 2.2 automatic table layout](https://www.w3.org/TR/CSS22/tables.html#auto-table-layout)
+Canonical HTML `table`/`caption`/`colgroup`/`col`/`thead`/`tbody`/`tfoot`/
+`tr`/`td`/`th` boxes support content-sized automatic columns, separate borders
+and one nonnegative `border-spacing` length. See [CSS 2.2 automatic table layout](https://www.w3.org/TR/CSS22/tables.html#auto-table-layout)
 (local ID `css2-tables`). Each column takes its cells' maximum minimum/maximum
 intrinsic widths. A cell with a bounded positive `colspan` contributes minimum
 and maximum intrinsic constraints across all covered columns; each deficit is
@@ -229,6 +229,16 @@ bounds, then equal beyond them.
 CSS 2.2 permits UA-defined automatic distribution; this is a finite policy,
 not a claim of matching every browser.
 
+HTML `colgroup`/`col` definitions add tracks before row groups. Absent, invalid
+and zero `span` values become one; positive values are capped at 1000, and the
+resulting track count is checked against `LayoutOptions.MaxTableColumns` before
+allocation. A `col` width that computes to a nonnegative CSS-pixel value raises
+that track's minimum and maximum; a `colgroup` width that computes to pixels
+raises the minimum across its tracks, with any deficit shared evenly. Supported
+absolute units convert to pixels, and supported `em`/`rem` lengths resolve
+through CSS before sizing. Percentage column/group widths and backgrounds
+attached to either element remain unsupported and fail explicitly.
+
 Header groups precede ordinary groups and footer groups follow them.
 Cells are top-aligned and equalized to the row's maximum border-box height;
 specified cell height is a minimum. A spanning cell's required height,
@@ -245,8 +255,8 @@ UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
 is not synthesized. Measurement and arrangement share node, text, shaping,
 line, glyph, box, depth and cancellation budgets.
 
-Explicit failures remain for columns/colgroups, anonymous or arbitrary CSS
-tables, nested tables/widgets,
+Explicit failures remain for anonymous or arbitrary CSS tables, nested
+tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, other cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,

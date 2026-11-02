@@ -100,8 +100,9 @@ group/row/cell block flow for table/cell backgrounds, solid borders and text.
 Separate-border spacing remains transparent to the table background.
 Table, row-group and row backgrounds paint in order beneath cell backgrounds.
 A top caption has separate wrapper and table-box geometry, so table backgrounds
-and borders do not extend over the caption. This does not imply collapsed-border
-or broader table-layer painting.
+and borders do not extend over the caption. Column and column-group backgrounds
+remain unsupported. This does not imply collapsed-border or broader table-layer
+painting.
 
 - The root background covers the viewport and is not repainted on its box.
   For an HTML root with transparent background, the first body child's

@@ -56,8 +56,10 @@ row-group and row backgrounds
 paint before cell backgrounds so later rows cannot cover spanning cells.
 One first-child HTML caption with `display:table-caption` is laid out above
 the table at the table's border-edge width; caption content does not affect
-intrinsic column sizing. Bottom captions, `caption-side`, columns/colgroups,
-nested tables/widgets and other
+intrinsic column sizing. Bounded HTML `colgroup`/`col` spans add tracks, and
+computed nonnegative CSS-pixel widths constrain column/group automatic sizing;
+percentage widths and column/column-group backgrounds remain unsupported.
+Bottom captions, `caption-side`, nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify

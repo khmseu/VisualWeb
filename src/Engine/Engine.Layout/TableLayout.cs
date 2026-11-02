@@ -14,6 +14,7 @@ public static partial class StaticLayout
         private sealed record TableCell(DomElement Element, int Column, int ColumnSpan, int RowSpan);
         private sealed record TableRow(DomElement Element, IReadOnlyList<TableCell> Cells);
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
+        private sealed record ColumnGroupWidthConstraint(int Start, int Span, double Width);
         private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing,
             DomElement? Caption);
         private sealed record ArrangedTable(IReadOnlyList<LayoutBox> Children, double Height,
@@ -27,10 +28,12 @@ public static partial class StaticLayout
             RequireAutoHeight(style);
             var spacing = ((CssLength)style["border-spacing"]).Value;
             var groups = new List<TableGroup>();
+            var columnGroupElements = new List<DomElement>();
             var tableChildren = new List<DomElement>();
             DomElement? caption = null;
             var captionSeen = false;
             var elementSeen = false;
+            var rowGroupsStarted = false;
             foreach (var node in table.ChildNodes)
             {
                 Visit();
@@ -51,22 +54,76 @@ public static partial class StaticLayout
                             caption = child;
                         }
                     }
+                    else if (display != "none" && child.LocalName == "colgroup")
+                    {
+                        if (rowGroupsStarted)
+                        { throw new UnsupportedLayoutException("Column groups must precede table row groups."); }
+                        if (display != "table-column-group")
+                        { throw new UnsupportedLayoutException("HTML colgroup elements require display:table-column-group."); }
+                        columnGroupElements.Add(child);
+                        elementSeen = true;
+                    }
                     else
                     {
                         elementSeen = true;
-                        if (display != "none") { tableChildren.Add(child); }
+                        if (display != "none")
+                        {
+                            rowGroupsStarted = true;
+                            tableChildren.Add(child);
+                        }
                     }
                 }
                 else if (node is DomText text && !IsCollapsibleWhitespace(text.Data))
                 { throw new UnsupportedLayoutException("Non-whitespace content requires unsupported anonymous table boxes."); }
             }
-            var columnCount = 0;
+            var columnWidths = new List<double?>();
+            var columnGroupWidths = new List<ColumnGroupWidthConstraint>();
+            foreach (var columnGroup in columnGroupElements)
+            {
+                CheckTableColumn(columnGroup, depth + 1);
+                var groupStart = columnWidths.Count;
+                var columnChildren = new List<DomElement>();
+                var hasElementChildren = false;
+                foreach (var node in columnGroup.ChildNodes)
+                {
+                    Visit();
+                    if (node is DomElement child)
+                    {
+                        hasElementChildren = true;
+                        if (Display(child) != "none") { columnChildren.Add(child); }
+                    }
+                    else if (node is DomText text && !IsCollapsibleWhitespace(text.Data))
+                    { throw new UnsupportedLayoutException("Column groups accept only col elements."); }
+                }
+                if (hasElementChildren)
+                {
+                    if (columnGroup.GetAttribute("span") is not null)
+                    { throw new UnsupportedLayoutException("A colgroup with col children cannot also specify span."); }
+                    foreach (var column in columnChildren)
+                    {
+                        if (column.LocalName != "col" || Display(column) != "table-column")
+                        { throw new UnsupportedLayoutException("Column groups require col children with display:table-column."); }
+                        CheckTableColumn(column, depth + 2);
+                        CheckEmptyTableColumn(column);
+                        AddColumnTracks(columnWidths, ParseColumnSpan(column.GetAttribute("span")),
+                            TableColumnWidth(column));
+                    }
+                }
+                else
+                {
+                    AddColumnTracks(columnWidths, ParseColumnSpan(columnGroup.GetAttribute("span")), null);
+                }
+                var groupSpan = columnWidths.Count - groupStart;
+                if (groupSpan > 0 && TableColumnWidth(columnGroup) is { } groupWidth)
+                { columnGroupWidths.Add(new(groupStart, groupSpan, groupWidth)); }
+            }
+            var columnCount = columnWidths.Count;
             foreach (var group in tableChildren)
             {
                 var display = Display(group);
                 if (group.LocalName is not ("thead" or "tbody" or "tfoot")
                     || display is not ("table-header-group" or "table-row-group" or "table-footer-group"))
-                { throw new UnsupportedLayoutException("Tables require explicit HTML row groups; columns and anonymous table boxes are unsupported."); }
+                { throw new UnsupportedLayoutException("Tables require explicit HTML row groups; anonymous table boxes are unsupported."); }
                 CheckTablePart(group, depth + 1);
                 var pendingRows = new List<PendingTableRow>();
                 foreach (var row in TableChildren(group))
@@ -106,6 +163,12 @@ public static partial class StaticLayout
             }).ToList();
             var minimum = new double[columnCount];
             var maximum = new double[columnCount];
+            for (var index = 0; index < columnWidths.Count; index++)
+            {
+                if (columnWidths[index] is not { } specifiedWidth) { continue; }
+                minimum[index] = specifiedWidth;
+                maximum[index] = specifiedWidth;
+            }
             Dictionary<int, List<(int Column, double Minimum, double Maximum)>>? spanningConstraints = null;
             List<int>? spanOrder = null;
             foreach (var row in groups.SelectMany(g => g.Rows))
@@ -157,6 +220,20 @@ public static partial class StaticLayout
                             maximum[index] = Finite(Math.Max(minimum[index], maximum[index] + maximumShare));
                         }
                     }
+                }
+            }
+            foreach (var constraint in columnGroupWidths)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                var deficit = Math.Max(0, constraint.Width - SumColumns(minimum, constraint.Start, constraint.Span));
+                if (deficit == 0) { continue; }
+                var share = deficit / constraint.Span;
+                ChargeTableColumnWork(constraint.Span);
+                for (var index = constraint.Start; index < constraint.Start + constraint.Span; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    minimum[index] = Finite(minimum[index] + share);
+                    maximum[index] = Math.Max(maximum[index], minimum[index]);
                 }
             }
             var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing);
@@ -256,6 +333,44 @@ public static partial class StaticLayout
                 value = Math.Min(1001, value * 10 + raw[index++] - '0');
             }
             return negative || value == 0 ? 1 : Math.Min(value, MaxHtmlColumnSpan);
+        }
+
+        private void CheckTableColumn(DomElement element, int depth)
+        {
+            Check(element, depth, block: true, tableContext: true);
+            RejectTableAttributes(element);
+            if (Style(element)["background-color"] is CssColor { Alpha: > 0 })
+            { throw new UnsupportedLayoutException("Column and column-group backgrounds are unsupported."); }
+        }
+
+        private void CheckEmptyTableColumn(DomElement element)
+        {
+            foreach (var node in element.ChildNodes)
+            {
+                Visit();
+                if (node is DomElement || node is DomText text && !IsCollapsibleWhitespace(text.Data))
+                { throw new UnsupportedLayoutException("HTML col elements cannot have content."); }
+            }
+        }
+
+        private double? TableColumnWidth(DomElement element) => Style(element)["width"] switch
+        {
+            CssKeyword { Value: "auto" } => null,
+            CssLength { Unit: "px", Value: >= 0 } width => Finite(width.Value),
+            CssLength { Unit: "%" } => throw new UnsupportedLayoutException("Percentage column widths are unsupported."),
+            _ => throw new UnsupportedLayoutException("Columns and column groups require auto or nonnegative absolute CSS widths.")
+        };
+
+        private void AddColumnTracks(List<double?> columns, int span, double? width)
+        {
+            if (span > options.MaxTableColumns - columns.Count)
+            { throw new LayoutLimitException("Table column limit exceeded."); }
+            if (width is not null) { ChargeTableColumnWork(span); }
+            for (var index = 0; index < span; index++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                columns.Add(width);
+            }
         }
 
         private int ParseRowSpan(string? raw)

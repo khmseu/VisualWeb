@@ -149,11 +149,12 @@ supported horizontal LTR subset; these remain normal UA declarations that
 author CSS may override. `address` defaults to italic, subject to the same
 normal cascade and exact-face font requirements as other italic elements.
 
-The finite table properties add canonical table/group/row/cell displays,
-`table-caption`, `table-layout:auto`, inherited `border-collapse:separate` and
-single-length `border-spacing`, plus `vertical-align:baseline/top`
-(ID `css2-tables`). The UA stylesheet places HTML captions above the table;
-`caption-side` remains unsupported.
+The finite table properties add canonical table, caption, column, column-group,
+row/group and cell displays, `table-layout:auto`, inherited
+`border-collapse:separate` and single-length `border-spacing`, plus
+`vertical-align:baseline/top`
+(ID `css2-tables`). UA defaults place captions above tables and supply the
+canonical column displays; `caption-side` remains unsupported.
 UA cells use 1px padding and top alignment; UA tables use 2px spacing.
 See the [layout subset](../../../docs/text-layout.md#basic-automatic-tables)
 for accepted geometry and explicit downstream failures.
