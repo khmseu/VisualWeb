@@ -149,7 +149,11 @@
   Implementierung, Begrenzung ueber `MaxTableRowSpanOperations`, Paint-
   Reihenfolge und Regressionen sind abgeschlossen. Layout (821), Paint (69),
   Solution-Build (0 Warnungen/Fehler), Volltest (16.163) und Formatpruefung
-  bestehen lokal. Commit, Push und CI stehen noch aus (KP-204).
+  bestehen lokal. Commit `a79f119` ist gepusht; Linux x64/arm64, Windows
+  x64 und CodeQL bestehen. Der erste Windows-arm64-Lauf traf einen
+  Duplicate-Request-Fehler im unabhaengigen Browser-Test
+  `UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`; der
+  isolierte arm64-Rerun bestand (KP-204/KP-205).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

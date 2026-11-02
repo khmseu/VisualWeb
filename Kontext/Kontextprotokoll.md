@@ -5690,3 +5690,18 @@ later row fills from covering spanning cells.
 passed locally on 2026-11-02. Commit, push, and CI verification are pending.
 This entry supersedes the pending implementation status recorded in KP-203;
 the user-selected behavior itself is unchanged.
+
+### KP-205 - Pass 4 commit and cross-platform CI
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: commit `a79f119` and GitHub Actions runs 41367865564,
+  41367865554, and 41367865633.
+- Related: KP-204 and the Pass 4 scope of the ten-pass request.
+
+**Belegt:** Commit `a79f119` (`feat(layout): support bounded table row spans`)
+was pushed. Linux x64/arm64, Windows x64, and CodeQL passed. The first
+Windows-arm64 attempt failed only in the unrelated browser test
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`, whose
+concurrent request assertion observed duplicate requests; the isolated
+Windows-arm64 rerun passed, including the full solution test and smoke steps.
+The transient failure and successful retry are recorded rather than hidden.

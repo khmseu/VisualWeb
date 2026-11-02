@@ -525,8 +525,11 @@ the current explicit row group, with collision-checked slot placement and
 even row-height deficit distribution including internal spacing. The independent
 `MaxTableRowSpanOperations` limit bounds grid and height work. Focused layout
 (821) and paint (69) suites, the zero-warning solution build, all 16,163
-solution tests and solution formatting verification pass locally. Commit and
-CI results are pending.
+solution tests and solution formatting verification pass locally. Commit
+`a79f119` is pushed. Linux x64/arm64, Windows x64 and CodeQL CI passed; the
+first Windows arm64 run hit a duplicate-request failure in the unrelated
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` browser
+test, and the isolated arm64 rerun passed (run 41367865554).
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the
