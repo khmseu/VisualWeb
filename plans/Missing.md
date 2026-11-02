@@ -495,21 +495,38 @@ and explicit failure when no listed face is registered. The full solution
 suite (16,120 tests), solution build (zero warnings/errors) and formatting
 verification also pass.
 
-Canonical table layout now supports bounded horizontal `colspan` without
-`rowspan`. Spanned cells contribute intrinsic minimum/maximum constraints that
+Canonical table layout in [TableLayout.cs](../src/Engine/Engine.Layout/TableLayout.cs)
+supports bounded horizontal `colspan` and bounded `rowspan`. Column spans contribute intrinsic minimum/maximum constraints that
 are shared equally across covered columns in increasing span order; arrangement
-uses the combined track widths and internal spacing. HTML values default or
-cap per the bounded parsing rules, and `LayoutOptions.MaxTableColumns` (default
-100,000) rejects oversized grids before allocation. Repeated track work shares
-`LayoutOptions.MaxTableColumnOperations` (default 10,000,000); attribute
-scanning retains the shared text and cancellation budgets. Focused layout tests
-cover geometry, parsing, caps and attribute limits; native Content pixels match
-an equivalent unspanned grid. Remaining table gaps include `rowspan`,
-captions/columns, anonymous/arbitrary tables, and other listed exclusions.
-Layout (807), Content (92), solution build (zero warnings/errors), all 16,130
-solution tests and solution formatting verification pass. Commit `3e568b1` is
-pushed; Linux, Windows confinement and CodeQL CI pass (runs 41342219697,
-41342219768 and 41342218952).
+uses the combined track widths and internal spacing. Positive row spans are
+capped at 65,534; `rowspan=0` covers the remaining rows of the explicit row
+group, and spans cannot escape that group. Occupied slots shift later cells to
+the first free contiguous run, with collision checks during grid reservation.
+Any spanning-cell height deficit, including internal row spacing, is shared
+equally across covered rows. Table, row-group and row backgrounds paint before
+cell backgrounds so later rows cannot cover spanning cells.
+`LayoutOptions.MaxTableColumns` (default 100,000) rejects oversized grids
+before allocation. Repeated track work shares
+`LayoutOptions.MaxTableColumnOperations` (default 10,000,000); row-span grid
+and height work has the separate
+[`LayoutOptions.MaxTableRowSpanOperations`](../src/Engine/Engine.Layout/StaticLayout.cs)
+limit (default 1,000,000). Attribute scanning retains the shared text and
+cancellation budgets. Focused layout tests cover geometry, row-group clipping,
+HTML parsing and limits; paint tests verify overlapping row/cell background
+order. Remaining table gaps include captions/columns, anonymous/arbitrary
+tables, and other listed exclusions.
+The preceding `colspan` increment remains recorded in commit `3e568b1`:
+layout (807), Content (92), all 16,130 solution tests, solution build and
+format verification passed; Linux, Windows confinement and CodeQL CI passed
+(runs 41342219697, 41342219768 and 41342218952).
+
+Pass 4 implements positive `rowspan` values and `rowspan=0` through the end of
+the current explicit row group, with collision-checked slot placement and
+even row-height deficit distribution including internal spacing. The independent
+`MaxTableRowSpanOperations` limit bounds grid and height work. Focused layout
+(821) and paint (69) suites, the zero-warning solution build, all 16,163
+solution tests and solution formatting verification pass locally. Commit and
+CI results are pending.
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the

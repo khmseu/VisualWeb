@@ -69,6 +69,9 @@ public sealed record LayoutOptions
     public int MaxTableColumns { get; init; } = 100_000;
     /// <summary>Maximum table-grid track operations across intrinsic sizing and arrangement.</summary>
     public long MaxTableColumnOperations { get; init; } = 10_000_000;
+    /// <summary>Maximum row-span grid and height-distribution operations.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/tabular-data.html#forming-a-table">table grid</see>.</remarks>
+    public long MaxTableRowSpanOperations { get; init; } = 1_000_000;
     public int MaxNodes { get; init; } = 1_000_000;
     public int MaxLines { get; init; } = 100_000;
     public int MaxTextCharacters { get; init; } = 1_000_000;
@@ -80,6 +83,7 @@ public sealed record LayoutOptions
     internal void Validate()
     {
         if (MaxDepth <= 0 || MaxBoxes <= 0 || MaxTableColumns <= 0 || MaxTableColumnOperations <= 0
+            || MaxTableRowSpanOperations <= 0
             || MaxNodes <= 0 || MaxLines <= 0 || MaxTextCharacters <= 0 || MaxShapedGlyphs <= 0
             || MaxShapingCalls <= 0 || MaxLineBreakOperations <= 0 || MaxInlineBackgroundOperations <= 0)
         {
@@ -157,7 +161,7 @@ public static partial class StaticLayout
         private readonly LayoutOptions options;
         private readonly CancellationToken cancellation;
         private int nodes, boxes, lines, characters, glyphs, calls;
-        private long lineBreakOperations, tableColumnOperations, inlineBackgroundOperations;
+        private long lineBreakOperations, tableColumnOperations, tableRowSpanOperations, inlineBackgroundOperations;
         private readonly Dictionary<DomElement, long> ordinals = new(ReferenceEqualityComparer.Instance);
 
         internal Builder(CssStyleResult styles, ITextShaper shaper, LayoutOptions options, CancellationToken cancellation)
@@ -1212,6 +1216,14 @@ public static partial class StaticLayout
             if (count > options.MaxTableColumnOperations - tableColumnOperations)
             { throw new LayoutLimitException("Table column processing limit exceeded."); }
             tableColumnOperations += count;
+        }
+
+        private void ChargeTableRowSpanOperation()
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (tableRowSpanOperations >= options.MaxTableRowSpanOperations)
+            { throw new LayoutLimitException("Table row-span processing limit exceeded."); }
+            tableRowSpanOperations++;
         }
 
         private void ChargeInlineBackgroundOperation()

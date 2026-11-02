@@ -214,7 +214,15 @@ at 1000. The total materialized grid is separately bounded by
 `LayoutOptions.MaxTableColumns` (default 100,000), checked before column
 arrays are allocated. Repeated track visits during sizing and arrangement share
 `LayoutOptions.MaxTableColumnOperations` (default 10,000,000). Span attribute
-scans share the text-character and cancellation budgets. Auto tables shrink
+scans share the text-character and cancellation budgets. Positive `rowspan`
+values are capped at 65,534; absent and invalid values mean one, while zero
+spans the remainder of the current explicit row group. Spans are clipped at
+that group's end. Placement skips occupied slots to the first free contiguous
+column run and rejects any collision while reserving the resulting grid.
+[`LayoutOptions.MaxTableRowSpanOperations`](../src/Engine/Engine.Layout/StaticLayout.cs)
+(default 1,000,000) bounds row-span
+grid visits and height allocation independently of the column-track budget.
+Auto tables shrink
 toward maximum content width without shrinking below minimum content; explicit
 table width is a minimum. Available growth is proportional between intrinsic
 bounds, then equal beyond them.
@@ -223,15 +231,17 @@ not a claim of matching every browser.
 
 Header groups precede ordinary groups and footer groups follow them.
 Cells are top-aligned and equalized to the row's maximum border-box height;
-specified cell height is a minimum. Cell block margins do not collapse through
-cell edges. Table, row-group, row and cell `background-color` layers paint in
-CSS 2.2 order; solid borders use the existing paint flow.
+specified cell height is a minimum. A spanning cell's required height,
+including internal row spacing, is distributed evenly across its covered rows.
+Cell block margins do not collapse through cell edges. Table, row-group and
+row backgrounds paint before cell backgrounds, so later rows cannot cover a
+spanning cell; solid borders use the existing paint flow.
 UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
 is not synthesized. Measurement and arrangement share node, text, shaping,
 line, glyph, box, depth and cancellation budgets.
 
-Explicit failures remain for `rowspan` other than absent/exact `1`, captions,
-columns/colgroups, anonymous or arbitrary CSS tables, nested tables/widgets,
+Explicit failures remain for captions, columns/colgroups, anonymous or
+arbitrary CSS tables, nested tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, other cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, row/group sizing/decorations,

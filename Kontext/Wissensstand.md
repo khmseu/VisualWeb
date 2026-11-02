@@ -140,6 +140,16 @@
   validiert: Build ohne Warnungen, 16.154 Solution-Tests und Formatpruefung
   bestehen. Commit `7bd6e99` ist gepusht; Linux/Windows x64+arm64 und CodeQL-CI
   bestehen ebenfalls (KP-202).
+  Pass 4 erweitert Tabellen um positive `rowspan`-Werte und HTMLs
+  `rowspan=0`-Semantik bis zum Ende der expliziten Zeilengruppe. Ueberlaeufe
+  werden an der Gruppe begrenzt, Tabellenmodell-Ueberlappungen scheitern
+  explizit, und erforderliche Mehrhoehe wird gleichmaessig auf betroffene
+  Zeilen verteilt; die CSS-2.2-Regel laesst diese Verteilung dem UA. Diese
+  Verhaltenswahl hat der Nutzer mit `include-zero` getroffen (KP-203).
+  Implementierung, Begrenzung ueber `MaxTableRowSpanOperations`, Paint-
+  Reihenfolge und Regressionen sind abgeschlossen. Layout (821), Paint (69),
+  Solution-Build (0 Warnungen/Fehler), Volltest (16.163) und Formatpruefung
+  bestehen lokal. Commit, Push und CI stehen noch aus (KP-204).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

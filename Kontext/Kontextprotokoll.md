@@ -5635,3 +5635,58 @@ arm64, Windows x64/arm64 and CodeQL checks passed
 **Verified:** Linux x64/arm64, Windows x64/arm64 and CodeQL jobs all completed
 successfully. The implementation and local validation recorded in KP-201 are
 therefore CI-verified on these targets.
+
+### KP-203 - Row-span scope decision needed for Pass 4
+
+- Documented on: 2026-11-01, Europe/Berlin.
+- Sources: `plans/Missing.md`, `docs/text-layout.md`, `TableLayout.cs`,
+  cached `specs/cache/html.html` sections `#attr-tdth-rowspan` and
+  `#forming-a-table`, and `specs/cache/css2-tables.html` row-height rules.
+- Related: KP-202; Pass 4 of the ten-pass request.
+
+**Verified:** The current table layout rejects every `rowspan` spelling except
+the exact string `1`; the text/layout guide and missing tracker identify row
+spans as unsupported. HTML defines positive values up to 65,534 and `0` as
+spanning the remaining rows of the row group; spans are clipped at that group,
+and overlapping table-model slots are errors. CSS 2.2 requires spanning-cell
+height to fit within the combined covered rows but does not prescribe how
+excess height is distributed.
+
+**Proposal:** Implement a resource-bounded row-span subset with explicit
+row-group limits, overlap handling and a deterministic row-height policy.
+Keeping `rowspan=0` unsupported is a smaller increment; supporting its
+row-group remainder semantics is more compatible. Equal distribution of any
+remaining required height across the covered rows is one candidate policy, not
+an existing repository decision.
+
+**User decision:** The user selected “include-zero”: support positive spans
+and HTML's `rowspan=0` row-group remainder semantics. This selects the more
+compatible option, including clipping at the row-group boundary, explicit
+failure for overlapping table-model slots, and equal distribution of any
+additional required cell height across the covered rows. The implementation
+and tests remain outstanding.
+
+### KP-204 - Pass 4 row-span implementation and local verification
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: `src/Engine/Engine.Layout/TableLayout.cs`,
+  `src/Engine/Engine.Layout/StaticLayout.cs`,
+  `src/Engine/Engine.Paint/DisplayList.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `tests/Engine.Paint.Tests/PaintTests.cs`, `docs/text-layout.md`,
+  `src/Engine/Engine.Layout/README.md`, and `plans/Missing.md`.
+- Related: KP-203 and the Pass 4 scope of the ten-pass request.
+
+**Belegt:** The implementation now parses bounded positive row spans and zero,
+clips them to their explicit row group, places cells in free contiguous grid
+slots with collision checks, and evenly distributes any remaining cell-height
+deficit across covered rows, including internal row spacing. A separate
+`MaxTableRowSpanOperations` limit bounds slot visits and height allocation.
+Table, group and row backgrounds are emitted before cell backgrounds to keep
+later row fills from covering spanning cells.
+
+**Verifikation:** Layout tests (821), paint tests (69), the solution build
+(zero warnings/errors), all 16,163 solution tests, and formatting verification
+passed locally on 2026-11-02. Commit, push, and CI verification are pending.
+This entry supersedes the pending implementation status recorded in KP-203;
+the user-selected behavior itself is unchanged.

@@ -8,7 +8,10 @@ public static partial class StaticLayout
     private sealed partial class Builder
     {
         private const int MaxHtmlColumnSpan = 1000;
-        private sealed record TableCell(DomElement Element, int Column, int ColumnSpan);
+        private const int MaxHtmlRowSpan = 65534;
+        private sealed record PendingTableCell(DomElement Element, int ColumnSpan, int RowSpan);
+        private sealed record PendingTableRow(DomElement Element, IReadOnlyList<PendingTableCell> Cells);
+        private sealed record TableCell(DomElement Element, int Column, int ColumnSpan, int RowSpan);
         private sealed record TableRow(DomElement Element, IReadOnlyList<TableCell> Cells);
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
         private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing);
@@ -29,36 +32,32 @@ public static partial class StaticLayout
                     || display is not ("table-header-group" or "table-row-group" or "table-footer-group"))
                 { throw new UnsupportedLayoutException("Tables require explicit HTML row groups; captions, columns and anonymous table boxes are unsupported."); }
                 CheckTablePart(group, depth + 1);
-                var rows = new List<TableRow>();
+                var pendingRows = new List<PendingTableRow>();
                 foreach (var row in TableChildren(group))
                 {
                     if (row.LocalName != "tr" || Display(row) != "table-row")
                     { throw new UnsupportedLayoutException("Table row groups require tr rows."); }
                     CheckTablePart(row, depth + 2);
-                    var positionedCells = new List<TableCell>();
-                    var column = 0;
+                    var pendingCells = new List<PendingTableCell>();
                     foreach (var cell in TableChildren(row))
                     {
                         if (cell.LocalName is not ("td" or "th") || Display(cell) != "table-cell")
                         { throw new UnsupportedLayoutException("Table rows require td/th cells."); }
-                        if (cell.GetAttribute("rowspan") is { } rowSpan && rowSpan != "1")
-                        { throw new UnsupportedLayoutException("Table cells spanning rows are unsupported."); }
                         var columnSpan = ParseColumnSpan(cell.GetAttribute("colspan"));
-                        if (columnSpan > options.MaxTableColumns - column)
-                        { throw new LayoutLimitException("Table column limit exceeded."); }
+                        var rowSpan = ParseRowSpan(cell.GetAttribute("rowspan"));
                         RejectTableAttributes(cell);
                         var cellStyle = Style(cell);
                         if (cellStyle["vertical-align"] is not CssKeyword { Value: "top" }
                             || Edges(cellStyle, "margin", 0) != default
                             || cellStyle["max-height"] is not CssKeyword { Value: "none" })
                         { throw new UnsupportedLayoutException("Table cells require top alignment, zero margins and no maximum height."); }
-                        positionedCells.Add(new(cell, column, columnSpan));
-                        column += columnSpan;
+                        pendingCells.Add(new(cell, columnSpan, rowSpan));
                     }
-                    columnCount = Math.Max(columnCount, column);
-                    rows.Add(new(row, positionedCells.AsReadOnly()));
+                    pendingRows.Add(new(row, pendingCells.AsReadOnly()));
                 }
-                groups.Add(new(group, rows.AsReadOnly()));
+                var rows = PositionTableCells(pendingRows, out var groupColumnCount);
+                columnCount = Math.Max(columnCount, groupColumnCount);
+                groups.Add(new(group, rows));
             }
             if (groups.Count(g => Display(g.Element) == "table-header-group") > 1
                 || groups.Count(g => Display(g.Element) == "table-footer-group") > 1)
@@ -142,6 +141,68 @@ public static partial class StaticLayout
             return new(groups.AsReadOnly(), minimum, Finite(width), spacing);
         }
 
+        private List<TableRow> PositionTableCells(IReadOnlyList<PendingTableRow> sourceRows, out int columnCount)
+        {
+            var rows = new List<TableRow>(sourceRows.Count);
+            var occupied = new Dictionary<int, HashSet<int>>();
+            columnCount = 0;
+            for (var rowIndex = 0; rowIndex < sourceRows.Count; rowIndex++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                var cells = new List<TableCell>(sourceRows[rowIndex].Cells.Count);
+                var column = 0;
+                foreach (var sourceCell in sourceRows[rowIndex].Cells)
+                {
+                    var rowSpan = sourceCell.RowSpan == 0
+                        ? sourceRows.Count - rowIndex
+                        : Math.Min(sourceCell.RowSpan, sourceRows.Count - rowIndex);
+                    while (column < options.MaxTableColumns)
+                    {
+                        if (sourceCell.ColumnSpan > options.MaxTableColumns - column)
+                        { throw new LayoutLimitException("Table column limit exceeded."); }
+                        var overlaps = false;
+                        if (occupied.TryGetValue(rowIndex, out var currentRow))
+                        {
+                            for (var candidate = column; candidate < column + sourceCell.ColumnSpan; candidate++)
+                            {
+                                ChargeTableRowSpanOperation();
+                                if (currentRow.Contains(candidate)) { overlaps = true; break; }
+                            }
+                        }
+                        if (!overlaps) { break; }
+                        column++;
+                    }
+                    if (column >= options.MaxTableColumns)
+                    { throw new LayoutLimitException("Table column limit exceeded."); }
+
+                    if (rowSpan > 1)
+                    {
+                        for (var coveredRow = rowIndex; coveredRow < rowIndex + rowSpan; coveredRow++)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            for (var coveredColumn = column; coveredColumn < column + sourceCell.ColumnSpan; coveredColumn++)
+                            {
+                                ChargeTableRowSpanOperation();
+                                if (!occupied.TryGetValue(coveredRow, out var occupiedColumns))
+                                {
+                                    occupiedColumns = [];
+                                    occupied.Add(coveredRow, occupiedColumns);
+                                }
+                                if (!occupiedColumns.Add(coveredColumn))
+                                { throw new UnsupportedLayoutException("Table cells overlap in the row-span grid."); }
+                            }
+                        }
+                    }
+                    cells.Add(new(sourceCell.Element, column, sourceCell.ColumnSpan, rowSpan));
+                    column += sourceCell.ColumnSpan;
+                    columnCount = Math.Max(columnCount, column);
+                }
+                rows.Add(new(sourceRows[rowIndex].Element, cells.AsReadOnly()));
+                occupied.Remove(rowIndex);
+            }
+            return rows;
+        }
+
         private int ParseColumnSpan(string? raw)
         {
             if (raw is null) { return 1; }
@@ -159,6 +220,23 @@ public static partial class StaticLayout
                 value = Math.Min(1001, value * 10 + raw[index++] - '0');
             }
             return negative || value == 0 ? 1 : Math.Min(value, MaxHtmlColumnSpan);
+        }
+
+        private int ParseRowSpan(string? raw)
+        {
+            if (raw is null) { return 1; }
+            ChargeCharacters(raw.Length);
+            var index = 0;
+            while (index < raw.Length && raw[index] is ' ' or '\t' or '\n' or '\f' or '\r')
+            { cancellation.ThrowIfCancellationRequested(); index++; }
+            if (index == raw.Length || !char.IsAsciiDigit(raw[index])) { return 1; }
+            var value = 0;
+            while (index < raw.Length && char.IsAsciiDigit(raw[index]))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                value = Math.Min(MaxHtmlRowSpan + 1, value * 10 + raw[index++] - '0');
+            }
+            return Math.Min(value, MaxHtmlRowSpan);
         }
 
         private double SumColumns(double[] columns, int start, int count)
@@ -291,41 +369,75 @@ public static partial class StaticLayout
         private (IReadOnlyList<LayoutBox> Groups, double Height) ArrangeTable(TablePlan plan, double x, double y, int depth)
         {
             var groups = new List<LayoutBox>();
-            var cursor = y + (plan.Columns.Length > 0 ? plan.Spacing : 0);
+            var rowSpacing = plan.Columns.Length > 0 ? plan.Spacing : 0;
+            var cursor = y + rowSpacing;
             foreach (var group in plan.Groups)
             {
                 var groupY = cursor;
                 var rows = new List<LayoutBox>();
-                foreach (var row in group.Rows)
+                var rowHeights = new double[group.Rows.Count];
+                var rowCells = new List<(TableCell Cell, LayoutBox Box)>[group.Rows.Count];
+                for (var rowIndex = 0; rowIndex < group.Rows.Count; rowIndex++)
                 {
-                    var cells = new List<LayoutBox>();
-                    var cellX = x + plan.Spacing;
+                    cancellation.ThrowIfCancellationRequested();
+                    var row = group.Rows[rowIndex];
+                    var cells = new List<(TableCell Cell, LayoutBox Box)>(row.Cells.Count);
                     foreach (var cell in row.Cells)
                     {
                         var width = Finite(SumColumns(plan.Columns, cell.Column, cell.ColumnSpan)
                             + (cell.ColumnSpan - 1) * plan.Spacing);
+                        var cellX = Finite(x + plan.Spacing + SumColumns(plan.Columns, 0, cell.Column)
+                            + cell.Column * plan.Spacing);
                         var style = Style(cell.Element);
                         var padding = Edges(style, "padding", width);
                         var border = Edges(style, "border", width, "-width");
                         var contentWidth = Math.Max(0, width - padding.Left - padding.Right - border.Left - border.Right);
-                        cells.Add(Block(cell.Element, cellX, cursor, width, null, depth + 3, cellWidth: contentWidth));
-                        cellX = Finite(cellX + width + plan.Spacing);
+                        var box = Block(cell.Element, cellX, groupY, width, null, depth + 3, cellWidth: contentWidth);
+                        cells.Add((cell, box));
+                        if (cell.RowSpan == 1)
+                        { rowHeights[rowIndex] = Math.Max(rowHeights[rowIndex], box.BorderBox.Height); }
                     }
-                    var height = cells.Select(cell => cell.BorderBox.Height).DefaultIfEmpty().Max();
-                    for (var index = 0; index < cells.Count; index++)
+                    rowCells[rowIndex] = cells;
+                }
+                for (var rowIndex = 0; rowIndex < group.Rows.Count; rowIndex++)
+                {
+                    foreach (var (cell, box) in rowCells[rowIndex])
                     {
-                        var box = cells[index];
-                        var extra = height - box.BorderBox.Height;
-                        cells[index] = box with
+                        if (cell.RowSpan == 1) { continue; }
+                        var spanHeight = SumRowHeights(rowHeights, rowIndex, cell.RowSpan)
+                            + rowSpacing * (cell.RowSpan - 1);
+                        var deficit = Math.Max(0, box.BorderBox.Height - spanHeight);
+                        var share = deficit / cell.RowSpan;
+                        for (var coveredRow = rowIndex; coveredRow < rowIndex + cell.RowSpan; coveredRow++)
                         {
-                            Content = box.Content with { Height = box.Content.Height + extra },
-                            PaddingBox = box.PaddingBox with { Height = box.PaddingBox.Height + extra },
-                            BorderBox = box.BorderBox with { Height = height }
-                        };
+                            ChargeTableRowSpanOperation();
+                            rowHeights[coveredRow] = Finite(rowHeights[coveredRow] + share);
+                        }
                     }
-                    rows.Add(TableBox(row.Element, Rect(x + plan.Spacing, cursor, Math.Max(0, plan.Width - 2 * plan.Spacing), height),
-                        cells, depth + 2));
-                    cursor = Finite(cursor + height + (plan.Columns.Length > 0 ? plan.Spacing : 0));
+                }
+                for (var rowIndex = 0; rowIndex < group.Rows.Count; rowIndex++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    var row = group.Rows[rowIndex];
+                    var cells = new List<LayoutBox>(rowCells[rowIndex].Count);
+                    foreach (var (cell, originalBox) in rowCells[rowIndex])
+                    {
+                        var height = cell.RowSpan == 1
+                            ? rowHeights[rowIndex]
+                            : SumRowHeights(rowHeights, rowIndex, cell.RowSpan) + rowSpacing * (cell.RowSpan - 1);
+                        var extra = Math.Max(0, height - originalBox.BorderBox.Height);
+                        var box = originalBox with
+                        {
+                            Content = originalBox.Content with { Height = originalBox.Content.Height + extra },
+                            PaddingBox = originalBox.PaddingBox with { Height = originalBox.PaddingBox.Height + extra },
+                            BorderBox = originalBox.BorderBox with { Height = height }
+                        };
+                        cells.Add(TranslateTableBox(box, cursor - groupY));
+                    }
+                    var rowHeight = rowHeights[rowIndex];
+                    rows.Add(TableBox(row.Element, Rect(x + plan.Spacing, cursor,
+                        Math.Max(0, plan.Width - 2 * plan.Spacing), rowHeight), cells, depth + 2));
+                    cursor = Finite(cursor + rowHeight + rowSpacing);
                 }
                 var groupHeight = Math.Max(0, cursor - groupY - (rows.Count > 0 && plan.Columns.Length > 0 ? plan.Spacing : 0));
                 groups.Add(TableBox(group.Element, Rect(x + plan.Spacing, groupY, Math.Max(0, plan.Width - 2 * plan.Spacing), groupHeight),
@@ -341,6 +453,97 @@ public static partial class StaticLayout
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             return new(element, bounds, bounds, bounds, default, children.AsReadOnly(), Array.Empty<LayoutLine>())
             { Flow = children.Select(child => (LayoutFlowItem)new LayoutBlockItem(child)).ToList().AsReadOnly() };
+        }
+
+        private double SumRowHeights(double[] heights, int start, int count)
+        {
+            var sum = 0.0;
+            for (var index = start; index < start + count; index++)
+            {
+                ChargeTableRowSpanOperation();
+                sum = Finite(sum + heights[index]);
+            }
+            return sum;
+        }
+
+        private LayoutBox TranslateTableBox(LayoutBox box, double offsetY)
+        {
+            cancellation.ThrowIfCancellationRequested();
+            if (offsetY == 0) { return box; }
+            LayoutRect ShiftRect(LayoutRect rect) => rect with { Y = Finite(rect.Y + offsetY) };
+            LayoutLine ShiftLine(LayoutLine line)
+            {
+                var fragments = new LayoutTextFragment[line.Fragments.Count];
+                for (var index = 0; index < fragments.Length; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    var fragment = line.Fragments[index];
+                    fragments[index] = fragment with { Baseline = Finite(fragment.Baseline + offsetY) };
+                }
+                var widgets = new LayoutInlineWidget[line.Widgets.Count];
+                for (var index = 0; index < widgets.Length; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    widgets[index] = line.Widgets[index] with { Bounds = ShiftRect(line.Widgets[index].Bounds) };
+                }
+                var backgrounds = new LayoutInlineBackground[line.InlineBackgrounds.Count];
+                for (var index = 0; index < backgrounds.Length; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    backgrounds[index] = line.InlineBackgrounds[index] with
+                    { Bounds = ShiftRect(line.InlineBackgrounds[index].Bounds) };
+                }
+                return line with
+                {
+                    Bounds = ShiftRect(line.Bounds),
+                    Baseline = Finite(line.Baseline + offsetY),
+                    Fragments = fragments,
+                    Widgets = widgets,
+                    InlineBackgrounds = backgrounds
+                };
+            }
+
+            var children = new LayoutBox[box.Children.Count];
+            var childMap = new Dictionary<LayoutBox, LayoutBox>(ReferenceEqualityComparer.Instance);
+            for (var index = 0; index < box.Children.Count; index++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                children[index] = TranslateTableBox(box.Children[index], offsetY);
+                childMap.Add(box.Children[index], children[index]);
+            }
+            var lines = new LayoutLine[box.Lines.Count];
+            var lineMap = new Dictionary<LayoutLine, LayoutLine>(ReferenceEqualityComparer.Instance);
+            for (var index = 0; index < box.Lines.Count; index++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                lines[index] = ShiftLine(box.Lines[index]);
+                lineMap.Add(box.Lines[index], lines[index]);
+            }
+            var flow = new LayoutFlowItem[box.Flow.Count];
+            for (var index = 0; index < box.Flow.Count; index++)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                flow[index] = box.Flow[index] switch
+                {
+                    LayoutBlockItem child => new LayoutBlockItem(childMap[child.Box]),
+                    LayoutLineItem line => new LayoutLineItem(lineMap[line.Line]),
+                    _ => throw new InvalidOperationException("Unknown layout flow item.")
+                };
+            }
+            return box with
+            {
+                Content = ShiftRect(box.Content),
+                PaddingBox = ShiftRect(box.PaddingBox),
+                BorderBox = ShiftRect(box.BorderBox),
+                Children = children,
+                Lines = lines,
+                Flow = flow,
+                DiscMarker = box.DiscMarker is { } disc ? ShiftRect(disc) : null,
+                CircleMarker = box.CircleMarker is { } circle ? ShiftRect(circle) : null,
+                SquareMarker = box.SquareMarker is { } square ? ShiftRect(square) : null,
+                TextMarker = box.TextMarker is { } marker
+                    ? marker with { Baseline = Finite(marker.Baseline + offsetY) } : null
+            };
         }
     }
 }

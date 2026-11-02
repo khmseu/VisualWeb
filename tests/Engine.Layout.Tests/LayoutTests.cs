@@ -914,6 +914,83 @@ public sealed class LayoutTests
             UnorderedList("<table></table>", options: new() { MaxTableColumns = 0 }));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             UnorderedList("<table></table>", options: new() { MaxTableColumnOperations = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            UnorderedList("<table></table>", options: new() { MaxTableRowSpanOperations = 0 }));
+    }
+
+    [Fact]
+    public void RowSpansPlaceCellsInFreeSlotsAndDistributeHeightAcrossCoveredRows()
+    {
+        const string html = """
+            <table id=t><tbody><tr id=r0><td id=span rowspan=2>span</td><td id=a>a</td></tr>
+            <tr id=r1><td id=b>b</td></tr></tbody></table>
+            """;
+        const string css = "table{border-spacing:3px}#span{height:40px}";
+        var root = UnorderedList(html, css).Root!;
+        var span = Find(root, "span");
+        var first = Find(root, "a");
+        var second = Find(root, "b");
+        var row0 = Find(root, "r0");
+        var row1 = Find(root, "r1");
+
+        Assert.Equal(span.BorderBox.X + span.BorderBox.Width + 3, first.BorderBox.X);
+        Assert.Equal(first.BorderBox.X, second.BorderBox.X);
+        Assert.Equal(first.BorderBox.Width, second.BorderBox.Width);
+        Assert.Equal(row0.BorderBox.Y + row0.BorderBox.Height + 3, row1.BorderBox.Y);
+        Assert.Equal(row0.BorderBox.Height, row1.BorderBox.Height);
+        Assert.Equal(row1.BorderBox.Y + row1.BorderBox.Height,
+            span.BorderBox.Y + span.BorderBox.Height);
+        Assert.Equal(row0.BorderBox.Height + row1.BorderBox.Height + 3, span.BorderBox.Height);
+    }
+
+    [Fact]
+    public void ZeroRowSpanStopsAtItsRowGroupBoundary()
+    {
+        const string html = """
+            <table id=t><tbody id=g><tr id=r0><td id=span rowspan=0>s</td><td>a</td></tr>
+            <tr id=r1><td>b</td></tr><tr id=r2><td>c</td></tr></tbody>
+            <tbody><tr id=outside><td id=next>n</td></tr></tbody></table>
+            """;
+        const string css = "table{border-spacing:3px}";
+        var root = UnorderedList(html, css).Root!;
+        var span = Find(root, "span");
+        var lastRow = Find(root, "r2");
+        var next = Find(root, "next");
+        var outsideRow = Find(root, "outside");
+
+        Assert.Equal(lastRow.BorderBox.Y + lastRow.BorderBox.Height,
+            span.BorderBox.Y + span.BorderBox.Height);
+        Assert.Equal(span.BorderBox.X, next.BorderBox.X);
+        Assert.True(outsideRow.BorderBox.Y > span.BorderBox.Y + span.BorderBox.Height);
+    }
+
+    [Theory]
+    [InlineData("2", true)]
+    [InlineData(" 2suffix", true)]
+    [InlineData("65535", true)]
+    [InlineData("0", true)]
+    [InlineData("+2", false)]
+    [InlineData("-2", false)]
+    [InlineData("invalid", false)]
+    public void RowSpanUsesBoundedHtmlParsing(string value, bool spansFollowingRow)
+    {
+        var html = $"<table><tbody><tr><td id=span rowspan='{value}'>s</td></tr>"
+            + "<tr><td id=next>n</td></tr></tbody></table>";
+        var root = UnorderedList(html).Root!;
+        var span = Find(root, "span");
+        var next = Find(root, "next");
+        Assert.Equal(spansFollowingRow ? span.BorderBox.X + span.BorderBox.Width + 2 : span.BorderBox.X,
+            next.BorderBox.X);
+    }
+
+    [Fact]
+    public void RowSpanGridAndHeightWorkShareAnIndependentBudget()
+    {
+        const string regular = "<table><tr><td>a</td></tr></table>";
+        const string spanning = "<table><tbody><tr><td rowspan=2>a</td></tr><tr></tr></tbody></table>";
+        Assert.NotNull(UnorderedList(regular, options: new() { MaxTableRowSpanOperations = 1 }).Root);
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList(spanning, options: new() { MaxTableRowSpanOperations = 1 }));
     }
 
     [Fact]
@@ -1045,8 +1122,6 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("<table><tr><td rowspan=2>x</td></tr></table>", "")]
-    [InlineData("<table><tr><td rowspan=0>x</td></tr></table>", "")]
     [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]

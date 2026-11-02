@@ -514,6 +514,32 @@ public sealed class PaintTests
         Assert.Equal(new FillRectangle(new(15, 1, 1, 14), Red), list.Commands[4]);
     }
 
+    [Fact]
+    public void RowGroupAndRowBackgroundsPaintBeforeRowSpanningCellBackgrounds()
+    {
+        const string html = "<table><tbody><tr><td rowspan=2>x</td></tr><tr></tr></tbody></table>";
+        const string css = "table{display:table;border-spacing:3px}"
+            + "tbody{display:table-row-group}tr{display:table-row;background-color:red}"
+            + "td{display:table-cell;height:40px;background-color:blue;vertical-align:top;margin:0;max-height:none}";
+        var list = Page(html, css);
+        var fills = list.Commands.OfType<FillRectangle>().ToArray();
+        var redIndexes = list.Commands.Select((command, index) => (command, index))
+            .Where(item => item.command is FillRectangle { Color: var color } && color == Red)
+            .Select(item => item.index).ToArray();
+        var blueIndex = Array.FindIndex(list.Commands.ToArray(),
+            command => command is FillRectangle { Color: var color } && color == Blue);
+        var rowBackground = fills.Last(fill => fill.Color == Red);
+        var cellBackground = fills.Single(fill => fill.Color == Blue);
+        Assert.True(redIndexes.Max() < blueIndex);
+
+        var overlapX = (int)Math.Ceiling(Math.Max(rowBackground.Bounds.X, cellBackground.Bounds.X));
+        var overlapY = (int)Math.Ceiling(Math.Max(rowBackground.Bounds.Y, cellBackground.Bounds.Y));
+        Assert.True(overlapX < Math.Min(rowBackground.Bounds.X + rowBackground.Bounds.Width,
+            cellBackground.Bounds.X + cellBackground.Bounds.Width));
+        Assert.True(overlapY < Math.Min(rowBackground.Bounds.Y + rowBackground.Bounds.Height,
+            cellBackground.Bounds.Y + cellBackground.Bounds.Height));
+    }
+
     [Theory]
     [InlineData("html{background-color:red} body{background-color:blue}", 255, 0, 0)]
     [InlineData("body{background-color:blue}", 0, 0, 255)]

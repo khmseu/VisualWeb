@@ -46,12 +46,15 @@ unsupported advanced layouts throw rather than return approximate geometry.
 
 Canonical HTML tables support bounded automatic intrinsic columns, equal
 minimum/maximum constraint distribution for horizontal `colspan`, separate
-borders, one spacing length and top-aligned text/block cells. The total
-materialized grid is capped by `LayoutOptions.MaxTableColumns`; HTML `rowspan`
-remains unsupported, and repeated track visits share
-`LayoutOptions.MaxTableColumnOperations`. Ordinary borders reuse existing flow;
-table, row-group, row and cell `background-color` layers paint in CSS 2.2
-table-layer order. Captions/columns, nested tables/widgets and other
+borders, one spacing length and top-aligned text/block cells. Positive
+`rowspan` and `rowspan=0` are bounded to their row group; row-height deficits
+are shared evenly across covered rows. The materialized columns are capped by
+`LayoutOptions.MaxTableColumns`, column-track visits by
+`LayoutOptions.MaxTableColumnOperations`, and row-span grid/height work by
+[`LayoutOptions.MaxTableRowSpanOperations`](./StaticLayout.cs). Table,
+row-group and row backgrounds
+paint before cell backgrounds so later rows cannot cover spanning cells.
+Captions/columns, nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify

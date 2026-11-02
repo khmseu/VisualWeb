@@ -159,21 +159,63 @@ public static class DisplayListBuilder
             void Background(LayoutBox box, int depth)
             {
                 Check(depth);
-                if (box != root && box != propagated && Color(box, "background-color") is { Alpha: > 0 } background)
+                BackgroundLayer(box);
+                if (box.Element.LocalName == "table")
                 {
-                    Add(new FillRectangle(box.BorderBox, background));
+                    WithClip(box, () => TableLayers(box, depth));
+                    return;
                 }
+                WithClip(box, () =>
+                {
+                    foreach (var child in box.Children) { Background(child, depth + 1); }
+                });
+            }
+            void TableLayers(LayoutBox table, int depth)
+            {
+                var groups = table.Children;
+                foreach (var group in groups)
+                {
+                    Check(depth + 1);
+                    BackgroundLayer(group);
+                    WithClip(group, () =>
+                    {
+                        foreach (var row in group.Children)
+                        {
+                            Check(depth + 2);
+                            BackgroundLayer(row);
+                        }
+                    });
+                }
+                foreach (var group in groups)
+                {
+                    WithClip(group, () =>
+                    {
+                        foreach (var row in group.Children)
+                        {
+                            WithClip(row, () =>
+                            {
+                                foreach (var cell in row.Children)
+                                { Background(cell, depth + 3); }
+                            });
+                        }
+                    });
+                }
+            }
+            void BackgroundLayer(LayoutBox box)
+            {
+                if (box != root && box != propagated && Color(box, "background-color") is { Alpha: > 0 } background)
+                { Add(new FillRectangle(box.BorderBox, background)); }
                 Border(box);
+            }
+            void WithClip(LayoutBox box, Action paintChildren)
+            {
                 if (scrollClips is not null && scrollClips.TryGetValue(box, out var clip))
                 {
                     Add(new PushScrollClip(clip.Clip, clip.OffsetY));
-                    foreach (var child in box.Children) { Background(child, depth + 1); }
+                    paintChildren();
                     Add(new PopScrollClip());
                 }
-                else
-                {
-                    foreach (var child in box.Children) { Background(child, depth + 1); }
-                }
+                else { paintChildren(); }
             }
         }
         return new(layout.ViewportWidth, layout.ViewportHeight, commands, limits);
