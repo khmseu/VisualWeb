@@ -171,7 +171,9 @@
   ausgeschlossen (Q-025/KP-209/KP-210/KP-211). CSS (1.140) und Layout (834)
   bestehen fokussiert; Solution-Build (0 Warnungen/Fehler) und Formatpruefung
   bestehen ebenfalls. Der Volltest besteht (15.786 Tests). Commit, Push und CI
-  stehen noch aus.
+  sind abgeschlossen: `c677ceb` ist gepusht; Linux-Entwicklung, Windows-
+  Confinement und Push-on-main-CI sind gruen (Runs 41403577075, 41403577187
+  und 41403576947).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

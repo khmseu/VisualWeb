@@ -5842,4 +5842,10 @@ Percentage widths and column/column-group backgrounds still fail explicitly.
 CSS tests (1,140) and layout tests (834) pass; the solution build has zero
 warnings/errors and format verification passes. Guides, project READMEs and
 `plans/Missing.md` describe the supported subset. All 15,786 solution tests
-pass. Commit, push and CI remain pending.
+pass. Commit [`c677ceb`](https://github.com/khmseu/VisualWeb/commit/c677ceb95714b3acfb8491dfb027274ef3998ec9)
+is pushed. Linux development, Windows confinement and Push on main all pass
+([41403577075](https://github.com/khmseu/VisualWeb/actions/runs/41403577075),
+[41403577187](https://github.com/khmseu/VisualWeb/actions/runs/41403577187),
+[41403576947](https://github.com/khmseu/VisualWeb/actions/runs/41403576947)).
+
+**Status:** Pass 6 is locally validated, committed, pushed and CI-green.

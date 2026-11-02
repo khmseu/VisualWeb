@@ -551,7 +551,11 @@ constrain that track's minimum and maximum; a group width raises the minimum
 across its tracks, shared evenly. Percentage widths and backgrounds on either element
 remain unsupported. CSS (1,140), Layout (834), the zero-warning solution build and
 format verification pass locally. The complete solution test run passes
-(15,786 tests).
+(15,786 tests). Commit [`c677ceb`](https://github.com/khmseu/VisualWeb/commit/c677ceb95714b3acfb8491dfb027274ef3998ec9)
+is pushed; Linux development, Windows confinement and Push on main CI pass
+(runs [41403577075](https://github.com/khmseu/VisualWeb/actions/runs/41403577075),
+[41403577187](https://github.com/khmseu/VisualWeb/actions/runs/41403577187) and
+[41403576947](https://github.com/khmseu/VisualWeb/actions/runs/41403576947)).
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the
