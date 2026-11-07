@@ -19,6 +19,10 @@ command budget; inline-widget/line-break backgrounds and non-color background
 effects remain unsupported.
 Table captions use separate wrapper and table-box geometry, keeping the table's
 background and border from covering its supported top caption.
+Canonical table column-group and column `background-color` layers paint after
+the table and before row-group/row/cell layers. Their bounded rectangles follow
+cell origins, including spanning cells beyond the source track; alpha is
+composited by the existing raster path.
 
 See the [painting guide](../../../docs/painting.md) for scope, ownership, budgets
 and offline evidence, the [project map](../../../docs/project-map.md) and

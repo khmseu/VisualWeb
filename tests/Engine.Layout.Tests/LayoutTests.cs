@@ -1248,8 +1248,6 @@ public sealed class LayoutTests
     [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "col{width:50%}")]
     [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "colgroup{width:50%}")]
     [InlineData("<table><colgroup width=20><col></colgroup><tr><td>x</td></tr></table>", "")]
-    [InlineData("<table><colgroup><col span=2></colgroup><tr><td>x</td></tr></table>", "colgroup{background-color:red}")]
-    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "col{background-color:red}")]
     [InlineData("<table><colgroup span=2><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
     [InlineData("<table><tr><td><input></td></tr></table>", "")]
@@ -1274,6 +1272,38 @@ public sealed class LayoutTests
 
         Assert.Single(Find(root, "group").Children);
         Assert.Single(Find(root, "row").Children);
+    }
+
+    [Fact]
+    public void ColumnAndGroupBackgroundsCoverCellsByTheirOriginatingTracks()
+    {
+        const string html = "<table id=t><colgroup style='background-color:red'>"
+            + "<col span=2 style='background-color:blue'></colgroup>"
+            + "<colgroup style='background-color:green'><col></colgroup><tbody>"
+            + "<tr><td id=span colspan=3>x</td></tr>"
+            + "<tr><td id=a>a</td><td id=b>b</td><td id=c>c</td></tr></tbody></table>";
+        var root = UnorderedList(html).Root!;
+        var table = Find(root, "t");
+        var firstGroupCells = new[] { Find(root, "span"), Find(root, "a"), Find(root, "b") };
+        var lastGroupCell = Find(root, "c");
+        var red = new CssColor(255, 0, 0);
+        var blue = new CssColor(0, 0, 255);
+        var green = new CssColor(0, 128, 0);
+
+        Assert.Equal(4, table.TableColumnGroupBackgrounds.Count);
+        Assert.Equal(firstGroupCells.Select(cell => cell.BorderBox),
+            table.TableColumnGroupBackgrounds.Where(background => background.Color == red)
+                .Select(background => background.Bounds));
+        Assert.Contains(table.TableColumnGroupBackgrounds,
+            background => background.Color == green && background.Bounds == lastGroupCell.BorderBox);
+        Assert.DoesNotContain(table.TableColumnGroupBackgrounds,
+            background => background.Color == green && background.Bounds == Find(root, "span").BorderBox);
+
+        Assert.Equal(firstGroupCells.Select(cell => cell.BorderBox),
+            table.TableColumnBackgrounds.Select(background => background.Bounds));
+        Assert.All(table.TableColumnBackgrounds, background => Assert.Equal(blue, background.Color));
+        Assert.Throws<LayoutLimitException>(() => UnorderedList(html,
+            options: new() { MaxTableColumnOperations = 1 }));
     }
 
     [Fact]

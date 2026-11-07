@@ -13,6 +13,7 @@ public sealed class PaintTests
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
     private static readonly CssColor Red = new(255, 0, 0);
     private static readonly CssColor Blue = new(0, 0, 255);
+    private static readonly CssColor Green = new(0, 128, 0);
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
 
     private static DisplayList Page(string html, string css = "", PaintOptions? options = null)
@@ -538,6 +539,42 @@ public sealed class PaintTests
             cellBackground.Bounds.X + cellBackground.Bounds.Width));
         Assert.True(overlapY < Math.Min(rowBackground.Bounds.Y + rowBackground.Bounds.Height,
             cellBackground.Bounds.Y + cellBackground.Bounds.Height));
+    }
+
+    [Fact]
+    public void ColumnAndGroupBackgroundsPaintInLayerOrderAcrossOriginatingSpans()
+    {
+        const string html = "<table><colgroup style='background-color:rgba(255,0,0,.5)'>"
+            + "<col span=2 style='width:20px;background-color:rgba(0,0,255,.5)'></colgroup>"
+            + "<colgroup style='background-color:green'><col style='width:20px'></colgroup>"
+            + "<tbody><tr><td colspan=3></td></tr>"
+            + "<tr><td></td><td></td><td></td></tr></tbody></table>";
+        const string css = "table{display:table}colgroup{display:table-column-group}"
+            + "col{display:table-column}tbody{display:table-row-group}"
+            + "tr{display:table-row}td{display:table-cell;vertical-align:top;height:10px}";
+        var list = Page(html, css);
+        var fills = list.Commands.OfType<FillRectangle>().ToArray();
+        var translucentRed = new CssColor(255, 0, 0, 128);
+        var translucentBlue = new CssColor(0, 0, 255, 128);
+        Assert.Equal(new[]
+        {
+            translucentRed, translucentRed, translucentRed, Green,
+            translucentBlue, translucentBlue, translucentBlue
+        }, fills.Select(fill => fill.Color));
+        Assert.Equal(fills[0].Bounds, fills[4].Bounds);
+        Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 6 }));
+
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        var span = fills[0].Bounds;
+        var spanPixel = Pixel(frame, (int)Math.Floor(span.X + span.Width - 0.5),
+            (int)Math.Floor(span.Y + span.Height - 0.5));
+        Assert.Equal(((byte)127, (byte)63, (byte)191, (byte)255), spanPixel);
+
+        var lastGroup = Assert.Single(fills, fill => fill.Color == Green).Bounds;
+        var lastGroupPixel = Pixel(frame, (int)Math.Floor(lastGroup.X + lastGroup.Width - 0.5),
+            (int)Math.Floor(lastGroup.Y + lastGroup.Height - 0.5));
+        Assert.Equal(((byte)0, (byte)128, (byte)0, (byte)255), lastGroupPixel);
     }
 
     [Fact]

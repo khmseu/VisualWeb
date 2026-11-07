@@ -174,6 +174,8 @@ public static class DisplayListBuilder
             {
                 foreach (var caption in table.Children.Where(child => child.Element.LocalName == "caption"))
                 { Background(caption, depth + 1); }
+                PaintTableColumnLayers(table.TableColumnGroupBackgrounds);
+                PaintTableColumnLayers(table.TableColumnBackgrounds);
                 var groups = table.Children.Where(child => child.Element.LocalName != "caption").ToArray();
                 foreach (var group in groups)
                 {
@@ -201,6 +203,15 @@ public static class DisplayListBuilder
                             });
                         }
                     });
+                }
+
+                void PaintTableColumnLayers(IReadOnlyList<LayoutTableBackground> backgrounds)
+                {
+                    foreach (var background in backgrounds)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        Add(new FillRectangle(background.Bounds, background.Color));
+                    }
                 }
             }
             void BackgroundLayer(LayoutBox box)

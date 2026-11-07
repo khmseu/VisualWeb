@@ -98,11 +98,16 @@ ancestor clips and viewport transforms still apply.
 The [basic table subset](text-layout.md#basic-automatic-tables) reuses ordered
 group/row/cell block flow for table/cell backgrounds, solid borders and text.
 Separate-border spacing remains transparent to the table background.
-Table, row-group and row backgrounds paint in order beneath cell backgrounds.
+Table, column-group, column, row-group, row and cell backgrounds paint in
+layer order. Column/group colors produce one rectangle for each originating
+cell, covering its full bounds even when a colspan crosses the source
+column/group boundary; separate-border gaps remain transparent. Alpha uses
+the normal source-over raster path, and these rectangles share the layout
+column-operation and paint-command budgets.
 A top caption has separate wrapper and table-box geometry, so table backgrounds
-and borders do not extend over the caption. Column and column-group backgrounds
-remain unsupported. This does not imply collapsed-border or broader table-layer
-painting.
+and borders do not extend over the caption. Column/group background images and
+other effects, collapsed-border painting and broader table-layer behavior
+remain unsupported.
 
 - The root background covers the viewport and is not repainted on its box.
   For an HTML root with transparent background, the first body child's

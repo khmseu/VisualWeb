@@ -5849,3 +5849,46 @@ is pushed. Linux development, Windows confinement and Push on main all pass
 [41403576947](https://github.com/khmseu/VisualWeb/actions/runs/41403576947)).
 
 **Status:** Pass 6 is locally validated, committed, pushed and CI-green.
+
+### KP-212 - Pass 7 bounded table-column background layers selected
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: current continuation summary after KP-211; `plans/Missing.md`;
+  `src/Engine/Engine.Layout/TableLayout.cs`;
+  `src/Engine/Engine.Paint/DisplayList.cs`;
+  `specs/cache/css2-tables.html#table-layers`; and
+  `specs/manifest.json` (`css2-tables`, checked 2026-10-28).
+- Related: ten-pass request and KP-209 through KP-211.
+
+**Ableitung / Auswahl:** The next table gap is `colgroup`/`col`
+`background-color`. CSS 2.2 §17.5.1 specifies that the color covers the full
+area of cells originating in that column/group, including a cell spanning
+beyond its source track. The bounded increment therefore stores per-cell
+origin rectangles, paints group then column layers before row layers, preserves
+alpha compositing, and shares existing layout-operation and paint-command
+limits. Background images and other effects remain outside scope. This follows
+the recorded priority and cached specification; no unresolved behavior choice
+blocks the increment.
+
+**Belegt:** The implementation and focused regressions are present locally.
+Layout (833), Paint (71), the zero-warning solution build and formatting
+verification pass. The full solution run was in progress at this selection
+checkpoint; its result is recorded in KP-213.
+
+### KP-213 - Pass 7 implemented and locally validated
+
+- Documented on: 2026-11-02, Europe/Berlin.
+- Sources: working-tree implementation, focused tests, solution build,
+  `dotnet test VisualWeb.slnx --no-build`, formatting verification, and
+  updated guides/tracker in the current session.
+- Related: KP-212 and the ten-pass request.
+
+**Belegt:** Canonical `colgroup`/`col` solid background colors now emit bounded
+cell-origin rectangles, including complete `colspan` bounds across source
+group/track edges. The painter orders group then column layers before row and
+cell layers; alpha uses normal source-over compositing. Layout operation and
+paint command budgets apply. Layout (833), Paint (71), the zero-warning
+solution build, all 16,180 solution tests and formatting verification pass.
+
+**Status:** Pass 7 is locally validated. Commit, push and CI verification remain
+open.

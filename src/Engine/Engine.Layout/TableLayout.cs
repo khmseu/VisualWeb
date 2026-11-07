@@ -16,9 +16,12 @@ public static partial class StaticLayout
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
         private sealed record ColumnGroupWidthConstraint(int Start, int Span, double Width);
         private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing,
-            DomElement? Caption);
+            DomElement? Caption, IReadOnlyList<CssColor?> ColumnGroupBackgrounds,
+            IReadOnlyList<CssColor?> ColumnBackgrounds, bool HasColumnBackgrounds);
         private sealed record ArrangedTable(IReadOnlyList<LayoutBox> Children, double Height,
-            LayoutRect? WrapperBounds, LayoutTableBoxGeometry? TableBoxGeometry);
+            LayoutRect? WrapperBounds, LayoutTableBoxGeometry? TableBoxGeometry,
+            IReadOnlyList<LayoutTableBackground> TableColumnGroupBackgrounds,
+            IReadOnlyList<LayoutTableBackground> TableColumnBackgrounds);
 
         // css2-tables: automatic layout permits UA-defined distribution between intrinsic constraints.
         private TablePlan PlanTable(DomElement table, double containingWidth, int depth)
@@ -77,10 +80,14 @@ public static partial class StaticLayout
                 { throw new UnsupportedLayoutException("Non-whitespace content requires unsupported anonymous table boxes."); }
             }
             var columnWidths = new List<double?>();
+            var columnGroupBackgrounds = new List<CssColor?>();
+            var columnBackgrounds = new List<CssColor?>();
             var columnGroupWidths = new List<ColumnGroupWidthConstraint>();
+            var hasColumnBackgrounds = false;
             foreach (var columnGroup in columnGroupElements)
             {
-                CheckTableColumn(columnGroup, depth + 1);
+                var groupBackground = CheckTableColumn(columnGroup, depth + 1);
+                hasColumnBackgrounds |= groupBackground is not null;
                 var groupStart = columnWidths.Count;
                 var columnChildren = new List<DomElement>();
                 var hasElementChildren = false;
@@ -103,17 +110,28 @@ public static partial class StaticLayout
                     {
                         if (column.LocalName != "col" || Display(column) != "table-column")
                         { throw new UnsupportedLayoutException("Column groups require col children with display:table-column."); }
-                        CheckTableColumn(column, depth + 2);
+                        var columnBackground = CheckTableColumn(column, depth + 2);
+                        hasColumnBackgrounds |= columnBackground is not null;
                         CheckEmptyTableColumn(column);
-                        AddColumnTracks(columnWidths, ParseColumnSpan(column.GetAttribute("span")),
-                            TableColumnWidth(column));
+                        AddColumnTracks(columnWidths, columnGroupBackgrounds, columnBackgrounds,
+                            ParseColumnSpan(column.GetAttribute("span")), TableColumnWidth(column), columnBackground);
                     }
                 }
                 else
                 {
-                    AddColumnTracks(columnWidths, ParseColumnSpan(columnGroup.GetAttribute("span")), null);
+                    AddColumnTracks(columnWidths, columnGroupBackgrounds, columnBackgrounds,
+                        ParseColumnSpan(columnGroup.GetAttribute("span")), null, null);
                 }
                 var groupSpan = columnWidths.Count - groupStart;
+                if (groupSpan > 0 && groupBackground is { } background)
+                {
+                    ChargeTableColumnWork(groupSpan);
+                    for (var index = groupStart; index < columnGroupBackgrounds.Count; index++)
+                    {
+                        cancellation.ThrowIfCancellationRequested();
+                        columnGroupBackgrounds[index] = background;
+                    }
+                }
                 if (groupSpan > 0 && TableColumnWidth(columnGroup) is { } groupWidth)
                 { columnGroupWidths.Add(new(groupStart, groupSpan, groupWidth)); }
             }
@@ -161,6 +179,16 @@ public static partial class StaticLayout
                 "table-footer-group" => 2,
                 _ => 1
             }).ToList();
+            if (hasColumnBackgrounds && columnBackgrounds.Count < columnCount)
+            {
+                ChargeTableColumnWork(columnCount - columnBackgrounds.Count);
+                while (columnBackgrounds.Count < columnCount)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    columnGroupBackgrounds.Add(null);
+                    columnBackgrounds.Add(null);
+                }
+            }
             var minimum = new double[columnCount];
             var maximum = new double[columnCount];
             for (var index = 0; index < columnWidths.Count; index++)
@@ -251,7 +279,8 @@ public static partial class StaticLayout
                 cancellation.ThrowIfCancellationRequested();
                 minimum[index] = Finite(minimum[index] + ratio * (maximum[index] - minimum[index]) + extra);
             }
-            return new(groups.AsReadOnly(), minimum, Finite(width), spacing, caption);
+            return new(groups.AsReadOnly(), minimum, Finite(width), spacing, caption,
+                columnGroupBackgrounds.AsReadOnly(), columnBackgrounds.AsReadOnly(), hasColumnBackgrounds);
         }
 
         private List<TableRow> PositionTableCells(IReadOnlyList<PendingTableRow> sourceRows, out int columnCount)
@@ -335,12 +364,11 @@ public static partial class StaticLayout
             return negative || value == 0 ? 1 : Math.Min(value, MaxHtmlColumnSpan);
         }
 
-        private void CheckTableColumn(DomElement element, int depth)
+        private CssColor? CheckTableColumn(DomElement element, int depth)
         {
             Check(element, depth, block: true, tableContext: true);
             RejectTableAttributes(element);
-            if (Style(element)["background-color"] is CssColor { Alpha: > 0 })
-            { throw new UnsupportedLayoutException("Column and column-group backgrounds are unsupported."); }
+            return Style(element)["background-color"] is CssColor { Alpha: > 0 } background ? background : null;
         }
 
         private void CheckEmptyTableColumn(DomElement element)
@@ -361,15 +389,18 @@ public static partial class StaticLayout
             _ => throw new UnsupportedLayoutException("Columns and column groups require auto or nonnegative absolute CSS widths.")
         };
 
-        private void AddColumnTracks(List<double?> columns, int span, double? width)
+        private void AddColumnTracks(List<double?> columns, List<CssColor?> columnGroupBackgrounds,
+            List<CssColor?> columnBackgrounds, int span, double? width, CssColor? background)
         {
             if (span > options.MaxTableColumns - columns.Count)
             { throw new LayoutLimitException("Table column limit exceeded."); }
-            if (width is not null) { ChargeTableColumnWork(span); }
+            if (width is not null || background is not null) { ChargeTableColumnWork(span); }
             for (var index = 0; index < span; index++)
             {
                 cancellation.ThrowIfCancellationRequested();
                 columns.Add(width);
+                columnGroupBackgrounds.Add(null);
+                columnBackgrounds.Add(background);
             }
         }
 
@@ -521,6 +552,8 @@ public static partial class StaticLayout
             double wrapperX, double wrapperY, double wrapperWidth, LayoutEdges tablePadding, LayoutEdges tableBorder)
         {
             var groups = new List<LayoutBox>();
+            var tableColumnGroupBackgrounds = new List<LayoutTableBackground>();
+            var tableColumnBackgrounds = new List<LayoutTableBackground>();
             LayoutBox? caption = null;
             if (plan.Caption is { } captionElement)
             {
@@ -591,7 +624,16 @@ public static partial class StaticLayout
                             PaddingBox = originalBox.PaddingBox with { Height = originalBox.PaddingBox.Height + extra },
                             BorderBox = originalBox.BorderBox with { Height = height }
                         };
-                        cells.Add(TranslateTableBox(box, cursor - groupY));
+                        var positionedCell = TranslateTableBox(box, cursor - groupY);
+                        cells.Add(positionedCell);
+                        if (plan.HasColumnBackgrounds)
+                        {
+                            ChargeTableColumnWork(2);
+                            if (plan.ColumnGroupBackgrounds[cell.Column] is { } groupBackground)
+                            { tableColumnGroupBackgrounds.Add(new(positionedCell.BorderBox, groupBackground)); }
+                            if (plan.ColumnBackgrounds[cell.Column] is { } columnBackground)
+                            { tableColumnBackgrounds.Add(new(positionedCell.BorderBox, columnBackground)); }
+                        }
                     }
                     var rowHeight = rowHeights[rowIndex];
                     rows.Add(TableBox(row.Element, Rect(x + plan.Spacing, cursor,
@@ -603,7 +645,11 @@ public static partial class StaticLayout
                     rows, depth + 1));
             }
             var tableHeight = Finite(cursor - y);
-            if (caption is null) { return new(groups.AsReadOnly(), tableHeight, null, null); }
+            if (caption is null)
+            {
+                return new(groups.AsReadOnly(), tableHeight, null, null,
+                    tableColumnGroupBackgrounds.AsReadOnly(), tableColumnBackgrounds.AsReadOnly());
+            }
 
             var tableBorderY = Finite(y - tablePadding.Top - tableBorder.Top);
             var tablePaddingBox = Rect(x - tablePadding.Left, y - tablePadding.Top,
@@ -617,7 +663,8 @@ public static partial class StaticLayout
             var children = new LayoutBox[groups.Count + 1];
             children[0] = caption;
             for (var index = 0; index < groups.Count; index++) { children[index + 1] = groups[index]; }
-            return new(children, wrapperHeight, Rect(wrapperX, wrapperY, wrapperWidth, wrapperHeight), tableGeometry);
+            return new(children, wrapperHeight, Rect(wrapperX, wrapperY, wrapperWidth, wrapperHeight), tableGeometry,
+                tableColumnGroupBackgrounds.AsReadOnly(), tableColumnBackgrounds.AsReadOnly());
         }
 
         private LayoutBox TableBox(DomElement element, LayoutRect bounds, List<LayoutBox> children, int depth)
@@ -645,6 +692,19 @@ public static partial class StaticLayout
             cancellation.ThrowIfCancellationRequested();
             if (offsetY == 0) { return box; }
             LayoutRect ShiftRect(LayoutRect rect) => rect with { Y = Finite(rect.Y + offsetY) };
+            IReadOnlyList<LayoutTableBackground> ShiftTableBackgrounds(
+                IReadOnlyList<LayoutTableBackground> backgrounds)
+            {
+                if (backgrounds.Count == 0) { return Array.Empty<LayoutTableBackground>(); }
+                ChargeTableColumnWork(backgrounds.Count);
+                var shifted = new LayoutTableBackground[backgrounds.Count];
+                for (var index = 0; index < backgrounds.Count; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    shifted[index] = backgrounds[index] with { Bounds = ShiftRect(backgrounds[index].Bounds) };
+                }
+                return shifted;
+            }
             LayoutLine ShiftLine(LayoutLine line)
             {
                 var fragments = new LayoutTextFragment[line.Fragments.Count];
@@ -717,6 +777,8 @@ public static partial class StaticLayout
                         BorderBox = ShiftRect(tableGeometry.BorderBox)
                     }
                     : null,
+                TableColumnGroupBackgrounds = ShiftTableBackgrounds(box.TableColumnGroupBackgrounds),
+                TableColumnBackgrounds = ShiftTableBackgrounds(box.TableColumnBackgrounds),
                 Children = children,
                 Lines = lines,
                 Flow = flow,

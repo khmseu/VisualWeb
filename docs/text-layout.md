@@ -236,8 +236,12 @@ allocation. A `col` width that computes to a nonnegative CSS-pixel value raises
 that track's minimum and maximum; a `colgroup` width that computes to pixels
 raises the minimum across its tracks, with any deficit shared evenly. Supported
 absolute units convert to pixels, and supported `em`/`rem` lengths resolve
-through CSS before sizing. Percentage column/group widths and backgrounds
-attached to either element remain unsupported and fail explicitly.
+through CSS before sizing. Percentage column/group widths remain unsupported.
+Solid-color `background-color` on columns and groups is supported as a bounded
+per-cell-origin layer: only a cell's starting column/group contributes, and the
+full border box of a spanning cell is covered even when it extends beyond that
+track/group. Separate-border gaps remain transparent. Background images and
+other effects remain unsupported.
 
 Header groups precede ordinary groups and footer groups follow them.
 Cells are top-aligned and equalized to the row's maximum border-box height;

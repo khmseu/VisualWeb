@@ -174,6 +174,12 @@
   sind abgeschlossen: `c677ceb` ist gepusht; Linux-Entwicklung, Windows-
   Confinement und Push-on-main-CI sind gruen (Runs 41403577075, 41403577187
   und 41403576947).
+  Pass 7 ist aus der verbleibenden Tabellenluecke abgeleitet: begrenzte solide
+  `background-color`-Layer fuer `colgroup`/`col`, pro Herkunftszelle und mit
+  vollstaendiger Spanning-Zellflaeche nach CSS 2.2. Die Implementierung und
+  fokussierten Tests bestehen lokal (Layout 833, Paint 71), ebenso der
+  Solution-Build, der Volltest (16.180 Faelle) und die Formatpruefung.
+  Commit/Push/CI stehen aus (KP-212/KP-213).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

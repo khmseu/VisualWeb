@@ -42,11 +42,19 @@ public sealed record LayoutLineItem(LayoutLine Line) : LayoutFlowItem;
 /// <summary>Table-box geometry when a table's layout box also represents its caption wrapper.</summary>
 /// <remarks>Spec: css2-tables; <see href="https://www.w3.org/TR/CSS22/tables.html#model">table wrapper and table box</see>.</remarks>
 public sealed record LayoutTableBoxGeometry(LayoutRect Content, LayoutRect PaddingBox, LayoutRect BorderBox);
+/// <summary>Solid table-layer background over the complete area of a cell originating in a column or column group.</summary>
+/// <remarks>Spec: css2-tables; <see href="https://www.w3.org/TR/CSS22/tables.html#table-layers">table layers and transparency</see>.
+/// A spanning cell's complete bounds are covered by the layer where its origin belongs.</remarks>
+public sealed record LayoutTableBackground(LayoutRect Bounds, CssColor Color);
 public sealed record LayoutBox(DomElement Element, LayoutRect Content, LayoutRect PaddingBox,
     LayoutRect BorderBox, LayoutEdges Margin, IReadOnlyList<LayoutBox> Children, IReadOnlyList<LayoutLine> Lines)
 {
     public IReadOnlyList<LayoutFlowItem> Flow { get; init; } = Array.Empty<LayoutFlowItem>();
     public LayoutTableBoxGeometry? TableBoxGeometry { get; init; }
+    /// <summary>Column-group backgrounds in table cell-origin order.</summary>
+    public IReadOnlyList<LayoutTableBackground> TableColumnGroupBackgrounds { get; init; } = Array.Empty<LayoutTableBackground>();
+    /// <summary>Column backgrounds in table cell-origin order.</summary>
+    public IReadOnlyList<LayoutTableBackground> TableColumnBackgrounds { get; init; } = Array.Empty<LayoutTableBackground>();
     /// <summary>Outside disc-marker bounds, separate from selectable document text.</summary>
     /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#lists">lists</see>.
     /// The finite LTR subset uses a 0.3em disc and a 0.5em gap before the content edge.</remarks>
@@ -350,6 +358,8 @@ public static partial class StaticLayout
             var inline = new List<InlineUnit>();
             LayoutTableBoxGeometry? tableBoxGeometry = null;
             LayoutRect? tableWrapperBounds = null;
+            IReadOnlyList<LayoutTableBackground> tableColumnGroupBackgrounds = Array.Empty<LayoutTableBackground>();
+            IReadOnlyList<LayoutTableBackground> tableColumnBackgrounds = Array.Empty<LayoutTableBackground>();
             var cursor = contentY;
             double? previousBlockBottomMargin = null;
             if (element.LocalName == "input")
@@ -363,6 +373,8 @@ public static partial class StaticLayout
                     borderX, borderY, width + horizontal, padding, border);
                 childBoxes.AddRange(arranged.Children);
                 flow.AddRange(arranged.Children.Select(child => new LayoutBlockItem(child)));
+                tableColumnGroupBackgrounds = arranged.TableColumnGroupBackgrounds;
+                tableColumnBackgrounds = arranged.TableColumnBackgrounds;
                 if (arranged.WrapperBounds is { } wrapperBounds)
                 {
                     tableBoxGeometry = arranged.TableBoxGeometry;
@@ -437,6 +449,8 @@ public static partial class StaticLayout
             {
                 Flow = flow.AsReadOnly(),
                 TableBoxGeometry = tableBoxGeometry,
+                TableColumnGroupBackgrounds = tableColumnGroupBackgrounds,
+                TableColumnBackgrounds = tableColumnBackgrounds,
                 DiscMarker = discMarker,
                 CircleMarker = circleMarker,
                 SquareMarker = squareMarker,

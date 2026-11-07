@@ -513,8 +513,7 @@ and height work has the separate
 limit (default 1,000,000). Attribute scanning retains the shared text and
 cancellation budgets. Focused layout tests cover geometry, row-group clipping,
 HTML parsing and limits; paint tests verify overlapping row/cell background
-order. Remaining table gaps include column backgrounds, percentage widths,
-anonymous/arbitrary
+order. Remaining table gaps include percentage widths, anonymous/arbitrary
 tables, and other listed exclusions.
 The preceding `colspan` increment remains recorded in commit `3e568b1`:
 layout (807), Content (92), all 16,130 solution tests, solution build and
@@ -548,8 +547,9 @@ and [41387360887](https://github.com/khmseu/VisualWeb/actions/runs/41387360887))
 Pass 6 adds canonical column/group displays and bounded HTML `span` expansion
 for `colgroup`/`col`. Nonnegative CSS widths computed to pixels on a column
 constrain that track's minimum and maximum; a group width raises the minimum
-across its tracks, shared evenly. Percentage widths and backgrounds on either element
-remain unsupported. CSS (1,140), Layout (834), the zero-warning solution build and
+across its tracks, shared evenly. Percentage widths and backgrounds on either
+element remained unsupported at that pass. CSS (1,140), Layout (834), the
+zero-warning solution build and
 format verification pass locally. The complete solution test run passes
 (15,786 tests). Commit [`c677ceb`](https://github.com/khmseu/VisualWeb/commit/c677ceb95714b3acfb8491dfb027274ef3998ec9)
 is pushed; Linux development, Windows confinement and Push on main CI pass
@@ -557,10 +557,21 @@ is pushed; Linux development, Windows confinement and Push on main CI pass
 [41403577187](https://github.com/khmseu/VisualWeb/actions/runs/41403577187) and
 [41403576947](https://github.com/khmseu/VisualWeb/actions/runs/41403576947)).
 
+Pass 7 adds bounded column-group and column `background-color` layers. Layout
+stores one complete cell rectangle for each background on the cell's originating
+group/column, so spans crossing track/group boundaries retain CSS 2.2 coverage.
+The painter orders these layers below row-group/row/cell backgrounds; alpha
+composites through the existing raster path, and the layer geometry shares table
+operation and paint-command limits. Percentage widths and other table gaps
+remain unsupported. Layout (833) and Paint (71), the zero-warning solution
+build, all 16,180 solution tests and solution formatting verification pass
+locally.
+
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the
 zero-warning solution build, all 16,131 solution tests and solution formatting
-verification pass locally.
+verification pass locally; column backgrounds were unsupported at that earlier
+point and are implemented by Pass 7 above.
 
 The HTML UA stylesheet now applies the ordinary `hidden` rendering rule through
 the normal cascade. An override may make a hidden element visible, but
@@ -936,8 +947,9 @@ baseline findings, not new table findings.
 Pass 10 accepts row-group and row `background-color` on canonical tables.
 Existing parent-before-child paint traversal paints these layers below cells,
 so transparent cells reveal row colors and row spacing reveals the group color.
-Margins, padding, borders, row/group sizing and column backgrounds remain
-unsupported. Layout (807), Content (93), the zero-warning solution build, all
+Margins, padding, borders and row/group sizing remain unsupported. Column
+backgrounds were unsupported at that earlier point and are implemented by
+Pass 7 above. Layout (807), Content (93), the zero-warning solution build, all
 16,131 solution tests and solution formatting verification pass locally.
 
 **A particularly restrictive current limitation:** parent-edge margin collapsing is limited to eligible first/last block-child edges without intervening content, borders or padding (bottom propagation additionally requires auto height and zero min-height). Some CSS values parse successfully but remain unsupported downstream in layout or paint.
