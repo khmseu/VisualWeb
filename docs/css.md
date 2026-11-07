@@ -239,7 +239,8 @@ the table box without changing its intrinsic column sizing
 local ID `css2-tables`). The UA stylesheet also gives `colgroup` and `col`
 their canonical
 `table-column-group` and `table-column` display values; layout supports their
-bounded HTML spans and the documented automatic-table width constraints.
+bounded HTML spans and the documented automatic-table width constraints,
+including percentages solved against the final auto table width.
 
 The [HTML `font color` hint](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) uses the full

@@ -953,6 +953,76 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void AutomaticTablePercentageColumnWidthResolvesAgainstFinalTableWidth()
+    {
+        const string html = """
+            <table id=t><colgroup><col style="width:75%"><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(52, Find(root, "t").Content.Width, 10);
+        Assert.Equal(39, Find(root, "a").BorderBox.Width, 10);
+        Assert.Equal(7, Find(root, "b").BorderBox.Width);
+    }
+
+    [Fact]
+    public void AutomaticTablePercentageColumnGroupWidthIncludesColumnConstraints()
+    {
+        const string html = """
+            <table id=t><colgroup style="width:80%"><col style="width:60%"><col></colgroup>
+            <colgroup><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td><td id=c>z</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(75, Find(root, "t").Content.Width, 10);
+        Assert.True(Find(root, "a").BorderBox.Width >= 45);
+        Assert.True(Find(root, "a").BorderBox.Width + Find(root, "b").BorderBox.Width >= 60);
+        Assert.Equal(7, Find(root, "c").BorderBox.Width);
+    }
+
+    [Fact]
+    public void AutomaticTablePercentageColumnGroupWidthResolvesAgainstFinalTableWidth()
+    {
+        const string html = """
+            <table id=t><colgroup style="width:80%"><col><col></colgroup>
+            <colgroup><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td><td id=c>z</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(75, Find(root, "t").Content.Width, 10);
+        Assert.True(Find(root, "a").BorderBox.Width + Find(root, "b").BorderBox.Width >= 60);
+    }
+
+    [Theory]
+    [InlineData("<col style='width:100%'><col>")]
+    [InlineData("<col style='width:120%'><col>")]
+    [InlineData("<col style='width:75%'><col style='width:75%'>")]
+    [InlineData("<colgroup style='width:120%'><col><col></colgroup>")]
+    public void AutomaticTablePercentageConstraintsWithoutFiniteSolutionFailExplicitly(string columns)
+    {
+        var html = $"<table><colgroup>{columns}</colgroup><tr><td>x</td><td>y</td></tr></table>";
+
+        var exception = Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
+
+        Assert.Equal("Automatic table percentage width constraints cannot be satisfied.", exception.Message);
+    }
+
+    [Fact]
+    public void AutomaticTablePercentageWidthSolveUsesTheSharedColumnOperationLimit()
+    {
+        const string html = """
+            <table><colgroup><col style="width:75%"><col></colgroup>
+            <tr><td>x</td><td>y</td></tr></table>
+            """;
+
+        Assert.Throws<LayoutLimitException>(() =>
+            UnorderedList(html, options: new() { MaxTableColumnOperations = 100 }));
+    }
+
+    [Fact]
     public void PercentageColumnWidthUsesResolvedPercentageTableWidth()
     {
         const string html = """
@@ -1498,8 +1568,6 @@ public sealed class LayoutTests
 
     [Theory]
     [InlineData("<table><caption>Title</caption><tr><td>x</td></tr></table>", "caption{display:block}")]
-    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "col{width:50%}")]
-    [InlineData("<table><colgroup><col></colgroup><tr><td>x</td></tr></table>", "colgroup{width:50%}")]
     [InlineData("<table><colgroup width=20><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><colgroup span=2><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]

@@ -238,9 +238,12 @@ that track's minimum and maximum; a `colgroup` width that computes to pixels
 raises the minimum across its tracks, with any deficit shared evenly. Supported
 absolute units convert to pixels, and supported `em`/`rem` lengths resolve
 through CSS before sizing. Percentage widths on `col` and `colgroup` are
-minimum-width constraints resolved against a definite table width; a group
-constraint's deficit is shared evenly across its tracks. Percentage column
-widths on an auto-width table remain unsupported.
+minimum-width constraints resolved against the final table width; a group
+constraint's deficit is shared evenly across its tracks. Auto-width tables use
+a bounded deterministic solve for the width-dependent constraints, sharing the
+column-track operation and cancellation budgets. Constraints without a finite
+solution fail explicitly instead of returning approximate geometry. This is a
+local automatic-sizing policy, not a claim of matching every user agent.
 Solid-color `background-color` on columns and groups is supported as a bounded
 per-cell-origin layer: only a cell's starting column/group contributes, and the
 full border box of a spanning cell is covered even when it extends beyond that

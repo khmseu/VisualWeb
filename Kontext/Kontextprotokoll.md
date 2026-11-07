@@ -6205,3 +6205,73 @@ Warnungen/Fehler), alle 16.230 Solution-Tests, Formatpruefung und
 `git diff --check` lokal. Commit `146952f` ist gepusht. Linux
 (Run 42388005024), Windows-Confinement (Run 42388005016) und CodeQL
 (Run 42388004385) bestehen.
+
+### KP-229 - Pass 5: Auto-Tabellen-Prozentbreiten-Umfang
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerauftrag: zehn getrennte Missing-Prioritaetsinkremente fortsetzen;
+  Pass 1-4 sind abgeschlossen ([KP-225](./Kontextprotokoll.md#kp-225---zehn-passen-lauf-caption-side-als-erster-tabellenpass)
+  bis [KP-228](./Kontextprotokoll.md#kp-228---html-cellspacing-hinweis)).
+- Quellen: [Missing-Tracker](../plans/Missing.md#5-general-css-layout-and-painting),
+  [CSS-2.2-Auto-Tabellenalgorithmus](../specs/cache/css2-tables.html#auto-table-layout),
+  geprueft 2026-10-28, [Layout-Guide](../docs/text-layout.md#basic-automatic-tables),
+  `TableLayout.cs` und `LayoutTests.cs`.
+
+**Belegt:** Prozentbreiten auf `col`/`colgroup` sind fuer Tabellen mit
+definitiver Breite implementiert. Fuer `width:auto` wirft das Layout derzeit
+`UnsupportedLayoutException`. CSS 2.2 beschreibt den Auto-Tabellenalgorithmus
+als nicht normativ, bezieht Prozentspaltenbreiten auf die Tabellenbreite und
+empfiehlt dem User Agent, die Constraint-Erfuellung zu versuchen; wie das bei
+gekoppelten oder unloesbaren Constraints geschieht, ist eine offene
+Implementierungswahl. Der Missing-Tracker nennt Auto-Tabellen-Prozentbreiten
+als verbleibende Tabellenluecke.
+
+**Ableitung / offen:** Dies ist nach `cellspacing` ein konkreter, kleiner
+Tabellenblocker. Die Zielbreite ist jedoch Teil des Prozentbezugs und zugleich
+ein Ergebnis der automatischen Spaltenconstraints. Ein Solver und sein
+Verhalten bei nicht gemeinsam erfuellbaren Constraints sind nicht festgelegt;
+die Implementierung wartet daher auf die Nutzerwahl Q-028.
+
+**Vorschlaege, nicht beschlossen:**
+
+1. Prozentconstraints fuer automatische Tabellen mit einem begrenzten,
+   deterministischen Solver behandeln und nicht gemeinsam erfuellbare
+   Constraints explizit ablehnen. Das erweitert die Kompatibilitaet, benoetigt
+   aber einen genau definierten Constraint-/Verteilungsalgorithmus.
+2. Prozentbreiten auf automatischen Tabellen vorerst explizit ablehnen und
+   stattdessen den separaten HTML-`table[width]`-Presentational-Hinweis
+   bearbeiten. Das vermeidet die zirkulaere Prozentberechnung, laesst diese
+   konkrete Luecke aber offen.
+3. Weitere Arbeit blockieren, bis diese Entscheidung geklaert ist.
+
+**Arbeitsstand:** Der CI-Nachtrag fuer Pass 4 ist mit `47c4605` gepusht;
+Linux (Run 42389020117) und CodeQL (Run 42389020016) bestanden, Windows-
+Confinement (Run 42389020139) bestanden ebenfalls. Keine Implementierung fuer
+Pass 5 begonnen.
+
+### KP-230 - Pass 5: Auto-Tabellen-Prozentbreiten implementiert
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerentscheidung: Antwort `1` auf Q-028, automatische Tabellen-
+  Prozentbreiten fuer `col`/`colgroup` mit begrenztem Solver und explizitem
+  Fehler bei unloesbaren Constraints umzusetzen (Nutzerturn 2026-11-07,
+  17:15 Europe/Berlin; folgt auf KP-229).
+- Quellen: `TableLayout.cs`, `LayoutTests.cs`, [Layout-Guide](../docs/text-layout.md#basic-automatic-tables),
+  [CSS-Guide](../docs/css.md), [Missing-Tracker](../plans/Missing.md#5-general-css-layout-and-painting).
+
+**Belegt:** Auto-Tabellen-Prozentconstraints werden gegen die resultierende
+Tabellenbreite geloest. Der Algorithmus prueft die verfuegbare Breite; falls
+die Mindestconstraints sie uebersteigen, sucht er eine endliche Breite per
+begrenzter Bisektion, andernfalls ermittelt er gegebenenfalls die Breite aus
+den Maximalconstraints. Gruppen-Defizite werden gleichmaessig auf die Tracks
+verteilt. Ohne endliche Loesung wirft Layout eine konkrete
+`UnsupportedLayoutException`, nicht eine Naeherungsgeometrie. Kandidaten-
+Berechnungen, Constraints und Gruppen-Scans teilen
+`MaxTableColumnOperations` und Cancellation. Die Regressionen pruefen
+definite/unbestimmte Tabellenbreiten, kombinierte Spalten-/Gruppenconstraints,
+unloesbare 100%/120%-Faelle und das Operationslimit.
+
+**Validierung:** Die Regressionen bestanden zunaechst rot und nach der
+Implementierung gruen. Layout (867), Solution-Build (0 Warnungen/Fehler),
+alle 16.236 Solution-Tests, Formatpruefung und `git diff --check` bestehen
+lokal. Commit, Push und CI stehen noch aus.

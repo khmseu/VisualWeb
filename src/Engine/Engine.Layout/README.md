@@ -68,8 +68,10 @@ below the table according to inherited `caption-side:top/bottom` (initially
 `top`), at the table's border-edge width; caption content does not affect
 intrinsic column sizing. Bounded HTML `colgroup`/`col` spans add tracks, and
 computed nonnegative CSS-pixel widths constrain column/group automatic sizing.
-Percentage `col`/`colgroup` widths constrain track minimums against a definite
-table width; percentage column widths on auto-width tables remain unsupported.
+Percentage `col`/`colgroup` widths constrain track minimums against the final
+table width. Auto-width tables use a bounded deterministic solve sharing the
+table-column operation and cancellation budgets; constraints without a finite
+solution fail explicitly.
 Solid column/group `background-color` uses bounded cell-origin geometry,
 including complete bounds of spanning cells beyond their originating
 track/group; these rectangles share the table-column operation limit. See the

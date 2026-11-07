@@ -513,8 +513,8 @@ and height work has the separate
 limit (default 1,000,000). Attribute scanning retains the shared text and
 cancellation budgets. Focused layout tests cover geometry, row-group clipping,
 HTML parsing and limits; paint tests verify overlapping row/cell background
-order. Remaining table gaps include percentage widths on auto-width tables,
-anonymous/arbitrary tables, and other listed exclusions.
+order. Remaining table gaps include anonymous/arbitrary tables and other listed
+exclusions.
 The preceding `colspan` increment remains recorded in commit `3e568b1`:
 layout (807), Content (92), all 16,130 solution tests, solution build and
 format verification passed; Linux, Windows confinement and CodeQL CI passed
@@ -1024,11 +1024,12 @@ confinement and CodeQL CI pass (runs
 [42379320829](https://github.com/khmseu/VisualWeb/actions/runs/42379320829)).
 
 Pass 2 supports CSS 2.2 percentage widths on canonical `col` and `colgroup`
-elements when the table width is definite. Percentages constrain track minimums
-against the resolved table width; a column-group deficit is shared evenly
-across its tracks. Percentage column widths on auto-width tables remain
-unsupported. Layout tests (858), the zero-warning solution build, all 16,218
-solution tests and format verification pass locally. Commit `dee2a86` is
+elements. Definite-width tables resolve against the table width; automatic
+tables use a bounded deterministic solve against their final width. A
+column-group deficit is shared evenly across its tracks. Constraints without
+a finite solution fail explicitly. Layout tests (858), the zero-warning
+solution build, all 16,218 solution tests and format verification pass locally.
+Commit `dee2a86` is
 pushed; Linux, Windows confinement and CodeQL CI pass (runs
 [42381800740](https://github.com/khmseu/VisualWeb/actions/runs/42381800740),
 [42381800852](https://github.com/khmseu/VisualWeb/actions/runs/42381800852) and
@@ -1051,6 +1052,15 @@ tests (1,161), Layout tests (861), the zero-warning solution build, all 16,230
 solution tests, format verification and `git diff --check` pass locally.
 Commit `146952f` is pushed; Linux (Run 42388005024), Windows confinement
 (Run 42388005016) and CodeQL (Run 42388004385) pass.
+
+Pass 5 extends percentage `col`/`colgroup` constraints to auto-width tables.
+The bounded solver resolves them against the final table width, charges
+repeated work to the shared table-column operation limit, and rejects
+constraints without a finite solution. Regression coverage includes final
+width resolution, overlapping group/column constraints, unsatisfiable
+percentages and the operation limit. Layout (867), the zero-warning solution
+build, all 16,236 solution tests, solution format verification and
+`git diff --check` pass locally; CI and the increment commit are pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

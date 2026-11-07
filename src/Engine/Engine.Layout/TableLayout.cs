@@ -9,6 +9,7 @@ public static partial class StaticLayout
     {
         private const int MaxHtmlColumnSpan = 1000;
         private const int MaxHtmlRowSpan = 65534;
+        private const int MaxAutomaticTableWidthSolveIterations = 64;
         private sealed record PendingTableCell(DomElement Element, int ColumnSpan, int RowSpan);
         private sealed record PendingTableRow(DomElement Element, IReadOnlyList<PendingTableCell> Cells);
         private sealed record TableCell(DomElement Element, int Column, int ColumnSpan, int RowSpan);
@@ -278,40 +279,141 @@ public static partial class StaticLayout
                 }
             }
             var available = ContentWidth(style, containingWidth);
+            var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing.Horizontal.Value);
+            var isAutoWidth = style["width"] is CssKeyword { Value: "auto" };
             if (hasPercentageColumnWidths)
             {
-                if (style["width"] is CssKeyword { Value: "auto" })
-                { throw new UnsupportedLayoutException("Percentage column widths require a definite table width."); }
-                for (var index = 0; index < columnWidths.Count; index++)
+                var baseMinimum = minimum;
+                var baseMaximum = maximum;
+                (double[] Minimum, double[] Maximum, double Min, double Max) ApplyPercentages(
+                    double referenceWidth, bool copyForAutoWidth)
                 {
-                    cancellation.ThrowIfCancellationRequested();
-                    if (columnWidths[index] is not { IsPercentage: true } percentage) { continue; }
-                    var constraint = Finite(available * (percentage.Value / 100));
-                    ChargeTableColumnWork(1);
-                    minimum[index] = Math.Max(minimum[index], constraint);
-                    maximum[index] = Math.Max(maximum[index], minimum[index]);
-                }
-                foreach (var constraint in columnGroupWidths)
-                {
-                    cancellation.ThrowIfCancellationRequested();
-                    if (!constraint.IsPercentage) { continue; }
-                    var percentageWidth = Finite(available * (constraint.Value / 100));
-                    var deficit = Math.Max(0, percentageWidth - SumColumns(minimum, constraint.Start, constraint.Span));
-                    if (deficit == 0) { continue; }
-                    var share = deficit / constraint.Span;
-                    ChargeTableColumnWork(constraint.Span);
-                    for (var index = constraint.Start; index < constraint.Start + constraint.Span; index++)
+                    if (copyForAutoWidth) { ChargeTableColumnWork(columnCount); }
+                    var constrainedMinimum = copyForAutoWidth ? (double[])baseMinimum.Clone() : baseMinimum;
+                    var constrainedMaximum = copyForAutoWidth ? (double[])baseMaximum.Clone() : baseMaximum;
+                    for (var index = 0; index < columnWidths.Count; index++)
                     {
                         cancellation.ThrowIfCancellationRequested();
-                        minimum[index] = Finite(minimum[index] + share);
-                        maximum[index] = Math.Max(maximum[index], minimum[index]);
+                        if (columnWidths[index] is not { IsPercentage: true } percentage) { continue; }
+                        var constraint = Finite(referenceWidth * (percentage.Value / 100));
+                        ChargeTableColumnWork(1);
+                        constrainedMinimum[index] = Math.Max(constrainedMinimum[index], constraint);
+                        constrainedMaximum[index] = Math.Max(constrainedMaximum[index], constrainedMinimum[index]);
+                    }
+                    foreach (var constraint in columnGroupWidths)
+                    {
+                        cancellation.ThrowIfCancellationRequested();
+                        if (!constraint.IsPercentage) { continue; }
+                        var percentageWidth = Finite(referenceWidth * (constraint.Value / 100));
+                        var deficit = Math.Max(0, percentageWidth
+                            - SumColumns(constrainedMinimum, constraint.Start, constraint.Span));
+                        if (deficit == 0) { continue; }
+                        var share = deficit / constraint.Span;
+                        ChargeTableColumnWork(constraint.Span);
+                        for (var index = constraint.Start; index < constraint.Start + constraint.Span; index++)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            constrainedMinimum[index] = Finite(constrainedMinimum[index] + share);
+                            constrainedMaximum[index] = Math.Max(constrainedMaximum[index], constrainedMinimum[index]);
+                        }
+                    }
+                    var totalMinimum = copyForAutoWidth
+                        ? Finite(SumColumns(constrainedMinimum, 0, columnCount) + gaps) : 0;
+                    var totalMaximum = copyForAutoWidth
+                        ? Finite(SumColumns(constrainedMaximum, 0, columnCount) + gaps) : 0;
+                    return (constrainedMinimum, constrainedMaximum, totalMinimum, totalMaximum);
+                }
+
+                double referenceWidth;
+                if (!isAutoWidth)
+                {
+                    referenceWidth = available;
+                }
+                else
+                {
+                    var atAvailable = ApplyPercentages(available, copyForAutoWidth: true);
+                    if (atAvailable.Min <= available && atAvailable.Max >= available)
+                    {
+                        referenceWidth = available;
+                    }
+                    else if (atAvailable.Min > available)
+                    {
+                        var percentageSlope = 0.0;
+                        ChargeTableColumnWork(columnWidths.Count);
+                        foreach (var columnWidth in columnWidths)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            if (columnWidth is { IsPercentage: true } percentage)
+                            { percentageSlope += percentage.Value / 100; }
+                        }
+                        foreach (var constraint in columnGroupWidths)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            if (!constraint.IsPercentage) { continue; }
+                            var columnSlope = 0.0;
+                            ChargeTableColumnWork(constraint.Span);
+                            for (var index = constraint.Start; index < constraint.Start + constraint.Span; index++)
+                            {
+                                cancellation.ThrowIfCancellationRequested();
+                                if (columnWidths[index] is { IsPercentage: true } percentage)
+                                { columnSlope += percentage.Value / 100; }
+                            }
+                            percentageSlope += Math.Max(0, constraint.Value / 100 - columnSlope);
+                        }
+                        if (!double.IsFinite(percentageSlope) || percentageSlope >= 1)
+                        {
+                            throw new UnsupportedLayoutException(
+                                "Automatic table percentage width constraints cannot be satisfied.");
+                        }
+                        var low = available;
+                        var high = Math.Max(available, atAvailable.Min / (1 - percentageSlope));
+                        if (!double.IsFinite(high))
+                        {
+                            throw new UnsupportedLayoutException(
+                                "Automatic table percentage width constraints cannot be satisfied.");
+                        }
+                        if (ApplyPercentages(high, copyForAutoWidth: true).Min > high)
+                        {
+                            high = Math.Max(1, high) * 2;
+                            if (!double.IsFinite(high)
+                                || ApplyPercentages(high, copyForAutoWidth: true).Min > high)
+                            {
+                                throw new UnsupportedLayoutException(
+                                    "Automatic table percentage width constraints cannot be satisfied.");
+                            }
+                        }
+                        for (var iteration = 0; iteration < MaxAutomaticTableWidthSolveIterations; iteration++)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            var middle = low + (high - low) / 2;
+                            if (middle == low || middle == high) { break; }
+                            if (ApplyPercentages(middle, copyForAutoWidth: true).Min > middle) { low = middle; }
+                            else { high = middle; }
+                        }
+                        referenceWidth = high;
+                    }
+                    else
+                    {
+                        var low = 0.0;
+                        var high = available;
+                        for (var iteration = 0; iteration < MaxAutomaticTableWidthSolveIterations; iteration++)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            var middle = low + (high - low) / 2;
+                            if (middle == low || middle == high) { break; }
+                            if (ApplyPercentages(middle, copyForAutoWidth: true).Max >= middle) { low = middle; }
+                            else { high = middle; }
+                        }
+                        referenceWidth = low;
                     }
                 }
+                var constrained = ApplyPercentages(referenceWidth, copyForAutoWidth: isAutoWidth);
+                minimum = constrained.Minimum;
+                maximum = constrained.Maximum;
             }
-            var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing.Horizontal.Value);
             var min = Finite(minimum.Sum() + gaps);
             var max = Finite(maximum.Sum() + gaps);
-            var width = style["width"] is CssKeyword { Value: "auto" }
+            var width = isAutoWidth
                 ? Math.Min(Math.Max(min, available), max) : Math.Max(min, available);
             var flexibility = max - min;
             var ratio = flexibility > 0 ? Math.Min(1, (width - min) / flexibility) : 0;
