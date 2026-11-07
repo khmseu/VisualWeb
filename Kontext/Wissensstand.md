@@ -197,7 +197,10 @@
   vorhandene CSS-Kaskade und Zell-/Row-Span-Layoutlogik; Baseline sowie
   Zeilen-/Gruppenattribute bleiben ausgeschlossen. CSS (1.149), Layout (852),
   Solution-Build (0 Warnungen/Fehler), Volltest (16.208), Formatpruefung und
-  Whitespace-Check bestehen lokal. Commit/Push und CI stehen aus (KP-221).
+  Whitespace-Check bestehen lokal. Commit `ce09478` ist gepusht; Linux
+  x64/arm64, Windows x64/arm64 und CodeQL-CI sind gruen (Runs 42362747599,
+  42362747677 und 42362747202; KP-221/KP-222). Ein angeforderter Pass
+  verbleibt; vor Auswahl Tracker und Artefakte erneut pruefen.
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

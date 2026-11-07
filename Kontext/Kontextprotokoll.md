@@ -6021,3 +6021,15 @@ navigation-test issue, not a regression from table alignment or documentation.
   Solution-Build (0 Warnungen/Fehler), der Volltest (16.208 Faelle), die
   Formatpruefung und `git diff --check`.
 - Offen bei dieser Erfassung: Commit, Push und CI stehen aus.
+
+### KP-222 - Pass 9 gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Quellen: Commit `ce09478`; GitHub Actions Runs 42362747599 (Linux
+  development), 42362747677 (Windows confinement) und 42362747202 (Push on
+  main/CodeQL).
+- Related: KP-221 and the ten-pass request.
+
+**Belegt:** `ce09478` ist nach `main` gepusht. Linux x64/arm64, Windows
+x64/arm64 und Push-on-main-CodeQL sind erfolgreich. Die Browser-Test-Suites
+bestanden in der Linux-/Windows-CI.
