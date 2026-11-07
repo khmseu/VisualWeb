@@ -1006,7 +1006,9 @@ remain top-aligned, and row/group `valign` remains unsupported.
 CSS (1,152), Layout (853) and Content (100) tests pass. The solution build
 reports zero warnings/errors; all 16,213 solution tests and formatting
 verification pass. The retained-content regression verifies baseline `valign`
-against equivalent CSS across resize. Commit, push and CI remain to be recorded.
+against equivalent CSS across resize. Commit `348ad31` is pushed; Linux x64/arm64,
+Windows x64/arm64 and CodeQL CI pass (runs 42373689351, 42373689357 and
+42373689317).
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

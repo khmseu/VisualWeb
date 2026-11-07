@@ -6084,4 +6084,6 @@ bleiben top-ausgerichtet; Zeilen-/Gruppen-`valign` bleibt unsupported.
 Solution-Build (0 Warnungen/Fehler), Volltest (16.213 Tests),
 Formatpruefung und `git diff --check` bestehen. Der Content-Pixeltest
 vergleicht HTML-`valign` mit CSS bei initialem Rendern und retained resize.
-Commit, Push und CI stehen noch aus.
+Commit `348ad317d25ec0d87c6775f3e902c1d07143d2b9` ist gepusht. Linux
+x64/arm64 (Run 42373689351), Windows x64/arm64 (Run 42373689357) und
+Push-on-main/CodeQL (Run 42373689317) bestehen.
