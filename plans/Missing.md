@@ -969,10 +969,10 @@ horizontal LTR subset; its captions remain ordinary block flow. HTML
 explicitly registered italic face for rendering.
 The HTML table-cell `align` attribute now maps `left`, `right`, `center`,
 `middle` and `justify` on `td`/`th` to `text-align`, with ASCII-case-insensitive
-matching and `middle` mapped to `center`. Row/group alignment, `valign`,
-baseline table-cell alignment, legacy `valign`, legacy over-constrained
-descendant-margin alignment, table left/right floats and other alignment targets
-remain unsupported. CSS `vertical-align:middle` and `bottom` now position
+matching and `middle` mapped to `center`. Row/group `align`, baseline
+table-cell alignment, legacy over-constrained descendant-margin alignment,
+table left/right floats and other alignment targets remain unsupported. CSS
+`vertical-align:middle` and `bottom` now position
 canonical table-cell contents against their final row height, including the
 complete height and internal spacing of row-spanning cells; `top` remains the
 UA default. Pass 8 adds explicit CSS-parser and exact single-/multi-row-span
@@ -983,11 +983,17 @@ Linux development, Windows confinement (x64/arm64) and CodeQL CI pass (runs
 42357015761, 42357015749 and 42357015436). On the CI-recording commit, the
 unchanged Windows x64 navigation test intermittently duplicated requests on
 the first run; the failed-job-only rerun passed, so Windows run 42357742176 is
-green. Baseline alignment and legacy `valign` remain open.
-This increment adds 14 CSS cascade cases, 13 layout acceptance/rejection cases
-and one retained-resize pixel regression. CSS (1,116), Layout (798), Content
-(89), the solution build (zero warnings/errors), all 16,105 solution tests and
-format verification pass.
+green. The Pass 8 increment adds 14 CSS cascade cases, 13 layout
+acceptance/rejection cases and one retained-resize pixel regression. CSS
+(1,116), Layout (798), Content (89), the solution build (zero warnings/errors),
+all 16,105 solution tests and format verification pass.
+
+Pass 9 adds HTML `td`/`th` `valign=top`, `middle` and `bottom` as
+ASCII-case-insensitive author presentational hints, using the existing
+single-row and row-span alignment behavior. Baseline, invalid cell values and
+row/group `valign` remain unsupported and fail explicitly at layout. CSS
+(1,149), Layout (852), the zero-warning solution build, all 16,208 solution
+tests and formatting verification pass locally; CI is pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

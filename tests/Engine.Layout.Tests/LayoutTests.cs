@@ -1154,6 +1154,19 @@ public sealed class LayoutTests
         Assert.NotNull(UnorderedList(html).Root);
     }
 
+    [Theory]
+    [InlineData("td", "top")]
+    [InlineData("td", "middle")]
+    [InlineData("td", "bottom")]
+    [InlineData("th", "top")]
+    [InlineData("th", "middle")]
+    [InlineData("th", "bottom")]
+    public void SupportedTableCellValignHintsAreAcceptedByLayout(string tag, string valign)
+    {
+        var html = $"<table><tr><{tag} valign='{valign}'>x</{tag}></tr></table>";
+        Assert.NotNull(UnorderedList(html).Root);
+    }
+
     [Fact]
     public void FigureUserAgentMarginsInsetItsContentInHorizontalLayout()
     {
@@ -1208,6 +1221,40 @@ public sealed class LayoutTests
         Assert.Equal(20, Find(root, "b").BorderBox.Height);
         Assert.Equal(7, Find(root, "a").Children[0].Content.Y);
         Assert.Equal(2, Find(root, "b").Content.Y);
+    }
+
+    [Fact]
+    public void TableCellValignMiddleCentersContentsWithinTheSingleRow()
+    {
+        const string html = """
+            <table><tr>
+            <td id=aligned valign=middle><div id=content>short</div></td>
+            <td>one<br>two<br>three</td>
+            </tr></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}").Root!;
+        var cell = Find(root, "aligned");
+        var content = Find(root, "content");
+
+        Assert.Equal(10, content.Content.Y - cell.Content.Y);
+        Assert.Equal(30, cell.BorderBox.Height);
+    }
+
+    [Fact]
+    public void TableCellValignBottomUsesTheCompleteRowSpanHeight()
+    {
+        const string html = """
+            <table><tbody><tr>
+            <td id=aligned rowspan=2 valign=bottom><div id=content>short</div></td>
+            <td>one<br>two<br>three</td>
+            </tr><tr><td>one<br>two</td></tr></tbody></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}").Root!;
+        var cell = Find(root, "aligned");
+        var content = Find(root, "content");
+
+        Assert.Equal(42, content.Content.Y - cell.Content.Y);
+        Assert.Equal(52, cell.BorderBox.Height);
     }
 
     [Theory]
@@ -1292,6 +1339,11 @@ public sealed class LayoutTests
     [InlineData("<table width=100><tr><td>x</td></tr></table>", "")]
     [InlineData("<table align=left><tr><td>x</td></tr></table>", "")]
     [InlineData("<table align='center '><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table valign=top><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><tbody valign=top><tr><td>x</td></tr></tbody></table>", "")]
+    [InlineData("<table><tr valign=top><td>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td valign=baseline>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td valign='middle '>x</td></tr></table>", "")]
     [InlineData("<table><tbody align=left><tr><td>x</td></tr></tbody></table>", "")]
     [InlineData("<table><tr align=center><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td align='middle '>x</td></tr></table>", "")]

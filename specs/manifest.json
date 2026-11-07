@@ -386,10 +386,10 @@
       "title": "WHATWG HTML",
       "url": "https://html.spec.whatwg.org/",
       "file": "html.html",
-      "fetchedAt": "2026-10-04T14:43:25.8475765+00:00",
-      "checkedAt": "2026-10-04T14:43:25.8475765+00:00",
-      "eTag": "\u00226ac248f1-ee3246\u0022",
-      "lastModified": "2026-10-04T12:39:13+00:00"
+      "fetchedAt": "2026-11-07T09:34:04.8278357+00:00",
+      "checkedAt": "2026-11-07T09:34:04.8278357+00:00",
+      "eTag": "\u00226aee4ed9-f349bc\u0022",
+      "lastModified": "2026-11-06T22:04:09+00:00"
     },
     {
       "id": "dom",

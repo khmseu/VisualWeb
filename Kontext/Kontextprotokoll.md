@@ -6000,3 +6000,24 @@ attempt failed only in the unchanged browser test
 reported repeated requests. The failed-job-only rerun passed. The Windows
 workflow is green; the failure is recorded as an existing intermittent
 navigation-test issue, not a regression from table alignment or documentation.
+
+### KP-221 - Pass 9: begrenzte HTML valign-Hints
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Quellen: `plans/Missing.md` (Tabellenstatus und Prioritaet 1),
+  `docs/css.md`, `docs/text-layout.md`, `specs/cache/html.html`
+  (`tables-2:presentational-hints`), CSS/Layout-Code und fokussierte Tests.
+- Anlass: Der Nutzerauftrag umfasst zehn getrennte Missing-Prioritaetsinkremente;
+  nach Pass 8 war `td`/`th` `valign` eine verbleibende konkrete Tabellenluecke.
+- Status der Auswahl: **Ableitung**, nicht neue Nutzerentscheidung. Der Pass
+  erweitert nur Tabellenzellen auf HTML-`valign=top`, `middle` und `bottom`;
+  diese Werte entsprechen dem bereits getesteten CSS-/Layoutumfang. Baseline,
+  ungueltige Werte und `valign` auf Tabelle/Zeile/Gruppe bleiben explizit
+  ausgeschlossen.
+- Belegt: Die HTML-Cachequelle war beim Start aelter als 30 Tage und wurde am
+  2026-11-07 aktualisiert; nur ihr Manifesteintrag wurde behalten. Neue CSS-
+  und Layoutregressionen schlugen vor Implementierung wie erwartet fehl.
+  Danach bestanden die fokussierten Tests (CSS 1.149, Layout 852), der
+  Solution-Build (0 Warnungen/Fehler), der Volltest (16.208 Faelle), die
+  Formatpruefung und `git diff --check`.
+- Offen bei dieser Erfassung: Commit, Push und CI stehen aus.

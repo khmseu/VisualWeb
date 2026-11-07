@@ -213,6 +213,11 @@ list hints. The separate legacy behavior that adjusts over-constrained
 descendant margins is not implemented. Table row/group hints and alignment on
 other elements remain unsupported. The HTML `center` element is a block by
 default and supplies a `text-align:center` presentational hint.
+The same table rendering rules map `valign=top`, `middle` and `bottom` on
+`td`/`th` to `vertical-align` as ASCII-case-insensitive author presentational
+hints. They share the same cascade, assignment budget and recomputation rules.
+Baseline and other `valign` values, plus `valign` on table rows/groups, remain
+unsupported and fail explicitly when table layout is requested.
 The table rendering rules also support ASCII-case-insensitive
 `table[align=center]` as `margin-left:auto;margin-right:auto` in the
 horizontal LTR layout subset. Other table alignment values and legacy

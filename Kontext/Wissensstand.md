@@ -192,6 +192,12 @@
   Der erste Lauf des unveraenderten Windows-x64-Browsernavigationstests traf
   wiederholte Requests; der Retry bestand (Runs 42357015761, 42357015749,
   42357015436 und 42357742176; KP-219/KP-220).
+  Pass 9 leitet begrenzte HTML-`valign`-Hints fuer `td`/`th` aus der
+  verbleibenden Tabellenluecke ab: `top`, `middle` und `bottom` verwenden die
+  vorhandene CSS-Kaskade und Zell-/Row-Span-Layoutlogik; Baseline sowie
+  Zeilen-/Gruppenattribute bleiben ausgeschlossen. CSS (1.149), Layout (852),
+  Solution-Build (0 Warnungen/Fehler), Volltest (16.208), Formatpruefung und
+  Whitespace-Check bestehen lokal. Commit/Push und CI stehen aus (KP-221).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

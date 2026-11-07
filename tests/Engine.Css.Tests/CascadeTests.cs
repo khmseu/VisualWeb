@@ -624,6 +624,40 @@ public sealed class CascadeTests
                 .Styles[target]["text-align"]);
     }
 
+    [Theory]
+    [InlineData("td", "ToP", "top")]
+    [InlineData("td", "MiDdLe", "middle")]
+    [InlineData("td", "BoTtOm", "bottom")]
+    [InlineData("th", "ToP", "top")]
+    [InlineData("th", "MiDdLe", "middle")]
+    [InlineData("th", "BoTtOm", "bottom")]
+    public void TableCellValignHintsAcceptSupportedAsciiValues(string tag, string value, string expected)
+    {
+        var doc = Document($"<table><tr><{tag} id=target valign='{value}'>x</{tag}></tr></table>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), result.Styles[doc.GetElementById("target")!]["vertical-align"]);
+    }
+
+    [Fact]
+    public void TableCellValignHintUsesPresentationalCascade()
+    {
+        var doc = Document("<table><tr><td id=target valign=middle>x</td></tr></table>");
+        var target = doc.GetElementById("target")!;
+
+        Assert.Equal(new CssKeyword("middle"),
+            CssStyleEngine.Compute(doc, [new("td{vertical-align:bottom}", CssOrigin.User)],
+                cancellationToken: Cancellation).Styles[target]["vertical-align"]);
+        Assert.Equal(new CssKeyword("bottom"),
+            CssStyleEngine.Compute(doc, [new("td{vertical-align:bottom}")],
+                cancellationToken: Cancellation).Styles[target]["vertical-align"]);
+        Assert.Empty(CssStyleEngine.Compute(doc, [new("td{color:red}")], includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, [new("td{color:red}")],
+            includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+    }
+
     [Fact]
     public void CenterElementUsesCenterPresentationalHintAndBlockUaDefault()
     {

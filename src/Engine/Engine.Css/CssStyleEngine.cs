@@ -33,7 +33,7 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Alphabetic and Roman values use css-counter-styles
 /// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-alphabetic">alphabetic styles</see> and
 /// <see href="https://www.w3.org/TR/css-counter-styles-3/#simple-numeric">numeric styles</see>.
-/// Supported HTML list type and flow-content alignment hints enter the
+/// Supported HTML list type and alignment hints enter the
 /// <see href="https://www.w3.org/TR/css-cascade-5/#preshint">author presentational hint origin</see>.
 /// Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">alignment hints</see>.
 /// Center-element and div alignment hints use
@@ -155,6 +155,15 @@ public static class CssStyleEngine
         return element.LocalName is ("td" or "th") && GetAlignHint(element) is not null;
     }
 
+    /// <summary>Reports whether a supported legacy vertical-alignment hint applies to an HTML table cell.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell alignment hints</see>.</remarks>
+    public static bool HasSupportedTableCellValignHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName is ("td" or "th") && GetValignHint(element) is not null;
+    }
+
     /// <summary>Finds the supported flow-content text alignment hints.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow content hints</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table rendering hints</see>.</remarks>
@@ -185,6 +194,19 @@ public static class CssStyleEngine
             "right" => "right",
             "center" => "center",
             "justify" => "justify",
+            _ => null
+        } : null;
+    }
+
+    private static string? GetValignHint(DomElement element)
+    {
+        if (element.LocalName is not ("td" or "th")) { return null; }
+        var valign = element.GetAttribute("valign");
+        return valign is { Length: 3 or 6 } ? CssText.Lower(valign) switch
+        {
+            "top" => "top",
+            "middle" => "middle",
+            "bottom" => "bottom",
             _ => null
         } : null;
     }
@@ -230,6 +252,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("text-align", new CssKeyword(align), false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetValignHint(element) is { } verticalAlign)
+            {
+                context.Assignment();
+                Add(new("vertical-align", new CssKeyword(verticalAlign), false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (element.LocalName == "font" && element.GetAttribute("color") is { } colorAttribute)
@@ -347,6 +375,7 @@ public static class CssStyleEngine
                         _ => candidate.Value
                     };
                 }
+
                 return property.Inherited ? inherited : property.Initial;
             }
         }

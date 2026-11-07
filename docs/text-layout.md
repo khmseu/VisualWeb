@@ -249,8 +249,10 @@ border-box height; specified cell height is a minimum. CSS
 `vertical-align:middle` centers the cell contents in the available cell height,
 and `bottom` aligns them to its bottom. For row-spanning cells, alignment uses
 the complete spanned height, including internal row spacing. Baseline alignment
-and legacy HTML `valign` remain unsupported. A spanning cell's required height,
-including internal row spacing, is distributed evenly across its covered rows.
+remains unsupported. HTML `td`/`th` `valign=top`, `middle` and `bottom` map to
+the corresponding supported alignment; matching is ASCII-case-insensitive and
+does not trim. A spanning cell's required height, including internal row
+spacing, is distributed evenly across its covered rows.
 Cell block margins do not collapse through cell edges. Table, row-group and
 row backgrounds paint before cell backgrounds, so later rows cannot cover a
 spanning cell; solid borders use the existing paint flow.
@@ -269,14 +271,14 @@ percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
 spacing, baseline and other cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
-`cellspacing`, `valign`, `nowrap`). The table's ASCII-case-insensitive
+`cellspacing`, `nowrap`). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
 maps to `center`. Row/group `align`, left/right table floats, other table
-alignment values and `valign` remain unsupported. Table cells support
-`vertical-align:top`, `middle` and `bottom`; `baseline` and other values fail
-explicitly at layout.
+alignment values, row/group `valign`, baseline and other cell `valign` values
+remain unsupported and fail explicitly at layout. Table cells support
+`vertical-align:top`, `middle` and `bottom`.
 Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
 have zero intrinsic content size.
 
