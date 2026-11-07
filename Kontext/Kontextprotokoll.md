@@ -6056,3 +6056,32 @@ bestanden in der Linux-/Windows-CI.
   diese Folge nicht durch CSS 2.2 spezifiziert ist. Bestehende UA-Topdefaults
   wuerden in beiden Varianten unveraendert bleiben.
 - **Offen:** weitere Aktionen pausieren, bis der Nutzer den Umfang waehlt.
+
+### KP-224 - Pass 10: Baselineausrichtung mit Row-Spans
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Ereignisdatum der Nutzerwahl: 2026-11-07, 13:13 Europe/Berlin.
+- Quellen: Nutzerantwort in der aktuellen Unterhaltung; lokaler CSS-2.2-Cache
+  `css2-tables` (checked 2026-10-28); HTML-Cache `html` (refreshed 2026-11-07);
+  `TableLayout.cs`, CSS/Layout/Content-Tests und [Missing-Tracker](../plans/Missing.md).
+- Bezug: Q-027/KP-223, Priority-1 Pass 10 des zehnteiligen Auftrags.
+
+**Nutzerangabe / Entscheidung:** Der Nutzer waehlte Option 2: Baselineausrichtung
+auch fuer Row-Spans; wenn baselinebedingte Verschiebung mehr Span-Hoehe
+erfordert, soll die zusaetzliche Hoehe mit der bestehenden gleichmaessigen
+Row-Span-Defizitverteilung vergeben werden.
+
+**Belegt:** CSS/HTML-`baseline` ist im endlichen Tabellenlayout implementiert.
+Zellbaselines kommen von der ersten in-flow Line oder, bei leerem Zellinhalt,
+von der unteren Inhaltskante. Die Baseline einer Zeile ist der groesste Offset
+der baseline-ausgerichteten Zellen, die in dieser Zeile starten. Row-Spans
+richten sich an der ersten Zeilenbaseline aus; zusaetzliche erforderliche
+Gesamthoehe wird gleichmaessig ueber die ueberdeckten Zeilen verteilt. Dies ist
+eine lokale Hoehenpolitik, keine von CSS 2.2 definierte Row-Span-Regel. UA-Zellen
+bleiben top-ausgerichtet; Zeilen-/Gruppen-`valign` bleibt unsupported.
+
+**Validierung:** CSS (1.152), Layout (853) und Content (100) Tests bestehen;
+Solution-Build (0 Warnungen/Fehler), Volltest (16.213 Tests),
+Formatpruefung und `git diff --check` bestehen. Der Content-Pixeltest
+vergleicht HTML-`valign` mit CSS bei initialem Rendern und retained resize.
+Commit, Push und CI stehen noch aus.

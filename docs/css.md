@@ -213,11 +213,13 @@ list hints. The separate legacy behavior that adjusts over-constrained
 descendant margins is not implemented. Table row/group hints and alignment on
 other elements remain unsupported. The HTML `center` element is a block by
 default and supplies a `text-align:center` presentational hint.
-The same table rendering rules map `valign=top`, `middle` and `bottom` on
+The same table rendering rules map `valign=baseline`, `top`, `middle` and `bottom` on
 `td`/`th` to `vertical-align` as ASCII-case-insensitive author presentational
 hints. They share the same cascade, assignment budget and recomputation rules.
-Baseline and other `valign` values, plus `valign` on table rows/groups, remain
-unsupported and fail explicitly when table layout is requested.
+Other `valign` values, plus `valign` on table rows/groups, remain unsupported
+and fail explicitly when table layout is requested. Baseline row-spans use the
+documented local even row-height policy; CSS 2.2 leaves that height effect
+undefined.
 The table rendering rules also support ASCII-case-insensitive
 `table[align=center]` as `margin-left:auto;margin-right:auto` in the
 horizontal LTR layout subset. Other table alignment values and legacy
@@ -422,8 +424,8 @@ resolution or V8 work is performed here.
 
 Canonical HTML tables now receive their finite table display defaults, 2px
 spacing, and 1px top-aligned cell padding. The layout subset also supports
-`vertical-align:middle` and `bottom` on table cells, including row spans;
-baseline and other values remain explicit layout failures. Automatic column sizing and explicit
+`vertical-align:baseline`, `middle` and `bottom` on table cells, including row
+spans. Automatic column sizing and explicit
 downstream exclusions are documented in the
 [table layout subset](text-layout.md#basic-automatic-tables). Accepted display
 values include captions and column/group boxes, but do not imply anonymous

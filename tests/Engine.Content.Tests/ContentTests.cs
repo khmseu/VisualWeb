@@ -371,6 +371,42 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void TableCellBaselineHintMatchesExplicitCssAcrossRetainedResize()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string style = "*{margin:0;font-size:20px;line-height:20px;color:red}table{border-spacing:0}td{padding:0}";
+        CssStyleSource[] actualStyle = [new(style)];
+        const string html = """
+            <!doctype html><table><tbody><tr>
+            <td rowspan=2 valign=baseline>one<br>two<br>three<br>four</td>
+            <td valign=baseline><div style="font-size:30px;line-height:30px">tall</div></td>
+            </tr><tr><td valign=baseline>short</td></tr></tbody></table>
+            """;
+        const string reference = """
+            <!doctype html><table><tbody><tr>
+            <td rowspan=2>one<br>two<br>three<br>four</td>
+            <td><div style="font-size:30px;line-height:30px">tall</div></td>
+            </tr><tr><td>short</td></tr></tbody></table>
+            """;
+        CssStyleSource[] expectedStyle = [new(style + "td{vertical-align:baseline}")];
+        var actual = OfflinePageRenderer.Render(html, actualStyle, text, fonts, 220, 140,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(reference, expectedStyle, text, fonts, 220, 140,
+            cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+        var resized = OfflinePageRenderer.RenderParsed(actual.Html, actualStyle, text, fonts, 240, 140,
+            cancellationToken: Cancellation);
+        var expectedResized = OfflinePageRenderer.RenderParsed(expected.Html, expectedStyle, text, fonts, 240, 140,
+            cancellationToken: Cancellation);
+        Assert.Same(actual.Html.Document, resized.Html.Document);
+        Assert.Equal(expectedResized.Frame.Pixels.ToArray(), resized.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void NestedUaListMarginsMatchExplicitZeroMarginPixels()
     {
         using var font = new TextFont(FontPath);

@@ -104,6 +104,7 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("baseline")]
     [InlineData("top")]
     [InlineData("middle")]
     [InlineData("bottom")]
@@ -628,9 +629,11 @@ public sealed class CascadeTests
     [InlineData("td", "ToP", "top")]
     [InlineData("td", "MiDdLe", "middle")]
     [InlineData("td", "BoTtOm", "bottom")]
+    [InlineData("td", "BaSeLiNe", "baseline")]
     [InlineData("th", "ToP", "top")]
     [InlineData("th", "MiDdLe", "middle")]
     [InlineData("th", "BoTtOm", "bottom")]
+    [InlineData("th", "BaSeLiNe", "baseline")]
     public void TableCellValignHintsAcceptSupportedAsciiValues(string tag, string value, string expected)
     {
         var doc = Document($"<table><tr><{tag} id=target valign='{value}'>x</{tag}></tr></table>");

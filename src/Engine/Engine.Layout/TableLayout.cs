@@ -159,10 +159,10 @@ public static partial class StaticLayout
                         RejectTableAttributes(cell);
                         var cellStyle = Style(cell);
                         if (cellStyle["vertical-align"] is not CssKeyword
-                            { Value: "top" or "middle" or "bottom" }
+                            { Value: "baseline" or "top" or "middle" or "bottom" }
                             || Edges(cellStyle, "margin", 0) != default
                             || cellStyle["max-height"] is not CssKeyword { Value: "none" })
-                        { throw new UnsupportedLayoutException("Table cells require top, middle or bottom alignment, zero margins and no maximum height."); }
+                        { throw new UnsupportedLayoutException("Table cells require baseline, top, middle or bottom alignment, zero margins and no maximum height."); }
                         pendingCells.Add(new(cell, columnSpan, rowSpan));
                     }
                     pendingRows.Add(new(row, pendingCells.AsReadOnly()));
@@ -610,6 +610,40 @@ public static partial class StaticLayout
                         }
                     }
                 }
+                var rowBaselines = new double?[group.Rows.Count];
+                for (var rowIndex = 0; rowIndex < group.Rows.Count; rowIndex++)
+                {
+                    foreach (var (cell, box) in rowCells[rowIndex])
+                    {
+                        if (((CssKeyword)Style(cell.Element)["vertical-align"]).Value != "baseline") { continue; }
+                        var baselineOffset = TableCellBaselineOffset(box);
+                        rowBaselines[rowIndex] = Math.Max(rowBaselines[rowIndex] ?? 0, baselineOffset);
+                    }
+                }
+                for (var rowIndex = 0; rowIndex < group.Rows.Count; rowIndex++)
+                {
+                    if (rowBaselines[rowIndex] is not { } rowBaseline) { continue; }
+                    foreach (var (cell, box) in rowCells[rowIndex])
+                    {
+                        if (((CssKeyword)Style(cell.Element)["vertical-align"]).Value != "baseline") { continue; }
+                        var contentOffset = rowBaseline - TableCellBaselineOffset(box);
+                        if (cell.RowSpan == 1)
+                        {
+                            rowHeights[rowIndex] = Math.Max(rowHeights[rowIndex],
+                                Finite(contentOffset + box.BorderBox.Height));
+                            continue;
+                        }
+                        var spanHeight = SumRowHeights(rowHeights, rowIndex, cell.RowSpan)
+                            + rowSpacing * (cell.RowSpan - 1);
+                        var deficit = Math.Max(0, contentOffset + box.BorderBox.Height - spanHeight);
+                        var share = deficit / cell.RowSpan;
+                        for (var coveredRow = rowIndex; coveredRow < rowIndex + cell.RowSpan; coveredRow++)
+                        {
+                            ChargeTableRowSpanOperation();
+                            rowHeights[coveredRow] = Finite(rowHeights[coveredRow] + share);
+                        }
+                    }
+                }
                 for (var rowIndex = 0; rowIndex < group.Rows.Count; rowIndex++)
                 {
                     cancellation.ThrowIfCancellationRequested();
@@ -626,6 +660,7 @@ public static partial class StaticLayout
                         {
                             "middle" => extra / 2,
                             "bottom" => extra,
+                            "baseline" => (rowBaselines[rowIndex] ?? 0) - TableCellBaselineOffset(originalBox),
                             _ => 0
                         };
                         var alignedContents = TranslateTableBox(originalBox, contentOffset, shiftBox: false);
@@ -696,6 +731,21 @@ public static partial class StaticLayout
                 sum = Finite(sum + heights[index]);
             }
             return sum;
+        }
+
+        private double TableCellBaselineOffset(LayoutBox box)
+        {
+            var pending = new Stack<LayoutFlowItem>(box.Flow.Reverse());
+            while (pending.TryPop(out var item))
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (item is LayoutLineItem line) { return Finite(line.Line.Baseline - box.BorderBox.Y); }
+                if (item is LayoutBlockItem block)
+                {
+                    foreach (var child in block.Box.Flow.Reverse()) { pending.Push(child); }
+                }
+            }
+            return Finite(box.Content.Y + box.Content.Height - box.BorderBox.Y);
         }
 
         private LayoutBox TranslateTableBox(LayoutBox box, double offsetY, bool shiftBox = true)

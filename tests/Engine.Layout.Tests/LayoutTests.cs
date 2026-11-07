@@ -34,6 +34,19 @@ public sealed class LayoutTests
     }
     private static LayoutBox? TryFind(LayoutBox root, string id) => root.Element.GetAttribute("id") == id ? root
         : root.Children.Select(child => TryFind(child, id)).FirstOrDefault(found => found is not null);
+    private static double FirstBaseline(LayoutBox box)
+    {
+        var pending = new Stack<LayoutFlowItem>(box.Flow.Reverse());
+        while (pending.TryPop(out var item))
+        {
+            if (item is LayoutLineItem line) { return line.Line.Baseline; }
+            if (item is LayoutBlockItem block)
+            {
+                foreach (var child in block.Box.Flow.Reverse()) { pending.Push(child); }
+            }
+        }
+        throw new InvalidOperationException("Missing line baseline.");
+    }
 
     private static LayoutResult UnorderedList(string html, string css = "", double width = 100, LayoutOptions? options = null)
     {
@@ -1295,6 +1308,45 @@ public sealed class LayoutTests
         Assert.Equal(52, cell.BorderBox.Height);
     }
 
+    [Theory]
+    [InlineData("valign=baseline", "")]
+    [InlineData("", "td{vertical-align:baseline}")]
+    public void TableCellBaselineAlignmentMatchesTheRowBaseline(string attribute, string css)
+    {
+        var root = UnorderedList($"""
+            <table><tr>
+            <td id=short {attribute}><div id=shortContent>short</div></td>
+            <td id=tall {attribute}><div id=tallContent>tall</div></td>
+            </tr></table>
+            """, "td{padding:0}#tall div{font-size:20px;line-height:20px}" + css).Root!;
+        var shortCell = Find(root, "short");
+        var tallCell = Find(root, "tall");
+
+        Assert.Equal(20, shortCell.BorderBox.Height);
+        Assert.Equal(FirstBaseline(tallCell), FirstBaseline(shortCell));
+        Assert.Equal(16, FirstBaseline(shortCell) - shortCell.BorderBox.Y);
+    }
+
+    [Fact]
+    public void RowSpanningCellBaselineUsesFirstRowAndDistributesExtraHeightEvenly()
+    {
+        const string html = """
+            <table><tbody><tr id=r0>
+            <td id=span rowspan=2 valign=baseline><div id=spanContent>one<br>two<br>three<br>four</div></td>
+            <td id=tall valign=baseline><div>tall</div></td>
+            </tr><tr id=r1><td id=second>short</td></tr></tbody></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}#tall div{font-size:20px;line-height:20px}").Root!;
+        var firstRow = Find(root, "r0");
+        var span = Find(root, "span");
+        var tall = Find(root, "tall");
+        var secondRow = Find(root, "r1");
+
+        Assert.Equal(FirstBaseline(tall), FirstBaseline(span));
+        Assert.Equal(28, firstRow.BorderBox.Height);
+        Assert.Equal(18, secondRow.BorderBox.Height);
+    }
+
     [Fact]
     public void TableMeasurementAndFinalLayoutShareExactWorkBudgets()
     {
@@ -1342,13 +1394,11 @@ public sealed class LayoutTests
     [InlineData("<table valign=top><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tbody valign=top><tr><td>x</td></tr></tbody></table>", "")]
     [InlineData("<table><tr valign=top><td>x</td></tr></table>", "")]
-    [InlineData("<table><tr><td valign=baseline>x</td></tr></table>", "")]
     [InlineData("<table><tr><td valign='middle '>x</td></tr></table>", "")]
     [InlineData("<table><tbody align=left><tr><td>x</td></tr></tbody></table>", "")]
     [InlineData("<table><tr align=center><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td align='middle '>x</td></tr></table>", "")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
-    [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:baseline}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:sub}")]
     [InlineData("<div>x</div>", "div{vertical-align:middle}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "table{height:100px}")]

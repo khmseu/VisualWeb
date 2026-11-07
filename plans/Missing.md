@@ -997,6 +997,17 @@ tests and formatting verification pass locally. Commit `ce09478` is pushed and
 Linux x64/arm64, Windows x64/arm64 and CodeQL CI pass (runs 42362747599,
 42362747677 and 42362747202).
 
+Pass 10 adds CSS and HTML `td`/`th` baseline alignment, including row-spanning
+cells. A cell's first in-flow line baseline (or its content bottom if empty)
+aligns with the maximum baseline offset among baseline-aligned cells starting
+in the row. For baseline row-spans, any added height uses the existing even
+deficit distribution; CSS 2.2 does not define this row-height policy. UA cells
+remain top-aligned, and row/group `valign` remains unsupported.
+CSS (1,152), Layout (853) and Content (100) tests pass. The solution build
+reports zero warnings/errors; all 16,213 solution tests and formatting
+verification pass. The retained-content regression verifies baseline `valign`
+against equivalent CSS across resize. Commit, push and CI remain to be recorded.
+
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
 ### 6. A persistent browser JavaScript environment

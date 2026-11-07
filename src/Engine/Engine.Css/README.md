@@ -156,11 +156,11 @@ row/group and cell displays, `table-layout:auto`, inherited
 (ID `css2-tables`). UA defaults place captions above tables and supply the
 canonical column displays; `caption-side` remains unsupported.
 UA cells use 1px padding and top alignment; UA tables use 2px spacing.
-HTML `td`/`th` `valign=top`, `middle` and `bottom` map to `vertical-align` at
-the author presentational-hint origin. Matching is ASCII-case-insensitive and
-does not trim. Baseline and other values, and row/group `valign`, remain
-unsupported.
-The layout subset also accepts cell `middle` and `bottom` alignment, including
-row spans; baseline alignment and other values fail explicitly downstream.
+HTML `td`/`th` `valign=baseline`, `top`, `middle` and `bottom` map to
+`vertical-align` at the author presentational-hint origin. Matching is
+ASCII-case-insensitive and does not trim. Other values and row/group `valign`
+remain unsupported.
+The layout subset supports cell baseline, `middle` and `bottom` alignment,
+including row spans; see its local row-height policy and remaining exclusions.
 See the [layout subset](../../../docs/text-layout.md#basic-automatic-tables)
 for accepted geometry and explicit downstream failures.

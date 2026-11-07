@@ -246,13 +246,18 @@ other effects remain unsupported.
 Header groups precede ordinary groups and footer groups follow them.
 Cells default to top alignment and are equalized to the row's maximum
 border-box height; specified cell height is a minimum. CSS
-`vertical-align:middle` centers the cell contents in the available cell height,
-and `bottom` aligns them to its bottom. For row-spanning cells, alignment uses
-the complete spanned height, including internal row spacing. Baseline alignment
-remains unsupported. HTML `td`/`th` `valign=top`, `middle` and `bottom` map to
-the corresponding supported alignment; matching is ASCII-case-insensitive and
-does not trim. A spanning cell's required height, including internal row
-spacing, is distributed evenly across its covered rows.
+`vertical-align:baseline` aligns each cell's first in-flow line baseline (or
+the empty cell's content bottom) with the row baseline. The row baseline is the
+largest baseline offset among baseline-aligned cells originating in that row.
+`middle` centers cell contents in the available cell height, and `bottom`
+aligns them to its bottom. For row-spanning cells, baseline uses the first row's
+baseline; middle/bottom use the complete spanned height, including internal row
+spacing. Baseline row-spans use the existing even row-height deficit
+distribution as a local policy; CSS 2.2 does not specify how baseline row-spans
+affect row heights. HTML `td`/`th` `valign=baseline`, `top`, `middle` and
+`bottom` map to the corresponding supported alignment; matching is
+ASCII-case-insensitive and does not trim. A spanning cell's required height,
+including internal row spacing, is distributed evenly across its covered rows.
 Cell block margins do not collapse through cell edges. Table, row-group and
 row backgrounds paint before cell backgrounds, so later rows cannot cover a
 spanning cell; solid borders use the existing paint flow.
@@ -268,7 +273,7 @@ line, glyph, box, depth and cancellation budgets.
 Explicit failures remain for anonymous or arbitrary CSS tables, nested
 tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
-spacing, baseline and other cell alignments, nonzero cell margins, cell maximum height,
+spacing, other cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 `cellspacing`, `nowrap`). The table's ASCII-case-insensitive
@@ -276,9 +281,9 @@ and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
 maps to `center`. Row/group `align`, left/right table floats, other table
-alignment values, row/group `valign`, baseline and other cell `valign` values
-remain unsupported and fail explicitly at layout. Table cells support
-`vertical-align:top`, `middle` and `bottom`.
+alignment values, row/group `valign` and other cell `valign` values remain
+unsupported and fail explicitly at layout. Table cells support
+`vertical-align:baseline`, `top`, `middle` and `bottom`.
 Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
 have zero intrinsic content size.
 

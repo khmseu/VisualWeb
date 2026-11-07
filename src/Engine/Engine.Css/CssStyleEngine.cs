@@ -202,8 +202,9 @@ public static class CssStyleEngine
     {
         if (element.LocalName is not ("td" or "th")) { return null; }
         var valign = element.GetAttribute("valign");
-        return valign is { Length: 3 or 6 } ? CssText.Lower(valign) switch
+        return valign is { Length: 3 or 6 or 8 } ? CssText.Lower(valign) switch
         {
+            "baseline" => "baseline",
             "top" => "top",
             "middle" => "middle",
             "bottom" => "bottom",
