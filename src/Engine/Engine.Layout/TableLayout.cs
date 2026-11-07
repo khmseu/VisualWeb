@@ -14,7 +14,8 @@ public static partial class StaticLayout
         private sealed record TableCell(DomElement Element, int Column, int ColumnSpan, int RowSpan);
         private sealed record TableRow(DomElement Element, IReadOnlyList<TableCell> Cells);
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
-        private sealed record ColumnGroupWidthConstraint(int Start, int Span, double Width);
+        private sealed record ColumnWidthConstraint(double Value, bool IsPercentage);
+        private sealed record ColumnGroupWidthConstraint(int Start, int Span, double Value, bool IsPercentage);
         private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing,
             DomElement? Caption, bool CaptionAtBottom, IReadOnlyList<CssColor?> ColumnGroupBackgrounds,
             IReadOnlyList<CssColor?> ColumnBackgrounds, bool HasColumnBackgrounds);
@@ -81,11 +82,12 @@ public static partial class StaticLayout
                 else if (node is DomText text && !IsCollapsibleWhitespace(text.Data))
                 { throw new UnsupportedLayoutException("Non-whitespace content requires unsupported anonymous table boxes."); }
             }
-            var columnWidths = new List<double?>();
+            var columnWidths = new List<ColumnWidthConstraint?>();
             var columnGroupBackgrounds = new List<CssColor?>();
             var columnBackgrounds = new List<CssColor?>();
             var columnGroupWidths = new List<ColumnGroupWidthConstraint>();
             var hasColumnBackgrounds = false;
+            var hasPercentageColumnWidths = false;
             foreach (var columnGroup in columnGroupElements)
             {
                 var groupBackground = CheckTableColumn(columnGroup, depth + 1);
@@ -115,8 +117,10 @@ public static partial class StaticLayout
                         var columnBackground = CheckTableColumn(column, depth + 2);
                         hasColumnBackgrounds |= columnBackground is not null;
                         CheckEmptyTableColumn(column);
+                        var columnWidth = TableColumnWidth(column);
+                        hasPercentageColumnWidths |= columnWidth is { IsPercentage: true };
                         AddColumnTracks(columnWidths, columnGroupBackgrounds, columnBackgrounds,
-                            ParseColumnSpan(column.GetAttribute("span")), TableColumnWidth(column), columnBackground);
+                            ParseColumnSpan(column.GetAttribute("span")), columnWidth, columnBackground);
                     }
                 }
                 else
@@ -135,7 +139,10 @@ public static partial class StaticLayout
                     }
                 }
                 if (groupSpan > 0 && TableColumnWidth(columnGroup) is { } groupWidth)
-                { columnGroupWidths.Add(new(groupStart, groupSpan, groupWidth)); }
+                {
+                    hasPercentageColumnWidths |= groupWidth.IsPercentage;
+                    columnGroupWidths.Add(new(groupStart, groupSpan, groupWidth.Value, groupWidth.IsPercentage));
+                }
             }
             var columnCount = columnWidths.Count;
             foreach (var group in tableChildren)
@@ -196,9 +203,10 @@ public static partial class StaticLayout
             var maximum = new double[columnCount];
             for (var index = 0; index < columnWidths.Count; index++)
             {
-                if (columnWidths[index] is not { } specifiedWidth) { continue; }
-                minimum[index] = specifiedWidth;
-                maximum[index] = specifiedWidth;
+                cancellation.ThrowIfCancellationRequested();
+                if (columnWidths[index] is not { IsPercentage: false } specifiedWidth) { continue; }
+                minimum[index] = specifiedWidth.Value;
+                maximum[index] = specifiedWidth.Value;
             }
             Dictionary<int, List<(int Column, double Minimum, double Maximum)>>? spanningConstraints = null;
             List<int>? spanOrder = null;
@@ -256,7 +264,8 @@ public static partial class StaticLayout
             foreach (var constraint in columnGroupWidths)
             {
                 cancellation.ThrowIfCancellationRequested();
-                var deficit = Math.Max(0, constraint.Width - SumColumns(minimum, constraint.Start, constraint.Span));
+                if (constraint.IsPercentage) { continue; }
+                var deficit = Math.Max(0, constraint.Value - SumColumns(minimum, constraint.Start, constraint.Span));
                 if (deficit == 0) { continue; }
                 var share = deficit / constraint.Span;
                 ChargeTableColumnWork(constraint.Span);
@@ -267,10 +276,40 @@ public static partial class StaticLayout
                     maximum[index] = Math.Max(maximum[index], minimum[index]);
                 }
             }
+            var available = ContentWidth(style, containingWidth);
+            if (hasPercentageColumnWidths)
+            {
+                if (style["width"] is CssKeyword { Value: "auto" })
+                { throw new UnsupportedLayoutException("Percentage column widths require a definite table width."); }
+                for (var index = 0; index < columnWidths.Count; index++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (columnWidths[index] is not { IsPercentage: true } percentage) { continue; }
+                    var constraint = Finite(available * (percentage.Value / 100));
+                    ChargeTableColumnWork(1);
+                    minimum[index] = Math.Max(minimum[index], constraint);
+                    maximum[index] = Math.Max(maximum[index], minimum[index]);
+                }
+                foreach (var constraint in columnGroupWidths)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (!constraint.IsPercentage) { continue; }
+                    var percentageWidth = Finite(available * (constraint.Value / 100));
+                    var deficit = Math.Max(0, percentageWidth - SumColumns(minimum, constraint.Start, constraint.Span));
+                    if (deficit == 0) { continue; }
+                    var share = deficit / constraint.Span;
+                    ChargeTableColumnWork(constraint.Span);
+                    for (var index = constraint.Start; index < constraint.Start + constraint.Span; index++)
+                    {
+                        cancellation.ThrowIfCancellationRequested();
+                        minimum[index] = Finite(minimum[index] + share);
+                        maximum[index] = Math.Max(maximum[index], minimum[index]);
+                    }
+                }
+            }
             var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing);
             var min = Finite(minimum.Sum() + gaps);
             var max = Finite(maximum.Sum() + gaps);
-            var available = ContentWidth(style, containingWidth);
             var width = style["width"] is CssKeyword { Value: "auto" }
                 ? Math.Min(Math.Max(min, available), max) : Math.Max(min, available);
             var flexibility = max - min;
@@ -384,16 +423,16 @@ public static partial class StaticLayout
             }
         }
 
-        private double? TableColumnWidth(DomElement element) => Style(element)["width"] switch
+        private ColumnWidthConstraint? TableColumnWidth(DomElement element) => Style(element)["width"] switch
         {
             CssKeyword { Value: "auto" } => null,
-            CssLength { Unit: "px", Value: >= 0 } width => Finite(width.Value),
-            CssLength { Unit: "%" } => throw new UnsupportedLayoutException("Percentage column widths are unsupported."),
-            _ => throw new UnsupportedLayoutException("Columns and column groups require auto or nonnegative absolute CSS widths.")
+            CssLength { Unit: "px", Value: >= 0 } width => new(Finite(width.Value), false),
+            CssLength { Unit: "%", Value: >= 0 } width => new(Finite(width.Value), true),
+            _ => throw new UnsupportedLayoutException("Columns and column groups require auto or nonnegative CSS widths.")
         };
 
-        private void AddColumnTracks(List<double?> columns, List<CssColor?> columnGroupBackgrounds,
-            List<CssColor?> columnBackgrounds, int span, double? width, CssColor? background)
+        private void AddColumnTracks(List<ColumnWidthConstraint?> columns, List<CssColor?> columnGroupBackgrounds,
+            List<CssColor?> columnBackgrounds, int span, ColumnWidthConstraint? width, CssColor? background)
         {
             if (span > options.MaxTableColumns - columns.Count)
             { throw new LayoutLimitException("Table column limit exceeded."); }

@@ -919,6 +919,53 @@ public sealed class LayoutTests
         Assert.Equal(30, Find(root, "b").BorderBox.Width);
     }
 
+    [Theory]
+    [InlineData(100, 81, 13)]
+    [InlineData(120, 98.5, 15.5)]
+    public void PercentageColumnWidthsConstrainTracksAgainstDefiniteTableWidth(
+        double tableWidth, double expectedFirstWidth, double expectedSecondWidth)
+    {
+        const string html = """
+            <table id=t><colgroup><col style="width:75%"><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html, $"table{{width:{tableWidth}px}}").Root!;
+
+        Assert.Equal(tableWidth, Find(root, "t").Content.Width);
+        Assert.Equal(expectedFirstWidth, Find(root, "a").BorderBox.Width);
+        Assert.Equal(expectedSecondWidth, Find(root, "b").BorderBox.Width);
+    }
+
+    [Fact]
+    public void PercentageColumnGroupWidthIsDistributedAcrossItsTracks()
+    {
+        const string html = """
+            <table id=t><colgroup style="width:80%"><col><col></colgroup>
+            <colgroup><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td><td id=c>z</td></tr></table>
+            """;
+        var root = UnorderedList(html, "table{width:100px}").Root!;
+
+        Assert.Equal(100, Find(root, "t").Content.Width);
+        Assert.Equal(41 + 2.0 / 3, Find(root, "a").BorderBox.Width);
+        Assert.Equal(41 + 2.0 / 3, Find(root, "b").BorderBox.Width);
+        Assert.Equal(8 + 2.0 / 3, Find(root, "c").BorderBox.Width);
+    }
+
+    [Fact]
+    public void PercentageColumnWidthUsesResolvedPercentageTableWidth()
+    {
+        const string html = """
+            <table id=t><colgroup><col style="width:50%"><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html, "table{width:100%}", width: 100).Root!;
+
+        Assert.Equal(100, Find(root, "t").Content.Width);
+        Assert.Equal(68.5, Find(root, "a").BorderBox.Width);
+        Assert.Equal(25.5, Find(root, "b").BorderBox.Width);
+    }
+
     [Fact]
     public void AutomaticTablesDistributeSpanningCellIntrinsicConstraintsAcrossCoveredColumns()
     {

@@ -513,8 +513,8 @@ and height work has the separate
 limit (default 1,000,000). Attribute scanning retains the shared text and
 cancellation budgets. Focused layout tests cover geometry, row-group clipping,
 HTML parsing and limits; paint tests verify overlapping row/cell background
-order. Remaining table gaps include percentage widths, anonymous/arbitrary
-tables, and other listed exclusions.
+order. Remaining table gaps include percentage widths on auto-width tables,
+anonymous/arbitrary tables, and other listed exclusions.
 The preceding `colspan` increment remains recorded in commit `3e568b1`:
 layout (807), Content (92), all 16,130 solution tests, solution build and
 format verification passed; Linux, Windows confinement and CodeQL CI passed
@@ -1016,7 +1016,18 @@ Bottom captions follow the table box and contribute to wrapper height without
 changing intrinsic column sizing. Multiple, later-child and non-HTML captions
 remain unsupported. CSS tests (1,152), Layout tests (854), the zero-warning
 solution build, all 16,214 solution tests, solution format verification and
-`git diff --check` pass locally. Commit, push and CI remain pending.
+`git diff --check` pass locally. Commit `ef3247f` is pushed; Linux, Windows
+confinement and CodeQL CI pass (runs
+[42379320965](https://github.com/khmseu/VisualWeb/actions/runs/42379320965),
+[42379321055](https://github.com/khmseu/VisualWeb/actions/runs/42379321055) and
+[42379320829](https://github.com/khmseu/VisualWeb/actions/runs/42379320829)).
+
+Pass 2 supports CSS 2.2 percentage widths on canonical `col` and `colgroup`
+elements when the table width is definite. Percentages constrain track minimums
+against the resolved table width; a column-group deficit is shared evenly
+across its tracks. Percentage column widths on auto-width tables remain
+unsupported. Layout tests (858), the zero-warning solution build, all 16,218
+solution tests and format verification pass locally.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

@@ -6113,4 +6113,31 @@ nicht-HTML-Captions bleiben unsupported.
 
 **Validierung:** CSS (1.152), Layout (854), Solution-Build (0 Warnungen/Fehler),
 alle 16.214 Solution-Tests, Formatpruefung und `git diff --check` bestehen
-lokal. Commit, Push und CI stehen zum Dokumentationszeitpunkt noch aus.
+lokal. Commit `ef3247f` ist gepusht. Linux-Entwicklung (Run 42379320965),
+Windows-Confinement (Run 42379321055) und CodeQL (Run 42379320829) bestehen.
+
+### KP-226 - Prozentbreiten fuer definitive Tabellen
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerauftrag: zehn getrennte Missing-Prioritaetsinkremente fortsetzen
+  (aktuelle Anfrage, 2026-11-07).
+- Quellen: [Missing-Tracker](../plans/Missing.md#recommended-priority),
+  [CSS-2.2-Tabellenquelle](../specs/cache/css2-tables.html#auto-table-layout),
+  geprueft 2026-10-28, `TableLayout.cs`, Layout-Tests und die Layout-Dokumentation.
+
+**Ableitung:** Der naechste konkrete Tabellenblocker ist die im Tracker
+aufgefuehrte Prozentbreite von `col`/`colgroup`. Der Pass beschraenkt sich auf
+Tabellen mit definitiver Breite; die komplexere Prozent-Constraint-Politik von
+`width:auto` bleibt ein spaeterer, explizit unsupported Fall.
+
+**Belegt:** Prozentbreiten auf `col` setzen je erzeugtem Track eine
+Mindestbreite relativ zur definitiven Tabellenbreite. Eine Prozentbreite auf
+`colgroup` setzt eine Mindestbreite ueber die Gruppen-Tracks; ein Defizit wird
+gleichmaessig verteilt. Auto-Width-Tabellen mit Prozentbreiten auf Spalten oder
+Gruppen werfen weiterhin `UnsupportedLayoutException`.
+
+**Validierung:** Die neuen Geometrie-Regressionsfaelle wurden zuerst durch die
+vorherige Unsupported-Exception abgelehnt und bestehen nach der Umsetzung.
+Sechs gezielte Prozent-Layouttests, Layout (858), Solution-Build (0
+Warnungen/Fehler), alle 16.218 Solution-Tests, Formatpruefung und
+`git diff --check` bestehen lokal. Commit, Push und CI stehen noch aus.
