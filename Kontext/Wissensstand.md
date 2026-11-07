@@ -179,7 +179,9 @@
   vollstaendiger Spanning-Zellflaeche nach CSS 2.2. Die Implementierung und
   fokussierten Tests bestehen lokal (Layout 833, Paint 71), ebenso der
   Solution-Build, der Volltest (16.180 Faelle) und die Formatpruefung.
-  Commit/Push/CI stehen aus (KP-212/KP-213).
+  Commit `879982f` ist gepusht; Linux x64/arm64, Windows x64/arm64 sowie
+  Push-on-main-CI sind gruen (Runs 42340535912, 42340535879 und 42340535497;
+  KP-212/KP-214).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

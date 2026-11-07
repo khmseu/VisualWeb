@@ -565,7 +565,10 @@ composites through the existing raster path, and the layer geometry shares table
 operation and paint-command limits. Percentage widths and other table gaps
 remain unsupported. Layout (833) and Paint (71), the zero-warning solution
 build, all 16,180 solution tests and solution formatting verification pass
-locally.
+locally. Commit `879982f` is pushed; Linux x64/arm64, Windows x64/arm64 and
+Push on main CI pass (runs [42340535912](https://github.com/khmseu/VisualWeb/actions/runs/42340535912),
+[42340535879](https://github.com/khmseu/VisualWeb/actions/runs/42340535879) and
+[42340535497](https://github.com/khmseu/VisualWeb/actions/runs/42340535497)).
 
 Pass 10 adds row-group and row `background-color` support, painted in CSS 2.2
 table-layer order beneath cells. Layout (807), Content (93), the

@@ -5892,3 +5892,27 @@ solution build, all 16,180 solution tests and formatting verification pass.
 
 **Status:** Pass 7 is locally validated. Commit, push and CI verification remain
 open.
+
+### KP-214 - Pass 7 commit, push and CI completed
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Sources: commit `879982f`; GitHub Actions runs 42340535912,
+  42340535879 and 42340535497; updated `plans/Missing.md`.
+- Related: KP-212 and KP-213.
+
+**Belegt:** Commit `879982f` was pushed to `main`. Linux development passed on
+x64 and arm64; Windows confinement passed on x64 and arm64; Push on main passed.
+The commit includes the bounded table column/group background implementation,
+focused regressions, subsystem documentation and local Pass 7 validation.
+
+### KP-215 - Corrected Pass 7 commit messages
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Source: current user request and Git history for commits `879982f` and
+  `1b54f64`.
+- Related: KP-214.
+
+**Nutzerangabe / beschlossen:** Correct the messages on the last two commits.
+The messages had literal `\n` sequences instead of line breaks, so the required
+co-author trailer was not recognized. The requested correction preserves each
+commit's content and ordering and adds a properly parsed trailer.
