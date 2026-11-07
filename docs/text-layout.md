@@ -204,7 +204,8 @@ ownership are implied.
 
 Canonical HTML `table`/`caption`/`colgroup`/`col`/`thead`/`tbody`/`tfoot`/
 `tr`/`td`/`th` boxes support content-sized automatic columns, separate borders
-and one nonnegative `border-spacing` length. See [CSS 2.2 automatic table layout](https://www.w3.org/TR/CSS22/tables.html#auto-table-layout)
+and one or two nonnegative `border-spacing` lengths. One length sets both axes;
+two set horizontal then vertical spacing. See [CSS 2.2 automatic table layout](https://www.w3.org/TR/CSS22/tables.html#auto-table-layout)
 (local ID `css2-tables`). Each column takes its cells' maximum minimum/maximum
 intrinsic widths. A cell with a bounded positive `colspan` contributes minimum
 and maximum intrinsic constraints across all covered columns; each deficit is
@@ -269,14 +270,14 @@ when it computes to `display: table-caption`, according to inherited
 `caption-side:top/bottom` (initially `top`). Its wrapper uses the table
 border-edge width, while the caption does not affect intrinsic column sizing;
 caption and table backgrounds/borders retain separate geometry.
-UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
-is not synthesized. Measurement and arrangement share node, text, shaping,
-line, glyph, box, depth and cancellation budgets.
+UA spacing is 2px on both axes; cells have 1px padding and top alignment. Header
+font weight is not synthesized. Measurement and arrangement share node, text,
+shaping, line, glyph, box, depth and cancellation budgets.
 
 Explicit failures remain for anonymous or arbitrary CSS tables, nested
 tables/widgets,
-percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
-spacing, other cell alignments, nonzero cell margins, cell maximum height,
+percentage dimensions inside cells, collapsed borders, fixed layout, other
+cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 `cellspacing`, `nowrap`). The table's ASCII-case-insensitive

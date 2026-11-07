@@ -16,9 +16,10 @@ public static partial class StaticLayout
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
         private sealed record ColumnWidthConstraint(double Value, bool IsPercentage);
         private sealed record ColumnGroupWidthConstraint(int Start, int Span, double Value, bool IsPercentage);
-        private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing,
-            DomElement? Caption, bool CaptionAtBottom, IReadOnlyList<CssColor?> ColumnGroupBackgrounds,
-            IReadOnlyList<CssColor?> ColumnBackgrounds, bool HasColumnBackgrounds);
+        private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width,
+            double HorizontalSpacing, double VerticalSpacing, DomElement? Caption, bool CaptionAtBottom,
+            IReadOnlyList<CssColor?> ColumnGroupBackgrounds, IReadOnlyList<CssColor?> ColumnBackgrounds,
+            bool HasColumnBackgrounds);
         private sealed record ArrangedTable(IReadOnlyList<LayoutBox> Children, double Height,
             LayoutRect? WrapperBounds, LayoutTableBoxGeometry? TableBoxGeometry,
             IReadOnlyList<LayoutTableBackground> TableColumnGroupBackgrounds,
@@ -30,7 +31,7 @@ public static partial class StaticLayout
             var style = Style(table);
             RejectTableAttributes(table);
             RequireAutoHeight(style);
-            var spacing = ((CssLength)style["border-spacing"]).Value;
+            var spacing = (CssBorderSpacing)style["border-spacing"];
             var groups = new List<TableGroup>();
             var columnGroupElements = new List<DomElement>();
             var tableChildren = new List<DomElement>();
@@ -244,7 +245,7 @@ public static partial class StaticLayout
                     foreach (var constraint in spanningConstraints[span])
                     {
                         cancellation.ThrowIfCancellationRequested();
-                        var spanGaps = Finite((span - 1.0) * spacing);
+                        var spanGaps = Finite((span - 1.0) * spacing.Horizontal.Value);
                         var requiredMinimum = Math.Max(0, constraint.Minimum - spanGaps);
                         var minimumDeficit = Math.Max(0, requiredMinimum - SumColumns(minimum, constraint.Column, span));
                         var minimumShare = minimumDeficit / span;
@@ -307,7 +308,7 @@ public static partial class StaticLayout
                     }
                 }
             }
-            var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing);
+            var gaps = columnCount == 0 ? 0 : Finite((columnCount + 1.0) * spacing.Horizontal.Value);
             var min = Finite(minimum.Sum() + gaps);
             var max = Finite(maximum.Sum() + gaps);
             var width = style["width"] is CssKeyword { Value: "auto" }
@@ -321,7 +322,8 @@ public static partial class StaticLayout
                 cancellation.ThrowIfCancellationRequested();
                 minimum[index] = Finite(minimum[index] + ratio * (maximum[index] - minimum[index]) + extra);
             }
-            return new(groups.AsReadOnly(), minimum, Finite(width), spacing, caption, captionAtBottom,
+            return new(groups.AsReadOnly(), minimum, Finite(width), spacing.Horizontal.Value, spacing.Vertical.Value,
+                caption, captionAtBottom,
                 columnGroupBackgrounds.AsReadOnly(), columnBackgrounds.AsReadOnly(), hasColumnBackgrounds);
         }
 
@@ -605,7 +607,7 @@ public static partial class StaticLayout
                 var captionTableBorderY = Finite(caption.BorderBox.Y + caption.BorderBox.Height + caption.Margin.Bottom);
                 y = Finite(captionTableBorderY + tableBorder.Top + tablePadding.Top);
             }
-            var rowSpacing = plan.Columns.Length > 0 ? plan.Spacing : 0;
+            var rowSpacing = plan.Columns.Length > 0 ? plan.VerticalSpacing : 0;
             var cursor = y + rowSpacing;
             foreach (var group in plan.Groups)
             {
@@ -621,9 +623,9 @@ public static partial class StaticLayout
                     foreach (var cell in row.Cells)
                     {
                         var width = Finite(SumColumns(plan.Columns, cell.Column, cell.ColumnSpan)
-                            + (cell.ColumnSpan - 1) * plan.Spacing);
-                        var cellX = Finite(x + plan.Spacing + SumColumns(plan.Columns, 0, cell.Column)
-                            + cell.Column * plan.Spacing);
+                            + (cell.ColumnSpan - 1) * plan.HorizontalSpacing);
+                        var cellX = Finite(x + plan.HorizontalSpacing + SumColumns(plan.Columns, 0, cell.Column)
+                            + cell.Column * plan.HorizontalSpacing);
                         var style = Style(cell.Element);
                         var padding = Edges(style, "padding", width);
                         var border = Edges(style, "border", width, "-width");
@@ -723,12 +725,14 @@ public static partial class StaticLayout
                         }
                     }
                     var rowHeight = rowHeights[rowIndex];
-                    rows.Add(TableBox(row.Element, Rect(x + plan.Spacing, cursor,
-                        Math.Max(0, plan.Width - 2 * plan.Spacing), rowHeight), cells, depth + 2));
+                    rows.Add(TableBox(row.Element, Rect(x + plan.HorizontalSpacing, cursor,
+                        Math.Max(0, plan.Width - 2 * plan.HorizontalSpacing), rowHeight), cells, depth + 2));
                     cursor = Finite(cursor + rowHeight + rowSpacing);
                 }
-                var groupHeight = Math.Max(0, cursor - groupY - (rows.Count > 0 && plan.Columns.Length > 0 ? plan.Spacing : 0));
-                groups.Add(TableBox(group.Element, Rect(x + plan.Spacing, groupY, Math.Max(0, plan.Width - 2 * plan.Spacing), groupHeight),
+                var groupHeight = Math.Max(0, cursor - groupY
+                    - (rows.Count > 0 && plan.Columns.Length > 0 ? plan.VerticalSpacing : 0));
+                groups.Add(TableBox(group.Element, Rect(x + plan.HorizontalSpacing, groupY,
+                    Math.Max(0, plan.Width - 2 * plan.HorizontalSpacing), groupHeight),
                     rows, depth + 1));
             }
             var tableHeight = Finite(cursor - y);

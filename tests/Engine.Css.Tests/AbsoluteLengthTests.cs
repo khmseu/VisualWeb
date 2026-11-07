@@ -33,7 +33,6 @@ public sealed class AbsoluteLengthTests
     [InlineData("margin-left", "-.5in", -48)]
     [InlineData("padding-right", "1pc", 16)]
     [InlineData("border-left-width", ".75pt", 1)]
-    [InlineData("border-spacing", "6pt", 8)]
     [InlineData("font-size", "12pt", 16)]
     [InlineData("line-height", "18pt", 24)]
     public void SupportedLengthPropertiesShareAbsoluteUnitConversion(string property, string input, double expected)
@@ -41,6 +40,20 @@ public sealed class AbsoluteLengthTests
         var (result, style) = Compute("border-style:solid;" + property + ":" + input);
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssLength(expected, "px"), style[property]);
+    }
+
+    [Theory]
+    [InlineData("6pt", 8, 8)]
+    [InlineData("6pt 12pt", 8, 16)]
+    public void BorderSpacingLengthsShareAbsoluteUnitConversion(
+        string input, double expectedHorizontal, double expectedVertical)
+    {
+        var (result, style) = Compute("border-spacing:" + input);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssBorderSpacing(
+            new(expectedHorizontal, "px"),
+            new(expectedVertical, "px")), style["border-spacing"]);
     }
 
     [Fact]
@@ -82,7 +95,10 @@ public sealed class AbsoluteLengthTests
     {
         var (result, style) = Compute(property + ":10px;" + property + ":" + input);
         Assert.Single(result.Diagnostics);
-        Assert.Equal(new CssLength(10, "px"), style[property]);
+        CssValue expected = property == "border-spacing"
+            ? new CssBorderSpacing(new(10, "px"), new(10, "px"))
+            : new CssLength(10, "px");
+        Assert.Equal(expected, style[property]);
     }
 
     [Theory]

@@ -338,6 +338,12 @@ public static class CssStyleEngine
                     if (!double.IsFinite(resolved.Value)) { throw new CssLimitException("Computed CSS length exceeds finite numeric range."); }
                     computed[name] = resolved;
                 }
+                else if (computed[name] is CssBorderSpacing spacing)
+                {
+                    computed[name] = new CssBorderSpacing(
+                        ResolveBorderSpacingLength(spacing.Horizontal, fontSize, rootSize),
+                        ResolveBorderSpacingLength(spacing.Vertical, fontSize, rootSize));
+                }
             }
             foreach (var side in new[] { "top", "right", "bottom", "left" })
             {
@@ -442,6 +448,18 @@ public static class CssStyleEngine
         {
             foreach (var diagnostic in diagnostics) { context.Error(diagnostic.Code, diagnostic.Offset, diagnostic.Message); }
         }
+    }
+
+    private static CssLength ResolveBorderSpacingLength(CssLength length, double fontSize, double rootSize)
+    {
+        var resolved = length.Unit switch
+        {
+            "em" => new CssLength(length.Value * fontSize, "px"),
+            "rem" => new CssLength(length.Value * rootSize, "px"),
+            _ => length
+        };
+        if (!double.IsFinite(resolved.Value)) { throw new CssLimitException("Computed CSS length exceeds finite numeric range."); }
+        return resolved;
     }
 
     private static CssLength ResolveFontSize(CssValue value, double parentSize, double rootSize)

@@ -9,6 +9,9 @@ namespace VisualWeb.Engine.Css;
 public abstract record CssValue;
 public sealed record CssKeyword(string Value) : CssValue;
 public sealed record CssLength(double Value, string Unit) : CssValue;
+/// <summary>Computed horizontal and vertical separated-border distances.</summary>
+/// <remarks>Spec: css2-tables; <see href="https://www.w3.org/TR/CSS22/tables.html#propdef-border-spacing">border-spacing</see>.</remarks>
+public sealed record CssBorderSpacing(CssLength Horizontal, CssLength Vertical) : CssValue;
 public sealed record CssNumber(double Value) : CssValue;
 /// <summary>Clamped 8-bit sRGB channels; high-precision color management is deferred.</summary>
 /// <remarks>Spec: css-color; <see href="https://www.w3.org/TR/css-color-4/#rgb-functions">RGB colors</see>.</remarks>
@@ -52,7 +55,7 @@ internal static class CssProperties
             ["table-layout"] = new(new CssKeyword("auto"), false),
             ["caption-side"] = new(new CssKeyword("top"), true),
             ["border-collapse"] = new(new CssKeyword("separate"), true),
-            ["border-spacing"] = new(new CssLength(0, "px"), true),
+            ["border-spacing"] = new(new CssBorderSpacing(new(0, "px"), new(0, "px")), true),
             ["vertical-align"] = new(new CssKeyword("baseline"), false),
             ["overflow-x"] = new(new CssKeyword("visible"), false),
             ["overflow-y"] = new(new CssKeyword("visible"), false),
@@ -255,6 +258,14 @@ internal static class CssProperties
         if (tokens.Count == 0) { return null; }
         if (name is "color" or "background-color" || name.EndsWith("-color", StringComparison.Ordinal)) { return Color(tokens); }
         if (name == "font-family") { return ParseFamilies(input); }
+        if (name == "border-spacing")
+        {
+            if (tokens.Count is < 1 or > 2) { return null; }
+            var horizontal = Length(tokens[0], false);
+            if (horizontal is not { Value: >= 0 }) { return null; }
+            var vertical = tokens.Count == 2 ? Length(tokens[1], false) : horizontal;
+            return vertical is { Value: >= 0 } v ? new CssBorderSpacing(horizontal, v) : null;
+        }
         if (tokens.Count != 1) { return null; }
         var token = tokens[0];
         var keyword = token.Kind == CssTokenKind.Ident ? CssText.Lower(token.Value) : "";
@@ -267,7 +278,6 @@ internal static class CssProperties
         if (name == "table-layout") { return Keyword(keyword, "auto"); }
         if (name == "caption-side") { return Keyword(keyword, "top", "bottom"); }
         if (name == "border-collapse") { return Keyword(keyword, "separate"); }
-        if (name == "border-spacing") { return Length(token, false) is { Value: >= 0 } spacing ? spacing : null; }
         if (name == "vertical-align") { return Keyword(keyword, "baseline", "top", "middle", "bottom"); }
         if (name == "list-style-type") { return IsListStyleType(keyword) ? new CssKeyword(keyword) : null; }
         if (name == "list-style-position") { return Keyword(keyword, "outside"); }

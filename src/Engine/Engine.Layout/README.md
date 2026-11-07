@@ -46,10 +46,12 @@ unsupported advanced layouts throw rather than return approximate geometry.
 
 Canonical HTML tables support bounded automatic intrinsic columns, equal
 minimum/maximum constraint distribution for horizontal `colspan`, separate
-borders and one spacing length. Cells default to top alignment; baseline aligns
-the first in-flow line (or the empty cell's content bottom) with the first
-spanned row baseline. `middle` centers contents and `bottom` aligns them to the
-bottom, including across a cell's full row span and internal row spacing.
+borders and one or two `border-spacing` lengths (one for both axes, or
+horizontal then vertical).
+Cells default to top alignment; baseline aligns the first in-flow line (or the
+empty cell's content bottom) with the first spanned row baseline. `middle`
+centers contents and `bottom` aligns them to the bottom, including across a
+cell's full row span and internal row spacing.
 Cell `td`/`th` `valign=baseline`, `top`, `middle` and `bottom` map to those
 values case-insensitively. Baseline row spans use the existing even row-height
 deficit distribution; CSS 2.2 does not specify how baseline row spans affect

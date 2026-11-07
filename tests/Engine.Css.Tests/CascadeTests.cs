@@ -99,8 +99,20 @@ public sealed class CascadeTests
         Assert.Equal(new CssKeyword("table-cell"), Child(result, doc)["display"]);
         Assert.Equal(new CssKeyword("top"), Child(result, doc)["vertical-align"]);
         Assert.Equal(new CssKeyword("separate"), Child(result, doc)["border-collapse"]);
-        Assert.Equal(new CssLength(8, "px"), Child(result, doc)["border-spacing"]);
+        Assert.Equal(new CssBorderSpacing(new(8, "px"), new(8, "px")), Child(result, doc)["border-spacing"]);
         Assert.Equal(new CssLength(1, "px"), Child(result, doc)["padding-left"]);
+    }
+
+    [Fact]
+    public void TwoAxisBorderSpacingComputesIndependentLengthsAndInherits()
+    {
+        var doc = Document("<table id=parent><tr><td id=child>x</td></tr></table>");
+        var result = Compute(doc, new CssStyleSource("table{font-size:10px;border-spacing:.5em 2em}"));
+
+        Assert.Empty(result.Diagnostics);
+        var expected = new CssBorderSpacing(new(5, "px"), new(20, "px"));
+        Assert.Equal(expected, result.Styles[doc.GetElementById("parent")!]["border-spacing"]);
+        Assert.Equal(expected, Child(result, doc)["border-spacing"]);
     }
 
     [Theory]
@@ -150,7 +162,8 @@ public sealed class CascadeTests
     [Theory]
     [InlineData("border-spacing:-1px")]
     [InlineData("border-spacing:10%")]
-    [InlineData("border-spacing:1px 2px")]
+    [InlineData("border-spacing:1px -2px")]
+    [InlineData("border-spacing:1px 2px 3px")]
     [InlineData("border-collapse:collapse")]
     [InlineData("table-layout:fixed")]
     [InlineData("caption-side:left")]

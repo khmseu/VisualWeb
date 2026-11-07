@@ -929,8 +929,9 @@ smoke and all 15,329 solution tests pass, including 338 Layout, 42 Content and
 findings on unchanged lines; all changed test files pass a targeted check.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
-separate borders, one spacing length, top-aligned text/block cells, and
-table/cell background colors and solid borders through ordinary paint flow.
+separate borders, one or two spacing lengths (one for both axes, or horizontal
+then vertical), top-aligned text/block cells, and table/cell background colors
+and solid borders through ordinary paint flow.
 Explicit table width and cell heights act as minima. Header/footer groups are
 ordered around body groups.
 Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
@@ -1027,7 +1028,20 @@ elements when the table width is definite. Percentages constrain track minimums
 against the resolved table width; a column-group deficit is shared evenly
 across its tracks. Percentage column widths on auto-width tables remain
 unsupported. Layout tests (858), the zero-warning solution build, all 16,218
-solution tests and format verification pass locally.
+solution tests and format verification pass locally. Commit `dee2a86` is
+pushed; Linux, Windows confinement and CodeQL CI pass (runs
+[42381800740](https://github.com/khmseu/VisualWeb/actions/runs/42381800740),
+[42381800852](https://github.com/khmseu/VisualWeb/actions/runs/42381800852) and
+[42381800232](https://github.com/khmseu/VisualWeb/actions/runs/42381800232)).
+
+Pass 3 extends inherited CSS 2.2 `border-spacing` to accept one or two
+nonnegative lengths. One length applies to both axes; two values specify
+horizontal then vertical spacing. Relative `em`/`rem` values compute to
+absolute pixels, and layout uses the horizontal value for column geometry and
+the vertical value for row and rowspan geometry. CSS tests (1,155), Layout
+tests (859), the zero-warning solution build, all 16,222 solution tests,
+format verification and `git diff --check` pass locally. Commit, push and CI
+are pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

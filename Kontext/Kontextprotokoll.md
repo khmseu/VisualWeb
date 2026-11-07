@@ -6140,4 +6140,33 @@ Gruppen werfen weiterhin `UnsupportedLayoutException`.
 vorherige Unsupported-Exception abgelehnt und bestehen nach der Umsetzung.
 Sechs gezielte Prozent-Layouttests, Layout (858), Solution-Build (0
 Warnungen/Fehler), alle 16.218 Solution-Tests, Formatpruefung und
+`git diff --check` bestehen lokal. Commit `dee2a86` ist gepusht. Linux
+(Run 42381800740), Windows-Confinement (Run 42381800852) und CodeQL
+(Run 42381800232) bestehen.
+
+### KP-227 - Zweiachsiger Tabellenabstand
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerauftrag: zehn getrennte Missing-Prioritaetsinkremente fortsetzen
+  (aktueller Nutzerturn, 2026-11-07).
+- Quellen: [Missing-Tracker](../plans/Missing.md#recommended-priority),
+  [CSS-2.2-Tabellenquelle](../specs/cache/css2-tables.html#propdef-border-spacing),
+  geprueft 2026-10-28, `CssProperties.cs`, `CssStyleEngine.cs`,
+  `TableLayout.cs` und die CSS-/Layout-Regressionen.
+
+**Ableitung:** Der bisherige Ein-Laengen-Parser und die gleichfoermige
+Layoutverwendung unterstuetzten den standardisierten zweiten Abstandswert
+nicht. Ein kleiner, abwaertskompatibler Pass implementiert ein oder zwei
+nichtnegative Laengen; ein Wert gilt fuer beide Achsen, zwei Werte bedeuten
+horizontal und anschliessend vertikal. Die Tabelle und ihre CSS-Initialwerte
+bleiben sonst unveraendert.
+
+**Belegt:** `border-spacing` wird als geerbtes Wertepaar berechnet; relative
+`em`/`rem`-Laengen werden zu Pixeln aufgeloest. Die Layoutgeometrie verwendet
+den horizontalen Abstand zwischen Spalten und den vertikalen Abstand zwischen
+Zeilen, einschliesslich der Hoehenberechnung fuer Rowspans. Ungueltige,
+negative oder mehr als zwei Werte bleiben diagnostiziert.
+
+**Validierung:** CSS (1.155), Layout (859), Solution-Build (0
+Warnungen/Fehler), alle 16.222 Solution-Tests, Formatpruefung und
 `git diff --check` bestehen lokal. Commit, Push und CI stehen noch aus.

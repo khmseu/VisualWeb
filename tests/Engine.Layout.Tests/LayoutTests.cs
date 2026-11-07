@@ -991,6 +991,21 @@ public sealed class LayoutTests
         Assert.Equal(10, Find(narrow, "b").BorderBox.Width);
     }
 
+    [Fact]
+    public void TablesUseIndependentHorizontalAndVerticalBorderSpacing()
+    {
+        const string html = """
+            <table id=t><tr><td id=a>x</td><td id=b>y</td></tr>
+            <tr><td id=c>z</td><td id=d>w</td></tr></table>
+            """;
+        var root = UnorderedList(html, "table{border-spacing:3px 7px}").Root!;
+        var first = Find(root, "a").BorderBox;
+
+        Assert.Equal(23, Find(root, "t").Content.Width);
+        Assert.Equal(first.X + first.Width + 3, Find(root, "b").BorderBox.X);
+        Assert.Equal(first.Y + first.Height + 7, Find(root, "c").BorderBox.Y);
+    }
+
     [Theory]
     [InlineData(null, 1)]
     [InlineData("0", 1)]
