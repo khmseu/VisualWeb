@@ -5986,3 +5986,17 @@ pending.
 (x64/arm64), Windows confinement passed (x64/arm64), and Push on main CodeQL
 passed. Pass 8 is locally validated, committed, pushed and CI-green. Baseline
 alignment and legacy HTML `valign` remain unsupported.
+
+### KP-220 - Pass 8 documentation CI retry passed
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Sources: GitHub Actions run 42357742176 for documentation commit `8570e0c`;
+  failed-job log and successful failed-job-only rerun.
+- Related: KP-218/KP-219 and the ten-pass request.
+
+**Belegt:** Windows arm64 passed on the first attempt. The first Windows x64
+attempt failed only in the unchanged browser test
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`, which
+reported repeated requests. The failed-job-only rerun passed. The Windows
+workflow is green; the failure is recorded as an existing intermittent
+navigation-test issue, not a regression from table alignment or documentation.
