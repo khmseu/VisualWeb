@@ -1049,7 +1049,8 @@ parse as non-negative integers set equal horizontal and vertical pixel spacing.
 Malformed values add no hint, and normal author CSS overrides the hint. CSS
 tests (1,161), Layout tests (861), the zero-warning solution build, all 16,230
 solution tests, format verification and `git diff --check` pass locally.
-Commit, push and CI are pending.
+Commit `146952f` is pushed; Linux (Run 42388005024), Windows confinement
+(Run 42388005016) and CodeQL (Run 42388004385) pass.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

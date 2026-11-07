@@ -6202,4 +6202,6 @@ zu und verwendet die bestehenden horizontalen/vertikalen Geometriepfade.
 den fehlenden Hinweis beziehungsweise die Unsupported-Exception; nach der
 Implementierung bestehen CSS (1.161), Layout (861), Solution-Build (0
 Warnungen/Fehler), alle 16.230 Solution-Tests, Formatpruefung und
-`git diff --check` lokal. Commit, Push und CI stehen noch aus.
+`git diff --check` lokal. Commit `146952f` ist gepusht. Linux
+(Run 42388005024), Windows-Confinement (Run 42388005016) und CodeQL
+(Run 42388004385) bestehen.
