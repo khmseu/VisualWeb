@@ -1040,8 +1040,9 @@ horizontal then vertical spacing. Relative `em`/`rem` values compute to
 absolute pixels, and layout uses the horizontal value for column geometry and
 the vertical value for row and rowspan geometry. CSS tests (1,155), Layout
 tests (859), the zero-warning solution build, all 16,222 solution tests,
-format verification and `git diff --check` pass locally. Commit, push and CI
-are pending.
+format verification and `git diff --check` pass locally. Commit `9102c49` is
+pushed; Linux (Run 42384229690), Windows confinement (Run 42384229722) and
+CodeQL (Run 42384229517) pass.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
