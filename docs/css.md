@@ -266,7 +266,7 @@ Supported longhands:
 | Group   | Properties and supported values                                                                                                                                                                                             |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Display | `display`: none, block, inline, inline-block, list-item, table, table-caption, table-column-group, table-column, table-row-group, table-header-group, table-footer-group, table-row, table-cell                             |
-| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top`                                                                                          |
+| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one nonnegative length; `vertical-align:baseline/top/middle/bottom`                                                                            |
 | Lists   | inherited `list-style-type`: disc/circle/square/decimal/decimal-leading-zero/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none         |
 | Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                                        |
 | Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                                                     |
@@ -416,7 +416,9 @@ passing sources to Engine.Css. No layout, shaping, painting, used-value
 resolution or V8 work is performed here.
 
 Canonical HTML tables now receive their finite table display defaults, 2px
-spacing, and 1px top-aligned cell padding. Automatic column sizing and explicit
+spacing, and 1px top-aligned cell padding. The layout subset also supports
+`vertical-align:middle` and `bottom` on table cells, including row spans;
+baseline and other values remain explicit layout failures. Automatic column sizing and explicit
 downstream exclusions are documented in the
 [table layout subset](text-layout.md#basic-automatic-tables). Accepted display
 values include captions and column/group boxes, but do not imply anonymous

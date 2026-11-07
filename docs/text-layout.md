@@ -244,8 +244,12 @@ track/group. Separate-border gaps remain transparent. Background images and
 other effects remain unsupported.
 
 Header groups precede ordinary groups and footer groups follow them.
-Cells are top-aligned and equalized to the row's maximum border-box height;
-specified cell height is a minimum. A spanning cell's required height,
+Cells default to top alignment and are equalized to the row's maximum
+border-box height; specified cell height is a minimum. CSS
+`vertical-align:middle` centers the cell contents in the available cell height,
+and `bottom` aligns them to its bottom. For row-spanning cells, alignment uses
+the complete spanned height, including internal row spacing. Baseline alignment
+and legacy HTML `valign` remain unsupported. A spanning cell's required height,
 including internal row spacing, is distributed evenly across its covered rows.
 Cell block margins do not collapse through cell edges. Table, row-group and
 row backgrounds paint before cell backgrounds, so later rows cannot cover a
@@ -262,7 +266,7 @@ line, glyph, box, depth and cancellation budgets.
 Explicit failures remain for anonymous or arbitrary CSS tables, nested
 tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, two-axis
-spacing, other cell alignments, nonzero cell margins, cell maximum height,
+spacing, baseline and other cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 `cellspacing`, `valign`, `nowrap`). The table's ASCII-case-insensitive
@@ -270,8 +274,9 @@ and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
 maps to `center`. Row/group `align`, left/right table floats, other table
-alignment values, `valign` and vertical-alignment values other than `top`
-remain unsupported.
+alignment values and `valign` remain unsupported. Table cells support
+`vertical-align:top`, `middle` and `bottom`; `baseline` and other values fail
+explicitly at layout.
 Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
 have zero intrinsic content size.
 

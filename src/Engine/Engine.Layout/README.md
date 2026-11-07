@@ -46,7 +46,10 @@ unsupported advanced layouts throw rather than return approximate geometry.
 
 Canonical HTML tables support bounded automatic intrinsic columns, equal
 minimum/maximum constraint distribution for horizontal `colspan`, separate
-borders, one spacing length and top-aligned text/block cells. Positive
+borders and one spacing length. Cells default to top alignment; `middle`
+centers contents and `bottom` aligns them to the bottom, including across a
+cell's full row span and internal row spacing. Baseline alignment and legacy
+HTML `valign` remain unsupported. Positive
 `rowspan` and `rowspan=0` are bounded to their row group; row-height deficits
 are shared evenly across covered rows. The materialized columns are capped by
 `LayoutOptions.MaxTableColumns`, column-track visits by
@@ -66,8 +69,8 @@ Bottom captions, `caption-side`, nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify
-values to text alignment; row/group hints and vertical-alignment values other
-than top remain unsupported.
+values to text alignment; row/group hints, `vertical-align:baseline` on cells
+and legacy HTML `valign` remain unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

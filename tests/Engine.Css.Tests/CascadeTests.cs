@@ -103,6 +103,19 @@ public sealed class CascadeTests
         Assert.Equal(new CssLength(1, "px"), Child(result, doc)["padding-left"]);
     }
 
+    [Theory]
+    [InlineData("top")]
+    [InlineData("middle")]
+    [InlineData("bottom")]
+    public void VerticalAlignmentParsesTheSupportedTableCellValues(string value)
+    {
+        var doc = Document("<table><tr><td id=child>x</td></tr></table>");
+        var result = Compute(doc, new CssStyleSource("#child{vertical-align:" + value + "}"));
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword(value), Child(result, doc)["vertical-align"]);
+    }
+
     [Fact]
     public void CaptionUsesTheTopTableCaptionDisplayAndDoesNotAddCaptionSide()
     {
@@ -132,7 +145,6 @@ public sealed class CascadeTests
     [InlineData("border-spacing:1px 2px")]
     [InlineData("border-collapse:collapse")]
     [InlineData("table-layout:fixed")]
-    [InlineData("vertical-align:middle")]
     [InlineData("caption-side:bottom")]
     public void UnsupportedTableCssProducesDiagnostics(string declaration) =>
         Assert.NotEmpty(Compute(Document(), new CssStyleSource("#child{" + declaration + "}")).Diagnostics);

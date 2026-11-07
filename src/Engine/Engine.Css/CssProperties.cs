@@ -266,7 +266,7 @@ internal static class CssProperties
         if (name == "table-layout") { return Keyword(keyword, "auto"); }
         if (name == "border-collapse") { return Keyword(keyword, "separate"); }
         if (name == "border-spacing") { return Length(token, false) is { Value: >= 0 } spacing ? spacing : null; }
-        if (name == "vertical-align") { return Keyword(keyword, "baseline", "top"); }
+        if (name == "vertical-align") { return Keyword(keyword, "baseline", "top", "middle", "bottom"); }
         if (name == "list-style-type") { return IsListStyleType(keyword) ? new CssKeyword(keyword) : null; }
         if (name == "list-style-position") { return Keyword(keyword, "outside"); }
         if (name == "list-style-image") { return Keyword(keyword, "none"); }

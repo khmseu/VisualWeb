@@ -970,8 +970,16 @@ explicitly registered italic face for rendering.
 The HTML table-cell `align` attribute now maps `left`, `right`, `center`,
 `middle` and `justify` on `td`/`th` to `text-align`, with ASCII-case-insensitive
 matching and `middle` mapped to `center`. Row/group alignment, `valign`,
-vertical cell alignment, legacy over-constrained descendant-margin alignment,
-table left/right floats and other alignment targets remain unsupported.
+baseline table-cell alignment, legacy `valign`, legacy over-constrained
+descendant-margin alignment, table left/right floats and other alignment targets
+remain unsupported. CSS `vertical-align:middle` and `bottom` now position
+canonical table-cell contents against their final row height, including the
+complete height and internal spacing of row-spanning cells; `top` remains the
+UA default. Pass 8 adds explicit CSS-parser and exact single-/multi-row-span
+geometry regressions. CSS (1,142), Layout (839), Content (99) and Paint (71)
+tests pass; the solution build has zero warnings/errors, all 16,188 solution
+tests pass, and solution format verification passes. Commit, push and CI remain
+pending; baseline alignment and legacy `valign` remain open.
 This increment adds 14 CSS cascade cases, 13 layout acceptance/rejection cases
 and one retained-resize pixel regression. CSS (1,116), Layout (798), Content
 (89), the solution build (zero warnings/errors), all 16,105 solution tests and

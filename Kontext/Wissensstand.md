@@ -4,7 +4,7 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-02, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-07, Zeitzone Europe/Berlin (UTC+01:00).
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
   KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten
@@ -181,7 +181,13 @@
   Solution-Build, der Volltest (16.180 Faelle) und die Formatpruefung.
   Commit `879982f` ist gepusht; Linux x64/arm64, Windows x64/arm64 sowie
   Push-on-main-CI sind gruen (Runs 42340535912, 42340535879 und 42340535497;
-  KP-212/KP-214).
+  KP-212/KP-214). Pass 8 setzt die Nutzerwahl Q-026/KP-217 um:
+  CSS-`vertical-align:middle` und `bottom` positionieren Tabellenzellinhalte
+  nach endgueltiger Zeilen-/Row-Span-Hoehe einschliesslich Zwischenabstaenden.
+  Baseline, Legacy-`valign` und andere Zellwerte bleiben ausgeschlossen.
+  CSS (1.142), Layout (839), Content (99), Paint (71), Solution-Build ohne
+  Warnungen/Fehler, Volltest (16.188) und Formatpruefung bestehen lokal.
+  Commit, Push und CI stehen noch aus (KP-218).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
@@ -933,6 +939,7 @@ abgelehnt und nicht geladen
 | Q-023 | Welches mit den aktuellen Eventgrenzen kompatible Inkrement soll Pass 10 stattdessen umsetzen?                                                                                                                                            | Nutzer bat um Stopp; kein alternatives Inkrement gewaehlt                                                                                                                                                     | Keine weitere Arbeit an Pass 10 ohne neue ausdrueckliche Nutzeranweisung                                                                                                                | aktuelle Nutzerantwort; [KP-062](./Kontextprotokoll.md#kp-062---weitere-arbeit-gestoppt)                                                                                                                                                                                                                  |
 | Q-024 | Soll Pass 5 eine HTML-`table-caption` nur oben oder zusaetzlich oben/unten mit `caption-side` unterstuetzen?                                                                                                                              | Beantwortet: Nutzer waehlte top-only; `display:table-caption` und Layout werden ergaenzt, `caption-side`/bottom bleiben unsupported                                                                           | Implementieren; keine Erweiterung auf Bottom-Position oder `caption-side`                                                                                                               | ausdrueckliche Nutzerwahl in aktueller Sitzung; DEC-028; [KP-207](./Kontextprotokoll.md#kp-207---pass-5-top-only-caption-beschlossen); CSS 2.2 `#caption-position`                                                                                                                                        |
 | Q-021 | Welches konkrete, nicht bereits umgesetzte Prioritaet-2-Inkrement soll Pass 10 behandeln?                                                                                                                                                 | Offen; die verbleibende Page-Interaction-Luecke ist breit, und der aktuelle Nutzerauftrag legt keinen Einzelumfang fest                                                                                       | Nutzer zwischen begrenzten Pointer-Hover-Events auf vorhandenen Zielen, erweiterten `tabindex`-Fokuszielen, begrenzten DOM-Scroll-Events oder Blockieren weiterer Arbeit waehlen lassen | [Missing.md](../plans/Missing.md#2-basic-interaction-with-pages), [browser-shell.md](../docs/browser-shell.md), [KP-058](./Kontextprotokoll.md#kp-058---pass-10-umfang-noch-offen)                                                                                                                        |
+| Q-026 | Welchen vertikalen Tabellenzell-Ausrichtungsumfang soll Pass 8 aus Prioritaet 1 umsetzen?                                                                                                                                                 | Beantwortet: Nutzer waehlt CSS `middle`/`bottom` einschliesslich Row-Spans; Implementierung ausstehend; CSS `baseline` und HTML-`valign` bleiben ausserhalb dieses Inkrements                                 | `vertical-align:middle/bottom` im kanonischen Tabellenlayout inkl. mehrzeiliger Spans implementieren; keine Legacy-`valign`-Hints oder Baseline-Algorithmik ausweiten                   | ausdrueckliche Nutzerwahl am 2026-11-07; [Missing.md](../plans/Missing.md#recommended-priority), [text-layout.md](../docs/text-layout.md#basic-automatic-tables), [KP-217](./Kontextprotokoll.md#kp-217---pass-8-vertical-cell-alignment-scope-decided)                                                   |
 
 ## Arbeitsstand und Nachweise
 

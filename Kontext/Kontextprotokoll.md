@@ -5916,3 +5916,61 @@ focused regressions, subsystem documentation and local Pass 7 validation.
 The messages had literal `\n` sequences instead of line breaks, so the required
 co-author trailer was not recognized. The requested correction preserves each
 commit's content and ordering and adds a properly parsed trailer.
+
+### KP-216 - Pass 8 vertical cell alignment scope open
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Sources: current user request for ten Missing-priority passes; `plans/Missing.md`;
+  `docs/text-layout.md`; `src/Engine/Engine.Layout/TableLayout.cs`;
+  `src/Engine/Engine.Css/CssProperties.cs`; `src/Engine/Engine.Css/CssStyleEngine.cs`;
+  `specs/cache/css2-tables.html#vertical-alignment`; and
+  `specs/manifest.json` (`css2-tables`, checked 2026-10-28).
+- Related: Q-026 and the ten-pass request.
+
+**Belegt:** The highest recommended work priority favors ordinary static-page
+rendering and basic tables. Canonical table layout currently rejects every
+cell `vertical-align` value other than `top`; CSS accepts only `baseline` and
+`top`, and the UA rule sets cells to `top`. The layout guide explicitly leaves
+other cell alignments and legacy `valign` unsupported. The local CSS 2.2
+tables source defines cell `baseline`, `top`, `bottom` and `middle` behavior,
+including alignment across rows spanned by a cell. Its recorded check date is
+within the 30-day refresh window.
+
+**Offen:** Choosing the next scope materially affects table geometry and
+compatibility. Options presented: implement CSS `middle`/`bottom` for
+single-row cells first; include row-spanning cells in that scope; implement
+baseline alignment first; handle legacy HTML `valign` first; or block further
+actions until the decision is resolved. No implementation or standards refresh
+was started pending the user's choice.
+
+### KP-217 - Pass 8 vertical cell alignment scope decided
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Source: explicit user selection "2" in the current conversation.
+- Related: Q-026/KP-216 and the ten-pass request.
+
+**Nutzerangabe / beschlossen:** Implement CSS `vertical-align: middle` and
+`bottom` for canonical HTML table cells, including row-spanning cells. Keep
+baseline alignment and legacy HTML `valign` outside this increment. Preserve
+explicit failure for unsupported values and unsupported table contexts.
+
+### KP-218 - Pass 8 vertical cell alignment implemented and validated locally
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Sources: working-tree implementation, focused and full test results,
+  solution build, format verification, and updated subsystem documentation in
+  the current session.
+- Related: Q-026/KP-216/KP-217 and the ten-pass request.
+
+**Belegt:** CSS now parses `vertical-align:middle` and `bottom`. Canonical
+table layout positions cell descendants after final row and row-span heights
+are known; middle divides the added space evenly and bottom uses it all,
+including spacing across spanned rows. Baseline, legacy `valign` and other
+values remain explicitly unsupported in table layout. New CSS and layout
+regressions verify both values for single-row and row-spanning cells.
+
+Focused CSS (1,142), Layout (839), Content (99), and Paint (71) suites pass.
+The solution build passes with zero warnings/errors, all 16,188 solution tests
+pass, `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` passes, and `git diff --check` passes. Commit, push and CI remain
+pending.

@@ -1210,6 +1210,44 @@ public sealed class LayoutTests
         Assert.Equal(2, Find(root, "b").Content.Y);
     }
 
+    [Theory]
+    [InlineData("middle", 10)]
+    [InlineData("bottom", 20)]
+    public void TableCellVerticalAlignmentPositionsContentWithinSingleRow(string alignment, double expectedOffset)
+    {
+        const string html = """
+            <table><tr>
+            <td id=aligned><div id=content>short</div></td>
+            <td>one<br>two<br>three</td>
+            </tr></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}#aligned{vertical-align:" + alignment + "}").Root!;
+        var cell = Find(root, "aligned");
+        var content = Find(root, "content");
+
+        Assert.Equal(expectedOffset, content.Content.Y - cell.Content.Y);
+        Assert.Equal(30, cell.BorderBox.Height);
+    }
+
+    [Theory]
+    [InlineData("middle", 21)]
+    [InlineData("bottom", 42)]
+    public void TableCellVerticalAlignmentIncludesRowsSpannedByTheCell(string alignment, double expectedOffset)
+    {
+        const string html = """
+            <table><tbody><tr>
+            <td id=aligned rowspan=2><div id=content>short</div></td>
+            <td>one<br>two<br>three</td>
+            </tr><tr><td>one<br>two</td></tr></tbody></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}#aligned{vertical-align:" + alignment + "}").Root!;
+        var cell = Find(root, "aligned");
+        var content = Find(root, "content");
+
+        Assert.Equal(expectedOffset, content.Content.Y - cell.Content.Y);
+        Assert.Equal(52, cell.BorderBox.Height);
+    }
+
     [Fact]
     public void TableMeasurementAndFinalLayoutShareExactWorkBudgets()
     {
@@ -1259,6 +1297,8 @@ public sealed class LayoutTests
     [InlineData("<table><tr><td align='middle '>x</td></tr></table>", "")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:baseline}")]
+    [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:sub}")]
+    [InlineData("<div>x</div>", "div{vertical-align:middle}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "table{height:100px}")]
     public void UnsupportedTableFeaturesFailInsteadOfReturningApproximateGeometry(string html, string css) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html, css));

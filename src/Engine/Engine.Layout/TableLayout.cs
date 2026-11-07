@@ -158,10 +158,11 @@ public static partial class StaticLayout
                         var rowSpan = ParseRowSpan(cell.GetAttribute("rowspan"));
                         RejectTableAttributes(cell);
                         var cellStyle = Style(cell);
-                        if (cellStyle["vertical-align"] is not CssKeyword { Value: "top" }
+                        if (cellStyle["vertical-align"] is not CssKeyword
+                            { Value: "top" or "middle" or "bottom" }
                             || Edges(cellStyle, "margin", 0) != default
                             || cellStyle["max-height"] is not CssKeyword { Value: "none" })
-                        { throw new UnsupportedLayoutException("Table cells require top alignment, zero margins and no maximum height."); }
+                        { throw new UnsupportedLayoutException("Table cells require top, middle or bottom alignment, zero margins and no maximum height."); }
                         pendingCells.Add(new(cell, columnSpan, rowSpan));
                     }
                     pendingRows.Add(new(row, pendingCells.AsReadOnly()));
@@ -618,10 +619,18 @@ public static partial class StaticLayout
                             ? rowHeights[rowIndex]
                             : SumRowHeights(rowHeights, rowIndex, cell.RowSpan) + rowSpacing * (cell.RowSpan - 1);
                         var extra = Math.Max(0, height - originalBox.BorderBox.Height);
-                        var box = originalBox with
+                        var verticalAlignment = ((CssKeyword)Style(cell.Element)["vertical-align"]).Value;
+                        var contentOffset = verticalAlignment switch
                         {
-                            Content = originalBox.Content with { Height = originalBox.Content.Height + extra },
-                            PaddingBox = originalBox.PaddingBox with { Height = originalBox.PaddingBox.Height + extra },
+                            "middle" => extra / 2,
+                            "bottom" => extra,
+                            _ => 0
+                        };
+                        var alignedContents = TranslateTableBox(originalBox, contentOffset, shiftBox: false);
+                        var box = alignedContents with
+                        {
+                            Content = alignedContents.Content with { Height = alignedContents.Content.Height + extra },
+                            PaddingBox = alignedContents.PaddingBox with { Height = alignedContents.PaddingBox.Height + extra },
                             BorderBox = originalBox.BorderBox with { Height = height }
                         };
                         var positionedCell = TranslateTableBox(box, cursor - groupY);
@@ -687,7 +696,7 @@ public static partial class StaticLayout
             return sum;
         }
 
-        private LayoutBox TranslateTableBox(LayoutBox box, double offsetY)
+        private LayoutBox TranslateTableBox(LayoutBox box, double offsetY, bool shiftBox = true)
         {
             cancellation.ThrowIfCancellationRequested();
             if (offsetY == 0) { return box; }
@@ -766,19 +775,23 @@ public static partial class StaticLayout
             }
             return box with
             {
-                Content = ShiftRect(box.Content),
-                PaddingBox = ShiftRect(box.PaddingBox),
-                BorderBox = ShiftRect(box.BorderBox),
+                Content = shiftBox ? ShiftRect(box.Content) : box.Content,
+                PaddingBox = shiftBox ? ShiftRect(box.PaddingBox) : box.PaddingBox,
+                BorderBox = shiftBox ? ShiftRect(box.BorderBox) : box.BorderBox,
                 TableBoxGeometry = box.TableBoxGeometry is { } tableGeometry
-                    ? tableGeometry with
-                    {
-                        Content = ShiftRect(tableGeometry.Content),
-                        PaddingBox = ShiftRect(tableGeometry.PaddingBox),
-                        BorderBox = ShiftRect(tableGeometry.BorderBox)
-                    }
+                    ? shiftBox
+                        ? tableGeometry with
+                        {
+                            Content = ShiftRect(tableGeometry.Content),
+                            PaddingBox = ShiftRect(tableGeometry.PaddingBox),
+                            BorderBox = ShiftRect(tableGeometry.BorderBox)
+                        }
+                        : tableGeometry
                     : null,
-                TableColumnGroupBackgrounds = ShiftTableBackgrounds(box.TableColumnGroupBackgrounds),
-                TableColumnBackgrounds = ShiftTableBackgrounds(box.TableColumnBackgrounds),
+                TableColumnGroupBackgrounds = shiftBox
+                    ? ShiftTableBackgrounds(box.TableColumnGroupBackgrounds) : box.TableColumnGroupBackgrounds,
+                TableColumnBackgrounds = shiftBox
+                    ? ShiftTableBackgrounds(box.TableColumnBackgrounds) : box.TableColumnBackgrounds,
                 Children = children,
                 Lines = lines,
                 Flow = flow,
