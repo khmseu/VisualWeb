@@ -6274,4 +6274,6 @@ unloesbare 100%/120%-Faelle und das Operationslimit.
 **Validierung:** Die Regressionen bestanden zunaechst rot und nach der
 Implementierung gruen. Layout (867), Solution-Build (0 Warnungen/Fehler),
 alle 16.236 Solution-Tests, Formatpruefung und `git diff --check` bestehen
-lokal. Commit, Push und CI stehen noch aus.
+lokal. Commit `de132ad` ist gepusht; Linux (Run 42396138538), Windows-
+Confinement (Run 42396138531, x64/arm64) und CodeQL (Run 42396138216)
+bestehen.

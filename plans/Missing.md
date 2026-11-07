@@ -1060,7 +1060,9 @@ constraints without a finite solution. Regression coverage includes final
 width resolution, overlapping group/column constraints, unsatisfiable
 percentages and the operation limit. Layout (867), the zero-warning solution
 build, all 16,236 solution tests, solution format verification and
-`git diff --check` pass locally; CI and the increment commit are pending.
+`git diff --check` pass locally. Commit `de132ad` is pushed; Linux (Run
+42396138538), Windows confinement (Run 42396138531, x64/arm64) and CodeQL
+(Run 42396138216) pass.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
