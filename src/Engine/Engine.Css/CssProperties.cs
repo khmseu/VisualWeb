@@ -50,6 +50,7 @@ internal static class CssProperties
             ["list-style-position"] = new(new CssKeyword("outside"), true),
             ["list-style-image"] = new(new CssKeyword("none"), true),
             ["table-layout"] = new(new CssKeyword("auto"), false),
+            ["caption-side"] = new(new CssKeyword("top"), true),
             ["border-collapse"] = new(new CssKeyword("separate"), true),
             ["border-spacing"] = new(new CssLength(0, "px"), true),
             ["vertical-align"] = new(new CssKeyword("baseline"), false),
@@ -264,6 +265,7 @@ internal static class CssProperties
                 "table-header-group", "table-footer-group", "table-row", "table-cell");
         }
         if (name == "table-layout") { return Keyword(keyword, "auto"); }
+        if (name == "caption-side") { return Keyword(keyword, "top", "bottom"); }
         if (name == "border-collapse") { return Keyword(keyword, "separate"); }
         if (name == "border-spacing") { return Length(token, false) is { Value: >= 0 } spacing ? spacing : null; }
         if (name == "vertical-align") { return Keyword(keyword, "baseline", "top", "middle", "bottom"); }

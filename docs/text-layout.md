@@ -261,11 +261,11 @@ including internal row spacing, is distributed evenly across its covered rows.
 Cell block margins do not collapse through cell edges. Table, row-group and
 row backgrounds paint before cell backgrounds, so later rows cannot cover a
 spanning cell; solid borders use the existing paint flow.
-One first-element-child HTML `caption` is supported above the table when it
-computes to `display: table-caption`. Its wrapper uses the table border-edge
-width, while the caption does not affect intrinsic column sizing; caption and
-table backgrounds/borders retain separate geometry. This is the initial
-top-only position: `caption-side` and bottom captions remain unsupported.
+One first-element-child HTML `caption` is supported above or below the table
+when it computes to `display: table-caption`, according to inherited
+`caption-side:top/bottom` (initially `top`). Its wrapper uses the table
+border-edge width, while the caption does not affect intrinsic column sizing;
+caption and table backgrounds/borders retain separate geometry.
 UA spacing is 2px; cells have 1px padding and top alignment. Header font weight
 is not synthesized. Measurement and arrangement share node, text, shaping,
 line, glyph, box, depth and cancellation budgets.

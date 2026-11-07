@@ -16,7 +16,7 @@ public static partial class StaticLayout
         private sealed record TableGroup(DomElement Element, IReadOnlyList<TableRow> Rows);
         private sealed record ColumnGroupWidthConstraint(int Start, int Span, double Width);
         private sealed record TablePlan(IReadOnlyList<TableGroup> Groups, double[] Columns, double Width, double Spacing,
-            DomElement? Caption, IReadOnlyList<CssColor?> ColumnGroupBackgrounds,
+            DomElement? Caption, bool CaptionAtBottom, IReadOnlyList<CssColor?> ColumnGroupBackgrounds,
             IReadOnlyList<CssColor?> ColumnBackgrounds, bool HasColumnBackgrounds);
         private sealed record ArrangedTable(IReadOnlyList<LayoutBox> Children, double Height,
             LayoutRect? WrapperBounds, LayoutTableBoxGeometry? TableBoxGeometry,
@@ -34,6 +34,7 @@ public static partial class StaticLayout
             var columnGroupElements = new List<DomElement>();
             var tableChildren = new List<DomElement>();
             DomElement? caption = null;
+            var captionAtBottom = false;
             var captionSeen = false;
             var elementSeen = false;
             var rowGroupsStarted = false;
@@ -55,6 +56,7 @@ public static partial class StaticLayout
                             { throw new UnsupportedLayoutException("HTML captions require display:table-caption."); }
                             Check(child, depth + 1, block: true, tableContext: true);
                             caption = child;
+                            captionAtBottom = ((CssKeyword)Style(child)["caption-side"]).Value == "bottom";
                         }
                     }
                     else if (display != "none" && child.LocalName == "colgroup")
@@ -280,7 +282,7 @@ public static partial class StaticLayout
                 cancellation.ThrowIfCancellationRequested();
                 minimum[index] = Finite(minimum[index] + ratio * (maximum[index] - minimum[index]) + extra);
             }
-            return new(groups.AsReadOnly(), minimum, Finite(width), spacing, caption,
+            return new(groups.AsReadOnly(), minimum, Finite(width), spacing, caption, captionAtBottom,
                 columnGroupBackgrounds.AsReadOnly(), columnBackgrounds.AsReadOnly(), hasColumnBackgrounds);
         }
 
@@ -558,7 +560,7 @@ public static partial class StaticLayout
             var tableColumnGroupBackgrounds = new List<LayoutTableBackground>();
             var tableColumnBackgrounds = new List<LayoutTableBackground>();
             LayoutBox? caption = null;
-            if (plan.Caption is { } captionElement)
+            if (plan.Caption is { } captionElement && !plan.CaptionAtBottom)
             {
                 caption = Block(captionElement, wrapperX, wrapperY, wrapperWidth, null, depth + 1, tableContext: true);
                 var captionTableBorderY = Finite(caption.BorderBox.Y + caption.BorderBox.Height + caption.Margin.Bottom);
@@ -691,7 +693,7 @@ public static partial class StaticLayout
                     rows, depth + 1));
             }
             var tableHeight = Finite(cursor - y);
-            if (caption is null)
+            if (plan.Caption is null)
             {
                 return new(groups.AsReadOnly(), tableHeight, null, null,
                     tableColumnGroupBackgrounds.AsReadOnly(), tableColumnBackgrounds.AsReadOnly());
@@ -705,10 +707,27 @@ public static partial class StaticLayout
                 tableHeight + tablePadding.Top + tablePadding.Bottom + tableBorder.Top + tableBorder.Bottom);
             var tableGeometry = new LayoutTableBoxGeometry(
                 Rect(x, y, plan.Width, tableHeight), tablePaddingBox, tableBorderBox);
-            var wrapperHeight = Finite(Math.Max(0, tableBorderBox.Y + tableBorderBox.Height - wrapperY));
+            if (plan.CaptionAtBottom)
+            {
+                caption = Block(plan.Caption, wrapperX, tableBorderBox.Y + tableBorderBox.Height,
+                    wrapperWidth, null, depth + 1, tableContext: true);
+            }
+            var captionBox = caption
+                ?? throw new InvalidOperationException("A planned table caption was not arranged.");
+            var wrapperBottom = Math.Max(tableBorderBox.Y + tableBorderBox.Height,
+                captionBox.BorderBox.Y + captionBox.BorderBox.Height + captionBox.Margin.Bottom);
+            var wrapperHeight = Finite(Math.Max(0, wrapperBottom - wrapperY));
             var children = new LayoutBox[groups.Count + 1];
-            children[0] = caption;
-            for (var index = 0; index < groups.Count; index++) { children[index + 1] = groups[index]; }
+            if (plan.CaptionAtBottom)
+            {
+                for (var index = 0; index < groups.Count; index++) { children[index] = groups[index]; }
+                children[^1] = captionBox;
+            }
+            else
+            {
+                children[0] = captionBox;
+                for (var index = 0; index < groups.Count; index++) { children[index + 1] = groups[index]; }
+            }
             return new(children, wrapperHeight, Rect(wrapperX, wrapperY, wrapperWidth, wrapperHeight), tableGeometry,
                 tableColumnGroupBackgrounds.AsReadOnly(), tableColumnBackgrounds.AsReadOnly());
         }

@@ -6087,3 +6087,30 @@ vergleicht HTML-`valign` mit CSS bei initialem Rendern und retained resize.
 Commit `348ad317d25ec0d87c6775f3e902c1d07143d2b9` ist gepusht. Linux
 x64/arm64 (Run 42373689351), Windows x64/arm64 (Run 42373689357) und
 Push-on-main/CodeQL (Run 42373689317) bestehen.
+
+### KP-225 - Zehn-Passen-Lauf: caption-side als erster Tabellenpass
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerauftrag: zehn getrennte Missing-Prioritaetsinkremente fortsetzen
+  (aktuelle Anfrage, 2026-11-07, 14:18 Europe/Berlin).
+- Quellen: [Missing-Tracker](../plans/Missing.md#recommended-priority),
+  [CSS-2.2-Tabellenquelle](../specs/cache/css2-tables.html#caption-position),
+  geprueft 2026-10-28, sowie `CssProperties.cs`, `TableLayout.cs` und die
+  CSS-/Layout-Regressionen.
+
+**Ableitung:** Der erste umsetzbare Tabellenpass erweitert die fruehere
+top-only Caption-Implementierung um `caption-side:top/bottom`. Die damalige
+Nutzerwahl Q-024/DEC-028 war explizit auf Pass 5 begrenzt; dieser neue
+Backlog-Pass aendert sie nicht rueckwirkend. CSS 2.2 definiert den initialen,
+geerbten Wert `top` sowie `bottom` als Position unterhalb der Tabellenbox.
+Die bestehende Begrenzung auf eine erste HTML-Caption bleibt erhalten.
+
+**Belegt:** `caption-side` ist in CSS und Cascade als geerbte Property mit
+`top`/`bottom` registriert. Bottom-Captions werden nach der Tabellenbox
+positioniert und in die Wrapperhoehe sowie Paint-Reihenfolge aufgenommen;
+intrinsische Tabellenspalten bleiben unveraendert. Mehrere, spaetere und
+nicht-HTML-Captions bleiben unsupported.
+
+**Validierung:** CSS (1.152), Layout (854), Solution-Build (0 Warnungen/Fehler),
+alle 16.214 Solution-Tests, Formatpruefung und `git diff --check` bestehen
+lokal. Commit, Push und CI stehen zum Dokumentationszeitpunkt noch aus.

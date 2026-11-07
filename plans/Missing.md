@@ -1010,6 +1010,14 @@ against equivalent CSS across resize. Commit `348ad31` is pushed; Linux x64/arm6
 Windows x64/arm64 and CodeQL CI pass (runs 42373689351, 42373689357 and
 42373689317).
 
+The caption-placement increment supports CSS 2.2 `caption-side:top/bottom`,
+including inherited bottom positioning for the existing first-child caption.
+Bottom captions follow the table box and contribute to wrapper height without
+changing intrinsic column sizing. Multiple, later-child and non-HTML captions
+remain unsupported. CSS tests (1,152), Layout tests (854), the zero-warning
+solution build, all 16,214 solution tests, solution format verification and
+`git diff --check` pass locally. Commit, push and CI remain pending.
+
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
 ### 6. A persistent browser JavaScript environment

@@ -61,15 +61,16 @@ are shared evenly across covered rows. The materialized columns are capped by
 [`LayoutOptions.MaxTableRowSpanOperations`](./StaticLayout.cs). Table,
 row-group and row backgrounds
 paint before cell backgrounds so later rows cannot cover spanning cells.
-One first-child HTML caption with `display:table-caption` is laid out above
-the table at the table's border-edge width; caption content does not affect
+One first-child HTML caption with `display:table-caption` is laid out above or
+below the table according to inherited `caption-side:top/bottom` (initially
+`top`), at the table's border-edge width; caption content does not affect
 intrinsic column sizing. Bounded HTML `colgroup`/`col` spans add tracks, and
 computed nonnegative CSS-pixel widths constrain column/group automatic sizing;
 percentage widths remain unsupported. Solid column/group `background-color`
 uses bounded cell-origin geometry, including complete bounds of spanning cells
 beyond their originating track/group; these rectangles share the table-column
 operation limit. See the layout guide for the layer order and exact limits.
-Bottom captions, `caption-side`, nested tables/widgets and other
+Nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify

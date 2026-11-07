@@ -153,8 +153,9 @@ The finite table properties add canonical table, caption, column, column-group,
 row/group and cell displays, `table-layout:auto`, inherited
 `border-collapse:separate` and single-length `border-spacing`, plus
 `vertical-align:baseline/top/middle/bottom`
-(ID `css2-tables`). UA defaults place captions above tables and supply the
-canonical column displays; `caption-side` remains unsupported.
+(ID `css2-tables`). Inherited `caption-side:top/bottom` defaults to `top`,
+placing the caption above or below the table. UA defaults also supply the
+canonical column displays.
 UA cells use 1px padding and top alignment; UA tables use 2px spacing.
 HTML `td`/`th` `valign=baseline`, `top`, `middle` and `bottom` map to
 `vertical-align` at the author presentational-hint origin. Matching is

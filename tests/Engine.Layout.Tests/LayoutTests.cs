@@ -1118,6 +1118,32 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void BottomCaptionFollowsTableWithoutChangingItsGeometryOrIntrinsicColumns()
+    {
+        const string html = """
+            <table id=t><caption id=caption>one two three four</caption>
+            <tbody><tr><td>x</td></tr></tbody></table>
+            """;
+        const string tableCss = "table{border:2px solid red;padding:3px;caption-side:bottom}";
+        const string css = tableCss + "caption{margin-top:3px;margin-bottom:4px;border:1px solid blue;padding:2px}";
+        var root = UnorderedList(html, css).Root!;
+        var table = Find(root, "t");
+        var caption = Find(root, "caption");
+        var tableBox = Assert.IsType<LayoutTableBoxGeometry>(table.TableBoxGeometry);
+        var withoutCaption = UnorderedList("<table id=t><tbody><tr><td>x</td></tr></tbody></table>",
+            tableCss).Root!;
+        var plainTable = Find(withoutCaption, "t");
+
+        Assert.Equal(plainTable.BorderBox.Y, tableBox.BorderBox.Y);
+        Assert.Equal(table.BorderBox.Width, caption.BorderBox.Width);
+        Assert.Equal(tableBox.BorderBox.Y + tableBox.BorderBox.Height + caption.Margin.Top, caption.BorderBox.Y);
+        Assert.Equal(caption.BorderBox.Y + caption.BorderBox.Height + caption.Margin.Bottom,
+            table.BorderBox.Y + table.BorderBox.Height);
+        Assert.Equal(plainTable.BorderBox.Width, tableBox.BorderBox.Width);
+        Assert.Same(caption.Element, table.Children[^1].Element);
+    }
+
+    [Fact]
     public void HiddenTopCaptionDoesNotCreateCaptionWrapperGeometry()
     {
         var root = UnorderedList(

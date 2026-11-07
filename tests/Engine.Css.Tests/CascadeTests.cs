@@ -118,14 +118,21 @@ public sealed class CascadeTests
     }
 
     [Fact]
-    public void CaptionUsesTheTopTableCaptionDisplayAndDoesNotAddCaptionSide()
+    public void CaptionUsesTheTopTableCaptionDisplayAndSupportsCaptionSide()
     {
         var doc = Document("<table><caption id=caption>Title</caption><tr><td>x</td></tr></table>");
         var result = Compute(doc);
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssKeyword("table-caption"),
             result.Styles[doc.GetElementById("caption")!]["display"]);
-        Assert.NotEmpty(Compute(doc, new CssStyleSource("caption{caption-side:bottom}")).Diagnostics);
+        Assert.Equal(new CssKeyword("top"), result.Styles[doc.GetElementById("caption")!]["caption-side"]);
+
+        var bottom = Compute(doc, new CssStyleSource("table{caption-side:bottom}"));
+        Assert.Empty(bottom.Diagnostics);
+        Assert.Equal(new CssKeyword("bottom"), bottom.Styles[doc.GetElementById("caption")!]["caption-side"]);
+        Assert.Equal(new CssKeyword("bottom"),
+            Compute(doc, new CssStyleSource("caption{caption-side:bottom}"))
+                .Styles[doc.GetElementById("caption")!]["caption-side"]);
     }
 
     [Fact]
@@ -146,7 +153,7 @@ public sealed class CascadeTests
     [InlineData("border-spacing:1px 2px")]
     [InlineData("border-collapse:collapse")]
     [InlineData("table-layout:fixed")]
-    [InlineData("caption-side:bottom")]
+    [InlineData("caption-side:left")]
     public void UnsupportedTableCssProducesDiagnostics(string declaration) =>
         Assert.NotEmpty(Compute(Document(), new CssStyleSource("#child{" + declaration + "}")).Diagnostics);
 
