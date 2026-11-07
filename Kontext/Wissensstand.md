@@ -187,7 +187,9 @@
   Baseline, Legacy-`valign` und andere Zellwerte bleiben ausgeschlossen.
   CSS (1.142), Layout (839), Content (99), Paint (71), Solution-Build ohne
   Warnungen/Fehler, Volltest (16.188) und Formatpruefung bestehen lokal.
-  Commit, Push und CI stehen noch aus (KP-218).
+  Commit `8edd05b` ist gepusht; Linux-Entwicklung, Windows-Confinement
+  (x64/arm64) und CodeQL-CI sind gruen (Runs 42357015761, 42357015749,
+  42357015436; KP-219).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

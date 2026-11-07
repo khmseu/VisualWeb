@@ -5974,3 +5974,15 @@ The solution build passes with zero warnings/errors, all 16,188 solution tests
 pass, `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
 third_party` passes, and `git diff --check` passes. Commit, push and CI remain
 pending.
+
+### KP-219 - Pass 8 commit, push and CI completed
+
+- Documented on: 2026-11-07, Europe/Berlin.
+- Sources: commit `8edd05b`; GitHub Actions runs 42357015761,
+  42357015749 and 42357015436; updated `plans/Missing.md`.
+- Related: Q-026/KP-216 through KP-218 and the ten-pass request.
+
+**Belegt:** Commit `8edd05b` was pushed to `main`. Linux development passed
+(x64/arm64), Windows confinement passed (x64/arm64), and Push on main CodeQL
+passed. Pass 8 is locally validated, committed, pushed and CI-green. Baseline
+alignment and legacy HTML `valign` remain unsupported.

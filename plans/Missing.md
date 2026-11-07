@@ -978,8 +978,10 @@ complete height and internal spacing of row-spanning cells; `top` remains the
 UA default. Pass 8 adds explicit CSS-parser and exact single-/multi-row-span
 geometry regressions. CSS (1,142), Layout (839), Content (99) and Paint (71)
 tests pass; the solution build has zero warnings/errors, all 16,188 solution
-tests pass, and solution format verification passes. Commit, push and CI remain
-pending; baseline alignment and legacy `valign` remain open.
+tests pass, and solution format verification passes. Commit `8edd05b` is pushed;
+Linux development, Windows confinement (x64/arm64) and CodeQL CI pass (runs
+42357015761, 42357015749 and 42357015436). Baseline alignment and legacy
+`valign` remain open.
 This increment adds 14 CSS cascade cases, 13 layout acceptance/rejection cases
 and one retained-resize pixel regression. CSS (1,116), Layout (798), Content
 (89), the solution build (zero warnings/errors), all 16,105 solution tests and
