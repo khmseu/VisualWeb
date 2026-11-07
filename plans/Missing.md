@@ -993,7 +993,9 @@ ASCII-case-insensitive author presentational hints, using the existing
 single-row and row-span alignment behavior. Baseline, invalid cell values and
 row/group `valign` remain unsupported and fail explicitly at layout. CSS
 (1,149), Layout (852), the zero-warning solution build, all 16,208 solution
-tests and formatting verification pass locally; CI is pending.
+tests and formatting verification pass locally. Commit `ce09478` is pushed and
+Linux x64/arm64, Windows x64/arm64 and CodeQL CI pass (runs 42362747599,
+42362747677 and 42362747202).
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

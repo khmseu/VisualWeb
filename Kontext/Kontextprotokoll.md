@@ -6033,3 +6033,26 @@ navigation-test issue, not a regression from table alignment or documentation.
 **Belegt:** `ce09478` ist nach `main` gepusht. Linux x64/arm64, Windows
 x64/arm64 und Push-on-main-CodeQL sind erfolgreich. Die Browser-Test-Suites
 bestanden in der Linux-/Windows-CI.
+
+### KP-223 - Pass 10: Baselineumfang offen
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Quellen: aktualisierter [Missing-Tracker](../plans/Missing.md#recommended-priority),
+  [CSS 2.2 Tables](https://www.w3.org/TR/CSS22/tables.html), lokaler Cache
+  `css2-tables` (checked 2026-10-28), HTML-Cache `html` (refreshed 2026-11-07),
+  `TableLayout.cs` und aktuelle CSS/Layout-Tests.
+- Pass-9-Nachtrag: Der Dokumentationscommit `177388f` ist gepusht; Linux
+  (Run 42363535903), Windows x64/arm64 (Run 42363535693) und Push-on-main/
+  CodeQL (Run 42363535754) bestehen.
+- Status der Pass-10-Auswahl: **Offen**, aus Prioritaet 1 abgeleitet. Nach dem
+  Pass-9-`valign`-Hint bleiben CSS-Tabellenzellen-Baselines eine konkrete
+  einfache-Seiten-Luecke. CSS 2.2 definiert Baselines und die normale
+  Zeilenpositionierung, sagt aber nicht, wie Zellen ueber mehrere Zeilen die
+  Zeilenhoehen beeinflussen.
+- Noch keine Implementierung. Zu klaeren ist: (A) nur nicht-spannende
+  `td`/`th` mit CSS/HTML-`baseline` unterstuetzen und Baseline-Row-Spans
+  explizit ablehnen; oder (B) Row-Spans einschliessen und die bestehende
+  gleichmaessige Defizitverteilung als lokale Hoehenpolitik festlegen, obwohl
+  diese Folge nicht durch CSS 2.2 spezifiziert ist. Bestehende UA-Topdefaults
+  wuerden in beiden Varianten unveraendert bleiben.
+- **Offen:** weitere Aktionen pausieren, bis der Nutzer den Umfang waehlt.
