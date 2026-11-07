@@ -30,7 +30,7 @@ public static partial class StaticLayout
         private TablePlan PlanTable(DomElement table, double containingWidth, int depth)
         {
             var style = Style(table);
-            RejectTableAttributes(table);
+            RejectTableAttributes(table, allowWidthAttribute: true);
             RequireAutoHeight(style);
             var spacing = (CssBorderSpacing)style["border-spacing"];
             var groups = new List<TableGroup>();
@@ -607,9 +607,10 @@ public static partial class StaticLayout
             { throw new UnsupportedLayoutException("Row groups and rows require automatic sizing without margins, padding or borders."); }
         }
 
-        private static void RejectTableAttributes(DomElement element)
+        private static void RejectTableAttributes(DomElement element, bool allowWidthAttribute = false)
         {
-            if (new[] { "width", "height", "border", "cellpadding", "nowrap" }
+            if ((!allowWidthAttribute && element.GetAttribute("width") is not null)
+                || new[] { "height", "border", "cellpadding", "nowrap" }
                     .Any(attribute => element.GetAttribute(attribute) is not null)
                 || element.GetAttribute("cellspacing") is not null && element.LocalName != "table"
                 || element.GetAttribute("valign") is not null

@@ -37,7 +37,7 @@
       "url": "https://www.rfc-editor.org/rfc/rfc6797.html",
       "file": "rfc6797.html",
       "fetchedAt": "2026-10-06T23:01:00.4717964+00:00",
-      "checkedAt": "2026-10-06T23:01:00.4717964+00:00",
+      "checkedAt": "2026-11-07T17:41:17.5656009+00:00",
       "eTag": "W/\u002200ca6316fe3546d2f2f25e907ae21416\u0022",
       "lastModified": null
     },
@@ -66,19 +66,19 @@
       "title": "Linux kernel cgroup v2 resource controllers",
       "url": "https://docs.kernel.org/admin-guide/cgroup-v2.html",
       "file": "linux-cgroup-v2.html",
-      "fetchedAt": "2026-10-05T05:42:40.920455+00:00",
-      "checkedAt": "2026-10-05T05:42:40.920455+00:00",
+      "fetchedAt": "2026-11-07T17:41:17.9545117+00:00",
+      "checkedAt": "2026-11-07T17:41:17.9545117+00:00",
       "eTag": null,
-      "lastModified": "2026-10-04T20:51:13+00:00"
+      "lastModified": "2026-11-01T22:42:11+00:00"
     },
     {
       "id": "systemd-run",
       "title": "systemd transient services and scopes",
       "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd-run.html",
       "file": "systemd-run.html",
-      "fetchedAt": "2026-10-05T05:42:42.5570294+00:00",
-      "checkedAt": "2026-10-05T05:42:42.5570294+00:00",
-      "eTag": "\u0022c4ef-65c1262b7a60b-gzip\u0022",
+      "fetchedAt": "2026-11-07T17:41:24.0805386+00:00",
+      "checkedAt": "2026-11-07T17:41:24.0805386+00:00",
+      "eTag": "\u0022c4ef-65c1262b7a60b\u0022",
       "lastModified": "2026-09-22T13:31:35+00:00"
     },
     {
@@ -86,9 +86,9 @@
       "title": "systemd cgroup resource-control properties",
       "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html",
       "file": "systemd-resource-control.html",
-      "fetchedAt": "2026-10-05T05:42:42.9780121+00:00",
-      "checkedAt": "2026-10-05T05:42:42.9780121+00:00",
-      "eTag": "\u00221d7e1-65c1262c89de2-gzip\u0022",
+      "fetchedAt": "2026-11-07T17:41:31.6720536+00:00",
+      "checkedAt": "2026-11-07T17:41:31.6720536+00:00",
+      "eTag": "\u00221d7e1-65c1262c89de2\u0022",
       "lastModified": "2026-09-22T13:31:36+00:00"
     },
     {
@@ -106,10 +106,10 @@
       "title": "Linux kernel seccomp filter interface",
       "url": "https://docs.kernel.org/userspace-api/seccomp_filter.html",
       "file": "linux-seccomp.html",
-      "fetchedAt": "2026-10-05T04:50:45.6554746+00:00",
-      "checkedAt": "2026-10-05T04:50:45.6554746+00:00",
+      "fetchedAt": "2026-11-07T17:41:31.7377407+00:00",
+      "checkedAt": "2026-11-07T17:41:31.7377407+00:00",
       "eTag": null,
-      "lastModified": "2026-10-04T20:58:44+00:00"
+      "lastModified": "2026-11-01T22:50:01+00:00"
     },
     {
       "id": "libseccomp",
@@ -126,29 +126,29 @@
       "title": "Linux resource limits",
       "url": "https://man7.org/linux/man-pages/man2/getrlimit.2.html",
       "file": "linux-resource-limits.html",
-      "fetchedAt": "2026-10-05T04:50:46.5843463+00:00",
-      "checkedAt": "2026-10-05T04:50:46.5843463+00:00",
-      "eTag": "\u00229eff-65b0fe53ed040\u0022",
-      "lastModified": "2026-09-09T17:08:09+00:00"
+      "fetchedAt": "2026-11-07T17:41:31.9534172+00:00",
+      "checkedAt": "2026-11-07T17:41:31.9534172+00:00",
+      "eTag": "\u00229eff-65f50e092bf80\u0022",
+      "lastModified": "2026-11-02T20:20:30+00:00"
     },
     {
       "id": "dotnet-host-environment",
       "title": ".NET runtime host environment variables",
       "url": "https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables",
       "file": "dotnet-host-environment.html",
-      "fetchedAt": "2026-10-05T03:57:13.5632658+00:00",
-      "checkedAt": "2026-10-05T03:57:13.5632658+00:00",
-      "eTag": "\u0022A\u002BymvqKpjTnKYRXHAp8IzJfbi/k=\u0022",
-      "lastModified": "2026-09-08T18:54:31+00:00"
+      "fetchedAt": "2026-11-07T17:41:32.5146601+00:00",
+      "checkedAt": "2026-11-07T17:41:32.5146601+00:00",
+      "eTag": "\u00228AJvRpkNqU\u002BIZSmFuL13igOGnR0=\u0022",
+      "lastModified": "2026-11-05T13:16:21+00:00"
     },
     {
       "id": "dotnet-stream-read",
       "title": ".NET exact-length stream reads",
       "url": "https://learn.microsoft.com/en-us/dotnet/api/system.io.stream.readexactlyasync?view=net-10.0",
       "file": "dotnet-stream-read.html",
-      "fetchedAt": "2026-10-05T01:48:28.7655921+00:00",
-      "checkedAt": "2026-10-05T01:48:28.7655921+00:00",
-      "eTag": "\u0022Z76rTRGwJxrp3xlxc6HWfVmimtw=\u0022",
+      "fetchedAt": "2026-11-07T17:41:32.7122539+00:00",
+      "checkedAt": "2026-11-07T17:41:32.7122539+00:00",
+      "eTag": "\u0022NAjjNryRckB//tZpapnjRJX0jT8=\u0022",
       "lastModified": "2026-09-15T14:56:24+00:00"
     },
     {
@@ -156,18 +156,18 @@
       "title": ".NET redirected process output",
       "url": "https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput?view=net-10.0",
       "file": "dotnet-process-pipes.html",
-      "fetchedAt": "2026-10-05T01:48:29.1850857+00:00",
-      "checkedAt": "2026-10-05T01:48:29.1850857+00:00",
-      "eTag": "\u0022znm0M4/TsGxMS3Na8e8Bycwi3O4=\u0022",
-      "lastModified": "2026-09-15T15:03:58+00:00"
+      "fetchedAt": "2026-11-07T17:41:33.0227954+00:00",
+      "checkedAt": "2026-11-07T17:41:33.0227954+00:00",
+      "eTag": "\u0022Tm6FhfXtR61xFE6qIGRxBTrEQbw=\u0022",
+      "lastModified": "2026-10-16T17:29:24+00:00"
     },
     {
       "id": "skia-canvas",
       "title": "Skia canvas API",
       "url": "https://api.skia.org/classSkCanvas.html",
       "file": "skia-canvas.html",
-      "fetchedAt": "2026-10-04T23:36:52.40164+00:00",
-      "checkedAt": "2026-10-04T23:36:52.40164+00:00",
+      "fetchedAt": "2026-11-07T17:41:33.7896815+00:00",
+      "checkedAt": "2026-11-07T17:41:33.7896815+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -177,7 +177,7 @@
       "url": "https://www.w3.org/TR/CSS22/zindex.html",
       "file": "css2-paint.html",
       "fetchedAt": "2026-10-04T23:36:53.0554985+00:00",
-      "checkedAt": "2026-10-04T23:36:53.0554985+00:00",
+      "checkedAt": "2026-11-07T17:41:33.9635557+00:00",
       "eTag": null,
       "lastModified": "2016-04-08T12:57:18+00:00"
     },
@@ -186,20 +186,20 @@
       "title": "HarfBuzz shaping API",
       "url": "https://harfbuzz.github.io/harfbuzz-hb-shape.html",
       "file": "harfbuzz-shaping.html",
-      "fetchedAt": "2026-10-04T22:33:49.7223229+00:00",
-      "checkedAt": "2026-10-04T22:33:49.7223229+00:00",
-      "eTag": "\u00226abd9e2c-2eaa\u0022",
-      "lastModified": "2026-09-30T23:41:32+00:00"
+      "fetchedAt": "2026-11-07T17:41:34.2353734+00:00",
+      "checkedAt": "2026-11-07T17:41:34.2353734+00:00",
+      "eTag": "\u00226aeba717-2eaa\u0022",
+      "lastModified": "2026-11-04T21:43:51+00:00"
     },
     {
       "id": "harfbuzz-font",
       "title": "HarfBuzz font API",
       "url": "https://harfbuzz.github.io/harfbuzz-hb-font.html",
       "file": "harfbuzz-font.html",
-      "fetchedAt": "2026-10-04T22:33:50.122449+00:00",
-      "checkedAt": "2026-10-04T22:33:50.122449+00:00",
-      "eTag": "\u00226abd9e2c-5b528\u0022",
-      "lastModified": "2026-09-30T23:41:32+00:00"
+      "fetchedAt": "2026-11-07T17:41:34.5319473+00:00",
+      "checkedAt": "2026-11-07T17:41:34.5319473+00:00",
+      "eTag": "\u00226aeba717-5ada9\u0022",
+      "lastModified": "2026-11-04T21:43:51+00:00"
     },
     {
       "id": "css2-visual",
@@ -207,7 +207,7 @@
       "url": "https://www.w3.org/TR/CSS22/visuren.html",
       "file": "css2-visual.html",
       "fetchedAt": "2026-10-04T22:33:50.5386087+00:00",
-      "checkedAt": "2026-10-04T22:33:50.5386087+00:00",
+      "checkedAt": "2026-11-07T17:41:34.5643649+00:00",
       "eTag": null,
       "lastModified": "2016-04-08T13:44:59+00:00"
     },
@@ -217,7 +217,7 @@
       "url": "https://www.w3.org/TR/CSS22/visudet.html",
       "file": "css2-sizing.html",
       "fetchedAt": "2026-10-04T22:33:50.69482+00:00",
-      "checkedAt": "2026-10-04T22:33:50.69482+00:00",
+      "checkedAt": "2026-11-07T17:41:34.5968542+00:00",
       "eTag": null,
       "lastModified": "2016-04-08T12:57:18+00:00"
     },
@@ -226,30 +226,30 @@
       "title": "CSS Color Module Level 4",
       "url": "https://drafts.csswg.org/css-color-4/",
       "file": "css-color.html",
-      "fetchedAt": "2026-10-04T21:27:11.2042329+00:00",
-      "checkedAt": "2026-10-04T21:27:11.2042329+00:00",
-      "eTag": "\u00226ac03aed-132a9d\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:35.2532929+00:00",
+      "checkedAt": "2026-11-07T17:41:35.2532929+00:00",
+      "eTag": "\u00226aedffa8-135593\u0022",
+      "lastModified": "2026-11-06T16:26:16+00:00"
     },
     {
       "id": "css-sizing",
       "title": "CSS Box Sizing Module Level 3",
       "url": "https://drafts.csswg.org/css-sizing-3/",
       "file": "css-sizing.html",
-      "fetchedAt": "2026-10-04T21:27:11.4659578+00:00",
-      "checkedAt": "2026-10-04T21:27:11.4659578+00:00",
-      "eTag": "\u00226ac03aed-879c2\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:35.5005147+00:00",
+      "checkedAt": "2026-11-07T17:41:35.5005147+00:00",
+      "eTag": "\u00226aedffa8-87756\u0022",
+      "lastModified": "2026-11-06T16:26:16+00:00"
     },
     {
       "id": "css-backgrounds",
       "title": "CSS Backgrounds and Borders Module Level 3",
       "url": "https://drafts.csswg.org/css-backgrounds-3/",
       "file": "css-backgrounds.html",
-      "fetchedAt": "2026-10-04T21:38:18.1241236+00:00",
-      "checkedAt": "2026-10-04T21:38:18.1241236+00:00",
-      "eTag": "\u00226ac03aed-110992\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:35.7975535+00:00",
+      "checkedAt": "2026-11-07T17:41:35.7975535+00:00",
+      "eTag": "\u00226aedffa9-1044f8\u0022",
+      "lastModified": "2026-11-06T16:26:17+00:00"
     },
     {
       "id": "http-cookies",
@@ -257,7 +257,7 @@
       "url": "https://www.rfc-editor.org/rfc/rfc6265.html",
       "file": "http-cookies.html",
       "fetchedAt": "2026-10-04T17:44:37.190366+00:00",
-      "checkedAt": "2026-10-04T17:44:37.190366+00:00",
+      "checkedAt": "2026-11-07T17:41:35.9776891+00:00",
       "eTag": "W/\u0022fc5c94cc40419c22078c0472eebc9f74\u0022",
       "lastModified": null
     },
@@ -266,9 +266,9 @@
       "title": ".NET CookieContainer",
       "url": "https://learn.microsoft.com/en-us/dotnet/api/system.net.cookiecontainer?view=net-10.0",
       "file": "dotnet-cookie-container.html",
-      "fetchedAt": "2026-10-04T17:44:38.182799+00:00",
-      "checkedAt": "2026-10-04T17:44:38.182799+00:00",
-      "eTag": "\u0022KXMfMPr9LAf05TRUPAGSkWXTvwM=\u0022",
+      "fetchedAt": "2026-11-07T17:41:36.2597138+00:00",
+      "checkedAt": "2026-11-07T17:41:36.2597138+00:00",
+      "eTag": "\u00221CF0GFi9jjMrAG3Up7aImS3Gq\u002Bs=\u0022",
       "lastModified": "2026-09-15T15:04:40+00:00"
     },
     {
@@ -276,10 +276,10 @@
       "title": ".NET SocketsHttpHandler",
       "url": "https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler?view=net-10.0",
       "file": "dotnet-http-handler.html",
-      "fetchedAt": "2026-10-04T17:44:38.3676907+00:00",
-      "checkedAt": "2026-10-04T17:44:38.3676907+00:00",
-      "eTag": "\u0022vnWWeMsCCaTsJnyQ9oZzly1D1EQ=\u0022",
-      "lastModified": "2026-09-15T15:04:29+00:00"
+      "fetchedAt": "2026-11-07T17:41:36.4471331+00:00",
+      "checkedAt": "2026-11-07T17:41:36.4471331+00:00",
+      "eTag": "\u0022IEhGAV7lqb3xIa7JO\u002BhmxRY7Y9Q=\u0022",
+      "lastModified": "2026-10-16T17:29:26+00:00"
     },
     {
       "id": "unicode-idna",
@@ -287,7 +287,7 @@
       "url": "https://www.unicode.org/reports/tr46/",
       "file": "unicode-idna.html",
       "fetchedAt": "2026-10-04T17:07:21.9539744+00:00",
-      "checkedAt": "2026-10-04T17:07:21.9539744+00:00",
+      "checkedAt": "2026-11-07T17:41:36.8625844+00:00",
       "eTag": null,
       "lastModified": "2026-09-01T21:15:42+00:00"
     },
@@ -297,7 +297,7 @@
       "url": "https://www.unicode.org/reports/tr9/",
       "file": "unicode-bidi.html",
       "fetchedAt": "2026-10-04T17:07:22.5914545+00:00",
-      "checkedAt": "2026-10-04T17:07:22.5914545+00:00",
+      "checkedAt": "2026-11-07T17:41:37.1374087+00:00",
       "eTag": null,
       "lastModified": "2026-09-01T21:00:40+00:00"
     },
@@ -316,40 +316,40 @@
       "title": "WHATWG URL",
       "url": "https://url.spec.whatwg.org/",
       "file": "url.html",
-      "fetchedAt": "2026-10-04T14:43:17.9442355+00:00",
-      "checkedAt": "2026-10-04T14:43:17.9442355+00:00",
-      "eTag": "\u00226aa26a50-b4b2f\u0022",
-      "lastModified": "2026-09-10T08:29:04+00:00"
+      "fetchedAt": "2026-11-07T17:41:38.5539699+00:00",
+      "checkedAt": "2026-11-07T17:41:38.5539699+00:00",
+      "eTag": "\u00226ad605d2-abc71\u0022",
+      "lastModified": "2026-10-19T11:58:10+00:00"
     },
     {
       "id": "encoding",
       "title": "WHATWG Encoding",
       "url": "https://encoding.spec.whatwg.org/",
       "file": "encoding.html",
-      "fetchedAt": "2026-10-04T14:43:19.4078036+00:00",
-      "checkedAt": "2026-10-04T14:43:19.4078036+00:00",
-      "eTag": "\u00226a0e93f6-94d98\u0022",
-      "lastModified": "2026-05-21T05:11:18+00:00"
+      "fetchedAt": "2026-11-07T17:41:39.9274815+00:00",
+      "checkedAt": "2026-11-07T17:41:39.9274815+00:00",
+      "eTag": "\u00226ad6a802-904ae\u0022",
+      "lastModified": "2026-10-19T23:30:10+00:00"
     },
     {
       "id": "mime-sniffing",
       "title": "WHATWG MIME Sniffing",
       "url": "https://mimesniff.spec.whatwg.org/",
       "file": "mime-sniffing.html",
-      "fetchedAt": "2026-10-04T14:43:20.9468423+00:00",
-      "checkedAt": "2026-10-04T14:43:20.9468423+00:00",
-      "eTag": "\u00226a5a2b82-3c002\u0022",
-      "lastModified": "2026-07-17T13:17:54+00:00"
+      "fetchedAt": "2026-11-07T17:41:41.065437+00:00",
+      "checkedAt": "2026-11-07T17:41:41.065437+00:00",
+      "eTag": "\u00226ad60595-3c006\u0022",
+      "lastModified": "2026-10-19T11:57:09+00:00"
     },
     {
       "id": "fetch",
       "title": "WHATWG Fetch",
       "url": "https://fetch.spec.whatwg.org/",
       "file": "fetch.html",
-      "fetchedAt": "2026-10-04T14:43:22.5598821+00:00",
-      "checkedAt": "2026-10-04T14:43:22.5598821+00:00",
-      "eTag": "\u00226ab0cb9c-1d72eb\u0022",
-      "lastModified": "2026-09-21T06:15:56+00:00"
+      "fetchedAt": "2026-11-07T17:41:42.7267572+00:00",
+      "checkedAt": "2026-11-07T17:41:42.7267572+00:00",
+      "eTag": "\u00226ad60703-1c4bb9\u0022",
+      "lastModified": "2026-10-19T12:03:15+00:00"
     },
     {
       "id": "upgrade-insecure-requests",
@@ -396,10 +396,10 @@
       "title": "WHATWG DOM",
       "url": "https://dom.spec.whatwg.org/",
       "file": "dom.html",
-      "fetchedAt": "2026-10-04T14:43:27.6214411+00:00",
-      "checkedAt": "2026-10-04T14:43:27.6214411+00:00",
-      "eTag": "\u00226ac21a07-3044a3\u0022",
-      "lastModified": "2026-10-04T09:19:03+00:00"
+      "fetchedAt": "2026-11-07T17:41:44.3569276+00:00",
+      "checkedAt": "2026-11-07T17:41:44.3569276+00:00",
+      "eTag": "\u00226aeb41cd-297aa9\u0022",
+      "lastModified": "2026-11-04T14:31:41+00:00"
     },
     {
       "id": "pointerevents4",
@@ -416,10 +416,10 @@
       "title": "CSS Syntax Level 3",
       "url": "https://drafts.csswg.org/css-syntax-3/",
       "file": "css-syntax.html",
-      "fetchedAt": "2026-10-04T14:43:28.0552577+00:00",
-      "checkedAt": "2026-10-04T14:43:28.0552577+00:00",
-      "eTag": "\u00226ac03aed-9edff\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:44.598532+00:00",
+      "checkedAt": "2026-11-07T17:41:44.598532+00:00",
+      "eTag": "\u00226aedffa8-9797e\u0022",
+      "lastModified": "2026-11-06T16:26:16+00:00"
     },
     {
       "id": "css-conditional-3",
@@ -446,50 +446,50 @@
       "title": "CSS Cascading and Inheritance Level 5",
       "url": "https://drafts.csswg.org/css-cascade-5/",
       "file": "css-cascade.html",
-      "fetchedAt": "2026-10-04T14:43:28.3483303+00:00",
-      "checkedAt": "2026-10-04T14:43:28.3483303+00:00",
-      "eTag": "\u00226ac03aed-6ddc2\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:44.8712309+00:00",
+      "checkedAt": "2026-11-07T17:41:44.8712309+00:00",
+      "eTag": "\u00226aedffa9-6cf0c\u0022",
+      "lastModified": "2026-11-06T16:26:17+00:00"
     },
     {
       "id": "selectors",
       "title": "Selectors Level 4",
       "url": "https://drafts.csswg.org/selectors-4/",
       "file": "selectors.html",
-      "fetchedAt": "2026-10-04T14:43:28.8545533+00:00",
-      "checkedAt": "2026-10-04T14:43:28.8545533+00:00",
-      "eTag": "\u00226ac03aed-1213e6\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:45.1411383+00:00",
+      "checkedAt": "2026-11-07T17:41:45.1411383+00:00",
+      "eTag": "\u00226aedffa9-10db3b\u0022",
+      "lastModified": "2026-11-06T16:26:17+00:00"
     },
     {
       "id": "css-values",
       "title": "CSS Values and Units Level 4",
       "url": "https://drafts.csswg.org/css-values-4/",
       "file": "css-values.html",
-      "fetchedAt": "2026-10-04T14:43:29.2516896+00:00",
-      "checkedAt": "2026-10-04T14:43:29.2516896+00:00",
-      "eTag": "\u00226ac03aed-f893a\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:45.4758141+00:00",
+      "checkedAt": "2026-11-07T17:41:45.4758141+00:00",
+      "eTag": "\u00226aedffa8-ec2d1\u0022",
+      "lastModified": "2026-11-06T16:26:16+00:00"
     },
     {
       "id": "css-box",
       "title": "CSS Box Model Level 3",
       "url": "https://drafts.csswg.org/css-box-3/",
       "file": "css-box.html",
-      "fetchedAt": "2026-10-04T14:43:29.4244524+00:00",
-      "checkedAt": "2026-10-04T14:43:29.4244524+00:00",
-      "eTag": "\u00226ac03aed-2ebc6\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:45.6633515+00:00",
+      "checkedAt": "2026-11-07T17:41:45.6633515+00:00",
+      "eTag": "\u00226aedffa8-2cf44\u0022",
+      "lastModified": "2026-11-06T16:26:16+00:00"
     },
     {
       "id": "css-display",
       "title": "CSS Display Level 3",
       "url": "https://drafts.csswg.org/css-display-3/",
       "file": "css-display.html",
-      "fetchedAt": "2026-10-04T14:43:29.6447214+00:00",
-      "checkedAt": "2026-10-04T14:43:29.6447214+00:00",
-      "eTag": "\u00226ac03aed-91271\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:45.9187033+00:00",
+      "checkedAt": "2026-11-07T17:41:45.9187033+00:00",
+      "eTag": "\u00226aedffa9-91006\u0022",
+      "lastModified": "2026-11-06T16:26:17+00:00"
     },
     {
       "id": "css-overflow",
@@ -516,20 +516,20 @@
       "title": "CSS Inline Layout Level 3",
       "url": "https://drafts.csswg.org/css-inline-3/",
       "file": "css-inline.html",
-      "fetchedAt": "2026-10-04T14:43:29.8949809+00:00",
-      "checkedAt": "2026-10-04T14:43:29.8949809+00:00",
-      "eTag": "\u00226ac03aec-a71e5\u0022",
-      "lastModified": "2026-10-02T23:14:52+00:00"
+      "fetchedAt": "2026-11-07T17:41:46.2274687+00:00",
+      "checkedAt": "2026-11-07T17:41:46.2274687+00:00",
+      "eTag": "\u00226aedffa9-a69d0\u0022",
+      "lastModified": "2026-11-06T16:26:17+00:00"
     },
     {
       "id": "css-text",
       "title": "CSS Text Level 3",
       "url": "https://drafts.csswg.org/css-text-3/",
       "file": "css-text.html",
-      "fetchedAt": "2026-10-04T14:43:30.5594558+00:00",
-      "checkedAt": "2026-10-04T14:43:30.5594558+00:00",
-      "eTag": "\u00226ac03aed-1dee44\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:46.650778+00:00",
+      "checkedAt": "2026-11-07T17:41:46.650778+00:00",
+      "eTag": "\u00226aedffa9-1db14e\u0022",
+      "lastModified": "2026-11-06T16:26:17+00:00"
     },
     {
       "id": "css-text-decoration",
@@ -546,38 +546,38 @@
       "title": "CSS Fonts Level 4",
       "url": "https://drafts.csswg.org/css-fonts-4/",
       "file": "css-fonts.html",
-      "fetchedAt": "2026-10-04T14:43:31.0147014+00:00",
-      "checkedAt": "2026-10-04T14:43:31.0147014+00:00",
-      "eTag": "\u00226ac03aed-16b964\u0022",
-      "lastModified": "2026-10-02T23:14:53+00:00"
+      "fetchedAt": "2026-11-07T17:41:47.0072517+00:00",
+      "checkedAt": "2026-11-07T17:41:47.0072517+00:00",
+      "eTag": "\u00226aedffa8-164487\u0022",
+      "lastModified": "2026-11-06T16:26:16+00:00"
     },
     {
       "id": "webidl",
       "title": "Web IDL",
       "url": "https://webidl.spec.whatwg.org/",
       "file": "webidl.html",
-      "fetchedAt": "2026-10-04T14:43:32.8570912+00:00",
-      "checkedAt": "2026-10-04T14:43:32.8570912+00:00",
-      "eTag": "\u00226abfd689-26daec\u0022",
-      "lastModified": "2026-10-02T16:06:33+00:00"
+      "fetchedAt": "2026-11-07T17:41:48.5554369+00:00",
+      "checkedAt": "2026-11-07T17:41:48.5554369+00:00",
+      "eTag": "\u00226aef0e7a-26e847\u0022",
+      "lastModified": "2026-11-07T11:41:46+00:00"
     },
     {
       "id": "ecmascript",
       "title": "ECMA-262 ECMAScript",
       "url": "https://tc39.es/ecma262/",
       "file": "ecmascript.html",
-      "fetchedAt": "2026-10-04T14:43:34.4066113+00:00",
-      "checkedAt": "2026-10-04T14:43:34.4066113+00:00",
-      "eTag": "\u00226ac0c150-746b0d\u0022",
-      "lastModified": "2026-10-03T08:48:16+00:00"
+      "fetchedAt": "2026-11-07T17:41:49.9806145+00:00",
+      "checkedAt": "2026-11-07T17:41:49.9806145+00:00",
+      "eTag": "\u00226aee0bc4-775063\u0022",
+      "lastModified": "2026-11-06T17:17:56+00:00"
     },
     {
       "id": "sdl-video",
       "title": "SDL3 Video API",
       "url": "https://wiki.libsdl.org/SDL3/CategoryVideo",
       "file": "sdl-video.html",
-      "fetchedAt": "2026-10-04T15:08:20.2277372+00:00",
-      "checkedAt": "2026-10-04T15:08:20.2277372+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.3039666+00:00",
+      "checkedAt": "2026-11-07T17:41:50.3039666+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -586,8 +586,8 @@
       "title": "SDL3 Video Initialization",
       "url": "https://wiki.libsdl.org/SDL3/SDL_InitSubSystem",
       "file": "sdl-init.html",
-      "fetchedAt": "2026-10-04T15:08:20.5938087+00:00",
-      "checkedAt": "2026-10-04T15:08:20.5938087+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.3489543+00:00",
+      "checkedAt": "2026-11-07T17:41:50.3489543+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -596,8 +596,8 @@
       "title": "SDL3 Window Creation",
       "url": "https://wiki.libsdl.org/SDL3/SDL_CreateWindow",
       "file": "sdl-create-window.html",
-      "fetchedAt": "2026-10-04T15:08:20.8129764+00:00",
-      "checkedAt": "2026-10-04T15:08:20.8129764+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.4066926+00:00",
+      "checkedAt": "2026-11-07T17:41:50.4066926+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -606,8 +606,8 @@
       "title": "SDL3 Window Surface",
       "url": "https://wiki.libsdl.org/SDL3/SDL_GetWindowSurface",
       "file": "sdl-window-surface.html",
-      "fetchedAt": "2026-10-04T15:08:20.8710898+00:00",
-      "checkedAt": "2026-10-04T15:08:20.8710898+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.4535279+00:00",
+      "checkedAt": "2026-11-07T17:41:50.4535279+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -616,8 +616,8 @@
       "title": "SDL3 Event Polling",
       "url": "https://wiki.libsdl.org/SDL3/SDL_PollEvent",
       "file": "sdl-events.html",
-      "fetchedAt": "2026-10-04T15:08:20.9407558+00:00",
-      "checkedAt": "2026-10-04T15:08:20.9407558+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.4982966+00:00",
+      "checkedAt": "2026-11-07T17:41:50.4982966+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -626,8 +626,8 @@
       "title": "SDL3 Text Input",
       "url": "https://wiki.libsdl.org/SDL3/SDL_StartTextInput",
       "file": "sdl-text-input.html",
-      "fetchedAt": "2026-10-04T15:08:20.9904653+00:00",
-      "checkedAt": "2026-10-04T15:08:20.9904653+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.5493477+00:00",
+      "checkedAt": "2026-11-07T17:41:50.5493477+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -636,8 +636,8 @@
       "title": "SDL Linux X11 and Wayland",
       "url": "https://wiki.libsdl.org/SDL3/README-linux",
       "file": "sdl-linux.html",
-      "fetchedAt": "2026-10-04T15:08:21.0384895+00:00",
-      "checkedAt": "2026-10-04T15:08:21.0384895+00:00",
+      "fetchedAt": "2026-11-07T17:41:50.6011811+00:00",
+      "checkedAt": "2026-11-07T17:41:50.6011811+00:00",
       "eTag": null,
       "lastModified": null
     },
@@ -646,39 +646,39 @@
       "title": "XDG Base Directory Specification",
       "url": "https://specifications.freedesktop.org/basedir/0.8/",
       "file": "xdg-directories.html",
-      "fetchedAt": "2026-10-04T15:12:31.8392042+00:00",
-      "checkedAt": "2026-10-04T15:12:31.8392042+00:00",
-      "eTag": "\u0022371e27ae0ec02b9abc3fcf5b5c339b62dd969cba31d519c0f36ec3dd0c8a4f69\u0022",
-      "lastModified": "2026-10-02T15:21:20+00:00"
+      "fetchedAt": "2026-11-07T17:41:51.12934+00:00",
+      "checkedAt": "2026-11-07T17:41:51.12934+00:00",
+      "eTag": "\u0022b8359600872679ac414dd8ef82c3d66e0bdea0e883462ff4fd8735b8469188eb\u0022",
+      "lastModified": "2026-10-19T18:07:29+00:00"
     },
     {
       "id": "dotnet-process",
       "title": ".NET Process API",
       "url": "https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process?view=net-10.0",
       "file": "dotnet-process.html",
-      "fetchedAt": "2026-10-04T15:08:22.4238803+00:00",
-      "checkedAt": "2026-10-04T15:08:22.4238803+00:00",
-      "eTag": "\u0022acDbyW1Wfw1nhNAYUiLZ426P9ZM=\u0022",
-      "lastModified": "2026-09-15T14:56:34+00:00"
+      "fetchedAt": "2026-11-07T17:41:51.3300213+00:00",
+      "checkedAt": "2026-11-07T17:41:51.3300213+00:00",
+      "eTag": "\u0022orM/MPv0bN9FiBCHVfQEC\u002BE0u1Q=\u0022",
+      "lastModified": "2026-10-16T17:29:20+00:00"
     },
     {
       "id": "dotnet-process-start",
       "title": ".NET ProcessStartInfo API",
       "url": "https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo?view=net-10.0",
       "file": "dotnet-process-start.html",
-      "fetchedAt": "2026-10-04T15:08:22.8822724+00:00",
-      "checkedAt": "2026-10-04T15:08:22.8822724+00:00",
-      "eTag": "\u0022AYuwDDXRqB5vL8IXpixjJgG4Knk=\u0022",
-      "lastModified": "2026-09-15T15:04:03+00:00"
+      "fetchedAt": "2026-11-07T17:41:51.6157217+00:00",
+      "checkedAt": "2026-11-07T17:41:51.6157217+00:00",
+      "eTag": "\u0022PJXf7QivbzZ0\u002Ba6UHVVJZQG8R2s=\u0022",
+      "lastModified": "2026-10-16T17:29:24+00:00"
     },
     {
       "id": "windows-fonts",
       "title": "Windows Font Management",
       "url": "https://learn.microsoft.com/en-us/windows/win32/gdi/about-fonts",
       "file": "windows-fonts.html",
-      "fetchedAt": "2026-10-04T15:12:32.271233+00:00",
-      "checkedAt": "2026-10-04T15:12:32.271233+00:00",
-      "eTag": "\u00224Fn5hXYt7rUuV4mdPTbE3VbCLvU=\u0022",
+      "fetchedAt": "2026-11-07T17:41:51.8341987+00:00",
+      "checkedAt": "2026-11-07T17:41:51.8341987+00:00",
+      "eTag": "\u0022kZHKLEiRRjbwNLyA9ggUQEVDrLM=\u0022",
       "lastModified": "2026-08-26T21:43:37+00:00"
     },
     {
@@ -686,9 +686,9 @@
       "title": "Implementing an AppContainer",
       "url": "https://learn.microsoft.com/en-us/windows/win32/secauthz/implementing-an-appcontainer",
       "file": "windows-appcontainer.html",
-      "fetchedAt": "2026-10-05T22:15:34.3168616+00:00",
-      "checkedAt": "2026-10-05T22:15:34.3168616+00:00",
-      "eTag": "\u0022yI2KtS2RvSKI6cC6pknEE1Z5u4s=\u0022",
+      "fetchedAt": "2026-11-07T17:41:52.010358+00:00",
+      "checkedAt": "2026-11-07T17:41:52.010358+00:00",
+      "eTag": "\u0022RaeqV15D0RYwWu9diCZ8XtiZaTI=\u0022",
       "lastModified": "2026-08-26T21:43:13+00:00"
     },
     {
@@ -696,9 +696,9 @@
       "title": "Job Objects",
       "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects",
       "file": "windows-job-objects.html",
-      "fetchedAt": "2026-10-05T22:15:34.717333+00:00",
-      "checkedAt": "2026-10-05T22:15:34.717333+00:00",
-      "eTag": "\u00225P74UVdjqINfM7EcIA446uq744k=\u0022",
+      "fetchedAt": "2026-11-07T17:41:52.1210574+00:00",
+      "checkedAt": "2026-11-07T17:41:52.1210574+00:00",
+      "eTag": "\u0022dT\u002B20Q2QSHnl\u002BYJ7peg9oCSCTmg=\u0022",
       "lastModified": "2026-08-26T21:43:31+00:00"
     },
     {
@@ -706,9 +706,9 @@
       "title": "UpdateProcThreadAttribute",
       "url": "https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute",
       "file": "windows-process-attributes.html",
-      "fetchedAt": "2026-10-05T22:15:34.9559135+00:00",
-      "checkedAt": "2026-10-05T22:15:34.9559135+00:00",
-      "eTag": "\u0022bSNDtKoIwIaKOLtQIzjmITK\u002Bf2w=\u0022",
+      "fetchedAt": "2026-11-07T17:41:52.3598016+00:00",
+      "checkedAt": "2026-11-07T17:41:52.3598016+00:00",
+      "eTag": "\u0022mAu6\u002BytQvGOI4\u002Byhyu7aXOQQJMg=\u0022",
       "lastModified": "2026-08-05T07:36:20+00:00"
     },
     {
@@ -716,8 +716,8 @@
       "title": "Fontconfig",
       "url": "https://www.freedesktop.org/wiki/Software/fontconfig/",
       "file": "fontconfig.html",
-      "fetchedAt": "2026-10-04T15:08:24.1974952+00:00",
-      "checkedAt": "2026-10-04T15:08:24.1974952+00:00",
+      "fetchedAt": "2026-11-07T17:41:58.337334+00:00",
+      "checkedAt": "2026-11-07T17:41:58.337334+00:00",
       "eTag": "\u0022152a-656b3bf9daac9-gzip\u0022",
       "lastModified": "2026-07-16T05:31:14+00:00"
     }

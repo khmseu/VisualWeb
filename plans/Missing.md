@@ -930,16 +930,17 @@ findings on unchanged lines; all changed test files pass a targeted check.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one or two spacing lengths (one for both axes, or horizontal
-then vertical), the HTML `cellspacing` hint, top-aligned text/block cells, and
-table/cell background colors and solid borders through ordinary paint flow.
-Explicit table width and cell heights act as minima. Header/footer groups are
-ordered around body groups.
+then vertical), the HTML `cellspacing` and nonzero `table[width]` hints,
+top-aligned text/block cells, and table/cell/row/group/column background colors
+and solid borders through ordinary paint flow. Table widths act as minima;
+header/footer groups are ordered around body groups.
 Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
 constraints equally across tracks; the total column grid is capped by
 `LayoutOptions.MaxTableColumns` before allocation and repeated track work by
-`LayoutOptions.MaxTableColumnOperations`. `rowspan`, captions/columns,
-anonymous/arbitrary CSS tables, collapsed borders, fixed layout, nested
-tables/widgets, percentages inside cells and other legacy presentation
+`LayoutOptions.MaxTableColumnOperations`. Positive `rowspan` and `rowspan=0`,
+one caption, and bounded column/group tracks and widths are supported as
+documented. Anonymous/arbitrary CSS tables, collapsed borders, fixed layout,
+nested tables/widgets, percentages inside cells and other legacy presentation
 attributes remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
@@ -1063,6 +1064,17 @@ build, all 16,236 solution tests, solution format verification and
 `git diff --check` pass locally. Commit `de132ad` is pushed; Linux (Run
 42396138538), Windows confinement (Run 42396138531, x64/arm64) and CodeQL
 (Run 42396138216) pass.
+
+Pass 6 supports the HTML `table[width]` presentational hint through the
+standard nonzero dimension parser. Positive lengths map to pixels and
+percentages resolve against the containing block; zero and invalid values add
+no hint, while values outside the finite numeric range fail explicitly.
+CSS and layout regressions cover parsing, cascade precedence, attribute/work
+limits, actual table widths and continued rejection of width attributes on
+other table parts. CSS (1,171), Layout (870), the zero-warning solution build,
+all 16,249 solution tests, format verification and `git diff --check` pass
+locally. The HTML cache was refreshed before implementation. Commit and CI
+status are pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

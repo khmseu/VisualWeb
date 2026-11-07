@@ -12,8 +12,9 @@ origin. The text shaper checks listed families in order against explicitly
 registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `@font-face` support. Independent per-computation
 `MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
-`MaxFontSizeAttributeCharacters` and `MaxTableSpacingAttributeCharacters`
-limits count raw UTF-16 attribute units, including invalid values, before parsing.
+`MaxFontSizeAttributeCharacters`, `MaxTableSpacingAttributeCharacters` and
+`MaxTableWidthAttributeCharacters` limits count raw UTF-16 attribute units,
+including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-11-07) include `search { display:block }`
 as a normal, disableable UA declaration; it introduces no search widget.
@@ -147,6 +148,11 @@ HTML `table[cellspacing]` maps values that parse as non-negative integers to
 equal horizontal and vertical `border-spacing` pixel lengths at the author
 presentational-hint origin. Values that fail parsing add no hint, and normal
 author CSS overrides it.
+HTML `table[width]` uses the nonzero dimension-value algorithm to provide a
+`width` hint: positive lengths become pixels and percentages remain percentages;
+zero or invalid values add no hint, and values outside the finite numeric range
+fail explicitly. It uses a separate aggregate raw-attribute budget, and normal
+author CSS overrides the hint.
 
 The HTML flow-content defaults give `figure` 40px left/right margins in the
 supported horizontal LTR subset; these remain normal UA declarations that

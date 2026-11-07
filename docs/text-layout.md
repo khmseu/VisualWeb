@@ -277,6 +277,10 @@ UA spacing is 2px on both axes; cells have 1px padding and top alignment. Header
 font weight is not synthesized. HTML `table[cellspacing]` maps values that
 parse as non-negative integers to equal horizontal and vertical pixel spacing;
 values that fail parsing add no hint, and normal author CSS overrides the hint.
+HTML `table[width]` maps a nonzero dimension value to a `width` hint: positive
+lengths become pixels and percentages resolve against the containing block.
+Zero and invalid values add no hint; values outside the finite numeric range
+fail explicitly. Normal author CSS overrides the hint.
 Measurement and arrangement share node, text, shaping, line, glyph, box, depth
 and cancellation budgets.
 
@@ -285,8 +289,9 @@ tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, other
 cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
-and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
-`nowrap`). The table's ASCII-case-insensitive
+and legacy presentation attributes other than the supported table
+`width`/`cellspacing` hints (`height`, `border`, `cellpadding`, `nowrap`, plus
+`width` on non-table parts). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`

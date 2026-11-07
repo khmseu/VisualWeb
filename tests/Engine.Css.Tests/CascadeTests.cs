@@ -734,6 +734,66 @@ public sealed class CascadeTests
             options: new() { MaxTableSpacingAttributeCharacters = 3 }, cancellationToken: Cancellation));
     }
 
+    [Theory]
+    [InlineData(" 12.5px", 12.5, "px")]
+    [InlineData("75.5%ignored", 75.5, "%")]
+    [InlineData("12.%", 12, "%")]
+    [InlineData("12.5junk", 12.5, "px")]
+    public void TableWidthAttributeMapsNonzeroDimensionsToCssWidth(string value, double expected, string unit)
+    {
+        var doc = Document($"<table id=target width='{value}'><tr><td>x</td></tr></table>");
+        var target = doc.GetElementById("target")!;
+
+        Assert.Equal(new CssLength(expected, unit),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["width"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("invalid")]
+    [InlineData("0")]
+    [InlineData("0%")]
+    public void InvalidOrZeroTableWidthDoesNotCreateHint(string value)
+    {
+        var doc = Document($"<table id=target width='{value}'><tr><td>x</td></tr></table>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+
+        Assert.Equal(new CssKeyword("auto"), result.Styles[doc.GetElementById("target")!]["width"]);
+    }
+
+    [Fact]
+    public void TableWidthAttributeRejectsValuesOutsideFiniteNumericRange()
+    {
+        var doc = Document("<table width='" + new string('9', 400) + "'></table>");
+        var tiny = Document("<table width='0." + new string('0', 400) + "1%'></table>");
+
+        Assert.Throws<CssLimitException>(() =>
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() =>
+            CssStyleEngine.Compute(tiny, includeUserAgent: false, cancellationToken: Cancellation));
+    }
+
+    [Fact]
+    public void TableWidthHintUsesCascadeAssignmentAndRawAttributeBudgets()
+    {
+        var doc = Document("<table id=target width=80><tr><td>x</td></tr></table>");
+        var target = doc.GetElementById("target")!;
+        var tableWidth = new CssStyleSource("table{width:120px}");
+        Assert.Equal(new CssLength(120, "px"),
+            CssStyleEngine.Compute(doc, [tableWidth], includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["width"]);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, [new("table{color:red}")],
+            includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+
+        var repeated = Document("""
+            <table width=12><tr><td>x</td></tr></table>
+            <table width=12><tr><td>y</td></tr></table>
+            """);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(repeated, includeUserAgent: false,
+            options: new() { MaxTableWidthAttributeCharacters = 3 }, cancellationToken: Cancellation));
+    }
+
     [Fact]
     public void CenterElementUsesCenterPresentationalHintAndBlockUaDefault()
     {

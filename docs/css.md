@@ -229,6 +229,11 @@ The [HTML `table[cellspacing]` hint](https://html.spec.whatwg.org/multipage/rend
 (local ID `html`) maps values parsed as non-negative integers to equal
 horizontal and vertical pixel lengths for `border-spacing`; values that fail
 parsing add no hint.
+The same HTML table rules map a nonzero `table[width]` dimension to a `width`
+presentational hint. Positive lengths become pixels and percentages remain
+percentages; zero and invalid values add no hint, while values outside the
+finite numeric range fail explicitly. Raw attribute scanning has a separate
+aggregate limit, and ordinary author CSS overrides the hint.
 The hint shares the author presentational-hint cascade, and normal author CSS
 overrides it.
 The UA stylesheet gives `caption` `display:table-caption`; layout supports

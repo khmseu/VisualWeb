@@ -6277,3 +6277,40 @@ alle 16.236 Solution-Tests, Formatpruefung und `git diff --check` bestehen
 lokal. Commit `de132ad` ist gepusht; Linux (Run 42396138538), Windows-
 Confinement (Run 42396138531, x64/arm64) und CodeQL (Run 42396138216)
 bestehen.
+
+### KP-231 - Pass 6: HTML table width hint
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerangabe: Der laufende Auftrag umfasst zehn getrennte Missing-
+  Prioritaetsinkremente; Pass 1-5 sind abgeschlossen (KP-225 bis KP-230).
+  Ein genauer Zeitstempel dieses Auftrags ist hier nicht verfuegbar.
+- Auswahlstatus: Ableitung, keine ausdrueckliche Einzelwahl fuer Pass 6. Der
+  Missing-Tracker listet `table[width]` bei den offenen Legacy-Hinweisen; die
+  vorherige Pass-5-Abwaegung nannte diesen Hinweis als eigenstaendige
+  alternative Tabellenluecke (KP-229). Der frische lokale HTML-Standard
+  definiert die Abbildung eindeutig, daher war keine offene Verhaltenswahl
+  blockierend.
+- Quellen: [Missing-Tracker](../plans/Missing.md#5-general-css-layout-and-painting),
+  `specs/cache/html.html#tables-2`,
+  `specs/cache/html.html#rules-for-parsing-dimension-values`,
+  [CSS-Guide](../docs/css.md), [Layout-Guide](../docs/text-layout.md),
+  `CssStyleEngine.cs`, `CssSyntax.cs`, `TableLayout.cs` und die CSS-/Layout-
+  Regressionen. Die SpecCache-Aktualisierung lief am 2026-11-07 erfolgreich;
+  der zuvor mehr als 30 Tage alte HTML-Eintrag ist jetzt frisch.
+
+**Belegt:** `table[width]` wird als Author-Presentational-Hint auf `width`
+abgebildet. Der HTML-Dimensionsalgorithmus akzeptiert eine fuehrende
+ASCII-Whitespace-Sequenz, ASCII-Ziffern und optionale Nachkommastellen; ein
+unmittelbar folgendes `%` ergibt einen Prozentsatz, andernfalls Pixel. Der
+Tabellenhint ignoriert null und ungueltige Werte. Nicht endliche oder zu kleine
+nichtnullige Zahlen scheitern explizit mit `CssLimitException`. Die
+Attributarbeit wird durch ein eigenes aggregiertes UTF-16-Budget begrenzt.
+Normales Autoren-CSS gewinnt; Layout erlaubt `width` nur auf dem `table`-
+Element und weist das Attribut auf anderen Tabellenteilen weiterhin explizit
+zurueck. Prozentwerte nutzen den bestehenden containing-block-Pfad. Keine
+anderen Legacy-Tabellenattribute wurden freigegeben.
+
+**Validierung:** Die Regressionen reproduzierten zuerst den bisher
+Unsupported-Fehler. CSS (1.171), Layout (870), Solution-Build (0 Warnungen/
+Fehler), Volltest (16.249), Formatpruefung und `git diff --check` bestehen
+lokal. Commit, Push und CI stehen noch aus.

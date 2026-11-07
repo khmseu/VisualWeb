@@ -865,6 +865,30 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void HtmlTableWidthHintSetsAnAbsoluteTableWidthMinimum()
+    {
+        var root = UnorderedList("<table id=t width=60><tr><td>x</td></tr></table>").Root!;
+
+        Assert.Equal(60, Find(root, "t").Content.Width);
+    }
+
+    [Fact]
+    public void HtmlTablePercentageWidthHintUsesTheContainingBlockWidth()
+    {
+        var root = UnorderedList("<table id=t width='50%'><tr><td>x</td></tr></table>", width: 100).Root!;
+
+        Assert.Equal(50, Find(root, "t").Content.Width);
+    }
+
+    [Fact]
+    public void AuthorCssOverridesHtmlTableWidthHint()
+    {
+        var root = UnorderedList("<table id=t width=80><tr><td>x</td></tr></table>", "table{width:40px}").Root!;
+
+        Assert.Equal(40, Find(root, "t").Content.Width);
+    }
+
+    [Fact]
     public void ColumnWidthsRaiseTrackMinimumAndMaximumWidths()
     {
         const string html = """
@@ -1572,7 +1596,7 @@ public sealed class LayoutTests
     [InlineData("<table><colgroup span=2><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
     [InlineData("<table><tr><td><input></td></tr></table>", "")]
-    [InlineData("<table width=100><tr><td>x</td></tr></table>", "")]
+    [InlineData("<table><tr><td width=100>x</td></tr></table>", "")]
     [InlineData("<table align=left><tr><td>x</td></tr></table>", "")]
     [InlineData("<table align='center '><tr><td>x</td></tr></table>", "")]
     [InlineData("<table valign=top><tr><td>x</td></tr></table>", "")]

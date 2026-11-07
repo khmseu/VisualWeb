@@ -85,6 +85,10 @@ remain unsupported.
 The HTML table `cellspacing` hint maps values that parse as non-negative
 integers to equal horizontal and vertical pixel spacing; values that fail
 parsing add no hint, and normal author CSS overrides it.
+The HTML table `width` hint maps nonzero dimensions to pixel or percentage
+widths, with percentages resolved against the containing block. Zero and
+invalid values add no hint, and out-of-range values fail explicitly. Width
+attributes on other table parts remain unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

@@ -221,6 +221,56 @@ public static class CssStyleEngine
         return new(length, length);
     }
 
+    private static CssLength? GetTableWidthHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName != "table" || element.GetAttribute("width") is not { } width) { return null; }
+        context.TableWidthCharacters(width.Length);
+        return TryParseNonZeroDimensionValue(width, context.Cancellation);
+    }
+
+    private static CssLength? TryParseNonZeroDimensionValue(string input, CancellationToken cancellationToken)
+    {
+        var position = 0;
+        while (position < input.Length && IsAsciiWhitespace(input[position]))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            position++;
+        }
+        if (position == input.Length || input[position] is not (>= '0' and <= '9')) { return null; }
+
+        var value = 0.0;
+        while (position < input.Length && input[position] is >= '0' and <= '9')
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            value = value * 10 + input[position++] - '0';
+            if (!double.IsFinite(value))
+            { throw new CssLimitException("HTML table width attribute exceeds finite numeric range."); }
+        }
+
+        if (position < input.Length && input[position] == '.')
+        {
+            position++;
+            if (position < input.Length && input[position] is >= '0' and <= '9')
+            {
+                var divisor = 1.0;
+                var hasNonzeroFractionDigit = false;
+                while (position < input.Length && input[position] is >= '0' and <= '9')
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var digit = input[position++] - '0';
+                    hasNonzeroFractionDigit |= digit != 0;
+                    divisor *= 10;
+                    value += digit / divisor;
+                }
+                if (value == 0 && hasNonzeroFractionDigit)
+                { throw new CssLimitException("HTML table width attribute is below finite numeric range."); }
+            }
+        }
+
+        if (value == 0) { return null; }
+        return new(value, position < input.Length && input[position] == '%' ? "%" : "px");
+    }
+
     private static bool TryParseNonNegativeInteger(string input, CancellationToken cancellationToken, out double value)
     {
         value = 0;
@@ -294,6 +344,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("border-spacing", cellSpacing, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetTableWidthHint(element, context) is { } tableWidth)
+            {
+                context.Assignment();
+                Add(new("width", tableWidth, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetAlignHint(element) is { } align)
