@@ -6172,3 +6172,34 @@ Warnungen/Fehler), alle 16.222 Solution-Tests, Formatpruefung und
 `git diff --check` bestehen lokal. Commit `9102c49` ist gepusht. Linux
 (Run 42384229690), Windows-Confinement (Run 42384229722) und CodeQL
 (Run 42384229517) bestehen.
+
+### KP-228 - HTML Cellspacing-Hinweis
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin.
+- Nutzerauftrag: zehn getrennte Missing-Prioritaetsinkremente fortsetzen
+  (aktueller Nutzerturn, 2026-11-07).
+- Quellen: [Missing-Tracker](../plans/Missing.md#recommended-priority),
+  [WHATWG-HTML-Tabellenregeln](../specs/cache/html.html#tables-2), im Manifest
+  am 2026-11-07 geprueft, sowie der dort referenzierte
+  [Integer-Parsing-Algorithmus](../specs/cache/html.html#rules-for-parsing-non-negative-integers),
+  `CssStyleEngine.cs`, `CssSyntax.cs`, `TableLayout.cs` und die Regressionen.
+
+**Ableitung:** Nach der CSS-Unterstuetzung fuer zwei Achsen bleibt das HTML-
+`table[cellspacing]`-Attribut im Tracker als nicht unterstuetzter Legacy-
+Praesentationshinweis. Die aktuelle HTML-Rendering-Regel ordnet ihm einen
+Pixelabstand fuer `border-spacing` zu. Die Spezifikationskopie wurde frisch
+geprueft; fuer diese begrenzte Erweiterung war keine offene Designentscheidung
+erforderlich.
+
+**Belegt:** Ein Wert, der nach den HTML-Regeln als nichtnegative Ganzzahl
+geparst wird, setzt beide berechneten `border-spacing`-Achsen in Pixeln. Ein
+ungueltiger Wert erzeugt keinen Hinweis; normale Autoren-CSS-Werte gewinnen
+gegen den Hinweis. CSS begrenzt den gesamten Rohattributaufwand und zaehlt den
+Hinweis zum Zuweisungsbudget. Layout laesst das Attribut nur am `table`-Element
+zu und verwendet die bestehenden horizontalen/vertikalen Geometriepfade.
+
+**Validierung:** Die neuen CSS-/Layout-Regressionsfaelle reproduzierten zuerst
+den fehlenden Hinweis beziehungsweise die Unsupported-Exception; nach der
+Implementierung bestehen CSS (1.161), Layout (861), Solution-Build (0
+Warnungen/Fehler), alle 16.230 Solution-Tests, Formatpruefung und
+`git diff --check` lokal. Commit, Push und CI stehen noch aus.

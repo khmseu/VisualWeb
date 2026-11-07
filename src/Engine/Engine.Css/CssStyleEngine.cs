@@ -212,6 +212,47 @@ public static class CssStyleEngine
         } : null;
     }
 
+    private static CssBorderSpacing? GetCellspacingHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName != "table" || element.GetAttribute("cellspacing") is not { } cellspacing) { return null; }
+        context.TableSpacingCharacters(cellspacing.Length);
+        if (!TryParseNonNegativeInteger(cellspacing, context.Cancellation, out var value)) { return null; }
+        var length = new CssLength(value, "px");
+        return new(length, length);
+    }
+
+    private static bool TryParseNonNegativeInteger(string input, CancellationToken cancellationToken, out double value)
+    {
+        value = 0;
+        var position = 0;
+        while (position < input.Length && IsAsciiWhitespace(input[position]))
+        {
+            if ((position & 0xFF) == 0) { cancellationToken.ThrowIfCancellationRequested(); }
+            position++;
+        }
+        if (position == input.Length) { return false; }
+
+        var negative = input[position] == '-';
+        if (input[position] is '+' or '-') { position++; }
+        var start = position;
+        while (position < input.Length && input[position] is >= '0' and <= '9')
+        {
+            if ((position & 0xFF) == 0) { cancellationToken.ThrowIfCancellationRequested(); }
+            var digit = input[position] - '0';
+            if (negative && digit > 0) { return false; }
+            value = value * 10 + digit;
+            if (!double.IsFinite(value)) { throw new CssLimitException("Computed table cellspacing exceeds finite numeric range."); }
+            position++;
+        }
+
+        if (position == start) { return false; }
+        if (negative && value > 0) { return false; }
+        if (negative) { value = 0; }
+        return true;
+    }
+
+    private static bool IsAsciiWhitespace(char value) => value is '\t' or '\n' or '\f' or '\r' or ' ';
+
     public static CssStyleResult Compute(DomDocument document, IEnumerable<CssStyleSource>? sources = null,
         bool includeUserAgent = true, CssOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -247,6 +288,12 @@ public static class CssStyleEngine
                     presentationalHint: true);
                 context.Assignment();
                 Add(new("margin-right", new CssKeyword("auto"), false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetCellspacingHint(element, context) is { } cellSpacing)
+            {
+                context.Assignment();
+                Add(new("border-spacing", cellSpacing, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetAlignHint(element) is { } align)

@@ -681,6 +681,59 @@ public sealed class CascadeTests
             includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
     }
 
+    [Theory]
+    [InlineData("5", 5)]
+    [InlineData(" \t+07junk", 7)]
+    public void TableCellspacingAttributeMapsToEqualPixelSpacing(string value, double expected)
+    {
+        var doc = Document($"<table id=target cellspacing='{value}'><tr><td>x</td></tr></table>");
+        var target = doc.GetElementById("target")!;
+        var hint = new CssBorderSpacing(new(expected, "px"), new(expected, "px"));
+        var user = new CssStyleSource("table{border-spacing:11px}", CssOrigin.User);
+
+        Assert.Equal(hint, CssStyleEngine.Compute(doc, [user], includeUserAgent: false,
+            cancellationToken: Cancellation).Styles[target]["border-spacing"]);
+        Assert.Equal(new CssBorderSpacing(new(3, "px"), new(7, "px")),
+            CssStyleEngine.Compute(doc, [new("table{border-spacing:3px 7px}")], includeUserAgent: false,
+                cancellationToken: Cancellation).Styles[target]["border-spacing"]);
+        target.SetAttribute("cellspacing", "9");
+        Assert.Equal(new CssBorderSpacing(new(9, "px"), new(9, "px")),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["border-spacing"]);
+        target.RemoveAttribute("cellspacing");
+        Assert.Equal(new CssBorderSpacing(new(0, "px"), new(0, "px")),
+            CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[target]["border-spacing"]);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("invalid")]
+    [InlineData("-5")]
+    public void InvalidTableCellspacingAttributeDoesNotCreateHint(string value)
+    {
+        var doc = Document($"<table id=target cellspacing='{value}'><tr><td>x</td></tr></table>");
+        var result = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+
+        Assert.Equal(new CssBorderSpacing(new(0, "px"), new(0, "px")),
+            result.Styles[doc.GetElementById("target")!]["border-spacing"]);
+    }
+
+    [Fact]
+    public void TableCellspacingHintUsesAssignmentAndRawAttributeBudgets()
+    {
+        var doc = Document("<table cellspacing=5><tr><td>x</td></tr></table>");
+        var repeated = Document("""
+            <table cellspacing="12"><tr><td>x</td></tr></table>
+            <table cellspacing="12"><tr><td>y</td></tr></table>
+            """);
+
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, [new("table{color:red}")],
+            includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(repeated, includeUserAgent: false,
+            options: new() { MaxTableSpacingAttributeCharacters = 3 }, cancellationToken: Cancellation));
+    }
+
     [Fact]
     public void CenterElementUsesCenterPresentationalHintAndBlockUaDefault()
     {

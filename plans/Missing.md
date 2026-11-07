@@ -930,8 +930,8 @@ findings on unchanged lines; all changed test files pass a targeted check.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one or two spacing lengths (one for both axes, or horizontal
-then vertical), top-aligned text/block cells, and table/cell background colors
-and solid borders through ordinary paint flow.
+then vertical), the HTML `cellspacing` hint, top-aligned text/block cells, and
+table/cell background colors and solid borders through ordinary paint flow.
 Explicit table width and cell heights act as minima. Header/footer groups are
 ordered around body groups.
 Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
@@ -939,8 +939,8 @@ constraints equally across tracks; the total column grid is capped by
 `LayoutOptions.MaxTableColumns` before allocation and repeated track work by
 `LayoutOptions.MaxTableColumnOperations`. `rowspan`, captions/columns,
 anonymous/arbitrary CSS tables, collapsed borders, fixed layout, nested
-tables/widgets, percentages inside cells and legacy
-presentation attributes remain unsupported. See the
+tables/widgets, percentages inside cells and other legacy presentation
+attributes remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
 exact work limits and cancellation, native pixels, and local/process
@@ -1043,6 +1043,13 @@ tests (859), the zero-warning solution build, all 16,222 solution tests,
 format verification and `git diff --check` pass locally. Commit `9102c49` is
 pushed; Linux (Run 42384229690), Windows confinement (Run 42384229722) and
 CodeQL (Run 42384229517) pass.
+
+Pass 4 supports the HTML `table[cellspacing]` presentational hint: values that
+parse as non-negative integers set equal horizontal and vertical pixel spacing.
+Malformed values add no hint, and normal author CSS overrides the hint. CSS
+tests (1,161), Layout tests (861), the zero-warning solution build, all 16,230
+solution tests, format verification and `git diff --check` pass locally.
+Commit, push and CI are pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

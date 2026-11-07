@@ -1006,6 +1006,34 @@ public sealed class LayoutTests
         Assert.Equal(first.Y + first.Height + 7, Find(root, "c").BorderBox.Y);
     }
 
+    [Fact]
+    public void TableCellspacingAttributeAddsEqualHorizontalAndVerticalGaps()
+    {
+        const string html = """
+            <table id=t cellspacing="5"><tr><td id=a>x</td><td id=b>y</td></tr>
+            <tr><td id=c>z</td><td id=d>w</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+        var first = Find(root, "a").BorderBox;
+
+        Assert.Equal(first.X + first.Width + 5, Find(root, "b").BorderBox.X);
+        Assert.Equal(first.Y + first.Height + 5, Find(root, "c").BorderBox.Y);
+    }
+
+    [Fact]
+    public void InvalidTableCellspacingAttributeIsIgnoredByLayout()
+    {
+        const string html = """
+            <table id=t cellspacing="-5"><tr><td id=a>x</td><td id=b>y</td></tr>
+            <tr><td id=c>z</td><td id=d>w</td></tr></table>
+            """;
+        var root = UnorderedList(html).Root!;
+        var first = Find(root, "a").BorderBox;
+
+        Assert.Equal(first.X + first.Width + 2, Find(root, "b").BorderBox.X);
+        Assert.Equal(first.Y + first.Height + 2, Find(root, "c").BorderBox.Y);
+    }
+
     [Theory]
     [InlineData(null, 1)]
     [InlineData("0", 1)]

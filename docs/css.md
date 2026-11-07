@@ -225,6 +225,12 @@ The table rendering rules also support ASCII-case-insensitive
 horizontal LTR layout subset. Other table alignment values and legacy
 descendant-margin behavior remain unsupported. Justification retains the
 layout limitations documented in the text guide.
+The [HTML `table[cellspacing]` hint](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
+(local ID `html`) maps values parsed as non-negative integers to equal
+horizontal and vertical pixel lengths for `border-spacing`; values that fail
+parsing add no hint.
+The hint shares the author presentational-hint cascade, and normal author CSS
+overrides it.
 The UA stylesheet gives `caption` `display:table-caption`; layout supports
 one first-element-child caption. `caption-side` supports inherited `top` and
 `bottom` values with the CSS 2.2 initial value `top`; bottom captions follow
@@ -467,11 +473,12 @@ input/token scanning, parsing, compilation and matching. Numeric values outside
 the finite `double` range are diagnosed, including color components; finite
 numeric overflow during computation also fails explicitly. Whole-string
 processing and these limits are not a total memory budget or an OS sandbox.
-The independent font color, face and size limits (`MaxFontColorAttributeCharacters`,
-`MaxFontFaceAttributeCharacters` and `MaxFontSizeAttributeCharacters`) are checked
-before processing each attribute, including invalid values; long scans honor
-cancellation. Other direct DOM construction and arbitrarily large DOM attribute
-values remain the caller's responsibility.
+The independent font color, face, size and table-spacing limits
+(`MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
+`MaxFontSizeAttributeCharacters` and `MaxTableSpacingAttributeCharacters`) are
+checked before processing their attributes, including invalid values; long
+scans honor cancellation. Other direct DOM construction and arbitrarily large
+DOM attribute values remain the caller's responsibility.
 
 ## Offline evidence and standards
 

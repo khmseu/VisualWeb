@@ -80,6 +80,9 @@ The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify
 values to text alignment; row/group hints and unsupported-value HTML `valign`
 remain unsupported.
+The HTML table `cellspacing` hint maps values that parse as non-negative
+integers to equal horizontal and vertical pixel spacing; values that fail
+parsing add no hint, and normal author CSS overrides it.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

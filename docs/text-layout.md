@@ -271,8 +271,11 @@ when it computes to `display: table-caption`, according to inherited
 border-edge width, while the caption does not affect intrinsic column sizing;
 caption and table backgrounds/borders retain separate geometry.
 UA spacing is 2px on both axes; cells have 1px padding and top alignment. Header
-font weight is not synthesized. Measurement and arrangement share node, text,
-shaping, line, glyph, box, depth and cancellation budgets.
+font weight is not synthesized. HTML `table[cellspacing]` maps values that
+parse as non-negative integers to equal horizontal and vertical pixel spacing;
+values that fail parsing add no hint, and normal author CSS overrides the hint.
+Measurement and arrangement share node, text, shaping, line, glyph, box, depth
+and cancellation budgets.
 
 Explicit failures remain for anonymous or arbitrary CSS tables, nested
 tables/widgets,
@@ -280,7 +283,7 @@ percentage dimensions inside cells, collapsed borders, fixed layout, other
 cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes (`width`, `height`, `border`, `cellpadding`,
-`cellspacing`, `nowrap`). The table's ASCII-case-insensitive
+`nowrap`). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
