@@ -1083,7 +1083,11 @@ Pass 7 extends the HTML table `align` presentational hint to `tr`, `thead`,
 `tbody` and `tfoot`, accepting ASCII-case-insensitive `left`, `right`,
 `center`, `middle` and `justify`; the inherited text alignment reaches cells.
 Legacy alignment of over-constrained descendant margins remains unsupported,
-and invalid row/group values still fail explicitly at layout.
+and invalid row/group values still fail explicitly at layout. CSS (1,174),
+Layout (891), the zero-warning solution build, all 16,273 solution tests,
+format verification and `git diff --check` pass locally. Commit `ae7f1ae` is
+pushed; Linux (Run 42474057086), Windows confinement x64/arm64 (Run 42474057143) and Push on main/CodeQL (Run 42474056897) pass. Pass 7 is
+complete.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

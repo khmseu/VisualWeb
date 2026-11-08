@@ -221,7 +221,7 @@
   Solution-Build (0 Warnungen/Fehler), Volltest (16.249), Formatpruefung und
   Whitespace-Check bestehen lokal. `fb73991` ist gepusht; Linux
   (Run 42401385159), Windows-Confinement x64/arm64 (Run 42401385143) und
-  CodeQL (Run 42401384901) bestehen. Vier Inkremente verbleiben
+  CodeQL (Run 42401384901) bestehen. Nach Pass 6 verblieben vier Inkremente
   ([KP-231](./Kontextprotokoll.md#kp-231---pass-6-html-table-width-hint)).
   Pass 7 erweitert die table-row/group `align`-Presentational-Hints auf
   `tr`, `thead`, `tbody` und `tfoot`; `text-align` wird in Zellen vererbt.
@@ -229,8 +229,10 @@
   dokumentiert in [KP-233](./Kontextprotokoll.md#kp-233---pass-7-row-und-row-group-align-hints).
   CSS (1.174), Layout (891), der Solution-Build (0 Warnungen/Fehler), der
   Volltest (16.273), Formatpruefung und Whitespace-Check bestehen lokal.
-  Commit, Push und CI stehen aus. Nach Abschluss dieses Passes verbleiben
-  drei Inkremente.
+  `ae7f1ae` ist gepusht; Linux (Run 42474057086), Windows confinement
+  x64/arm64 (Run 42474057143) und Push-on-main/CodeQL (Run 42474056897)
+  bestehen. Pass 7 ist abgeschlossen; drei Inkremente verbleiben
+  ([KP-234](./Kontextprotokoll.md#kp-234---pass-7-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

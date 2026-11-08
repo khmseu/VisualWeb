@@ -6359,3 +6359,20 @@ CSS-/Layout-Testlauf traf Dateisperren beim gemeinsamen Build und bestaetigte
 veraltete Tests, die die neue Unterstuetzung noch als unsupported erwarteten;
 nach Aktualisierung dieser Tests bestanden beide Suiten sequenziell. Commit,
 Push und CI stehen aus.
+
+### KP-234 - Pass 7: gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-233.
+- Quellen: Commit `ae7f1ae`, `origin/main`, GitHub Actions Runs
+  42474057086, 42474057143 und 42474056897.
+
+**Belegt:** Commit `ae7f1ae` (`feat(css): support HTML table row alignment
+hints`) ist auf `main` gepusht. Linux development (Run 42474057086), Windows
+confinement x64/arm64 (Run 42474057143) und Push on main mit CodeQL (Run 42474056897) sind erfolgreich abgeschlossen. Pass 7 ist damit komplett; im
+Zehn-Passen-Lauf verbleiben drei getrennte Inkremente.
+
+Ein frueherer, nur dokumentarischer Pass-6-Statuscommit `9935797` hatte einen
+CodeQL-Initialisierungsfehler beim Herunterladen des Bundles (HTTP 504); Linux
+und Windows waren erfolgreich, und GitHub lehnte das Rerun dieses Laufs ab.
+Der Codecommit `fb73991` fuer Pass 6 war bereits auf allen drei Workflows
+gruen; der neue Pass-7-Codecommit besteht ebenfalls einschliesslich CodeQL.
