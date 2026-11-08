@@ -172,6 +172,15 @@ public static class CssStyleEngine
         return element.LocalName is ("td" or "th") && GetValignHint(element) is not null;
     }
 
+    /// <summary>Reports whether a supported legacy vertical-alignment hint applies to an HTML table row or row group.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table row and row-group alignment hints</see>.</remarks>
+    public static bool HasSupportedTableRowValignHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName is ("thead" or "tbody" or "tfoot" or "tr") && GetValignHint(element) is not null;
+    }
+
     /// <summary>Finds the supported flow-content text alignment hints.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3">flow content hints</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table rendering hints</see>.</remarks>
@@ -207,9 +216,17 @@ public static class CssStyleEngine
         } : null;
     }
 
+    private static string? GetTableAncestorValignHint(DomElement element)
+    {
+        if (element.ParentNode is not DomElement { LocalName: "tr" } row) { return null; }
+        if (GetValignHint(row) is { } rowAlignment) { return rowAlignment; }
+        return row.ParentNode is DomElement { LocalName: "thead" or "tbody" or "tfoot" } group
+            ? GetValignHint(group) : null;
+    }
+
     private static string? GetValignHint(DomElement element)
     {
-        if (element.LocalName is not ("td" or "th")) { return null; }
+        if (element.LocalName is not ("td" or "th" or "thead" or "tbody" or "tfoot" or "tr")) { return null; }
         var valign = element.GetAttribute("valign");
         return valign is { Length: 3 or 6 or 8 } ? CssText.Lower(valign) switch
         {
@@ -367,7 +384,10 @@ public static class CssStyleEngine
                 Add(new("text-align", new CssKeyword(align), false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
-            if (GetValignHint(element) is { } verticalAlign)
+            var verticalAlign = GetValignHint(element);
+            if (verticalAlign is null && element.LocalName is ("td" or "th"))
+            { verticalAlign = GetTableAncestorValignHint(element); }
+            if (verticalAlign is not null)
             {
                 context.Assignment();
                 Add(new("vertical-align", new CssKeyword(verticalAlign), false, 0), CssOrigin.Author, false, new(), -1,

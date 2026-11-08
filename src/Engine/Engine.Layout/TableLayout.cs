@@ -615,6 +615,7 @@ public static partial class StaticLayout
                 || element.GetAttribute("cellspacing") is not null && element.LocalName != "table"
                 || element.GetAttribute("valign") is not null
                     && !CssStyleEngine.HasSupportedTableCellValignHint(element)
+                    && !CssStyleEngine.HasSupportedTableRowValignHint(element)
                 || element.GetAttribute("align") is not null
                     && !CssStyleEngine.HasSupportedTableCenterAlignmentHint(element)
                     && !CssStyleEngine.HasSupportedTableCellAlignmentHint(element)

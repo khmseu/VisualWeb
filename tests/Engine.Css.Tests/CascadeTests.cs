@@ -720,6 +720,55 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("thead", "BASELINE")]
+    [InlineData("tbody", "TOP")]
+    [InlineData("tfoot", "MIDDLE")]
+    [InlineData("tr", "BOTTOM")]
+    public void TableRowAndGroupValignHintsApplyToContainedCells(string tag, string value)
+    {
+        var target = tag == "tr"
+            ? $"<tr id=target valign='{value}'><td id=cell>x</td></tr>"
+            : $"<{tag} id=target valign='{value}'><tr><td id=cell>x</td></tr></{tag}>";
+        var doc = Document("<table>" + target + "</table>");
+        var styles = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        var expected = value.ToLowerInvariant();
+
+        Assert.Empty(styles.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), styles.Styles[doc.GetElementById("target")!]["vertical-align"]);
+        Assert.Equal(new CssKeyword(expected), styles.Styles[doc.GetElementById("cell")!]["vertical-align"]);
+        Assert.True(CssStyleEngine.HasSupportedTableRowValignHint(doc.GetElementById("target")!));
+    }
+
+    [Fact]
+    public void NearestTableValignHintWinsAndCellRulesOverrideIt()
+    {
+        var doc = Document("""
+            <table><tbody valign=bottom><tr id=row valign=middle>
+              <td id=inherited>x</td><td id=cell-hint valign=top>x</td>
+              <td id=cell-css>x</td>
+            </tr><tr><td id=group-default>x</td></tr></tbody></table>
+            """);
+        var cellCss = new CssStyleSource("#cell-css{vertical-align:baseline}");
+        var styles = CssStyleEngine.Compute(doc, [cellCss], cancellationToken: Cancellation);
+
+        Assert.Equal(new CssKeyword("middle"), styles.Styles[doc.GetElementById("inherited")!]["vertical-align"]);
+        Assert.Equal(new CssKeyword("top"), styles.Styles[doc.GetElementById("cell-hint")!]["vertical-align"]);
+        Assert.Equal(new CssKeyword("baseline"), styles.Styles[doc.GetElementById("cell-css")!]["vertical-align"]);
+        Assert.Equal(new CssKeyword("bottom"), styles.Styles[doc.GetElementById("group-default")!]["vertical-align"]);
+    }
+
+    [Fact]
+    public void RowGroupValignCellDefaultsUseTheSharedAssignmentBudget()
+    {
+        var doc = Document("<table><tbody valign=middle><tr><td>x</td></tr></tbody></table>");
+
+        Assert.Empty(CssStyleEngine.Compute(doc, includeUserAgent: false,
+            options: new() { MaxAssignments = 2 }, cancellationToken: Cancellation).Diagnostics);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(doc, includeUserAgent: false,
+            options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+    }
+
+    [Theory]
     [InlineData("5", 5)]
     [InlineData(" \t+07junk", 7)]
     public void TableCellspacingAttributeMapsToEqualPixelSpacing(string value, double expected)

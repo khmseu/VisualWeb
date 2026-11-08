@@ -82,9 +82,11 @@ The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify
 values to text alignment; the same values on `tr`, `thead`, `tbody` and
 `tfoot` are inherited by their cells. These six table elements also support
-the legacy `align=absmiddle` alias for centered text. Unsupported-value HTML
-`valign` and legacy alignment of over-constrained descendant margins remain
-unsupported.
+the legacy `align=absmiddle` alias for centered text. Unsupported HTML
+`valign` values and legacy alignment of over-constrained descendant margins
+remain unsupported. Row/group `valign=baseline/top/middle/bottom` supplies a
+default to contained cells; a nearer row wins over its group, and cell CSS or
+`valign` overrides it.
 The HTML table `cellspacing` hint maps values that parse as non-negative
 integers to equal horizontal and vertical pixel spacing; values that fail
 parsing add no hint, and normal author CSS overrides it.

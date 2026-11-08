@@ -210,8 +210,9 @@ public static partial class StaticLayout
             if (Display(element).StartsWith("table-", StringComparison.Ordinal) && !tableContext)
             { throw new UnsupportedLayoutException("Internal table boxes require the canonical table layout context."); }
             if (Style(element)["vertical-align"] is CssKeyword { Value: not "baseline" }
-                && !(tableContext && Display(element) == "table-cell"))
-            { throw new UnsupportedLayoutException("Non-baseline vertical alignment is supported only on table cells."); }
+                && !(tableContext && (Display(element) == "table-cell"
+                    || CssStyleEngine.HasSupportedTableRowValignHint(element))))
+            { throw new UnsupportedLayoutException("Non-baseline vertical alignment requires a table cell or supported table row/group hint."); }
             if (element.GetAttribute("dir") is { } dir && !dir.Equals("ltr", StringComparison.OrdinalIgnoreCase))
             {
                 throw new UnsupportedLayoutException("dir=rtl/auto requires bidi layout.");

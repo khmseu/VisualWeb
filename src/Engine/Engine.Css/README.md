@@ -176,8 +176,10 @@ the canonical column displays.
 UA cells use 1px padding and top alignment; UA tables use 2px spacing.
 HTML `td`/`th` `valign=baseline`, `top`, `middle` and `bottom` map to
 `vertical-align` at the author presentational-hint origin. Matching is
-ASCII-case-insensitive and does not trim. Other values and row/group `valign`
-remain unsupported.
+ASCII-case-insensitive and does not trim. The same row/group `valign` values
+act as defaults for contained cells; the nearest row wins over its group, and
+cell CSS or `valign` overrides the default. This is HTML-specific behavior,
+not general CSS inheritance. Other values remain unsupported.
 The layout subset supports cell baseline, `middle` and `bottom` alignment,
 including row spans; see its local row-height policy and remaining exclusions.
 See the [layout subset](../../../docs/text-layout.md#basic-automatic-tables)

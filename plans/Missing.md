@@ -973,10 +973,9 @@ The HTML table-cell `align` attribute now maps `left`, `right`, `center`,
 `middle` and `justify` on `td`/`th` to `text-align`, with ASCII-case-insensitive
 matching and `middle` mapped to `center`; `absmiddle` also maps to `center` on
 these six table elements. The same values on `tr`, `thead`, `tbody` and `tfoot`
-now map to inherited `text-align`. Baseline table-cell alignment, legacy
-over-constrained descendant-margin alignment, table
-left/right floats and other alignment targets remain unsupported. CSS
-`vertical-align:middle` and `bottom` now position
+now map to inherited `text-align`. Legacy over-constrained descendant-margin
+alignment, table left/right floats and other alignment targets remain
+unsupported. CSS `vertical-align:baseline`, `middle` and `bottom` now position
 canonical table-cell contents against their final row height, including the
 complete height and internal spacing of row-spanning cells; `top` remains the
 UA default. Pass 8 adds explicit CSS-parser and exact single-/multi-row-span
@@ -994,8 +993,9 @@ all 16,105 solution tests and format verification pass.
 
 Pass 9 adds HTML `td`/`th` `valign=top`, `middle` and `bottom` as
 ASCII-case-insensitive author presentational hints, using the existing
-single-row and row-span alignment behavior. Baseline, invalid cell values and
-row/group `valign` remain unsupported and fail explicitly at layout. CSS
+single-row and row-span alignment behavior. At that time, baseline, invalid
+cell values and row/group `valign` remained unsupported and failed explicitly
+at layout. CSS
 (1,149), Layout (852), the zero-warning solution build, all 16,208 solution
 tests and formatting verification pass locally. Commit `ce09478` is pushed and
 Linux x64/arm64, Windows x64/arm64 and CodeQL CI pass (runs 42362747599,
@@ -1103,6 +1103,17 @@ Windows confinement x64/arm64
 and Push on main/CodeQL
 ([Run 42478735123](https://github.com/khmseu/VisualWeb/actions/runs/42478735123))
 all pass. Pass 8 is complete; two increments remain in this ten-pass request.
+
+Pass 9 supports HTML `valign=baseline/top/middle/bottom` on `tr`, `thead`,
+`tbody` and `tfoot` as defaults for contained cells. The nearest row wins over
+its row group, while cell CSS and cell `valign` hints override; this is a
+bounded HTML compatibility rule, not general CSS inheritance. Invalid
+row/group values and unsupported targets continue to fail explicitly.
+
+CSS (1,183), Layout (908), the zero-warning solution build, all 16,299
+solution tests, format verification and `git diff --check` pass locally.
+Pass 9 is complete locally; one increment remains in this ten-pass request.
+Commit, push and CI remain pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

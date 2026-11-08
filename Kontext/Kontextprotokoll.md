@@ -6429,3 +6429,61 @@ alignment`) ist auf `main` gepusht. Linux development (Run 42478735102),
 Windows confinement x64/arm64 (Run 42478735101) und Push on main mit CodeQL
 (Run 42478735123) sind erfolgreich abgeschlossen. Pass 8 ist komplett; im
 Zehn-Passen-Lauf verbleiben zwei getrennte Inkremente.
+
+### KP-238 - Naechster Tabellenpass: row/group valign offen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin.
+- Nutzerangabe: Der Nutzer setzte den Zehn-Passen-Lauf mit "continue" fort.
+- Auswahlstatus: `plans/Missing.md` weist Tabellen- und Zellalignments als
+  konkrete Rendering-Luecke aus; row/group `valign` ist eine moegliche kleine
+  Fortsetzung, aber noch nicht als Implementierungsvertrag beschlossen.
+- Quellen: `specs/cache/html.html#tables-2`,
+  `specs/cache/css2-sizing.html#propdef-vertical-align`,
+  `specs/cache/css2-tables.html#height-layout`, `docs/css.md`,
+  `docs/text-layout.md`, `TableLayout.cs`.
+
+**Belegt:** WHATWG HTML fuehrt `vertical-align`-Hints fuer `thead`, `tbody`,
+`tfoot` und `tr` auf. CSS 2.2 erklaert `vertical-align` fuer inline-level und
+table-cell-Elemente anwendbar und als nicht vererbt; seine Tabellenregeln
+beschreiben die Ausrichtung pro Zelle. Die vorhandene Layoutimplementierung
+lehnt row/group `valign` deshalb weiterhin explizit ab. Ein HTML-kompatibles
+Verhalten als Default fuer enthaltene Zellen benoetigt eine ausdrueckliche
+Precedence-Entscheidung gegenueber Zellhinweisen und CSS.
+
+**Offen / Entscheidung angefragt:** Soll die naechste Aenderung die gueltigen
+row/group-Werte als Zell-Default behandeln, mit Zell-CSS/-Hint als Override,
+oder soll row/group `valign` unsupported bleiben und ein anderes
+Missing-Inkrement gewaehlt werden? Es wurde noch kein Code, keine Spezifikation
+und kein Tracker-Status fuer diese Kandidaten implementiert oder geaendert.
+
+### KP-239 - Row/group valign als Zell-Default gewaehlt
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-238.
+- Nutzerangabe: Antwort auf die Auswahlfrage war `cell-default`.
+- Status: Beschlossen; implementiert und fokussiert validiert, Vollvalidierung ausstehend.
+
+Der Nutzer waehlte, gueltige HTML-`valign`-Hints auf einer Tabellenzeile bzw.
+Row-Group als Defaultausrichtung ihrer enthaltenen Zellen auszulegen. Ein
+naeherer Row-Hint gewinnt gegen den umgebenden Group-Hint; Zell-CSS und ein
+Zell-`valign`-Hint haben Vorrang. Dies ist eine begrenzte HTML-Kompatibilitaets-
+semantik und keine allgemeine CSS-Vererbung von `vertical-align`.
+
+### KP-240 - Pass 9 implementiert und lokal vollvalidiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-239.
+- Belegt: gueltige Werte auf `tr`, `thead`, `tbody` und `tfoot` werden als
+  Author-Presentational-Hint auf direkt enthaltene `td`/`th` angewandt. Der
+  direkte Row-Hint gewinnt gegen den Row-Group-Hint; Zell-CSS und ein eigener
+  Zell-Hint bleiben staerker. Die Ancestor-Suche ist auf die kanonische direkte
+  Tabellenstruktur begrenzt. Layout akzeptiert diese Werte nur im Tabellenscope;
+  ungueltige Werte und unsupported Targets bleiben explizite Fehler.
+- Belegt: fokussierte CSS-Tests (1.183) und Layout-Tests (908) bestehen.
+  Solution-Build (0 Warnungen/Fehler), Volltest (16.299), Formatpruefung und
+  `git diff --check` bestehen ebenfalls. Diese vollstaendige Validierung wurde
+  nach den letzten Code-/Testaenderungen erneut ausgefuehrt.
+- Geaenderte Artefakte: `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Layout/StaticLayout.cs`,
+  `src/Engine/Engine.Layout/TableLayout.cs`, beide CSS-/Layout-Testdateien,
+  die betreffenden Guides/READMEs, `plans/Missing.md` und beide Kontextansichten.
+- Status: lokal abgeschlossen; Commit, Push und CI stehen aus. Im
+  Zehn-Inkrement-Lauf verbleibt ein weiterer Pass.

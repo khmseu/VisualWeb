@@ -218,10 +218,13 @@ hint.
 The same table rendering rules map `valign=baseline`, `top`, `middle` and `bottom` on
 `td`/`th` to `vertical-align` as ASCII-case-insensitive author presentational
 hints. They share the same cascade, assignment budget and recomputation rules.
-Other `valign` values, plus `valign` on table rows/groups, remain unsupported
-and fail explicitly when table layout is requested. Baseline row-spans use the
-documented local even row-height policy; CSS 2.2 leaves that height effect
-undefined.
+The same values on `tr`, `thead`, `tbody` and `tfoot` act as defaults for
+contained cells; the nearest row hint wins over its group, and cell CSS or a
+cell `valign` hint overrides it. This bounded HTML compatibility behavior does
+not make CSS `vertical-align` generally inherited. Other `valign` values
+remain unsupported and fail explicitly when table layout is requested.
+Baseline row-spans use the documented local even row-height policy; CSS 2.2
+leaves that height effect undefined.
 The table rendering rules also support ASCII-case-insensitive
 `table[align=center]` as `margin-left:auto;margin-right:auto` in the
 horizontal LTR layout subset. Other table alignment values and legacy

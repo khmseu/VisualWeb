@@ -298,9 +298,14 @@ subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 maps to `center`, and `absmiddle` maps to `center` on these six table
 elements only. The supported values on `tr`, `thead`, `tbody` and `tfoot`
 inherit through cells. Legacy alignment of over-constrained descendant
-margins, left/right table floats, other table alignment values, row/group
-`valign` and other cell `valign` values remain unsupported and fail explicitly
-at layout. Table cells support
+margins, left/right table floats and other table alignment values remain
+unsupported and fail explicitly at layout. Cell `valign`
+supports ASCII-case-insensitive `baseline`, `top`, `middle` and `bottom`;
+the same values on rows and row groups supply defaults to contained cells.
+The nearest row hint wins over its group, and cell CSS or a cell `valign`
+hint overrides it. This is a bounded HTML compatibility rule, not general CSS
+inheritance. Invalid `valign` values remain unsupported and fail explicitly.
+Table cells support
 `vertical-align:baseline`, `top`, `middle` and `bottom`.
 Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
 have zero intrinsic content size.
