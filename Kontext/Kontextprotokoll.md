@@ -6893,5 +6893,19 @@ VisualWeb.slnx` ohne Warnungen/Fehler, alle 16.355 Solution-Tests,
 third_party` und `git diff --check` bestehen lokal. Der Volltest dauerte
   13 Minuten 50 Sekunden fuer die Browsertests; alle 1.333 Browsertests
   bestanden.
-- Status: lokale Implementierung und Validierung abgeschlossen. Featurecommit,
-  Push und CI stehen aus; Pass 6 zaehlt bis dahin nicht als abgeschlossen.
+- Status: lokale Implementierung und Validierung abgeschlossen; Featurecommit,
+  Push und CI stehen aus.
+
+### KP-267 - Pass 6 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-266.
+- Belegt: Commit `e24bf1e12f04fff7c8e3ddf18e1a2c049a1378eb` ist auf `main`
+  gepusht. Linux development
+  ([42536481559](https://github.com/khmseu/VisualWeb/actions/runs/42536481559)),
+  Windows confinement
+  ([42536481451](https://github.com/khmseu/VisualWeb/actions/runs/42536481451))
+  und Push on main/CodeQL
+  ([42536481151](https://github.com/khmseu/VisualWeb/actions/runs/42536481151))
+  sind erfolgreich.
+- Status: Pass 6 ist abgeschlossen; vier der angeforderten zehn Inkremente
+  verbleiben.

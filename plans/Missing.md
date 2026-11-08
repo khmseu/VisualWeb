@@ -1236,8 +1236,15 @@ intrinsic cell sizing; normal author CSS overrides the hint. `nowrap` on the
 table, rows and row groups remains explicitly unsupported. CSS (1,229), Layout
 (913), the zero-warning solution build, all 16,355 solution tests,
 `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
-third_party`, and `git diff --check` pass locally. Commit, push, and CI remain
-pending; Pass 6 is not yet complete.
+third_party`, and `git diff --check` pass locally. Commit
+[`e24bf1e`](https://github.com/khmseu/VisualWeb/commit/e24bf1e12f04fff7c8e3ddf18e1a2c049a1378eb)
+is pushed. Linux development
+([run](https://github.com/khmseu/VisualWeb/actions/runs/42536481559)),
+Windows confinement
+([run](https://github.com/khmseu/VisualWeb/actions/runs/42536481451)) and
+Push on main/CodeQL
+([run](https://github.com/khmseu/VisualWeb/actions/runs/42536481151)) pass.
+Pass 6 is complete; four requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 

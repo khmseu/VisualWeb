@@ -353,9 +353,12 @@
   wird ignoriert, normale Autoren-CSS kann den Hinweis ueberschreiben, und
   `nowrap` an Tabelle, Zeilen und Gruppen bleibt unsupported. CSS (1.229),
   Layout (913), Solution-Build (0 Warnungen/Fehler), Volltest (16.355),
-  Formatpruefung und Whitespace-Check bestehen. Featurecommit, Push und CI
-  stehen noch aus; Pass 6 ist daher nicht abgeschlossen
-  ([KP-266](./Kontextprotokoll.md#kp-266---pass-6-td-th-nowrap-lokal-validiert)).
+  Formatpruefung und Whitespace-Check bestehen. `e24bf1e` ist gepusht; Linux
+  (Run 42536481559), Windows confinement (Run 42536481451) und Push-on-main/
+  CodeQL (Run 42536481151) sind gruen. Pass 6 ist abgeschlossen; vier
+  Inkremente verbleiben
+  ([KP-266](./Kontextprotokoll.md#kp-266---pass-6-td-th-nowrap-lokal-validiert),
+  [KP-267](./Kontextprotokoll.md#kp-267---pass-6-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
