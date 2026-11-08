@@ -252,6 +252,11 @@ insensitive `transparent` values add no hint, and the raw attribute length has
 its own aggregate per-computation limit. Other elements' `bgcolor` attributes
 are ignored. The offline renderer's existing body-background paint behavior
 handles the computed color.
+The same HTML page rule maps a successfully parsed `body[text]` value through
+the legacy-colour algorithm to the body's `color`; descendants use ordinary
+CSS inheritance. It has its own aggregate raw-attribute limit and shares the
+presentational-hint cascade and assignment budget. Empty and
+ASCII-case-insensitive `transparent` values add no hint.
 The UA stylesheet gives `caption` `display:table-caption`; layout supports
 one first-element-child caption. `caption-side` supports inherited `top` and
 `bottom` values with the CSS 2.2 initial value `top`; bottom captions follow
@@ -478,6 +483,7 @@ All CssOptions limits are positive and configurable:
 | ------------------------------------------------------------------------------ | ---------: |
 | Input characters per individual CSS string, before normalization               |       4 Mi |
 | Aggregate raw UTF-16 characters in `body[bgcolor]` per computation             |       4 Mi |
+| Aggregate raw UTF-16 characters in `body[text]` per computation                |       4 Mi |
 | Aggregate raw UTF-16 characters in `font color` attributes per computation     |       4 Mi |
 | Aggregate raw UTF-16 characters in `font face` attributes per computation      |       4 Mi |
 | Aggregate raw UTF-16 characters in `font size` attributes per computation      |       4 Mi |
@@ -496,8 +502,9 @@ input/token scanning, parsing, compilation and matching. Numeric values outside
 the finite `double` range are diagnosed, including color components; finite
 numeric overflow during computation also fails explicitly. Whole-string
 processing and these limits are not a total memory budget or an OS sandbox.
-The independent body background-color, font color, face, size and table-spacing
-limits (`MaxBodyBackgroundColorAttributeCharacters`,
+The independent body background-color, body text-color, font color, face, size
+and table-spacing limits (`MaxBodyBackgroundColorAttributeCharacters`,
+`MaxBodyTextColorAttributeCharacters`,
 `MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
 `MaxFontSizeAttributeCharacters` and `MaxTableSpacingAttributeCharacters`) are
 checked before processing their attributes, including values that do not yield

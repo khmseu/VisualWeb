@@ -30,6 +30,9 @@ public sealed record CssOptions
     /// <summary>Maximum aggregate raw UTF-16 units in HTML body bgcolor attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#the-page">body background-color hint</see>.</remarks>
     public int MaxBodyBackgroundColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in HTML body text attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#the-page">body text color hint</see>.</remarks>
+    public int MaxBodyTextColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate UTF-16 units in font color attributes per style computation.</summary>
     public int MaxFontColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate UTF-16 units in font face attributes per style computation.</summary>
@@ -58,6 +61,7 @@ public sealed record CssOptions
     internal void Validate()
     {
         if (MaxInputCharacters <= 0 || MaxBodyBackgroundColorAttributeCharacters <= 0
+            || MaxBodyTextColorAttributeCharacters <= 0
             || MaxFontColorAttributeCharacters <= 0 || MaxFontFaceAttributeCharacters <= 0
             || MaxFontSizeAttributeCharacters <= 0 || MaxTableSpacingAttributeCharacters <= 0
             || MaxTableWidthAttributeCharacters <= 0
@@ -86,6 +90,7 @@ internal sealed class CssContext
     private int matchDepth;
     private int assignments;
     private int bodyBackgroundColorCharacters;
+    private int bodyTextColorCharacters;
     private int fontColorCharacters;
     private int fontFaceCharacters;
     private int fontSizeCharacters;
@@ -144,6 +149,14 @@ internal sealed class CssContext
         if (length > Options.MaxBodyBackgroundColorAttributeCharacters - bodyBackgroundColorCharacters)
         { throw new CssLimitException("CSS body bgcolor attribute character limit exceeded."); }
         bodyBackgroundColorCharacters += length;
+    }
+
+    internal void BodyTextColorCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxBodyTextColorAttributeCharacters - bodyTextColorCharacters)
+        { throw new CssLimitException("CSS body text attribute character limit exceeded."); }
+        bodyTextColorCharacters += length;
     }
 
     internal void FontFaceCharacters(int length)

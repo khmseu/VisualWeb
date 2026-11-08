@@ -7,6 +7,9 @@ HTML `body bgcolor` uses the HTML legacy-color algorithm as a bounded
 `background-color` presentational hint; other elements' `bgcolor` attributes
 are ignored. Its independent per-computation raw UTF-16 limit is
 `MaxBodyBackgroundColorAttributeCharacters`.
+HTML `body text` uses the same legacy-color algorithm as a bounded inherited
+`color` presentational hint. Its independent per-computation raw UTF-16 limit
+is `MaxBodyTextColorAttributeCharacters`.
 HTML `font color` uses the full bounded legacy-color algorithm at the author
 presentational hint origin. HTML `font size` uses the
 [legacy font size algorithm](https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size)

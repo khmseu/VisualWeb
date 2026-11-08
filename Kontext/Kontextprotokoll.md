@@ -6562,3 +6562,43 @@ presentational hint`) ist auf `main` gepusht.
 - Status: Pass 10 ist abgeschlossen; alle zehn getrennten Inkremente des
   angeforderten Laufs sind implementiert, validiert, committet, gepusht und
   CI-gruen.
+
+### KP-247 - Neuer Zehn-Passen-Lauf und Pass 1 abgegrenzt
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-246.
+- Nutzerangabe: Der Nutzer startete `/missing-priority-implementation` erneut
+  mit dem Argument `10`; damit sind zehn getrennte Inkremente angefordert.
+- Ableitung / Auswahl: Fuer Pass 1 wird HTML `body[text]` gewaehlt. Der
+  empfohlene Tracker priorisiert Lesbarkeit einfacher statischer Seiten, und
+  der lokale HTML-Abschnitt `#the-page` definiert fuer dieses Attribut einen
+  Legacy-Farb-Hinweis auf `color`. Das nutzt den vorhandenen Legacy-Color-
+  Parser und erweitert dieselbe eng begrenzte Body-Attribut-Kompatibilitaet,
+  ohne Ressourcen zu laden.
+- Quellen: `plans/Missing.md#recommended-priority`, `specs/cache/html.html#the-page`
+  (HTML-Cache am 2026-11-07 geprueft), aktuelle CSS-Engine und
+  `HtmlLegacyColor`.
+- Status: Scope ausgewaehlt; Implementierung und Verifikation ausstehend.
+
+### KP-248 - Pass 1 body[text] implementiert und fokussiert geprueft
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-247.
+- Belegt: `body[text]` wird mit `HtmlLegacyColor.Parse` als author
+  presentational hint fuer `color` angewandt; normale Vererbung reicht ihn an
+  Nachfahren weiter. Das rohe UTF-16-Attribut wird vor dem Parsen durch eine
+  eigene aggregierte `MaxBodyTextColorAttributeCharacters`-Grenze geprueft.
+- Belegt: CSS-Tests decken Legacy-Farben, ungueltige Werte, Kaskade,
+  Vererbung/Mutation, aggregierte Grenze/Assignments und andere Elemente ab.
+  Ein Offline-Content-Test bestaetigt die geerbte Glyphenfarbe und BGRA-Pixel.
+  Die gezielten Testlaeufe bestehen (CSS 8, Content 1).
+- Belegt: Solution-Build (0 Warnungen/Fehler), CSS-Projekt (1.199 Tests),
+  Content-Projekt (102 Tests) und Formatpruefung bestehen. Im Volltest
+  bestehen alle Projekte ausser VisualWeb.Browser.Tests, das 1.332 von 1.333
+  Tests besteht; `InlineScriptTests.StructuralEqualityObservesLifecycleChangesWithTransactionalResize(process: True)`
+  ueberschreitet dort das V8-Ausfuehrungsdeadline. Der isolierte Wiederholungslauf
+  beider Theoriefaelle besteht (2 Tests). Eine Ursache des Volltest-Timeouts ist
+  nicht nachgewiesen; `git diff --check` besteht.
+- Quelle: `specs/cache/html.html#the-page`, Cache geprueft am 2026-11-07;
+  fokussierte Tests in `tests/Engine.Css.Tests/BodyTextColorHintTests.cs` und
+  `tests/Engine.Content.Tests/BodyTextColorHintTests.cs`.
+- Offen: Commit/Push und CI stehen aus; der Volltest hatte den beschriebenen
+  isoliert erfolgreichen Timeout-Fall.

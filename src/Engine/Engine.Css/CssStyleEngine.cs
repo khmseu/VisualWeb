@@ -261,6 +261,13 @@ public static class CssStyleEngine
         return HtmlLegacyColor.Parse(bgcolor, context.Cancellation);
     }
 
+    private static CssColor? GetBodyTextColorHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName != "body" || element.GetAttribute("text") is not { } text) { return null; }
+        context.BodyTextColorCharacters(text.Length);
+        return HtmlLegacyColor.Parse(text, context.Cancellation);
+    }
+
     private static CssLength? TryParseNonZeroDimensionValue(string input, CancellationToken cancellationToken)
     {
         var position = 0;
@@ -404,6 +411,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("background-color", bodyBackgroundColor, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetBodyTextColorHint(element, context) is { } bodyTextColor)
+            {
+                context.Assignment();
+                Add(new("color", bodyTextColor, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (element.LocalName == "font" && element.GetAttribute("color") is { } colorAttribute)

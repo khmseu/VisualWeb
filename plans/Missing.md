@@ -1131,6 +1131,17 @@ development (Run 42490116966), Windows confinement x64/arm64 (Run 42490116900)
 and Push-on-main/CodeQL (Run 42490116932) pass. Pass 10 and the requested
 ten-increment run are complete.
 
+For the next ten-increment request, Pass 1 adds HTML `body[text]` as a
+bounded legacy-color `color` presentational hint. It inherits through ordinary
+CSS, has an independent aggregate raw-attribute budget, and is verified by
+focused cascade/budget tests and an offline rendered-pixel regression. CSS
+(1,199), Content (102), the solution build (0 warnings/errors), and format
+verification pass. The full solution run passed every test assembly except for
+one `VisualWeb.Browser.Tests.InlineScriptTests.StructuralEqualityObservesLifecycleChangesWithTransactionalResize(process: True)`
+V8 deadline timeout; the full Browser project had 1,332 passes and that single
+failure. Rerunning the two cases of that test in isolation passed. No cause for
+the full-run timeout is established. Commit, push, and CI validation remain.
+
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
 ### 6. A persistent browser JavaScript environment
