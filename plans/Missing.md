@@ -1151,7 +1151,10 @@ unvisited without history access; `vlink`/`:visited` and `alink`/`:active`
 remain unsupported. Cascade, inherited glyph color, mutation, raw UTF-16 and
 assignment limits, and offline pixel regressions pass. CSS (1,208), Content
 (103), the solution build (0 warnings/errors), all 16,327 solution tests, and
-format verification pass locally. Commit, push, and CI validation remain.
+format verification pass locally. Commit `8716cd6` is pushed; Linux development
+(Run 42503046700), Windows confinement x64/arm64 (Run 42503046721), and
+Push-on-main/CodeQL (Run 42503046339) pass. Pass 2 is complete; eight
+increments remain in this request.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

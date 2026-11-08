@@ -6655,4 +6655,16 @@ presentational hint`) ist auf `main` gepusht.
   `tests/Engine.Css.Tests/BodyLinkColorHintTests.cs` und
   `tests/Engine.Content.Tests/BodyLinkColorHintTests.cs`. HTML, CSS Cascade
   und Selectors Cacheeintraege wurden am 2026-11-07 geprueft.
-- Offen: Commit/Push und CI stehen aus.
+- Belegt: Commit `8716cd6735d2ccf79f24e0f18c1ca607fd0db0cb`
+  (`feat(css): support body link color hints`) ist auf `origin/main`.
+  Linux development (Run 42503046700), Windows confinement x64/arm64
+  (Run 42503046721) und Push-on-main/CodeQL (Run 42503046339) sind erfolgreich.
+- Status: Pass 2 ist abgeschlossen; acht Inkremente des neuen Laufs verbleiben.
+
+### KP-252 - Pass 2 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-251.
+- Belegt: Alle drei CI-Laeufe fuer `8716cd6` sind erfolgreich. Worktree vor
+  dieser Kontext-/Tracker-Aktualisierung war sauber.
+- Status: Pass 2 ist vollstaendig abgeschlossen; vor Pass 3 wird die
+  aktualisierte Missing-Prioritaet erneut geprueft.

@@ -278,12 +278,16 @@
   den begrenzten HTML-`body[link]`-Legacy-Farb-Hinweis fuer statische `:link`-
   Elemente; `vlink`/`:visited` und `alink`/`:active` bleiben unsupported.
   CSS/Content, Solution-Build, 16.327 Solution-Tests und Formatpruefung
-  bestehen lokal. Commit, Push und CI stehen aus
+  bestehen lokal. `8716cd6` ist gepusht; Linux development
+  (Run 42503046700), Windows confinement x64/arm64 (Run 42503046721) und
+  Push-on-main/CodeQL (Run 42503046339) bestehen. Pass 2 ist abgeschlossen;
+  acht Inkremente verbleiben
   ([KP-247](./Kontextprotokoll.md#kp-247---neuer-zehn-passen-lauf-und-pass-1-abgegrenzt),
   KP-248,
   [KP-249](./Kontextprotokoll.md#kp-249---pass-1-committet-gepusht-und-ci-gruen),
   [KP-250](./Kontextprotokoll.md#kp-250---pass-2-waehlt-begrenzten-html-body-link-hinweis),
-  KP-251).
+  KP-251,
+  [KP-252](./Kontextprotokoll.md#kp-252---pass-2-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
