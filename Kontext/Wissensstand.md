@@ -288,6 +288,18 @@
   [KP-250](./Kontextprotokoll.md#kp-250---pass-2-waehlt-begrenzten-html-body-link-hinweis),
   KP-251,
   [KP-252](./Kontextprotokoll.md#kp-252---pass-2-committet-gepusht-und-ci-gruen)).
+  Pass 3 ist als begrenzte Darstellung fuer `<dir>` ausgewaehlt: direkte
+  `li`-Kinder nutzen die vorhandene Aussenmarker-Geometrie samt HTML-UA-
+  Block-/Einrueckungs-/Tiefenregeln. Das erweitert keine DOM-List-Owner-
+  Semantik, geordnete Listen, Inside-Marker oder beliebige List-Items
+  ([KP-253](./Kontextprotokoll.md#kp-253---pass-3-waehlt-begrenzte-dir-listenpraesentation)).
+  Pass 3 ist lokal implementiert: CSS (1.209), Layout (909),
+  Content (104), Solution-Build (0 Warnungen/Fehler), Volltest (16.330),
+  Formatpruefung und Whitespace-Check bestehen. Ein erster Volltest traf zwei
+  CPU-Druck-/Renderer-Scope-Fehler; die betroffenen Faelle bestanden isoliert,
+  ein cgroup-Pfadfehler reproduzierte auf dem Basiscommit `1b749f6`, und der
+  anschliessende Volltest bestand. Featurecommit, Push und CI stehen aus
+  ([KP-254](./Kontextprotokoll.md#kp-254---pass-3-dir-listenpraesentation-implementiert-und-lokal-validiert)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

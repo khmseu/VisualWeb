@@ -236,12 +236,12 @@ public static partial class StaticLayout
                 return;
             }
             if (Display(element) == "list-item"
-                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" or "ol" or "menu" }))
+                && (element.LocalName != "li" || element.ParentNode is not DomElement { LocalName: "ul" or "ol" or "menu" or "dir" }))
             {
-                throw new UnsupportedLayoutException("List-item markers require a direct ul, ol or menu parent.");
+                throw new UnsupportedLayoutException("List-item markers require a direct ul, ol, menu or dir parent.");
             }
-            if (element.LocalName is "ul" or "ol" or "menu" or "li"
-                && (!block || element.LocalName != "menu" && element.GetAttribute("type") is not null
+            if (element.LocalName is "ul" or "ol" or "menu" or "dir" or "li"
+                && (!block || element.LocalName is not ("menu" or "dir") && element.GetAttribute("type") is not null
                     && !CssStyleEngine.TryGetListTypeHint(element, out _)))
             {
                 throw new UnsupportedLayoutException("List elements require block layout and, where applicable, a supported legacy type attribute.");
@@ -304,7 +304,7 @@ public static partial class StaticLayout
             Visit();
             if (++boxes > options.MaxBoxes) { throw new LayoutLimitException("Layout box limit exceeded."); }
             var style = Style(element);
-            if (element.LocalName is "ul" or "ol" or "menu") { PrepareList(element); }
+            if (element.LocalName is "ul" or "ol" or "menu" or "dir") { PrepareList(element); }
             var table = Display(element) == "table" ? PlanTable(element, containingWidth, depth) : null;
             var padding = Edges(style, "padding", containingWidth);
             var border = Edges(style, "border", containingWidth, "-width");

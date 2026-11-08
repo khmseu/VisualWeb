@@ -747,7 +747,7 @@ The current engine implements finite static block/inline rendering. Missing esse
 - Images/replaced elements, general controls and broader list
   styling, decorations, nested scrolling, and general overflow layout. Root
   horizontal document scrolling is browser-owned and does not implement CSS overflow.
-- Default `ul` and `menu` unordered lists now render with outside markers, including
+- Default `ul`, `menu` and legacy `dir` unordered lists now render with outside markers, including
   nested and empty items. UA items use `display:list-item`; inherited
   `list-style-type:disc/circle/square/decimal/decimal-leading-zero/none`, the alphabetic and Roman
   styles `lower-alpha`/`upper-alpha`/`lower-roman`/`upper-roman` and the
@@ -765,11 +765,13 @@ The current engine implements finite static block/inline rendering. Missing esse
   rectangle or a single clipped, inset outline command respectively. The
   HTML UA marker defaults now use circles with one list ancestor and squares
   with two or more; ordered lists remain decimal, author styles still override
-  UA rules. `menu` has `ul`-equivalent block/padding and bounded list layout;
-  `dir` participates only in CSS marker rules.
+  UA rules. `menu` has `ul`-equivalent block/padding and bounded list layout.
+  `dir` uses its HTML block/padding/marker defaults and bounded direct-`li`
+  geometry as presentation only, without DOM list ownership or ordered-list
+  behavior.
   HTML UA list margins are 1em above and below outer lists and zero on
   descendants of `dir`/`dl`/`menu`/`ol`/`ul`; vertical writing and
-  `dir` list layout remain unsupported.
+  arbitrary `display:list-item` elements remain unsupported.
   Numbering attributes accept HTML integer
   syntax within signed 32-bit limits and fail visibly beyond that range.
   Legacy `type` hints support ASCII-case-insensitive disc/circle/square/none
@@ -1155,6 +1157,20 @@ format verification pass locally. Commit `8716cd6` is pushed; Linux development
 (Run 42503046700), Windows confinement x64/arm64 (Run 42503046721), and
 Push-on-main/CodeQL (Run 42503046339) pass. Pass 2 is complete; eight
 increments remain in this request.
+
+Pass 3 implements the explicitly documented gap in ordinary list rendering:
+bounded `<dir>` support. It reuses the existing outside-marker layout for
+direct `li` children and the HTML UA block, 40px start-padding, list-margin and
+depth-dependent marker defaults. This is presentation only; it does not add
+DOM list ownership, ordered-list behavior, inside markers, or arbitrary
+`display:list-item` support. The local HTML source (`#lists`) was checked on
+2026-11-08. CSS (1,209), Layout (909), and Content (104) tests pass. The
+solution build has zero warnings/errors; all 16,330 solution tests and format
+verification pass. The first solution-wide run encountered two unrelated
+CPU-pressure browser-test failures; all three affected test cases passed in
+isolation on the implementation, and the missing-cgroup-path failure also
+reproduced on the unchanged base commit. The subsequent full solution run
+passed. `git diff --check` passes. Commit, push and CI remain.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

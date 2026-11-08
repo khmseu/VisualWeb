@@ -6668,3 +6668,40 @@ presentational hint`) ist auf `main` gepusht.
   dieser Kontext-/Tracker-Aktualisierung war sauber.
 - Status: Pass 2 ist vollstaendig abgeschlossen; vor Pass 3 wird die
   aktualisierte Missing-Prioritaet erneut geprueft.
+
+### KP-253 - Pass 3 waehlt begrenzte dir-Listenpraesentation
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-252.
+- Ableitung / Auswahl: Der aktualisierte Prioritaet-1-Eintrag nennt gewoehnliche
+  Listen fuer einfache statische Seiten. Der Tracker und die Layout-Guides
+  bezeichnen `dir` ausdruecklich als nicht layoutunterstuetzt, obwohl der
+  lokale HTML-UA-Abschnitt `#lists` `dir` als Block, mit 40px Start-Padding,
+  Listenmargen und den Disc/Circle/Square-Defaults fuehrt.
+- Begrenzter Umfang: Die vorhandene Aussenmarker-Geometrie wird fuer direkte
+  `li`-Kinder von `<dir>` freigegeben. Das ist nur Darstellung; es wird kein
+  DOM-List-Owner, keine geordnete Listenbehandlung, kein Inside-Marker und
+  kein beliebiges `display:list-item` ergaenzt.
+- Belegt: HTML-Cacheeintrag `html` ist laut `specs/manifest.json` am
+  2026-11-07 geprueft; CSS- und Layout-Guides sowie die aktuelle Layout-
+  Validierung/Testmuster wurden gelesen. Keine SpecCache-Aktualisierung noetig.
+- Status: Scope ausgewaehlt; Implementierung und Verifikation ausstehend.
+
+### KP-254 - Pass 3 dir-Listenpraesentation implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-253.
+- Belegt: Die HTML-UA-Regeln setzen `dir` jetzt als Block mit 40px
+  Start-Padding. Layout akzeptiert direkte sichtbare `li`-Kinder und nutzt die
+  bestehende begrenzte Marker-Geometrie. Kein DOM-List-Owner, geordnetes
+  Listenverhalten, Inside-Marker oder beliebige List-Items werden hinzugefuegt.
+- Belegt: CSS (1.209), Layout (909) und Content (104), Solution-Build
+  (0 Warnungen/Fehler), Volltest (16.330), Formatpruefung und
+  `git diff --check` bestehen.
+- Belegt: Der erste Volltest traf zwei CPU-Druck-/Renderer-Scope-Fehler in
+  `VisualWeb.Browser.Tests`; die drei betroffenen Faelle bestanden isoliert
+  auf dem geaenderten Stand. Der fehlende cgroup-`cpu.stat`-Pfad trat auch
+  beim gezielten Lauf auf dem unveraenderten Basiscommit `1b749f6` auf. Ein
+  anschliessender Volltest bestand vollstaendig.
+- Quellen: `specs/cache/html.html#lists` (HTML am 2026-11-07 geprueft),
+  CSS-/Layout-Guides, `CascadeTests`, `LayoutTests` und der
+  Offline-Paint-Test `DirDefaultMarkersReachOfflinePaint`.
+- Offen: Featurecommit, Push und CI stehen aus.

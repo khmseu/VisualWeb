@@ -188,6 +188,18 @@ public sealed class CascadeTests
         Assert.Equal(new CssKeyword("outside"), Child(defaults, doc)["list-style-position"]);
         Assert.Equal(new CssKeyword("none"), Child(defaults, doc)["list-style-image"]);
         Assert.Equal(new CssLength(40, "px"), defaults.Styles[doc.GetElementById("parent")!]["padding-left"]);
+    }
+
+    [Fact]
+    public void DirUsesHtmlBlockIndentAndUnorderedMarkerDefaults()
+    {
+        var doc = Document("<dir id=parent><li id=child>item</li></dir>");
+        var result = Compute(doc);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssKeyword("block"), result.Styles[doc.GetElementById("parent")!]["display"]);
+        Assert.Equal(new CssLength(40, "px"), result.Styles[doc.GetElementById("parent")!]["padding-left"]);
+        Assert.Equal(new CssKeyword("list-item"), Child(result, doc)["display"]);
+        Assert.Equal(new CssKeyword("disc"), Child(result, doc)["list-style-type"]);
         var suppressed = Compute(doc, new CssStyleSource("#parent{list-style-type:none}"));
         Assert.Empty(suppressed.Diagnostics);
         Assert.Equal(new CssKeyword("none"), Child(suppressed, doc)["list-style-type"]);

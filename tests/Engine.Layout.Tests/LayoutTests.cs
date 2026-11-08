@@ -91,6 +91,26 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void DirItemsUseTheSameDefaultOutsideGeometryAsUnorderedLists()
+    {
+        const string items = "<li id=a>a b</li><li id=b></li>";
+        var dir = UnorderedList("<dir id=list>" + items + "</dir>", width: 50).Root!;
+        var unordered = UnorderedList("<ul id=list>" + items + "</ul>", width: 50).Root!;
+        Assert.Equal(Find(unordered, "list").Content, Find(dir, "list").Content);
+        foreach (var id in new[] { "a", "b" })
+        {
+            var actual = Find(dir, id);
+            var expected = Find(unordered, id);
+            Assert.Equal(expected.Content, actual.Content);
+            Assert.Equal(expected.DiscMarker, actual.DiscMarker);
+            Assert.Equal(expected.Lines.Count, actual.Lines.Count);
+        }
+        Assert.Equal(new LayoutRect(32, 3, 3, 3), Find(dir, "a").DiscMarker);
+        Assert.Equal(2, Find(dir, "a").Lines.Count);
+        Assert.Equal(10, Find(dir, "b").Content.Height);
+    }
+
+    [Fact]
     public void NestedMenuAndUnorderedListsUseExistingDepthAndMarginRules()
     {
         var root = UnorderedList(
@@ -105,6 +125,18 @@ public sealed class LayoutTests
         Assert.Equal("9.", Find(ordered, "a").TextMarker!.Run.Text);
         Assert.NotNull(Find(ordered, "b").CircleMarker);
         Assert.Equal("10.", Find(ordered, "c").TextMarker!.Run.Text);
+    }
+
+    [Fact]
+    public void NestedDirUsesExistingDepthDependentMarkerRules()
+    {
+        var root = UnorderedList(
+            "<dir><li id=a><ul><li id=b><dir><li id=c></li></dir></li></ul></li></dir>",
+            width: 180).Root!;
+        Assert.NotNull(Find(root, "a").DiscMarker);
+        Assert.NotNull(Find(root, "b").CircleMarker);
+        Assert.NotNull(Find(root, "c").SquareMarker);
+        Assert.Equal(10, Find(root, "c").Content.Height);
     }
 
     [Fact]
@@ -132,9 +164,9 @@ public sealed class LayoutTests
     [InlineData("<menu style='display:inline'></menu>")]
     [InlineData("<menu style='display:inline'><li>x</li></menu>")]
     [InlineData("<menu><li type=triangle>x</li></menu>")]
-    [InlineData("<dir><li>x</li></dir>")]
+    [InlineData("<dir style='display:inline'><li>x</li></dir>")]
     [InlineData("<div><li>x</li></div>")]
-    public void MenuSupportKeepsUnsupportedListContextsExplicit(string html) =>
+    public void ListSupportKeepsUnsupportedContextsExplicit(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));
 
     [Fact]
@@ -332,7 +364,6 @@ public sealed class LayoutTests
     [InlineData("<ul type='circle '><li>x</li></ul>")]
     [InlineData("<ul type='di\u017fc'><li>x</li></ul>")]
     [InlineData("<ul><li type=x>x</li></ul>")]
-    [InlineData("<dir><li>x</li></dir>")]
     [InlineData("<li>x</li>")]
     public void UnimplementedListKindsRemainExplicitFailures(string html) =>
         Assert.Throws<UnsupportedLayoutException>(() => UnorderedList(html));

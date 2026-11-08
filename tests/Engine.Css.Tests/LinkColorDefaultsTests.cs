@@ -131,11 +131,11 @@ public sealed class LinkColorDefaultsTests
         // Caption and the two column display defaults add three compiled assignments.
         // The four elements (html, head, body, a) each check 117 top-level selectors and
         // 11 unmatched :is() subject alternatives, at two operations per simple selector.
-        const int assignments = 74;
-        const long matches = 1024; // 4 * (117 + 11) * 2
+        const int assignments = 76;
+        const long matches = 1032; // 4 * (118 + 11) * 2
         // The author rule adds one compiled assignment and one selector evaluation per element.
-        const int authorAssignments = 75;
-        const long authorMatches = 1032;
+        const int authorAssignments = 77;
+        const long authorMatches = 1040;
         CssStyleSource[] author = [new("a{color:red}")];
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));

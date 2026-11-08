@@ -67,6 +67,7 @@ public static class CssStyleEngine
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }
         [hidden]:not([hidden=until-found i]):not(embed) { display: none }
+        dir { display: block; padding-left: 40px }
         body { margin: 8px }
         p, blockquote, pre, listing, xmp, plaintext, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         :is(dir, dl, menu, ol, ul) :is(dir, dl, menu, ol, ul) { margin-top: 0; margin-bottom: 0 }

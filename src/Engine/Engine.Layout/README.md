@@ -18,7 +18,7 @@ cancellation limits, even offscreen. A rendered select with a display-none
 descendant fails rather than altering option selectedness or submission; a
 display-none select and its subtree remain exempt.
 
-Unordered `ul` and `menu` lists use block list-item boxes with separate outside marker geometry;
+Unordered `ul`, `menu` and legacy `dir` lists use block list-item boxes with separate outside marker geometry;
 nested/empty items and inherited marker suppression are bounded. HTML UA defaults
 use discs, circles and squares at increasing list depth. Circles and squares use
 the same outside geometry as discs; circles are hollow.
@@ -32,7 +32,9 @@ than extended overlined forms. Scans and output share existing budgets.
 Legacy `type` hints support disc/circle/square/none on `ul`/`li` and exact
 `1`/`a`/`A`/`i`/`I` on `ol`/`li`; unsupported values still fail explicitly.
 `menu` ignores `type`, `start` and `reversed` for list rendering. Inside markers, other
-marker styles, `dir` list layout and arbitrary list-item elements remain unsupported. See the
+marker styles and arbitrary list-item elements remain unsupported. `dir` is
+presentation-only: its direct `li` children use unordered marker geometry,
+without DOM list ownership or ordered-list attributes. See the
 guide for exact geometry.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,

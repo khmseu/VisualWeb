@@ -122,12 +122,13 @@ form submission, including selected hidden options.
 
 ### Default unordered lists
 
-Visible block `ul` and `menu` containers and their direct `li` children support
+Visible block `ul`, `menu` and legacy `dir` containers and their direct `li` children support
 outside markers. UA styles give lists 40px left padding and items
 `display:list-item`; unordered lists default to discs at the outermost level,
 circles with one list ancestor, and squares with two or more list ancestors.
 `ol`, `ul`, `dir` and `menu` count as ancestors, but `dir` list layout
-itself remains unsupported. A `menu` uses the same bounded unordered-list
+itself is presentation-only and does not create DOM list ownership or ordered
+list behavior. A `menu` uses the same bounded unordered-list
 rendering as `ul`; this does not add toolbar interaction or menu-specific APIs.
 HTML UA vertical margins are 1em on outer lists and zero on lists nested within
 `dir`, `dl`, `menu`, `ol` or `ul`; author styles may override those defaults.

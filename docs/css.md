@@ -160,7 +160,10 @@ not listed above. No selector silently approximates these features.
 
 The bounded list subset gives `li` a UA `display:list-item` default and
 `ol` decimal markers. Following the [HTML list rendering rules](https://html.spec.whatwg.org/multipage/rendering.html#lists)
-(local ID `html`), `ul`/`dir`/`menu` default to disc with no list ancestor,
+(local ID `html`), `dir`, `ul` and `menu` use block display and 40px start
+padding. Layout supports direct `li` children of `dir` using the existing
+bounded unordered-list geometry; this does not add DOM list ownership or
+ordered-list semantics. `ul`/`dir`/`menu` default to disc with no list ancestor,
 circle with one, and square with two or more; `dir`, `menu`, `ol` and `ul`
 all count as list ancestors, including across intermediate elements.
 Ordered-list UA defaults remain decimal at every depth. Author/user cascade and disabling
@@ -183,8 +186,10 @@ therefore retains decimal markers. Duplicate components or unsupported values
 (inside, images, other marker types) diagnose the whole declaration without
 partially changing longhands.
 The UA sheet gives `menu` the same block display and 40px start padding as
-`ul`. Layout currently accepts visible list-item boxes only for direct `li`
-children of `ul`, `ol` or `menu`; `dir` list layout remains unsupported.
+`ul`; legacy `dir` uses the HTML block, start-padding and unordered-marker
+defaults. Layout accepts visible list-item boxes only for direct `li` children
+of `dir`, `ul`, `ol` or `menu`. `dir` support is presentation-only and does
+not add DOM list ownership or ordered-list behavior.
 
 The supported [HTML list `type` hints](https://html.spec.whatwg.org/multipage/rendering.html#lists)
 (local ID `html`) map ASCII-case-insensitive `disc`, `circle`, `square` and

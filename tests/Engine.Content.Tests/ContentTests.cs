@@ -450,6 +450,29 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void DirDefaultMarkersReachOfflinePaint()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><dir><li>one</li><li>two</li></dir>";
+        CssStyleSource[] styles = [new("html,body{margin:0}*{font-size:20px;line-height:20px;color:red}")];
+        var page = OfflinePageRenderer.Render(html, styles, text, fonts, 100, 60, cancellationToken: Cancellation);
+        Assert.Empty(page.Styles.Diagnostics);
+        var markers = page.DisplayList.Commands.OfType<FillEllipse>().ToArray();
+        Assert.Equal(2, markers.Length);
+        Assert.All(markers, marker =>
+        {
+            Assert.Equal(new CssColor(255, 0, 0), marker.Color);
+            Assert.Equal(24, marker.Bounds.X);
+            var x = (int)Math.Floor(marker.Bounds.X + marker.Bounds.Width / 2);
+            var y = (int)Math.Floor(marker.Bounds.Y + marker.Bounds.Height / 2);
+            var offset = y * page.Frame.Stride + x * 4;
+            Assert.Equal(new byte[] { 0, 0, 255, 255 }, page.Frame.Pixels.Span[offset..(offset + 4)].ToArray());
+        });
+    }
+
+    [Fact]
     public void CircleMarkersKeepTransparentCentersAndSurviveRetainedResize()
     {
         using var font = new TextFont(FontPath);
