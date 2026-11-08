@@ -6704,4 +6704,17 @@ presentational hint`) ist auf `main` gepusht.
 - Quellen: `specs/cache/html.html#lists` (HTML am 2026-11-07 geprueft),
   CSS-/Layout-Guides, `CascadeTests`, `LayoutTests` und der
   Offline-Paint-Test `DirDefaultMarkersReachOfflinePaint`.
-- Offen: Featurecommit, Push und CI stehen aus.
+
+### KP-255 - Pass 3 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-254.
+- Nutzerangabe: Der Nutzer bat um Fortsetzung des laufenden Zehn-Inkrement-
+  Auftrags; sieben Inkremente verbleiben nach Pass 3.
+- Belegt: Featurecommit `14295262aec9d0026d93b91380ad5db9c733f48c`
+  (`feat(layout): render bounded legacy dir lists`) ist auf `origin/main`.
+- Belegt: Linux development (Run 42510288621), Windows confinement
+  x64/arm64 (Run 42510288595) und Push-on-main/CodeQL (Run 42510288546)
+  sind erfolgreich.
+- Status / naechster Schritt: Pass 3 ist abgeschlossen. Den aktuellen
+  Missing-Tracker erneut pruefen und den naechsten konkreten, nicht
+  implementierten Prioritaet-1-Schritt fuer Pass 4 auswaehlen.

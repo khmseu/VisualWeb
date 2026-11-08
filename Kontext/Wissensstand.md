@@ -298,8 +298,11 @@
   Formatpruefung und Whitespace-Check bestehen. Ein erster Volltest traf zwei
   CPU-Druck-/Renderer-Scope-Fehler; die betroffenen Faelle bestanden isoliert,
   ein cgroup-Pfadfehler reproduzierte auf dem Basiscommit `1b749f6`, und der
-  anschliessende Volltest bestand. Featurecommit, Push und CI stehen aus
-  ([KP-254](./Kontextprotokoll.md#kp-254---pass-3-dir-listenpraesentation-implementiert-und-lokal-validiert)).
+  anschliessende Volltest bestand. Commit `1429526` ist gepusht; Linux
+  (Run 42510288621), Windows x64/arm64 (Run 42510288595) und CodeQL
+  (Run 42510288546) bestehen. Pass 3 ist abgeschlossen; sieben Inkremente
+  verbleiben ([KP-254](./Kontextprotokoll.md#kp-254---pass-3-dir-listenpraesentation-implementiert-und-lokal-validiert),
+  [KP-255](./Kontextprotokoll.md#kp-255---pass-3-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

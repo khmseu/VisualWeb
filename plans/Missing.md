@@ -1170,7 +1170,10 @@ verification pass. The first solution-wide run encountered two unrelated
 CPU-pressure browser-test failures; all three affected test cases passed in
 isolation on the implementation, and the missing-cgroup-path failure also
 reproduced on the unchanged base commit. The subsequent full solution run
-passed. `git diff --check` passes. Commit, push and CI remain.
+passed. `git diff --check` passes. Commit `1429526` is pushed; Linux
+development (Run 42510288621), Windows confinement x64/arm64
+(Run 42510288595) and Push-on-main/CodeQL (Run 42510288546) pass.
+Pass 3 is complete; seven increments remain.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
