@@ -6718,3 +6718,31 @@ presentational hint`) ist auf `main` gepusht.
 - Status / naechster Schritt: Pass 3 ist abgeschlossen. Den aktuellen
   Missing-Tracker erneut pruefen und den naechsten konkreten, nicht
   implementierten Prioritaet-1-Schritt fuer Pass 4 auswaehlen.
+
+### KP-256 - Pass 4 waehlt die HTML-Einrueckung von dd
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-255.
+- Ableitung / Auswahl: Prioritaet 1 umfasst gewoehnliche HTML-Listen. Der
+  lokale HTML-UA-Abschnitt `#lists` gibt `dd` `margin-inline-start:40px`;
+  das CSS-UA-Stylesheet setzte bisher keine Einrueckung. Das ist eine kleine,
+  sichtbare LTR-Ergaenzung ueber die vorhandene Blocklayout-Geometrie.
+- Begrenzter Umfang: Das logische HTML-Startmass wird nur in der bestehenden
+  horizontalen LTR-Teilmenge als `margin-left:40px` abgebildet. Keine neue
+  CSS-Logikeigenschaft und keine RTL-/Vertikaltext-Unterstuetzung.
+- Belegt: Der HTML-Cacheeintrag `html` wurde laut Manifest am 2026-11-07
+  geprueft; keine SpecCache-Aktualisierung war erforderlich.
+- Status: Scope ausgewaehlt; Implementierung folgte in KP-257.
+
+### KP-257 - Pass 4 dd-Einrueckung implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-256.
+- Belegt: Die HTML-UA-Regel setzt `dd` auf `margin-left:40px`. Tests decken
+  den Standardwert, Author-Override, deaktiviertes UA-Stylesheet und 40px
+  Layout-Geometrie ab. Die exakten CSS-Budgettests wurden um die neue
+  UA-Regel erweitert.
+- Belegt: CSS (1.210), Layout (910), Solution-Build (0 Warnungen/Fehler),
+  Volltest (16.332), Formatpruefung und `git diff --check` bestehen.
+- Quellen: `specs/cache/html.html#lists` (HTML am 2026-11-07 geprueft),
+  CSS-/Layout-Guides, `CascadeTests`, `LayoutTests`,
+  `LinkColorDefaultsTests`, `HiddenDefaultsTests` und `SearchDefaultsTests`.
+- Offen: Featurecommit, Push und CI stehen aus.

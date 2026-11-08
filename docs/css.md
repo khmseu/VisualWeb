@@ -173,6 +173,9 @@ bottom margins and reset both margins to zero for descendants of any of those
 five list types, including across intermediate elements. These physical
 properties are the horizontal-writing equivalent of HTML's block margins;
 they do not add vertical writing support.
+HTML's `dd` default maps `margin-inline-start:40px` to `margin-left:40px` in
+the supported horizontal LTR layout. Author styles override it normally;
+RTL and vertical writing mappings remain unsupported.
 List-style longhands participate in normal inheritance and CSS-wide keywords;
 only disc/circle/square/decimal/none, `decimal-leading-zero`, the alphabetic `lower-alpha`,
 `upper-alpha`, `lower-latin` and `upper-latin`, and the `lower-roman`/

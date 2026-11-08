@@ -14,6 +14,8 @@ HTML `body link` applies the legacy-color algorithm to the `color` of static
 `:link` elements. Link matching does not access history; `vlink`/`:visited` and
 `alink`/`:active` remain unsupported. Its independent per-computation raw
 UTF-16 limit is `MaxBodyLinkColorAttributeCharacters`.
+HTML definition-list descriptions receive the bounded UA start indent as a
+physical left margin in the horizontal LTR layout subset.
 HTML `font color` uses the full bounded legacy-color algorithm at the author
 presentational hint origin. HTML `font size` uses the
 [legacy font size algorithm](https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size)

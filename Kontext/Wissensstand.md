@@ -303,6 +303,14 @@
   (Run 42510288546) bestehen. Pass 3 ist abgeschlossen; sieben Inkremente
   verbleiben ([KP-254](./Kontextprotokoll.md#kp-254---pass-3-dir-listenpraesentation-implementiert-und-lokal-validiert),
   [KP-255](./Kontextprotokoll.md#kp-255---pass-3-committet-gepusht-und-ci-gruen)).
+  Pass 4 fuegt den HTML-`dd`-Startabstand hinzu: `margin-inline-start:40px`
+  wird im horizontalen LTR-Subset als `margin-left:40px` abgebildet; logische
+  CSS-Eigenschaften, RTL und vertikale Schreibrichtung sind nicht Teil davon.
+  CSS (1.210), Layout (910), Solution-Build (0 Warnungen/Fehler), Volltest
+  (16.332), Formatpruefung und Whitespace-Check bestehen. Commit, Push und CI
+  stehen aus; danach verbleiben sechs Inkremente
+  ([KP-256](./Kontextprotokoll.md#kp-256---pass-4-waehlt-die-html-einrueckung-von-dd),
+  [KP-257](./Kontextprotokoll.md#kp-257---pass-4-dd-einrueckung-implementiert-und-lokal-validiert)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

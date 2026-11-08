@@ -36,6 +36,8 @@ marker styles and arbitrary list-item elements remain unsupported. `dir` is
 presentation-only: its direct `li` children use unordered marker geometry,
 without DOM list ownership or ordered-list attributes. See the
 guide for exact geometry.
+Definition-list descriptions use the HTML start indent as a physical left
+margin in this horizontal LTR layout subset.
 
 Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
 `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,

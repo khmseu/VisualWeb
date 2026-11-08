@@ -128,14 +128,14 @@ public sealed class LinkColorDefaultsTests
         var document = Parse("<a id=target href>text</a>");
         // The page matches 61 UA declarations including :link underline; mark adds two
         // assignments and margin/padding expansion brings the previous total to 71.
-        // Caption and the two column display defaults add three compiled assignments.
-        // The four elements (html, head, body, a) each check 117 top-level selectors and
+        // Caption and the two column display defaults add three assignments; dd adds one.
+        // The four elements (html, head, body, a) each check 119 top-level selectors and
         // 11 unmatched :is() subject alternatives, at two operations per simple selector.
-        const int assignments = 76;
-        const long matches = 1032; // 4 * (118 + 11) * 2
+        const int assignments = 77;
+        const long matches = 1040; // 4 * (119 + 11) * 2
         // The author rule adds one compiled assignment and one selector evaluation per element.
-        const int authorAssignments = 77;
-        const long authorMatches = 1040;
+        const int authorAssignments = 78;
+        const long authorMatches = 1048;
         CssStyleSource[] author = [new("a{color:red}")];
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));

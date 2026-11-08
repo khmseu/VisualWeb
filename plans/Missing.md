@@ -1175,7 +1175,17 @@ development (Run 42510288621), Windows confinement x64/arm64
 (Run 42510288595) and Push-on-main/CodeQL (Run 42510288546) pass.
 Pass 3 is complete; seven increments remain.
 
-Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
+Pass 4 implements the HTML definition-list description indent: `dd` receives
+the HTML `margin-inline-start:40px` default, mapped to `margin-left` for the
+supported horizontal LTR layout. The existing cascade permits author
+overrides. This does not add logical-property, RTL or vertical-writing support.
+The local HTML `#lists` source was checked on 2026-11-07. CSS (1,210) and
+Layout (910) tests pass; the solution build has zero warnings/errors and all
+16,332 solution tests pass. Format verification and `git diff --check` pass.
+Commit, push and CI remain.
+
+Evidence: `CSS scope`, `layout restrictions`, `painting limitations`, and
+`specs/cache/html.html#lists`.
 
 ### 6. A persistent browser JavaScript environment
 

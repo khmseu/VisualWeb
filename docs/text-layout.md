@@ -130,6 +130,8 @@ circles with one list ancestor, and squares with two or more list ancestors.
 itself is presentation-only and does not create DOM list ownership or ordered
 list behavior. A `menu` uses the same bounded unordered-list
 rendering as `ul`; this does not add toolbar interaction or menu-specific APIs.
+Definition-list descriptions (`dd`) receive the HTML 40px start indent, mapped
+to the physical left margin in this horizontal LTR subset.
 HTML UA vertical margins are 1em on outer lists and zero on lists nested within
 `dir`, `dl`, `menu`, `ol` or `ul`; author styles may override those defaults.
 Authors may instead select `list-style-type:circle` or `list-style-type:square`,

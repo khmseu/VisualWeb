@@ -111,6 +111,21 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void DefinitionDescriptionsUseHtmlStartIndent()
+    {
+        var document = HtmlParser.Parse("<!doctype html><dl><dt id=term>term</dt><dd id=definition>meaning</dd></dl>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document,
+            [new("body{margin:0} *{font-size:10px;line-height:10px}")],
+            cancellationToken: Cancellation);
+        var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 200,
+            cancellationToken: Cancellation).Root!;
+
+        Assert.Equal(0, Find(root, "term").Content.X);
+        Assert.Equal(40, Find(root, "definition").Content.X);
+    }
+
+    [Fact]
     public void NestedMenuAndUnorderedListsUseExistingDepthAndMarginRules()
     {
         var root = UnorderedList(

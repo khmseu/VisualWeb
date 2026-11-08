@@ -227,6 +227,21 @@ public sealed class CascadeTests
     }
 
     [Fact]
+    public void DefinitionDescriptionUsesHtmlStartIndentAndAuthorStylesOverride()
+    {
+        var doc = Document("<dl><dt>term</dt><dd id=child>definition</dd></dl>");
+        var defaults = Compute(doc);
+        Assert.Empty(defaults.Diagnostics);
+        Assert.Equal(new CssLength(40, "px"), Child(defaults, doc)["margin-left"]);
+
+        var authored = Compute(doc, new CssStyleSource("#child{margin-left:7px}"));
+        Assert.Equal(new CssLength(7, "px"), Child(authored, doc)["margin-left"]);
+
+        var withoutUa = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(0, "px"), Child(withoutUa, doc)["margin-left"]);
+    }
+
+    [Fact]
     public void FigureReceivesHtmlInlineMarginsThroughTheUserAgentCascade()
     {
         var doc = Document("<figure id=parent>caption</figure>");
