@@ -15,6 +15,7 @@
 - [Linux x64/ARM64 renderer confinement, exact guarantees and denial probes](linux-confinement.md)
 - [Windows AppContainer and Job Object renderer confinement](windows-confinement.md)
 - [Standards sources, cache and citation convention](standards.md)
+- [Standards support status and implemented subsets](standards-support.md)
 - [Foundation decision record](adr/0001-browser-foundation.md)
 - [Approved phased roadmap](../plans/browser-foundation-plan.md)
 - [Spec cache tool](../tools/SpecCache/README.md)

@@ -5,6 +5,8 @@ It records IDs, official URLs, local filenames, fetch/check timestamps and HTTP
 validators. The local HTML files live under `specs/cache/`; this generated
 directory is ignored by git to avoid large document churn. The registry is
 tracked. Each developer/agent checkout bootstraps its own local cache once.
+See the [standards support status](standards-support.md) for implemented
+subsets and explicit omissions.
 
 From the repository root:
 
