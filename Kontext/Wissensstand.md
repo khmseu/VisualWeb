@@ -307,10 +307,13 @@
   wird im horizontalen LTR-Subset als `margin-left:40px` abgebildet; logische
   CSS-Eigenschaften, RTL und vertikale Schreibrichtung sind nicht Teil davon.
   CSS (1.210), Layout (910), Solution-Build (0 Warnungen/Fehler), Volltest
-  (16.332), Formatpruefung und Whitespace-Check bestehen. Commit, Push und CI
-  stehen aus; danach verbleiben sechs Inkremente
+  (16.332), Formatpruefung und Whitespace-Check bestehen. Commit `9a0f78c`
+  ist gepusht; Linux (Run 42515502225), Windows x64/arm64 (Run 42515502194)
+  und CodeQL (Run 42515501937) bestehen. Pass 4 ist abgeschlossen; sechs
+  Inkremente verbleiben
   ([KP-256](./Kontextprotokoll.md#kp-256---pass-4-waehlt-die-html-einrueckung-von-dd),
-  [KP-257](./Kontextprotokoll.md#kp-257---pass-4-dd-einrueckung-implementiert-und-lokal-validiert)).
+  [KP-257](./Kontextprotokoll.md#kp-257---pass-4-dd-einrueckung-implementiert-und-lokal-validiert),
+  [KP-258](./Kontextprotokoll.md#kp-258---pass-4-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

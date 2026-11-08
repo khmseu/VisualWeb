@@ -1182,7 +1182,9 @@ overrides. This does not add logical-property, RTL or vertical-writing support.
 The local HTML `#lists` source was checked on 2026-11-07. CSS (1,210) and
 Layout (910) tests pass; the solution build has zero warnings/errors and all
 16,332 solution tests pass. Format verification and `git diff --check` pass.
-Commit, push and CI remain.
+Commit `9a0f78c` is pushed; Linux development (Run 42515502225), Windows
+confinement x64/arm64 (Run 42515502194) and Push-on-main/CodeQL
+(Run 42515501937) pass. Pass 4 is complete; six increments remain.
 
 Evidence: `CSS scope`, `layout restrictions`, `painting limitations`, and
 `specs/cache/html.html#lists`.

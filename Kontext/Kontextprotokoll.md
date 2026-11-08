@@ -6746,3 +6746,14 @@ presentational hint`) ist auf `main` gepusht.
   CSS-/Layout-Guides, `CascadeTests`, `LayoutTests`,
   `LinkColorDefaultsTests`, `HiddenDefaultsTests` und `SearchDefaultsTests`.
 - Offen: Featurecommit, Push und CI stehen aus.
+
+### KP-258 - Pass 4 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-257.
+- Belegt: Featurecommit `9a0f78cde1da828341a7925c476abb50ca92f40f`
+  (`feat(css): indent HTML definition descriptions`) ist auf `origin/main`.
+- Belegt: Linux development (Run 42515502225), Windows confinement
+  x64/arm64 (Run 42515502194) und Push-on-main/CodeQL (Run 42515501937)
+  sind erfolgreich.
+- Status / naechster Schritt: Pass 4 ist abgeschlossen; sechs Inkremente des
+  laufenden Zehn-Inkrement-Auftrags verbleiben.
