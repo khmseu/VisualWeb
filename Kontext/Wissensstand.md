@@ -303,17 +303,16 @@
   (Run 42510288546) bestehen. Pass 3 ist abgeschlossen; sieben Inkremente
   verbleiben ([KP-254](./Kontextprotokoll.md#kp-254---pass-3-dir-listenpraesentation-implementiert-und-lokal-validiert),
   [KP-255](./Kontextprotokoll.md#kp-255---pass-3-committet-gepusht-und-ci-gruen)).
-  Pass 4 fuegt den HTML-`dd`-Startabstand hinzu: `margin-inline-start:40px`
-  wird im horizontalen LTR-Subset als `margin-left:40px` abgebildet; logische
-  CSS-Eigenschaften, RTL und vertikale Schreibrichtung sind nicht Teil davon.
-  CSS (1.210), Layout (910), Solution-Build (0 Warnungen/Fehler), Volltest
-  (16.332), Formatpruefung und Whitespace-Check bestehen. Commit `9a0f78c`
-  ist gepusht; Linux (Run 42515502225), Windows x64/arm64 (Run 42515502194)
-  und CodeQL (Run 42515501937) bestehen. Pass 4 ist abgeschlossen; sechs
-  Inkremente verbleiben
+  Pass-4-Korrektur: `dd`-Einrueckung war bereits vor Commit `9a0f78c` im
+  Stylesheet implementiert; dieser Commit fuegte sie versehentlich doppelt
+  ein. Die Korrektur entfernt die Dublette und stellt die exakten CSS-Budgets
+  wieder her. CSS-/Layouttests und Dokumentation bleiben als Abdeckung der
+  vorhandenen Regel. Es wurde kein neues Inkrement abgeschlossen; nach Pass 3
+  verbleiben sieben Inkremente
   ([KP-256](./Kontextprotokoll.md#kp-256---pass-4-waehlt-die-html-einrueckung-von-dd),
   [KP-257](./Kontextprotokoll.md#kp-257---pass-4-dd-einrueckung-implementiert-und-lokal-validiert),
-  [KP-258](./Kontextprotokoll.md#kp-258---pass-4-committet-gepusht-und-ci-gruen)).
+  [KP-258](./Kontextprotokoll.md#kp-258---pass-4-committet-gepusht-und-ci-gruen),
+  [KP-259](./Kontextprotokoll.md#kp-259---korrektur-dd-einrueckung-war-bereits-implementiert)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

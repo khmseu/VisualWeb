@@ -72,7 +72,6 @@ public static class CssStyleEngine
         p, blockquote, pre, listing, xmp, plaintext, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }
         :is(dir, dl, menu, ol, ul) :is(dir, dl, menu, ol, ul) { margin-top: 0; margin-bottom: 0 }
         blockquote, figure { margin-left: 40px; margin-right: 40px }
-        dd { margin-left: 40px }
         ul, ol, menu { padding-left: 40px }
         dir, menu, ul { list-style-type: disc }
         ol { list-style-type: decimal }

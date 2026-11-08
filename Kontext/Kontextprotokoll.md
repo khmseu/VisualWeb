@@ -6755,5 +6755,21 @@ presentational hint`) ist auf `main` gepusht.
 - Belegt: Linux development (Run 42515502225), Windows confinement
   x64/arm64 (Run 42515502194) und Push-on-main/CodeQL (Run 42515501937)
   sind erfolgreich.
-- Status / naechster Schritt: Pass 4 ist abgeschlossen; sechs Inkremente des
-  laufenden Zehn-Inkrement-Auftrags verbleiben.
+- Status bei Dokumentation: Als abgeschlossen dokumentiert; die spaetere
+  Korrektur in KP-259 stellt fest, dass das Verhalten bereits vorhanden war.
+
+### KP-259 - Korrektur: dd-Einrueckung war bereits implementiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; korrigiert KP-256 bis KP-258.
+- Belegt: Der Parent von `9a0f78c` enthaelt bereits
+  `dd { margin-left: 40px }` im HTML-UA-Stylesheet. Der Pass-4-Commit fuegte
+  dieselbe Regel ein zweites Mal ein und verschob dadurch nur die exakten
+  CSS-Testbudgets; die neuen Cascade-/Layouttests bestaetigen vorhandenes
+  Verhalten.
+- Korrektur: Die doppelte UA-Regel und die Budgetverschiebungen werden entfernt.
+  Die Tests und direkten Dokumentationshinweise bleiben als Abdeckung des
+  zuvor nicht explizit dokumentierten Verhaltens bestehen.
+- Status / naechster Schritt: Pass 4 war kein neues Implementierungsinkrement;
+  nach Pass 3 bleiben sieben angeforderte Inkremente. Den aktualisierten
+  Tracker erneut pruefen und einen tatsaechlich fehlenden Prioritaet-1-Schritt
+  auswaehlen.

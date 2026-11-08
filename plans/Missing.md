@@ -1175,16 +1175,12 @@ development (Run 42510288621), Windows confinement x64/arm64
 (Run 42510288595) and Push-on-main/CodeQL (Run 42510288546) pass.
 Pass 3 is complete; seven increments remain.
 
-Pass 4 implements the HTML definition-list description indent: `dd` receives
-the HTML `margin-inline-start:40px` default, mapped to `margin-left` for the
-supported horizontal LTR layout. The existing cascade permits author
-overrides. This does not add logical-property, RTL or vertical-writing support.
-The local HTML `#lists` source was checked on 2026-11-07. CSS (1,210) and
-Layout (910) tests pass; the solution build has zero warnings/errors and all
-16,332 solution tests pass. Format verification and `git diff --check` pass.
-Commit `9a0f78c` is pushed; Linux development (Run 42515502225), Windows
-confinement x64/arm64 (Run 42515502194) and Push-on-main/CodeQL
-(Run 42515501937) pass. Pass 4 is complete; six increments remain.
+The proposed Pass 4 `dd` indentation was already present in the CSS user-agent
+stylesheet before the attempt. Commit `9a0f78c` added a duplicate declaration
+and unnecessary CSS-budget increases but did not add behavior; the correction
+removes the duplicate and restores the original budgets. The added CSS/layout
+tests and documentation are retained to verify and describe the existing
+support. This is not a completed increment; seven remain after Pass 3.
 
 Evidence: `CSS scope`, `layout restrictions`, `painting limitations`, and
 `specs/cache/html.html#lists`.
