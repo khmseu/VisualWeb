@@ -6811,3 +6811,17 @@ presentational hint`) ist auf `main` gepusht.
   `1b749f6` reproduziert. Der anschliessende Volltest-Retry bestand.
 - Status: lokale Validierung abgeschlossen; Featurecommit, Push und CI stehen
   noch aus. Pass 4 zaehlt bis dahin nicht als vollstaendig abgeschlossen.
+
+### KP-262 - Pass 4 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-261.
+- Belegt: Commit `dff4edd7e9595503b98df3c9a0e88ee10616f811` ist auf `main`
+  gepusht. Linux development (Run
+  [42524681927](https://github.com/khmseu/VisualWeb/actions/runs/42524681927)),
+  Windows confinement
+  ([42524681949](https://github.com/khmseu/VisualWeb/actions/runs/42524681949))
+  und CodeQL
+  ([42524681823](https://github.com/khmseu/VisualWeb/actions/runs/42524681823))
+  sind erfolgreich.
+- Status: Pass 4 ist abgeschlossen; sechs der angeforderten zehn Inkremente
+  verbleiben.

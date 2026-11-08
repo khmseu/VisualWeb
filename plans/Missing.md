@@ -1198,8 +1198,11 @@ tests pass on retry. The first full-suite run hit the unrelated
 case because its transient cgroup `cpu.stat` path disappeared; both parameters
 pass in isolation. Browser implementation and test sources are unchanged from
 the pass base, and the same missing-path issue was previously reproduced on
-base `1b749f6`. Commit, push and CI remain pending; after their success, six
-requested increments will remain.
+base `1b749f6`. Commit [`dff4edd`](https://github.com/khmseu/VisualWeb/commit/dff4edd7e9595503b98df3c9a0e88ee10616f811)
+is pushed. Linux development ([run](https://github.com/khmseu/VisualWeb/actions/runs/42524681927)),
+Windows confinement ([run](https://github.com/khmseu/VisualWeb/actions/runs/42524681949))
+and CodeQL ([run](https://github.com/khmseu/VisualWeb/actions/runs/42524681823))
+all pass. Pass 4 is complete; six requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 
