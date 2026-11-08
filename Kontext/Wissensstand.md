@@ -258,9 +258,13 @@
   Legacy-Color-Parser und Body-Hintergrundpaint werden genutzt, mit eigener
   aggregierter Attributgrenze. CSS (1.191), Content (101), Solution-Build
   (0 Warnungen/Fehler), Volltest (16.308), Formatpruefung und Whitespace-Check
-  bestehen lokal. Commit, Push und CI stehen noch aus
+  bestehen lokal. `49ab268` ist gepusht; Linux development
+  (Run 42490116966), Windows confinement x64/arm64 (Run 42490116900) und
+  Push-on-main/CodeQL (Run 42490116932) bestehen. Der Zehn-Passen-Lauf ist
+  abgeschlossen
   ([KP-242](./Kontextprotokoll.md#kp-242---pass-10-als-body-bgcolor-hinweis-abgegrenzt),
-  KP-243, KP-244).
+  KP-243, KP-244, KP-245,
+  [KP-246](./Kontextprotokoll.md#kp-246---pass-10-ci-gruen-zehn-passen-lauf-abgeschlossen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

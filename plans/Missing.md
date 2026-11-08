@@ -1126,7 +1126,10 @@ rendering. It reuses the legacy color parser and author presentational-hint
 cascade, with an independent aggregate raw-attribute budget. CSS and offline
 pixel regressions pass. CSS (1,191), Content (101), all 16,308 solution
 tests, the zero-warning solution build, format verification and
-`git diff --check` pass locally; commit, push and CI remain pending.
+`git diff --check` pass locally. Commit `49ab268` is pushed; Linux
+development (Run 42490116966), Windows confinement x64/arm64 (Run 42490116900)
+and Push-on-main/CodeQL (Run 42490116932) pass. Pass 10 and the requested
+ten-increment run are complete.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

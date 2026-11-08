@@ -6544,3 +6544,21 @@ defaults`) ist auf `main` gepusht.
 --no-build` besteht mit 16.308 Tests. Die Formatverifikation und
   `git diff --check` bestehen ebenfalls.
 - Status: lokal validiert. Commit, Push und CI fuer Pass 10 stehen noch aus.
+
+### KP-245 - Pass 10 committet und gepusht
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-244.
+- Belegt: Featurecommit `49ab268` (`feat(css): support body bgcolor
+presentational hint`) ist auf `main` gepusht.
+- Belegt: Linux development (Run 42490116966), Windows confinement
+  (Run 42490116900) und Push on main/CodeQL (Run 42490116932) sind gestartet;
+  Ergebnisse stehen aus.
+
+### KP-246 - Pass 10 CI-gruen; Zehn-Passen-Lauf abgeschlossen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-245.
+- Belegt: Linux development (Run 42490116966), Windows confinement x64/arm64
+  (Run 42490116900) und Push on main/CodeQL (Run 42490116932) sind erfolgreich.
+- Status: Pass 10 ist abgeschlossen; alle zehn getrennten Inkremente des
+  angeforderten Laufs sind implementiert, validiert, committet, gepusht und
+  CI-gruen.
