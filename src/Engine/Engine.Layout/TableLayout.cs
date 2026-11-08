@@ -610,8 +610,10 @@ public static partial class StaticLayout
         private static void RejectTableAttributes(DomElement element, bool allowWidthAttribute = false)
         {
             if ((!allowWidthAttribute && element.GetAttribute("width") is not null)
-                || new[] { "height", "border", "nowrap" }
+                || new[] { "height", "border" }
                     .Any(attribute => element.GetAttribute(attribute) is not null)
+                || element.GetAttribute("nowrap") is not null
+                    && !CssStyleEngine.HasSupportedTableCellNowrapHint(element)
                 || element.GetAttribute("cellpadding") is not null && element.LocalName != "table"
                 || element.GetAttribute("cellspacing") is not null && element.LocalName != "table"
                 || element.GetAttribute("valign") is not null

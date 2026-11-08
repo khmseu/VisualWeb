@@ -12,6 +12,8 @@ raw UTF-16 limit, `MaxTableBackgroundColorAttributeCharacters`.
 HTML table `cellpadding` maps successfully parsed non-negative integers to all
 four padding properties of corresponding `td`/`th` cells. Its independent
 aggregate raw UTF-16 limit is `MaxTableCellPaddingAttributeCharacters`.
+HTML `td`/`th` `nowrap` maps boolean-attribute presence to `white-space:nowrap`
+at the author presentational-hint origin.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.

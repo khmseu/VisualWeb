@@ -6875,3 +6875,23 @@ third_party`) besteht. Der erste Volltest hatte eine Deadline-Ueberschreitung
   sind erfolgreich.
 - Status: Pass 5 ist abgeschlossen; fuenf der angeforderten zehn Inkremente
   verbleiben.
+
+### KP-266 - Pass 6 td/th nowrap lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-265.
+- Nutzerangabe: Der laufende `/missing-priority-implementation 10`-Auftrag
+  verlangt zehn getrennte, getestete und committete Inkremente.
+- Belegt: Die lokale HTML-Kopie `specs/cache/html.html`, `#tables-2`, beschreibt
+  fuer `td`/`th` den Boolean-Hinweis `white-space:nowrap`. Pass 6 bildet die
+  Attributpraesenz auf diesen Autor-Presentational-Hint ab; der Attributwert
+  wird ignoriert. Gewoehnliche Autoren-CSS kann ihn ueberschreiben. Die
+  vorhandene begrenzte Nonwrapping-Layoutlogik bleibt unveraendert; `nowrap`
+  auf Tabelle, Zeilen und Zeilengruppen bleibt ausdruecklich unsupported.
+- Belegt: CSS-Tests (1.229), Layouttests (913), `dotnet build
+VisualWeb.slnx` ohne Warnungen/Fehler, alle 16.355 Solution-Tests,
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestehen lokal. Der Volltest dauerte
+  13 Minuten 50 Sekunden fuer die Browsertests; alle 1.333 Browsertests
+  bestanden.
+- Status: lokale Implementierung und Validierung abgeschlossen. Featurecommit,
+  Push und CI stehen aus; Pass 6 zaehlt bis dahin nicht als abgeschlossen.

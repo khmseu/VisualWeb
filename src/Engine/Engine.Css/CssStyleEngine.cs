@@ -158,6 +158,15 @@ public static class CssStyleEngine
         return element.LocalName is ("td" or "th") && GetAlignHint(element) is not null;
     }
 
+    /// <summary>Reports whether the bounded HTML table-cell nowrap hint applies.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell nowrap hint</see>.</remarks>
+    public static bool HasSupportedTableCellNowrapHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName is ("td" or "th") && element.GetAttribute("nowrap") is not null;
+    }
+
     /// <summary>Reports whether a supported alignment hint applies to an HTML table row or row group.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table row and row-group alignment hints</see>.</remarks>
     public static bool HasSupportedTableRowAlignmentHint(DomElement element)
@@ -471,6 +480,12 @@ public static class CssStyleEngine
                     presentationalHint: true);
                 context.Assignment();
                 Add(new("padding-left", cellPadding, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (HasSupportedTableCellNowrapHint(element))
+            {
+                context.Assignment();
+                Add(new("white-space", new CssKeyword("nowrap"), false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetAlignHint(element) is { } align)

@@ -1205,6 +1205,22 @@ public sealed class LayoutTests
             UnorderedList("<table><tr><td cellpadding=3>x</td></tr></table>"));
     }
 
+    [Fact]
+    public void TableCellNowrapPreventsSoftWrappingButOtherTablePartsRemainUnsupported()
+    {
+        var root = UnorderedList(
+            "<table style='width:10px'><tr><td id=cell nowrap=false>aa bb cc dd</td></tr></table>",
+            width: 15).Root!;
+        var cell = Find(root, "cell");
+
+        Assert.Single(cell.Lines);
+        Assert.True(cell.Content.Width > 10);
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table nowrap><tr><td>x</td></tr></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr nowrap><td>x</td></tr></table>"));
+    }
+
     [Theory]
     [InlineData(null, 1)]
     [InlineData("0", 1)]

@@ -946,7 +946,8 @@ constraints equally across tracks; the total column grid is capped by
 one caption, and bounded column/group tracks and widths are supported as
 documented. Anonymous/arbitrary CSS tables, collapsed borders, fixed layout,
 nested tables/widgets, percentages inside cells and other legacy presentation
-attributes (including `height`, `border` and `nowrap`) remain unsupported. See the
+attributes (including `height`, `border` and `nowrap` outside `td`/`th`) remain
+unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
 exact work limits and cancellation, native pixels, and local/process
@@ -1227,6 +1228,16 @@ Windows confinement
 ([run](https://github.com/khmseu/VisualWeb/actions/runs/42531254221)) and CodeQL
 ([run](https://github.com/khmseu/VisualWeb/actions/runs/42531253690)) pass.
 Pass 5 is complete; five of the ten requested increments remain.
+
+Pass 6 supports the HTML boolean `nowrap` attribute on `td` and `th`. Attribute
+presence maps to the existing `white-space:nowrap` author presentational hint,
+and its value is ignored. The existing bounded nonwrapping layout path handles
+intrinsic cell sizing; normal author CSS overrides the hint. `nowrap` on the
+table, rows and row groups remains explicitly unsupported. CSS (1,229), Layout
+(913), the zero-warning solution build, all 16,355 solution tests,
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party`, and `git diff --check` pass locally. Commit, push, and CI remain
+pending; Pass 6 is not yet complete.
 
 ### 6. A persistent browser JavaScript environment
 

@@ -102,6 +102,9 @@ The table `cellpadding` hint maps parsed non-negative integers to equal pixel
 padding on all four sides of corresponding cells. Cell padding participates in
 the existing intrinsic sizing and arrangement; `cellpadding` on other table
 parts remains unsupported.
+The boolean `nowrap` attribute on `td`/`th` maps by presence to the existing
+nonwrapping text flow; other table parts' `nowrap` attributes remain
+unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

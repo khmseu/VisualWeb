@@ -348,6 +348,14 @@
   verbleiben ([KP-263](./Kontextprotokoll.md#kp-263---pass-5-waehlt-html-table-cellpadding),
   [KP-264](./Kontextprotokoll.md#kp-264---pass-5-lokal-implementiert-und-validiert),
   [KP-265](./Kontextprotokoll.md#kp-265---pass-5-committet-gepusht-und-ci-gruen)).
+  Pass 6 waehlt und implementiert den HTML-Boolean-Hinweis `nowrap` fuer
+  `td`/`th`: Attributpraesenz setzt `white-space:nowrap`; der Attributwert
+  wird ignoriert, normale Autoren-CSS kann den Hinweis ueberschreiben, und
+  `nowrap` an Tabelle, Zeilen und Gruppen bleibt unsupported. CSS (1.229),
+  Layout (913), Solution-Build (0 Warnungen/Fehler), Volltest (16.355),
+  Formatpruefung und Whitespace-Check bestehen. Featurecommit, Push und CI
+  stehen noch aus; Pass 6 ist daher nicht abgeschlossen
+  ([KP-266](./Kontextprotokoll.md#kp-266---pass-6-td-th-nowrap-lokal-validiert)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

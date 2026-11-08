@@ -259,6 +259,10 @@ the independent aggregate raw UTF-16 limit
 `MaxTableCellPaddingAttributeCharacters`, including invalid values. The hint
 uses the author presentational-hint cascade, so ordinary author CSS overrides
 it; `cellpadding` on other elements remains unsupported.
+HTML `td[nowrap]` and `th[nowrap]` map the boolean attribute's presence to
+`white-space:nowrap` through the same author hint cascade. The attribute's
+value is ignored; ordinary author CSS can override the hint. Other table
+elements' `nowrap` attributes remain unsupported.
 The [HTML page background rule](https://html.spec.whatwg.org/multipage/rendering.html#the-page)
 (local ID `html`) maps a successfully parsed `body[bgcolor]` value through the
 HTML legacy-colour algorithm to `background-color`. This uses the normal
