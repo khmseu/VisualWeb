@@ -1219,8 +1219,14 @@ attribute limits, and unsupported attribute placement.
 Local validation passes: CSS (1,225), Layout (912), solution build (zero
 warnings/errors), format verification, and all 16,350 solution tests on retry.
 The first full-suite run had one scripting deadline failure in an unchanged
-test; its isolated rerun and the full-suite retry both pass. Feature commit,
-push and CI are pending.
+test; its isolated rerun and the full-suite retry both pass. Commit
+[`5770646`](https://github.com/khmseu/VisualWeb/commit/57706463914520f084567cdfae0d9b7bdc6daa16)
+is pushed; Linux development
+([run](https://github.com/khmseu/VisualWeb/actions/runs/42531254218)),
+Windows confinement
+([run](https://github.com/khmseu/VisualWeb/actions/runs/42531254221)) and CodeQL
+([run](https://github.com/khmseu/VisualWeb/actions/runs/42531253690)) pass.
+Pass 5 is complete; five of the ten requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 

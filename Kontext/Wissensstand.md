@@ -342,7 +342,12 @@
   Solution-Build (0 Warnungen/Fehler), Formatverifikation und der Volltest-
   Retry (16.350) bestehen. Der erste Volltest traf eine Deadline-Ueberschreitung
   in einem unveraenderten Scripting-Test; dessen isolierter Lauf sowie der
-  Volltest-Retry bestehen. Commit, Push und CI stehen aus (KP-263/KP-264).
+  Volltest-Retry bestehen. Commit `5770646` ist gepusht; Linux development
+  (Run 42531254218), Windows confinement (Run 42531254221) und CodeQL
+  (Run 42531253690) bestehen. Pass 5 ist abgeschlossen; fuenf Inkremente
+  verbleiben ([KP-263](./Kontextprotokoll.md#kp-263---pass-5-waehlt-html-table-cellpadding),
+  [KP-264](./Kontextprotokoll.md#kp-264---pass-5-lokal-implementiert-und-validiert),
+  [KP-265](./Kontextprotokoll.md#kp-265---pass-5-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

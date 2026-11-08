@@ -6861,3 +6861,17 @@ third_party`) besteht. Der erste Volltest hatte eine Deadline-Ueberschreitung
   16.350 Tests. Eine Ursache des ersten Timeouts ist nicht nachgewiesen.
 - Status: lokale Validierung abgeschlossen; Featurecommit, Push und CI stehen
   noch aus. Pass 5 zaehlt noch nicht als abgeschlossen.
+
+### KP-265 - Pass 5 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-264.
+- Belegt: Commit `57706463914520f084567cdfae0d9b7bdc6daa16` ist auf `main`
+  gepusht. Linux development (Run
+  [42531254218](https://github.com/khmseu/VisualWeb/actions/runs/42531254218)),
+  Windows confinement
+  ([42531254221](https://github.com/khmseu/VisualWeb/actions/runs/42531254221))
+  und CodeQL
+  ([42531253690](https://github.com/khmseu/VisualWeb/actions/runs/42531253690))
+  sind erfolgreich.
+- Status: Pass 5 ist abgeschlossen; fuenf der angeforderten zehn Inkremente
+  verbleiben.
