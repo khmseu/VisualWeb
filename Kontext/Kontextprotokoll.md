@@ -6376,3 +6376,44 @@ CodeQL-Initialisierungsfehler beim Herunterladen des Bundles (HTTP 504); Linux
 und Windows waren erfolgreich, und GitHub lehnte das Rerun dieses Laufs ab.
 Der Codecommit `fb73991` fuer Pass 6 war bereits auf allen drei Workflows
 gruen; der neue Pass-7-Codecommit besteht ebenfalls einschliesslich CodeQL.
+
+### KP-235 - Pass 8: waehlt den HTML-Tabellenalias absmiddle
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin.
+- Nutzerangabe: Der Nutzer setzte den laufenden Auftrag mit "continue" fort.
+- Auswahlstatus: Abgeleitet aus `plans/Missing.md` und der konkreten, noch
+  unimplementierten HTML-Rendering-Regel; keine ausdrueckliche Einzelwahl.
+- Quellen: `specs/cache/html.html#tables-2`,
+  `specs/manifest.json` (HTML-ID `html`, `checkedAt` 2026-11-07),
+  `CssStyleEngine.cs`, `TableLayout.cs` sowie CSS-/Layout-Regressionen.
+
+**Belegt:** Die lokale HTML-Regel ordnet ASCII-case-insensitive
+`align=absmiddle` als `text-align:center` genau `td`, `th`, `tr`, `thead`,
+`tbody` und `tfoot` zu. Die bestehende Tabellen-Align-Hint-Logik kann den
+Alias ohne neue Parser- oder Layoutregeln auswerten. Der Cache ist innerhalb
+der 30-Tage-Frist; keine Aktualisierung war erforderlich. Es blieb keine
+blockierende Verhaltensentscheidung offen.
+
+**Umsetzung gewaehlt:** Pass 8 ergaenzt den Alias ausschliesslich fuer diese
+sechs HTML-Tabellenelemente, mit CSS-Kaskaden-, Layout-Akzeptanz- und
+Zentrierungsregressionen sowie direkter Dokumentation. Andere Elemente,
+Tabellenfloats und row/group `valign` bleiben ausserhalb des Passes. Zum
+Dokumentationszeitpunkt laufen die Solution-weiten Tests; Commit, Push und CI
+stehen aus.
+
+### KP-236 - Pass 8: lokal implementiert und validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-235.
+- Quellen: lokale CSS-/Layout-Testlaeufe, Solution-Build, Volltest,
+  Formatpruefung und aktueller Patch.
+
+**Belegt:** `GetAlignHint` erkennt `absmiddle` ASCII-case-insensitive und
+bildet es nur fuer die sechs spezifizierten Tabellen-Elemente auf `center` ab.
+CSS-Tests pruefen die Zellwerte und Row-/Group-Vererbung; Layout-Tests decken
+die Annahme der sechs Werte und die genaue Textzentrierung ab. Die direkte
+Dokumentation und `plans/Missing.md` benennen den begrenzten Umfang.
+
+CSS (1.177) und Layout (898) bestehen. `dotnet build VisualWeb.slnx` besteht
+mit null Warnungen und Fehlern; `dotnet test VisualWeb.slnx --no-build`
+besteht mit 16.283 Tests. Die Loesungsformatpruefung und `git diff --check`
+bestehen ebenfalls. Commit, Push und CI stehen aus.

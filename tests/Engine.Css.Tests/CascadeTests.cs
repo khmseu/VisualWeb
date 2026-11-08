@@ -605,11 +605,13 @@ public sealed class CascadeTests
     [InlineData("td", "RiGhT", "right")]
     [InlineData("td", "CeNtEr", "center")]
     [InlineData("td", "MiDdLe", "center")]
+    [InlineData("td", "AbSmIdDlE", "center")]
     [InlineData("td", "JuStIfY", "justify")]
     [InlineData("th", "LeFt", "left")]
     [InlineData("th", "RiGhT", "right")]
     [InlineData("th", "CeNtEr", "center")]
     [InlineData("th", "MiDdLe", "center")]
+    [InlineData("th", "AbSmIdDlE", "center")]
     [InlineData("th", "JuStIfY", "justify")]
     public void TableCellAlignHintsAcceptSupportedAsciiValues(string tag, string value, string expected)
     {
@@ -650,6 +652,7 @@ public sealed class CascadeTests
     [InlineData("tbody", "RiGhT", "right")]
     [InlineData("tfoot", "CeNtEr", "center")]
     [InlineData("tr", "MiDdLe", "center")]
+    [InlineData("thead", "AbSmIdDlE", "center")]
     [InlineData("tbody", "JuStIfY", "justify")]
     public void TableRowAndGroupAlignHintsInheritToCells(string tag, string value, string expected)
     {

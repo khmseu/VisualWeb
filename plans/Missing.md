@@ -971,9 +971,10 @@ horizontal LTR subset; its captions remain ordinary block flow. HTML
 explicitly registered italic face for rendering.
 The HTML table-cell `align` attribute now maps `left`, `right`, `center`,
 `middle` and `justify` on `td`/`th` to `text-align`, with ASCII-case-insensitive
-matching and `middle` mapped to `center`. The same values on `tr`, `thead`,
-`tbody` and `tfoot` now map to inherited `text-align`. Baseline table-cell
-alignment, legacy over-constrained descendant-margin alignment, table
+matching and `middle` mapped to `center`; `absmiddle` also maps to `center` on
+these six table elements. The same values on `tr`, `thead`, `tbody` and `tfoot`
+now map to inherited `text-align`. Baseline table-cell alignment, legacy
+over-constrained descendant-margin alignment, table
 left/right floats and other alignment targets remain unsupported. CSS
 `vertical-align:middle` and `bottom` now position
 canonical table-cell contents against their final row height, including the
@@ -1088,6 +1089,14 @@ Layout (891), the zero-warning solution build, all 16,273 solution tests,
 format verification and `git diff --check` pass locally. Commit `ae7f1ae` is
 pushed; Linux (Run 42474057086), Windows confinement x64/arm64 (Run 42474057143) and Push on main/CodeQL (Run 42474056897) pass. Pass 7 is
 complete.
+
+Pass 8 adds the local HTML rendering rule's `align=absmiddle` alias for
+`text-align:center` on `td`, `th`, `tr`, `thead`, `tbody` and `tfoot`. CSS
+cascade coverage, layout acceptance and exact centered-cell geometry verify
+the behavior; other elements and unsupported table-alignment behaviors remain
+unchanged. CSS (1,177), Layout (898), the zero-warning solution build, all
+16,283 solution tests, solution format verification and `git diff --check`
+pass locally. Commit, push and CI are pending.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

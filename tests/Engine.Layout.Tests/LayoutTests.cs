@@ -1365,11 +1365,13 @@ public sealed class LayoutTests
     [InlineData("td", "right")]
     [InlineData("td", "center")]
     [InlineData("td", "middle")]
+    [InlineData("td", "absmiddle")]
     [InlineData("td", "justify")]
     [InlineData("th", "left")]
     [InlineData("th", "right")]
     [InlineData("th", "center")]
     [InlineData("th", "middle")]
+    [InlineData("th", "absmiddle")]
     [InlineData("th", "justify")]
     public void SupportedTableCellAlignHintsAreAcceptedByLayout(string tag, string align)
     {
@@ -1382,21 +1384,25 @@ public sealed class LayoutTests
     [InlineData("thead", "right")]
     [InlineData("thead", "center")]
     [InlineData("thead", "middle")]
+    [InlineData("thead", "absmiddle")]
     [InlineData("thead", "justify")]
     [InlineData("tbody", "left")]
     [InlineData("tbody", "right")]
     [InlineData("tbody", "center")]
     [InlineData("tbody", "middle")]
+    [InlineData("tbody", "absmiddle")]
     [InlineData("tbody", "justify")]
     [InlineData("tfoot", "left")]
     [InlineData("tfoot", "right")]
     [InlineData("tfoot", "center")]
     [InlineData("tfoot", "middle")]
+    [InlineData("tfoot", "absmiddle")]
     [InlineData("tfoot", "justify")]
     [InlineData("tr", "left")]
     [InlineData("tr", "right")]
     [InlineData("tr", "center")]
     [InlineData("tr", "middle")]
+    [InlineData("tr", "absmiddle")]
     [InlineData("tr", "justify")]
     public void SupportedTableRowAndGroupAlignHintsAreAcceptedByLayout(string tag, string align)
     {
@@ -1434,6 +1440,17 @@ public sealed class LayoutTests
             var fragment = Assert.Single(Assert.Single(cell.Lines).Fragments);
             Assert.Equal(cell.Content.X + cell.Content.Width - fragment.Run.Width, fragment.X);
         }
+    }
+
+    [Fact]
+    public void TableAbsmiddleAlignHintCentersCellText()
+    {
+        var root = UnorderedList("<table><tbody align=absmiddle><tr><td id=cell>x</td></tr></tbody></table>",
+            "table{width:100px}").Root!;
+        var cell = Find(root, "cell");
+        var fragment = Assert.Single(Assert.Single(cell.Lines).Fragments);
+
+        Assert.Equal(cell.Content.X + (cell.Content.Width - fragment.Run.Width) / 2, fragment.X);
     }
 
     [Theory]

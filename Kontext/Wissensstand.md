@@ -233,6 +233,13 @@
   x64/arm64 (Run 42474057143) und Push-on-main/CodeQL (Run 42474056897)
   bestehen. Pass 7 ist abgeschlossen; drei Inkremente verbleiben
   ([KP-234](./Kontextprotokoll.md#kp-234---pass-7-gepusht-und-ci-gruen)).
+  Pass 8 waehlt als naechsten Tabellen-Rendering-Schritt die von der lokalen
+  HTML-Regel definierte `align=absmiddle`-Abbildung auf `text-align:center`
+  fuer `td`, `th`, `tr`, `thead`, `tbody` und `tfoot`. CSS (1.177), Layout
+  (898), Solution-Build (0 Warnungen/Fehler), Volltest (16.283), Formatpruefung
+  und Whitespace-Check bestehen lokal; Commit, Push und CI stehen aus
+  ([KP-235](./Kontextprotokoll.md#kp-235---pass-8-waehlt-den-html-tabellenalias-absmiddle),
+  [KP-236](./Kontextprotokoll.md#kp-236---pass-8-lokal-implementiert-und-validiert)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

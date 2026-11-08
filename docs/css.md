@@ -227,6 +227,9 @@ The table rendering rules also support ASCII-case-insensitive
 horizontal LTR layout subset. Other table alignment values and legacy
 descendant-margin behavior remain unsupported. Justification retains the
 layout limitations documented in the text guide.
+For `td`, `th`, `tr`, `thead`, `tbody` and `tfoot`, the additional legacy
+`align=absmiddle` value maps to `text-align:center`; it does not apply to
+other elements.
 The [HTML `table[cellspacing]` hint](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
 (local ID `html`) maps values parsed as non-negative integers to equal
 horizontal and vertical pixel lengths for `border-spacing`; values that fail

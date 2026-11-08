@@ -188,11 +188,11 @@ public static class CssStyleEngine
         var align = element.GetAttribute("align");
         if (supportsMiddleAlias)
         {
-            return align is { Length: 4 or 5 or 6 or 7 } ? CssText.Lower(align) switch
+            return align is { Length: 4 or 5 or 6 or 7 or 9 } ? CssText.Lower(align) switch
             {
                 "left" => "left",
                 "right" => "right",
-                "center" or "middle" => "center",
+                "center" or "middle" or "absmiddle" => "center",
                 "justify" => "justify",
                 _ => null
             } : null;
