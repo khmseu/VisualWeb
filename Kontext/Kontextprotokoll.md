@@ -6416,4 +6416,16 @@ Dokumentation und `plans/Missing.md` benennen den begrenzten Umfang.
 CSS (1.177) und Layout (898) bestehen. `dotnet build VisualWeb.slnx` besteht
 mit null Warnungen und Fehlern; `dotnet test VisualWeb.slnx --no-build`
 besteht mit 16.283 Tests. Die Loesungsformatpruefung und `git diff --check`
-bestehen ebenfalls. Commit, Push und CI stehen aus.
+bestehen ebenfalls.
+
+### KP-237 - Pass 8: gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-236.
+- Quellen: Commit `25e1ab4`, `origin/main`, GitHub Actions Runs
+  42478735102, 42478735101 und 42478735123.
+
+**Belegt:** Commit `25e1ab4` (`feat(css): support HTML table absmiddle
+alignment`) ist auf `main` gepusht. Linux development (Run 42478735102),
+Windows confinement x64/arm64 (Run 42478735101) und Push on main mit CodeQL
+(Run 42478735123) sind erfolgreich abgeschlossen. Pass 8 ist komplett; im
+Zehn-Passen-Lauf verbleiben zwei getrennte Inkremente.

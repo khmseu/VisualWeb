@@ -1096,7 +1096,13 @@ cascade coverage, layout acceptance and exact centered-cell geometry verify
 the behavior; other elements and unsupported table-alignment behaviors remain
 unchanged. CSS (1,177), Layout (898), the zero-warning solution build, all
 16,283 solution tests, solution format verification and `git diff --check`
-pass locally. Commit, push and CI are pending.
+pass locally. Commit `25e1ab4` is pushed; Linux development
+([Run 42478735102](https://github.com/khmseu/VisualWeb/actions/runs/42478735102)),
+Windows confinement x64/arm64
+([Run 42478735101](https://github.com/khmseu/VisualWeb/actions/runs/42478735101))
+and Push on main/CodeQL
+([Run 42478735123](https://github.com/khmseu/VisualWeb/actions/runs/42478735123))
+all pass. Pass 8 is complete; two increments remain in this ten-pass request.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

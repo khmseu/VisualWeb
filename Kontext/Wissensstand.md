@@ -237,9 +237,13 @@
   HTML-Regel definierte `align=absmiddle`-Abbildung auf `text-align:center`
   fuer `td`, `th`, `tr`, `thead`, `tbody` und `tfoot`. CSS (1.177), Layout
   (898), Solution-Build (0 Warnungen/Fehler), Volltest (16.283), Formatpruefung
-  und Whitespace-Check bestehen lokal; Commit, Push und CI stehen aus
+  und Whitespace-Check bestehen lokal. Commit `25e1ab4` ist gepusht; Linux
+  (Run 42478735102), Windows confinement x64/arm64 (Run 42478735101) und
+  Push-on-main/CodeQL (Run 42478735123) sind gruen. Pass 8 ist abgeschlossen;
+  zwei Inkremente verbleiben
   ([KP-235](./Kontextprotokoll.md#kp-235---pass-8-waehlt-den-html-tabellenalias-absmiddle),
-  [KP-236](./Kontextprotokoll.md#kp-236---pass-8-lokal-implementiert-und-validiert)).
+  [KP-236](./Kontextprotokoll.md#kp-236---pass-8-lokal-implementiert-und-validiert),
+  [KP-237](./Kontextprotokoll.md#kp-237---pass-8-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
