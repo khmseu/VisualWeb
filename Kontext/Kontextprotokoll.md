@@ -6611,5 +6611,48 @@ presentational hint`) ist auf `main` gepusht.
   (`feat(css): support body text color hints`) ist auf `origin/main`.
   Linux development (Run 42496849796), Windows confinement fuer x64/arm64
   (Run 42496849835) und Push-on-main/CodeQL (Run 42496849427) sind erfolgreich.
-- Status: Pass 1 des neuen Zehn-Passen-Laufs abgeschlossen; neun getrennte
-  Inkremente verbleiben.
+- Belegt: Der nachgelagerte Dokumentationscommit `7760eeb` ist ebenfalls auf
+  `origin/main`; Linux development (Run 42497809869), Windows confinement
+  (Run 42497809846) und Push-on-main/CodeQL (Run 42497810046) sind erfolgreich.
+- Status: Pass 1 des neuen Zehn-Passen-Laufs abgeschlossen; Pass 2 wird in
+  KP-250 abgegrenzt.
+
+### KP-250 - Pass 2 waehlt begrenzten HTML-body-link-Hinweis
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-249.
+- Ableitung / Auswahl: Die prioritaere einfache Seitendarstellung profitiert
+  von der HTML-`body[link]`-Farbe. Der lokale HTML-Abschnitt `#the-page`
+  definiert den Legacy-Color-Hinweis auf alle Dokumentelemente, die `:link`
+  matchen; Engine.Css hat bereits denselben statischen Link-Matcher und die
+  Legacy-Farbparser. Der Cache ist am 2026-11-07 geprueft worden.
+- Begrenzter Umfang: Nur `body[link]` fuer statische `:link`-Elemente. Die
+  vorhandene Selector-Semantik behandelt Links ohne History-Abfrage als
+  unvisited. `body[vlink]`/`:visited` bleibt wegen der bestehenden
+  privacy-erhaltenden Grenze unsupported; `body[alink]`/`:active` benoetigt
+  nicht vorhandene dynamische Zustandsauswertung. Getrennte aggregierte
+  UTF-16-Grenze und presentational-hint-Kaskade bleiben erforderlich.
+- Quellen: `plans/Missing.md#recommended-priority`,
+  `specs/cache/html.html#the-page`, `docs/css.md` und
+  `src/Engine/Engine.Css/CssStyleEngine.cs`.
+- Status: Ausgewaehlt; Implementierung und Verifikation ausstehend.
+
+### KP-251 - Pass 2 body[link] implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-250.
+- Belegt: `body[link]` wird mit dem vorhandenen Legacy-Color-Parser als
+  aggregiert begrenzter author presentational hint auf alle mit dem statischen
+  `:link`-Matcher uebereinstimmenden Dokumentelemente angewandt. Die
+  Selector-Auswertung nutzt die gemeinsame Match-Operations-/Cancellation-
+  Begrenzung; Author-Regeln behalten ihre normale Prioritaet. Es wird keine
+  History gelesen.
+- Belegt: CSS-Tests decken Legacy-Werte, `a`/`area`/Nachfahren,
+  nicht-verlinkte Elemente, Cascade, Mutation und aggregierte UTF-16-/
+  Assignment-Limits ab. Ein Offline-Content-Test vergleicht Glyphenfarbe und
+  Pixel mit explizitem `a:link`-CSS.
+- Belegt: CSS (1.208) und Content (103), Solution-Build (0 Warnungen/Fehler),
+  Volltest (16.327) und Formatpruefung bestehen. `git diff --check` besteht.
+- Quelle: `specs/cache/html.html#the-page`, `docs/css.md`,
+  `tests/Engine.Css.Tests/BodyLinkColorHintTests.cs` und
+  `tests/Engine.Content.Tests/BodyLinkColorHintTests.cs`. HTML, CSS Cascade
+  und Selectors Cacheeintraege wurden am 2026-11-07 geprueft.
+- Offen: Commit/Push und CI stehen aus.

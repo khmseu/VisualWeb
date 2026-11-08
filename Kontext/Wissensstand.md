@@ -274,10 +274,16 @@
   Deadline-Timeout im Browserprojekt, der isolierte Wiederholungslauf des
   betroffenen Tests besteht; eine Ursache ist nicht nachgewiesen. `a571e76`
   ist gepusht; Linux, Windows x64/arm64 und CodeQL-CI bestehen. Pass 1 ist
-  abgeschlossen, neun weitere Inkremente verbleiben
+  abgeschlossen, neun weitere Inkremente verbleiben. Pass 2 implementiert
+  den begrenzten HTML-`body[link]`-Legacy-Farb-Hinweis fuer statische `:link`-
+  Elemente; `vlink`/`:visited` und `alink`/`:active` bleiben unsupported.
+  CSS/Content, Solution-Build, 16.327 Solution-Tests und Formatpruefung
+  bestehen lokal. Commit, Push und CI stehen aus
   ([KP-247](./Kontextprotokoll.md#kp-247---neuer-zehn-passen-lauf-und-pass-1-abgegrenzt),
   KP-248,
-  [KP-249](./Kontextprotokoll.md#kp-249---pass-1-committet-gepusht-und-ci-gruen)).
+  [KP-249](./Kontextprotokoll.md#kp-249---pass-1-committet-gepusht-und-ci-gruen),
+  [KP-250](./Kontextprotokoll.md#kp-250---pass-2-waehlt-begrenzten-html-body-link-hinweis),
+  KP-251).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

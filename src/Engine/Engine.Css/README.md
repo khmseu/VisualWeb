@@ -10,6 +10,10 @@ are ignored. Its independent per-computation raw UTF-16 limit is
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
+HTML `body link` applies the legacy-color algorithm to the `color` of static
+`:link` elements. Link matching does not access history; `vlink`/`:visited` and
+`alink`/`:active` remain unsupported. Its independent per-computation raw
+UTF-16 limit is `MaxBodyLinkColorAttributeCharacters`.
 HTML `font color` uses the full bounded legacy-color algorithm at the author
 presentational hint origin. HTML `font size` uses the
 [legacy font size algorithm](https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size)

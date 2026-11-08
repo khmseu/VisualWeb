@@ -41,6 +41,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Table centering hints use the table alignment rule in tables-2.
 /// HTML font color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing rule</see>
 /// and <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color parsing</see>.
+/// HTML body link-color hints use the <see href="https://html.spec.whatwg.org/multipage/rendering.html#the-page">page rule</see>,
+/// the same legacy color parsing, and the static <c>:link</c> matcher without history access.
 /// HTML font face hints use the phrasing rule and
 /// <see href="https://www.w3.org/TR/css-fonts-4/#font-family-prop">CSS font-family syntax</see>.
 /// Spec: html, css-fonts.
@@ -268,6 +270,23 @@ public static class CssStyleEngine
         return HtmlLegacyColor.Parse(text, context.Cancellation);
     }
 
+    private static List<CssColor> GetBodyLinkColorHints(DomDocument document, CssContext context)
+    {
+        var colors = new List<CssColor>();
+        var elementCount = 0;
+        foreach (var node in document.Descendants())
+        {
+            context.Cancellation.ThrowIfCancellationRequested();
+            if (node is not DomElement element) { continue; }
+            if (++elementCount > context.Options.MaxElements)
+            { throw new CssLimitException("CSS styled element limit exceeded."); }
+            if (element.LocalName != "body" || element.GetAttribute("link") is not { } link) { continue; }
+            context.BodyLinkColorCharacters(link.Length);
+            if (HtmlLegacyColor.Parse(link, context.Cancellation) is { } color) { colors.Add(color); }
+        }
+        return colors;
+    }
+
     private static CssLength? TryParseNonZeroDimensionValue(string input, CancellationToken cancellationToken)
     {
         var position = 0;
@@ -353,6 +372,9 @@ public static class CssStyleEngine
         var sourceCount = 0;
         if (includeUserAgent) { Compile(new(UserAgentStyleSheet, CssOrigin.UserAgent)); }
         foreach (var source in sources ?? []) { Compile(source); }
+        var bodyLinkColors = GetBodyLinkColorHints(document, context);
+        var linkSelector = bodyLinkColors.Count == 0 ? null
+            : CssSelectorList.Compile(CssSyntax.Tokens(":link", context), context);
         var styles = new Dictionary<DomElement, CssComputedStyle>();
         foreach (var node in document.Descendants())
         {
@@ -364,6 +386,15 @@ public static class CssStyleEngine
             {
                 if (rule.Selectors.Match(element, context) is not { } specificity) { continue; }
                 foreach (var assignment in rule.Assignments) { Add(assignment, rule.Origin, false, specificity, rule.Order); }
+            }
+            if (linkSelector?.Match(element, context) is not null)
+            {
+                foreach (var bodyLinkColor in bodyLinkColors)
+                {
+                    context.Assignment();
+                    Add(new("color", bodyLinkColor, false, 0), CssOrigin.Author, false, new(), -1,
+                        presentationalHint: true);
+                }
             }
             if (TryGetListTypeHint(element, out var marker))
             {

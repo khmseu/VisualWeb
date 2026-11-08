@@ -1145,6 +1145,14 @@ development (Run 42496849796), Windows confinement x64/arm64 (Run 42496849835),
 and Push-on-main/CodeQL (Run 42496849427) all pass. Pass 1 is complete; nine
 increments remain in this request.
 
+Pass 2 implements the HTML `body[link]` legacy-color hint on document `:link`
+elements only. The existing static selector intentionally treats links as
+unvisited without history access; `vlink`/`:visited` and `alink`/`:active`
+remain unsupported. Cascade, inherited glyph color, mutation, raw UTF-16 and
+assignment limits, and offline pixel regressions pass. CSS (1,208), Content
+(103), the solution build (0 warnings/errors), all 16,327 solution tests, and
+format verification pass locally. Commit, push, and CI validation remain.
+
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
 ### 6. A persistent browser JavaScript environment
