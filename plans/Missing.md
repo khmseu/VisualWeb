@@ -1185,6 +1185,22 @@ support. This is not a completed increment; seven remain after Pass 3.
 Evidence: `CSS scope`, `layout restrictions`, `painting limitations`, and
 `specs/cache/html.html#lists`.
 
+Pass 4 implements the HTML `bgcolor` presentational hint for
+`table`, `thead`, `tbody`, `tfoot`, `tr`, `td` and `th`. The cached HTML
+`#tables-2` rule maps these attributes to `background-color`; the existing
+bounded legacy-color parser, author-hint cascade and table background paint
+layers are reused. The new aggregate raw UTF-16 budget is separate from the
+body-color limit. Background-image attributes and other elements' `bgcolor`
+remain unsupported. Focused CSS (1,216) and Content (105) tests pass, as do
+the zero-warning solution build and format verification. All 16,339 solution
+tests pass on retry. The first full-suite run hit the unrelated
+`ProcessTests.CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs`
+case because its transient cgroup `cpu.stat` path disappeared; both parameters
+pass in isolation. Browser implementation and test sources are unchanged from
+the pass base, and the same missing-path issue was previously reproduced on
+base `1b749f6`. Commit, push and CI remain pending; after their success, six
+requested increments will remain.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

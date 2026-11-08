@@ -51,6 +51,9 @@ public sealed record CssOptions
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table width hint</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values">dimension values</see>.</remarks>
     public int MaxTableWidthAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in table bgcolor attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/tables.html#tables-2">table background-color hints</see>.</remarks>
+    public int MaxTableBackgroundColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     public int MaxTokens { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
     public int MaxDiagnostics { get; init; } = 10_000;
@@ -67,7 +70,7 @@ public sealed record CssOptions
             || MaxBodyTextColorAttributeCharacters <= 0 || MaxBodyLinkColorAttributeCharacters <= 0
             || MaxFontColorAttributeCharacters <= 0 || MaxFontFaceAttributeCharacters <= 0
             || MaxFontSizeAttributeCharacters <= 0 || MaxTableSpacingAttributeCharacters <= 0
-            || MaxTableWidthAttributeCharacters <= 0
+            || MaxTableWidthAttributeCharacters <= 0 || MaxTableBackgroundColorAttributeCharacters <= 0
             || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
             || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
@@ -100,6 +103,7 @@ internal sealed class CssContext
     private int fontSizeCharacters;
     private int tableSpacingCharacters;
     private int tableWidthCharacters;
+    private int tableBackgroundColorCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
     internal CssSelectorScope? Scope { get; }
@@ -192,6 +196,10 @@ internal sealed class CssContext
         { throw new CssLimitException("CSS table width attribute character limit exceeded."); }
         tableWidthCharacters += length;
     }
+
+    internal void TableBackgroundColorCharacters(int length)
+        => AttributeCharacters(length, ref tableBackgroundColorCharacters,
+            Options.MaxTableBackgroundColorAttributeCharacters, "table bgcolor");
 
     private void AttributeCharacters(int length, ref int used, int limit, string attribute)
     {

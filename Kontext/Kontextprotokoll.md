@@ -6773,3 +6773,41 @@ presentational hint`) ist auf `main` gepusht.
   nach Pass 3 bleiben sieben angeforderte Inkremente. Den aktualisierten
   Tracker erneut pruefen und einen tatsaechlich fehlenden Prioritaet-1-Schritt
   auswaehlen.
+
+### KP-260 - Pass 4 waehlt Tabellen-bgcolor-Hints
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-259.
+- Nutzerangabe: Der Nutzer setzte den Auftrag
+  `/missing-priority-implementation 10` fort; der Lauf verlangt zehn weitere
+  getrennte, validierte Inkremente. Die exakte Anweisung ist in der aktuellen
+  Unterhaltung verfuegbar.
+- Belegt: Prioritaet 1 in `plans/Missing.md` nennt einfache Seiten und
+  grundlegendes Tabellen-Rendering. Die lokale HTML-Kopie
+  `specs/cache/html.html`, `#tables-2`, bildet `bgcolor` auf `table`, `thead`,
+  `tbody`, `tfoot`, `tr`, `td` und `th` als `background-color`-Hinweis ab.
+  `CssStyleEngine` implementierte zuvor nur `body[bgcolor]`; die vorhandenen
+  Tabellen-Hintergrundebenen koennen die resultierenden Stile layouten und
+  painten. Der HTML-Cache wurde am 2026-11-07 geprueft.
+- Auswahl/Umfang: Diese konkrete Luecke wird als Pass 4 umgesetzt. Die
+  Implementierung verwendet den bestehenden HTML-Legacy-Farbparser und die
+  Author-Presentational-Hint-Kaskade, mit eigenem aggregierten UTF-16-Limit.
+  Bildattribute und `bgcolor` auf anderen Elementen bleiben ausserhalb.
+- Status bei Auswahl: Die Implementierung war noch nicht begonnen.
+
+### KP-261 - Pass 4 lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-260.
+- Belegt: Die sieben `bgcolor`-Hints, deren gemeinsames UTF-16-Limit,
+  Cascade-/Mutationsverhalten und Pixelintegration sind implementiert.
+  CSS (1.216), Content (105), Solution-Build (null Warnungen/Fehler),
+  `dotnet format ... --verify-no-changes` und `git diff --check` bestehen.
+  Ein kompletter `dotnet test VisualWeb.slnx --no-build`-Retry besteht mit
+  16.339 Tests.
+- Vorheriger Volltest: Ein erster Lauf scheiterte ausschliesslich in
+  `ProcessTests.CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(cancel: True)`,
+  weil der temporaere cgroup-`cpu.stat`-Pfad nicht mehr existierte. Beide
+  Parameter bestehen isoliert; Browsercode/Testquelle sind zum Basiscommit
+  `b8a8c83` unveraendert. Derselbe fehlende Pfad wurde laut KP-254 zuvor auf
+  `1b749f6` reproduziert. Der anschliessende Volltest-Retry bestand.
+- Status: lokale Validierung abgeschlossen; Featurecommit, Push und CI stehen
+  noch aus. Pass 4 zaehlt bis dahin nicht als vollstaendig abgeschlossen.

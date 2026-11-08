@@ -264,6 +264,14 @@ public static class CssStyleEngine
         return HtmlLegacyColor.Parse(bgcolor, context.Cancellation);
     }
 
+    private static CssColor? GetTableBackgroundColorHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName is not ("table" or "thead" or "tbody" or "tfoot" or "tr" or "td" or "th")
+            || element.GetAttribute("bgcolor") is not { } bgcolor) { return null; }
+        context.TableBackgroundColorCharacters(bgcolor.Length);
+        return HtmlLegacyColor.Parse(bgcolor, context.Cancellation);
+    }
+
     private static CssColor? GetBodyTextColorHint(DomElement element, CssContext context)
     {
         if (element.LocalName != "body" || element.GetAttribute("text") is not { } text) { return null; }
@@ -443,6 +451,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("background-color", bodyBackgroundColor, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetTableBackgroundColorHint(element, context) is { } tableBackgroundColor)
+            {
+                context.Assignment();
+                Add(new("background-color", tableBackgroundColor, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetBodyTextColorHint(element, context) is { } bodyTextColor)

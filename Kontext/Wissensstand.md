@@ -307,12 +307,29 @@
   Stylesheet implementiert; dieser Commit fuegte sie versehentlich doppelt
   ein. Die Korrektur entfernt die Dublette und stellt die exakten CSS-Budgets
   wieder her. CSS-/Layouttests und Dokumentation bleiben als Abdeckung der
-  vorhandenen Regel. Es wurde kein neues Inkrement abgeschlossen; nach Pass 3
-  verbleiben sieben Inkremente
+  vorhandenen Regel. Korrekturcommit `b8a8c83` ist gepusht; Linux, Windows und
+  CodeQL sind erfolgreich. Es wurde kein Inkrement dadurch abgeschlossen.
+  Pass 4 waehlt die belegte Luecke fuer HTML-`bgcolor` auf `table`, `thead`,
+  `tbody`, `tfoot`, `tr`, `td` und `th`: WHATWG HTML `#tables-2` mappt diese
+  Attribute ueber den Legacy-Farbparser auf `background-color`; der bisherige
+  Code unterstuetzte nur `body[bgcolor]`. Der Umfang nutzt die bestehende
+  Presentational-Hint-Kaskade und Tabellen-Hintergrundebenen, mit eigenem
+  aggregiertem UTF-16-Budget; Bildattribute und andere Elemente bleiben
+  unsupported (KP-260). CSS (1.216), Content (105), Solution-Build (0
+  Warnungen/Fehler) und Formatverifikation bestehen. Der erste Volltest traf
+  nur den unabhaengigen
+  `ProcessTests.CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs`
+  cgroup-`cpu.stat`-Pfadfehler; beide Parameter bestehen isoliert. Browsercode
+  und Testquelle sind gegenueber dem Pass-Basiscommit unveraendert; der gleiche
+  fehlende Pfad wurde zuvor auf `1b749f6` reproduziert. Der Volltest-Retry
+  besteht mit 16.339 Tests. Commit, Push und CI stehen noch aus; bei deren
+  Erfolg verbleiben sechs angeforderte Inkremente
   ([KP-256](./Kontextprotokoll.md#kp-256---pass-4-waehlt-die-html-einrueckung-von-dd),
   [KP-257](./Kontextprotokoll.md#kp-257---pass-4-dd-einrueckung-implementiert-und-lokal-validiert),
   [KP-258](./Kontextprotokoll.md#kp-258---pass-4-committet-gepusht-und-ci-gruen),
-  [KP-259](./Kontextprotokoll.md#kp-259---korrektur-dd-einrueckung-war-bereits-implementiert)).
+  [KP-259](./Kontextprotokoll.md#kp-259---korrektur-dd-einrueckung-war-bereits-implementiert),
+  [KP-260](./Kontextprotokoll.md#kp-260---pass-4-waehlt-tabellen-bgcolor-hints),
+  [KP-261](./Kontextprotokoll.md#kp-261---pass-4-lokal-validiert)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

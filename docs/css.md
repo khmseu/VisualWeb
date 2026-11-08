@@ -253,13 +253,21 @@ aggregate limit, and ordinary author CSS overrides the hint.
 The hint shares the author presentational-hint cascade, and normal author CSS
 overrides it.
 The [HTML page background rule](https://html.spec.whatwg.org/multipage/rendering.html#the-page)
-(local ID `html`) also maps a successfully parsed `body[bgcolor]` value through
-the HTML legacy-colour algorithm to `background-color`. This uses the same
-presentational-hint cascade and assignment budget; empty and ASCII-case-
-insensitive `transparent` values add no hint, and the raw attribute length has
-its own aggregate per-computation limit. Other elements' `bgcolor` attributes
-are ignored. The offline renderer's existing body-background paint behavior
-handles the computed color.
+(local ID `html`) maps a successfully parsed `body[bgcolor]` value through the
+HTML legacy-colour algorithm to `background-color`. This uses the normal
+presentational-hint cascade; empty and ASCII-case-insensitive `transparent`
+values add no hint, and raw attribute length has its own aggregate
+per-computation limit. The offline renderer's existing body-background paint
+behavior handles the computed color.
+The [HTML table rendering rules](https://html.spec.whatwg.org/multipage/tables.html#tables-2)
+(local ID `html`) also map `bgcolor` on `table`, `thead`, `tbody`, `tfoot`,
+`tr`, `td` and `th` to `background-color` using the same legacy-colour
+algorithm and author presentational-hint cascade. These attributes share a
+separate aggregate raw UTF-16 limit across one style computation; empty and
+ASCII-case-insensitive `transparent` values consume that budget but add no
+hint. The existing table background layers carry the computed colors through
+layout and paint. `background` image attributes and other elements' `bgcolor`
+attributes remain unsupported.
 The same HTML page rule maps a successfully parsed `body[text]` value through
 the legacy-colour algorithm to the body's `color`; descendants use ordinary
 CSS inheritance. It has its own aggregate raw-attribute limit and shares the

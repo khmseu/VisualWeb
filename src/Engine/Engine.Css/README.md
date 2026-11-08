@@ -4,9 +4,11 @@ Phase-6 first-party CSS Syntax tokenization/parsing, static HTML selectors and
 typed computed styles. UA/user/author/inline cascade, !important, specificity,
 inheritance, CSS-wide keywords and initial block/inline properties are supported.
 HTML `body bgcolor` uses the HTML legacy-color algorithm as a bounded
-`background-color` presentational hint; other elements' `bgcolor` attributes
-are ignored. Its independent per-computation raw UTF-16 limit is
-`MaxBodyBackgroundColorAttributeCharacters`.
+`background-color` presentational hint. Its independent per-computation raw
+UTF-16 limit is `MaxBodyBackgroundColorAttributeCharacters`.
+HTML table `bgcolor` on `table`, `thead`, `tbody`, `tfoot`, `tr`, `td` and
+`th` uses the same algorithm and cascade with a separate bounded aggregate
+raw UTF-16 limit, `MaxTableBackgroundColorAttributeCharacters`.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.

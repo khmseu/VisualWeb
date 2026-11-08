@@ -1144,6 +1144,28 @@ public sealed class ContentTests
     }
 
     [Fact]
+    public void TableBgcolorHintsReachNativeTableBackgroundPixels()
+    {
+        using var font = new TextFont(FontPath);
+        var text = new FontSet(); text.Register("serif", font);
+        using var fonts = new PaintFontRegistry(); fonts.Register(font);
+        const string html = "<!doctype html><table bgcolor=yellow><tbody bgcolor=green>"
+            + "<tr bgcolor=red><td bgcolor=blue></td></tr></tbody></table>";
+        const string stylesText = "*{margin:0}table{width:40px;border-spacing:4px}"
+            + "td{width:32px;height:20px;padding:0}";
+        var actual = OfflinePageRenderer.Render(html, [new(stylesText)], text, fonts, 50, 50,
+            cancellationToken: Cancellation);
+        var expected = OfflinePageRenderer.Render(
+            "<!doctype html><table><tbody><tr><td></td></tr></tbody></table>",
+            [new(stylesText + "table{background-color:yellow}tbody{background-color:green}"
+                + "tr{background-color:red}td{background-color:blue}")],
+            text, fonts, 50, 50, cancellationToken: Cancellation);
+
+        Assert.Empty(actual.Styles.Diagnostics);
+        Assert.Equal(expected.Frame.Pixels.ToArray(), actual.Frame.Pixels.ToArray());
+    }
+
+    [Fact]
     public void SimpleLegacyDoctypeDocumentReachesAnOfflineNativeFrame()
     {
         using var font = new TextFont(FontPath);
