@@ -6487,3 +6487,14 @@ semantik und keine allgemeine CSS-Vererbung von `vertical-align`.
   die betreffenden Guides/READMEs, `plans/Missing.md` und beide Kontextansichten.
 - Status: lokal abgeschlossen; Commit, Push und CI stehen aus. Im
   Zehn-Inkrement-Lauf verbleibt ein weiterer Pass.
+
+### KP-241 - Pass 9 gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-240.
+- Belegt: Commit `dd42bec` (`feat(layout): support row and row-group valign
+defaults`) ist auf `main` gepusht.
+- Belegt: Linux development (Run 42485850844), Windows confinement x64/arm64
+  (Run 42485850871) und Push on main mit CodeQL (Run 42485850925) sind
+  erfolgreich abgeschlossen.
+- Pass 9 ist abgeschlossen; im angeforderten Zehn-Inkrement-Lauf verbleibt
+  ein weiterer Pass.

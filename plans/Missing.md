@@ -1113,7 +1113,13 @@ row/group values and unsupported targets continue to fail explicitly.
 CSS (1,183), Layout (908), the zero-warning solution build, all 16,299
 solution tests, format verification and `git diff --check` pass locally.
 Pass 9 is complete locally; one increment remains in this ten-pass request.
-Commit, push and CI remain pending.
+Commit `dd42bec` is pushed. Linux development
+([Run 42485850844](https://github.com/khmseu/VisualWeb/actions/runs/42485850844)),
+Windows confinement x64/arm64
+([Run 42485850871](https://github.com/khmseu/VisualWeb/actions/runs/42485850871))
+and Push on main/CodeQL
+([Run 42485850925](https://github.com/khmseu/VisualWeb/actions/runs/42485850925))
+pass.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
