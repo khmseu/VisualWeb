@@ -6825,3 +6825,39 @@ presentational hint`) ist auf `main` gepusht.
   sind erfolgreich.
 - Status: Pass 4 ist abgeschlossen; sechs der angeforderten zehn Inkremente
   verbleiben.
+
+### KP-263 - Pass 5 waehlt HTML-table-cellpadding
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-262.
+- Nutzerangabe: Der Nutzer setzte den Auftrag `/missing-priority-implementation 10`
+  mit „continue“ fort; der laufende Auftrag verlangt zehn getrennte
+  Missing-Prioritaetsinkremente.
+- Belegt: Die lokale HTML-Kopie `specs/cache/html.html`, `#tables-2`, bildet
+  `table[cellpadding]` mittels des Algorithmus fuer nichtnegative Ganzzahlen
+  auf alle vier Padding-Eigenschaften der zugehoerigen `td`/`th`-Zellen ab.
+  Der aktuelle CSS-Code hatte keinen solchen Hint; Layout akzeptierte keine
+  solche Tabellenangabe. Der HTML-Cache wurde am 2026-11-07 geprueft.
+- Auswahl/Umfang: Pass 5 implementiert diesen einzelnen Tabellenhinweis.
+  Jeder Tabellenwert wird einmal gecacht und gegen ein separates aggregiertes
+  Roh-UTF-16-Limit geprueft; verschachtelte Tabellen verwenden die naechste
+  Tabelle. Die vier Deklarationen nutzen den bestehenden Author-
+  Presentational-Hint-Ursprung und dessen Assignment-Limit. Unparsible Werte
+  erzeugen keinen Hint; normale Autorenstile koennen ihn ueberschreiben.
+  `cellpadding` an anderen Tabellenbestandteilen bleibt unsupported.
+- Status bei Auswahl: Die Codeaenderung war noch nicht implementiert.
+
+### KP-264 - Pass 5 lokal implementiert und validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-263.
+- Belegt: Implementierung, CSS-/Layouttests und direkte Dokumentation sind
+  vorhanden. CSS (1.225) und Layout (912) bestehen; `dotnet build
+VisualWeb.slnx` besteht mit null Warnungen/Fehlern. Formatverifikation
+  (`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party`) besteht. Der erste Volltest hatte eine Deadline-Ueberschreitung
+  in `MicrotaskTests.MicrotasksShareDomBudgetWithSynchronousWorkAndIsolatesNeverShareJobs`
+  (Engine.Scripting; erwartet `ScriptExecutionException`, tatsaechlich
+  `ScriptLimitException`). Der unveraenderte Test besteht isoliert; der
+  vollstaendige `dotnet test VisualWeb.slnx --no-build`-Retry besteht mit
+  16.350 Tests. Eine Ursache des ersten Timeouts ist nicht nachgewiesen.
+- Status: lokale Validierung abgeschlossen; Featurecommit, Push und CI stehen
+  noch aus. Pass 5 zaehlt noch nicht als abgeschlossen.

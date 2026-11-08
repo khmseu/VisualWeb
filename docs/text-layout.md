@@ -284,6 +284,11 @@ HTML `table[width]` maps a nonzero dimension value to a `width` hint: positive
 lengths become pixels and percentages resolve against the containing block.
 Zero and invalid values add no hint; values outside the finite numeric range
 fail explicitly. Normal author CSS overrides the hint.
+HTML `table[cellpadding]` maps a successfully parsed non-negative integer to
+equal pixel `padding-top`, `padding-right`, `padding-bottom` and `padding-left`
+hints on the table's corresponding `td`/`th` cells. The table attribute is
+counted once toward its independent aggregate raw UTF-16 limit, including
+invalid values; ordinary author CSS overrides the hint.
 Measurement and arrangement share node, text, shaping, line, glyph, box, depth
 and cancellation budgets.
 
@@ -293,7 +298,7 @@ percentage dimensions inside cells, collapsed borders, fixed layout, other
 cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes other than the supported table
-`width`/`cellspacing` hints (`height`, `border`, `cellpadding`, `nowrap`, plus
+`width`/`cellspacing`/`cellpadding` hints (`height`, `border`, `nowrap`, plus
 `width` on non-table parts). The table's ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive

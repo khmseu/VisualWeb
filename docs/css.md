@@ -252,6 +252,13 @@ finite numeric range fail explicitly. Raw attribute scanning has a separate
 aggregate limit, and ordinary author CSS overrides the hint.
 The hint shares the author presentational-hint cascade, and normal author CSS
 overrides it.
+The HTML table `cellpadding` attribute maps a successfully parsed
+non-negative integer to equal pixel values for all four padding properties of
+each corresponding `td`/`th` cell. Each table attribute is counted once toward
+the independent aggregate raw UTF-16 limit
+`MaxTableCellPaddingAttributeCharacters`, including invalid values. The hint
+uses the author presentational-hint cascade, so ordinary author CSS overrides
+it; `cellpadding` on other elements remains unsupported.
 The [HTML page background rule](https://html.spec.whatwg.org/multipage/rendering.html#the-page)
 (local ID `html`) maps a successfully parsed `body[bgcolor]` value through the
 HTML legacy-colour algorithm to `background-color`. This uses the normal

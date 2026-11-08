@@ -1174,6 +1174,37 @@ public sealed class LayoutTests
         Assert.Equal(first.Y + first.Height + 2, Find(root, "c").BorderBox.Y);
     }
 
+    [Fact]
+    public void TableCellpaddingAttributeAddsUniformPaddingToAssociatedCells()
+    {
+        var root = UnorderedList("""
+            <table cellpadding="4"><tbody><tr>
+            <td id=cell>x</td><th id=header>y</th>
+            </tr></tbody></table>
+            """).Root!;
+
+        foreach (var id in new[] { "cell", "header" })
+        {
+            var cell = Find(root, id);
+            Assert.Equal(4, cell.Content.X - cell.BorderBox.X);
+            Assert.Equal(4, cell.Content.Y - cell.BorderBox.Y);
+            Assert.Equal(4, cell.BorderBox.X + cell.BorderBox.Width - cell.Content.X - cell.Content.Width);
+            Assert.Equal(4, cell.BorderBox.Y + cell.BorderBox.Height - cell.Content.Y - cell.Content.Height);
+        }
+    }
+
+    [Fact]
+    public void InvalidTableCellpaddingLeavesDefaultCellPaddingAndCellAttributesRemainUnsupported()
+    {
+        var root = UnorderedList("""
+            <table cellpadding="-5"><tr><td id=cell>x</td></tr></table>
+            """).Root!;
+        var cell = Find(root, "cell");
+        Assert.Equal(1, cell.Content.X - cell.BorderBox.X);
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr><td cellpadding=3>x</td></tr></table>"));
+    }
+
     [Theory]
     [InlineData(null, 1)]
     [InlineData("0", 1)]

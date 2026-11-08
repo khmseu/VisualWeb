@@ -98,6 +98,10 @@ The HTML table `width` hint maps nonzero dimensions to pixel or percentage
 widths, with percentages resolved against the containing block. Zero and
 invalid values add no hint, and out-of-range values fail explicitly. Width
 attributes on other table parts remain unsupported.
+The table `cellpadding` hint maps parsed non-negative integers to equal pixel
+padding on all four sides of corresponding cells. Cell padding participates in
+the existing intrinsic sizing and arrangement; `cellpadding` on other table
+parts remains unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

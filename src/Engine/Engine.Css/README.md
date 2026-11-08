@@ -9,6 +9,9 @@ UTF-16 limit is `MaxBodyBackgroundColorAttributeCharacters`.
 HTML table `bgcolor` on `table`, `thead`, `tbody`, `tfoot`, `tr`, `td` and
 `th` uses the same algorithm and cascade with a separate bounded aggregate
 raw UTF-16 limit, `MaxTableBackgroundColorAttributeCharacters`.
+HTML table `cellpadding` maps successfully parsed non-negative integers to all
+four padding properties of corresponding `td`/`th` cells. Its independent
+aggregate raw UTF-16 limit is `MaxTableCellPaddingAttributeCharacters`.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
@@ -28,8 +31,9 @@ registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `@font-face` support. Independent per-computation
 `MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
 `MaxFontSizeAttributeCharacters`, `MaxTableSpacingAttributeCharacters` and
-`MaxTableWidthAttributeCharacters` limits count raw UTF-16 attribute units,
-including invalid values, before parsing.
+`MaxTableWidthAttributeCharacters`, `MaxTableBackgroundColorAttributeCharacters`
+and `MaxTableCellPaddingAttributeCharacters` limits count raw UTF-16 attribute
+units, including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-11-07) include `search { display:block }`
 as a normal, disableable UA declaration; it introduces no search widget.

@@ -932,10 +932,13 @@ findings on unchanged lines; all changed test files pass a targeted check.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one or two spacing lengths (one for both axes, or horizontal
-then vertical), the HTML `cellspacing` and nonzero `table[width]` hints,
+then vertical), the HTML `cellspacing`, nonzero `table[width]`, and
+`table[cellpadding]` hints,
 top-aligned text/block cells, and table/cell/row/group/column background colors
 and solid borders through ordinary paint flow. Table widths act as minima;
 header/footer groups are ordered around body groups.
+`cellpadding` sets the four equal padding sides of corresponding cells from a
+non-negative integer pixel value, with bounded aggregate attribute work.
 Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
 constraints equally across tracks; the total column grid is capped by
 `LayoutOptions.MaxTableColumns` before allocation and repeated track work by
@@ -943,7 +946,7 @@ constraints equally across tracks; the total column grid is capped by
 one caption, and bounded column/group tracks and widths are supported as
 documented. Anonymous/arbitrary CSS tables, collapsed borders, fixed layout,
 nested tables/widgets, percentages inside cells and other legacy presentation
-attributes remain unsupported. See the
+attributes (including `height`, `border` and `nowrap`) remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
 exact work limits and cancellation, native pixels, and local/process
@@ -1203,6 +1206,21 @@ is pushed. Linux development ([run](https://github.com/khmseu/VisualWeb/actions/
 Windows confinement ([run](https://github.com/khmseu/VisualWeb/actions/runs/42524681949))
 and CodeQL ([run](https://github.com/khmseu/VisualWeb/actions/runs/42524681823))
 all pass. Pass 4 is complete; six requested increments remain.
+
+Pass 5 supports the HTML table `cellpadding` hint. A table's successfully
+parsed non-negative integer supplies all four pixel padding properties to its
+corresponding `td`/`th` cells through the author presentational-hint cascade.
+Attribute scanning has an independent aggregate raw UTF-16 budget and parses
+each table value once; nearest-table ownership keeps nested tables separate.
+Invalid values add no hint, author CSS overrides the hint, and attributes on
+other table elements remain unsupported. Focused CSS and layout tests cover
+parsing, cascade, mutation, nested tables, exact geometry, assignment and
+attribute limits, and unsupported attribute placement.
+Local validation passes: CSS (1,225), Layout (912), solution build (zero
+warnings/errors), format verification, and all 16,350 solution tests on retry.
+The first full-suite run had one scripting deadline failure in an unchanged
+test; its isolated rerun and the full-suite retry both pass. Feature commit,
+push and CI are pending.
 
 ### 6. A persistent browser JavaScript environment
 

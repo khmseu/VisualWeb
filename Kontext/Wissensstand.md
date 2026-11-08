@@ -333,6 +333,16 @@
   [KP-260](./Kontextprotokoll.md#kp-260---pass-4-waehlt-tabellen-bgcolor-hints),
   [KP-261](./Kontextprotokoll.md#kp-261---pass-4-lokal-validiert),
   [KP-262](./Kontextprotokoll.md#kp-262---pass-4-committet-gepusht-und-ci-gruen)).
+  Pass 5 waehlt die HTML-`table[cellpadding]`-Praesentationsregel: ein
+  erfolgreich als nichtnegative Ganzzahl geparster Tabellenwert setzt alle
+  vier Paddingseiten zugehoeriger `td`/`th`-Elemente. Jede Tabellenangabe wird
+  einmal gegen ein eigenes aggregiertes UTF-16-Limit geprueft; fuer
+  verschachtelte Tabellen gilt der naechste Tabellenvorfahr. Andere
+  Attributpositionen bleiben unsupported. CSS (1.225), Layout (912),
+  Solution-Build (0 Warnungen/Fehler), Formatverifikation und der Volltest-
+  Retry (16.350) bestehen. Der erste Volltest traf eine Deadline-Ueberschreitung
+  in einem unveraenderten Scripting-Test; dessen isolierter Lauf sowie der
+  Volltest-Retry bestehen. Commit, Push und CI stehen aus (KP-263/KP-264).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

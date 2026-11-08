@@ -257,6 +257,21 @@ public static class CssStyleEngine
         return TryParseNonZeroDimensionValue(width, context.Cancellation);
     }
 
+    private static CssLength? GetTableCellPaddingHint(DomElement table, CssContext context,
+        Dictionary<DomElement, CssLength?> cache)
+    {
+        if (cache.TryGetValue(table, out var hint)) { return hint; }
+        hint = null;
+        if (table.GetAttribute("cellpadding") is { } cellpadding)
+        {
+            context.TableCellPaddingCharacters(cellpadding.Length);
+            if (TryParseNonNegativeInteger(cellpadding, context.Cancellation, out var value, "table cellpadding"))
+            { hint = new(value, "px"); }
+        }
+        cache.Add(table, hint);
+        return hint;
+    }
+
     private static CssColor? GetBodyBackgroundColorHint(DomElement element, CssContext context)
     {
         if (element.LocalName != "body" || element.GetAttribute("bgcolor") is not { } bgcolor) { return null; }
@@ -339,7 +354,8 @@ public static class CssStyleEngine
         return new(value, position < input.Length && input[position] == '%' ? "%" : "px");
     }
 
-    private static bool TryParseNonNegativeInteger(string input, CancellationToken cancellationToken, out double value)
+    private static bool TryParseNonNegativeInteger(string input, CancellationToken cancellationToken, out double value,
+        string attribute = "table cellspacing")
     {
         value = 0;
         var position = 0;
@@ -359,7 +375,7 @@ public static class CssStyleEngine
             var digit = input[position] - '0';
             if (negative && digit > 0) { return false; }
             value = value * 10 + digit;
-            if (!double.IsFinite(value)) { throw new CssLimitException("Computed table cellspacing exceeds finite numeric range."); }
+            if (!double.IsFinite(value)) { throw new CssLimitException($"Computed {attribute} exceeds finite numeric range."); }
             position++;
         }
 
@@ -385,12 +401,20 @@ public static class CssStyleEngine
         var linkSelector = bodyLinkColors.Count == 0 ? null
             : CssSelectorList.Compile(CssSyntax.Tokens(":link", context), context);
         var styles = new Dictionary<DomElement, CssComputedStyle>();
+        var tableCellPaddingHints = new Dictionary<DomElement, CssLength?>();
+        var tableAncestors = new Dictionary<DomElement, DomElement?>();
         foreach (var node in document.Descendants())
         {
             context.Cancellation.ThrowIfCancellationRequested();
             if (node is not DomElement element) { continue; }
             if (styles.Count >= context.Options.MaxElements) { throw new CssLimitException("CSS styled element limit exceeded."); }
+            DomElement? tableAncestor = element.LocalName == "table" ? element : null;
+            if (tableAncestor is null && element.ParentNode is DomElement tableParent)
+            { tableAncestors.TryGetValue(tableParent, out tableAncestor); }
+            if (tableAncestor is not null) { tableAncestors.Add(element, tableAncestor); }
             var candidates = new Dictionary<string, List<Candidate>>(StringComparer.Ordinal);
+            if (element.LocalName == "table")
+            { _ = GetTableCellPaddingHint(element, context, tableCellPaddingHints); }
             foreach (var rule in rules)
             {
                 if (rule.Selectors.Match(element, context) is not { } specificity) { continue; }
@@ -430,6 +454,23 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("width", tableWidth, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (element.LocalName is ("td" or "th")
+                && tableAncestor is { } table
+                && GetTableCellPaddingHint(table, context, tableCellPaddingHints) is { } cellPadding)
+            {
+                context.Assignment();
+                Add(new("padding-top", cellPadding, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+                context.Assignment();
+                Add(new("padding-right", cellPadding, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+                context.Assignment();
+                Add(new("padding-bottom", cellPadding, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+                context.Assignment();
+                Add(new("padding-left", cellPadding, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetAlignHint(element) is { } align)
