@@ -155,6 +155,14 @@ public static class CssStyleEngine
         return element.LocalName is ("td" or "th") && GetAlignHint(element) is not null;
     }
 
+    /// <summary>Reports whether a supported alignment hint applies to an HTML table row or row group.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table row and row-group alignment hints</see>.</remarks>
+    public static bool HasSupportedTableRowAlignmentHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName is ("thead" or "tbody" or "tfoot" or "tr") && GetAlignHint(element) is not null;
+    }
+
     /// <summary>Reports whether a supported legacy vertical-alignment hint applies to an HTML table cell.</summary>
     /// <remarks>Spec: html;
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell alignment hints</see>.</remarks>
@@ -170,14 +178,15 @@ public static class CssStyleEngine
     private static string? GetAlignHint(DomElement element)
     {
         if (element.LocalName == "center") { return "center"; }
-        var divOrCell = element.LocalName is "div" or "td" or "th";
-        if (!divOrCell
+        var supportsMiddleAlias = element.LocalName is
+            ("div" or "td" or "th" or "thead" or "tbody" or "tfoot" or "tr");
+        if (!supportsMiddleAlias
             && element.LocalName is not ("p" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6"))
         {
             return null;
         }
         var align = element.GetAttribute("align");
-        if (divOrCell)
+        if (supportsMiddleAlias)
         {
             return align is { Length: 4 or 5 or 6 or 7 } ? CssText.Lower(align) switch
             {

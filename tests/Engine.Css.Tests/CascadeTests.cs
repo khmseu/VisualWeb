@@ -646,6 +646,41 @@ public sealed class CascadeTests
     }
 
     [Theory]
+    [InlineData("thead", "LeFt", "left")]
+    [InlineData("tbody", "RiGhT", "right")]
+    [InlineData("tfoot", "CeNtEr", "center")]
+    [InlineData("tr", "MiDdLe", "center")]
+    [InlineData("tbody", "JuStIfY", "justify")]
+    public void TableRowAndGroupAlignHintsInheritToCells(string tag, string value, string expected)
+    {
+        var target = tag == "tr"
+            ? $"<tr id=target align='{value}'><td id=cell>x</td></tr>"
+            : $"<{tag} id=target align='{value}'><tr><td id=cell>x</td></tr></{tag}>";
+        var doc = Document("<table>" + target + "</table>");
+        var styles = CssStyleEngine.Compute(doc, includeUserAgent: false, cancellationToken: Cancellation);
+
+        Assert.Empty(styles.Diagnostics);
+        Assert.Equal(new CssKeyword(expected), styles.Styles[doc.GetElementById("target")!]["text-align"]);
+        Assert.Equal(new CssKeyword(expected), styles.Styles[doc.GetElementById("cell")!]["text-align"]);
+        Assert.True(CssStyleEngine.HasSupportedTableRowAlignmentHint(doc.GetElementById("target")!));
+    }
+
+    [Fact]
+    public void TableRowAlignHintUsesPresentationalCascadeAndAllowsCellOverride()
+    {
+        var doc = Document("<table><tbody id=group align=right><tr><td id=target>x</td></tr></tbody></table>");
+        var group = doc.GetElementById("group")!;
+        var target = doc.GetElementById("target")!;
+        var user = new CssStyleSource("tbody{text-align:left}", CssOrigin.User);
+        Assert.Equal(new CssKeyword("right"),
+            CssStyleEngine.Compute(doc, [user], includeUserAgent: false, cancellationToken: Cancellation)
+                .Styles[group]["text-align"]);
+        Assert.Equal(new CssKeyword("left"),
+            CssStyleEngine.Compute(doc, [new("td{text-align:left}")], includeUserAgent: false,
+                cancellationToken: Cancellation).Styles[target]["text-align"]);
+    }
+
+    [Theory]
     [InlineData("td", "ToP", "top")]
     [InlineData("td", "MiDdLe", "middle")]
     [InlineData("td", "BoTtOm", "bottom")]
@@ -886,9 +921,6 @@ public sealed class CascadeTests
     }
 
     [Theory]
-    [InlineData("tbody")]
-    [InlineData("thead")]
-    [InlineData("tr")]
     [InlineData("table")]
     [InlineData("span")]
     public void OtherElementsDoNotGetAlignHints(string tag)
@@ -896,9 +928,6 @@ public sealed class CascadeTests
         var body = tag switch
         {
             "table" => "<table id=target align=right><tr><td>x</td></tr></table>",
-            "thead" => "<table><thead id=target align=right><tr><th>x</th></tr></thead></table>",
-            "tbody" => "<table><tbody id=target align=right><tr><td>x</td></tr></tbody></table>",
-            "tr" => "<table><tr id=target align=right><td>x</td></tr></table>",
             _ => $"<{tag} id=target align=right>x</{tag}>"
         };
         var doc = Document(body);

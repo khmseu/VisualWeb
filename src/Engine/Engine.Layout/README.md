@@ -80,8 +80,9 @@ Nested tables/widgets and other
 [listed exclusions](../../../docs/text-layout.md#basic-automatic-tables) fail explicitly.
 The table's `align=center` hint centers it with auto inline margins. Cell
 `td`/`th` `align` hints map the supported left/right/center/middle/justify
-values to text alignment; row/group hints and unsupported-value HTML `valign`
-remain unsupported.
+values to text alignment; the same values on `tr`, `thead`, `tbody` and
+`tfoot` are inherited by their cells. Unsupported-value HTML `valign` and
+legacy alignment of over-constrained descendant margins remain unsupported.
 The HTML table `cellspacing` hint maps values that parse as non-negative
 integers to equal horizontal and vertical pixel spacing; values that fail
 parsing add no hint, and normal author CSS overrides it.

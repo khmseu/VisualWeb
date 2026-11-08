@@ -140,6 +140,11 @@ implemented. See the
 [HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
 and [flow-content hints](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`).
+The table rendering rules also map ASCII-case-insensitive `align=left`,
+`right`, `center`, `middle` and `justify` on `td`, `th`, `tr`, `thead`,
+`tbody` and `tfoot` to inherited `text-align` hints; `middle` maps to
+`center`. The legacy over-constrained descendant-margin behavior remains
+unsupported.
 
 HTML table rendering also maps ASCII-case-insensitive `table[align=center]`
 to `margin-left:auto` and `margin-right:auto` hints in the supported horizontal

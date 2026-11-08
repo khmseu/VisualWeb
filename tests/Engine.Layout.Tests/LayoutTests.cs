@@ -1378,6 +1378,65 @@ public sealed class LayoutTests
     }
 
     [Theory]
+    [InlineData("thead", "left")]
+    [InlineData("thead", "right")]
+    [InlineData("thead", "center")]
+    [InlineData("thead", "middle")]
+    [InlineData("thead", "justify")]
+    [InlineData("tbody", "left")]
+    [InlineData("tbody", "right")]
+    [InlineData("tbody", "center")]
+    [InlineData("tbody", "middle")]
+    [InlineData("tbody", "justify")]
+    [InlineData("tfoot", "left")]
+    [InlineData("tfoot", "right")]
+    [InlineData("tfoot", "center")]
+    [InlineData("tfoot", "middle")]
+    [InlineData("tfoot", "justify")]
+    [InlineData("tr", "left")]
+    [InlineData("tr", "right")]
+    [InlineData("tr", "center")]
+    [InlineData("tr", "middle")]
+    [InlineData("tr", "justify")]
+    public void SupportedTableRowAndGroupAlignHintsAreAcceptedByLayout(string tag, string align)
+    {
+        var content = tag == "tr"
+            ? $"<tr align='{align}'><td>x</td></tr>"
+            : $"<{tag} align='{align}'><tr><td>x</td></tr></{tag}>";
+        Assert.NotNull(UnorderedList("<table>" + content + "</table>").Root);
+    }
+
+    [Theory]
+    [InlineData("tbody")]
+    [InlineData("tr")]
+    public void UnsupportedTableRowAndGroupAlignValuesStillFailAtLayout(string tag)
+    {
+        var content = tag == "tr"
+            ? "<tr align=top><td>x</td></tr>"
+            : "<tbody align=top><tr><td>x</td></tr></tbody>";
+        Assert.Throws<UnsupportedLayoutException>(() => UnorderedList("<table>" + content + "</table>"));
+    }
+
+    [Fact]
+    public void TableRowAndGroupAlignHintsPositionCellText()
+    {
+        const string html = """
+            <table>
+              <tbody align=right><tr><td id=group>x</td></tr></tbody>
+              <tbody><tr align=right><td id=row>x</td></tr></tbody>
+            </table>
+            """;
+        var root = UnorderedList(html, "table{width:100px}").Root!;
+
+        foreach (var id in new[] { "group", "row" })
+        {
+            var cell = Find(root, id);
+            var fragment = Assert.Single(Assert.Single(cell.Lines).Fragments);
+            Assert.Equal(cell.Content.X + cell.Content.Width - fragment.Run.Width, fragment.X);
+        }
+    }
+
+    [Theory]
     [InlineData("td", "top")]
     [InlineData("td", "middle")]
     [InlineData("td", "bottom")]
@@ -1603,8 +1662,6 @@ public sealed class LayoutTests
     [InlineData("<table><tbody valign=top><tr><td>x</td></tr></tbody></table>", "")]
     [InlineData("<table><tr valign=top><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td valign='middle '>x</td></tr></table>", "")]
-    [InlineData("<table><tbody align=left><tr><td>x</td></tr></tbody></table>", "")]
-    [InlineData("<table><tr align=center><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td align='middle '>x</td></tr></table>", "")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{width:50%}")]
     [InlineData("<table><tr><td>x</td></tr></table>", "td{vertical-align:sub}")]

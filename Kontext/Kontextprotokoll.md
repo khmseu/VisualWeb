@@ -6326,3 +6326,36 @@ ist auf `main` gepusht. Linux development (Run 42401385159), Windows
 confinement x64/arm64 (Run 42401385143) und CodeQL (Run 42401384901) sind
 erfolgreich abgeschlossen. Pass 6 ist damit komplett; im angeforderten
 Zehn-Passen-Lauf verbleiben vier getrennte Inkremente.
+
+### KP-233 - Pass 7: row- und row-group align hints
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin.
+- Nutzerangabe: Nach Pass 6 sagte der Nutzer "continue". Der bestehende Auftrag
+  umfasst laut bereitgestellter Verlaufssummary zehn getrennte Inkremente;
+  sechs davon waren vor dieser Fortsetzung abgeschlossen.
+- Auswahlstatus: Ableitung aus `plans/Missing.md`, keine ausdrueckliche
+  Einzelwahl. Dort waren `align`-Hints fuer `tr`, `thead`, `tbody` und `tfoot`
+  noch als Luecke aufgefuehrt. Der aktuelle lokale WHATWG-HTML-Cache (ID
+  `html`, geprueft 2026-11-07) legt Ziel-Elemente und Werte fest; keine
+  blockierende Verhaltensentscheidung blieb offen.
+- Quellen: `specs/cache/html.html#tables-2`,
+  `specs/cache/html.html#align-descendants`,
+  `docs/css.md`, `docs/text-layout.md`, `CssStyleEngine.cs`,
+  `TableLayout.cs` sowie CSS-/Layout-Regressionen. Der Cache ist innerhalb
+  der 30-Tage-Frist; keine Aktualisierung war erforderlich.
+
+**Belegt:** HTML `align=left`, `right`, `center`, `middle` und `justify` auf
+`tr`, `thead`, `tbody` und `tfoot` bildet auf `text-align`-Hints ab; `middle`
+wird zu `center`, und die Eigenschaft vererbt sich in Tabellenzellen.
+Separates HTML-`align-descendants` richtet nur ueberbestimmte Margins aus und
+bleibt ausdruecklich ausserhalb dieses Passes. Unerstuetzte Werte scheitern
+weiterhin an der Layout-Grenze.
+
+**Validierung:** CSS (1.174), Layout (891), `dotnet build VisualWeb.slnx`
+(0 Warnungen/Fehler), der vollstaendige Solution-Testlauf (16.273),
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestehen. Ein erster paralleler
+CSS-/Layout-Testlauf traf Dateisperren beim gemeinsamen Build und bestaetigte
+veraltete Tests, die die neue Unterstuetzung noch als unsupported erwarteten;
+nach Aktualisierung dieser Tests bestanden beide Suiten sequenziell. Commit,
+Push und CI stehen aus.

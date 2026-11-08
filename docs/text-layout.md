@@ -295,9 +295,11 @@ and legacy presentation attributes other than the supported table
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
 `left`, `right`, `center`, `middle` and `justify` text alignment; `middle`
-maps to `center`. Row/group `align`, left/right table floats, other table
-alignment values, row/group `valign` and other cell `valign` values remain
-unsupported and fail explicitly at layout. Table cells support
+maps to `center`. The same values on `tr`, `thead`, `tbody` and `tfoot`
+inherit through cells. Legacy alignment of over-constrained descendant
+margins, left/right table floats, other table alignment values, row/group
+`valign` and other cell `valign` values remain unsupported and fail explicitly
+at layout. Table cells support
 `vertical-align:baseline`, `top`, `middle` and `bottom`.
 Hidden parts are omitted; missing cells leave empty grid slots. Empty grids
 have zero intrinsic content size.

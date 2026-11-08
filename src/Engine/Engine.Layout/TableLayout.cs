@@ -617,7 +617,8 @@ public static partial class StaticLayout
                     && !CssStyleEngine.HasSupportedTableCellValignHint(element)
                 || element.GetAttribute("align") is not null
                     && !CssStyleEngine.HasSupportedTableCenterAlignmentHint(element)
-                    && !CssStyleEngine.HasSupportedTableCellAlignmentHint(element))
+                    && !CssStyleEngine.HasSupportedTableCellAlignmentHint(element)
+                    && !CssStyleEngine.HasSupportedTableRowAlignmentHint(element))
             { throw new UnsupportedLayoutException("Legacy table presentation attributes require unsupported presentational hints; use supported CSS."); }
         }
 

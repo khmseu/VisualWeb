@@ -971,9 +971,10 @@ horizontal LTR subset; its captions remain ordinary block flow. HTML
 explicitly registered italic face for rendering.
 The HTML table-cell `align` attribute now maps `left`, `right`, `center`,
 `middle` and `justify` on `td`/`th` to `text-align`, with ASCII-case-insensitive
-matching and `middle` mapped to `center`. Row/group `align`, baseline
-table-cell alignment, legacy over-constrained descendant-margin alignment,
-table left/right floats and other alignment targets remain unsupported. CSS
+matching and `middle` mapped to `center`. The same values on `tr`, `thead`,
+`tbody` and `tfoot` now map to inherited `text-align`. Baseline table-cell
+alignment, legacy over-constrained descendant-margin alignment, table
+left/right floats and other alignment targets remain unsupported. CSS
 `vertical-align:middle` and `bottom` now position
 canonical table-cell contents against their final row height, including the
 complete height and internal spacing of row-spanning cells; `top` remains the
@@ -1077,6 +1078,12 @@ locally. The HTML cache was refreshed before implementation. Commit and CI
 `fb73991` is pushed; Linux development (Run 42401385159), Windows confinement
 x64/arm64 (Run 42401385143) and CodeQL (Run 42401384901) pass. Pass 6 is
 complete.
+
+Pass 7 extends the HTML table `align` presentational hint to `tr`, `thead`,
+`tbody` and `tfoot`, accepting ASCII-case-insensitive `left`, `right`,
+`center`, `middle` and `justify`; the inherited text alignment reaches cells.
+Legacy alignment of over-constrained descendant margins remains unsupported,
+and invalid row/group values still fail explicitly at layout.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

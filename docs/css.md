@@ -208,11 +208,13 @@ map `align=left`, `right`, `center`, `middle` and `justify` on `div`, with
 map `align=left`, `right`, `center`, `middle` and `justify` on `td` and `th`
 to `text-align`, with `middle` mapping to `center`. Matching is
 ASCII-case-insensitive and does not trim; unsupported values are ignored.
+The same values map on `tr`, `thead`, `tbody` and `tfoot`; `text-align`
+inherits through their cells. The separate legacy behavior that adjusts
+over-constrained descendant margins is not implemented.
 These hints use the same cascade, assignment budget and recomputation rules as
-list hints. The separate legacy behavior that adjusts over-constrained
-descendant margins is not implemented. Table row/group hints and alignment on
-other elements remain unsupported. The HTML `center` element is a block by
-default and supplies a `text-align:center` presentational hint.
+list hints. Alignment on other elements remains unsupported. The HTML `center`
+element is a block by default and supplies a `text-align:center` presentational
+hint.
 The same table rendering rules map `valign=baseline`, `top`, `middle` and `bottom` on
 `td`/`th` to `vertical-align` as ASCII-case-insensitive author presentational
 hints. They share the same cascade, assignment budget and recomputation rules.

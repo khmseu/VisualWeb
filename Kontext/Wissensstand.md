@@ -223,6 +223,14 @@
   (Run 42401385159), Windows-Confinement x64/arm64 (Run 42401385143) und
   CodeQL (Run 42401384901) bestehen. Vier Inkremente verbleiben
   ([KP-231](./Kontextprotokoll.md#kp-231---pass-6-html-table-width-hint)).
+  Pass 7 erweitert die table-row/group `align`-Presentational-Hints auf
+  `tr`, `thead`, `tbody` und `tfoot`; `text-align` wird in Zellen vererbt.
+  Die HTML-Regeln und die Begrenzung auf diese Layout-Subset-Erweiterung sind
+  dokumentiert in [KP-233](./Kontextprotokoll.md#kp-233---pass-7-row-und-row-group-align-hints).
+  CSS (1.174), Layout (891), der Solution-Build (0 Warnungen/Fehler), der
+  Volltest (16.273), Formatpruefung und Whitespace-Check bestehen lokal.
+  Commit, Push und CI stehen aus. Nach Abschluss dieses Passes verbleiben
+  drei Inkremente.
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).
