@@ -254,6 +254,13 @@
   und Push on main/CodeQL
   ([Run 42485850925](https://github.com/khmseu/VisualWeb/actions/runs/42485850925))
   bestehen. Ein Inkrement verbleibt (KP-238 bis KP-241).
+  Pass 10 waehlt begrenzte HTML-`body[bgcolor]`-Unterstuetzung: vorhandener
+  Legacy-Color-Parser und Body-Hintergrundpaint werden genutzt, mit eigener
+  aggregierter Attributgrenze. CSS (1.191), Content (101), Solution-Build
+  (0 Warnungen/Fehler), Volltest (16.308), Formatpruefung und Whitespace-Check
+  bestehen lokal. Commit, Push und CI stehen noch aus
+  ([KP-242](./Kontextprotokoll.md#kp-242---pass-10-als-body-bgcolor-hinweis-abgegrenzt),
+  KP-243, KP-244).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

@@ -1121,6 +1121,13 @@ and Push on main/CodeQL
 ([Run 42485850925](https://github.com/khmseu/VisualWeb/actions/runs/42485850925))
 pass.
 
+Pass 10 selects bounded HTML `body[bgcolor]` support for simple-page
+rendering. It reuses the legacy color parser and author presentational-hint
+cascade, with an independent aggregate raw-attribute budget. CSS and offline
+pixel regressions pass. CSS (1,191), Content (101), all 16,308 solution
+tests, the zero-warning solution build, format verification and
+`git diff --check` pass locally; commit, push and CI remain pending.
+
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
 ### 6. A persistent browser JavaScript environment

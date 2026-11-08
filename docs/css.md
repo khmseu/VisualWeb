@@ -244,6 +244,14 @@ finite numeric range fail explicitly. Raw attribute scanning has a separate
 aggregate limit, and ordinary author CSS overrides the hint.
 The hint shares the author presentational-hint cascade, and normal author CSS
 overrides it.
+The [HTML page background rule](https://html.spec.whatwg.org/multipage/rendering.html#the-page)
+(local ID `html`) also maps a successfully parsed `body[bgcolor]` value through
+the HTML legacy-colour algorithm to `background-color`. This uses the same
+presentational-hint cascade and assignment budget; empty and ASCII-case-
+insensitive `transparent` values add no hint, and the raw attribute length has
+its own aggregate per-computation limit. Other elements' `bgcolor` attributes
+are ignored. The offline renderer's existing body-background paint behavior
+handles the computed color.
 The UA stylesheet gives `caption` `display:table-caption`; layout supports
 one first-element-child caption. `caption-side` supports inherited `top` and
 `bottom` values with the CSS 2.2 initial value `top`; bottom captions follow
@@ -469,6 +477,7 @@ All CssOptions limits are positive and configurable:
 | Limit                                                                          |    Default |
 | ------------------------------------------------------------------------------ | ---------: |
 | Input characters per individual CSS string, before normalization               |       4 Mi |
+| Aggregate raw UTF-16 characters in `body[bgcolor]` per computation             |       4 Mi |
 | Aggregate raw UTF-16 characters in `font color` attributes per computation     |       4 Mi |
 | Aggregate raw UTF-16 characters in `font face` attributes per computation      |       4 Mi |
 | Aggregate raw UTF-16 characters in `font size` attributes per computation      |       4 Mi |
@@ -487,12 +496,13 @@ input/token scanning, parsing, compilation and matching. Numeric values outside
 the finite `double` range are diagnosed, including color components; finite
 numeric overflow during computation also fails explicitly. Whole-string
 processing and these limits are not a total memory budget or an OS sandbox.
-The independent font color, face, size and table-spacing limits
-(`MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
+The independent body background-color, font color, face, size and table-spacing
+limits (`MaxBodyBackgroundColorAttributeCharacters`,
+`MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
 `MaxFontSizeAttributeCharacters` and `MaxTableSpacingAttributeCharacters`) are
-checked before processing their attributes, including invalid values; long
-scans honor cancellation. Other direct DOM construction and arbitrarily large
-DOM attribute values remain the caller's responsibility.
+checked before processing their attributes, including values that do not yield
+a hint; long scans honor cancellation. Other direct DOM construction and
+arbitrarily large DOM attribute values remain the caller's responsibility.
 
 ## Offline evidence and standards
 

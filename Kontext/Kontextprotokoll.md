@@ -6498,3 +6498,49 @@ defaults`) ist auf `main` gepusht.
   erfolgreich abgeschlossen.
 - Pass 9 ist abgeschlossen; im angeforderten Zehn-Inkrement-Lauf verbleibt
   ein weiterer Pass.
+
+### KP-242 - Pass 10 als Body-bgcolor-Hinweis abgegrenzt
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-241.
+- Nutzerangabe: Der Nutzer setzte den angeforderten Zehn-Passen-Lauf mit
+  "continue" fort; ein konkretes Pass-10-Feature wurde nicht benannt.
+- Ableitung / Auswahl: Als kleiner Schritt fuer die Prioritaet
+  HTML-/CSS-Rendering einfacher statischer Seiten wird `body[bgcolor]`
+  ausgewaehlt. Der lokale WHATWG-HTML-Abschnitt `#the-page` beschreibt, dass
+  der Wert mit dem Legacy-Color-Algorithmus geparst und bei Erfolg als
+  `background-color`-Presentational-Hint angewandt wird. Das vorhandene
+  `HtmlLegacyColor` und der Body-Background-Paint-Pfad koennen wiederverwendet
+  werden; Attributarbeit bleibt mit einem eigenen aggregierten Limit begrenzt.
+- Quellen: `specs/cache/html.html#the-page` (HTML-Cache am 2026-11-07
+  geprueft), `src/Engine/Engine.Css/HtmlLegacyColor.cs`,
+  `tests/Engine.Content.Tests/ContentTests.cs` (Body-Hintergrundpixeltest).
+- Status: Scope ausgewaehlt; Implementierung und Verifikation stehen aus.
+
+### KP-243 - Pass 10 implementiert und fokussiert geprueft
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-242.
+- Belegt: `body[bgcolor]` wird ueber `HtmlLegacyColor.Parse` als author
+  presentational hint fuer `background-color` angewandt. Die neue
+  `MaxBodyBackgroundColorAttributeCharacters`-Grenze zaehlt rohe UTF-16-
+  Attribute pro Berechnung; andere Elemente bleiben unberuehrt.
+- Belegt: CSS-Tests pruefen erfolgreiche/fehlgeschlagene Legacyfarben,
+  Kaskadenreihenfolge, Mutation/Recompute, Aggregatgrenze und assignment budget.
+  Ein Offline-Content-Test bestaetigt die erwarteten nativen BGRA-Pixel.
+  Beide fokussierten Testfilter bestehen (CSS 8, Content 1).
+- Ergaenzend verifiziert: Linux, Windows confinement x64/arm64 und
+  Push-on-main/CodeQL fuer den vorherigen Dokumentationscommit `bc25bf1`
+  (Runs 42486767466, 42486767478, 42486767609) sind erfolgreich.
+- Geaenderte Bereiche: CSS engine/options/tests, Content pixel test,
+  CSS-/Standardsdokumentation, Missing-Tracker und Kontextansichten.
+- Zum Zeitpunkt dieses Eintrags noch offen: vollstaendiger Solution-Build,
+  Gesamttests, Formatpruefung, Whitespace-Check, Commit/Push und Pass-10-CI;
+  die lokale Validierung wurde danach in KP-244 abgeschlossen.
+
+### KP-244 - Pass 10 vollstaendig lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-243.
+- Belegt: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern.
+  CSS (1.191) und Content (101) bestehen; `dotnet test VisualWeb.slnx
+--no-build` besteht mit 16.308 Tests. Die Formatverifikation und
+  `git diff --check` bestehen ebenfalls.
+- Status: lokal validiert. Commit, Push und CI fuer Pass 10 stehen noch aus.
