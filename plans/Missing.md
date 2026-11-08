@@ -1140,7 +1140,10 @@ verification pass. The full solution run passed every test assembly except for
 one `VisualWeb.Browser.Tests.InlineScriptTests.StructuralEqualityObservesLifecycleChangesWithTransactionalResize(process: True)`
 V8 deadline timeout; the full Browser project had 1,332 passes and that single
 failure. Rerunning the two cases of that test in isolation passed. No cause for
-the full-run timeout is established. Commit, push, and CI validation remain.
+the full-run timeout is established. Commit `a571e76` is pushed; Linux
+development (Run 42496849796), Windows confinement x64/arm64 (Run 42496849835),
+and Push-on-main/CodeQL (Run 42496849427) all pass. Pass 1 is complete; nine
+increments remain in this request.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 

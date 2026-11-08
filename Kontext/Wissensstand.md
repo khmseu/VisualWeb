@@ -272,10 +272,12 @@
   Renderpixeltests, vollstaendige CSS-/Content-Projekte, Solution-Build und
   Formatpruefung bestehen. Der Solution-Volltest hat einen einzelnen V8-
   Deadline-Timeout im Browserprojekt, der isolierte Wiederholungslauf des
-  betroffenen Tests besteht; eine Ursache ist nicht nachgewiesen. Commit,
-  Push und CI stehen aus
+  betroffenen Tests besteht; eine Ursache ist nicht nachgewiesen. `a571e76`
+  ist gepusht; Linux, Windows x64/arm64 und CodeQL-CI bestehen. Pass 1 ist
+  abgeschlossen, neun weitere Inkremente verbleiben
   ([KP-247](./Kontextprotokoll.md#kp-247---neuer-zehn-passen-lauf-und-pass-1-abgegrenzt),
-  KP-248).
+  KP-248,
+  [KP-249](./Kontextprotokoll.md#kp-249---pass-1-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

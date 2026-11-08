@@ -6600,5 +6600,16 @@ presentational hint`) ist auf `main` gepusht.
 - Quelle: `specs/cache/html.html#the-page`, Cache geprueft am 2026-11-07;
   fokussierte Tests in `tests/Engine.Css.Tests/BodyTextColorHintTests.cs` und
   `tests/Engine.Content.Tests/BodyTextColorHintTests.cs`.
-- Offen: Commit/Push und CI stehen aus; der Volltest hatte den beschriebenen
-  isoliert erfolgreichen Timeout-Fall.
+- Status: Implementierung und lokale Verifikation abgeschlossen; der Volltest
+  hatte den beschriebenen isoliert erfolgreichen Timeout-Fall. Commit/Push/CI
+  werden in KP-249 dokumentiert.
+
+### KP-249 - Pass 1 committet, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-248.
+- Belegt: Commit `a571e7635620faf04fdb8d3378c18b983b29ee4e`
+  (`feat(css): support body text color hints`) ist auf `origin/main`.
+  Linux development (Run 42496849796), Windows confinement fuer x64/arm64
+  (Run 42496849835) und Push-on-main/CodeQL (Run 42496849427) sind erfolgreich.
+- Status: Pass 1 des neuen Zehn-Passen-Laufs abgeschlossen; neun getrennte
+  Inkremente verbleiben.
