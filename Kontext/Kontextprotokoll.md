@@ -6314,3 +6314,15 @@ anderen Legacy-Tabellenattribute wurden freigegeben.
 Unsupported-Fehler. CSS (1.171), Layout (870), Solution-Build (0 Warnungen/
 Fehler), Volltest (16.249), Formatpruefung und `git diff --check` bestehen
 lokal. Commit, Push und CI stehen noch aus.
+
+### KP-232 - Pass 6: committed, gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-07, Europe/Berlin; folgt auf KP-231.
+- Quellen: Commit `fb73991`, `origin/main`, GitHub Actions Runs
+  42401385159, 42401385143 und 42401384901.
+
+**Belegt:** Commit `fb73991` (`feat(css): support HTML table width hints`)
+ist auf `main` gepusht. Linux development (Run 42401385159), Windows
+confinement x64/arm64 (Run 42401385143) und CodeQL (Run 42401384901) sind
+erfolgreich abgeschlossen. Pass 6 ist damit komplett; im angeforderten
+Zehn-Passen-Lauf verbleiben vier getrennte Inkremente.

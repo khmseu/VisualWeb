@@ -1074,7 +1074,9 @@ limits, actual table widths and continued rejection of width attributes on
 other table parts. CSS (1,171), Layout (870), the zero-warning solution build,
 all 16,249 solution tests, format verification and `git diff --check` pass
 locally. The HTML cache was refreshed before implementation. Commit and CI
-status are pending.
+`fb73991` is pushed; Linux development (Run 42401385159), Windows confinement
+x64/arm64 (Run 42401385143) and CodeQL (Run 42401384901) pass. Pass 6 is
+complete.
 
 Evidence: `CSS scope`, `layout restrictions`, and `painting limitations`.
 
