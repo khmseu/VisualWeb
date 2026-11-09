@@ -63,6 +63,10 @@ public sealed record CssOptions
     /// <summary>Maximum aggregate raw UTF-16 units in table-row height attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table row height hints</see>.</remarks>
     public int MaxTableRowHeightAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in table-column width attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table column width hints</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values">dimension values</see>.</remarks>
+    public int MaxTableColumnWidthAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate raw UTF-16 units in table-cell width attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table cell width hints</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values">dimension values</see>.</remarks>
@@ -85,7 +89,8 @@ public sealed record CssOptions
             || MaxFontSizeAttributeCharacters <= 0 || MaxTableSpacingAttributeCharacters <= 0
             || MaxTableWidthAttributeCharacters <= 0 || MaxTableBackgroundColorAttributeCharacters <= 0
             || MaxTableCellPaddingAttributeCharacters <= 0 || MaxTableCellHeightAttributeCharacters <= 0
-            || MaxTableRowHeightAttributeCharacters <= 0 || MaxTableCellWidthAttributeCharacters <= 0
+            || MaxTableRowHeightAttributeCharacters <= 0 || MaxTableColumnWidthAttributeCharacters <= 0
+            || MaxTableCellWidthAttributeCharacters <= 0
             || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
             || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
@@ -122,6 +127,7 @@ internal sealed class CssContext
     private int tableCellPaddingCharacters;
     private int tableCellHeightCharacters;
     private int tableRowHeightCharacters;
+    private int tableColumnWidthCharacters;
     private int tableCellWidthCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
@@ -239,6 +245,14 @@ internal sealed class CssContext
     internal void TableRowHeightCharacters(int length)
         => AttributeCharacters(length, ref tableRowHeightCharacters,
             Options.MaxTableRowHeightAttributeCharacters, "table row height");
+
+    internal void TableColumnWidthCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxTableColumnWidthAttributeCharacters - tableColumnWidthCharacters)
+        { throw new CssLimitException("CSS table-column width attribute character limit exceeded."); }
+        tableColumnWidthCharacters += length;
+    }
 
     internal void TableCellWidthCharacters(int length)
     {

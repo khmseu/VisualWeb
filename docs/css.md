@@ -274,6 +274,12 @@ presentational hint, bounded by the separate aggregate raw UTF-16 limit
 minimum row height; percentage row heights fail explicitly because CSS 2.2
 does not define their behavior. Ordinary author CSS overrides either hint.
 Height attributes on tables and row groups remain unsupported.
+HTML `col[width]` maps dimension values, including zero and percentages, to a
+`width` presentational hint with a separate aggregate raw UTF-16 limit
+`MaxTableColumnWidthAttributeCharacters`. Ordinary author CSS overrides the
+hint. The CSS table-column sizing subset uses pixel widths as track
+constraints and resolves percentage widths against the final table width.
+`colgroup[width]` and width attributes on other table parts remain unsupported.
 HTML `td[width]` and `th[width]` map nonzero dimension values to a `width`
 presentational hint, with a separate aggregate raw UTF-16 limit
 `MaxTableCellWidthAttributeCharacters`. Zero and invalid values add no hint;
@@ -560,8 +566,10 @@ color, face, size and table-spacing limits (`MaxBodyBackgroundColorAttributeChar
 `MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
 `MaxFontSizeAttributeCharacters` and `MaxTableSpacingAttributeCharacters`) are
 checked before processing their attributes, including values that do not yield
-a hint; long scans honor cancellation. Other direct DOM construction and
-arbitrarily large DOM attribute values remain the caller's responsibility.
+a hint; long scans honor cancellation. Table-column and table-cell width
+attributes also have separate aggregate raw UTF-16 budgets. Other direct DOM
+construction and arbitrarily large DOM attribute values remain the caller's
+responsibility.
 
 ## Offline evidence and standards
 

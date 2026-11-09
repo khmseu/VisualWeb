@@ -73,9 +73,11 @@ below the table according to inherited `caption-side:top/bottom` (initially
 intrinsic column sizing. Bounded HTML `colgroup`/`col` spans add tracks, and
 computed nonnegative CSS-pixel widths constrain column/group automatic sizing.
 Percentage `col`/`colgroup` widths constrain track minimums against the final
-table width. Auto-width tables use a bounded deterministic solve sharing the
-table-column operation and cancellation budgets; constraints without a finite
-solution fail explicitly.
+table width. HTML `col[width]` values map to CSS width hints, including zero
+and percentages; ordinary author CSS overrides the hint, while
+`colgroup[width]` remains unsupported. Auto-width tables use a bounded
+deterministic solve sharing the table-column operation and cancellation
+budgets; constraints without a finite solution fail explicitly.
 HTML `td`/`th` width hints contribute to intrinsic cell sizing constraints,
 including bounded distribution across spanning columns. Percentage cell widths
 remain unsupported by intrinsic table layout.

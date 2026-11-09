@@ -311,8 +311,13 @@ intrinsic minimum/maximum cell constraints, including the bounded distribution
 for spanning cells; zero and invalid values add no hint, and ordinary author
 CSS overrides it. Scanning has its own aggregate raw UTF-16 limit,
 `MaxTableCellWidthAttributeCharacters`. Percentage cell widths remain
-unsupported by intrinsic table layout; width attributes on other table parts
-remain unsupported.
+unsupported by intrinsic table layout; width attributes on tables, row groups
+and rows remain unsupported. HTML `col[width]` maps dimension values, including zero
+and percentages, to a `width` hint under the separate aggregate raw UTF-16
+limit `MaxTableColumnWidthAttributeCharacters`. Pixel widths constrain the
+column's minimum and maximum track widths; percentage widths constrain the
+track against the final table width, using the existing bounded solve. Normal
+author CSS overrides the hint; `colgroup[width]` remains unsupported.
 Measurement and arrangement share node, text, shaping, line, glyph, box, depth
 and cancellation budgets.
 

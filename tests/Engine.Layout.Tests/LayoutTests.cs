@@ -1288,9 +1288,51 @@ public sealed class LayoutTests
         Assert.Throws<UnsupportedLayoutException>(() =>
             UnorderedList("<table><tbody width=30><tr><td>x</td></tr></tbody></table>"));
         Assert.Throws<UnsupportedLayoutException>(() =>
-            UnorderedList("<table><colgroup><col width=30></colgroup><tr><td>x</td></tr></table>"));
-        Assert.Throws<UnsupportedLayoutException>(() =>
             UnorderedList("<table><tr><td width='50%'>x</td></tr></table>"));
+    }
+
+    [Fact]
+    public void TableColumnWidthAttributeConstrainsTracksAndHonorsAuthorCascade()
+    {
+        const string html = """
+            <table style="border-spacing:0"><colgroup><col id=column width=30></colgroup>
+            <tr><td id=cell>x</td></tr></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}").Root!;
+        Assert.Equal(30, Find(root, "cell").BorderBox.Width);
+
+        var overridden = UnorderedList(html, "td{padding:0}#column{width:40px}").Root!;
+        Assert.Equal(40, Find(overridden, "cell").BorderBox.Width);
+    }
+
+    [Fact]
+    public void TableColumnWidthAttributeAppliesToEveryTrackInItsSpan()
+    {
+        const string html = """
+            <table style="border-spacing:0"><colgroup><col span=2 width=15></colgroup>
+            <tr><td id=a>a</td><td id=b>b</td></tr></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}").Root!;
+
+        Assert.Equal(15, Find(root, "a").BorderBox.Width);
+        Assert.Equal(15, Find(root, "b").BorderBox.Width);
+    }
+
+    [Theory]
+    [InlineData(100, 81, 13)]
+    [InlineData(120, 98.5, 15.5)]
+    public void PercentageTableColumnWidthAttributeConstrainsTracksAgainstTableWidth(
+        double tableWidth, double expectedFirstWidth, double expectedSecondWidth)
+    {
+        const string html = """
+            <table id=t><colgroup><col width="75%"><col></colgroup>
+            <tr><td id=a>x</td><td id=b>y</td></tr></table>
+            """;
+        var root = UnorderedList(html, $"table{{width:{tableWidth}px}}").Root!;
+
+        Assert.Equal(tableWidth, Find(root, "t").Content.Width);
+        Assert.Equal(expectedFirstWidth, Find(root, "a").BorderBox.Width);
+        Assert.Equal(expectedSecondWidth, Find(root, "b").BorderBox.Width);
     }
 
     [Fact]

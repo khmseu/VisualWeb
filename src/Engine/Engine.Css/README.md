@@ -22,6 +22,10 @@ HTML `td`/`th` nonzero `width` dimensions map to the CSS `width` hint, under
 the independent aggregate raw UTF-16 limit
 `MaxTableCellWidthAttributeCharacters`; percentage cell widths remain
 unsupported by intrinsic table layout.
+HTML `col` width dimensions, including zero and percentages, map to the CSS
+`width` hint under the independent aggregate raw UTF-16 limit
+`MaxTableColumnWidthAttributeCharacters`; `colgroup` width attributes remain
+unsupported.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
@@ -40,12 +44,15 @@ origin. The text shaper checks listed families in order against explicitly
 registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `@font-face` support. Independent per-computation
 `MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
-`MaxFontSizeAttributeCharacters`, `MaxTableSpacingAttributeCharacters` and
-`MaxTableWidthAttributeCharacters`, `MaxTableBackgroundColorAttributeCharacters`
-`MaxTableCellPaddingAttributeCharacters` and
-`MaxTableCellHeightAttributeCharacters` and
-`MaxTableCellWidthAttributeCharacters` limits count raw UTF-16 attribute units,
-including invalid values, before parsing.
+`MaxFontSizeAttributeCharacters`, `MaxTableSpacingAttributeCharacters`,
+`MaxTableWidthAttributeCharacters`,
+`MaxTableBackgroundColorAttributeCharacters`,
+`MaxTableCellPaddingAttributeCharacters`,
+`MaxTableCellHeightAttributeCharacters`,
+`MaxTableRowHeightAttributeCharacters`,
+`MaxTableColumnWidthAttributeCharacters` and
+`MaxTableCellWidthAttributeCharacters` limits count raw UTF-16 attribute
+units, including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-11-07) include `search { display:block }`
 as a normal, disableable UA declaration; it introduces no search widget.

@@ -1284,8 +1284,22 @@ and content; row CSS may override the hint. Percentage row heights fail
 explicitly because CSS 2.2 does not define their behavior. Table and row-group
 heights remain unsupported. CSS (1,241), Layout (915), all 16,369 solution
 tests, the zero-warning solution build and format verification pass locally.
-The feature commit, push and CI remain pending; one of the ten requested
-increments remains after Pass 9.
+Feature commit `d27699f` is pushed to `main`; Linux development
+([42550788954](https://github.com/khmseu/VisualWeb/actions/runs/42550788954)),
+Windows confinement
+([42550788843](https://github.com/khmseu/VisualWeb/actions/runs/42550788843))
+and Push on main/CodeQL
+([42550788551](https://github.com/khmseu/VisualWeb/actions/runs/42550788551))
+all pass. Pass 9 is complete; one of the ten requested increments remains.
+
+Pass 10 adds HTML `col[width]` as a CSS width presentational hint, including
+zero and percentages, under its own aggregate raw UTF-16 limit. The existing
+bounded column-sizing path applies pixel and percentage constraints, and
+ordinary author CSS overrides the hint. `colgroup[width]` and width attributes
+on other table parts remain unsupported. CSS (1,245), Layout (919) and the
+zero-warning solution build pass locally. All 16,377 solution tests,
+format verification and `git diff --check` also pass. Pass 10 is the final
+requested increment; its commit, push and CI remain pending.
 
 ### 6. A persistent browser JavaScript environment
 

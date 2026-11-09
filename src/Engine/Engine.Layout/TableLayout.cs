@@ -515,7 +515,8 @@ public static partial class StaticLayout
         private CssColor? CheckTableColumn(DomElement element, int depth)
         {
             Check(element, depth, block: true, tableContext: true);
-            RejectTableAttributes(element);
+            RejectTableAttributes(element,
+                allowWidthAttribute: CssStyleEngine.HasSupportedTableColumnWidthHint(element));
             return Style(element)["background-color"] is CssColor { Alpha: > 0 } background ? background : null;
         }
 

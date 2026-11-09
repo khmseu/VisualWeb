@@ -7053,3 +7053,35 @@ third_party` und `git diff --check` bestehen lokal. Tests decken Dimensionen,
   bestehen ebenfalls; `git diff --check` ist sauber.
 - Status: Pass 9 ist lokal implementiert und vollstaendig validiert. Feature-
   commit, Push und CI stehen noch aus.
+
+### KP-277 - Pass 9 CI abgeschlossen, Pass 10 gewaehlt
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-276.
+- Belegt: Featurecommit `d27699fa1cedba64ecac3f540b6039e6c771b605` ist nach
+  `main` gepusht. Linux development
+  ([42550788954](https://github.com/khmseu/VisualWeb/actions/runs/42550788954)),
+  Windows confinement
+  ([42550788843](https://github.com/khmseu/VisualWeb/actions/runs/42550788843))
+  und Push on main/CodeQL
+  ([42550788551](https://github.com/khmseu/VisualWeb/actions/runs/42550788551))
+  sind erfolgreich.
+- Auswahl: Fuer das letzte angeforderte Inkrement wird HTML `col[width]`
+  ergaenzt. Die lokale HTML-Regel `specs/cache/html.html#tables-2` ordnet das
+  Attribut der CSS-Dimension `width` zu; das bestehende Tabellenlayout
+  unterstuetzt bereits CSS-Pixel- und Prozentbreiten fuer `col`, verwirft
+  jedoch noch das HTML-Attribut. Die HTML-Quelle wurde am 2026-11-07, die
+  CSS-2.2-Tabellenquelle am 2026-10-28 geprueft. `colgroup[width]` ist von
+  dieser Zuordnung nicht umfasst und bleibt unsupported.
+- Status: Pass 10 ist lokal implementiert. CSS (1.245), Layout (919) und der
+  Solution-Build (null Warnungen/Fehler) bestehen; Volltest und
+  Formatverifikation stehen noch aus.
+
+### KP-278 - Pass 10 vollstaendig lokal validiert
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-277.
+- Belegt: CSS (1.245), Layout (919), alle 16.377 Solution-Tests,
+  Solution-Build (null Warnungen/Fehler), Formatverifikation und
+  `git diff --check` bestehen. Nach der letzten CSS-Diagnoseanpassung wurden
+  Solution-Build und CSS-Tests erneut ausgefuehrt.
+- Status: Pass 10 ist lokal implementiert und validiert. Featurecommit, Push
+  und CI stehen aus.

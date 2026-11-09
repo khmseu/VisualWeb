@@ -185,6 +185,15 @@ public static class CssStyleEngine
         return element.LocalName == "tr" && element.GetAttribute("height") is not null;
     }
 
+    /// <summary>Reports whether the bounded HTML table-column width hint applies.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table column width hint</see>.</remarks>
+    public static bool HasSupportedTableColumnWidthHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName == "col" && element.GetAttribute("width") is not null;
+    }
+
     /// <summary>Reports whether the bounded HTML table-cell width hint applies.</summary>
     /// <remarks>Spec: html;
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell width hint</see>.</remarks>
@@ -306,6 +315,13 @@ public static class CssStyleEngine
         if (element.LocalName != "tr" || element.GetAttribute("height") is not { } height) { return null; }
         context.TableRowHeightCharacters(height.Length);
         return TryParseDimensionValue(height, context.Cancellation, "HTML table-row height attribute");
+    }
+
+    private static CssLength? GetTableColumnWidthHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName != "col" || element.GetAttribute("width") is not { } width) { return null; }
+        context.TableColumnWidthCharacters(width.Length);
+        return TryParseDimensionValue(width, context.Cancellation, "HTML table-column width attribute");
     }
 
     private static CssLength? GetTableCellWidthHint(DomElement element, CssContext context)
@@ -532,6 +548,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("height", rowHeight, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetTableColumnWidthHint(element, context) is { } columnWidth)
+            {
+                context.Assignment();
+                Add(new("width", columnWidth, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetTableCellWidthHint(element, context) is { } cellWidth)

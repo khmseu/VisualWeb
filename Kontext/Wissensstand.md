@@ -16,9 +16,14 @@ Workflow-Pruefung). Pass 9 ergaenzt `tr[height]` als begrenzte CSS-
 Presentational-Hint mit Pixel-Minimumhoehen, Kaskadenueberschreibung,
 UTF-16-Budget und expliziter Ablehnung prozentualer Zeilenhoehen. CSS (1.241),
 Layout (915), alle 16.369 Solution-Tests, Solution-Build (0 Warnungen/Fehler)
-und Formatverifikation bestehen. Pass 9 ist noch nicht committet oder gepusht;
-danach verbleibt ein Inkrement. Chronologische Evidenz steht in
-[KP-271 bis KP-276](./Kontextprotokoll.md#kp-271---pass-8-waehlt-tdth-width).
+und Formatverifikation bestehen. Commit `d27699f` ist gepusht; Linux, Windows
+und CodeQL sind gruen (KP-277). Pass 9 ist abgeschlossen. Pass 10 ergaenzt
+HTML `col[width]` als begrenzten CSS-Hinweis mit Pixel-/Prozent-Spurbreiten,
+Autor-Kaskade und eigenem UTF-16-Limit. CSS (1.245), Layout (919) und
+alle 16.377 Solution-Tests, Solution-Build (0 Warnungen/Fehler),
+Formatverifikation und `git diff --check` bestehen. Pass 10 ist noch nicht
+committet oder gepusht; CI steht aus. Chronologische Evidenz steht in
+[KP-271 bis KP-278](./Kontextprotokoll.md#kp-271---pass-8-waehlt-tdth-width).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
