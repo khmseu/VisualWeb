@@ -7107,8 +7107,8 @@ third_party` und `git diff --check` bestehen lokal. Tests decken Dimensionen,
 - Dokumentiert am: 2026-11-09, Europe/Berlin.
 - Ereignisdatum: Datum unbekannt; die Fortsetzung ist in der aktuellen
   Gespraechszusammenfassung ueberliefert.
-- Erfassungsart: laufend dokumentiert; lokales Inkrement implementiert und
-  validiert, Commit/Push/CI ausstehend.
+- Erfassungsart: fortlaufend dokumentiert; Inkrement implementiert, lokal
+  validiert, committed, gepusht und CI-gruen.
 - Quelle: Fortsetzungsbitte, `plans/Missing.md` Prioritaet 1,
   `specs/cache/html.html#the-hr-element-2`,
   `specs/cache/css-backgrounds.html#valdef-line-style-inset`, Engine.Css- und
@@ -7145,6 +7145,12 @@ Arbeitsstand; danach bestand `dotnet test VisualWeb.slnx --no-build -m:1` mit
 16.381 Tests. Eine Ursache fuer den einzelnen ersten Timeout ist nicht
 nachgewiesen.
 
-**Status / naechste Schritte:** Lokales Inkrement und Tracker sind aktualisiert.
-Featurecommit, Push und CI stehen aus; danach Kontext-/Trackerstatus mit den
-Remote-Ergebnissen vervollstaendigen.
+**Status:** Featurecommit `3304add49eafcc8dd920ea544e053365058c0ff2` ist
+committed und nach `main` gepusht. Linux development (Run
+[42714571836](https://github.com/khmseu/VisualWeb/actions/runs/42714571836)),
+Windows confinement x64/arm64 (Run
+[42714571820](https://github.com/khmseu/VisualWeb/actions/runs/42714571820))
+und Push on main/CodeQL (Run
+[42714571721](https://github.com/khmseu/VisualWeb/actions/runs/42714571721))
+sind erfolgreich. Damit ist dieses einzelne Fortsetzungsinkrement
+abgeschlossen; Prioritaet 1 bleibt offen.

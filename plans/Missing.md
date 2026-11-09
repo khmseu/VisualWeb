@@ -1318,7 +1318,14 @@ run hit one timeout in the unrelated browser navigation test
 `ShellTests.UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`;
 that test passed in isolation on both base and working revisions. The full
 serial-project rerun (`dotnet test VisualWeb.slnx --no-build -m:1`) passes all
-16,381 tests. Commit, push and CI remain pending.
+16,381 tests. Commit `3304add49eafcc8dd920ea544e053365058c0ff2` is pushed.
+Linux development
+([42714571836](https://github.com/khmseu/VisualWeb/actions/runs/42714571836)),
+Windows confinement x64/arm64
+([42714571820](https://github.com/khmseu/VisualWeb/actions/runs/42714571820))
+and Push on main/CodeQL
+([42714571721](https://github.com/khmseu/VisualWeb/actions/runs/42714571721))
+pass.
 
 ### 6. A persistent browser JavaScript environment
 

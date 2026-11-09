@@ -33,8 +33,9 @@ deterministisches Malen des `inset`-Rahmens. Lokale CSS-/Paint-/Content-Tests,
 Solution-Build, Formatverifikation und serieller Solution-Volltest (16.381)
 bestehen. Ein erster paralleler Volltest hatte einen Timeout in einem
 unveraenderten Browser-Navigationstest; der gezielte Test bestand isoliert auf
-Basiscommit und Arbeitsstand, und der serielle Volltest bestand. Featurecommit,
-Push und CI stehen noch aus; siehe
+Basiscommit und Arbeitsstand, und der serielle Volltest bestand. Featurecommit
+`3304add` ist gepusht; Linux, Windows x64/arm64 und CodeQL sind gruen (Runs
+42714571836, 42714571820 und 42714571721). Siehe
 [KP-280](./Kontextprotokoll.md#kp-280---fortsetzung-waehlt-sichtbare-html-horizontalregel).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
