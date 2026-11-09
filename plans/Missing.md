@@ -1262,6 +1262,19 @@ development (run 42540838824), Windows confinement (42540838782) and
 CodeQL/Push on main (42540838464) all pass. Pass 7 is complete; three of the
 requested ten increments remain.
 
+Pass 8 maps nonzero `td`/`th` HTML `width` dimensions to CSS `width`, under an
+independent aggregate raw UTF-16 limit. The existing intrinsic cell-width
+constraints handle positive pixel widths, including bounded `colspan`
+distribution; normal author CSS overrides the hint. Zero and invalid values
+add no hint. Percentage cell widths and `width` attributes on other table
+parts remain explicitly unsupported. CSS (1,237), Layout (915), the
+zero-warning solution build, all 16,365 solution tests, format verification and
+`git diff --check` pass locally. Feature commit
+`5da1a7ff62a5f16548599c49009a88ca85a1d8a8` is pushed to `main`. Linux
+development (run 42545600550), Windows confinement (42545600498) and
+CodeQL/Push on main (42545600021) all pass. Pass 8 is complete; two of the
+requested ten increments remain.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

@@ -372,6 +372,17 @@
   verbleiben ([KP-268](./Kontextprotokoll.md#kp-268---pass-7-waehlt-html-td-th-height),
   [KP-269](./Kontextprotokoll.md#kp-269---pass-7-lokal-validiert),
   [KP-270](./Kontextprotokoll.md#kp-270---pass-7-committet-gepusht-und-ci-gruen)).
+  Pass 8 bildet nichtnull `td`/`th`-`width`-Dimensionen auf CSS `width` ab;
+  positive Pixelwerte wirken in den vorhandenen intrinsischen Zellbreiten-
+  constraints einschliesslich `colspan`-Verteilung. Prozentbreiten und
+  `width`-Attribute anderer Tabellenelemente bleiben unsupported. CSS (1.237),
+  Layout (915), Build, Formatpruefung und alle 16.365 Solution-Tests bestehen
+  lokal. `5da1a7f` ist nach `main` gepusht; Linux (Run 42545600550), Windows
+  confinement (Run 42545600498) und CodeQL (Run 42545600021) sind gruen.
+  Pass 8 ist abgeschlossen; zwei Inkremente verbleiben
+  ([KP-271](./Kontextprotokoll.md#kp-271---pass-8-waehlt-td-th-width),
+  [KP-272](./Kontextprotokoll.md#kp-272---pass-8-lokal-validiert),
+  [KP-273](./Kontextprotokoll.md#kp-273---pass-8-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

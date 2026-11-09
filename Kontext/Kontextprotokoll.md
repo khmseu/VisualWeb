@@ -6963,3 +6963,50 @@ third_party` und `git diff --check` bestehen lokal.
   sind erfolgreich.
 - Status: Pass 7 abgeschlossen; drei der angeforderten zehn Inkremente
   verbleiben.
+
+### KP-271 - Pass 8 waehlt td/th width
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-270.
+- Belegt: Die lokale HTML-Kopie `specs/cache/html.html`, `#tables-2`, bildet
+  `td`/`th`-`width` als nichtnull Dimension auf CSS `width` ab. CSS 2.2
+  `specs/cache/css2-tables.html`, `#auto-table-layout`, verwendet eine groessere
+  Zellbreite als Mindestbreite und verteilt Spanning-Cell-Constraints ueber
+  belegte Spalten. Beide Manifest-Eintraege waren innerhalb der 30-Tage-Frist.
+  Vor der Aenderung lehnte `TableLayout` jedes Zell-`width`-Attribut ab; die
+  vorhandene intrinsische Zellmessung beruecksichtigt bereits CSS-Pixelbreiten
+  und lehnt Prozentdimensionen explizit ab.
+- Auswahl/Umfang (Ableitung): Pass 8 bildet nur `td`/`th`-Attribute ab,
+  ergaenzt eine unabhaengige aggregierte Roh-UTF-16-Grenze und nutzt den
+  vorhandenen intrinsischen Min/Max-/Spanning-Constraint-Algorithmus.
+  Prozentzellbreiten und `width`-Attribute anderer Tabellenelemente bleiben
+  unsupported; ein neuer Prozent- oder Spaltenalgorithmus wird nicht
+  eingefuehrt.
+- Status: ausgewählt; Implementierung und Validierung stehen aus.
+
+### KP-272 - Pass 8 lokal validiert
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-271.
+- Belegt: CSS-Tests (1.237), Layouttests (915), `dotnet build
+VisualWeb.slnx` ohne Warnungen/Fehler, alle 16.365 Solution-Tests,
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestehen lokal. Tests decken Dimensionen,
+  Null/ungueltige Werte, Kaskade/Mutation, Assignment-/Attributbudgets,
+  numerische Grenzen, Single- und Spanning-Cell-Geometrie sowie die
+  Unsupported-Grenzen ab.
+- Status: lokale Implementierung und Validierung abgeschlossen. Commit, Push
+  und CI stehen aus; Pass 8 ist noch nicht abgeschlossen.
+
+### KP-273 - Pass 8 committet, gepusht und CI gruen
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-272.
+- Belegt: Feature-Commit
+  `5da1a7ff62a5f16548599c49009a88ca85a1d8a8` wurde nach `main` gepusht.
+  Linux development
+  ([42545600550](https://github.com/khmseu/VisualWeb/actions/runs/42545600550)),
+  Windows confinement
+  ([42545600498](https://github.com/khmseu/VisualWeb/actions/runs/42545600498))
+  und Push on main/CodeQL
+  ([42545600021](https://github.com/khmseu/VisualWeb/actions/runs/42545600021))
+  sind erfolgreich.
+- Status: Pass 8 abgeschlossen; zwei der angeforderten zehn Inkremente
+  verbleiben.
