@@ -1222,7 +1222,7 @@ public sealed class LayoutTests
     }
 
     [Fact]
-    public void TableCellHeightAttributeSetsMinimumHeightAndOtherHeightAttributesRemainUnsupported()
+    public void TableCellAndRowHeightAttributesSetMinimumHeightsAndRespectCss()
     {
         var root = UnorderedList(
             "<table style='border-spacing:0'><tr><td id=cell height=30>x</td></tr></table>",
@@ -1234,12 +1234,40 @@ public sealed class LayoutTests
             "td{padding:0}#cell{height:40px}").Root!;
         Assert.Equal(40, Find(overridden, "cell").Content.Height);
 
+        var row = UnorderedList(
+            "<table style='border-spacing:0'><tr id=row height=30><td id=cell>x</td></tr></table>",
+            "td{padding:0}").Root!;
+        Assert.Equal(30, Find(row, "row").BorderBox.Height);
+        Assert.Equal(30, Find(row, "cell").BorderBox.Height);
+
+        var spanningRows = UnorderedList(
+            "<table style='border-spacing:0'><tr id=first height=30><td id=span rowspan=2>x</td></tr>"
+            + "<tr id=second height=40><td>y</td></tr></table>",
+            "td{padding:0}").Root!;
+        Assert.Equal(30, Find(spanningRows, "first").BorderBox.Height);
+        Assert.Equal(40, Find(spanningRows, "second").BorderBox.Height);
+        Assert.Equal(70, Find(spanningRows, "span").BorderBox.Height);
+
+        var rowOverridden = UnorderedList(
+            "<table style='border-spacing:0'><tr id=row height=30><td>x</td></tr></table>",
+            "#row{height:40px}").Root!;
+        Assert.Equal(40, Find(rowOverridden, "row").BorderBox.Height);
+
+        var zeroRow = UnorderedList(
+            "<table style='border-spacing:0'><tr id=row height=0><td id=cell>x</td></tr></table>",
+            "td{padding:0}").Root!;
+        Assert.Equal(Find(zeroRow, "cell").BorderBox.Height, Find(zeroRow, "row").BorderBox.Height);
+
+        var invalidRow = UnorderedList(
+            "<table style='border-spacing:0'><tr id=row height=invalid><td>x</td></tr></table>").Root!;
+        Assert.True(Find(invalidRow, "row").BorderBox.Height > 0);
+
         Assert.Throws<UnsupportedLayoutException>(() =>
             UnorderedList("<table height=30><tr><td>x</td></tr></table>"));
         Assert.Throws<UnsupportedLayoutException>(() =>
-            UnorderedList("<table><tr height=30><td>x</td></tr></table>"));
-        Assert.Throws<UnsupportedLayoutException>(() =>
             UnorderedList("<table><tbody height=30><tr><td>x</td></tr></tbody></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr height='50%'><td>x</td></tr></table>"));
         Assert.Throws<UnsupportedLayoutException>(() =>
             UnorderedList("<table><tr><td height='50%'>x</td></tr></table>"));
     }

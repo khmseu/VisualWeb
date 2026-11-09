@@ -600,13 +600,14 @@ public static partial class StaticLayout
             Check(element, depth, block: true, tableContext: true);
             RejectTableAttributes(element);
             var style = Style(element);
-            RequireAutoHeight(style);
+            if (element.LocalName == "tr") { _ = TableRowHeight(style); }
+            else { RequireAutoHeight(style); }
             if (style["width"] is not CssKeyword { Value: "auto" }
                 || style["min-width"] is not CssKeyword { Value: "auto" }
                 || style["max-width"] is not CssKeyword { Value: "none" }
                 || Edges(style, "margin", 0) != default || Edges(style, "padding", 0) != default
                 || Edges(style, "border", 0, "-width") != default)
-            { throw new UnsupportedLayoutException("Row groups and rows require automatic sizing without margins, padding or borders."); }
+            { throw new UnsupportedLayoutException("Row groups and rows require automatic width sizing without margins, padding or borders."); }
         }
 
         private static void RejectTableAttributes(DomElement element, bool allowWidthAttribute = false)
@@ -616,6 +617,7 @@ public static partial class StaticLayout
                     && !CssStyleEngine.HasSupportedTableCellWidthHint(element))
                 || element.GetAttribute("height") is not null
                     && !CssStyleEngine.HasSupportedTableCellHeightHint(element)
+                    && !CssStyleEngine.HasSupportedTableRowHeightHint(element)
                 || new[] { "border" }
                     .Any(attribute => element.GetAttribute(attribute) is not null)
                 || element.GetAttribute("nowrap") is not null
@@ -637,7 +639,24 @@ public static partial class StaticLayout
             if (style["height"] is not CssKeyword { Value: "auto" }
                 || style["min-height"] is not CssKeyword { Value: "auto" } && style["min-height"] is not CssLength { Value: 0 }
                 || style["max-height"] is not CssKeyword { Value: "none" })
-            { throw new UnsupportedLayoutException("Table and row-group/row heights must remain automatic."); }
+            { throw new UnsupportedLayoutException("Table and row-group heights must remain automatic."); }
+        }
+
+        private static double TableRowHeight(CssComputedStyle style)
+        {
+            var minimumHeight = style["height"] switch
+            {
+                CssKeyword { Value: "auto" } => 0,
+                CssLength { Unit: "px", Value: >= 0 } height => Finite(height.Value),
+                CssLength { Unit: "%" } => throw new UnsupportedLayoutException(
+                    "Percentage table-row heights are unsupported because CSS 2.2 does not define their behavior."),
+                _ => throw new UnsupportedLayoutException("Table-row heights require auto or a nonnegative pixel value.")
+            };
+            if (style["min-height"] is not CssKeyword { Value: "auto" }
+                    && style["min-height"] is not CssLength { Value: 0 }
+                || style["max-height"] is not CssKeyword { Value: "none" })
+            { throw new UnsupportedLayoutException("Table rows do not support min-height or max-height."); }
+            return minimumHeight;
         }
 
         private (double Minimum, double Maximum) Intrinsic(DomElement element, int depth, bool cell = false)
@@ -734,6 +753,7 @@ public static partial class StaticLayout
                 {
                     cancellation.ThrowIfCancellationRequested();
                     var row = group.Rows[rowIndex];
+                    rowHeights[rowIndex] = TableRowHeight(Style(row.Element));
                     var cells = new List<(TableCell Cell, LayoutBox Box)>(row.Cells.Count);
                     foreach (var cell in row.Cells)
                     {

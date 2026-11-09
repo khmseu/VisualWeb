@@ -1273,7 +1273,19 @@ zero-warning solution build, all 16,365 solution tests, format verification and
 `5da1a7ff62a5f16548599c49009a88ca85a1d8a8` is pushed to `main`. Linux
 development (run 42545600550), Windows confinement (42545600498) and
 CodeQL/Push on main (42545600021) all pass. Pass 8 is complete; two of the
-requested ten increments remain.
+requested ten increments remain. The separate tracker/context commit
+`08bf613` also has passing Linux development (42546640879), Windows
+confinement (42546640844) and Push on main/CodeQL (42546640429) workflows.
+
+Pass 9 adds the HTML `tr[height]` dimension hint, including zero, through the
+author presentational-hint cascade and an independent aggregate raw UTF-16
+limit. Nonnegative pixel heights become row minimums combined with cell heights
+and content; row CSS may override the hint. Percentage row heights fail
+explicitly because CSS 2.2 does not define their behavior. Table and row-group
+heights remain unsupported. CSS (1,241), Layout (915), all 16,369 solution
+tests, the zero-warning solution build and format verification pass locally.
+The feature commit, push and CI remain pending; one of the ten requested
+increments remains after Pass 9.
 
 ### 6. A persistent browser JavaScript environment
 

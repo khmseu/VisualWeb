@@ -4,7 +4,22 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-07, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-09, Zeitzone Europe/Berlin (UTC+01:00).
+
+## Aktueller Wissensstand
+
+Der Nutzer setzt eine neue Serie aus zehn Missing-Prioritaetsinkrementen fort.
+Pass 8 bildet `td`/`th`-`width` auf CSS `width` ab. Featurecommit
+`5da1a7f` und Trackercommit `08bf613` sind gepusht; Linux, Windows x64/arm64
+und CodeQL fuer beide Commits sind gruen (KP-273 und anschliessende
+Workflow-Pruefung). Pass 9 ergaenzt `tr[height]` als begrenzte CSS-
+Presentational-Hint mit Pixel-Minimumhoehen, Kaskadenueberschreibung,
+UTF-16-Budget und expliziter Ablehnung prozentualer Zeilenhoehen. CSS (1.241),
+Layout (915), alle 16.369 Solution-Tests, Solution-Build (0 Warnungen/Fehler)
+und Formatverifikation bestehen. Pass 9 ist noch nicht committet oder gepusht;
+danach verbleibt ein Inkrement. Chronologische Evidenz steht in
+[KP-271 bis KP-276](./Kontextprotokoll.md#kp-271---pass-8-waehlt-tdth-width).
+
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
   KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten

@@ -215,3 +215,9 @@ The layout subset supports cell baseline, `middle` and `bottom` alignment,
 including row spans; see its local row-height policy and remaining exclusions.
 See the [layout subset](../../../docs/text-layout.md#basic-automatic-tables)
 for accepted geometry and explicit downstream failures.
+HTML `tr[height]` maps dimension values, including zero, to the CSS `height`
+presentational hint, bounded by the separate aggregate raw UTF-16 limit
+`MaxTableRowHeightAttributeCharacters`. Nonnegative pixel heights set minimum
+row heights; percentage row heights fail explicitly because CSS 2.2 does not
+define their behavior. Ordinary author CSS overrides the hint; table and
+row-group height attributes remain unsupported.

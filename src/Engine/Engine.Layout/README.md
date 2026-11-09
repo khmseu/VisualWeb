@@ -111,7 +111,11 @@ unsupported.
 Nonzero `td`/`th` `height` dimensions map to minimum cell heights through the
 existing layout path; author CSS overrides the hint. Percentage cell heights
 fail explicitly because CSS 2.2 does not define their row-sizing behavior.
-Height attributes on tables, rows and row groups remain unsupported.
+`tr[height]` maps a dimension value, including zero, to a computed row-height
+minimum. Nonnegative pixel heights are combined with cell heights and content;
+percentage row heights fail explicitly because CSS 2.2 does not define their
+behavior. Author CSS overrides the HTML hint. Table and row-group heights
+remain unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

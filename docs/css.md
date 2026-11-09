@@ -267,8 +267,13 @@ HTML `td[height]` and `th[height]` map nonzero dimension values to a `height`
 presentational hint, with a separate aggregate raw UTF-16 limit
 `MaxTableCellHeightAttributeCharacters`. Zero and invalid values add no hint;
 ordinary author CSS overrides it. Percentage cell heights fail explicitly at
-layout because CSS 2.2 does not define their row-sizing behavior. Height
-attributes on other table parts remain unsupported.
+layout because CSS 2.2 does not define their row-sizing behavior.
+HTML `tr[height]` maps dimension values, including zero, to the row's `height`
+presentational hint, bounded by the separate aggregate raw UTF-16 limit
+`MaxTableRowHeightAttributeCharacters`. Nonnegative pixel heights set a
+minimum row height; percentage row heights fail explicitly because CSS 2.2
+does not define their behavior. Ordinary author CSS overrides either hint.
+Height attributes on tables and row groups remain unsupported.
 HTML `td[width]` and `th[width]` map nonzero dimension values to a `width`
 presentational hint, with a separate aggregate raw UTF-16 limit
 `MaxTableCellWidthAttributeCharacters`. Zero and invalid values add no hint;

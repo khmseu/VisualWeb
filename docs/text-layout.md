@@ -298,7 +298,13 @@ existing minimum cell-height geometry; zero and invalid values add no hint,
 and ordinary author CSS overrides it. Scanning has its own aggregate raw
 UTF-16 limit, `MaxTableCellHeightAttributeCharacters`. Percentage cell heights
 fail explicitly because CSS 2.2 does not define their row-sizing behavior;
-height attributes on tables, rows and row groups remain unsupported.
+HTML `tr[height]` maps dimension values, including zero, to the row's CSS
+`height`. A nonnegative pixel row height acts as a minimum alongside cell
+heights and content; ordinary author CSS overrides the hint. Percentage row
+heights fail explicitly because CSS 2.2 does not define their behavior.
+Scanning has a separate aggregate raw UTF-16 limit,
+`MaxTableRowHeightAttributeCharacters`. Heights on tables and row groups remain
+unsupported.
 HTML `td[width]`/`th[width]` maps nonzero dimension values to the CSS `width`
 presentational hint. Positive pixel widths contribute to the existing
 intrinsic minimum/maximum cell constraints, including the bounded distribution
@@ -314,12 +320,13 @@ Explicit failures remain for anonymous or arbitrary CSS tables, nested
 tables/widgets,
 percentage dimensions inside cells, collapsed borders, fixed layout, other
 cell alignments, nonzero cell margins, cell maximum height,
-nonautomatic table/row/group heights, other row/group sizing and decorations,
+nonautomatic table/row-group heights, row heights other than auto or
+nonnegative pixels, row min/max heights, other row/group sizing and decorations,
 and legacy presentation attributes other than the supported table
 `width`/`cellspacing`/`cellpadding` hints and cell `nowrap`/pixel `height`/`width`
-(`height` on other table parts, percentage cell heights/widths, `width` on
-other table parts, `border`, `nowrap` on other table parts, plus `width` on
-non-table parts). The table's
+(`height` on other table parts, percentage cell/row heights, percentage cell
+widths, `width` on other table parts, `border`, `nowrap` on other table parts,
+plus `width` on non-table parts). The table's
 ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive

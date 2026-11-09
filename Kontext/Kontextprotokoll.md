@@ -7010,3 +7010,46 @@ third_party` und `git diff --check` bestehen lokal. Tests decken Dimensionen,
   sind erfolgreich.
 - Status: Pass 8 abgeschlossen; zwei der angeforderten zehn Inkremente
   verbleiben.
+
+### KP-274 - Pass 9 waehlt HTML-tr-height
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-273.
+- Nutzerangabe: Der Nutzer setzt den Auftrag
+  `/missing-priority-implementation 10` fort; nach Pass 8 verbleiben zwei
+  getrennte Inkremente.
+- Belegt: `specs/cache/html.html`, `#tables-2`, bildet das `height`-Attribut
+  von `tr` auf die CSS-Dimension `height` ab, ohne Nullwerte auszuschliessen.
+  Der lokale CSS-2.2-Abschnitt `specs/cache/css2-tables.html#height-layout`
+  definiert die Zeilenhoehe als Maximum aus berechneter Zeilenhoehe,
+  Zellhoehen und Inhaltsminimum; Prozenthoehen von Zeilen sind dort nicht
+  definiert. Beide Standardsquellen waren laut Manifest innerhalb der
+  30-Tage-Frist.
+- Auswahl/Umfang (Ableitung): Pass 9 ergaenzt ausschliesslich den begrenzten
+  `tr[height]`-Hinweis mit unabhaengigem aggregiertem Roh-UTF-16-Limit und
+  nichtnegativen Pixel-Minimumhoehen. Gewoehnliche Autoren-CSS kann den Hint
+  ueberschreiben; Zeilen-Prozenthoehen scheitern explizit. Tabellen- und
+  Zeilengruppenhoehen bleiben unsupported, weil CSS 2.2 deren Verhalten nicht
+  definiert. Begruendung: die Zeilenhoehe ist durch CSS 2.2 messbar definiert,
+  waehrend Prozentwerte keine interoperable lokale Geometrie begruenden.
+- Status bei Auswahl: Die Codeaenderung war noch nicht implementiert.
+
+### KP-275 - Pass 9 lokal implementiert, Volltest laeuft
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-274.
+- Belegt: CSS-Tests (1.241) und Layouttests (915) bestehen. Der
+  Solution-Build besteht mit null Warnungen/Fehlern; Formatverifikation
+  besteht. Die Volltest-Suite `dotnet test VisualWeb.slnx --no-build` laeuft
+  noch.
+- Status: Code, fokussierte Regressionen und direkte Dokumentation sind
+  vorhanden. Der Volltest, Featurecommit, Push und CI stehen noch aus; Pass 9
+  zaehlt noch nicht als abgeschlossen.
+
+### KP-276 - Pass 9 Volltest abgeschlossen
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-275.
+- Belegt: `dotnet test VisualWeb.slnx --no-build` endet mit Exitcode 0.
+  Alle 16.369 Tests bestehen, darunter CSS (1.241), Layout (915), Browser
+  (1.333) sowie die uebrigen Projekte. Solution-Build und Formatverifikation
+  bestehen ebenfalls; `git diff --check` ist sauber.
+- Status: Pass 9 ist lokal implementiert und vollstaendig validiert. Feature-
+  commit, Push und CI stehen noch aus.

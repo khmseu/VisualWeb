@@ -176,6 +176,15 @@ public static class CssStyleEngine
         return element.LocalName is ("td" or "th") && element.GetAttribute("height") is not null;
     }
 
+    /// <summary>Reports whether the bounded HTML table-row height hint applies.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-row height hint</see>.</remarks>
+    public static bool HasSupportedTableRowHeightHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName == "tr" && element.GetAttribute("height") is not null;
+    }
+
     /// <summary>Reports whether the bounded HTML table-cell width hint applies.</summary>
     /// <remarks>Spec: html;
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell width hint</see>.</remarks>
@@ -292,6 +301,13 @@ public static class CssStyleEngine
         return TryParseNonZeroDimensionValue(height, context.Cancellation, "HTML table-cell height attribute");
     }
 
+    private static CssLength? GetTableRowHeightHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName != "tr" || element.GetAttribute("height") is not { } height) { return null; }
+        context.TableRowHeightCharacters(height.Length);
+        return TryParseDimensionValue(height, context.Cancellation, "HTML table-row height attribute");
+    }
+
     private static CssLength? GetTableCellWidthHint(DomElement element, CssContext context)
     {
         if (element.LocalName is not ("td" or "th") || element.GetAttribute("width") is not { } width)
@@ -357,6 +373,13 @@ public static class CssStyleEngine
     private static CssLength? TryParseNonZeroDimensionValue(string input, CancellationToken cancellationToken,
         string attributeName)
     {
+        var dimension = TryParseDimensionValue(input, cancellationToken, attributeName);
+        return dimension is { Value: not 0 } ? dimension : null;
+    }
+
+    private static CssLength? TryParseDimensionValue(string input, CancellationToken cancellationToken,
+        string attributeName)
+    {
         var position = 0;
         while (position < input.Length && IsAsciiWhitespace(input[position]))
         {
@@ -394,7 +417,6 @@ public static class CssStyleEngine
             }
         }
 
-        if (value == 0) { return null; }
         return new(value, position < input.Length && input[position] == '%' ? "%" : "px");
     }
 
@@ -504,6 +526,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("height", cellHeight, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetTableRowHeightHint(element, context) is { } rowHeight)
+            {
+                context.Assignment();
+                Add(new("height", rowHeight, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetTableCellWidthHint(element, context) is { } cellWidth)
