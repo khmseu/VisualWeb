@@ -269,6 +269,12 @@ presentational hint, with a separate aggregate raw UTF-16 limit
 ordinary author CSS overrides it. Percentage cell heights fail explicitly at
 layout because CSS 2.2 does not define their row-sizing behavior. Height
 attributes on other table parts remain unsupported.
+HTML `td[width]` and `th[width]` map nonzero dimension values to a `width`
+presentational hint, with a separate aggregate raw UTF-16 limit
+`MaxTableCellWidthAttributeCharacters`. Zero and invalid values add no hint;
+ordinary author CSS overrides it. Percentage cell widths remain explicitly
+unsupported by intrinsic table layout, as do `width` attributes on other table
+parts.
 The [HTML page background rule](https://html.spec.whatwg.org/multipage/rendering.html#the-page)
 (local ID `html`) maps a successfully parsed `body[bgcolor]` value through the
 HTML legacy-colour algorithm to `background-color`. This uses the normal

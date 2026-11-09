@@ -1244,6 +1244,42 @@ public sealed class LayoutTests
             UnorderedList("<table><tr><td height='50%'>x</td></tr></table>"));
     }
 
+    [Fact]
+    public void TableCellWidthAttributeConstrainsAutomaticColumnsAndHonorsAuthorCascade()
+    {
+        const string html =
+            "<table style='border-spacing:0'><tr><td id=cell width=30>x</td></tr></table>";
+        var root = UnorderedList(html, "td{padding:0}").Root!;
+        Assert.Equal(30, Find(root, "cell").BorderBox.Width);
+
+        var overridden = UnorderedList(html, "td{padding:0}#cell{width:40px}").Root!;
+        Assert.Equal(40, Find(overridden, "cell").BorderBox.Width);
+
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr width=30><td>x</td></tr></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tbody width=30><tr><td>x</td></tr></tbody></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><colgroup><col width=30></colgroup><tr><td>x</td></tr></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr><td width='50%'>x</td></tr></table>"));
+    }
+
+    [Fact]
+    public void TableCellWidthConstraintForSpanningCellsDistributesAcrossCoveredColumns()
+    {
+        const string html = """
+            <table id=t style="border-spacing:0"><tr><td id=span colspan=2 width=80>x</td></tr>
+            <tr><td id=a>a</td><td id=b>b</td></tr></table>
+            """;
+        var root = UnorderedList(html, "td{padding:0}").Root!;
+
+        Assert.Equal(80, Find(root, "t").Content.Width);
+        Assert.Equal(80, Find(root, "span").BorderBox.Width);
+        Assert.Equal(40, Find(root, "a").BorderBox.Width);
+        Assert.Equal(40, Find(root, "b").BorderBox.Width);
+    }
+
     [Theory]
     [InlineData(null, 1)]
     [InlineData("0", 1)]
@@ -1826,7 +1862,6 @@ public sealed class LayoutTests
     [InlineData("<table><colgroup span=2><col></colgroup><tr><td>x</td></tr></table>", "")]
     [InlineData("<table><tr><td><table></table></td></tr></table>", "")]
     [InlineData("<table><tr><td><input></td></tr></table>", "")]
-    [InlineData("<table><tr><td width=100>x</td></tr></table>", "")]
     [InlineData("<table align=left><tr><td>x</td></tr></table>", "")]
     [InlineData("<table align='center '><tr><td>x</td></tr></table>", "")]
     [InlineData("<table valign=top><tr><td>x</td></tr></table>", "")]

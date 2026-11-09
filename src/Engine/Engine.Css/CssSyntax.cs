@@ -60,6 +60,10 @@ public sealed record CssOptions
     /// <summary>Maximum aggregate raw UTF-16 units in table-cell height attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table cell height hints</see>.</remarks>
     public int MaxTableCellHeightAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in table-cell width attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table cell width hints</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values">dimension values</see>.</remarks>
+    public int MaxTableCellWidthAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     public int MaxTokens { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
     public int MaxDiagnostics { get; init; } = 10_000;
@@ -78,6 +82,7 @@ public sealed record CssOptions
             || MaxFontSizeAttributeCharacters <= 0 || MaxTableSpacingAttributeCharacters <= 0
             || MaxTableWidthAttributeCharacters <= 0 || MaxTableBackgroundColorAttributeCharacters <= 0
             || MaxTableCellPaddingAttributeCharacters <= 0 || MaxTableCellHeightAttributeCharacters <= 0
+            || MaxTableCellWidthAttributeCharacters <= 0
             || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
             || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
@@ -113,6 +118,7 @@ internal sealed class CssContext
     private int tableBackgroundColorCharacters;
     private int tableCellPaddingCharacters;
     private int tableCellHeightCharacters;
+    private int tableCellWidthCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
     internal CssSelectorScope? Scope { get; }
@@ -224,6 +230,14 @@ internal sealed class CssContext
         if (length > Options.MaxTableCellHeightAttributeCharacters - tableCellHeightCharacters)
         { throw new CssLimitException("CSS table-cell height attribute character limit exceeded."); }
         tableCellHeightCharacters += length;
+    }
+
+    internal void TableCellWidthCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxTableCellWidthAttributeCharacters - tableCellWidthCharacters)
+        { throw new CssLimitException("CSS table-cell width attribute character limit exceeded."); }
+        tableCellWidthCharacters += length;
     }
 
     private void AttributeCharacters(int length, ref int used, int limit, string attribute)

@@ -611,7 +611,9 @@ public static partial class StaticLayout
 
         private static void RejectTableAttributes(DomElement element, bool allowWidthAttribute = false)
         {
-            if ((!allowWidthAttribute && element.GetAttribute("width") is not null)
+            if ((element.GetAttribute("width") is not null
+                    && !allowWidthAttribute
+                    && !CssStyleEngine.HasSupportedTableCellWidthHint(element))
                 || element.GetAttribute("height") is not null
                     && !CssStyleEngine.HasSupportedTableCellHeightHint(element)
                 || new[] { "border" }

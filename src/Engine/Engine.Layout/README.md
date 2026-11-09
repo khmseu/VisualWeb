@@ -76,6 +76,9 @@ Percentage `col`/`colgroup` widths constrain track minimums against the final
 table width. Auto-width tables use a bounded deterministic solve sharing the
 table-column operation and cancellation budgets; constraints without a finite
 solution fail explicitly.
+HTML `td`/`th` width hints contribute to intrinsic cell sizing constraints,
+including bounded distribution across spanning columns. Percentage cell widths
+remain unsupported by intrinsic table layout.
 Solid column/group `background-color` uses bounded cell-origin geometry,
 including complete bounds of spanning cells beyond their originating
 track/group; these rectangles share the table-column operation limit. See the

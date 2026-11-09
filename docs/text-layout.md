@@ -299,6 +299,14 @@ and ordinary author CSS overrides it. Scanning has its own aggregate raw
 UTF-16 limit, `MaxTableCellHeightAttributeCharacters`. Percentage cell heights
 fail explicitly because CSS 2.2 does not define their row-sizing behavior;
 height attributes on tables, rows and row groups remain unsupported.
+HTML `td[width]`/`th[width]` maps nonzero dimension values to the CSS `width`
+presentational hint. Positive pixel widths contribute to the existing
+intrinsic minimum/maximum cell constraints, including the bounded distribution
+for spanning cells; zero and invalid values add no hint, and ordinary author
+CSS overrides it. Scanning has its own aggregate raw UTF-16 limit,
+`MaxTableCellWidthAttributeCharacters`. Percentage cell widths remain
+unsupported by intrinsic table layout; width attributes on other table parts
+remain unsupported.
 Measurement and arrangement share node, text, shaping, line, glyph, box, depth
 and cancellation budgets.
 
@@ -308,9 +316,10 @@ percentage dimensions inside cells, collapsed borders, fixed layout, other
 cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes other than the supported table
-`width`/`cellspacing`/`cellpadding` hints and cell `nowrap`/pixel `height`
-(`height` on other table parts, percentage cell heights, `border`, `nowrap` on
-other table parts, plus `width` on non-table parts). The table's
+`width`/`cellspacing`/`cellpadding` hints and cell `nowrap`/pixel `height`/`width`
+(`height` on other table parts, percentage cell heights/widths, `width` on
+other table parts, `border`, `nowrap` on other table parts, plus `width` on
+non-table parts). The table's
 ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive
