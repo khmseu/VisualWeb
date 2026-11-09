@@ -359,6 +359,19 @@
   Inkremente verbleiben
   ([KP-266](./Kontextprotokoll.md#kp-266---pass-6-td-th-nowrap-lokal-validiert),
   [KP-267](./Kontextprotokoll.md#kp-267---pass-6-committet-gepusht-und-ci-gruen)).
+  Pass 7 implementiert HTML-`td`/`th`-`height`-Hints: nichtnull
+  Dimensionswerte setzen `height`; positive Pixelwerte wirken als
+  Mindestzellhoehe. Prozentuale Zellhoehen scheitern explizit am Layout, da
+  CSS 2.2 deren Zeilenhoehenalgorithmus nicht definiert. Andere
+  Tabellen-/Zeilen-/Gruppen-`height`-Attribute bleiben unsupported. CSS
+  (1.233), Layout (914), Solution-Build (0 Warnungen/Fehler), Volltest
+  (16.360), Formatpruefung und Whitespace-Check bestehen. Commit, Push und CI
+  sind abgeschlossen; `d572657` ist auf `main`; Linux (Run 42540838824),
+  Windows confinement (Run 42540838782) und CodeQL (Run 42540838464) sind
+  gruen. Pass 7 ist abgeschlossen; drei weitere Inkremente
+  verbleiben ([KP-268](./Kontextprotokoll.md#kp-268---pass-7-waehlt-html-td-th-height),
+  [KP-269](./Kontextprotokoll.md#kp-269---pass-7-lokal-validiert),
+  [KP-270](./Kontextprotokoll.md#kp-270---pass-7-committet-gepusht-und-ci-gruen)).
 - Vorheriger Auftrag: am 2026-10-31 zehn weitere getrennt validierte,
   committete, gepushte und CI-gepruefte Missing-Prioritaetsinkremente bearbeiten
   ([KP-106](./Kontextprotokoll.md#kp-106---erneuter-auftrag-und-erstes-textinkrement)).

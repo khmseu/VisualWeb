@@ -6909,3 +6909,57 @@ third_party` und `git diff --check` bestehen lokal. Der Volltest dauerte
   sind erfolgreich.
 - Status: Pass 6 ist abgeschlossen; vier der angeforderten zehn Inkremente
   verbleiben.
+
+### KP-268 - Pass 7 waehlt HTML td/th height
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-267.
+- Nutzerangabe: Der laufende `/missing-priority-implementation 10`-Auftrag
+  verlangt zehn getrennte, getestete und committete Inkremente.
+- Belegt: Die lokale HTML-Kopie `specs/cache/html.html`, `#tables-2`, bildet
+  `td`/`th`-`height` als nichtnull Dimension auf CSS `height` ab. Der lokale
+  CSS-2.2-Abschnitt `#height-layout` weist die Behandlung prozentualer Hoehen
+  von Tabellenzellen als nicht spezifiziert aus. `docs/text-layout.md`
+  dokumentiert bereits Zellhoehen als Mindesthoehen im vorhandenen
+  Tabellenlayout.
+- Auswahl/Umfang (Ableitung): Pass 7 ergaenzt nur den HTML-Hinweis fuer
+  `td`/`th`, einschliesslich eines unabhaengigen aggregierten Roh-UTF-16-
+  Limits und normaler Autoren-CSS-Kaskade. Tabellen-, Zeilen- und
+  Zeilengruppen-`height` bleiben unsupported. Prozentwerte fuer Zellen werden
+  beim Layout explizit abgelehnt, statt als automatische Hoehen zu gelten.
+  Begruendung: der CSS-2.2-Algorithmus fuer prozentuale Zell-/Zeilenhoehen ist
+  nicht definiert; die Repository-Regel verlangt sichtbare Fehler statt
+  stiller Annaeherungen.
+- Status: ausgewaehlt; Implementierung und Validierung stehen aus.
+
+### KP-269 - Pass 7 lokal validiert
+
+- Dokumentiert am: 2026-11-08, Europe/Berlin; folgt auf KP-268.
+- Belegt: HTML (Manifest `checkedAt` 2026-11-07) und CSS 2.2 Tables
+  (Manifest `checkedAt` 2026-10-28) waren innerhalb der 30-Tage-Frist.
+  `td`/`th`-`height` bildet nichtnull Dimensionen auf CSS `height` ab und
+  verwendet eine eigene aggregierte Roh-UTF-16-Grenze. Zell-Prozenthoehen
+  scheitern explizit beim Layout; Tabellen-, Zeilen- und Zeilengruppen-Hoehen
+  bleiben unsupported. Tests decken Pixel-/Prozentwerte, Null/ungueltige Werte,
+  CSS-Kaskade und Mutation, Assignment-/Attributbudgets, endliche Grenzen,
+  Zellgeometrie und explizite Grenzen ab.
+- Belegt: CSStests (1.233), Layouttests (914), `dotnet build
+VisualWeb.slnx` ohne Warnungen/Fehler, alle 16.360 Solution-Tests,
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestehen lokal.
+- Status: lokale Implementierung und Validierung abgeschlossen. Commit, Push
+  und CI stehen aus; Pass 7 zaehlt noch nicht als abgeschlossen.
+
+### KP-270 - Pass 7 committet, gepusht und CI gruen
+
+- Dokumentiert am: 2026-11-09 UTC; folgt auf KP-269.
+- Belegt: Feature-Commit
+  `d5726575be58e09658ab4224fba856e1bae3ed66` wurde nach `main` gepusht.
+  Linux development
+  ([42540838824](https://github.com/khmseu/VisualWeb/actions/runs/42540838824)),
+  Windows confinement
+  ([42540838782](https://github.com/khmseu/VisualWeb/actions/runs/42540838782))
+  und Push on main/CodeQL
+  ([42540838464](https://github.com/khmseu/VisualWeb/actions/runs/42540838464))
+  sind erfolgreich.
+- Status: Pass 7 abgeschlossen; drei der angeforderten zehn Inkremente
+  verbleiben.

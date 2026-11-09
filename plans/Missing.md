@@ -932,13 +932,16 @@ findings on unchanged lines; all changed test files pass a targeted check.
 
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one or two spacing lengths (one for both axes, or horizontal
-then vertical), the HTML `cellspacing`, nonzero `table[width]`, and
-`table[cellpadding]` hints,
+then vertical), the HTML `cellspacing`, nonzero `table[width]`,
+`table[cellpadding]`, and nonzero `td`/`th` `height` hints,
 top-aligned text/block cells, and table/cell/row/group/column background colors
 and solid borders through ordinary paint flow. Table widths act as minima;
 header/footer groups are ordered around body groups.
 `cellpadding` sets the four equal padding sides of corresponding cells from a
 non-negative integer pixel value, with bounded aggregate attribute work.
+Nonzero pixel `height` values on `td`/`th` set minimum cell heights; percentage
+cell heights fail explicitly because CSS 2.2 does not define their row-sizing
+behavior. Other table-part `height` attributes remain unsupported.
 Bounded horizontal `colspan` distributes spanned intrinsic minimum/maximum
 constraints equally across tracks; the total column grid is capped by
 `LayoutOptions.MaxTableColumns` before allocation and repeated track work by
@@ -946,8 +949,8 @@ constraints equally across tracks; the total column grid is capped by
 one caption, and bounded column/group tracks and widths are supported as
 documented. Anonymous/arbitrary CSS tables, collapsed borders, fixed layout,
 nested tables/widgets, percentages inside cells and other legacy presentation
-attributes (including `height`, `border` and `nowrap` outside `td`/`th`) remain
-unsupported. See the
+attributes (including `height` on other table parts, `border` and `nowrap`
+outside `td`/`th`) remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
 exact work limits and cancellation, native pixels, and local/process
@@ -1245,6 +1248,19 @@ Windows confinement
 Push on main/CodeQL
 ([run](https://github.com/khmseu/VisualWeb/actions/runs/42536481151)) pass.
 Pass 6 is complete; four requested increments remain.
+
+Pass 7 implements the HTML `height` hint on `td`/`th`. Nonzero dimension values
+map to CSS `height`; positive pixel values contribute to the existing minimum
+cell-height layout. Zero and invalid values add no hint, and percentage cell
+heights fail explicitly because CSS 2.2 does not define their row-sizing
+behavior. A separate aggregate raw UTF-16 limit bounds the attribute scan.
+`height` on tables, rows and row groups remains unsupported. CSS (1,233),
+Layout (914), the zero-warning solution build, all 16,360 solution tests,
+format verification and `git diff --check` pass locally. Feature commit
+`d5726575be58e09658ab4224fba856e1bae3ed66` is pushed to `main`. Linux
+development (run 42540838824), Windows confinement (42540838782) and
+CodeQL/Push on main (42540838464) all pass. Pass 7 is complete; three of the
+requested ten increments remain.
 
 ### 6. A persistent browser JavaScript environment
 
