@@ -1298,8 +1298,14 @@ bounded column-sizing path applies pixel and percentage constraints, and
 ordinary author CSS overrides the hint. `colgroup[width]` and width attributes
 on other table parts remain unsupported. CSS (1,245), Layout (919) and the
 zero-warning solution build pass locally. All 16,377 solution tests,
-format verification and `git diff --check` also pass. Pass 10 is the final
-requested increment; its commit, push and CI remain pending.
+format verification and `git diff --check` also pass. Feature commit
+`73c61c7` is pushed to `main`; Linux development
+([42553906266](https://github.com/khmseu/VisualWeb/actions/runs/42553906266)),
+Windows confinement
+([42553906302](https://github.com/khmseu/VisualWeb/actions/runs/42553906302))
+and Push on main/CodeQL
+([42553905200](https://github.com/khmseu/VisualWeb/actions/runs/42553905200))
+all pass. Pass 10 completes the requested ten increments.
 
 ### 6. A persistent browser JavaScript environment
 
