@@ -8,7 +8,9 @@
 
 ## Aktueller Wissensstand
 
-Der Nutzer setzt eine neue Serie aus zehn Missing-Prioritaetsinkrementen fort.
+Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
+abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres
+einzelnes Inkrement bearbeitet:
 Pass 8 bildet `td`/`th`-`width` auf CSS `width` ab. Featurecommit
 `5da1a7f` und Trackercommit `08bf613` sind gepusht; Linux, Windows x64/arm64
 und CodeQL fuer beide Commits sind gruen (KP-273 und anschliessende
@@ -25,6 +27,15 @@ Formatverifikation und `git diff --check` bestehen. Commit `73c61c7` ist
 gepusht; Linux, Windows und CodeQL sind gruen. Pass 10 und der Auftrag mit
 zehn Inkrementen sind abgeschlossen (KP-279). Chronologische Evidenz steht in
 [KP-271 bis KP-279](./Kontextprotokoll.md#kp-271---pass-8-waehlt-tdth-width).
+
+Das neue Inkrement ergaenzt die Standard-UA-Darstellung von HTML `<hr>` und
+deterministisches Malen des `inset`-Rahmens. Lokale CSS-/Paint-/Content-Tests,
+Solution-Build, Formatverifikation und serieller Solution-Volltest (16.381)
+bestehen. Ein erster paralleler Volltest hatte einen Timeout in einem
+unveraenderten Browser-Navigationstest; der gezielte Test bestand isoliert auf
+Basiscommit und Arbeitsstand, und der serielle Volltest bestand. Featurecommit,
+Push und CI stehen noch aus; siehe
+[KP-280](./Kontextprotokoll.md#kp-280---fortsetzung-waehlt-sichtbare-html-horizontalregel).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

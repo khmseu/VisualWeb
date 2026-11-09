@@ -26,6 +26,9 @@ HTML `col` width dimensions, including zero and percentages, map to the CSS
 `width` hint under the independent aggregate raw UTF-16 limit
 `MaxTableColumnWidthAttributeCharacters`; `colgroup` width attributes remain
 unsupported.
+The HTML `hr` UA rule sets gray `color`, a 1px inset border, 0.5em vertical
+margins and automatic horizontal margins. Legacy `hr` attribute hints remain
+unsupported.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.

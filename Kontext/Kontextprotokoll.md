@@ -7101,3 +7101,50 @@ third_party` und `git diff --check` bestehen lokal. Tests decken Dimensionen,
   CI-gruen. Damit sind die zehn angeforderten getrennten Inkremente
   abgeschlossen; der Tracker enthaelt weiterhin offene, nicht ausgewaehlte
   Backlog-Arbeit.
+
+### KP-280 - Fortsetzung waehlt sichtbare HTML-Horizontalregel
+
+- Dokumentiert am: 2026-11-09, Europe/Berlin.
+- Ereignisdatum: Datum unbekannt; die Fortsetzung ist in der aktuellen
+  Gespraechszusammenfassung ueberliefert.
+- Erfassungsart: laufend dokumentiert; lokales Inkrement implementiert und
+  validiert, Commit/Push/CI ausstehend.
+- Quelle: Fortsetzungsbitte, `plans/Missing.md` Prioritaet 1,
+  `specs/cache/html.html#the-hr-element-2`,
+  `specs/cache/css-backgrounds.html#valdef-line-style-inset`, Engine.Css- und
+  Engine.Paint-Implementierung, fokussierte Tests und lokale Validierung.
+- Bezug: Fortsetzung nach KP-279; keine Fortsetzung des bereits abgeschlossenen
+  Zehnerauftrags.
+
+**Nutzerangabe:** Der Nutzer bat um Fortsetzung. Da keine Passzahl genannt
+wurde, fuehrte der Skill genau ein Inkrement aus.
+
+**Auswahl (Ableitung):** Prioritaet 1 in `Missing.md` stellt gewoehnliche
+Darstellung einfacher statischer Seiten vor breitere Plattformarbeit. Die
+HTML-UA-Regel fuer `<hr>` war im lokalen HTML-Cache dokumentiert (geprueft
+2026-11-07), waehrend die Paint-Implementierung sichtbare Rahmen nur als
+`solid` malte. Daraus wurde die Ende-zu-Ende-Luecke gewaehlt: Standard-
+UA-Darstellung plus der dafuer benoetigte `inset`-Rahmen. Die exakten Farben
+des 3D-Effekts sind im CSS-Standard implementationsdefiniert; die gewaehlte
+deterministische Schattierung dunkelt oben/links Kanaele halb ab und hellt
+unten/rechts halb bis 255 auf, bei erhaltener Alpha-Komponente.
+
+**Umsetzung:** Die UA-Kaskade setzt `hr` auf graue Textfarbe, 1px `inset`-
+Rahmen, 0.5em obere/untere und automatische linke/rechte Margen. Der Painter
+zeichnet `solid` wie zuvor und zusaetzlich `inset`; andere sichtbare
+nicht-solide Rahmenstile bleiben explizit unsupported. Die Standard-UA-Regel
+bleibt normal ueberschreibbar/deaktivierbar. Legacy-Attribute `align`,
+`color`, `noshade`, `size` und `width` bleiben ausserhalb des Umfangs.
+
+**Validierung:** CSS (1.246), Paint (73) und Content (106) bestehen. Der
+Solution-Build hat null Warnungen/Fehler; Formatverifikation besteht. Der
+erste parallele Volltest traf einen Timeout im unveraenderten Browser-Test
+`ShellTests.UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`.
+Der gezielte Browsertest bestand auf Basiscommit `59bb211` und im aktuellen
+Arbeitsstand; danach bestand `dotnet test VisualWeb.slnx --no-build -m:1` mit
+16.381 Tests. Eine Ursache fuer den einzelnen ersten Timeout ist nicht
+nachgewiesen.
+
+**Status / naechste Schritte:** Lokales Inkrement und Tracker sind aktualisiert.
+Featurecommit, Push und CI stehen aus; danach Kontext-/Trackerstatus mit den
+Remote-Ergebnissen vervollstaendigen.

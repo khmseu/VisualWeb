@@ -119,13 +119,13 @@ public sealed class HiddenDefaultsTests
     {
         var document = Parse("<a id=target hidden href>text</a>");
         // The figure margin and address selectors add 4 operations per element;
-        // Dir, caption and column defaults add four top-level selectors and two dir assignments;
+        // the hr UA rule adds two selector operations per element;
         // mark adds two assignments.
         // The hidden selector adds 2 operations on nonmatches and 8 on the target.
-        const int assignments = 76;
-        const long matches = 1038; // 4 * (118 + 11) * 2 + 3 * 2 + 8 - 8
+        const int assignments = 89;
+        const long matches = 1046; // 4 * (119 + 11) * 2 + 3 * 2 + 8 - 8
         CssStyleSource[] author = [new("a{display:block}")];
-        const long authorMatches = 1046;
+        const long authorMatches = 1054;
 
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxAssignments = assignments - 1 }));
         Assert.Throws<CssLimitException>(() => Calculate(new() { MaxMatchOperations = matches - 1 }));

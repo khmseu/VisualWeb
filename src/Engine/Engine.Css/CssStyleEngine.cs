@@ -58,7 +58,8 @@ public static class CssStyleEngine
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list defaults</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#hiddenCSS">hidden elements</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3">phrasing defaults</see>,
-    /// including the <c>mark</c> highlight colors.
+    /// including the <c>mark</c> highlight colors and
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#the-hr-element-2">horizontal-rule defaults</see>.
     /// Property semantics use css-box, css-backgrounds, css-sizing, css-display, css-fonts and css-text.</remarks>
     public const string UserAgentStyleSheet = """
         html, body, div, center, p, section, article, aside, nav, header, footer, main, address,
@@ -67,6 +68,7 @@ public static class CssStyleEngine
         input[type=hidden i] { display: none !important }
         head, title, base, link, meta, style, script { display: none }
         [hidden]:not([hidden=until-found i]):not(embed) { display: none }
+        hr { color: gray; border-style: inset; border-width: 1px; margin-top: .5em; margin-bottom: .5em; margin-left: auto; margin-right: auto }
         dir { display: block; padding-left: 40px }
         body { margin: 8px }
         p, blockquote, pre, listing, xmp, plaintext, dir, menu, ul, ol, dl, figure { margin-top: 1em; margin-bottom: 1em }

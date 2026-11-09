@@ -1307,6 +1307,19 @@ and Push on main/CodeQL
 ([42553905200](https://github.com/khmseu/VisualWeb/actions/runs/42553905200))
 all pass. Pass 10 completes the requested ten increments.
 
+Continuation after the ten-pass request adds the standard HTML `<hr>` UA
+defaults and paints the required inset border with a deterministic 3D shade
+choice. The defaults remain in the normal disableable UA cascade; other
+non-solid border styles and legacy `hr` attribute hints remain unsupported.
+This is one ordinary-rendering increment, not completion of priority 1. CSS
+(1,246), Paint (73), Content (106), the zero-warning solution build and format
+verification pass. A first parallel `dotnet test VisualWeb.slnx --no-build`
+run hit one timeout in the unrelated browser navigation test
+`ShellTests.UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`;
+that test passed in isolation on both base and working revisions. The full
+serial-project rerun (`dotnet test VisualWeb.slnx --no-build -m:1`) passes all
+16,381 tests. Commit, push and CI remain pending.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

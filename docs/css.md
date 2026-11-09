@@ -454,6 +454,14 @@ complete HTML rendering stylesheet (controls have limited inline-block defaults
 and no UA borders/padding/fonts). Broader marker types,
 decoration and replaced-element sizing are not yet implemented.
 
+The HTML [horizontal-rule UA rule](https://html.spec.whatwg.org/multipage/rendering.html#the-hr-element-2)
+(local ID `html`, checked 2026-11-07) gives `<hr>` gray `color`, a 1px `inset`
+border, and 0.5em vertical plus automatic horizontal margins. The horizontal
+margins map the standard logical margins to physical sides in this LTR subset.
+`overflow:hidden` is omitted because `<hr>` is void and has no child content.
+The presentational hints for legacy `align`, `color`, `noshade`, `size` and
+`width` attributes remain unsupported.
+
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`) style `listing`, `xmp` and `plaintext` like `pre`: block
 display, 1em physical top and bottom margins, monospace family and

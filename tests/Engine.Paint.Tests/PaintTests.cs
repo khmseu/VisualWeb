@@ -516,6 +516,23 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void InsetBordersUseDeterministicDarkAndLightSides()
+    {
+        var list = Page("<hr>", "hr{display:block;color:gray;border:1px inset currentcolor}");
+        PaintCommand[] expected =
+        [
+            new FillRectangle(new(0, 0, 100, 1), new CssColor(64, 64, 64)),
+            new FillRectangle(new(0, 1, 100, 1), new CssColor(192, 192, 192))
+        ];
+        Assert.Equal(expected, list.Commands);
+
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(frame, 50, 0));
+        Assert.Equal(((byte)192, (byte)192, (byte)192, (byte)255), Pixel(frame, 50, 1));
+    }
+
+    [Fact]
     public void RowGroupAndRowBackgroundsPaintBeforeRowSpanningCellBackgrounds()
     {
         const string html = "<table><tbody><tr><td rowspan=2>x</td></tr><tr></tr></tbody></table>";
@@ -626,6 +643,7 @@ public sealed class PaintTests
 
     [Theory]
     [InlineData("div{border:1px dashed red}")]
+    [InlineData("div{border:1px outset red}")]
     [InlineData("div{border:1px solid red;border-left-color:blue}")]
     [InlineData("div{border:1px solid red;border-left-color:blue;height:0}")]
     public void UnsupportedBorderStylesAndCornerColorsFail(string css)

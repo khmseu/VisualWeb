@@ -265,9 +265,11 @@ public static class DisplayListBuilder
             CssColor? borderColor = null;
             foreach (var (side, bounds, _) in visible)
             {
-                if (style["border-" + side + "-style"] is not CssKeyword { Value: "solid" })
+                var sideStyle = style["border-" + side + "-style"] as CssKeyword
+                    ?? throw new UnsupportedPaintException("Only solid and inset visible borders are supported.");
+                if (sideStyle.Value is not ("solid" or "inset"))
                 {
-                    throw new UnsupportedPaintException("Only solid visible borders are supported.");
+                    throw new UnsupportedPaintException("Only solid and inset visible borders are supported.");
                 }
                 var color = Color(box, "border-" + side + "-color");
                 if (borderColor is not null && color != borderColor)
@@ -275,8 +277,19 @@ public static class DisplayListBuilder
                     throw new UnsupportedPaintException("Different side colors require deferred border-corner joins.");
                 }
                 borderColor = color;
-                if (bounds.Width > 0 && bounds.Height > 0) { Add(new FillRectangle(bounds, color)); }
+                if (bounds.Width > 0 && bounds.Height > 0)
+                {
+                    Add(new FillRectangle(bounds, sideStyle.Value == "inset" ? InsetColor(side, color) : color));
+                }
             }
+        }
+        static CssColor InsetColor(string side, CssColor color)
+        {
+            var darkSide = side is "top" or "left";
+            byte Shade(byte channel) => darkSide
+                ? (byte)(channel / 2)
+                : (byte)(channel + (byte.MaxValue - channel + 1) / 2);
+            return new(Shade(color.Red), Shade(color.Green), Shade(color.Blue), color.Alpha);
         }
         void Text(LayoutBox box, int depth)
         {

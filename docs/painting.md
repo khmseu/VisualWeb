@@ -124,8 +124,11 @@ remain unsupported.
   `PaintOptions.MaxCommands` bound generation and display-list storage. Inline
   widget/line-break backgrounds, padding/borders/margins, images, gradients,
   clipping and corner effects remain unsupported.
-- Physical solid borders use nonoverlapping rectangular strips. Visible sides
-  must have the same color; differing colors need deferred corner joins.
+- Physical solid and inset borders use nonoverlapping rectangular strips.
+  Visible sides must have the same color; differing colors need deferred corner
+  joins. Inset borders darken top/left channels by half and lighten bottom/right
+  channels halfway toward 255, preserving alpha; this deterministic shade choice
+  supplies the 3D effect whose exact colors CSS leaves implementation-defined.
   Translucent same-color corners are composited once, not double blended.
 - Positioned glyph IDs and absolute CSS baseline positions come directly from
   HarfBuzz-shaped fragments, including ligatures and combining offsets. Bounded
@@ -156,7 +159,8 @@ remain unsupported.
   with positive physical dimensions and stride `width * 4`, copied row-by-row
   from the native bitmap's actual stride.
 
-Images, gradients, advanced/differently colored borders, border radius,
+Images, gradients, outset/groove/ridge/dashed/dotted/double and
+advanced/differently colored borders, border radius,
 overlines, decoration styles/colors/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
