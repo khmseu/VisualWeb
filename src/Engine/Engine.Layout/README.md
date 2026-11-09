@@ -105,6 +105,10 @@ parts remains unsupported.
 The boolean `nowrap` attribute on `td`/`th` maps by presence to the existing
 nonwrapping text flow; other table parts' `nowrap` attributes remain
 unsupported.
+Nonzero `td`/`th` `height` dimensions map to minimum cell heights through the
+existing layout path; author CSS overrides the hint. Percentage cell heights
+fail explicitly because CSS 2.2 does not define their row-sizing behavior.
+Height attributes on tables, rows and row groups remain unsupported.
 
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow

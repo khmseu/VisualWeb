@@ -57,6 +57,9 @@ public sealed record CssOptions
     /// <summary>Maximum aggregate raw UTF-16 units in table cellpadding attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table cell padding hints</see>.</remarks>
     public int MaxTableCellPaddingAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in table-cell height attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table cell height hints</see>.</remarks>
+    public int MaxTableCellHeightAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     public int MaxTokens { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
     public int MaxDiagnostics { get; init; } = 10_000;
@@ -74,7 +77,7 @@ public sealed record CssOptions
             || MaxFontColorAttributeCharacters <= 0 || MaxFontFaceAttributeCharacters <= 0
             || MaxFontSizeAttributeCharacters <= 0 || MaxTableSpacingAttributeCharacters <= 0
             || MaxTableWidthAttributeCharacters <= 0 || MaxTableBackgroundColorAttributeCharacters <= 0
-            || MaxTableCellPaddingAttributeCharacters <= 0
+            || MaxTableCellPaddingAttributeCharacters <= 0 || MaxTableCellHeightAttributeCharacters <= 0
             || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
             || MaxNestedRuleOperations <= 0 || MaxMatchOperations <= 0)
@@ -109,6 +112,7 @@ internal sealed class CssContext
     private int tableWidthCharacters;
     private int tableBackgroundColorCharacters;
     private int tableCellPaddingCharacters;
+    private int tableCellHeightCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
     internal CssSelectorScope? Scope { get; }
@@ -212,6 +216,14 @@ internal sealed class CssContext
         if (length > Options.MaxTableCellPaddingAttributeCharacters - tableCellPaddingCharacters)
         { throw new CssLimitException("CSS table cellpadding attribute character limit exceeded."); }
         tableCellPaddingCharacters += length;
+    }
+
+    internal void TableCellHeightCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxTableCellHeightAttributeCharacters - tableCellHeightCharacters)
+        { throw new CssLimitException("CSS table-cell height attribute character limit exceeded."); }
+        tableCellHeightCharacters += length;
     }
 
     private void AttributeCharacters(int length, ref int used, int limit, string attribute)

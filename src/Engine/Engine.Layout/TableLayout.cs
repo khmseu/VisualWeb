@@ -169,6 +169,8 @@ public static partial class StaticLayout
                         var rowSpan = ParseRowSpan(cell.GetAttribute("rowspan"));
                         RejectTableAttributes(cell);
                         var cellStyle = Style(cell);
+                        if (cellStyle["height"] is CssLength { Unit: "%" })
+                        { throw new UnsupportedLayoutException("Percentage table-cell heights are unsupported."); }
                         if (cellStyle["vertical-align"] is not CssKeyword
                             { Value: "baseline" or "top" or "middle" or "bottom" }
                             || Edges(cellStyle, "margin", 0) != default
@@ -610,7 +612,9 @@ public static partial class StaticLayout
         private static void RejectTableAttributes(DomElement element, bool allowWidthAttribute = false)
         {
             if ((!allowWidthAttribute && element.GetAttribute("width") is not null)
-                || new[] { "height", "border" }
+                || element.GetAttribute("height") is not null
+                    && !CssStyleEngine.HasSupportedTableCellHeightHint(element)
+                || new[] { "border" }
                     .Any(attribute => element.GetAttribute(attribute) is not null)
                 || element.GetAttribute("nowrap") is not null
                     && !CssStyleEngine.HasSupportedTableCellNowrapHint(element)

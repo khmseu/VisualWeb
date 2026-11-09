@@ -14,6 +14,10 @@ four padding properties of corresponding `td`/`th` cells. Its independent
 aggregate raw UTF-16 limit is `MaxTableCellPaddingAttributeCharacters`.
 HTML `td`/`th` `nowrap` maps boolean-attribute presence to `white-space:nowrap`
 at the author presentational-hint origin.
+HTML `td`/`th` nonzero `height` dimensions map to the CSS `height` hint, under
+the independent aggregate raw UTF-16 limit
+`MaxTableCellHeightAttributeCharacters`; percentage cell heights fail at
+layout because their CSS 2.2 row-sizing algorithm is undefined.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
@@ -34,7 +38,8 @@ registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `MaxFontColorAttributeCharacters`, `MaxFontFaceAttributeCharacters`,
 `MaxFontSizeAttributeCharacters`, `MaxTableSpacingAttributeCharacters` and
 `MaxTableWidthAttributeCharacters`, `MaxTableBackgroundColorAttributeCharacters`
-and `MaxTableCellPaddingAttributeCharacters` limits count raw UTF-16 attribute
+`MaxTableCellPaddingAttributeCharacters` and
+`MaxTableCellHeightAttributeCharacters` limits count raw UTF-16 attribute
 units, including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-11-07) include `search { display:block }`

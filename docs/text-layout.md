@@ -292,6 +292,13 @@ invalid values; ordinary author CSS overrides the hint.
 The boolean `nowrap` attribute on `td`/`th` maps by presence to the existing
 `white-space:nowrap` text flow; its value is ignored and ordinary author CSS
 overrides the hint. `nowrap` on other table parts remains unsupported.
+HTML `td[height]`/`th[height]` maps nonzero dimension values to the CSS
+`height` presentational hint. Positive pixel heights contribute to the
+existing minimum cell-height geometry; zero and invalid values add no hint,
+and ordinary author CSS overrides it. Scanning has its own aggregate raw
+UTF-16 limit, `MaxTableCellHeightAttributeCharacters`. Percentage cell heights
+fail explicitly because CSS 2.2 does not define their row-sizing behavior;
+height attributes on tables, rows and row groups remain unsupported.
 Measurement and arrangement share node, text, shaping, line, glyph, box, depth
 and cancellation budgets.
 
@@ -301,8 +308,9 @@ percentage dimensions inside cells, collapsed borders, fixed layout, other
 cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row/group heights, other row/group sizing and decorations,
 and legacy presentation attributes other than the supported table
-`width`/`cellspacing`/`cellpadding` hints and cell `nowrap` (`height`, `border`,
-`nowrap` on other table parts, plus `width` on non-table parts). The table's
+`width`/`cellspacing`/`cellpadding` hints and cell `nowrap`/pixel `height`
+(`height` on other table parts, percentage cell heights, `border`, `nowrap` on
+other table parts, plus `width` on non-table parts). The table's
 ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive

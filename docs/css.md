@@ -263,6 +263,12 @@ HTML `td[nowrap]` and `th[nowrap]` map the boolean attribute's presence to
 `white-space:nowrap` through the same author hint cascade. The attribute's
 value is ignored; ordinary author CSS can override the hint. Other table
 elements' `nowrap` attributes remain unsupported.
+HTML `td[height]` and `th[height]` map nonzero dimension values to a `height`
+presentational hint, with a separate aggregate raw UTF-16 limit
+`MaxTableCellHeightAttributeCharacters`. Zero and invalid values add no hint;
+ordinary author CSS overrides it. Percentage cell heights fail explicitly at
+layout because CSS 2.2 does not define their row-sizing behavior. Height
+attributes on other table parts remain unsupported.
 The [HTML page background rule](https://html.spec.whatwg.org/multipage/rendering.html#the-page)
 (local ID `html`) maps a successfully parsed `body[bgcolor]` value through the
 HTML legacy-colour algorithm to `background-color`. This uses the normal

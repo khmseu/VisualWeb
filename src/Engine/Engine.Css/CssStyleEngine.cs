@@ -167,6 +167,15 @@ public static class CssStyleEngine
         return element.LocalName is ("td" or "th") && element.GetAttribute("nowrap") is not null;
     }
 
+    /// <summary>Reports whether the bounded HTML table-cell height hint applies.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell height hint</see>.</remarks>
+    public static bool HasSupportedTableCellHeightHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName is ("td" or "th") && element.GetAttribute("height") is not null;
+    }
+
     /// <summary>Reports whether a supported alignment hint applies to an HTML table row or row group.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table row and row-group alignment hints</see>.</remarks>
     public static bool HasSupportedTableRowAlignmentHint(DomElement element)
@@ -263,7 +272,15 @@ public static class CssStyleEngine
     {
         if (element.LocalName != "table" || element.GetAttribute("width") is not { } width) { return null; }
         context.TableWidthCharacters(width.Length);
-        return TryParseNonZeroDimensionValue(width, context.Cancellation);
+        return TryParseNonZeroDimensionValue(width, context.Cancellation, "HTML table width attribute");
+    }
+
+    private static CssLength? GetTableCellHeightHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName is not ("td" or "th") || element.GetAttribute("height") is not { } height)
+        { return null; }
+        context.TableCellHeightCharacters(height.Length);
+        return TryParseNonZeroDimensionValue(height, context.Cancellation, "HTML table-cell height attribute");
     }
 
     private static CssLength? GetTableCellPaddingHint(DomElement table, CssContext context,
@@ -320,7 +337,8 @@ public static class CssStyleEngine
         return colors;
     }
 
-    private static CssLength? TryParseNonZeroDimensionValue(string input, CancellationToken cancellationToken)
+    private static CssLength? TryParseNonZeroDimensionValue(string input, CancellationToken cancellationToken,
+        string attributeName)
     {
         var position = 0;
         while (position < input.Length && IsAsciiWhitespace(input[position]))
@@ -336,7 +354,7 @@ public static class CssStyleEngine
             cancellationToken.ThrowIfCancellationRequested();
             value = value * 10 + input[position++] - '0';
             if (!double.IsFinite(value))
-            { throw new CssLimitException("HTML table width attribute exceeds finite numeric range."); }
+            { throw new CssLimitException($"{attributeName} exceeds finite numeric range."); }
         }
 
         if (position < input.Length && input[position] == '.')
@@ -355,7 +373,7 @@ public static class CssStyleEngine
                     value += digit / divisor;
                 }
                 if (value == 0 && hasNonzeroFractionDigit)
-                { throw new CssLimitException("HTML table width attribute is below finite numeric range."); }
+                { throw new CssLimitException($"{attributeName} is below finite numeric range."); }
             }
         }
 
@@ -463,6 +481,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("width", tableWidth, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetTableCellHeightHint(element, context) is { } cellHeight)
+            {
+                context.Assignment();
+                Add(new("height", cellHeight, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (element.LocalName is ("td" or "th")

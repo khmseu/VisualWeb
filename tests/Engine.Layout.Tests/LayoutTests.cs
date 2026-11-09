@@ -1221,6 +1221,29 @@ public sealed class LayoutTests
             UnorderedList("<table><tr nowrap><td>x</td></tr></table>"));
     }
 
+    [Fact]
+    public void TableCellHeightAttributeSetsMinimumHeightAndOtherHeightAttributesRemainUnsupported()
+    {
+        var root = UnorderedList(
+            "<table style='border-spacing:0'><tr><td id=cell height=30>x</td></tr></table>",
+            "td{padding:0}").Root!;
+        Assert.Equal(30, Find(root, "cell").Content.Height);
+
+        var overridden = UnorderedList(
+            "<table style='border-spacing:0'><tr><td id=cell height=30>x</td></tr></table>",
+            "td{padding:0}#cell{height:40px}").Root!;
+        Assert.Equal(40, Find(overridden, "cell").Content.Height);
+
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table height=30><tr><td>x</td></tr></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr height=30><td>x</td></tr></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tbody height=30><tr><td>x</td></tr></tbody></table>"));
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tr><td height='50%'>x</td></tr></table>"));
+    }
+
     [Theory]
     [InlineData(null, 1)]
     [InlineData("0", 1)]
