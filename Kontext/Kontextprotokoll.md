@@ -7154,3 +7154,43 @@ und Push on main/CodeQL (Run
 [42714571721](https://github.com/khmseu/VisualWeb/actions/runs/42714571721))
 sind erfolgreich. Damit ist dieses einzelne Fortsetzungsinkrement
 abgeschlossen; Prioritaet 1 bleibt offen.
+
+### KP-281 - Pass 1 des neuen Zehnerauftrags: CSS-outset-Rahmen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: laufend dokumentiert; Implementierung und lokale Validierung
+  abgeschlossen, Commit/Push/CI ausstehend.
+- Quelle: ausdruecklicher Auftrag `missing-priority-implementation 10`,
+  Prioritaetsliste in `plans/Missing.md`, `docs/painting.md`,
+  `src/Engine/Engine.Paint/README.md`,
+  `specs/cache/css-backgrounds.html#valdef-line-style-outset` (Manifestcheck
+  2026-11-07), Painter und Paint-Regressionen.
+- Bezug: neuer Zehnerauftrag beginnt nach KP-280; Pass 1.
+
+**Nutzerangabe:** Der Nutzer fordert zehn getrennte Prioritaetsinkremente.
+Der Skill verlangt pro Pass einen eigenen getesteten Commit, Push und
+CI-Pruefung. Der Worktree war vor Beginn sauber.
+
+**Auswahl (Ableitung):** Prioritaet 1 nennt gewoehnliche Darstellung einfacher
+statischer Seiten. Der CSS-Parser und berechnete Stil unterstuetzen `outset`
+bereits, der Painter wies sichtbare `outset`-Rahmen aber explizit ab. Da die
+vorherige Horizontalregelarbeit `inset`-Rahmen bereits mit einer begrenzten,
+deterministischen Schattierung ergaenzte, wurde das spiegelbildliche
+`outset`-Malen als kleiner, messbarer Schritt gewaehlt. Der CSS-Standard
+beschreibt den visuellen Eindruck als erhaben, definiert aber keine exakten
+Farben; diese Implementierung verwendet entsprechend die umgekehrten
+Licht-/Dunkelseiten des bestehenden Algorithmus.
+
+**Umsetzung:** Paint unterstuetzt nun `solid`, `inset` und `outset` auf
+sichtbaren physischen Rahmenstreifen. `outset` hellt oben/links und dunkelt
+unten/rechts ab; Alpha und die bestehende Einfarbigkeit-/Eckengeometrie-
+Begrenzung bleiben erhalten. Exakte Tests pruefen vier Streifen und CPU-Pixel.
+`groove`, `ridge`, `dashed`, `dotted` und `double` bleiben unsupported.
+
+**Validierung:** Paint (73) und alle 16.381 Solution-Tests bestehen lokal;
+Solution-Build (null Warnungen/Fehler), Formatverifikation und
+`git diff --check` bestehen. Der vollstaendige seriale Testlauf dauerte wegen
+der Browser-Testprojektlaufzeit mehrere Minuten.
+
+**Status:** Implementiert, lokal validiert; Commit, Push und CI stehen aus.

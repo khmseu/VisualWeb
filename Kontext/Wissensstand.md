@@ -38,6 +38,12 @@ Basiscommit und Arbeitsstand, und der serielle Volltest bestand. Featurecommit
 42714571836, 42714571820 und 42714571721). Siehe
 [KP-280](./Kontextprotokoll.md#kp-280---fortsetzung-waehlt-sichtbare-html-horizontalregel).
 
+Am 2026-11-10 begann ein neuer Auftrag ueber zehn separate Missing-
+Prioritaetsinkremente. Pass 1 erweitert das deterministische Rahmenmalen um
+`outset` mit umgekehrten Hell-/Dunkelseiten. Paint (73), Solution-Build,
+Formatverifikation und alle 16.381 Solution-Tests bestehen; Commit, Push und
+CI stehen aus (KP-281).
+
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
   KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten

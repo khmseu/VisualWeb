@@ -1311,7 +1311,10 @@ Continuation after the ten-pass request adds the standard HTML `<hr>` UA
 defaults and paints the required inset border with a deterministic 3D shade
 choice. The defaults remain in the normal disableable UA cascade; other
 non-solid border styles and legacy `hr` attribute hints remain unsupported.
-This is one ordinary-rendering increment, not completion of priority 1. CSS
+This ten-pass request begins by painting CSS `outset` borders with the
+opposite deterministic light/dark sides, covering the common raised-edge
+effect. `groove`, `ridge`, dashed, dotted and double border styles remain
+unsupported. CSS
 (1,246), Paint (73), Content (106), the zero-warning solution build and format
 verification pass. A first parallel `dotnet test VisualWeb.slnx --no-build`
 run hit one timeout in the unrelated browser navigation test
@@ -1326,6 +1329,13 @@ Windows confinement x64/arm64
 and Push on main/CodeQL
 ([42714571721](https://github.com/khmseu/VisualWeb/actions/runs/42714571721))
 pass.
+
+Pass 1 of the next ten-pass request paints CSS `outset` borders using the
+opposite deterministic light/dark sides, producing a raised appearance.
+Four-sided display-list geometry and CPU pixels are tested; `groove`, `ridge`,
+dashed, dotted and double remain unsupported. The Paint suite (73), solution
+build (zero warnings/errors), format verification and all 16,381 solution
+tests pass locally.
 
 ### 6. A persistent browser JavaScript environment
 

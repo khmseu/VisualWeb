@@ -266,10 +266,10 @@ public static class DisplayListBuilder
             foreach (var (side, bounds, _) in visible)
             {
                 var sideStyle = style["border-" + side + "-style"] as CssKeyword
-                    ?? throw new UnsupportedPaintException("Only solid and inset visible borders are supported.");
-                if (sideStyle.Value is not ("solid" or "inset"))
+                    ?? throw new UnsupportedPaintException("Only solid, inset, and outset visible borders are supported.");
+                if (sideStyle.Value is not ("solid" or "inset" or "outset"))
                 {
-                    throw new UnsupportedPaintException("Only solid and inset visible borders are supported.");
+                    throw new UnsupportedPaintException("Only solid, inset, and outset visible borders are supported.");
                 }
                 var color = Color(box, "border-" + side + "-color");
                 if (borderColor is not null && color != borderColor)
@@ -279,13 +279,21 @@ public static class DisplayListBuilder
                 borderColor = color;
                 if (bounds.Width > 0 && bounds.Height > 0)
                 {
-                    Add(new FillRectangle(bounds, sideStyle.Value == "inset" ? InsetColor(side, color) : color));
+                    var paintColor = sideStyle.Value switch
+                    {
+                        "inset" => ShadeColor(side, color, darkTopLeft: true),
+                        "outset" => ShadeColor(side, color, darkTopLeft: false),
+                        _ => color
+                    };
+                    Add(new FillRectangle(bounds, paintColor));
                 }
             }
         }
-        static CssColor InsetColor(string side, CssColor color)
+        static CssColor ShadeColor(string side, CssColor color, bool darkTopLeft)
         {
-            var darkSide = side is "top" or "left";
+            var darkSide = darkTopLeft
+                ? side is "top" or "left"
+                : side is "bottom" or "right";
             byte Shade(byte channel) => darkSide
                 ? (byte)(channel / 2)
                 : (byte)(channel + (byte.MaxValue - channel + 1) / 2);
