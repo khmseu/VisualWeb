@@ -1484,7 +1484,13 @@ without mutating DOM text or changing UTF-16 cluster positions; non-ASCII
 letters fail explicitly, and `capitalize`, `full-width` and `full-size-kana`
 remain unsupported. CSS (1,329), Layout (929), the zero-warning solution
 build, all 16,490 solution tests, format verification and `git diff --check`
-pass locally. Commit and CI verification are pending.
+pass locally. Feature commit `0200283` is pushed to `main`. Linux development
+(run [42925954320](https://github.com/khmseu/VisualWeb/actions/runs/42925954320)),
+Windows confinement x64/arm64
+(run [42925954248](https://github.com/khmseu/VisualWeb/actions/runs/42925954248))
+and Push on main/CodeQL
+(run [42925954109](https://github.com/khmseu/VisualWeb/actions/runs/42925954109))
+all pass. Pass 3 is complete; seven increments remain.
 
 ### 6. A persistent browser JavaScript environment
 

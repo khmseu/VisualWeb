@@ -26,7 +26,8 @@ UTF-16-Laengenverschiebung. Nicht-ASCII-Buchstaben scheitern explizit;
 `capitalize`, `full-width` und `full-size-kana` bleiben unsupported. CSS
 (1.329), Layout (929), Solution-Build (0 Warnungen/Fehler), Solution-Volltest
 (16.490), Formatverifikation und `git diff --check` bestehen lokal. Feature-
-Commit, Push und CI stehen noch aus; sieben Inkremente bleiben.
+Commit `0200283` ist gepusht. Linux x64/ARM64 (Run 42925954320), Windows
+confinement x64/ARM64 (Run 42925954248) und Push-on-main/CodeQL (Run 42925954109) sind erfolgreich. Sieben Inkremente bleiben.
 Siehe [KP-297](./Kontextprotokoll.md#kp-297---pass-3-ascii-text-transform).
 Siehe
 [KP-296](./Kontextprotokoll.md#kp-296---pass-2-text-align-last).
