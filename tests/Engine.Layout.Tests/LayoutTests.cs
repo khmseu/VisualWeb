@@ -3424,8 +3424,7 @@ public sealed class LayoutTests
 
     [Theory]
     [InlineData("text-justify:inter-character")]
-    [InlineData("text-align-last:center")]
-    public void AdditionalJustificationPropertiesRemainExplicitDiagnostics(string declaration)
+    public void UnsupportedJustificationPropertiesRemainExplicitDiagnostics(string declaration)
     {
         Assert.Throws<UnsupportedLayoutException>(() =>
             Layout("<p>a b</p>", "p{text-align:justify;" + declaration + "}"));
@@ -3489,6 +3488,51 @@ public sealed class LayoutTests
             Assert.Equal([0, 10, 16, 26, 32], box.Lines[0].Fragments.Select(f => f.X));
             Assert.Equal(42, box.Lines[0].Fragments[^1].X + box.Lines[0].Fragments[^1].Run.Width);
         }
+    }
+
+    [Fact]
+    public void TextAlignLastOverridesOnlyTheLastWrappedLine()
+    {
+        var box = Find(Layout("<p id=x>aa bb cc dd</p>", "#x{text-align:left;text-align-last:right}",
+            width: 42).Root!, "x");
+
+        Assert.Equal(2, box.Lines.Count);
+        Assert.Equal(0, box.Lines[0].Fragments[0].X);
+        Assert.Equal(32, box.Lines[1].Fragments[0].X);
+    }
+
+    [Fact]
+    public void TextAlignLastAppliesBeforeForcedBreaksAndAtTheBlockEnd()
+    {
+        var box = Find(Layout("<p id=x>aa<br>bb</p>", "#x{text-align:left;text-align-last:center}",
+            width: 42).Root!, "x");
+
+        Assert.Equal(2, box.Lines.Count);
+        Assert.Equal([16, 16], box.Lines.Select(line => line.Fragments[0].X));
+    }
+
+    [Fact]
+    public void TextAlignLastJustifiesStretchableContentAndCentersWhenItCannotStretch()
+    {
+        var justified = Find(Layout("<p id=x>aa bb cc dd ee</p>", "#x{text-align-last:justify}",
+            width: 42).Root!, "x");
+        var justifiedLastLine = justified.Lines[^1];
+        Assert.Equal(2, justified.Lines.Count);
+        Assert.Equal(0, justifiedLastLine.Fragments[0].X);
+        Assert.Equal(42, justifiedLastLine.Fragments[^1].X + justifiedLastLine.Fragments[^1].Run.Width);
+
+        var centered = Find(Layout("<p id=x>aa bb cc dd</p>", "#x{text-align-last:justify}",
+            width: 42).Root!, "x");
+        Assert.Equal(16, centered.Lines[^1].Fragments[0].X);
+    }
+
+    [Fact]
+    public void TextAlignLastJustificationDoesNotAffectAutomaticTableIntrinsicSizing()
+    {
+        var cell = Find(UnorderedList("<table><tbody><tr><td id=x>dd ee</td></tr></tbody></table>",
+            "td{text-align-last:justify}", width: 100).Root!, "x");
+
+        Assert.InRange(cell.Content.Width, 0, 100);
     }
 
     [Fact]

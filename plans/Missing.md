@@ -1462,6 +1462,16 @@ and CodeQL (run
 pass on `a072c01`. See the [CSS scope](../docs/css.md#cascade-and-computed-values)
 and [ordinary flow](../docs/text-layout.md#ordinary-flow).
 
+Pass 2 adds inherited CSS `text-align-last` for the final formatted line and
+lines preceding forced breaks. `auto`, start/end, left/right, center and
+justify are supported; `match-parent` remains unsupported. Automatic table
+intrinsic sizing measures unexpanded text. Focused CSS (1,317) and Layout (927)
+tests pass; the solution build has zero warnings/errors, all 16,476 solution
+tests pass, and format verification plus `git diff --check` pass. Commit, push
+and CI remain pending; eight increments remain after this pass. See the
+[CSS scope](../docs/css.md#cascade-and-computed-values) and
+[ordinary flow](../docs/text-layout.md#ordinary-flow).
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

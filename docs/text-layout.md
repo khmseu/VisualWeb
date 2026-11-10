@@ -368,6 +368,13 @@ have zero intrinsic content size.
   `hanging` and `each-line` modifiers are unsupported. See CSS Text
   [`text-indent`](https://drafts.csswg.org/css-text-3/#propdef-text-indent)
   (local ID `css-text`).
+- Inherited `text-align-last` selects the alignment of the final line and lines
+  before forced breaks. `auto` follows `text-align`, except justified final
+  lines are start-aligned; explicit `justify` expands supported spaces and
+  centers content that cannot be stretched. `match-parent` remains unsupported.
+  Automatic table intrinsic sizing measures unexpanded text. See CSS Text
+  [`text-align-last`](https://drafts.csswg.org/css-text-3/#propdef-text-align-last)
+  (local ID `css-text`).
 - Vertical margins between adjacent block siblings collapse, including
   positive and negative margins. Parent margins also collapse through eligible
   first/last block-child edges without intervening content/borders/padding; bottom

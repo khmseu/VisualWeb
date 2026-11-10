@@ -721,8 +721,9 @@ public static partial class StaticLayout
                 if (inline.Any(unit => unit.Kind == UnitKind.Widget))
                 { throw new UnsupportedLayoutException("Form widgets in intrinsic table cells are unsupported."); }
                 var indent = Dimension(style["text-indent"], 0) ?? 0;
-                min = Math.Max(min, WidthOf(Inline(inline, style, 0, 0, 0, indent)));
-                max = Math.Max(max, WidthOf(Inline(inline, style, 0, 0, double.MaxValue / 4, indent)));
+                min = Math.Max(min, WidthOf(Inline(inline, style, 0, 0, 0, indent, intrinsicSizing: true)));
+                max = Math.Max(max, WidthOf(Inline(inline, style, 0, 0, double.MaxValue / 4, indent,
+                    intrinsicSizing: true)));
                 inline.Clear();
             }
             static double WidthOf(IEnumerable<LayoutLine> lines) => lines.Select(line => line.IntrinsicWidth).DefaultIfEmpty().Max();

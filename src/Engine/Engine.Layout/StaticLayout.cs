@@ -462,7 +462,8 @@ public static partial class StaticLayout
             void Flush()
             {
                 if (inline.Count == 0) { return; }
-                var formatted = Inline(inline, style, contentX, cursor, width, Dimension(style["text-indent"], width) ?? 0);
+                var formatted = Inline(inline, style, contentX, cursor, width,
+                    Dimension(style["text-indent"], width) ?? 0);
                 blockLines.AddRange(formatted);
                 flow.AddRange(formatted.Select(line => new LayoutLineItem(line)));
                 if (formatted.Count > 0)
@@ -816,7 +817,7 @@ public static partial class StaticLayout
         }
 
         private List<LayoutLine> Inline(List<InlineUnit> input, CssComputedStyle blockStyle, double x, double y, double width,
-            double firstLineIndent = 0)
+            double firstLineIndent = 0, bool intrinsicSizing = false)
         {
             var output = new List<LayoutLine>();
             var pending = new List<Placed>();
@@ -851,7 +852,7 @@ public static partial class StaticLayout
                 if (unit.Kind == UnitKind.Break)
                 {
                     space = null;
-                    Emit(true);
+                    Emit(true, lastLine: true);
                     previousWord = null;
                     previousWidgetAllowsWrap = false;
                     continue;
@@ -922,7 +923,7 @@ public static partial class StaticLayout
                 previousWord = unit.Kind == UnitKind.Word ? unit : null;
                 previousWidgetAllowsWrap = false;
             }
-            if (hasContent) { Emit(false); }
+            if (hasContent) { Emit(false, lastLine: true); }
             return output;
 
             double CurrentIndent() => firstLine ? firstLineIndent : 0;
@@ -1001,7 +1002,7 @@ public static partial class StaticLayout
                 }
             }
 
-            void Emit(bool force, bool softWrap = false)
+            void Emit(bool force, bool softWrap = false, bool lastLine = false)
             {
                 if (!force && !hasContent) { return; }
                 if (++lines > options.MaxLines) { throw new LayoutLimitException("Layout line limit exceeded."); }
@@ -1027,7 +1028,19 @@ public static partial class StaticLayout
                 var lineIndent = CurrentIndent();
                 var lineWidth = Finite(width - lineIndent);
                 var align = ((CssKeyword)blockStyle["text-align"]).Value;
-                if (align == "justify" && softWrap && lineWidth > advance) { Justify(lineWidth); }
+                var lastAlign = ((CssKeyword)blockStyle["text-align-last"]).Value;
+                var justifyLastLine = lastLine && lastAlign == "justify";
+                if (lastLine)
+                {
+                    if (lastAlign != "auto") { align = lastAlign; }
+                    else if (align == "justify") { align = "start"; }
+                }
+                if (align == "justify" && (softWrap || justifyLastLine) && lineWidth > advance)
+                {
+                    var justified = !intrinsicSizing && Justify(lineWidth);
+                    if (justifyLastLine && !justified) { align = "center"; }
+                }
+                else if (justifyLastLine) { align = "center"; }
                 var offset = Finite(lineIndent + (align is "right" or "end" ? lineWidth - advance
                     : align == "center" ? (lineWidth - advance) / 2 : 0));
                 var baseline = y + ascent;
@@ -1120,7 +1133,7 @@ public static partial class StaticLayout
                 return result;
             }
 
-            void Justify(double lineWidth)
+            bool Justify(double lineWidth)
             {
                 ChargeLineBreakWork(pending.Count);
                 var opportunities = 0;
@@ -1133,7 +1146,7 @@ public static partial class StaticLayout
                     }
                     if (placed.JustificationSpace) { opportunities++; }
                 }
-                if (opportunities == 0) { return; }
+                if (opportunities == 0) { return false; }
                 var slack = lineWidth - advance;
                 var shift = 0.0;
                 var seen = 0;
@@ -1161,6 +1174,7 @@ public static partial class StaticLayout
                     }
                     pending[index] = placed;
                 }
+                return true;
             }
         }
 

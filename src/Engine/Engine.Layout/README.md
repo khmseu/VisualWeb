@@ -5,6 +5,8 @@ space/internal-ASCII-hyphen line wrapping, with selected ASCII solidi
 and bounded ASCII infix separators and email joiners retained in unbroken
 words. Inherited `text-indent` applies supported length/percentage first-line
 offsets; percentage indents in automatic table intrinsic sizing fail explicitly.
+Inherited `text-align-last` controls final and forced-break line alignment;
+intrinsic table measurement does not expand justified text.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
@@ -145,10 +147,14 @@ separating spaces and the U+00A0 atomic-boundary exception remain supported.
 General inline-block layout remains unsupported.
 
 `text-align:justify` distributes positive slack on soft-wrapped English text
-lines across collapsed ASCII spaces. Final/forced-break lines and lines without
-opportunities remain start-aligned. Expanded glyph advances retain source and
-selection geometry; U+00A0 on a line needing expansion and missing space glyphs
-fail explicitly. Scans share the line-break work and cancellation budgets.
+lines across collapsed ASCII spaces. `text-align-last:justify` also expands
+eligible final and forced-break lines, and centers them when they cannot be
+stretched. Final/forced-break lines with `text-align-last:auto` follow
+`text-align`, except justified lines are start-aligned; soft-wrapped justify
+lines without opportunities also remain start-aligned. Expanded glyph advances
+retain source and selection geometry; U+00A0 on a line needing expansion and
+missing space glyphs fail explicitly. Scans share the line-break work and
+cancellation budgets.
 Other justification methods and properties remain unsupported.
 
 Nontransparent solid `background-color` on non-replaced inline text is emitted

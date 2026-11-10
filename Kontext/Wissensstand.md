@@ -15,8 +15,12 @@ CSS (1.302) und Layout (924) fokussierte Tests, Solution-Build (0 Warnungen/
 Fehler), Solution-Volltest (16.458), Formatverifikation und `git diff --check`
 bestehen. Featurecommit `0dd3c9e` und Integrationscommit `a072c01` sind
 gepusht; Linux, Windows confinement und CodeQL bestehen auf `a072c01`.
-Neun weitere Inkremente bleiben; Pass 2 wird aus dem aktualisierten Tracker
-ausgewaehlt.
+Pass 2 ergaenzt geerbtes CSS `text-align-last` fuer Schlusszeilen und Zeilen
+vor erzwungenen Umbruechen. CSS (1.317), Layout (927), Solution-Build
+(0 Warnungen/Fehler), Solution-Volltest (16.476), Formatverifikation und
+`git diff --check` bestehen lokal. Commit, Push und CI stehen noch aus; acht
+Inkremente bleiben danach. Siehe
+[KP-296](./Kontextprotokoll.md#kp-296---pass-2-text-align-last).
 Chronologischer Beleg und Auswahlgrund stehen in
 [KP-295](./Kontextprotokoll.md#kp-295---neuer-zehnerauftrag-und-pass-1-text-indent).
 

@@ -7672,3 +7672,40 @@ bestanden fuer `a072c01`.
 **Status:** Pass 1 ist lokal validiert, gepusht und CI-geprueft. Neun weitere
 Inkremente des Nutzerauftrags bleiben; Pass 2 wird gegen den aktualisierten
 Prioritaetstracker ausgewaehlt.
+
+### KP-296 - Pass 2: text-align-last
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Umsetzung und lokale
+  Vollvalidierung.
+- Quellen: [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [CSS guide](../docs/css.md#cascade-and-computed-values),
+  [layout guide](../docs/text-layout.md#ordinary-flow), bestehender
+  expliziter Layout-Negativtest fuer `text-align-last` und lokaler `css-text`
+  Cache (Manifest geprueft am 2026-11-07).
+- Bezug: zweiter der zehn getrennten Missing-Prioritaetsinkremente; schliesst
+  an KP-295 an.
+
+**Auswahl (belegt/Ableitung):** Der CSS-Guide und ein Layout-Negativtest
+belegten, dass `text-align-last` bislang explizit unsupported war.
+CSS Text Level 3 definiert die geerbte Eigenschaft mit Initialwert `auto`
+fuer die letzte Zeile eines Blocks und Zeilen vor erzwungenen Umbruechen.
+Daraus wurde ein begrenzter Beitrag zur gewoehnlichen Textausrichtung
+ausgewaehlt.
+
+**Umsetzung (belegt):** `auto`, start/end, left/right, center und justify
+werden unterstuetzt. `auto` folgt `text-align`, ausser dass eine automatisch
+ausgerichtete justify-Zeile am Start bleibt; explizites justify verteilt
+positiven Freiraum ueber unterstuetzte Leerzeichen und zentriert, wenn der
+Inhalt nicht gestreckt werden kann. `match-parent` bleibt wegen fehlender
+Richtungsausrichtung unsupported. Automatische Tabellen-Intrinsics messen
+Text ohne justify-Erweiterung.
+
+**Validierung (belegt):** CSS (1.317) und Layout (927) fokussierte Tests
+bestehen. `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern;
+`dotnet test VisualWeb.slnx --no-build` besteht mit 16.476 Tests.
+Formatverifikation und `git diff --check` bestehen.
+
+**Status:** Pass 2 ist lokal vollstaendig validiert; Commit, Push und Remote-CI
+stehen noch aus. Acht weitere Inkremente bleiben nach diesem Pass.

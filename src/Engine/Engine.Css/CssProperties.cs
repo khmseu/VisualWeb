@@ -71,6 +71,7 @@ internal static class CssProperties
             ["font-style"] = new(new CssKeyword("normal"), true),
             ["line-height"] = new(new CssKeyword("normal"), true),
             ["text-align"] = new(new CssKeyword("start"), true),
+            ["text-align-last"] = new(new CssKeyword("auto"), true),
             ["text-indent"] = new(new CssLength(0, "px"), true),
             ["text-decoration-line"] = new(new CssKeyword("none"), false),
             ["text-decoration-thickness"] = new(new CssKeyword("auto"), false),
@@ -318,6 +319,8 @@ internal static class CssProperties
         if (name is "overflow-x" or "overflow-y") { return Keyword(keyword, "visible", "hidden", "auto"); }
         if (name == "box-sizing") { return Keyword(keyword, "content-box", "border-box"); }
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }
+        if (name == "text-align-last")
+        { return Keyword(keyword, "auto", "start", "end", "left", "right", "center", "justify"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
         if (name == "text-decoration-thickness")
         {
