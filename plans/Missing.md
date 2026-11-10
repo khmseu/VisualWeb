@@ -1427,7 +1427,9 @@ Underline, overline and line-through carry the selected thickness through
 preflight and rasterization, with explicit zero suppressing the paint command.
 CSS (1,287), Paint (88), the zero-warning solution build, all 16,437 solution
 tests, format verification and `git diff --check` pass locally. Pass 9 is
-locally complete; one requested increment remains, pending commit, push and CI.
+committed as `98c6fa8` and pushed to `main`. Linux development, Windows
+confinement x64/arm64 and CodeQL all pass. Pass 9 is complete; one requested
+increment remains.
 
 ### 6. A persistent browser JavaScript environment
 

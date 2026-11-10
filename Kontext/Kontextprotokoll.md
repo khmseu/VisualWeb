@@ -7393,8 +7393,8 @@ verbleiben.
 
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
-- Erfassungsart: Implementierung und lokale Validierung; Commit, Push und
-  Remote-CI stehen aus.
+- Erfassungsart: Implementierung, lokale Validierung, Commit und Push;
+  Windows-CI steht aus.
 - Quelle: vom Nutzer eingebrachte Fortsetzungszusammenfassung; Folge auf
   KP-286; CSS guide, Paint guide und lokale Quelle
   `specs/cache/css-text-decoration.html` (`#text-decoration-style-property`,
@@ -7503,7 +7503,8 @@ beim Lesen des verschwundenen cgroup-`cpu.stat`; der vollstaendige
 Wiederholungslauf bestand anschliessend einschliesslich aller 1.333
 Browser-Tests. `git diff --check` besteht.
 
-**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.
+**Status:** Lokal validiert; Commit, Push und Remote-CI sind in KP-290
+festgehalten.
 
 ### KP-291 - Pass 9: CSS text-decoration-thickness
 
@@ -7541,4 +7542,22 @@ VisualWeb.slnx` endet mit 0 Warnungen/Fehlern; `dotnet test VisualWeb.slnx
 --no-build` besteht mit 16.437 Tests; Formatverifikation und
 `git diff --check` bestehen.
 
-**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.
+**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI standen zum
+Zeitpunkt dieses Eintrags noch aus. KP-292 dokumentiert den Abschluss.
+
+### KP-292 - Pass 9 CI green
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Push und Remote-CI abgeschlossen.
+- Bezug: schliesst KP-291 ab.
+- Belegt: Feature-Commit `98c6fa8` ist nach `main` gepusht.
+  Linux development
+  ([42885347166](https://github.com/khmseu/VisualWeb/actions/runs/42885347166)),
+  Windows confinement x64/arm64
+  ([42885347268](https://github.com/khmseu/VisualWeb/actions/runs/42885347268))
+  und CodeQL
+  ([42885345875](https://github.com/khmseu/VisualWeb/actions/runs/42885345875))
+  sind erfolgreich.
+
+**Status:** Pass 9 ist abgeschlossen; ein angefordertes Inkrement verbleibt.

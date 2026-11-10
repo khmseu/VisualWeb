@@ -126,8 +126,10 @@ zurueck. Underline, Overline und Line-through tragen die ausgewaehlte Breite bis
 zur vorab validierten Rasterung; explizite Null unterdrueckt die Ausgabe.
 CSS (1.287), Paint (88), Solution-Build (0 Warnungen/Fehler), alle 16.437
 Solution-Tests, Formatverifikation und `git diff --check` bestehen lokal.
-Feature-Commit, Push und Remote-CI stehen aus; danach bleibt ein angefordertes
-Inkrement. Siehe [KP-291](./Kontextprotokoll.md#kp-291---pass-9-css-text-decoration-thickness).
+Commit `98c6fa8` ist gepusht; Linux development, Windows confinement x64/arm64
+und CodeQL bestehen. Pass 9 ist abgeschlossen; ein angefordertes Inkrement
+bleibt. Siehe [KP-291](./Kontextprotokoll.md#kp-291---pass-9-css-text-decoration-thickness)
+und [KP-292](./Kontextprotokoll.md#kp-292---pass-9-ci-gruen).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
