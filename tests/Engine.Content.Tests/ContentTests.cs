@@ -1330,7 +1330,7 @@ public sealed class ContentTests
     {
         using var fonts = new PaintFontRegistry();
         Assert.Throws<UnsupportedPaintException>(() => OfflinePageRenderer.Render("<!doctype html><div></div>",
-            [new(Css + " div{border:1px dotted}")], new EmptyShaper(), fonts, 20, 20,
+            [new(Css + " div{border:1px solid red;border-top-color:blue}")], new EmptyShaper(), fonts, 20, 20,
             new() { IncludeUserAgentStyle = false }, Cancellation));
         Assert.Throws<VisualWeb.Engine.Layout.UnsupportedLayoutException>(() => OfflinePageRenderer.Render("<!doctype html><div></div>",
             [new(Css + " @import 'https://example.com/x'")], new EmptyShaper(), fonts, 20, 20,

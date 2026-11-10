@@ -1,6 +1,6 @@
 # Engine.Paint
 
-Immutable display lists for backgrounds, solid/inset/outset/dashed/groove/ridge
+Immutable display lists for backgrounds, solid/inset/outset/dotted/dashed/groove/ridge
 borders and glyphs; SkiaSharp CPU rasterization and portable opaque BGRA
 presentation. Registers exact shaping font bytes explicitly; no font fallback,
 GPU, resource loading or browser UI.
@@ -10,7 +10,9 @@ alpha. Dashed borders use square-ended segments at a bounded three-to-two
 dash-gap ratio, charged to the command budget. Groove and ridge use two
 command-budgeted shade bands per physical side, with inverse inset/outset
 shading. Double borders use two command-budgeted lines separated by a
-transparent gap; dotted remains unsupported.
+transparent gap. Dotted borders use centered antialiased circles whose diameter
+and gap equal the border thickness; each dot uses the command budget, and a side
+too short to contain one full dot fails explicitly.
 Outside list markers use bounded filled ellipses for discs, a single
 stroke-ellipse command for hollow circles, and existing rectangle commands
 for squares. Nested-list UA defaults and author styles use the same commands.

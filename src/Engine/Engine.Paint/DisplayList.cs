@@ -266,10 +266,10 @@ public static class DisplayListBuilder
             foreach (var (side, bounds, thickness) in visible)
             {
                 var sideStyle = style["border-" + side + "-style"] as CssKeyword
-                    ?? throw new UnsupportedPaintException("Only solid, inset, outset, dashed, double, groove, and ridge visible borders are supported.");
-                if (sideStyle.Value is not ("solid" or "inset" or "outset" or "dashed" or "double" or "groove" or "ridge"))
+                    ?? throw new UnsupportedPaintException("Only solid, inset, outset, dotted, dashed, double, groove, and ridge visible borders are supported.");
+                if (sideStyle.Value is not ("solid" or "inset" or "outset" or "dotted" or "dashed" or "double" or "groove" or "ridge"))
                 {
-                    throw new UnsupportedPaintException("Only solid, inset, outset, dashed, double, groove, and ridge visible borders are supported.");
+                    throw new UnsupportedPaintException("Only solid, inset, outset, dotted, dashed, double, groove, and ridge visible borders are supported.");
                 }
                 var color = Color(box, "border-" + side + "-color");
                 if (borderColor is not null && color != borderColor)
@@ -279,6 +279,35 @@ public static class DisplayListBuilder
                 borderColor = color;
                 if (bounds.Width > 0 && bounds.Height > 0)
                 {
+                    if (sideStyle.Value == "dotted")
+                    {
+                        var horizontal = side is "top" or "bottom";
+                        var extent = horizontal ? bounds.Width : bounds.Height;
+                        if (thickness > extent)
+                        {
+                            throw new UnsupportedPaintException("Dotted border dots must fit within each side.");
+                        }
+                        var dotCountValue = Math.Floor((extent / thickness + 1) / 2);
+                        var remainingCommands = limits.MaxCommands - commands.Count;
+                        if (!double.IsFinite(dotCountValue) || dotCountValue < 1
+                            || dotCountValue > remainingCommands)
+                        {
+                            throw new PaintLimitException("Dotted border command limit exceeded.");
+                        }
+                        var dotCount = (int)dotCountValue;
+                        var period = thickness * 2;
+                        var usedLength = dotCount * thickness + (dotCount - 1) * thickness;
+                        var start = (extent - usedLength) / 2;
+                        for (var index = 0; index < dotCount; index++)
+                        {
+                            var offset = start + index * period;
+                            var dot = horizontal
+                                ? new LayoutRect(bounds.X + offset, bounds.Y, thickness, thickness)
+                                : new LayoutRect(bounds.X, bounds.Y + offset, thickness, thickness);
+                            Add(new FillEllipse(dot, color));
+                        }
+                        continue;
+                    }
                     if (sideStyle.Value == "dashed")
                     {
                         var horizontal = side is "top" or "bottom";

@@ -7318,3 +7318,34 @@ Solution-Tests bestehen lokal. Commit `f85b76f` ist gepusht; Linux
 (Run 42753539240) bestehen.
 
 **Status:** Pass 4 abgeschlossen; sechs Inkremente des Zehnerauftrags verbleiben.
+
+### KP-285 - Pass 5: CSS-dotted-Rahmen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung abgeschlossen;
+  Commit/Push/Remote-CI ausstehend.
+- Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
+  `plans/Missing.md` empfohlene Prioritaet 1, Paint guide und die lokale CSS
+  Backgrounds and Borders Quelle, Abschnitt `#valdef-line-style-dotted`;
+  Manifestcheck 2026-11-07.
+- Bezug: Auf Pass 4 (KP-284) folgend; einfache CSS-Rahmen fuer statische Seiten.
+
+**Auswahl (Ableitung):** Der Painter unterstuetzte bis Pass 4 alle gaengigen
+physischen Borderstile ausser `dotted`. Die lokale CSS-Quelle definiert runde
+Punkte, nicht aber deren Durchmesser oder Abstand. Die Umsetzung waehlt daher
+einen deterministischen Punktdurchmesser und gleichen Abstand von jeweils
+einer Rahmenbreite; das Muster wird pro Seite zentriert.
+
+**Umsetzung:** Jeder Punkt ist ein `FillEllipse`-Kommando und verbraucht das
+gemeinsame `MaxCommands`-Budget. Seiten, die keinen ganzen Punkt der
+Rahmenbreite aufnehmen koennen, schlagen explizit fehl; extrem grosse
+Punktzahlen werden vor der Erzeugung am verbleibenden Befehlsbudget abgewiesen.
+Tests pruefen alle vier Seiten, exakte Positionen, CPU-Pixel, transparente
+Zwischenraeume, kurze Seiten und Budgetfehler.
+
+**Validierung:** Engine.Paint.Tests (77), Engine.Content.Tests (106), der
+Solution-Build (null Warnungen/Fehler), Formatverifikation und alle 16.385
+seriellen Solution-Tests bestehen lokal.
+
+**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.

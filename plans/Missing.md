@@ -1377,6 +1377,12 @@ solution tests pass locally. Commit `f85b76f` is pushed; Linux, Windows
 confinement x64/arm64 and CodeQL CI pass. Pass 4 is complete; six increments
 remain in this request.
 
+Pass 5 adds CSS `dotted` borders as centered round dots whose diameter and gap
+equal the border thickness. Every dot consumes the display-command budget;
+sides too short to contain a full dot fail explicitly. Paint (77), Content
+(106), the zero-warning solution build, format verification and all 16,385
+serial solution tests pass locally. Commit and remote CI are pending.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

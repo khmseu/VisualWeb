@@ -663,6 +663,48 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void DottedBordersUseCenteredCommandBoundedRoundDots()
+    {
+        const string html = "<div></div>";
+        const string css = "div{width:10px;height:10px;padding:2px;border:3px dotted red;background-color:blue}";
+        var list = Page(html, css);
+        PaintCommand[] expected =
+        [
+            new FillRectangle(new(0, 0, 20, 20), Blue),
+            new FillEllipse(new(2.5, 0, 3, 3), Red),
+            new FillEllipse(new(8.5, 0, 3, 3), Red),
+            new FillEllipse(new(14.5, 0, 3, 3), Red),
+            new FillEllipse(new(2.5, 17, 3, 3), Red),
+            new FillEllipse(new(8.5, 17, 3, 3), Red),
+            new FillEllipse(new(14.5, 17, 3, 3), Red),
+            new FillEllipse(new(0, 5.5, 3, 3), Red),
+            new FillEllipse(new(0, 11.5, 3, 3), Red),
+            new FillEllipse(new(17, 5.5, 3, 3), Red),
+            new FillEllipse(new(17, 11.5, 3, 3), Red)
+        ];
+        Assert.Equal(expected, list.Commands);
+
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 4, 1));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 7, 1));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 4, 18));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 1, 7));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 1, 10));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 18, 7));
+
+        Assert.Throws<PaintLimitException>(() =>
+            Page(html, css, new() { MaxCommands = 7 }));
+    }
+
+    [Fact]
+    public void DottedBordersRejectSidesThatCannotContainAFullDot()
+    {
+        Assert.Throws<UnsupportedPaintException>(() =>
+            Page("<div></div>", "div{width:1px;height:1px;border:2px dotted red}"));
+    }
+
+    [Fact]
     public void RowGroupAndRowBackgroundsPaintBeforeRowSpanningCellBackgrounds()
     {
         const string html = "<table><tbody><tr><td rowspan=2>x</td></tr><tr></tr></tbody></table>";

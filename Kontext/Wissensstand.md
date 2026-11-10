@@ -73,6 +73,13 @@ Commit `f85b76f` ist gepusht; Linux, Windows confinement x64/arm64 und CodeQL
 CI bestehen. Pass 4 ist abgeschlossen; sechs Inkremente verbleiben
 ([KP-284](./Kontextprotokoll.md#kp-284---pass-4-css-double-rahmen)).
 
+Pass 5 ergaenzt zentrierte, runde CSS-`dotted`-Rahmenpunkte mit einem
+Durchmesser und Abstand von je einer Rahmenbreite. Jeder Punkt verbraucht das
+Paint-Budget; eine zu kurze Seite fuer einen vollstaendigen Punkt wird explizit
+abgewiesen. Paint (77), Content (106), Solution-Build, Formatverifikation und
+16.385 serielle Solution-Tests bestehen lokal. Commit/Push/CI stehen aus
+([KP-285](./Kontextprotokoll.md#kp-285---pass-5-css-dotted-rahmen)).
+
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
   KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten

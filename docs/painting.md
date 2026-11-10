@@ -126,9 +126,11 @@ remain unsupported.
   widget/line-break backgrounds, padding/borders/margins, images, gradients,
   clipping and corner effects remain unsupported.
 - Physical solid, inset and outset borders use nonoverlapping rectangular
-  strips. Dashed borders use square-ended, nonoverlapping segments with dash and
-  gap lengths of three and two border widths respectively, starting at each
-  side's origin. Every segment consumes the display-command budget. Groove and
+  strips. Dotted borders use centered antialiased circles with diameters and
+  gaps equal to the border thickness; each dot consumes the display-command
+  budget, and a side narrower than one dot fails explicitly. Dashed borders use
+  square-ended, nonoverlapping segments with dash and gap lengths of three and
+  two border widths respectively, starting at each side's origin. Every segment consumes the display-command budget. Groove and
   ridge borders split each side into adjacent outer and inner bands; groove
   applies inset shading to the outer band and outset shading to the inner, while
   ridge reverses them. Every band consumes the display-command budget. Visible
@@ -170,8 +172,8 @@ remain unsupported.
   with positive physical dimensions and stride `width * 4`, copied row-by-row
   from the native bitmap's actual stride.
 
-Images, gradients, dotted borders, advanced/differently colored borders,
-border radii, overlines, decoration styles/colors/thicknesses and skip-ink,
+Images, gradients, advanced/differently colored borders, border radii, overlines,
+decoration styles/colors/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
 diagnostics and prevents rendering; unsupported visible border styles throw
