@@ -1407,6 +1407,18 @@ tests pass locally. Commit `384e99b` is pushed to `main`; Linux development
 CodeQL/Push on main (run 42769753102) all pass. Pass 7 is complete; three
 requested increments remain.
 
+Pass 8 adds `overline` to `text-decoration-line` and the `text-decoration`
+shorthand. Paint uses the registered font's cap height and underline thickness
+as its bounded UA metric policy; origin color/style, double bands, metric
+validation and command limits are covered. CSS (1,272), Paint (84), the
+zero-warning solution build, format verification and all 16,418 serial
+solution tests pass locally. The first solution test run failed in the
+unmodified browser cgroup-cleanup test when its `cpu.stat` file disappeared;
+the complete rerun passed, including all 1,333 Browser tests. Commit
+`266d245` is pushed; Linux development (run 42874627946), Windows confinement
+x64/arm64 (run 42874627593) and CodeQL/Push on main (run 42874629254) pass.
+Pass 8 is complete; two requested increments remain.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

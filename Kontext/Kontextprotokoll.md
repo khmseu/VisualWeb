@@ -7425,7 +7425,27 @@ CSS-weite Werte, Shorthand-Reihenfolge und Resets, exakte Assignments,
 Ursprungsstil ueber Nachfahren, getrennte Pixelbaender und das Paint-
 Kommandobudget ab.
 
-**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.
+**Status:** Lokal validiert; Commit, Push und Remote-CI sind in KP-290
+festgehalten.
+
+### KP-290 - Pass 8 committed and CI green
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Commit, Push und Remote-CI abgeschlossen.
+- Bezug: schliesst KP-289 ab.
+- Belegt: Feature-Commit
+  `266d245f68c90a234c208babb78d01eb14eaf18f` ist nach `main` gepusht.
+  Linux development
+  ([42874627946](https://github.com/khmseu/VisualWeb/actions/runs/42874627946)),
+  Windows confinement x64/arm64
+  ([42874627593](https://github.com/khmseu/VisualWeb/actions/runs/42874627593))
+  und CodeQL/Push on main
+  ([42874629254](https://github.com/khmseu/VisualWeb/actions/runs/42874629254))
+  sind erfolgreich.
+
+**Status:** Pass 8 ist abgeschlossen; zwei Inkremente des Zehnerauftrags
+verbleiben.
 
 ### KP-288 - Pass 7 committed and CI green
 

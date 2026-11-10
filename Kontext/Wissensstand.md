@@ -110,8 +110,14 @@ Underline-Thickness als begrenzte UA-Metrik. CSS (1.272), Paint (84),
 Solution-Build, Formatverifikation und der serielle Solution-Volltest
 (16.418) bestehen. Der erste Volltestlauf scheiterte in einem unabhängigen
 Browser-Cgroup-Cleanup-Test beim Lesen von `cpu.stat`; der vollstaendige
-Wiederholungslauf bestand. Feature-Commit, Push und CI stehen aus
-([KP-289](./Kontextprotokoll.md#kp-289---pass-8-css-text-decoration-overline)).
+Wiederholungslauf bestand. Commit `266d245` ist gepusht; Linux, Windows
+x64/arm64 und CodeQL bestehen (Runs
+[42874627946](https://github.com/khmseu/VisualWeb/actions/runs/42874627946),
+[42874627593](https://github.com/khmseu/VisualWeb/actions/runs/42874627593),
+[42874629254](https://github.com/khmseu/VisualWeb/actions/runs/42874629254)).
+Pass 8 ist abgeschlossen; zwei Inkremente verbleiben
+([KP-289](./Kontextprotokoll.md#kp-289---pass-8-css-text-decoration-overline),
+[KP-290](./Kontextprotokoll.md#kp-290---pass-8-committed-and-ci-green)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
