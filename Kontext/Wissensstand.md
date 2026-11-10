@@ -88,7 +88,12 @@ Farbsyntax/Kaskade, startet mit `currentColor` und bleibt am Element verankert,
 das die Dekoration setzt; Nachfahrenfarben aendern sie nicht. Der
 line-only-`text-decoration`-Shorthand bleibt begrenzt. CSS (1.247), Paint (79),
 Solution-Build (0 Warnungen/Fehler), Formatverifikation und 16.388 serielle
-Solution-Tests bestehen lokal. Commit/Push/CI stehen aus
+Solution-Tests bestehen lokal. Commit `b85319f` ist gepusht; Linux, Windows
+confinement x64/arm64 und CodeQL bestehen (Runs
+[42763658777](https://github.com/khmseu/VisualWeb/actions/runs/42763658777),
+[42763659027](https://github.com/khmseu/VisualWeb/actions/runs/42763659027),
+[42763658072](https://github.com/khmseu/VisualWeb/actions/runs/42763658072)).
+Pass 6 ist abgeschlossen; vier Inkremente verbleiben
 ([KP-286](./Kontextprotokoll.md#kp-286---pass-6-css-text-decoration-color)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte

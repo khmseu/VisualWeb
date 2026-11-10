@@ -1390,8 +1390,10 @@ line-throughs. It follows the normal color cascade, defaults to `currentColor`,
 and is non-inherited; a descendant's color cannot recolor an ancestor's
 decoration. The shorthand remains limited to its supported line-only grammar.
 CSS (1,247), Paint (79), the zero-warning solution build, format verification
-and all 16,388 serial solution tests pass locally. Commit and remote CI are
-pending.
+and all 16,388 serial solution tests pass locally. Commit `b85319f` is pushed;
+Linux (run 42763658777), Windows confinement x64/arm64 (run 42763659027) and
+CodeQL (run 42763658072) pass. Pass 6 is complete; four requested increments
+remain.
 
 ### 6. A persistent browser JavaScript environment
 

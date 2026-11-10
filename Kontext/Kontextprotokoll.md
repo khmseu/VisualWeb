@@ -7356,8 +7356,8 @@ seriellen Solution-Tests bestehen lokal. Commit `b06b2fc` ist gepusht; Linux
 
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
-- Erfassungsart: Implementierung und lokale Validierung abgeschlossen;
-  Commit/Push/Remote-CI ausstehend.
+- Erfassungsart: Implementierung, lokale Validierung, Commit, Push und
+  Remote-CI abgeschlossen.
 - Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
   `plans/Missing.md` empfohlene Prioritaet 1, CSS guide und Paint guide sowie
   die lokale CSS Text Decoration Quelle, Abschnitt
@@ -7380,6 +7380,11 @@ Paint-Kommandotypen ueber Nachfahren mit anderer Textfarbe.
 
 **Validierung:** CSS.Tests (1.247), Engine.Paint.Tests (79), der
 Solution-Build (null Warnungen/Fehler), Formatverifikation und alle 16.388
-seriellen Solution-Tests bestehen lokal.
+seriellen Solution-Tests bestehen lokal. Commit `b85319f` ist gepusht; Linux,
+Windows confinement x64/arm64 und CodeQL bestehen (Runs
+[42763658777](https://github.com/khmseu/VisualWeb/actions/runs/42763658777),
+[42763659027](https://github.com/khmseu/VisualWeb/actions/runs/42763659027),
+[42763658072](https://github.com/khmseu/VisualWeb/actions/runs/42763658072)).
 
-**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.
+**Status:** Pass 6 ist abgeschlossen; vier Inkremente des Zehnerauftrags
+verbleiben.
