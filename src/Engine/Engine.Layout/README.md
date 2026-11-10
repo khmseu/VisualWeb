@@ -7,6 +7,9 @@ words. Inherited `text-indent` applies supported length/percentage first-line
 offsets; percentage indents in automatic table intrinsic sizing fail explicitly.
 Inherited `text-align-last` controls final and forced-break line alignment;
 intrinsic table measurement does not expand justified text.
+Inherited `text-transform` supports ASCII `uppercase` and `lowercase` before
+shaping without mutating source text; non-ASCII case mappings fail explicitly
+and locale-sensitive behavior is deferred.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.

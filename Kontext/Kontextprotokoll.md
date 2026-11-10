@@ -7718,3 +7718,41 @@ bestanden fuer diesen Commit.
 
 **Status:** Pass 2 ist lokal validiert, committed, gepusht und CI-geprueft.
 Acht weitere Inkremente des Nutzerauftrags bleiben.
+
+### KP-297 - Pass 3: ASCII text-transform
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Umsetzung und lokale
+  Vollvalidierung.
+- Quellen: ausdruecklicher Auftrag `/missing-priority-implementation 10`,
+  [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [CSS guide](../docs/css.md#cascade-and-computed-values),
+  [layout guide](../docs/text-layout.md#ordinary-flow), lokaler `css-text`
+  Cache (Manifest geprueft am 2026-11-07) und aktuelle CSS-/Layout-Quellen.
+- Bezug: dritter der zehn getrennten Missing-Prioritaetsinkremente; schliesst
+  an KP-296 an.
+
+**Auswahl (belegt/Ableitung):** Prioritaet 1 nennt gewoehnliche CSS- und
+Textdarstellung fuer einfache Seiten. `text-transform` war im CSS-Registry- und
+Layout-Pfad nicht implementiert. CSS Text Level 3 definiert die Eigenschaft
+als geerbt mit Initialwert `none`; der lokale Cache belegt den breiteren
+Wertebereich. Als kleiner, indexstabiler Schritt wurden nur ASCII-`uppercase`
+und `lowercase` gewaehlt. Dadurch bleiben Quelltext und UTF-16-Clusterpositionen
+unveraendert; Nicht-ASCII-Buchstaben scheitern explizit statt naeherungsweise
+umgewandelt zu werden.
+
+**Umsetzung (belegt):** `none`, `uppercase` und `lowercase` werden geparst,
+vererbt und vor dem Shaping auf Worte angewendet. Nur ASCII-Buchstaben werden
+veraendert. Nicht-ASCII-Buchstaben fuehren zu `UnsupportedLayoutException`;
+`capitalize`, `full-width` und `full-size-kana` bleiben CSS-Diagnosen.
+DOM-Text wird nicht mutiert.
+
+**Validierung (belegt):** CSS (1.329) und Layout (929) fokussierte Tests
+bestehen. `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern;
+`dotnet test VisualWeb.slnx --no-build` besteht mit 16.490 Tests.
+Formatverifikation und `git diff --check` bestehen.
+
+**Git/CI:** Featurecommit, Push und CI-Pruefung stehen noch aus.
+
+**Status:** Pass 3 ist lokal validiert; sieben weitere Inkremente bleiben.

@@ -128,6 +128,8 @@ layout subset applies it to the first formatted line of block flow only;
 Inherited `text-align-last` defaults to `auto` and supports start/end,
 left/right, center and justify for the final line and lines before forced
 breaks. `match-parent` remains unsupported.
+Inherited `text-transform` supports ASCII `uppercase` and `lowercase`; non-ASCII
+case mappings fail explicitly, and locale-sensitive behavior is deferred.
 `text-decoration-line` accepts `none`, `underline`, `overline` and `line-through`;
 `text-decoration-line` accepts `none` alone or distinct combinations of
 `underline`, `overline` and `line-through`; other line values are unsupported.

@@ -73,6 +73,7 @@ internal static class CssProperties
             ["text-align"] = new(new CssKeyword("start"), true),
             ["text-align-last"] = new(new CssKeyword("auto"), true),
             ["text-indent"] = new(new CssLength(0, "px"), true),
+            ["text-transform"] = new(new CssKeyword("none"), true),
             ["text-decoration-line"] = new(new CssKeyword("none"), false),
             ["text-decoration-thickness"] = new(new CssKeyword("auto"), false),
             ["text-decoration-style"] = new(new CssKeyword("solid"), false),
@@ -322,6 +323,7 @@ internal static class CssProperties
         if (name == "text-align-last")
         { return Keyword(keyword, "auto", "start", "end", "left", "right", "center", "justify"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
+        if (name == "text-transform") { return Keyword(keyword, "none", "uppercase", "lowercase"); }
         if (name == "text-decoration-thickness")
         {
             if (keyword is "auto" or "from-font") { return new CssKeyword(keyword); }

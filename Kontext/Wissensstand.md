@@ -4,7 +4,7 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-10, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-11, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
@@ -19,7 +19,15 @@ Pass 2 ergaenzt geerbtes CSS `text-align-last` fuer Schlusszeilen und Zeilen
 vor erzwungenen Umbruechen. CSS (1.317), Layout (927), Solution-Build
 (0 Warnungen/Fehler), Solution-Volltest (16.476), Formatverifikation und
 `git diff --check` bestehen lokal. Commit `3887986` ist gepusht; Linux,
-Windows confinement x64/arm64 und CodeQL bestehen. Acht Inkremente bleiben.
+Windows confinement x64/arm64 und CodeQL bestehen.
+Pass 3 implementiert geerbtes CSS Text `text-transform` mit `none`,
+ASCII-`uppercase` und ASCII-`lowercase` vor dem Shaping, ohne DOM-Mutation oder
+UTF-16-Laengenverschiebung. Nicht-ASCII-Buchstaben scheitern explizit;
+`capitalize`, `full-width` und `full-size-kana` bleiben unsupported. CSS
+(1.329), Layout (929), Solution-Build (0 Warnungen/Fehler), Solution-Volltest
+(16.490), Formatverifikation und `git diff --check` bestehen lokal. Feature-
+Commit, Push und CI stehen noch aus; sieben Inkremente bleiben.
+Siehe [KP-297](./Kontextprotokoll.md#kp-297---pass-3-ascii-text-transform).
 Siehe
 [KP-296](./Kontextprotokoll.md#kp-296---pass-2-text-align-last).
 Chronologischer Beleg und Auswahlgrund stehen in

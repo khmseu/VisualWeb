@@ -1478,6 +1478,14 @@ pass. Eight increments remain after this pass. See the
 [CSS scope](../docs/css.md#cascade-and-computed-values) and
 [ordinary flow](../docs/text-layout.md#ordinary-flow).
 
+Pass 3 adds inherited CSS Text `text-transform` for ASCII `uppercase` and
+`lowercase`, with initial value `none`. Layout transforms text before shaping
+without mutating DOM text or changing UTF-16 cluster positions; non-ASCII
+letters fail explicitly, and `capitalize`, `full-width` and `full-size-kana`
+remain unsupported. CSS (1,329), Layout (929), the zero-warning solution
+build, all 16,490 solution tests, format verification and `git diff --check`
+pass locally. Commit and CI verification are pending.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

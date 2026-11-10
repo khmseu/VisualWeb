@@ -375,6 +375,13 @@ have zero intrinsic content size.
   Automatic table intrinsic sizing measures unexpanded text. See CSS Text
   [`text-align-last`](https://drafts.csswg.org/css-text-3/#propdef-text-align-last)
   (local ID `css-text`).
+- Inherited `text-transform` supports ASCII `uppercase` and `lowercase` before
+  shaping while preserving source DOM text and UTF-16 cluster positions.
+  Non-ASCII letters fail explicitly; locale-sensitive mappings, `capitalize`,
+  `full-width` and `full-size-kana` are unsupported.
+  See CSS Text
+  [`text-transform`](https://drafts.csswg.org/css-text-3/#propdef-text-transform)
+  (local ID `css-text`).
 - Vertical margins between adjacent block siblings collapse, including
   positive and negative margins. Parent margins also collapse through eligible
   first/last block-child edges without intervening content/borders/padding; bottom

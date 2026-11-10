@@ -657,6 +657,32 @@ public static partial class StaticLayout
             _ => throw new UnsupportedLayoutException($"white-space:{whitespace} is outside the initial layout subset.")
         };
 
+        private static string ApplyTextTransform(string text, string transform, CancellationToken cancellationToken)
+        {
+            if (transform == "none") { return text; }
+            if (transform is not ("uppercase" or "lowercase"))
+            {
+                throw new UnsupportedLayoutException($"text-transform:{transform} is outside the initial layout subset.");
+            }
+
+            var characters = text.ToCharArray();
+            for (var index = 0; index < characters.Length; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var character = characters[index];
+                if (character > 0x7f && char.IsLetter(character))
+                {
+                    throw new UnsupportedLayoutException("Non-ASCII text-transform case mapping is outside the ASCII-only subset.");
+                }
+                characters[index] = transform == "uppercase" && character is >= 'a' and <= 'z'
+                    ? (char)(character - ('a' - 'A'))
+                    : transform == "lowercase" && character is >= 'A' and <= 'Z'
+                        ? (char)(character + ('a' - 'A'))
+                        : character;
+            }
+            return new string(characters);
+        }
+
         // Other GL/WJ/ZWJ characters are rejected by the existing wrapping-text grammar;
         // U+00A0 is explicitly exempted by the atomic-inline compatibility rule.
         private static bool IsAtomicWrapGlue(char character) => character is >= '\u035c' and <= '\u0362';
@@ -705,6 +731,7 @@ public static partial class StaticLayout
                     if (word.Length == 0) { return; }
                     var value = word.ToString();
                     TextFont.ValidateLatin(value, cancellation);
+                    value = ApplyTextTransform(value, ((CssKeyword)inheritedStyle["text-transform"]).Value, cancellation);
                     var hasHyphenBreaks = false;
                     var endsWithAtomicGlue = false;
                     if (canWrap)
