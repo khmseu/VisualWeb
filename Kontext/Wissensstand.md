@@ -13,7 +13,10 @@ Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS
 `text-indent` fuer begrenzte First-Line-Einrueckung im normalen Blockfluss.
 CSS (1.302) und Layout (924) fokussierte Tests, Solution-Build (0 Warnungen/
 Fehler), Solution-Volltest (16.458), Formatverifikation und `git diff --check`
-bestehen. Commit, Push und CI stehen noch aus.
+bestehen. Featurecommit `0dd3c9e` und Integrationscommit `a072c01` sind
+gepusht; Linux, Windows confinement und CodeQL bestehen auf `a072c01`.
+Neun weitere Inkremente bleiben; Pass 2 wird aus dem aktualisierten Tracker
+ausgewaehlt.
 Chronologischer Beleg und Auswahlgrund stehen in
 [KP-295](./Kontextprotokoll.md#kp-295---neuer-zehnerauftrag-und-pass-1-text-indent).
 

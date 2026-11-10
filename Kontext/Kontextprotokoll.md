@@ -7656,6 +7656,19 @@ Tests; Formatverifikation mit `dotnet format VisualWeb.slnx
 --verify-no-changes --no-restore --exclude third_party` und
 `git diff --check` bestehen ebenfalls.
 
-**Status:** Pass 1 lokal vollstaendig validiert; Commit, Push und Remote-CI
-stehen noch aus. Neun weitere Inkremente des Nutzerauftrags bleiben; Folgearbeit
-beginnt erst nach erfolgreicher CI-Pruefung dieses Passes.
+**Git/CI (belegt):** Featurecommit `0dd3c9e` wurde gepusht. Der Push traf auf
+ein zwischenzeitlich vorgeruecktes `origin/main` (drei Commits); die
+Dokumentationskonsolidierung wurde als Mergecommit `a072c01` integriert. Da
+Upstream `docs/standards-support.md` in `docs/standards.md` zusammengefuehrt
+hatte, wurde der neue CSS-Text-Supporteintrag in die konsolidierte Tabelle
+uebertragen. Linux (Run
+[42911691215](https://github.com/khmseu/VisualWeb/actions/runs/42911691215)),
+Windows confinement (Run
+[42911692261](https://github.com/khmseu/VisualWeb/actions/runs/42911692261))
+und CodeQL (Run
+[42911690623](https://github.com/khmseu/VisualWeb/actions/runs/42911690623))
+bestanden fuer `a072c01`.
+
+**Status:** Pass 1 ist lokal validiert, gepusht und CI-geprueft. Neun weitere
+Inkremente des Nutzerauftrags bleiben; Pass 2 wird gegen den aktualisierten
+Prioritaetstracker ausgewaehlt.

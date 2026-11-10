@@ -1450,8 +1450,16 @@ resolve against the block's content width. `hanging` and `each-line` remain
 unsupported. Automatic table intrinsic sizing includes pixel indents and
 rejects percentage indents explicitly. Focused CSS (1,302) and Layout (924)
 tests pass. The solution build passed with zero warnings/errors; all 16,458
-solution tests, format verification and `git diff --check` pass. Commit, push
-and CI remain pending. See the [CSS scope](../docs/css.md#cascade-and-computed-values)
+solution tests, format verification and `git diff --check` pass. Feature commit
+`0dd3c9e` and integration commit `a072c01` are pushed. Upstream documentation
+consolidation moved the standards inventory to [standards.md](../docs/standards.md),
+where the new scope entry is retained. Linux (run
+[42911691215](https://github.com/khmseu/VisualWeb/actions/runs/42911691215)),
+Windows confinement (run
+[42911692261](https://github.com/khmseu/VisualWeb/actions/runs/42911692261))
+and CodeQL (run
+[42911690623](https://github.com/khmseu/VisualWeb/actions/runs/42911690623))
+pass on `a072c01`. See the [CSS scope](../docs/css.md#cascade-and-computed-values)
 and [ordinary flow](../docs/text-layout.md#ordinary-flow).
 
 ### 6. A persistent browser JavaScript environment
