@@ -104,6 +104,14 @@ serielle Solution-Tests bestehen lokal. Commit `384e99b` ist gepusht; Linux
 (Run 42769753102) sind erfolgreich. Pass 7 ist abgeschlossen; drei
 Inkremente verbleiben ([KP-287](./Kontextprotokoll.md#kp-287---pass-7-css-text-decoration-style),
 [KP-288](./Kontextprotokoll.md#kp-288---pass-7-committed-and-ci-green)).
+Pass 8 nimmt `overline` in die endliche CSS-Textdekoration auf. Paint platziert
+die Linie anhand der registrierten OpenType-Cap-Height und verwendet die
+Underline-Thickness als begrenzte UA-Metrik. CSS (1.272), Paint (84),
+Solution-Build, Formatverifikation und der serielle Solution-Volltest
+(16.418) bestehen. Der erste Volltestlauf scheiterte in einem unabhängigen
+Browser-Cgroup-Cleanup-Test beim Lesen von `cpu.stat`; der vollstaendige
+Wiederholungslauf bestand. Feature-Commit, Push und CI stehen aus
+([KP-289](./Kontextprotokoll.md#kp-289---pass-8-css-text-decoration-overline)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

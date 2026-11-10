@@ -395,8 +395,11 @@ non-normal variants/widths, oblique angles and system-font keywords remain
 unsupported whole-declaration diagnostics. Existing font units, family lists,
 CSS-wide keywords and relative weight/size computation are reused. The engine
 does not add other font longhands or expand its exact native face policy.
-The finite `text-decoration-line` accepts `none`, `underline` and
-`line-through` plus the supported CSS-wide keywords. The non-inherited
+The finite `text-decoration-line` accepts `none`, `underline`, `overline` and
+`line-through` plus the supported CSS-wide keywords. Overlines use the
+registered font's cap height and underline thickness as the bounded UA metric
+policy; exact positions and thicknesses are UA-defined by the source
+specification. The non-inherited
 `text-decoration-style` starts at `solid` and accepts `solid`, `double` and the
 supported CSS-wide keywords. The `text-decoration` shorthand accepts at most one supported line, style and
 color component each, in any order; omitted components reset to `none`, `solid`
@@ -413,14 +416,16 @@ unvisited blue color and an underline through the ordinary cascade. Underlines
 are painted on static text fragments using the decorating ancestor's computed
 `text-decoration-color` and the exact registered font's OpenType underline
 metrics; they continue
-through in-flow descendants, and descendant `none` cannot cancel them. The
+through in-flow descendants, and descendant `none` cannot cancel them. Overlines
+use the same origin color/style propagation and double-band behavior, positioned
+at the registered font's cap height. The
 HTML [phrasing-content UA stylesheet](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 also underlines `ins` and `u`.
 Line-throughs likewise use the decorating ancestor's computed
 `text-decoration-color` and exact registered
 font's OpenType strikeout position/thickness metrics; a font without usable
 metrics fails during painting. The HTML UA defaults give `del`, `s` and
-`strike` line-through decoration. Overline, dotted/dashed/wavy styles,
+`strike` line-through decoration. Dotted/dashed/wavy styles,
 custom thicknesses,
 decoration of atomic inline content and skip-ink
 are unsupported diagnostics. See the [line property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line),

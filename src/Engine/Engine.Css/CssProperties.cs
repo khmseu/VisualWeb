@@ -306,7 +306,7 @@ internal static class CssProperties
         if (name == "box-sizing") { return Keyword(keyword, "content-box", "border-box"); }
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
-        if (name == "text-decoration-line") { return Keyword(keyword, "none", "underline", "line-through"); }
+        if (name == "text-decoration-line") { return Keyword(keyword, "none", "underline", "overline", "line-through"); }
         if (name == "text-decoration-style") { return Keyword(keyword, "solid", "double"); }
         if (name == "white-space") { return Keyword(keyword, "normal", "pre", "nowrap", "pre-wrap", "pre-line", "break-spaces"); }
         if (name == "font-weight")

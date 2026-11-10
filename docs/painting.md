@@ -165,10 +165,12 @@ remain unsupported.
   `text-decoration-color`; missing
   metrics fail before framebuffer allocation. It likewise propagates through
   in-flow text despite descendant `none`. Both decoration types use the same
-  originating-element style, including across descendants; only `solid` and
-  `double` are supported. Neither covers atomic inline content or supports
-  skip-ink, other decoration lines, dotted/dashed/wavy styles, or custom
-  thickness values.
+  originating-element style, including across descendants. The bounded CSS
+  `overline` uses a `DrawOverline` command at the registered font's cap height
+  and uses its underline thickness; CSS leaves exact overline metrics UA-defined.
+  All three lines support only `solid` and `double`. Decorations do not cover
+  atomic inline content or support skip-ink, dotted/dashed/wavy styles, or
+  custom thickness values.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS
   viewport. Fractional physical coverage uses Skia's non-antialiased rectangle/
@@ -178,7 +180,7 @@ remain unsupported.
   with positive physical dimensions and stride `width * 4`, copied row-by-row
   from the native bitmap's actual stride.
 
-Images, gradients, advanced/differently colored borders, border radii, overlines,
+Images, gradients, advanced/differently colored borders, border radii,
 dotted/dashed/wavy decoration styles, custom decoration thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives

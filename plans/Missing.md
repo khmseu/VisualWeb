@@ -686,15 +686,16 @@ conditional rules. See [screen media-type rules](../docs/css.md#screen-media-typ
 Its 36 new regressions, solution build and all 14,825 solution tests pass locally.
 Formatting reports only the three findings reproduced on base `ad0bca6`.
 
-The finite CSS cascade accepts `none`, `underline` and `line-through` for the
+The finite CSS cascade accepts `none`, `underline`, `overline` and `line-through` for the
 `text-decoration` shorthand and `text-decoration-line`, including the existing
 `initial`, `inherit`, `unset` and `revert` CSS-wide keywords. The UA `:link`
 rule supplies both its unvisited blue color and an underline; `ins` and `u`
 also receive the HTML underline default, while `del`, `s` and `strike` receive
 the HTML line-through default. Paint uses each decorating ancestor's color and
-exact registered OpenType metrics for underlines and line-throughs; descendant
-`none` does not cancel an ancestor decoration, and missing line-through metrics
-fail explicitly. Overline, other decoration
+exact registered OpenType metrics for underlines and line-throughs; overlines
+use registered font cap height and underline thickness as a bounded UA metric
+policy. Descendant `none` does not cancel an ancestor decoration, and missing
+line-through metrics fail explicitly. Other decoration
 style/color/thickness values, atomic-inline decoration and skip-ink remain
 unsupported.
 

@@ -1,3 +1,4 @@
+using SkiaSharp;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Html;
@@ -173,6 +174,18 @@ public sealed class PaintTests
 
         Assert.Equal(Red, underline.Color);
         Assert.True(underline.IsDouble);
+    }
+
+    [Fact]
+    public void DoubleOverlineUsesTheOriginatingStyleAcrossDescendants()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:overline;text-decoration-color:red;text-decoration-style:double}"
+            + "span{color:green;text-decoration-style:solid;text-decoration-line:none}";
+        var overline = Assert.Single(Page(html, css).Commands.OfType<DrawOverline>());
+
+        Assert.Equal(Red, overline.Color);
+        Assert.True(overline.IsDouble);
     }
 
     [Fact]
@@ -1150,6 +1163,35 @@ public sealed class PaintTests
         var forgedBody = body with { Children = [forgedP], Flow = [new LayoutBlockItem(forgedP)] };
         var forgedRoot = layout.Root with { Children = [forgedBody], Flow = [new LayoutBlockItem(forgedBody)] };
         Assert.Throws<InvalidOperationException>(() => DisplayListBuilder.Build(layout with { Root = forgedRoot }, styles,
+            cancellationToken: Cancellation));
+    }
+
+    [Fact]
+    public void OverlineRasterizesAtTheFontCapHeightAndPreflightsItsResources()
+    {
+        using var font = new TextFont(FontPath);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        using var typeface = SKTypeface.FromFile(FontPath);
+        using var skFont = new SKFont(typeface, 20) { Hinting = SKFontHinting.None };
+        skFont.GetFontMetrics(out var metrics);
+        var overline = new DrawOverline(font.Identity, 20, Red, 2, 20, 20);
+        var frame = CpuRasterizer.Render(new(40, 40, [overline]), fonts, scale: 8,
+            cancellationToken: Cancellation);
+        Assert.Equal(1, RedBandCount(frame, 80));
+        var thickness = metrics.UnderlineThickness ?? throw new InvalidOperationException();
+        var centerRow = (int)Math.Floor((20 - metrics.CapHeight + thickness / 2) * 8);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 80, centerRow));
+        var doubleFrame = CpuRasterizer.Render(new(40, 40,
+            [overline with { IsDouble = true }]), fonts, scale: 8, cancellationToken: Cancellation);
+        Assert.Equal(2, RedBandCount(doubleFrame, 80));
+        Assert.Throws<UnsupportedPaintException>(() => CpuRasterizer.Render(
+            new(40, 40, [overline with { FontIdentity = "unregistered" }]), fonts,
+            cancellationToken: Cancellation));
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(
+            new(40, 40, [overline with { X = 1e10 }]), fonts, cancellationToken: Cancellation));
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(
+            new(40, 40, [overline, overline]), fonts, options: new() { MaxCommands = 1 },
             cancellationToken: Cancellation));
     }
 

@@ -47,7 +47,9 @@ public sealed class NoTextDecorationTests
     [Theory]
     [InlineData("text-decoration:underline")]
     [InlineData("text-decoration-line:underline")]
+    [InlineData("text-decoration-line:overline")]
     [InlineData("text-decoration:UNDERLINE")]
+    [InlineData("text-decoration:OVERLINE")]
     [InlineData("text-decoration:line-through")]
     [InlineData("text-decoration-line:line-through")]
     [InlineData("text-decoration:LINE-THROUGH")]
@@ -56,12 +58,15 @@ public sealed class NoTextDecorationTests
         var (result, style) = Compute(declaration);
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssKeyword(declaration.Contains("line-through", StringComparison.OrdinalIgnoreCase)
-            ? "line-through" : "underline"), style["text-decoration-line"]);
+            ? "line-through" : declaration.Contains("overline", StringComparison.OrdinalIgnoreCase)
+                ? "overline" : "underline"), style["text-decoration-line"]);
     }
 
     [Theory]
     [InlineData("text-decoration-style:solid", "solid", "underline")]
     [InlineData("text-decoration-style:DOUBLE", "double", "underline")]
+    [InlineData("text-decoration:overline double", "double", "overline")]
+    [InlineData("text-decoration:double overline", "double", "overline")]
     [InlineData("text-decoration:underline double", "double", "underline")]
     [InlineData("text-decoration:double underline", "double", "underline")]
     [InlineData("text-decoration:double", "double", "none")]
@@ -80,6 +85,7 @@ public sealed class NoTextDecorationTests
     [Theory]
     [InlineData("text-decoration:underline double red", "underline", "double")]
     [InlineData("text-decoration:double red underline", "underline", "double")]
+    [InlineData("text-decoration:double red overline", "overline", "double")]
     [InlineData("text-decoration:red underline double", "underline", "double")]
     [InlineData("text-decoration:red", "none", "solid")]
     public void TextDecorationShorthandAcceptsSupportedComponentsInAnyOrder(
@@ -223,7 +229,6 @@ public sealed class NoTextDecorationTests
     }
 
     [Theory]
-    [InlineData("text-decoration:overline")]
     [InlineData("text-decoration:blink")]
     [InlineData("text-decoration:none underline")]
     [InlineData("text-decoration:none none")]
@@ -233,7 +238,6 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration:none,none")]
     [InlineData("text-decoration:inherit none")]
     [InlineData("text-decoration:revert-layer")]
-    [InlineData("text-decoration-line:overline")]
     [InlineData("text-decoration-line:revert-layer")]
     [InlineData("text-decoration-style:dotted")]
     [InlineData("text-decoration-style:dashed")]
@@ -258,7 +262,7 @@ public sealed class NoTextDecorationTests
             [new("a{text-decoration:none;text-decoration-line:none}")],
             includeUserAgent: false, options: exact, cancellationToken: Cancellation));
         var invalid = CssStyleEngine.Compute(document,
-            [new("a{text-decoration:overline;text-decoration:none}")],
+            [new("a{text-decoration:blink;text-decoration:none}")],
             includeUserAgent: false, options: exact, cancellationToken: Cancellation);
         Assert.Single(invalid.Diagnostics);
     }

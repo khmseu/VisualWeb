@@ -20,11 +20,11 @@ Circle strokes remain inside their bounds and
 preserve the actual underlying center pixels.
 Decimal (including zero-padded), ASCII alphabetic and Roman markers reuse the bounded glyph-run paint path.
 Finite `underline` and `line-through` decorations use the exact registered
-font's corresponding OpenType metrics and the decorating ancestor's computed
-color and style. `solid` and `double` are supported; double paints two bands
-and an equal gap within the metric thickness. Missing required metrics fail
-explicitly; other decoration lines, dotted/dashed/wavy styles and custom
-thickness remain unsupported.
+font's corresponding OpenType metrics; `overline` uses its cap height and underline
+thickness. The decorating ancestor's computed color and style are retained.
+`solid` and `double` are supported; double paints two bands and an equal gap
+within the metric thickness. Missing required metrics fail explicitly; other
+decoration styles and custom thickness remain unsupported.
 Text-backed inline solid backgrounds use ordered `FillRectangle` fragments
 before line text and inside existing scroll clips. They share the display-list
 command budget; inline-widget/line-break backgrounds and non-color background

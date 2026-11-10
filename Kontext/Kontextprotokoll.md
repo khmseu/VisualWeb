@@ -7445,3 +7445,42 @@ Kommandobudget ab.
 
 **Status:** Pass 7 ist abgeschlossen; drei Inkremente des Zehnerauftrags
 verbleiben.
+
+### KP-289 - Pass 8: CSS text-decoration overline
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung; Commit, Push und
+  Remote-CI stehen aus.
+- Quelle: Fortsetzung des ausdruecklichen Zehnerauftrags; Tracker
+  `plans/Missing.md`, CSS- und Paint-Guides sowie lokale CSS-Text-Decoration-
+  Quelle `specs/cache/css-text-decoration.html` (Manifestcheck 2026-10-31).
+- Bezug: folgt auf KP-287/KP-288 und vervollstaendigt den naechsten kleinen
+  Schritt der statischen Textdekoration.
+
+**Auswahl (Ableitung):** Der CSS-Wert `overline` war in der endlichen
+`text-decoration-line`-Untermenge ausdruecklich nicht unterstuetzt. Der
+Standard ueberlaesst die genaue UA-Linienposition den Plattformmetriken.
+Deshalb verwendet diese begrenzte Implementierung die Cap-Height und
+Underline-Thickness der explizit registrierten Fontface, ohne andere
+Fontsynthese oder neue Dekorationsstile einzufuehren.
+
+**Umsetzung:** CSS akzeptiert `overline` im Longhand und Shorthand. Der
+Display-List-Pfad traegt einen eigenen Overline-Befehl, uebernimmt Stil und
+Farbe vom dekorierenden Element und behaelt die vorhandenen `solid`-/`double`-
+Regeln. Der CPU-Rasterizer validiert Fontmetriken und Bandgeometrie vor der
+Framebuffer-Allokation. Tests pruefen Kaskade und Shorthand, dekorierenden
+Ancestor, exakte Pixelposition, zwei `double`-Baender, Ressourcenvalidierung
+und Kommandolimits. Weitere Stile, Thickness-Werte, skip-ink und
+Atomic-inline-Dekoration bleiben unsupported.
+
+**Validierung:** CSS.Tests (1.272), Engine.Paint.Tests (84),
+`dotnet build VisualWeb.slnx`, Formatverifikation und alle 16.418 seriellen
+Solution-Tests bestehen lokal. Der erste Solution-Testlauf hatte einen
+unabhaengigen Fehler in
+`ProcessTests.ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure`
+beim Lesen des verschwundenen cgroup-`cpu.stat`; der vollstaendige
+Wiederholungslauf bestand anschliessend einschliesslich aller 1.333
+Browser-Tests. `git diff --check` besteht.
+
+**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.

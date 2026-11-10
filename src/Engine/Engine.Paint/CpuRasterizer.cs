@@ -147,6 +147,12 @@ public static class CpuRasterizer
                     var underlineBounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
                     ValidateDecorationBounds(underlineBounds.First, underlineBounds.Second, "Underline");
                     break;
+                case DrawOverline overline:
+                    ArgumentException.ThrowIfNullOrWhiteSpace(overline.FontIdentity);
+                    ArgumentNullException.ThrowIfNull(overline.Color);
+                    var overlineBounds = OverlineBounds(overline, fonts.Resolve(overline.FontIdentity));
+                    ValidateDecorationBounds(overlineBounds.First, overlineBounds.Second, "Overline");
+                    break;
                 case DrawLineThrough lineThrough:
                     ArgumentException.ThrowIfNullOrWhiteSpace(lineThrough.FontIdentity);
                     ArgumentNullException.ThrowIfNull(lineThrough.Color);
@@ -220,6 +226,11 @@ public static class CpuRasterizer
             {
                 var bounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
                 DrawDecoration(canvas, paint, bounds, underline.Color, deviceScale, scrollX, activeScrollY);
+            }
+            else if (command is DrawOverline overline)
+            {
+                var bounds = OverlineBounds(overline, fonts.Resolve(overline.FontIdentity));
+                DrawDecoration(canvas, paint, bounds, overline.Color, deviceScale, scrollX, activeScrollY);
             }
             else if (command is DrawLineThrough lineThrough)
             {
@@ -330,6 +341,20 @@ public static class CpuRasterizer
         { throw new UnsupportedPaintException("The registered font lacks usable strikeout metrics."); }
         return DecorationBounds(new(lineThrough.X, lineThrough.Baseline + position - thickness,
             lineThrough.Width, thickness), lineThrough.IsDouble);
+    }
+    private static (LayoutRect First, LayoutRect? Second) OverlineBounds(DrawOverline overline, SKTypeface typeface)
+    {
+        if (!double.IsFinite(overline.FontSize) || overline.FontSize <= 0 || overline.FontSize > 4096)
+        { throw new UnsupportedPaintException("Overline requires a positive supported font size."); }
+        var size = Math.Round(overline.FontSize * 64, MidpointRounding.AwayFromZero) / 64;
+        using var font = new SKFont(typeface, Float(size)) { Hinting = SKFontHinting.None };
+        font.GetFontMetrics(out var metrics);
+        if (!float.IsFinite(metrics.CapHeight) || metrics.CapHeight <= 0
+            || metrics.UnderlineThickness is not { } thickness
+            || !float.IsFinite(thickness) || thickness <= 0)
+        { throw new UnsupportedPaintException("The registered font lacks usable overline metrics."); }
+        return DecorationBounds(new(overline.X, overline.Baseline - metrics.CapHeight,
+            overline.Width, thickness), overline.IsDouble);
     }
     private static (LayoutRect First, LayoutRect? Second) DecorationBounds(LayoutRect bounds, bool isDouble)
     {

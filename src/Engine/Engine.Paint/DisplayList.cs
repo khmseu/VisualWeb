@@ -36,6 +36,11 @@ public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCom
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
 public sealed record DrawUnderline(string FontIdentity, double FontSize, CssColor Color,
     double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
+/// <summary>A bounded solid or double overline using the registered font's metrics.</summary>
+/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">overline</see> and
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
+public sealed record DrawOverline(string FontIdentity, double FontSize, CssColor Color,
+    double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
 /// <summary>A bounded solid or double line-through using the registered font's OpenType metrics.</summary>
 /// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line-through</see> and
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
@@ -472,6 +477,11 @@ public static class DisplayListBuilder
                                     Add(new DrawUnderline(fragment.Run.FontIdentity, fragment.Run.FontSize,
                                         color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
                                 }
+                                else if (decorationLine == "overline")
+                                {
+                                    Add(new DrawOverline(fragment.Run.FontIdentity, fragment.Run.FontSize,
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
+                                }
                                 else
                                 {
                                     Add(new DrawLineThrough(fragment.Run.FontIdentity, fragment.Run.FontSize,
@@ -512,7 +522,7 @@ public static class DisplayListBuilder
                 if (++depth > limits.MaxDepth) { throw new PaintLimitException("Text decoration ancestry limit exceeded."); }
                 var style = styles.Styles.TryGetValue(element, out var computed) ? computed
                     : throw new InvalidOperationException("Paint styles are incomplete or stale.");
-                if (style["text-decoration-line"] is CssKeyword { Value: "underline" or "line-through" } line)
+                if (style["text-decoration-line"] is CssKeyword { Value: "underline" or "overline" or "line-through" } line)
                 { yield return (style, line.Value); }
                 current = element.ParentNode;
             }
