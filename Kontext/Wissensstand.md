@@ -4,7 +4,7 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-09, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-10, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
@@ -47,8 +47,12 @@ Pass 2 ergaenzt begrenzte quadratische CSS-`dashed`-Rahmensegmente. Paint (73)
 und Content (106), Solution-Build, Formatpruefung und alle 16.381
 serialen Solution-Tests bestehen. Ein veralteter Content-Test erwartete
 zunaechst, dass `dashed` fehlschlaegt; seine Negativabdeckung wurde auf
-weiterhin unsupported `dotted` umgestellt (KP-282). Pass 2 ist lokal
-validiert; Commit/Push/CI stehen aus.
+weiterhin unsupported `dotted` umgestellt (KP-282). Commit `90b9474` ist
+gepusht; Linux, Windows confinement einschliesslich x64/arm64 und CodeQL sind
+gruen (Runs [42732340775](https://github.com/khmseu/VisualWeb/actions/runs/42732340775),
+[42732340725](https://github.com/khmseu/VisualWeb/actions/runs/42732340725)
+und [42732340478](https://github.com/khmseu/VisualWeb/actions/runs/42732340478)).
+Pass 2 ist abgeschlossen; acht Inkremente verbleiben.
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

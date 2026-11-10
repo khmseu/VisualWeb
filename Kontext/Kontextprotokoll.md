@@ -7207,8 +7207,8 @@ sind erfolgreich.
 
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
-- Erfassungsart: fortlaufend dokumentiert; Implementierung, lokale Tests,
-  Solution-Build und Formatverifikation abgeschlossen, Commit/Push/CI ausstehend.
+- Erfassungsart: fortlaufend dokumentiert; Implementierung, lokale Validierung,
+  Commit, Push und Remote-CI abgeschlossen.
 - Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
   `plans/Missing.md` Prioritaet 1, CSS Backgrounds and Borders lokaler Abschnitt
   `#valdef-line-style-dashed` (Manifestcheck 2026-11-07), Paint guide,
@@ -7236,4 +7236,12 @@ veraltete Erwartung in
 die `dashed` als unsupported einstuft. Sie wurde auf `dotted` umgestellt;
 anschliessend bestanden Content und der serielle Volltest.
 
-**Status:** Implementiert und lokal validiert; Commit/Push/CI stehen aus.
+**Remote-CI:** Commit `90b9474` ist nach `origin/main` gepusht. Linux
+development ([Run 42732340775](https://github.com/khmseu/VisualWeb/actions/runs/42732340775)),
+Windows confinement einschliesslich x64/arm64
+([Run 42732340725](https://github.com/khmseu/VisualWeb/actions/runs/42732340725))
+und CodeQL
+([Run 42732340478](https://github.com/khmseu/VisualWeb/actions/runs/42732340478))
+sind erfolgreich.
+
+**Status:** Pass 2 abgeschlossen; acht Inkremente des Zehnerauftrags verbleiben.

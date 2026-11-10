@@ -1351,7 +1351,12 @@ border styles remain `groove`, `ridge`, `dotted` and `double`. The Paint (73)
 and Content (106) suites, zero-warning solution build, format verification and
 all 16,381 serial solution tests pass locally. The first full run exposed an
 old Content assertion that `dashed` must fail; it was updated to retain the
-failure check for `dotted`, then the final full run passed.
+failure check for `dotted`, then the final full run passed. Commit `90b9474`
+is pushed; Linux, Windows confinement (x64/arm64) and CodeQL CI passed
+([Linux](https://github.com/khmseu/VisualWeb/actions/runs/42732340775),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/42732340725),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/42732340478)).
+Pass 2 is complete; eight increments remain in this request.
 
 ### 6. A persistent browser JavaScript environment
 
