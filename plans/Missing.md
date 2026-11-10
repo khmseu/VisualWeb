@@ -1333,9 +1333,25 @@ pass.
 Pass 1 of the next ten-pass request paints CSS `outset` borders using the
 opposite deterministic light/dark sides, producing a raised appearance.
 Four-sided display-list geometry and CPU pixels are tested; `groove`, `ridge`,
-dashed, dotted and double remain unsupported. The Paint suite (73), solution
-build (zero warnings/errors), format verification and all 16,381 solution
-tests pass locally.
+dotted and double remain unsupported. The Paint suite (73), solution build
+(zero warnings/errors), format verification and all 16,381 solution tests pass
+locally. Commit `086e064` is pushed; Linux development
+([42727229201](https://github.com/khmseu/VisualWeb/actions/runs/42727229201)),
+Windows confinement x64/arm64
+([42727229121](https://github.com/khmseu/VisualWeb/actions/runs/42727229121))
+and Push on main/CodeQL
+([42727229412](https://github.com/khmseu/VisualWeb/actions/runs/42727229412))
+pass.
+
+Pass 2 paints CSS `dashed` borders as square-ended segments, using three
+border-widths per dash and two per gap, restarting at each physical side.
+Every segment consumes the existing display-command budget. Paint tests cover
+exact segment geometry/pixels and a command-limit failure. Other unsupported
+border styles remain `groove`, `ridge`, `dotted` and `double`. The Paint (73)
+and Content (106) suites, zero-warning solution build, format verification and
+all 16,381 serial solution tests pass locally. The first full run exposed an
+old Content assertion that `dashed` must fail; it was updated to retain the
+failure check for `dotted`, then the final full run passed.
 
 ### 6. A persistent browser JavaScript environment
 

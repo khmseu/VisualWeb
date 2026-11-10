@@ -41,8 +41,14 @@ Basiscommit und Arbeitsstand, und der serielle Volltest bestand. Featurecommit
 Am 2026-11-10 begann ein neuer Auftrag ueber zehn separate Missing-
 Prioritaetsinkremente. Pass 1 erweitert das deterministische Rahmenmalen um
 `outset` mit umgekehrten Hell-/Dunkelseiten. Paint (73), Solution-Build,
-Formatverifikation und alle 16.381 Solution-Tests bestehen; Commit, Push und
-CI stehen aus (KP-281).
+Formatverifikation und alle 16.381 Solution-Tests bestehen; Commit `086e064`
+ist gepusht und Linux, Windows x64/arm64 und CodeQL sind gruen (KP-281).
+Pass 2 ergaenzt begrenzte quadratische CSS-`dashed`-Rahmensegmente. Paint (73)
+und Content (106), Solution-Build, Formatpruefung und alle 16.381
+serialen Solution-Tests bestehen. Ein veralteter Content-Test erwartete
+zunaechst, dass `dashed` fehlschlaegt; seine Negativabdeckung wurde auf
+weiterhin unsupported `dotted` umgestellt (KP-282). Pass 2 ist lokal
+validiert; Commit/Push/CI stehen aus.
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

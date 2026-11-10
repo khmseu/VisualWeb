@@ -263,13 +263,13 @@ public static class DisplayListBuilder
             var visible = sides.Where(s => s.Item3 > 0 && b.Width > 0 && b.Height > 0).ToList();
             if (visible.Count == 0) { return; }
             CssColor? borderColor = null;
-            foreach (var (side, bounds, _) in visible)
+            foreach (var (side, bounds, thickness) in visible)
             {
                 var sideStyle = style["border-" + side + "-style"] as CssKeyword
-                    ?? throw new UnsupportedPaintException("Only solid, inset, and outset visible borders are supported.");
-                if (sideStyle.Value is not ("solid" or "inset" or "outset"))
+                    ?? throw new UnsupportedPaintException("Only solid, inset, outset, and dashed visible borders are supported.");
+                if (sideStyle.Value is not ("solid" or "inset" or "outset" or "dashed"))
                 {
-                    throw new UnsupportedPaintException("Only solid, inset, and outset visible borders are supported.");
+                    throw new UnsupportedPaintException("Only solid, inset, outset, and dashed visible borders are supported.");
                 }
                 var color = Color(box, "border-" + side + "-color");
                 if (borderColor is not null && color != borderColor)
@@ -279,6 +279,24 @@ public static class DisplayListBuilder
                 borderColor = color;
                 if (bounds.Width > 0 && bounds.Height > 0)
                 {
+                    if (sideStyle.Value == "dashed")
+                    {
+                        var horizontal = side is "top" or "bottom";
+                        var extent = horizontal ? bounds.Width : bounds.Height;
+                        var dashLength = thickness * 3;
+                        var period = thickness * 5;
+                        for (var index = 0; ; index++)
+                        {
+                            var offset = index * period;
+                            if (offset >= extent) { break; }
+                            var length = Math.Min(dashLength, extent - offset);
+                            var dash = horizontal
+                                ? new LayoutRect(bounds.X + offset, bounds.Y, length, bounds.Height)
+                                : new LayoutRect(bounds.X, bounds.Y + offset, bounds.Width, length);
+                            Add(new FillRectangle(dash, color));
+                        }
+                        continue;
+                    }
                     var paintColor = sideStyle.Value switch
                     {
                         "inset" => ShadeColor(side, color, darkTopLeft: true),

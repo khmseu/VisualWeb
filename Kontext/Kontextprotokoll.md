@@ -7159,8 +7159,8 @@ abgeschlossen; Prioritaet 1 bleibt offen.
 
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
-- Erfassungsart: laufend dokumentiert; Implementierung und lokale Validierung
-  abgeschlossen, Commit/Push/CI ausstehend.
+- Erfassungsart: fortlaufend dokumentiert; Implementierung, lokale Validierung,
+  Commit, Push und CI abgeschlossen.
 - Quelle: ausdruecklicher Auftrag `missing-priority-implementation 10`,
   Prioritaetsliste in `plans/Missing.md`, `docs/painting.md`,
   `src/Engine/Engine.Paint/README.md`,
@@ -7186,11 +7186,54 @@ Licht-/Dunkelseiten des bestehenden Algorithmus.
 sichtbaren physischen Rahmenstreifen. `outset` hellt oben/links und dunkelt
 unten/rechts ab; Alpha und die bestehende Einfarbigkeit-/Eckengeometrie-
 Begrenzung bleiben erhalten. Exakte Tests pruefen vier Streifen und CPU-Pixel.
-`groove`, `ridge`, `dashed`, `dotted` und `double` bleiben unsupported.
+`groove`, `ridge`, `dashed`, `dotted` und `double` waren zu Pass 1 unsupported;
+Pass 2 ergaenzt `dashed` (KP-282).
 
 **Validierung:** Paint (73) und alle 16.381 Solution-Tests bestehen lokal;
 Solution-Build (null Warnungen/Fehler), Formatverifikation und
 `git diff --check` bestehen. Der vollstaendige seriale Testlauf dauerte wegen
 der Browser-Testprojektlaufzeit mehrere Minuten.
 
-**Status:** Implementiert, lokal validiert; Commit, Push und CI stehen aus.
+**Status:** Commit `086e06403510cd8692d97dfe7a069f31ea9a6461` ist gepusht.
+Linux development
+([42727229201](https://github.com/khmseu/VisualWeb/actions/runs/42727229201)),
+Windows confinement x64/arm64
+([42727229121](https://github.com/khmseu/VisualWeb/actions/runs/42727229121))
+und Push on main/CodeQL
+([42727229412](https://github.com/khmseu/VisualWeb/actions/runs/42727229412))
+sind erfolgreich.
+
+### KP-282 - Pass 2 des neuen Zehnerauftrags: CSS-dashed-Rahmen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: fortlaufend dokumentiert; Implementierung, lokale Tests,
+  Solution-Build und Formatverifikation abgeschlossen, Commit/Push/CI ausstehend.
+- Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
+  `plans/Missing.md` Prioritaet 1, CSS Backgrounds and Borders lokaler Abschnitt
+  `#valdef-line-style-dashed` (Manifestcheck 2026-11-07), Paint guide,
+  Paint-Implementierung und Regressionen.
+- Bezug: Pass 2 folgt auf den erfolgreich gepushten und CI-gruenen Pass 1
+  (KP-281).
+
+**Auswahl (Ableitung):** Gewoehnliche statische Seiten verwenden haeufig
+gestrichelte Umrandungen. Die CSS-Kaskade berechnete `dashed` bereits, aber
+der Painter lehnte den Stil ab. Da der Standard quadratische Striche, jedoch
+keine festen Strich-/Lueckenlaengen vorgibt, verwendet die begrenzte Umsetzung
+3x/2x Rahmenbreite und beginnt das Muster an jeder physischen Seite neu.
+
+**Umsetzung:** Jeder Strich wird als FillRectangle ausgegeben und verbraucht
+das existierende MaxCommands-Limit. Die Streifen sind nicht ueberlappend und
+bleiben in den Rahmenbounds; andere nicht unterstuetzte Borderstyles bleiben
+explizit abgelehnt. Paint-Tests pruefen Segmentgeometrie, CPU-Pixel und
+Commandlimit.
+
+**Validierung:** Engine.Paint.Tests (73), Engine.Content.Tests (106), der
+Solution-Build (null Warnungen/Fehler), Formatverifikation und alle 16.381
+serialen Solution-Tests bestehen. Der erste serielle Volltest traf eine
+veraltete Erwartung in
+`ContentTests.UnsupportedCssHtmlLayoutAndImportsNeverBecomeApproximateFrames`,
+die `dashed` als unsupported einstuft. Sie wurde auf `dotted` umgestellt;
+anschliessend bestanden Content und der serielle Volltest.
+
+**Status:** Implementiert und lokal validiert; Commit/Push/CI stehen aus.

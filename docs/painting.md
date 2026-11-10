@@ -125,8 +125,11 @@ remain unsupported.
   widget/line-break backgrounds, padding/borders/margins, images, gradients,
   clipping and corner effects remain unsupported.
 - Physical solid, inset and outset borders use nonoverlapping rectangular strips.
-  Visible sides must have the same color; differing colors need deferred corner
-  joins. Inset borders darken top/left channels by half and lighten bottom/right
+  Dashed borders use square-ended, nonoverlapping segments with dash and gap
+  lengths of three and two border widths respectively, starting at each side's
+  origin. Every segment consumes the display-command budget. Visible sides
+  must have the same color; differing colors need deferred corner joins. Inset
+  borders darken top/left channels by half and lighten bottom/right
   channels halfway toward 255, preserving alpha; this deterministic shade choice
   supplies the 3D effect whose exact colors CSS leaves implementation-defined.
   Outset borders reverse those light/dark sides to give the raised effect.
@@ -160,7 +163,7 @@ remain unsupported.
   with positive physical dimensions and stride `width * 4`, copied row-by-row
   from the native bitmap's actual stride.
 
-Images, gradients, groove/ridge/dashed/dotted/double and
+Images, gradients, groove/ridge/dotted/double and
 advanced/differently colored borders, border radius,
 overlines, decoration styles/colors/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow

@@ -555,6 +555,25 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void DashedBordersUseBoundedSquareEndedSegments()
+    {
+        var list = Page("<hr>", "hr{display:block;border:1px dashed red}");
+        Assert.Equal(40, list.Commands.Count);
+        Assert.Equal(new FillRectangle(new(0, 0, 3, 1), Red), list.Commands[0]);
+        Assert.Equal(new FillRectangle(new(5, 0, 3, 1), Red), list.Commands[1]);
+        Assert.Equal(new FillRectangle(new(0, 1, 3, 1), Red), list.Commands[20]);
+
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 1, 0));
+        Assert.Equal(((byte)255, (byte)255, (byte)255, (byte)255), Pixel(frame, 4, 0));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 6, 0));
+
+        Assert.Throws<PaintLimitException>(() =>
+            Page("<hr>", "hr{display:block;border:1px dashed red}", new() { MaxCommands = 39 }));
+    }
+
+    [Fact]
     public void RowGroupAndRowBackgroundsPaintBeforeRowSpanningCellBackgrounds()
     {
         const string html = "<table><tbody><tr><td rowspan=2>x</td></tr><tr></tr></tbody></table>";
@@ -664,7 +683,6 @@ public sealed class PaintTests
     }
 
     [Theory]
-    [InlineData("div{border:1px dashed red}")]
     [InlineData("div{border:1px solid red;border-left-color:blue}")]
     [InlineData("div{border:1px solid red;border-left-color:blue;height:0}")]
     public void UnsupportedBorderStylesAndCornerColorsFail(string css)
