@@ -7707,5 +7707,14 @@ bestehen. `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern;
 `dotnet test VisualWeb.slnx --no-build` besteht mit 16.476 Tests.
 Formatverifikation und `git diff --check` bestehen.
 
-**Status:** Pass 2 ist lokal vollstaendig validiert; Commit, Push und Remote-CI
-stehen noch aus. Acht weitere Inkremente bleiben nach diesem Pass.
+**Git/CI (belegt):** Featurecommit `3887986` ist nach `main` gepusht. Linux
+(Run
+[42919437099](https://github.com/khmseu/VisualWeb/actions/runs/42919437099)),
+Windows confinement x64/arm64 (Run
+[42919437137](https://github.com/khmseu/VisualWeb/actions/runs/42919437137))
+und CodeQL (Run
+[42919437408](https://github.com/khmseu/VisualWeb/actions/runs/42919437408))
+bestanden fuer diesen Commit.
+
+**Status:** Pass 2 ist lokal validiert, committed, gepusht und CI-geprueft.
+Acht weitere Inkremente des Nutzerauftrags bleiben.

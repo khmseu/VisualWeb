@@ -1467,8 +1467,14 @@ lines preceding forced breaks. `auto`, start/end, left/right, center and
 justify are supported; `match-parent` remains unsupported. Automatic table
 intrinsic sizing measures unexpanded text. Focused CSS (1,317) and Layout (927)
 tests pass; the solution build has zero warnings/errors, all 16,476 solution
-tests pass, and format verification plus `git diff --check` pass. Commit, push
-and CI remain pending; eight increments remain after this pass. See the
+tests pass, and format verification plus `git diff --check` pass. Commit
+`3887986` is pushed to `main`. Linux (run
+[42919437099](https://github.com/khmseu/VisualWeb/actions/runs/42919437099)),
+Windows confinement (run
+[42919437137](https://github.com/khmseu/VisualWeb/actions/runs/42919437137))
+and CodeQL (run
+[42919437408](https://github.com/khmseu/VisualWeb/actions/runs/42919437408))
+pass. Eight increments remain after this pass. See the
 [CSS scope](../docs/css.md#cascade-and-computed-values) and
 [ordinary flow](../docs/text-layout.md#ordinary-flow).
 
