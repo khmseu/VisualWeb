@@ -7596,4 +7596,29 @@ separate bestehende Paint-Befehle ausgegeben.
 `dotnet test VisualWeb.slnx --no-build` besteht mit 16.442 Tests.
 Formatverifikation und `git diff --check` bestehen.
 
-**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.
+**Status zum Ereigniszeitpunkt:** Lokal validiert; Feature-Commit, Push und
+Remote-CI standen noch aus. Der Abschluss ist in KP-294 dokumentiert.
+
+### KP-294 - Pass 10: Commit, Push und CI gruen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Push und Remote-CI abgeschlossen.
+- Bezug: schliesst KP-293 und den ausdruecklichen Zehnerauftrag ab.
+- Belegt: Feature-Commit `002d38e` ist nach `main` gepusht.
+  Linux development
+  ([42893005649](https://github.com/khmseu/VisualWeb/actions/runs/42893005649)),
+  Windows confinement x64/arm64
+  ([42893005685](https://github.com/khmseu/VisualWeb/actions/runs/42893005685))
+  und CodeQL
+  ([42893004754](https://github.com/khmseu/VisualWeb/actions/runs/42893004754))
+  sind erfolgreich.
+
+**Abweichung im ersten Versuch:** Der erste Windows-x64-Lauf scheiterte beim
+unveraenderten `VisualWeb.Browser.Tests.ShellTests.UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`
+nach dessen 30-Sekunden-Wartegrenze. Der Windows-ARM64-Lauf bestand bereits;
+der vollstaendige Windows-Rerun bestand danach auch fuer x64. Es wurden keine
+Aenderungen an Browser-Code oder diesem Test vorgenommen.
+
+**Status:** Pass 10 ist committed, gepusht und durch die genannten CI-Laeufe
+validiert. Der angeforderte Zehnerauftrag ist abgeschlossen.

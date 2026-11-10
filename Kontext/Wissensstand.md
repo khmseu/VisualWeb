@@ -134,9 +134,13 @@ Pass 10 erweitert `text-decoration-line` und den Shorthand um Kombinationen
 verschiedener unterstuetzter Linien. Duplikate und `none` mit sichtbaren Linien
 bleiben ungueltig; `blink` ist weiterhin unsupported. CSS (1.291), Paint (89),
 Solution-Build (0 Warnungen/Fehler), alle 16.442 Solution-Tests,
-Formatverifikation und `git diff --check` bestehen lokal. Commit, Push und
-Remote-CI stehen aus. Siehe
-[KP-293](./Kontextprotokoll.md#kp-293---pass-10-kombinierte-textdekorationen).
+Formatverifikation und `git diff --check` bestehen lokal. Commit `002d38e` ist
+gepusht; Linux development (42893005649), Windows confinement x64/arm64
+(42893005685) und CodeQL (42893004754) sind erfolgreich. Der erste Windows-
+x64-Lauf traf einen unabhaengigen Browser-Test-Timeout; der vollstaendige
+Windows-Rerun bestand. Der Zehnerauftrag ist abgeschlossen. Siehe
+[KP-293](./Kontextprotokoll.md#kp-293---pass-10-kombinierte-textdekorationen)
+und [KP-294](./Kontextprotokoll.md#kp-294---pass-10-commit-push-und-ci-gruen).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

@@ -1437,8 +1437,11 @@ Duplicate lines and `none` combined with a visible line remain invalid;
 unsupported values such as `blink` remain diagnostics. Each originating line
 uses its own existing command and shares normal paint-budget preflight. CSS
 (1,291), Paint (89), the zero-warning solution build, all 16,442 solution
-tests, format verification and `git diff --check` pass locally. Commit, push
-and CI remain pending.
+tests, format verification and `git diff --check` pass locally. Commit
+`002d38e` is pushed to `main`. Linux development (run 42893005649), Windows
+confinement x64/arm64 (run 42893005685) and CodeQL (run 42893004754) pass.
+The first Windows x64 attempt hit an unrelated Browser test timeout; the full
+Windows rerun passed. Pass 10 completes the requested ten increments.
 
 ### 6. A persistent browser JavaScript environment
 
