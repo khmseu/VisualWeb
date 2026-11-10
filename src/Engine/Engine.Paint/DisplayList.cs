@@ -266,10 +266,10 @@ public static class DisplayListBuilder
             foreach (var (side, bounds, thickness) in visible)
             {
                 var sideStyle = style["border-" + side + "-style"] as CssKeyword
-                    ?? throw new UnsupportedPaintException("Only solid, inset, outset, and dashed visible borders are supported.");
-                if (sideStyle.Value is not ("solid" or "inset" or "outset" or "dashed"))
+                    ?? throw new UnsupportedPaintException("Only solid, inset, outset, dashed, groove, and ridge visible borders are supported.");
+                if (sideStyle.Value is not ("solid" or "inset" or "outset" or "dashed" or "groove" or "ridge"))
                 {
-                    throw new UnsupportedPaintException("Only solid, inset, outset, and dashed visible borders are supported.");
+                    throw new UnsupportedPaintException("Only solid, inset, outset, dashed, groove, and ridge visible borders are supported.");
                 }
                 var color = Color(box, "border-" + side + "-color");
                 if (borderColor is not null && color != borderColor)
@@ -294,6 +294,37 @@ public static class DisplayListBuilder
                                 ? new LayoutRect(bounds.X + offset, bounds.Y, length, bounds.Height)
                                 : new LayoutRect(bounds.X, bounds.Y + offset, bounds.Width, length);
                             Add(new FillRectangle(dash, color));
+                        }
+                        continue;
+                    }
+                    if (sideStyle.Value is "groove" or "ridge")
+                    {
+                        var outerThickness = thickness / 2;
+                        var innerThickness = thickness - outerThickness;
+                        var outerBounds = side switch
+                        {
+                            "top" => new LayoutRect(bounds.X, bounds.Y, bounds.Width, outerThickness),
+                            "bottom" => new LayoutRect(bounds.X, bounds.Y + innerThickness, bounds.Width, outerThickness),
+                            "left" => new LayoutRect(bounds.X, bounds.Y, outerThickness, bounds.Height),
+                            "right" => new LayoutRect(bounds.X + innerThickness, bounds.Y, outerThickness, bounds.Height),
+                            _ => throw new InvalidOperationException("Unknown border side.")
+                        };
+                        var innerBounds = side switch
+                        {
+                            "top" => new LayoutRect(bounds.X, bounds.Y + outerThickness, bounds.Width, innerThickness),
+                            "bottom" => new LayoutRect(bounds.X, bounds.Y, bounds.Width, innerThickness),
+                            "left" => new LayoutRect(bounds.X + outerThickness, bounds.Y, innerThickness, bounds.Height),
+                            "right" => new LayoutRect(bounds.X, bounds.Y, innerThickness, bounds.Height),
+                            _ => throw new InvalidOperationException("Unknown border side.")
+                        };
+                        var outerInset = sideStyle.Value == "groove";
+                        if (outerThickness > 0)
+                        {
+                            Add(new FillRectangle(outerBounds, ShadeColor(side, color, darkTopLeft: outerInset)));
+                        }
+                        if (innerThickness > 0)
+                        {
+                            Add(new FillRectangle(innerBounds, ShadeColor(side, color, darkTopLeft: !outerInset)));
                         }
                         continue;
                     }

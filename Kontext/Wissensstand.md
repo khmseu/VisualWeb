@@ -53,6 +53,12 @@ gruen (Runs [42732340775](https://github.com/khmseu/VisualWeb/actions/runs/42732
 [42732340725](https://github.com/khmseu/VisualWeb/actions/runs/42732340725)
 und [42732340478](https://github.com/khmseu/VisualWeb/actions/runs/42732340478)).
 Pass 2 ist abgeschlossen; acht Inkremente verbleiben.
+Pass 3 erweitert die physische Border-Painting-Untermenge um CSS `groove` und
+`ridge`: zwei angrenzende Schattenbaender pro Seite, jeweils mit invertierter
+Inset-/Outset-Reihenfolge. Paint (74), Solution-Build (0 Warnungen/Fehler),
+Formatverifikation und 16.382 serielle Solution-Tests bestehen. Commit/Push und
+Remote-CI fuer Pass 3 stehen noch aus; `dotted` und `double` bleiben
+unsupported ([KP-283](./Kontextprotokoll.md#kp-283---pass-3-css-groove--und-ridge-rahmen)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

@@ -1,13 +1,15 @@
 # Engine.Paint
 
-Immutable background/solid/inset/outset/dashed-border/glyph display lists, SkiaSharp CPU rasterization
-and portable opaque BGRA presentation. Registers exact shaping font bytes
-explicitly; no font fallback, GPU, resource loading or browser UI.
+Immutable display lists for backgrounds, solid/inset/outset/dashed/groove/ridge
+borders and glyphs; SkiaSharp CPU rasterization and portable opaque BGRA
+presentation. Registers exact shaping font bytes explicitly; no font fallback,
+GPU, resource loading or browser UI.
 Inset borders use deterministic half-channel darkening on top/left sides and
 lightening on bottom/right sides; outset reverses those sides. Both preserve
 alpha. Dashed borders use square-ended segments at a bounded three-to-two
-dash-gap ratio, charged to the command budget. Other non-solid styles remain
-unsupported.
+dash-gap ratio, charged to the command budget. Groove and ridge use two
+command-budgeted shade bands per physical side, with inverse inset/outset
+shading. Dotted and double remain unsupported.
 Outside list markers use bounded filled ellipses for discs, a single
 stroke-ellipse command for hollow circles, and existing rectangle commands
 for squares. Nested-list UA defaults and author styles use the same commands.

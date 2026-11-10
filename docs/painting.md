@@ -1,9 +1,10 @@
 # Phase-8 painting and offline page rendering
 
 The approved subset is immutable display commands for canvas/block backgrounds,
-solid borders and shaped text; Skia CPU rendering into opaque BGRA frames; portable
-surface presentation; and a decoded-HTML-to-frame pipeline. It does not add a
-browser shell, navigation, resource loading or process isolation.
+solid and selected non-solid borders, and shaped text; Skia CPU rendering into
+opaque BGRA frames; portable surface presentation; and a decoded-HTML-to-frame
+pipeline. It does not add a browser shell, navigation, resource loading or
+process isolation.
 
 ## Entry points and ownership
 
@@ -124,14 +125,17 @@ remain unsupported.
   `PaintOptions.MaxCommands` bound generation and display-list storage. Inline
   widget/line-break backgrounds, padding/borders/margins, images, gradients,
   clipping and corner effects remain unsupported.
-- Physical solid, inset and outset borders use nonoverlapping rectangular strips.
-  Dashed borders use square-ended, nonoverlapping segments with dash and gap
-  lengths of three and two border widths respectively, starting at each side's
-  origin. Every segment consumes the display-command budget. Visible sides
-  must have the same color; differing colors need deferred corner joins. Inset
-  borders darken top/left channels by half and lighten bottom/right
-  channels halfway toward 255, preserving alpha; this deterministic shade choice
-  supplies the 3D effect whose exact colors CSS leaves implementation-defined.
+- Physical solid, inset and outset borders use nonoverlapping rectangular
+  strips. Dashed borders use square-ended, nonoverlapping segments with dash and
+  gap lengths of three and two border widths respectively, starting at each
+  side's origin. Every segment consumes the display-command budget. Groove and
+  ridge borders split each side into adjacent outer and inner bands; groove
+  applies inset shading to the outer band and outset shading to the inner, while
+  ridge reverses them. Every band consumes the display-command budget. Visible
+  sides must have the same color; differing colors need deferred corner joins.
+  Inset borders darken top/left channels by half and lighten bottom/right
+  channels halfway toward 255, preserving alpha; this deterministic shade
+  choice supplies the 3D effect without claiming exact CSS-specified shades.
   Outset borders reverse those light/dark sides to give the raised effect.
   Translucent same-color corners are composited once, not double blended.
 - Positioned glyph IDs and absolute CSS baseline positions come directly from
@@ -163,8 +167,7 @@ remain unsupported.
   with positive physical dimensions and stride `width * 4`, copied row-by-row
   from the native bitmap's actual stride.
 
-Images, gradients, groove/ridge/dotted/double and
-advanced/differently colored borders, border radius,
+Images, gradients, dotted/double borders, advanced/differently colored borders, border radius,
 overlines, decoration styles/colors/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
@@ -222,8 +225,9 @@ Linux/Windows x64/arm64 assets do not certify execution on untested targets.
 ## Standards and offline evidence
 
 Read cached IDs `css2-paint` (CSS 2.2 Appendix E normal-flow painting),
-`css-backgrounds` (canvas/body background propagation), and `skia-canvas`
-(official native canvas API), alongside the text/layout references in the
+`css-backgrounds` (line-style definitions in [§3.2](https://drafts.csswg.org/css-backgrounds-3/#valdef-line-style-groove)
+and canvas/body background propagation), and `skia-canvas` (official native
+canvas API), alongside the text/layout references in the
 [registry](../specs/manifest.json). Documentation refresh is independent of tests.
 
 [Engine.Paint.Tests](../tests/Engine.Paint.Tests/) checks exact command order,

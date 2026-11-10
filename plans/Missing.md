@@ -1358,6 +1358,12 @@ is pushed; Linux, Windows confinement (x64/arm64) and CodeQL CI passed
 [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/42732340478)).
 Pass 2 is complete; eight increments remain in this request.
 
+Pass 3 adds bounded CSS `groove` and `ridge` painting as paired outer/inner
+shade bands, reusing the deterministic inset/outset shading in opposite
+orders. Each band uses the existing display-command budget; `dotted` and
+`double` remain unsupported. Paint (74), the zero-warning solution build,
+format verification and all 16,382 serial solution tests pass locally.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

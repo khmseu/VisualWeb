@@ -574,6 +574,55 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void GrooveAndRidgeBordersUseBoundedInvertedShadeLayers()
+    {
+        const string html = "<div></div>";
+        const string box = "div{width:10px;height:10px;padding:2px;color:gray;border:2px ";
+        var groove = Page(html, box + "groove currentcolor}");
+        PaintCommand[] expectedGroove =
+        [
+            new FillRectangle(new(0, 0, 18, 1), new CssColor(64, 64, 64)),
+            new FillRectangle(new(0, 1, 18, 1), new CssColor(192, 192, 192)),
+            new FillRectangle(new(0, 17, 18, 1), new CssColor(192, 192, 192)),
+            new FillRectangle(new(0, 16, 18, 1), new CssColor(64, 64, 64)),
+            new FillRectangle(new(0, 2, 1, 14), new CssColor(64, 64, 64)),
+            new FillRectangle(new(1, 2, 1, 14), new CssColor(192, 192, 192)),
+            new FillRectangle(new(17, 2, 1, 14), new CssColor(192, 192, 192)),
+            new FillRectangle(new(16, 2, 1, 14), new CssColor(64, 64, 64))
+        ];
+        Assert.Equal(expectedGroove, groove.Commands);
+
+        var ridge = Page(html, box + "ridge currentcolor}");
+        PaintCommand[] expectedRidge =
+        [
+            new FillRectangle(new(0, 0, 18, 1), new CssColor(192, 192, 192)),
+            new FillRectangle(new(0, 1, 18, 1), new CssColor(64, 64, 64)),
+            new FillRectangle(new(0, 17, 18, 1), new CssColor(64, 64, 64)),
+            new FillRectangle(new(0, 16, 18, 1), new CssColor(192, 192, 192)),
+            new FillRectangle(new(0, 2, 1, 14), new CssColor(192, 192, 192)),
+            new FillRectangle(new(1, 2, 1, 14), new CssColor(64, 64, 64)),
+            new FillRectangle(new(17, 2, 1, 14), new CssColor(64, 64, 64)),
+            new FillRectangle(new(16, 2, 1, 14), new CssColor(192, 192, 192))
+        ];
+        Assert.Equal(expectedRidge, ridge.Commands);
+
+        using var fonts = new PaintFontRegistry();
+        var grooveFrame = CpuRasterizer.Render(groove, fonts, cancellationToken: Cancellation);
+        var ridgeFrame = CpuRasterizer.Render(ridge, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(grooveFrame, 8, 0));
+        Assert.Equal(((byte)192, (byte)192, (byte)192, (byte)255), Pixel(grooveFrame, 8, 1));
+        Assert.Equal(((byte)192, (byte)192, (byte)192, (byte)255), Pixel(grooveFrame, 8, 17));
+        Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(grooveFrame, 8, 16));
+        Assert.Equal(((byte)192, (byte)192, (byte)192, (byte)255), Pixel(ridgeFrame, 8, 0));
+        Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(ridgeFrame, 8, 1));
+        Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(ridgeFrame, 8, 17));
+        Assert.Equal(((byte)192, (byte)192, (byte)192, (byte)255), Pixel(ridgeFrame, 8, 16));
+
+        Assert.Throws<PaintLimitException>(() =>
+            Page(html, box + "groove currentcolor}", new() { MaxCommands = 7 }));
+    }
+
+    [Fact]
     public void RowGroupAndRowBackgroundsPaintBeforeRowSpanningCellBackgrounds()
     {
         const string html = "<table><tbody><tr><td rowspan=2>x</td></tr><tr></tr></tbody></table>";

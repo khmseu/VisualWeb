@@ -7245,3 +7245,35 @@ und CodeQL
 sind erfolgreich.
 
 **Status:** Pass 2 abgeschlossen; acht Inkremente des Zehnerauftrags verbleiben.
+
+### KP-283 - Pass 3: CSS-groove- und ridge-Rahmen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung abgeschlossen;
+  Commit/Push/Remote-CI noch ausstehend.
+- Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
+  `plans/Missing.md` Prioritaet 1, Paint guide und die lokale CSS Backgrounds
+  and Borders Quelle, Abschnitte `#valdef-line-style-groove` und
+  `#valdef-line-style-ridge`; Manifestcheck 2026-11-07.
+- Bezug: Auf die erfolgreichen Passes 1 und 2 (KP-281 und KP-282) folgend.
+
+**Auswahl (Ableitung):** Gewoehnliche statische Seiten nutzen haeufig
+3D-Rahmen. Der Painter unterstuetzte bereits `inset`, `outset` und zuletzt
+`dashed`, lehnte aber die verwandten `groove`/`ridge`-Effekte ab. Die lokale
+CSS-Quelle beschreibt `groove` als eingraviert und `ridge` als erhaben; sie
+schreibt keine konkreten Schattenwerte vor. Der bereits dokumentierte,
+deterministische Inset-/Outset-Schatten wird daher fuer zwei angrenzende
+Baender pro physischer Seite in umgekehrter Reihenfolge verwendet.
+
+**Umsetzung:** Jeder nichtleere Schattenstreifen ist ein eigener
+`FillRectangle`-Befehl und verbraucht `MaxCommands`. `groove` nutzt Inset-/
+Outset-Shading von aussen nach innen, `ridge` umgekehrt. Exakte Tests decken
+alle vier Seiten, Displaylisten, CPU-Pixel und Command-Limit ab; `dotted` und
+`double` bleiben explizit unsupported.
+
+**Validierung:** Engine.Paint.Tests (74), der Solution-Build (null
+Warnungen/Fehler), Formatverifikation und alle 16.382 seriellen
+Solution-Tests bestehen lokal.
+
+**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.
