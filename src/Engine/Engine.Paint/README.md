@@ -21,7 +21,9 @@ preserve the actual underlying center pixels.
 Decimal (including zero-padded), ASCII alphabetic and Roman markers reuse the bounded glyph-run paint path.
 Finite `underline` and `line-through` decorations use the exact registered
 font's corresponding OpenType metrics; `overline` uses its cap height and underline
-thickness. The decorating ancestor's computed color and style are retained.
+thickness. Distinct supported lines may be combined on the originating
+element; each line emits a separate command in underline/overline/line-through
+order. The decorating ancestor's computed color and style are retained.
 `solid` and `double` are supported; double paints two bands and an equal gap
 within the metric thickness. `text-decoration-thickness` supports `auto`,
 `from-font`, `thin`/`medium`/`thick` and nonnegative computed lengths, including

@@ -130,6 +130,13 @@ Commit `98c6fa8` ist gepusht; Linux development, Windows confinement x64/arm64
 und CodeQL bestehen. Pass 9 ist abgeschlossen; ein angefordertes Inkrement
 bleibt. Siehe [KP-291](./Kontextprotokoll.md#kp-291---pass-9-css-text-decoration-thickness)
 und [KP-292](./Kontextprotokoll.md#kp-292---pass-9-ci-gruen).
+Pass 10 erweitert `text-decoration-line` und den Shorthand um Kombinationen
+verschiedener unterstuetzter Linien. Duplikate und `none` mit sichtbaren Linien
+bleiben ungueltig; `blink` ist weiterhin unsupported. CSS (1.291), Paint (89),
+Solution-Build (0 Warnungen/Fehler), alle 16.442 Solution-Tests,
+Formatverifikation und `git diff --check` bestehen lokal. Commit, Push und
+Remote-CI stehen aus. Siehe
+[KP-293](./Kontextprotokoll.md#kp-293---pass-10-kombinierte-textdekorationen).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

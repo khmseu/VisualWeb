@@ -7561,3 +7561,39 @@ Zeitpunkt dieses Eintrags noch aus. KP-292 dokumentiert den Abschluss.
   sind erfolgreich.
 
 **Status:** Pass 9 ist abgeschlossen; ein angefordertes Inkrement verbleibt.
+
+### KP-293 - Pass 10: kombinierte Textdekorationen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung; Commit, Push und
+  Remote-CI stehen aus.
+- Quelle: ausdruecklicher Zehnerauftrag aus dem aktuellen
+  Gespraechs-Handover; `plans/Missing.md`, CSS-/Paint-Guides und der lokale CSS
+  Text Decoration Level 3 Cache `specs/cache/css-text-decoration.html`,
+  Manifest-ID `css-text-decoration` (geprueft 2026-11-10).
+- Bezug: folgt auf KP-291/KP-292 und schliesst den zehnteiligen Auftrag lokal
+  mit einer weiteren bounded CSS rendering increment.
+
+**Auswahl (Ableitung):** Die vorhandene CSS-/Paint-Untermenge beschraenkte
+`text-decoration-line` ausdruecklich auf eine einzelne sichtbare Linie,
+waehrend die lokale Level-3-Grammatik mehrere `||`-Linienkombinationen
+zulaesst. Die bestehende Architektur kann jede Linie separat mit dem
+originierenden Element und dem vorhandenen Paint-Budget ausgeben. Deshalb
+wurde die Linienkombination als kleiner statischer CSS-Kompatibilitaetsschritt
+gewaehlt; Blink, weitere Linienwerte und andere Dekorationsstile bleiben
+ausserhalb des Umfangs.
+
+**Umsetzung (belegt):** `text-decoration-line` und das `text-decoration`-
+Shorthand akzeptieren jetzt nichtleere, duplikatfreie Kombinationen aus
+`underline`, `overline` und `line-through`. `none` ist nur allein gueltig;
+`blink` und weitere Werte diagnostizieren weiterhin. Mehrfachwerte werden als
+typisierte Linienflags berechnet und je Ursprung in fester Reihenfolge als
+separate bestehende Paint-Befehle ausgegeben.
+
+**Validierung (belegt):** CSS (1.291) und Paint (89) bestehen.
+`dotnet build VisualWeb.slnx` endet mit 0 Warnungen/Fehlern;
+`dotnet test VisualWeb.slnx --no-build` besteht mit 16.442 Tests.
+Formatverifikation und `git diff --check` bestehen.
+
+**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.

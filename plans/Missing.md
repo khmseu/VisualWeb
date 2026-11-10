@@ -1431,6 +1431,15 @@ committed as `98c6fa8` and pushed to `main`. Linux development, Windows
 confinement x64/arm64 and CodeQL all pass. Pass 9 is complete; one requested
 increment remains.
 
+Pass 10 allows distinct combinations of `underline`, `overline` and
+`line-through` in `text-decoration-line` and the `text-decoration` shorthand.
+Duplicate lines and `none` combined with a visible line remain invalid;
+unsupported values such as `blink` remain diagnostics. Each originating line
+uses its own existing command and shares normal paint-budget preflight. CSS
+(1,291), Paint (89), the zero-warning solution build, all 16,442 solution
+tests, format verification and `git diff --check` pass locally. Commit, push
+and CI remain pending.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

@@ -539,10 +539,24 @@ public static class DisplayListBuilder
                 if (++depth > limits.MaxDepth) { throw new PaintLimitException("Text decoration ancestry limit exceeded."); }
                 var style = styles.Styles.TryGetValue(element, out var computed) ? computed
                     : throw new InvalidOperationException("Paint styles are incomplete or stale.");
-                if (style["text-decoration-line"] is CssKeyword { Value: "underline" or "overline" or "line-through" } line)
-                { yield return (style, line.Value); }
+                foreach (var line in DecorationLines(style["text-decoration-line"]))
+                { yield return (style, line); }
                 current = element.ParentNode;
             }
+        }
+    }
+
+    private static IEnumerable<string> DecorationLines(CssValue value)
+    {
+        if (value is CssKeyword { Value: "underline" or "overline" or "line-through" } line)
+        {
+            yield return line.Value;
+        }
+        else if (value is CssTextDecorationLines lines)
+        {
+            if (lines.Underline) { yield return "underline"; }
+            if (lines.Overline) { yield return "overline"; }
+            if (lines.LineThrough) { yield return "line-through"; }
         }
     }
 }

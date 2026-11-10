@@ -122,11 +122,13 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 1em vertical margins, monospace family and preserved whitespace as `pre`.
 They use the normal cascade and require an explicitly configured face.
 `text-decoration-line` accepts `none`, `underline`, `overline` and `line-through`;
-non-inherited `text-decoration-thickness` accepts `auto`, `from-font`,
+`text-decoration-line` accepts `none` alone or distinct combinations of
+`underline`, `overline` and `line-through`; other line values are unsupported.
+The non-inherited `text-decoration-thickness` accepts `auto`, `from-font`,
 `thin`/`medium`/`thick` and nonnegative supported lengths/percentages;
 non-inherited `text-decoration-style` accepts `solid` and `double`, with
-`solid` as its initial value. The `text-decoration` shorthand accepts at most
-one supported line, thickness, style and color component each in any order,
+`solid` as its initial value. The `text-decoration` shorthand accepts a
+supported line set, thickness, style and color component each in any order,
 resetting omitted components to their initial values. CSS-wide keywords use
 the normal cascade; `revert-layer` remains unsupported. `none` neither adds nor inhibits
 ancestor decoration. Paint uses the decorating ancestor's computed

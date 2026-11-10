@@ -173,7 +173,9 @@ remain unsupported.
   underline thickness, with line-through falling back to its strikeout metric.
   Explicit zero emits no decoration. Custom thickness is carried in the same
   single command and preflighted before framebuffer allocation. All three lines
-  support only `solid` and `double`. Decorations do not cover atomic inline
+  may be combined on one decorating element and are emitted as separate,
+  command-budgeted paint operations in underline/overline/line-through order.
+  They support only `solid` and `double`. Decorations do not cover atomic inline
   content or support skip-ink or dotted/dashed/wavy styles.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS

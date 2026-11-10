@@ -395,8 +395,10 @@ non-normal variants/widths, oblique angles and system-font keywords remain
 unsupported whole-declaration diagnostics. Existing font units, family lists,
 CSS-wide keywords and relative weight/size computation are reused. The engine
 does not add other font longhands or expand its exact native face policy.
-The finite `text-decoration-line` accepts `none`, `underline`, `overline` and
-`line-through` plus the supported CSS-wide keywords. Overlines use the
+The finite `text-decoration-line` accepts `none` alone or any distinct
+combination of `underline`, `overline` and `line-through`, plus the supported
+CSS-wide keywords. The `text-decoration` shorthand accepts that line set with
+at most one thickness, style and color component each. Overlines use the
 registered font's cap height and underline thickness as the bounded UA metric
 policy; exact positions and thicknesses are UA-defined by the source
 specification. The non-inherited `text-decoration-thickness` accepts `auto`,
@@ -412,7 +414,8 @@ keywords. The `text-decoration` shorthand accepts at most one supported line,
 thickness, style and color component each, in any order; omitted components
 reset to `none`, `auto`, `solid` and `currentColor`. CSS-wide keywords apply
 to all four longhands.
-`revert-layer` remains unsupported.
+`revert-layer` remains unsupported. Duplicate lines and `none` combined with a
+visible line are invalid.
 `none` does not inhibit a decoration originating on an ancestor. `double`
 paints two solid bands, each one third of the registered font metric thickness,
 separated by a one-third gap. Style and color come from the element that

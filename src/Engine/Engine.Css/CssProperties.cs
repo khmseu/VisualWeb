@@ -9,6 +9,10 @@ namespace VisualWeb.Engine.Css;
 public abstract record CssValue;
 public sealed record CssKeyword(string Value) : CssValue;
 public sealed record CssLength(double Value, string Unit) : CssValue;
+/// <summary>A bounded combination of simultaneous text decoration lines.</summary>
+/// <remarks>Spec: css-text-decoration;
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">text-decoration-line</see>.</remarks>
+public sealed record CssTextDecorationLines(bool Underline, bool Overline, bool LineThrough) : CssValue;
 /// <summary>Computed horizontal and vertical separated-border distances.</summary>
 /// <remarks>Spec: css2-tables; <see href="https://www.w3.org/TR/CSS22/tables.html#propdef-border-spacing">border-spacing</see>.</remarks>
 public sealed record CssBorderSpacing(CssLength Horizontal, CssLength Vertical) : CssValue;
@@ -239,18 +243,21 @@ internal static class CssProperties
                     continue;
                 }
                 var components = Components(value);
-                var valid = components.Count is >= 1 and <= 4;
-                CssValue? line = null, thickness = null, style = null, color = null;
+                var valid = components.Count is >= 1 and <= 6;
+                var lineTokens = new List<CssToken>();
+                CssValue? thickness = null, style = null, color = null;
                 foreach (var component in components)
                 {
-                    if (line is null && Parse("text-decoration-line", component) is { } parsedLine) { line = parsedLine; }
+                    if (Parse("text-decoration-line", component) is not null) { lineTokens.AddRange(component); }
                     else if (thickness is null && Parse("text-decoration-thickness", component) is { } parsedThickness) { thickness = parsedThickness; }
                     else if (style is null && Parse("text-decoration-style", component) is { } parsedStyle) { style = parsedStyle; }
                     else if (color is null && Parse("text-decoration-color", component) is { } parsedColor) { color = parsedColor; }
                     else { valid = false; }
                 }
-                if (!valid) { Invalid(); continue; }
-                Add("text-decoration-line", line ?? Registry["text-decoration-line"].Initial);
+                var line = lineTokens.Count == 0 ? Registry["text-decoration-line"].Initial
+                    : Parse("text-decoration-line", lineTokens);
+                if (!valid || line is null) { Invalid(); continue; }
+                Add("text-decoration-line", line);
                 Add("text-decoration-thickness", thickness ?? Registry["text-decoration-thickness"].Initial);
                 Add("text-decoration-style", style ?? Registry["text-decoration-style"].Initial);
                 Add("text-decoration-color", color ?? Registry["text-decoration-color"].Initial);
@@ -282,6 +289,7 @@ internal static class CssProperties
         if (tokens.Count == 0) { return null; }
         if (name is "color" or "background-color" || name.EndsWith("-color", StringComparison.Ordinal)) { return Color(tokens); }
         if (name == "font-family") { return ParseFamilies(input); }
+        if (name == "text-decoration-line") { return ParseDecorationLines(tokens); }
         if (name == "border-spacing")
         {
             if (tokens.Count is < 1 or > 2) { return null; }
@@ -310,7 +318,6 @@ internal static class CssProperties
         if (name == "box-sizing") { return Keyword(keyword, "content-box", "border-box"); }
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
-        if (name == "text-decoration-line") { return Keyword(keyword, "none", "underline", "overline", "line-through"); }
         if (name == "text-decoration-thickness")
         {
             if (keyword is "auto" or "from-font") { return new CssKeyword(keyword); }
@@ -346,6 +353,35 @@ internal static class CssProperties
         if (keyword == "none" && name is "max-width" or "max-height") { return new CssKeyword(keyword); }
         var length = Length(token, !borderWidth);
         return length is not null && (length.Value >= 0 || name.StartsWith("margin-", StringComparison.Ordinal)) ? length : null;
+    }
+
+    private static CssValue? ParseDecorationLines(IReadOnlyList<CssToken> tokens)
+    {
+        var underline = false;
+        var overline = false;
+        var lineThrough = false;
+        foreach (var token in tokens)
+        {
+            if (token.Kind != CssTokenKind.Ident) { return null; }
+            switch (CssText.Lower(token.Value))
+            {
+                case "none" when tokens.Count == 1: return new CssKeyword("none");
+                case "underline" when !underline: underline = true; break;
+                case "overline" when !overline: overline = true; break;
+                case "line-through" when !lineThrough: lineThrough = true; break;
+                default: return null;
+            }
+        }
+
+        var count = (underline ? 1 : 0) + (overline ? 1 : 0) + (lineThrough ? 1 : 0);
+        return count switch
+        {
+            1 when underline => new CssKeyword("underline"),
+            1 when overline => new CssKeyword("overline"),
+            1 => new CssKeyword("line-through"),
+            >= 2 => new CssTextDecorationLines(underline, overline, lineThrough),
+            _ => null
+        };
     }
 
     private static bool IsListStyleType(string keyword) =>

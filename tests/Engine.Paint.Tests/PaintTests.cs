@@ -192,6 +192,24 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void CombinedDecorationLinesPaintForTheirOriginatingElement()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{text-decoration:overline underline line-through red 2px double}"
+            + "span{text-decoration-line:none}";
+        var list = Page(html, css);
+        var underline = Assert.Single(list.Commands.OfType<DrawUnderline>());
+        var overline = Assert.Single(list.Commands.OfType<DrawOverline>());
+        var lineThrough = Assert.Single(list.Commands.OfType<DrawLineThrough>());
+
+        Assert.All(new[] { underline.Color, overline.Color, lineThrough.Color }, color => Assert.Equal(Red, color));
+        Assert.All(new[] { underline.Thickness, overline.Thickness, lineThrough.Thickness },
+            thickness => Assert.Equal(2, thickness));
+        Assert.All(new[] { underline.IsDouble, overline.IsDouble, lineThrough.IsDouble }, Assert.True);
+        Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 3 }));
+    }
+
+    [Fact]
     public void FromFontDecorationThicknessRetainsItsModeInTheDisplayList()
     {
         var underline = Assert.Single(Page("<p>x</p>", "p{text-decoration:underline from-font}")

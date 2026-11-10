@@ -71,6 +71,21 @@ public sealed class NoTextDecorationTests
                 ? "overline" : "underline"), style["text-decoration-line"]);
     }
 
+    [Fact]
+    public void TextDecorationLineAndShorthandAcceptDistinctLineCombinations()
+    {
+        var (lineResult, lineStyle) = Compute("text-decoration-line:line-through underline overline");
+        var (shorthandResult, shorthand) = Compute("text-decoration:red 2px double overline underline");
+
+        Assert.Empty(lineResult.Diagnostics);
+        Assert.Empty(shorthandResult.Diagnostics);
+        Assert.Equal(new CssTextDecorationLines(true, true, true), lineStyle["text-decoration-line"]);
+        Assert.Equal(new CssTextDecorationLines(true, true, false), shorthand["text-decoration-line"]);
+        Assert.Equal(new CssLength(2, "px"), shorthand["text-decoration-thickness"]);
+        Assert.Equal(new CssKeyword("double"), shorthand["text-decoration-style"]);
+        Assert.Equal(new CssColor(255, 0, 0), shorthand["text-decoration-color"]);
+    }
+
     [Theory]
     [InlineData("text-decoration-style:solid", "solid", "underline")]
     [InlineData("text-decoration-style:DOUBLE", "double", "underline")]
@@ -305,6 +320,9 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration:blink")]
     [InlineData("text-decoration:none underline")]
     [InlineData("text-decoration:none none")]
+    [InlineData("text-decoration:underline overline underline")]
+    [InlineData("text-decoration-line:underline underline")]
+    [InlineData("text-decoration-line:none overline")]
     [InlineData("text-decoration:red blue")]
     [InlineData("text-decoration:none red blue")]
     [InlineData("text-decoration:underline double solid")]
