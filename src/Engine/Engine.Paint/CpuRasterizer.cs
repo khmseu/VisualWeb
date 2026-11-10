@@ -145,21 +145,13 @@ public static class CpuRasterizer
                     ArgumentException.ThrowIfNullOrWhiteSpace(underline.FontIdentity);
                     ArgumentNullException.ThrowIfNull(underline.Color);
                     var underlineBounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
-                    Rect(underlineBounds);
-                    var localUnderline = Rect(new(0, 0, underlineBounds.Width, underlineBounds.Height));
-                    if ((underlineBounds.Width > 0 && localUnderline.Left >= localUnderline.Right)
-                        || localUnderline.Top >= localUnderline.Bottom)
-                    { throw new PaintLimitException("Underline geometry exceeds Skia's numeric precision."); }
+                    ValidateDecorationBounds(underlineBounds.First, underlineBounds.Second, "Underline");
                     break;
                 case DrawLineThrough lineThrough:
                     ArgumentException.ThrowIfNullOrWhiteSpace(lineThrough.FontIdentity);
                     ArgumentNullException.ThrowIfNull(lineThrough.Color);
                     var lineThroughBounds = LineThroughBounds(lineThrough, fonts.Resolve(lineThrough.FontIdentity));
-                    Rect(lineThroughBounds);
-                    var localLineThrough = Rect(new(0, 0, lineThroughBounds.Width, lineThroughBounds.Height));
-                    if ((lineThroughBounds.Width > 0 && localLineThrough.Left >= localLineThrough.Right)
-                        || localLineThrough.Top >= localLineThrough.Bottom)
-                    { throw new PaintLimitException("Line-through geometry exceeds Skia's numeric precision."); }
+                    ValidateDecorationBounds(lineThroughBounds.First, lineThroughBounds.Second, "Line-through");
                     break;
                 case FillEllipse ellipse:
                     ArgumentNullException.ThrowIfNull(ellipse.Color);
@@ -227,34 +219,12 @@ public static class CpuRasterizer
             else if (command is DrawUnderline underline)
             {
                 var bounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
-                canvas.Save();
-                try
-                {
-                    canvas.ResetMatrix();
-                    canvas.Scale(deviceScale);
-                    canvas.Translate(RelativeCoordinate(bounds.X - scrollX),
-                        RelativeCoordinate(bounds.Y - activeScrollY));
-                    paint.Color = Color(underline.Color);
-                    paint.IsAntialias = true;
-                    canvas.DrawRect(Rect(new(0, 0, bounds.Width, bounds.Height)), paint);
-                }
-                finally { canvas.Restore(); }
+                DrawDecoration(canvas, paint, bounds, underline.Color, deviceScale, scrollX, activeScrollY);
             }
             else if (command is DrawLineThrough lineThrough)
             {
                 var bounds = LineThroughBounds(lineThrough, fonts.Resolve(lineThrough.FontIdentity));
-                canvas.Save();
-                try
-                {
-                    canvas.ResetMatrix();
-                    canvas.Scale(deviceScale);
-                    canvas.Translate(RelativeCoordinate(bounds.X - scrollX),
-                        RelativeCoordinate(bounds.Y - activeScrollY));
-                    paint.Color = Color(lineThrough.Color);
-                    paint.IsAntialias = true;
-                    canvas.DrawRect(Rect(new(0, 0, bounds.Width, bounds.Height)), paint);
-                }
-                finally { canvas.Restore(); }
+                DrawDecoration(canvas, paint, bounds, lineThrough.Color, deviceScale, scrollX, activeScrollY);
             }
             else if (command is FillEllipse ellipse)
             {
@@ -334,7 +304,7 @@ public static class CpuRasterizer
         return new(pixels, size, stride);
     }
     private static SKColor Color(CssColor color) => new(color.Red, color.Green, color.Blue, color.Alpha);
-    private static LayoutRect UnderlineBounds(DrawUnderline underline, SKTypeface typeface)
+    private static (LayoutRect First, LayoutRect? Second) UnderlineBounds(DrawUnderline underline, SKTypeface typeface)
     {
         if (!double.IsFinite(underline.FontSize) || underline.FontSize <= 0 || underline.FontSize > 4096)
         { throw new UnsupportedPaintException("Underline requires a positive supported font size."); }
@@ -345,9 +315,9 @@ public static class CpuRasterizer
             || metrics.UnderlineThickness is not { } thickness
             || !float.IsFinite(position) || !float.IsFinite(thickness) || thickness <= 0)
         { throw new UnsupportedPaintException("The registered font lacks usable underline metrics."); }
-        return new(underline.X, underline.Baseline + position, underline.Width, thickness);
+        return DecorationBounds(new(underline.X, underline.Baseline + position, underline.Width, thickness), underline.IsDouble);
     }
-    private static LayoutRect LineThroughBounds(DrawLineThrough lineThrough, SKTypeface typeface)
+    private static (LayoutRect First, LayoutRect? Second) LineThroughBounds(DrawLineThrough lineThrough, SKTypeface typeface)
     {
         if (!double.IsFinite(lineThrough.FontSize) || lineThrough.FontSize <= 0 || lineThrough.FontSize > 4096)
         { throw new UnsupportedPaintException("Line-through requires a positive supported font size."); }
@@ -358,7 +328,53 @@ public static class CpuRasterizer
             || metrics.StrikeoutThickness is not { } thickness
             || !float.IsFinite(position) || !float.IsFinite(thickness) || thickness <= 0)
         { throw new UnsupportedPaintException("The registered font lacks usable strikeout metrics."); }
-        return new(lineThrough.X, lineThrough.Baseline + position - thickness, lineThrough.Width, thickness);
+        return DecorationBounds(new(lineThrough.X, lineThrough.Baseline + position - thickness,
+            lineThrough.Width, thickness), lineThrough.IsDouble);
+    }
+    private static (LayoutRect First, LayoutRect? Second) DecorationBounds(LayoutRect bounds, bool isDouble)
+    {
+        if (!isDouble) { return (bounds, null); }
+        var lineHeight = bounds.Height / 3;
+        if (!double.IsFinite(lineHeight) || lineHeight <= 0)
+        { throw new PaintLimitException("Double text decoration cannot be represented."); }
+        return (
+            new(bounds.X, bounds.Y, bounds.Width, lineHeight),
+            new(bounds.X, bounds.Y + (lineHeight * 2), bounds.Width, lineHeight));
+    }
+    private static void ValidateDecorationBounds(LayoutRect first, LayoutRect? second, string kind)
+    {
+        Validate(first);
+        if (second is { } secondBounds) { Validate(secondBounds); }
+
+        void Validate(LayoutRect bounds)
+        {
+            var absolute = Rect(bounds);
+            var local = Rect(new(0, 0, bounds.Width, bounds.Height));
+            if ((bounds.Width > 0 && (local.Left >= local.Right || absolute.Left >= absolute.Right))
+                || local.Top >= local.Bottom || absolute.Top >= absolute.Bottom)
+            { throw new PaintLimitException($"{kind} geometry exceeds Skia's numeric precision."); }
+        }
+    }
+    private static void DrawDecoration(SKCanvas canvas, SKPaint paint,
+        (LayoutRect First, LayoutRect? Second) bounds, CssColor color, float scale, double scrollX, double scrollY)
+    {
+        Draw(bounds.First);
+        if (bounds.Second is { } second) { Draw(second); }
+
+        void Draw(LayoutRect line)
+        {
+            canvas.Save();
+            try
+            {
+                canvas.ResetMatrix();
+                canvas.Scale(scale);
+                canvas.Translate(RelativeCoordinate(line.X - scrollX), RelativeCoordinate(line.Y - scrollY));
+                paint.Color = Color(color);
+                paint.IsAntialias = true;
+                canvas.DrawRect(Rect(new(0, 0, line.Width, line.Height)), paint);
+            }
+            finally { canvas.Restore(); }
+        }
     }
     private static float Float(double value)
     {

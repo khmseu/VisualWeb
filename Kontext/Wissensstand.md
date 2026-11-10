@@ -85,8 +85,9 @@ abgeschlossen; fuenf Inkremente verbleiben
 Pass 6 ergaenzt die nicht-vererbte CSS-Eigenschaft
 `text-decoration-color` fuer Underline und Line-through. Sie folgt der
 Farbsyntax/Kaskade, startet mit `currentColor` und bleibt am Element verankert,
-das die Dekoration setzt; Nachfahrenfarben aendern sie nicht. Der
-line-only-`text-decoration`-Shorthand bleibt begrenzt. CSS (1.247), Paint (79),
+das die Dekoration setzt; Nachfahrenfarben aendern sie nicht. Zu diesem
+Zeitpunkt war der Shorthand noch line-only; Pass 7 erweitert Stil und Farbe.
+CSS (1.247), Paint (79),
 Solution-Build (0 Warnungen/Fehler), Formatverifikation und 16.388 serielle
 Solution-Tests bestehen lokal. Commit `b85319f` ist gepusht; Linux, Windows
 confinement x64/arm64 und CodeQL bestehen (Runs
@@ -95,6 +96,12 @@ confinement x64/arm64 und CodeQL bestehen (Runs
 [42763658072](https://github.com/khmseu/VisualWeb/actions/runs/42763658072)).
 Pass 6 ist abgeschlossen; vier Inkremente verbleiben
 ([KP-286](./Kontextprotokoll.md#kp-286---pass-6-css-text-decoration-color)).
+Pass 7 ergaenzt `text-decoration-style` mit `solid` und `double` sowie die
+begrenzte Zeilen-/Stil-/Farbkomposition des `text-decoration`-Shorthands.
+CSS (1.269), Paint (82), Solution-Build, Formatverifikation und 16.413
+serielle Solution-Tests bestehen lokal; Feature-Commit, Push und CI stehen
+noch aus. Der Zehnerauftrag hat bis zum Abschluss vier verbleibende Inkremente
+([KP-287](./Kontextprotokoll.md#kp-287---pass-7-css-text-decoration-style)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

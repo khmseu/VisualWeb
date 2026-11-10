@@ -31,14 +31,16 @@ public sealed record PaintOptions
 
 public abstract record PaintCommand;
 public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCommand;
-/// <summary>A bounded underline using the registered font's OpenType underline metrics.</summary>
-/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">underline</see>.</remarks>
+/// <summary>A bounded solid or double underline using the registered font's OpenType metrics.</summary>
+/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">underline</see> and
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
 public sealed record DrawUnderline(string FontIdentity, double FontSize, CssColor Color,
-    double X, double Baseline, double Width) : PaintCommand;
-/// <summary>A bounded line-through using the registered font's OpenType strikeout metrics.</summary>
-/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line-through</see>.</remarks>
+    double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
+/// <summary>A bounded solid or double line-through using the registered font's OpenType metrics.</summary>
+/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line-through</see> and
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
 public sealed record DrawLineThrough(string FontIdentity, double FontSize, CssColor Color,
-    double X, double Baseline, double Width) : PaintCommand;
+    double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
 /// <summary>A bounded solid ellipse used by disc list markers.</summary>
 /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.</remarks>
 public sealed record FillEllipse(LayoutRect Bounds, CssColor Color) : PaintCommand;
@@ -459,15 +461,21 @@ public static class DisplayListBuilder
                             {
                                 var color = decoration["text-decoration-color"] as CssColor
                                     ?? throw new UnsupportedPaintException("Unresolved text decoration color.");
+                                var isDouble = decoration["text-decoration-style"] switch
+                                {
+                                    CssKeyword { Value: "solid" } => false,
+                                    CssKeyword { Value: "double" } => true,
+                                    _ => throw new UnsupportedPaintException("Unsupported text decoration style.")
+                                };
                                 if (decorationLine == "underline")
                                 {
                                     Add(new DrawUnderline(fragment.Run.FontIdentity, fragment.Run.FontSize,
-                                        color, fragment.X, fragment.Baseline, fragment.Run.Width));
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
                                 }
                                 else
                                 {
                                     Add(new DrawLineThrough(fragment.Run.FontIdentity, fragment.Run.FontSize,
-                                        color, fragment.X, fragment.Baseline, fragment.Run.Width));
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
                                 }
                             }
                         }

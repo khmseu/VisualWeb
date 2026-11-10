@@ -31,6 +31,19 @@ public sealed class PaintTests
         var at = y * frame.Stride + x * 4;
         return (pixels[at + 2], pixels[at + 1], pixels[at], pixels[at + 3]);
     }
+    private static int RedBandCount(RasterFrame frame, int x)
+    {
+        var bands = 0;
+        var previous = -2;
+        for (var y = 0; y < frame.Size.Height; y++)
+        {
+            var pixel = Pixel(frame, x, y);
+            if (pixel.R <= 200 || pixel.G >= 80 || pixel.B >= 80) { continue; }
+            if (y != previous + 1) { bands++; }
+            previous = y;
+        }
+        return bands;
+    }
 
     [Fact]
     public void UnorderedListDiscUsesCurrentColorAndBoundedEllipseCommand()
@@ -131,6 +144,7 @@ public sealed class PaintTests
 
         Assert.Equal(Red, glyph.Color);
         Assert.Equal(Blue, underline.Color);
+        Assert.False(underline.IsDouble);
         Assert.Equal(glyph.FontIdentity, underline.FontIdentity);
         Assert.Equal(glyph.FontSize, underline.FontSize);
         Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 1 }));
@@ -147,6 +161,18 @@ public sealed class PaintTests
 
         Assert.Equal(new CssColor(0, 128, 0), glyph.Color);
         Assert.Equal(Red, underline.Color);
+    }
+
+    [Fact]
+    public void DoubleUnderlineUsesTheOriginatingStyleAcrossDescendants()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:underline;text-decoration-color:red;text-decoration-style:double}"
+            + "span{color:green;text-decoration-style:solid}";
+        var underline = Assert.Single(Page(html, css).Commands.OfType<DrawUnderline>());
+
+        Assert.Equal(Red, underline.Color);
+        Assert.True(underline.IsDouble);
     }
 
     [Fact]
@@ -178,6 +204,7 @@ public sealed class PaintTests
 
         Assert.Equal(Red, glyph.Color);
         Assert.Equal(Blue, lineThrough.Color);
+        Assert.False(lineThrough.IsDouble);
         Assert.Equal(glyph.FontIdentity, lineThrough.FontIdentity);
         Assert.Equal(glyph.FontSize, lineThrough.FontSize);
         Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 1 }));
@@ -194,6 +221,39 @@ public sealed class PaintTests
 
         Assert.Equal(new CssColor(0, 128, 0), glyph.Color);
         Assert.Equal(Red, lineThrough.Color);
+    }
+
+    [Fact]
+    public void DoubleLineThroughUsesTheOriginatingStyleAcrossDescendants()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:line-through;text-decoration-style:double}"
+            + "span{color:green;text-decoration-style:solid}";
+        var lineThrough = Assert.Single(Page(html, css).Commands.OfType<DrawLineThrough>());
+
+        Assert.Equal(Blue, lineThrough.Color);
+        Assert.True(lineThrough.IsDouble);
+    }
+
+    [Fact]
+    public void DoubleDecorationsRasterizeTwoBandsWithASpaceBetween()
+    {
+        using var font = new TextFont(FontPath);
+        using var fonts = new PaintFontRegistry();
+        fonts.Register(font);
+        var underline = new DrawUnderline(font.Identity, 20, Red, 2, 20, 20, IsDouble: true);
+        var lineThrough = new DrawLineThrough(font.Identity, 20, Red, 2, 20, 20, IsDouble: true);
+
+        var underlineFrame = CpuRasterizer.Render(new(40, 40, [underline]), fonts,
+            options: new() { MaxCommands = 1 }, scale: 8, cancellationToken: Cancellation);
+        var lineThroughFrame = CpuRasterizer.Render(new(40, 40, [lineThrough]), fonts, scale: 8,
+            cancellationToken: Cancellation);
+
+        Assert.Equal(2, RedBandCount(underlineFrame, 80));
+        Assert.Equal(2, RedBandCount(lineThroughFrame, 80));
+        Assert.Throws<PaintLimitException>(() => CpuRasterizer.Render(
+            new(40, 40, [underline, lineThrough]), fonts, options: new() { MaxCommands = 1 },
+            scale: 8, cancellationToken: Cancellation));
     }
 
     [Fact]

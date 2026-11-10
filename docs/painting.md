@@ -154,7 +154,9 @@ remain unsupported.
   qualifying text fragment. It resolves the exact registered shaping font and
   uses that face's OpenType underline position/thickness plus the decorating
   ancestor's computed `text-decoration-color` (defaulting to its computed
-  `color`); no fallback metric is invented. Raster preflight
+  `color`); no fallback metric is invented. `text-decoration-style:double`
+  divides the metric thickness into two solid bands and an equal gap; both
+  bands remain within one command and the metric envelope. Raster preflight
   validates the font, metric and finite geometry before framebuffer allocation.
   Ancestor decoration continues through in-flow text even when a descendant
   computes `text-decoration-line:none`. The bounded CSS `line-through` uses a
@@ -162,8 +164,10 @@ remain unsupported.
   position/thickness metrics with the decorating ancestor's computed
   `text-decoration-color`; missing
   metrics fail before framebuffer allocation. It likewise propagates through
-  in-flow text despite descendant `none`. Neither decoration covers atomic
-  inline content or supports skip-ink, other decoration lines, style, or
+  in-flow text despite descendant `none`. Both decoration types use the same
+  originating-element style, including across descendants; only `solid` and
+  `double` are supported. Neither covers atomic inline content or supports
+  skip-ink, other decoration lines, dotted/dashed/wavy styles, or custom
   thickness values.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS
@@ -175,7 +179,7 @@ remain unsupported.
   from the native bitmap's actual stride.
 
 Images, gradients, advanced/differently colored borders, border radii, overlines,
-decoration styles/thicknesses and skip-ink,
+dotted/dashed/wavy decoration styles, custom decoration thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
 diagnostics and prevents rendering; unsupported visible border styles throw

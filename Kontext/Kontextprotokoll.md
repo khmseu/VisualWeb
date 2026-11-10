@@ -7388,3 +7388,41 @@ Windows confinement x64/arm64 und CodeQL bestehen (Runs
 
 **Status:** Pass 6 ist abgeschlossen; vier Inkremente des Zehnerauftrags
 verbleiben.
+
+### KP-287 - Pass 7: CSS-text-decoration-style
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung; Commit, Push und
+  Remote-CI stehen aus.
+- Quelle: vom Nutzer eingebrachte Fortsetzungszusammenfassung; Folge auf
+  KP-286; CSS guide, Paint guide und lokale Quelle
+  `specs/cache/css-text-decoration.html` (`#text-decoration-style-property`,
+  `#text-decoration-property`); Manifestcheck 2026-10-31.
+- Status der Auswahl: Die Fortsetzungszusammenfassung waehlt `double` als
+  naechsten CSS-Textdekorationsstil und begrenzt die Arbeit auf den bestehenden
+  statischen Paintpfad.
+
+**Belegte Grundlage:** Der lokale Standard definiert `text-decoration-style`
+als nicht vererbt mit Initialwert `solid`; `double` ist ein definierter Wert.
+Der Shorthand setzt Zeile, Stil und Farbe gemeinsam; nicht spezifizierte
+Komponenten nehmen ihren Initialwert an. Andere Stile bleiben ausserhalb des
+unterstuetzten Subsets.
+
+**Umsetzung:** Das CSS-Longhand registriert `solid`/`double`. `text-decoration`
+expandiert die unterstuetzten Zeilen-, Stil- und Farbwerte atomar in beliebiger
+Reihenfolge; ausgelassene Werte werden auf `none`, `solid` und `currentColor`
+zurueckgesetzt, und CSS-weite Werte gelten fuer alle drei Longhands. Paint
+uebertraegt den Stil des dekorierenden Elements in Underline- und Line-through-
+Kommandos. Fuer `double` teilt der Rasterizer die Fontmetriken in zwei gleiche
+Baender und eine gleich grosse Luecke; beide Baender werden vor der
+Framebuffer-Allokation geprueft und bleiben innerhalb eines Display-Kommandos.
+
+**Validierung:** CSS.Tests (1.269), Engine.Paint.Tests (82), der
+Solution-Build (0 Warnungen/Fehler), Formatverifikation und alle 16.413
+seriellen Solution-Tests bestehen lokal. Tests decken Cascade/Inheritance,
+CSS-weite Werte, Shorthand-Reihenfolge und Resets, exakte Assignments,
+Ursprungsstil ueber Nachfahren, getrennte Pixelbaender und das Paint-
+Kommandobudget ab.
+
+**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.

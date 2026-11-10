@@ -121,15 +121,18 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 (ID `html`) give `listing`, `xmp` and `plaintext` the same block display,
 1em vertical margins, monospace family and preserved whitespace as `pre`.
 They use the normal cascade and require an explicitly configured face.
-`text-decoration` and `text-decoration-line` accept `none`, `underline`,
-`line-through` and
-the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`),
-with a non-inherited line value and the normal cascade. `revert-layer` remains
-unsupported. `none` neither adds nor inhibits ancestor decoration. Paint uses
-the decorating ancestor's computed `text-decoration-color`, which defaults to
-that element's computed color and is not inherited, plus the registered shaping
-font's OpenType underline metrics. The `text-decoration` shorthand remains
-limited to the supported line-only grammar. The HTML
+`text-decoration-line` accepts `none`, `underline` and `line-through`;
+non-inherited `text-decoration-style` accepts `solid` and `double`, with
+`solid` as its initial value. The `text-decoration` shorthand accepts at most
+one supported line, style and color component each in any order, resetting
+omitted components to their initial values. CSS-wide keywords use the normal
+cascade; `revert-layer` remains unsupported. `none` neither adds nor inhibits
+ancestor decoration. Paint uses the decorating ancestor's computed
+style and `text-decoration-color`, which defaults to that element's computed
+color and is not inherited, plus the registered shaping font's OpenType
+metrics. Double decorations paint two equal solid bands and an equal gap within
+the metric thickness. Dotted/dashed/wavy styles, other lines and custom
+thickness remain unsupported. The HTML
 [phrasing-content UA rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) give `ins` and `u` the underline default. Line-through uses
 the exact registered font's OpenType strikeout metrics, and HTML `del`, `s`

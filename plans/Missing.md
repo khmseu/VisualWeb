@@ -1395,6 +1395,15 @@ Linux (run 42763658777), Windows confinement x64/arm64 (run 42763659027) and
 CodeQL (run 42763658072) pass. Pass 6 is complete; four requested increments
 remain.
 
+Pass 7 adds non-inherited `text-decoration-style` with initial `solid` and
+bounded `double` rendering for underline and line-through. The shorthand now
+accepts at most one supported line, style and color component each in any
+order, resetting omitted values to `none`, `solid` and `currentColor`. Other
+decoration styles remain unsupported. CSS (1,269), Paint (82), the
+zero-warning solution build, format verification and all 16,413 serial solution
+tests pass locally. Commit, push and remote CI are pending; Pass 7 is not yet
+counted complete.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.
