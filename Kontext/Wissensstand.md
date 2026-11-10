@@ -65,6 +65,12 @@ und [42737896350](https://github.com/khmseu/VisualWeb/actions/runs/42737896350))
 `dotted` und `double` bleiben unsupported; Pass 3 ist abgeschlossen, sieben
 Inkremente verbleiben
 ([KP-283](./Kontextprotokoll.md#kp-283---pass-3-css-groove--und-ridge-rahmen)).
+Pass 4 ergaenzt CSS-`double`-Rahmen als zwei Linien von je einem Drittel der
+Rahmenbreite, getrennt durch eine transparente Luecke von einem Drittel.
+Paint (75), Solution-Build (0 Warnungen/Fehler), Formatverifikation und
+16.383 serielle Solution-Tests bestehen lokal; `dotted` bleibt unsupported.
+Commit/Push/Remote-CI fuer Pass 4 stehen noch aus
+([KP-284](./Kontextprotokoll.md#kp-284---pass-4-css-double-rahmen)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

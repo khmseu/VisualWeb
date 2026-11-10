@@ -132,7 +132,10 @@ remain unsupported.
   ridge borders split each side into adjacent outer and inner bands; groove
   applies inset shading to the outer band and outset shading to the inner, while
   ridge reverses them. Every band consumes the display-command budget. Visible
-  sides must have the same color; differing colors need deferred corner joins.
+  Double borders use two solid bands, each one third of the border width, with
+  the remaining third transparent between them. Each band consumes the
+  display-command budget. Visible sides must have the same color; differing
+  colors need deferred corner joins.
   Inset borders darken top/left channels by half and lighten bottom/right
   channels halfway toward 255, preserving alpha; this deterministic shade
   choice supplies the 3D effect without claiming exact CSS-specified shades.
@@ -167,8 +170,8 @@ remain unsupported.
   with positive physical dimensions and stride `width * 4`, copied row-by-row
   from the native bitmap's actual stride.
 
-Images, gradients, dotted/double borders, advanced/differently colored borders, border radius,
-overlines, decoration styles/colors/thicknesses and skip-ink,
+Images, gradients, dotted borders, advanced/differently colored borders,
+border radii, overlines, decoration styles/colors/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
 diagnostics and prevents rendering; unsupported visible border styles throw
@@ -226,8 +229,9 @@ Linux/Windows x64/arm64 assets do not certify execution on untested targets.
 
 Read cached IDs `css2-paint` (CSS 2.2 Appendix E normal-flow painting),
 `css-backgrounds` (line-style definitions in [§3.2](https://drafts.csswg.org/css-backgrounds-3/#valdef-line-style-groove)
-and canvas/body background propagation), and `skia-canvas` (official native
-canvas API), alongside the text/layout references in the
+including `double`'s line-and-gap width constraint, and canvas/body background
+propagation), and `skia-canvas` (official native canvas API), alongside the
+text/layout references in the
 [registry](../specs/manifest.json). Documentation refresh is independent of tests.
 
 [Engine.Paint.Tests](../tests/Engine.Paint.Tests/) checks exact command order,

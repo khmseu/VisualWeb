@@ -1369,6 +1369,12 @@ format verification and all 16,382 serial solution tests pass locally. Commit
 [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/42737896350)).
 Pass 3 is complete; seven increments remain in this request.
 
+Pass 4 adds CSS `double` borders as two solid bands, each one third of the
+border width, separated by a transparent one-third gap. Every band consumes
+the existing display-command budget; `dotted` remains unsupported. Paint (75),
+the zero-warning solution build, format verification and all 16,383 serial
+solution tests pass locally.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

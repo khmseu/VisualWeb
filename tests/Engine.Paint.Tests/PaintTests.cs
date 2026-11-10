@@ -623,6 +623,46 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void DoubleBordersUseTwoCommandBoundedLinesWithTransparentGaps()
+    {
+        const string html = "<div></div>";
+        const string css = "div{width:10px;height:10px;padding:2px;border:3px double red;background-color:blue}";
+        var list = Page(html, css);
+        PaintCommand[] expected =
+        [
+            new FillRectangle(new(0, 0, 20, 20), Blue),
+            new FillRectangle(new(0, 0, 20, 1), Red),
+            new FillRectangle(new(0, 2, 20, 1), Red),
+            new FillRectangle(new(0, 19, 20, 1), Red),
+            new FillRectangle(new(0, 17, 20, 1), Red),
+            new FillRectangle(new(0, 3, 1, 14), Red),
+            new FillRectangle(new(2, 3, 1, 14), Red),
+            new FillRectangle(new(19, 3, 1, 14), Red),
+            new FillRectangle(new(17, 3, 1, 14), Red)
+        ];
+        Assert.Equal(expected, list.Commands);
+
+        using var fonts = new PaintFontRegistry();
+        var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 8, 0));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 8, 1));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 8, 2));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 8, 17));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 8, 18));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 8, 19));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 0, 8));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 1, 8));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 2, 8));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 17, 8));
+        Assert.Equal(((byte)0, (byte)0, (byte)255, (byte)255), Pixel(frame, 18, 8));
+        Assert.Equal(((byte)255, (byte)0, (byte)0, (byte)255), Pixel(frame, 19, 8));
+
+        Assert.Throws<PaintLimitException>(() =>
+            Page(html, "div{width:10px;height:10px;padding:2px;border:3px double red}",
+                new() { MaxCommands = 7 }));
+    }
+
+    [Fact]
     public void RowGroupAndRowBackgroundsPaintBeforeRowSpanningCellBackgrounds()
     {
         const string html = "<table><tbody><tr><td rowspan=2>x</td></tr><tr></tr></tbody></table>";

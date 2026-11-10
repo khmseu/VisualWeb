@@ -7285,3 +7285,34 @@ und CodeQL
 sind erfolgreich.
 
 **Status:** Pass 3 abgeschlossen; sieben Inkremente des Zehnerauftrags verbleiben.
+
+### KP-284 - Pass 4: CSS-double-Rahmen
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: fortlaufend dokumentiert; Implementierung und lokale
+  Validierung abgeschlossen, Commit/Push/Remote-CI ausstehend.
+- Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
+  `plans/Missing.md` Prioritaet 1, Paint guide und die lokale CSS Backgrounds
+  and Borders Quelle, Abschnitt `#valdef-line-style-double`; Manifestcheck
+  2026-11-07.
+- Bezug: Auf die erfolgreichen Passes 1 bis 3 (KP-281 bis KP-283) folgend.
+
+**Auswahl (Ableitung):** Ein doppelter Rahmen ist ein gaengiges
+Darstellungsmittel fuer einfache Dokumente. Der Painter unterstuetzte bereits
+`solid`, `inset`, `outset`, `dashed`, `groove` und `ridge`, lehnte `double`
+aber ab. Die lokale CSS-Quelle verlangt zwei parallele Linien und dass ihre
+Breiten samt Zwischenraum die Borderbreite ergeben, laesst die Einzelbreiten
+jedoch offen. Die begrenzte Implementierung teilt die Breite gleichmaessig in
+zwei Linien und eine transparente Luecke.
+
+**Umsetzung:** Jeder Linienzug wird als `FillRectangle` ausgegeben und
+verbraucht `MaxCommands`; die Luecke malt nichts, sodass der Elementhintergrund
+sichtbar bleibt. Exakte Tests decken alle vier Seiten, CPU-Pixel und
+Commandlimit ab. `dotted` bleibt explizit unsupported.
+
+**Validierung:** Engine.Paint.Tests (75), der Solution-Build (null
+Warnungen/Fehler), Formatverifikation und alle 16.383 seriellen
+Solution-Tests bestehen lokal.
+
+**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.

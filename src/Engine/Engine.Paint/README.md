@@ -9,7 +9,8 @@ lightening on bottom/right sides; outset reverses those sides. Both preserve
 alpha. Dashed borders use square-ended segments at a bounded three-to-two
 dash-gap ratio, charged to the command budget. Groove and ridge use two
 command-budgeted shade bands per physical side, with inverse inset/outset
-shading. Dotted and double remain unsupported.
+shading. Double borders use two command-budgeted lines separated by a
+transparent gap; dotted remains unsupported.
 Outside list markers use bounded filled ellipses for discs, a single
 stroke-ellipse command for hollow circles, and existing rectangle commands
 for squares. Nested-list UA defaults and author styles use the same commands.
