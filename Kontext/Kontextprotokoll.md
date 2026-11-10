@@ -7291,7 +7291,7 @@ sind erfolgreich.
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
 - Erfassungsart: fortlaufend dokumentiert; Implementierung und lokale
-  Validierung abgeschlossen, Commit/Push/Remote-CI ausstehend.
+  Validierung, Commit, Push und Remote-CI abgeschlossen.
 - Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
   `plans/Missing.md` Prioritaet 1, Paint guide und die lokale CSS Backgrounds
   and Borders Quelle, Abschnitt `#valdef-line-style-double`; Manifestcheck
@@ -7313,6 +7313,8 @@ Commandlimit ab. `dotted` bleibt explizit unsupported.
 
 **Validierung:** Engine.Paint.Tests (75), der Solution-Build (null
 Warnungen/Fehler), Formatverifikation und alle 16.383 seriellen
-Solution-Tests bestehen lokal.
+Solution-Tests bestehen lokal. Commit `f85b76f` ist gepusht; Linux
+(Run 42753540115), Windows confinement (Run 42753539650) und CodeQL
+(Run 42753539240) bestehen.
 
-**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.
+**Status:** Pass 4 abgeschlossen; sechs Inkremente des Zehnerauftrags verbleiben.

@@ -1373,7 +1373,9 @@ Pass 4 adds CSS `double` borders as two solid bands, each one third of the
 border width, separated by a transparent one-third gap. Every band consumes
 the existing display-command budget; `dotted` remains unsupported. Paint (75),
 the zero-warning solution build, format verification and all 16,383 serial
-solution tests pass locally.
+solution tests pass locally. Commit `f85b76f` is pushed; Linux, Windows
+confinement x64/arm64 and CodeQL CI pass. Pass 4 is complete; six increments
+remain in this request.
 
 ### 6. A persistent browser JavaScript environment
 
