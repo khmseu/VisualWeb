@@ -1385,6 +1385,14 @@ serial solution tests pass locally. Commit `b06b2fc` is pushed; Linux, Windows
 confinement x64/arm64 and CodeQL CI pass. Pass 5 is complete; five increments
 remain in this request.
 
+Pass 6 adds the CSS `text-decoration-color` longhand for underlines and
+line-throughs. It follows the normal color cascade, defaults to `currentColor`,
+and is non-inherited; a descendant's color cannot recolor an ancestor's
+decoration. The shorthand remains limited to its supported line-only grammar.
+CSS (1,247), Paint (79), the zero-warning solution build, format verification
+and all 16,388 serial solution tests pass locally. Commit and remote CI are
+pending.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

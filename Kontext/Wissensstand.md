@@ -82,6 +82,15 @@ Linux, Windows confinement x64/arm64 und CodeQL CI bestehen. Pass 5 ist
 abgeschlossen; fuenf Inkremente verbleiben
 ([KP-285](./Kontextprotokoll.md#kp-285---pass-5-css-dotted-rahmen)).
 
+Pass 6 ergaenzt die nicht-vererbte CSS-Eigenschaft
+`text-decoration-color` fuer Underline und Line-through. Sie folgt der
+Farbsyntax/Kaskade, startet mit `currentColor` und bleibt am Element verankert,
+das die Dekoration setzt; Nachfahrenfarben aendern sie nicht. Der
+line-only-`text-decoration`-Shorthand bleibt begrenzt. CSS (1.247), Paint (79),
+Solution-Build (0 Warnungen/Fehler), Formatverifikation und 16.388 serielle
+Solution-Tests bestehen lokal. Commit/Push/CI stehen aus
+([KP-286](./Kontextprotokoll.md#kp-286---pass-6-css-text-decoration-color)).
+
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus
   KP-062 fuer neue, prioritaetsgerechte Arbeit aufgehoben; die zuvor gewaehlten

@@ -363,17 +363,17 @@ computed color (or inherited color for the color property itself).
 
 Supported longhands:
 
-| Group   | Properties and supported values                                                                                                                                                                                             |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Display | `display`: none, block, inline, inline-block, list-item, table, table-caption, table-column-group, table-column, table-row-group, table-header-group, table-footer-group, table-row, table-cell                             |
-| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one or two nonnegative lengths (one sets both axes; two are horizontal, then vertical); `vertical-align:baseline/top/middle/bottom`            |
-| Lists   | inherited `list-style-type`: disc/circle/square/decimal/decimal-leading-zero/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none         |
-| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                                        |
-| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                                                     |
-| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                                           |
-| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors                                               |
-| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                                          |
-| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none/underline/line-through; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
+| Group   | Properties and supported values                                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display | `display`: none, block, inline, inline-block, list-item, table, table-caption, table-column-group, table-column, table-row-group, table-header-group, table-footer-group, table-row, table-cell                                                                     |
+| Tables  | `table-layout:auto`; inherited `border-collapse:separate`, `border-spacing`: one or two nonnegative lengths (one sets both axes; two are horizontal, then vertical); `vertical-align:baseline/top/middle/bottom`                                                    |
+| Lists   | inherited `list-style-type`: disc/circle/square/decimal/decimal-leading-zero/none/lower-alpha/upper-alpha/lower-latin/upper-latin/lower-roman/upper-roman; `list-style-position`: outside; `list-style-image`: none                                                 |
+| Sizing  | width/height, min-width/min-height, max-width/max-height; nonnegative lengths/percentages, auto for size/min-size, none for max-size                                                                                                                                |
+| Box     | margin sides (negative lengths/percentages or auto), padding sides (nonnegative lengths/percentages), box-sizing content-box/border-box                                                                                                                             |
+| Borders | Physical side width/style/color; width nonnegative lengths or thin/medium/thick; none/hidden/solid/dotted/dashed/double/groove/ridge/inset/outset                                                                                                                   |
+| Color   | color, background-color, border colors; hex 3/4/6/8, comma and space-separated rgb/rgba and in-gamut hsl/hsla, transparent/currentColor, all 148 standard opaque named colors                                                                                       |
+| Fonts   | font-family ordered quoted/unquoted names; font-size lengths/percentages and size keywords; weight 1..1000/normal/bold/bolder/lighter; style normal/italic/oblique                                                                                                  |
+| Text    | line-height normal/nonnegative multiplier/length/percentage; text-align start/end/left/right/center/justify; text-decoration-line none/underline/line-through; text-decoration-color supported colors; white-space normal/pre/nowrap/pre-wrap/pre-line/break-spaces |
 
 The layout stage implements `text-align:justify` only for the bounded English
 inter-word policy described in [ordinary text flow](text-layout.md#ordinary-flow).
@@ -399,19 +399,27 @@ The finite `text-decoration` shorthand and `text-decoration-line` accept
 `none`, `underline`, `line-through`, and the supported CSS-wide keywords (`initial`, `inherit`,
 `unset`, and `revert`), expanding to the non-inherited line longhand.
 `revert-layer` remains unsupported. `none` does not inhibit a decoration
-originating on an ancestor. The UA `:link` rule supplies both the standard
+originating on an ancestor. The finite `text-decoration-color` longhand accepts
+the supported color syntax and CSS-wide keywords, is non-inherited, and
+defaults to `currentColor`; decoration painting uses the value on the element
+that originates the decoration, so descendant colors do not recolor it. The
+`text-decoration` shorthand remains limited to the supported line-only subset.
+The UA `:link` rule supplies both the standard
 unvisited blue color and an underline through the ordinary cascade. Underlines
 are painted on static text fragments using the decorating ancestor's computed
-color and the exact registered font's OpenType underline metrics; they continue
+`text-decoration-color` and the exact registered font's OpenType underline
+metrics; they continue
 through in-flow descendants, and descendant `none` cannot cancel them. The
 HTML [phrasing-content UA stylesheet](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 also underlines `ins` and `u`.
-Line-throughs likewise use the decorating ancestor's color and exact registered
+Line-throughs likewise use the decorating ancestor's computed
+`text-decoration-color` and exact registered
 font's OpenType strikeout position/thickness metrics; a font without usable
 metrics fails during painting. The HTML UA defaults give `del`, `s` and
-`strike` line-through decoration. Overline, other decoration
-styles/colors/thicknesses, decoration of atomic inline content and skip-ink
-are unsupported diagnostics. See the [line property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line)
+`strike` line-through decoration. Overline, other decoration styles/thicknesses,
+decoration of atomic inline content and skip-ink
+are unsupported diagnostics. See the [line property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line),
+[color property](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-color)
 and [shorthand](https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration)
 (local ID `css-text-decoration`).
 

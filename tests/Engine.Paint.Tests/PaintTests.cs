@@ -137,6 +137,19 @@ public sealed class PaintTests
     }
 
     [Fact]
+    public void UnderlineUsesTheDecoratingAncestorsExplicitColorAcrossDescendants()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:underline;text-decoration-color:red}span{color:green}";
+        var list = Page(html, css);
+        var glyph = Assert.Single(list.Commands.OfType<DrawGlyphRun>());
+        var underline = Assert.Single(list.Commands.OfType<DrawUnderline>());
+
+        Assert.Equal(new CssColor(0, 128, 0), glyph.Color);
+        Assert.Equal(Red, underline.Color);
+    }
+
+    [Fact]
     public void InlineBackgroundFragmentsPaintAncestorFirstBeforeLineText()
     {
         var list = Page("<p><span>A <b>B</b> C</span></p>",
@@ -168,6 +181,19 @@ public sealed class PaintTests
         Assert.Equal(glyph.FontIdentity, lineThrough.FontIdentity);
         Assert.Equal(glyph.FontSize, lineThrough.FontSize);
         Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 1 }));
+    }
+
+    [Fact]
+    public void LineThroughUsesTheDecoratingAncestorsExplicitColorAcrossDescendants()
+    {
+        const string html = "<div><span>x</span></div>";
+        const string css = "div{color:blue;text-decoration:line-through;text-decoration-color:red}span{color:green}";
+        var list = Page(html, css);
+        var glyph = Assert.Single(list.Commands.OfType<DrawGlyphRun>());
+        var lineThrough = Assert.Single(list.Commands.OfType<DrawLineThrough>());
+
+        Assert.Equal(new CssColor(0, 128, 0), glyph.Color);
+        Assert.Equal(Red, lineThrough.Color);
     }
 
     [Fact]

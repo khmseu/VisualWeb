@@ -68,6 +68,7 @@ internal static class CssProperties
             ["line-height"] = new(new CssKeyword("normal"), true),
             ["text-align"] = new(new CssKeyword("start"), true),
             ["text-decoration-line"] = new(new CssKeyword("none"), false),
+            ["text-decoration-color"] = new(new CssKeyword("currentcolor"), false),
             ["white-space"] = new(new CssKeyword("normal"), true),
             ["box-sizing"] = new(new CssKeyword("content-box"), false)
         };

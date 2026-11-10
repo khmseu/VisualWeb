@@ -107,6 +107,40 @@ public sealed class NoTextDecorationTests
         Assert.Equal(new CssKeyword("none"), disabled.Styles[link]["text-decoration-line"]);
     }
 
+    [Fact]
+    public void DecorationColorDefaultsToCurrentColorAndDoesNotInherit()
+    {
+        const string html = "<div id=parent><a id=link href='/next'>Visit</a></div>";
+        var document = HtmlParser.Parse(html, cancellationToken: Cancellation).Document;
+        var parent = document.GetElementById("parent")!;
+        var link = document.GetElementById("link")!;
+        var result = CssStyleEngine.Compute(document,
+            [new("div{color:blue;text-decoration-color:red}a{color:green}")],
+            includeUserAgent: false, cancellationToken: Cancellation);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(255, 0, 0), result.Styles[parent]["text-decoration-color"]);
+        Assert.Equal(new CssColor(0, 128, 0), result.Styles[link]["text-decoration-color"]);
+
+        var inherited = CssStyleEngine.Compute(document,
+            [new("div{color:blue;text-decoration-color:red}a{color:green;text-decoration-color:inherit}")],
+            includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Empty(inherited.Diagnostics);
+        Assert.Equal(new CssColor(255, 0, 0), inherited.Styles[link]["text-decoration-color"]);
+    }
+
+    [Fact]
+    public void DecorationColorAcceptsExplicitColorsAndCssWideKeywords()
+    {
+        var (_, explicitColor) = Compute("color:blue;text-decoration-color:red");
+        var (_, initial) = Compute("color:blue;text-decoration-color:initial");
+        var (_, current) = Compute("color:blue;text-decoration-color:currentColor");
+
+        Assert.Equal(new CssColor(255, 0, 0), explicitColor["text-decoration-color"]);
+        Assert.Equal(new CssColor(0, 0, 255), initial["text-decoration-color"]);
+        Assert.Equal(new CssColor(0, 0, 255), current["text-decoration-color"]);
+    }
+
     [Theory]
     [InlineData("text-decoration:overline")]
     [InlineData("text-decoration:blink")]
@@ -120,7 +154,6 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration-line:overline")]
     [InlineData("text-decoration-line:revert-layer")]
     [InlineData("text-decoration-style:solid")]
-    [InlineData("text-decoration-color:red")]
     [InlineData("text-decoration-thickness:1px")]
     public void VisibleOrBroaderDecorationsRemainDiagnostics(string declaration)
     {
@@ -158,6 +191,7 @@ public sealed class NoTextDecorationTests
             options: exact, cancellationToken: Cancellation);
         Assert.Empty(reset.Diagnostics);
         Assert.Equal(new CssKeyword("none"), reset.Styles[element]["text-decoration-line"]);
+        Assert.Equal(reset.Styles[element]["color"], reset.Styles[element]["text-decoration-color"]);
         Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(document, [new("a{all:initial}")],
             includeUserAgent: false, options: exact with { MaxAssignments = propertyCount - 1 }, cancellationToken: Cancellation));
     }

@@ -126,14 +126,15 @@ They use the normal cascade and require an explicitly configured face.
 the supported CSS-wide keywords (`initial`, `inherit`, `unset`, and `revert`),
 with a non-inherited line value and the normal cascade. `revert-layer` remains
 unsupported. `none` neither adds nor inhibits ancestor decoration. Paint uses
-the decorating ancestor's computed color and the registered shaping font's
-OpenType underline metrics. The HTML
+the decorating ancestor's computed `text-decoration-color`, which defaults to
+that element's computed color and is not inherited, plus the registered shaping
+font's OpenType underline metrics. The `text-decoration` shorthand remains
+limited to the supported line-only grammar. The HTML
 [phrasing-content UA rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) give `ins` and `u` the underline default. Line-through uses
 the exact registered font's OpenType strikeout metrics, and HTML `del`, `s`
-and `strike` receive its UA default. Overline, other decoration
-style/color/thickness values, atomic-inline decoration and skip-ink remain
-unsupported.
+and `strike` receive its UA default. Overline, other decoration styles and
+thickness values, atomic-inline decoration and skip-ink remain unsupported.
 The same HTML phrasing-content rules give `mark` a yellow
 `background-color` and black `color` through the normal cascade. Layout and
 paint support this only for bounded text-backed inline fragments; see the

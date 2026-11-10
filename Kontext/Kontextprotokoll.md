@@ -7351,3 +7351,35 @@ seriellen Solution-Tests bestehen lokal. Commit `b06b2fc` ist gepusht; Linux
 (Run 42758586778) bestehen.
 
 **Status:** Pass 5 abgeschlossen; fuenf Inkremente des Zehnerauftrags verbleiben.
+
+### KP-286 - Pass 6: CSS-text-decoration-color
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung abgeschlossen;
+  Commit/Push/Remote-CI ausstehend.
+- Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
+  `plans/Missing.md` empfohlene Prioritaet 1, CSS guide und Paint guide sowie
+  die lokale CSS Text Decoration Quelle, Abschnitt
+  `#propdef-text-decoration-color`; Manifestcheck 2026-10-31.
+- Bezug: Auf Pass 5 (KP-285) folgend; einfache Textdekoration statischer Seiten.
+
+**Auswahl (Ableitung):** Der Painter nutzt bereits die ausloesende
+Textdekoration und deren Fontmetriken, verwendete aber immer die Textfarbe des
+Elements. Die CSS-Quelle definiert `text-decoration-color` explizit als
+nicht-vererbte Eigenschaft mit Initialwert `currentcolor`; Dekorationen behalten
+die Farbe des Elements, das sie setzt. Das ergaenzt die vorhandene Darstellung
+ohne neue Metrik- oder Layoutregeln.
+
+**Umsetzung:** Das Longhand ist in der normalen Farbkaskade, im `all`-Reset und
+bei CSS-weiten Werten enthalten. Paint verwendet den berechneten Wert der
+Dekorationsquelle sowohl fuer Underline als auch Line-through; der bestehende
+line-only `text-decoration`-Shorthand bleibt explizit begrenzt. Tests pruefen
+Initial/currentColor, explizite Farben, Nichtvererbung, `inherit` und beide
+Paint-Kommandotypen ueber Nachfahren mit anderer Textfarbe.
+
+**Validierung:** CSS.Tests (1.247), Engine.Paint.Tests (79), der
+Solution-Build (null Warnungen/Fehler), Formatverifikation und alle 16.388
+seriellen Solution-Tests bestehen lokal.
+
+**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.

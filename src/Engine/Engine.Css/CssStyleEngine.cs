@@ -27,7 +27,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// Screen-only <see href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-media">@media</see> type lists use
 /// css-conditional-3 and css-mediaqueries-5. The bounded text-decoration subset uses css-text-decoration
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line values</see> and
-/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see>.
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see> plus
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-color">decoration color</see>.
 /// Finite marker values use css2-lists
 /// <see href="https://www.w3.org/TR/CSS22/generate.html#propdef-list-style-type">list style types</see>.
 /// Alphabetic and Roman values use css-counter-styles

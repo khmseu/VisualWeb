@@ -457,7 +457,7 @@ public static class DisplayListBuilder
                         {
                             foreach (var (decoration, decorationLine) in Decorations(fragment.Source))
                             {
-                                var color = decoration["color"] as CssColor
+                                var color = decoration["text-decoration-color"] as CssColor
                                     ?? throw new UnsupportedPaintException("Unresolved text decoration color.");
                                 if (decorationLine == "underline")
                                 {

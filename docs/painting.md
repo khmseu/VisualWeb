@@ -153,15 +153,17 @@ remain unsupported.
 - The bounded CSS `underline` line uses a `DrawUnderline` command after each
   qualifying text fragment. It resolves the exact registered shaping font and
   uses that face's OpenType underline position/thickness plus the decorating
-  ancestor's computed color; no fallback metric is invented. Raster preflight
+  ancestor's computed `text-decoration-color` (defaulting to its computed
+  `color`); no fallback metric is invented. Raster preflight
   validates the font, metric and finite geometry before framebuffer allocation.
   Ancestor decoration continues through in-flow text even when a descendant
   computes `text-decoration-line:none`. The bounded CSS `line-through` uses a
   `DrawLineThrough` command and the exact registered font's OpenType strikeout
-  position/thickness metrics with the decorating ancestor's color; missing
+  position/thickness metrics with the decorating ancestor's computed
+  `text-decoration-color`; missing
   metrics fail before framebuffer allocation. It likewise propagates through
   in-flow text despite descendant `none`. Neither decoration covers atomic
-  inline content or supports skip-ink, other decoration lines, or style/color/
+  inline content or supports skip-ink, other decoration lines, style, or
   thickness values.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS
@@ -173,7 +175,7 @@ remain unsupported.
   from the native bitmap's actual stride.
 
 Images, gradients, advanced/differently colored borders, border radii, overlines,
-decoration styles/colors/thicknesses and skip-ink,
+decoration styles/thicknesses and skip-ink,
 transforms, CSS opacity/blending, stacking contexts, general/nested overflow
 clipping, GPU rendering and browser UI are deferred. Unsupported CSS receives
 diagnostics and prevents rendering; unsupported visible border styles throw
