@@ -7324,7 +7324,7 @@ Solution-Tests bestehen lokal. Commit `f85b76f` ist gepusht; Linux
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
 - Erfassungsart: Implementierung und lokale Validierung abgeschlossen;
-  Commit/Push/Remote-CI ausstehend.
+  Commit, Push und Remote-CI abgeschlossen.
 - Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
   `plans/Missing.md` empfohlene Prioritaet 1, Paint guide und die lokale CSS
   Backgrounds and Borders Quelle, Abschnitt `#valdef-line-style-dotted`;
@@ -7346,6 +7346,8 @@ Zwischenraeume, kurze Seiten und Budgetfehler.
 
 **Validierung:** Engine.Paint.Tests (77), Engine.Content.Tests (106), der
 Solution-Build (null Warnungen/Fehler), Formatverifikation und alle 16.385
-seriellen Solution-Tests bestehen lokal.
+seriellen Solution-Tests bestehen lokal. Commit `b06b2fc` ist gepusht; Linux
+(Run 42758586528), Windows confinement (Run 42758586510) und CodeQL
+(Run 42758586778) bestehen.
 
-**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.
+**Status:** Pass 5 abgeschlossen; fuenf Inkremente des Zehnerauftrags verbleiben.

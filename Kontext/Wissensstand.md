@@ -77,7 +77,9 @@ Pass 5 ergaenzt zentrierte, runde CSS-`dotted`-Rahmenpunkte mit einem
 Durchmesser und Abstand von je einer Rahmenbreite. Jeder Punkt verbraucht das
 Paint-Budget; eine zu kurze Seite fuer einen vollstaendigen Punkt wird explizit
 abgewiesen. Paint (77), Content (106), Solution-Build, Formatverifikation und
-16.385 serielle Solution-Tests bestehen lokal. Commit/Push/CI stehen aus
+16.385 serielle Solution-Tests bestehen lokal. Commit `b06b2fc` ist gepusht;
+Linux, Windows confinement x64/arm64 und CodeQL CI bestehen. Pass 5 ist
+abgeschlossen; fuenf Inkremente verbleiben
 ([KP-285](./Kontextprotokoll.md#kp-285---pass-5-css-dotted-rahmen)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
