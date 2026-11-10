@@ -1362,7 +1362,12 @@ Pass 3 adds bounded CSS `groove` and `ridge` painting as paired outer/inner
 shade bands, reusing the deterministic inset/outset shading in opposite
 orders. Each band uses the existing display-command budget; `dotted` and
 `double` remain unsupported. Paint (74), the zero-warning solution build,
-format verification and all 16,382 serial solution tests pass locally.
+format verification and all 16,382 serial solution tests pass locally. Commit
+`d835936` is pushed; Linux, Windows confinement (x64/arm64) and CodeQL CI pass
+([Linux](https://github.com/khmseu/VisualWeb/actions/runs/42737897730),
+[Windows](https://github.com/khmseu/VisualWeb/actions/runs/42737897888),
+[CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/42737896350)).
+Pass 3 is complete; seven increments remain in this request.
 
 ### 6. A persistent browser JavaScript environment
 

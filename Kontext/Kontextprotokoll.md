@@ -7250,8 +7250,8 @@ sind erfolgreich.
 
 - Dokumentiert am: 2026-11-10, Europe/Berlin.
 - Ereignisdatum: 2026-11-10, Europe/Berlin.
-- Erfassungsart: Implementierung und lokale Validierung abgeschlossen;
-  Commit/Push/Remote-CI noch ausstehend.
+- Erfassungsart: Implementierung, lokale Validierung, Commit, Push und
+  Remote-CI abgeschlossen.
 - Quelle: Fortsetzung desselben ausdruecklichen Zehnerauftrags,
   `plans/Missing.md` Prioritaet 1, Paint guide und die lokale CSS Backgrounds
   and Borders Quelle, Abschnitte `#valdef-line-style-groove` und
@@ -7276,4 +7276,12 @@ alle vier Seiten, Displaylisten, CPU-Pixel und Command-Limit ab; `dotted` und
 Warnungen/Fehler), Formatverifikation und alle 16.382 seriellen
 Solution-Tests bestehen lokal.
 
-**Status:** Implementiert und lokal validiert; Commit/Push/Remote-CI stehen aus.
+**Remote-CI:** Commit `d835936` ist nach `origin/main` gepusht. Linux
+development ([Run 42737897730](https://github.com/khmseu/VisualWeb/actions/runs/42737897730)),
+Windows confinement x64/arm64
+([Run 42737897888](https://github.com/khmseu/VisualWeb/actions/runs/42737897888))
+und CodeQL
+([Run 42737896350](https://github.com/khmseu/VisualWeb/actions/runs/42737896350))
+sind erfolgreich.
+
+**Status:** Pass 3 abgeschlossen; sieben Inkremente des Zehnerauftrags verbleiben.
