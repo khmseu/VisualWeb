@@ -23,8 +23,8 @@
    VisualWeb.Browser CLI requires supported confinement for per-tab process rendering
    by default; local/unsandboxed development requires explicit trusted-content opt-out;
    shared static rendering policy lives in VisualWeb.PageRendering.
-3. Read the [standards index](docs/standards.md) and the
-   [standards support status](docs/standards-support.md). Use the local documents in
+3. Read the [standards index and support status](docs/standards.md). Use the
+   local documents in
    `specs/cache/` first, not repeated network requests. The [manifest](specs/manifest.json)
    maps document IDs to official sources, filenames, and last-check timestamps.
    When a change adds, removes, or materially changes standards-defined behavior,
