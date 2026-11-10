@@ -121,9 +121,9 @@ public sealed class HiddenDefaultsTests
         // The figure margin and address selectors add 4 operations per element;
         // the hr UA rule adds two selector operations per element;
         // mark adds two assignments; the text-decoration shorthand resets
-        // style and color as well as line, adding six UA assignments.
+        // thickness, style and color as well as line, adding nine UA assignments.
         // The hidden selector adds 2 operations on nonmatches and 8 on the target.
-        const int assignments = 95;
+        const int assignments = 98;
         const long matches = 1046; // 4 * (119 + 11) * 2 + 3 * 2 + 8 - 8
         CssStyleSource[] author = [new("a{display:block}")];
         const long authorMatches = 1054;

@@ -168,9 +168,13 @@ remain unsupported.
   originating-element style, including across descendants. The bounded CSS
   `overline` uses a `DrawOverline` command at the registered font's cap height
   and uses its underline thickness; CSS leaves exact overline metrics UA-defined.
-  All three lines support only `solid` and `double`. Decorations do not cover
-  atomic inline content or support skip-ink, dotted/dashed/wavy styles, or
-  custom thickness values.
+  `text-decoration-thickness` supports `auto`, `from-font`, `thin`/`medium`/
+  `thick` and nonnegative computed lengths; `from-font` uses the registered
+  underline thickness, with line-through falling back to its strikeout metric.
+  Explicit zero emits no decoration. Custom thickness is carried in the same
+  single command and preflighted before framebuffer allocation. All three lines
+  support only `solid` and `double`. Decorations do not cover atomic inline
+  content or support skip-ink or dotted/dashed/wavy styles.
 - Scale is an explicit finite positive CSS-to-physical multiplier. Physical
   dimensions are `ceil(viewport * scale)`. Drawing is clipped to the CSS
   viewport. Fractional physical coverage uses Skia's non-antialiased rectangle/

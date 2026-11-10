@@ -28,7 +28,8 @@ public sealed record CssStyleResult(IReadOnlyDictionary<DomElement, CssComputedS
 /// css-conditional-3 and css-mediaqueries-5. The bounded text-decoration subset uses css-text-decoration
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line values</see> and
 /// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration">shorthand</see> plus
-/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-color">decoration color</see>.
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-color">decoration color</see>,
+/// and css-text-decoration-4 <see href="https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-thickness">line thickness</see>.
 /// Finite marker values use css2-lists
 /// <see href="https://www.w3.org/TR/CSS22/generate.html#propdef-list-style-type">list style types</see>.
 /// Alphabetic and Roman values use css-counter-styles
@@ -693,6 +694,7 @@ public static class CssStyleEngine
                         "em" => new CssLength(length.Value * fontSize, "px"),
                         "rem" => new CssLength(length.Value * rootSize, "px"),
                         "%" when name == "line-height" => new CssLength(length.Value / 100 * fontSize, "px"),
+                        "%" when name == "text-decoration-thickness" => new CssLength(length.Value / 100 * fontSize, "px"),
                         _ => length
                     };
                     if (!double.IsFinite(resolved.Value)) { throw new CssLimitException("Computed CSS length exceeds finite numeric range."); }

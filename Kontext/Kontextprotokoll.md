@@ -7504,3 +7504,41 @@ Wiederholungslauf bestand anschliessend einschliesslich aller 1.333
 Browser-Tests. `git diff --check` besteht.
 
 **Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.
+
+### KP-291 - Pass 9: CSS text-decoration-thickness
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: Implementierung und lokale Validierung; Commit, Push und
+  Remote-CI stehen aus.
+- Quelle: ausdruecklicher Auftrag `/missing-priority-implementation 10`
+  (im aktuellen Gespraechs-Handover ueberliefert), `plans/Missing.md`,
+  CSS-/Paint-Guides und der lokale CSS Text Decoration Level 4 Cache
+  `specs/cache/css-text-decoration-4.html`, Manifest-ID
+  `css-text-decoration-4` (Abruf 2026-11-10).
+- Bezug: folgt auf KP-289/KP-290 und setzt den naechsten expliziten
+  Textdekoration-Schritt des Zehnerauftrags um.
+
+**Auswahl (Ableitung):** Der Tracker markierte benutzerdefinierte
+Dekorationsbreiten als verbleibende Luecke. Da die drei bestehenden
+Dekorationslinien bereits eine gemeinsame Paint-/Rasterstrecke und passende
+Tests besitzen, liess sich die CSS-Level-4-Eigenschaft als begrenzter,
+beobachtbarer Erweiterungsschritt umsetzen. Die Umsetzung fuehrt keine anderen
+Textdekoration-Features ein.
+
+**Umsetzung (belegt):** `text-decoration-thickness` ist nicht geerbt und
+initial `auto`. Der endliche Unterbereich unterstuetzt `auto`, `from-font`,
+`thin`/`medium`/`thick` mit der dokumentierten 1/3/5-CSS-Pixel-UA-Policy und
+nichtnegative unterstuetzte Laengen/Prozente; Prozentwerte werden gegen die
+Schriftgroesse des dekorierenden Elements aufgeloest. Der Shorthand schliesst
+die vierte Komponente ein und setzt ausgelassene Thickness auf `auto` zurueck.
+Paint transportiert und validiert die Breite fuer Underline, Overline und
+Line-through; Null unterdrueckt die Dekoration. Nicht unterstuetzte Einheiten,
+negative Werte und weitere Level-4-Funktionen bleiben ausgeschlossen.
+
+**Validierung (belegt):** CSS (1.287) und Paint (88) bestehen. `dotnet build
+VisualWeb.slnx` endet mit 0 Warnungen/Fehlern; `dotnet test VisualWeb.slnx
+--no-build` besteht mit 16.437 Tests; Formatverifikation und
+`git diff --check` bestehen.
+
+**Status:** Lokal validiert; Feature-Commit, Push und Remote-CI stehen aus.

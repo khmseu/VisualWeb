@@ -18,8 +18,8 @@ public sealed class SearchDefaultsTests
         const long matches = 4 * (119 + 11) * 2;
         // UA mark, link-decoration, phrasing-decoration, dir, caption, column-display and hr defaults
         // are compiled with the other UA declarations. Four-sided shorthands and
-        // the text-decoration style/color resets bring the total to 95.
-        const int assignments = 95;
+        // the text-decoration thickness/style/color resets bring the total to 98.
+        const int assignments = 98;
         // One author selector is checked on all four elements and adds one assignment.
         const long authorMatches = matches + 4 * 2;
         CssStyleSource[] author = [new("search{display:inline}")];

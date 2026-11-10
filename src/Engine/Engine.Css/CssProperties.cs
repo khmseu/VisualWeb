@@ -68,6 +68,7 @@ internal static class CssProperties
             ["line-height"] = new(new CssKeyword("normal"), true),
             ["text-align"] = new(new CssKeyword("start"), true),
             ["text-decoration-line"] = new(new CssKeyword("none"), false),
+            ["text-decoration-thickness"] = new(new CssKeyword("auto"), false),
             ["text-decoration-style"] = new(new CssKeyword("solid"), false),
             ["text-decoration-color"] = new(new CssKeyword("currentcolor"), false),
             ["white-space"] = new(new CssKeyword("normal"), true),
@@ -232,22 +233,25 @@ internal static class CssProperties
                 if (wide is not null)
                 {
                     Add("text-decoration-line", wide);
+                    Add("text-decoration-thickness", wide);
                     Add("text-decoration-style", wide);
                     Add("text-decoration-color", wide);
                     continue;
                 }
                 var components = Components(value);
-                var valid = components.Count is >= 1 and <= 3;
-                CssValue? line = null, style = null, color = null;
+                var valid = components.Count is >= 1 and <= 4;
+                CssValue? line = null, thickness = null, style = null, color = null;
                 foreach (var component in components)
                 {
                     if (line is null && Parse("text-decoration-line", component) is { } parsedLine) { line = parsedLine; }
+                    else if (thickness is null && Parse("text-decoration-thickness", component) is { } parsedThickness) { thickness = parsedThickness; }
                     else if (style is null && Parse("text-decoration-style", component) is { } parsedStyle) { style = parsedStyle; }
                     else if (color is null && Parse("text-decoration-color", component) is { } parsedColor) { color = parsedColor; }
                     else { valid = false; }
                 }
                 if (!valid) { Invalid(); continue; }
                 Add("text-decoration-line", line ?? Registry["text-decoration-line"].Initial);
+                Add("text-decoration-thickness", thickness ?? Registry["text-decoration-thickness"].Initial);
                 Add("text-decoration-style", style ?? Registry["text-decoration-style"].Initial);
                 Add("text-decoration-color", color ?? Registry["text-decoration-color"].Initial);
             }
@@ -307,6 +311,12 @@ internal static class CssProperties
         if (name == "font-style") { return Keyword(keyword, "normal", "italic", "oblique"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
         if (name == "text-decoration-line") { return Keyword(keyword, "none", "underline", "overline", "line-through"); }
+        if (name == "text-decoration-thickness")
+        {
+            if (keyword is "auto" or "from-font") { return new CssKeyword(keyword); }
+            if (keyword is "thin" or "medium" or "thick")
+            { return new CssLength(keyword == "thin" ? 1 : keyword == "medium" ? 3 : 5, "px"); }
+        }
         if (name == "text-decoration-style") { return Keyword(keyword, "solid", "double"); }
         if (name == "white-space") { return Keyword(keyword, "normal", "pre", "nowrap", "pre-wrap", "pre-line", "break-spaces"); }
         if (name == "font-weight")

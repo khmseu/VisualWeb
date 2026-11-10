@@ -19,6 +19,7 @@ public sealed class NoTextDecorationTests
         var (result, style) = Compute(declaration);
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssKeyword("none"), style["text-decoration-line"]);
+        Assert.Equal(new CssKeyword("auto"), style["text-decoration-thickness"]);
         Assert.Equal(new CssKeyword("solid"), style["text-decoration-style"]);
     }
 
@@ -31,17 +32,25 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration-line", "inherit")]
     [InlineData("text-decoration-line", "unset")]
     [InlineData("text-decoration-line", "revert")]
+    [InlineData("text-decoration-thickness", "initial")]
+    [InlineData("text-decoration-thickness", "inherit")]
+    [InlineData("text-decoration-thickness", "unset")]
+    [InlineData("text-decoration-thickness", "revert")]
     public void CssWideKeywordsUseTheExistingCascade(string property, string keyword)
     {
         var (result, style) = Compute(property + ":" + keyword);
         Assert.Empty(result.Diagnostics);
-        Assert.Equal(new CssKeyword(keyword == "revert" ? "underline" : "none"), style["text-decoration-line"]);
+        var expectedLine = property == "text-decoration-thickness" || keyword == "revert" ? "underline" : "none";
+        Assert.Equal(new CssKeyword(expectedLine), style["text-decoration-line"]);
         if (property == "text-decoration")
         {
+            Assert.Equal(new CssKeyword("auto"), style["text-decoration-thickness"]);
             Assert.Equal(new CssKeyword("solid"), style["text-decoration-style"]);
             Assert.Equal(keyword == "inherit" ? new CssColor(0, 0, 0) : style["color"],
                 style["text-decoration-color"]);
         }
+        if (property == "text-decoration-thickness")
+        { Assert.Equal(new CssKeyword("auto"), style["text-decoration-thickness"]); }
     }
 
     [Theory]
@@ -106,6 +115,70 @@ public sealed class NoTextDecorationTests
 
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssColor(0, 0, 255), style["text-decoration-color"]);
+    }
+
+    [Theory]
+    [InlineData("auto", "auto", 0)]
+    [InlineData("from-font", "from-font", 0)]
+    [InlineData("thin", "px", 1)]
+    [InlineData("medium", "px", 3)]
+    [InlineData("thick", "px", 5)]
+    [InlineData("2px", "px", 2)]
+    [InlineData("0", "px", 0)]
+    public void DecorationThicknessAcceptsTheBoundedValues(string value, string expected, double expectedLength)
+    {
+        var (result, style) = Compute("text-decoration-thickness:" + value);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(expected is "auto" or "from-font"
+            ? new CssKeyword(expected)
+            : new CssLength(expectedLength, expected), style["text-decoration-thickness"]);
+    }
+
+    [Fact]
+    public void DecorationThicknessResolvesFontRelativeLengthsAndPercentages()
+    {
+        var (emResult, em) = Compute("font-size:20px;text-decoration-thickness:0.1em");
+        var (percentResult, percent) = Compute("font-size:20px;text-decoration-thickness:10%");
+
+        Assert.Empty(emResult.Diagnostics);
+        Assert.Empty(percentResult.Diagnostics);
+        Assert.Equal(new CssLength(2, "px"), em["text-decoration-thickness"]);
+        Assert.Equal(new CssLength(2, "px"), percent["text-decoration-thickness"]);
+    }
+
+    [Fact]
+    public void DecorationThicknessIsNonInheritedButSupportsInherit()
+    {
+        var document = HtmlParser.Parse(
+            "<!doctype html><div id=parent><span id=child>Text</span><span id=inherited>Text</span></div>",
+            cancellationToken: Cancellation).Document;
+        var parent = document.GetElementById("parent")!;
+        var child = document.GetElementById("child")!;
+        var inherited = document.GetElementById("inherited")!;
+        var result = CssStyleEngine.Compute(document,
+            [new("div{text-decoration-thickness:3px}#inherited{text-decoration-thickness:inherit}")],
+            cancellationToken: Cancellation);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssLength(3, "px"), result.Styles[parent]["text-decoration-thickness"]);
+        Assert.Equal(new CssKeyword("auto"), result.Styles[child]["text-decoration-thickness"]);
+        Assert.Equal(new CssLength(3, "px"), result.Styles[inherited]["text-decoration-thickness"]);
+    }
+
+    [Fact]
+    public void TextDecorationShorthandAcceptsThicknessAndResetsItWhenOmitted()
+    {
+        var (result, style) = Compute("text-decoration:red 2px double underline");
+        var (resetResult, reset) = Compute("text-decoration-thickness:2px;text-decoration:underline");
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Empty(resetResult.Diagnostics);
+        Assert.Equal(new CssKeyword("underline"), style["text-decoration-line"]);
+        Assert.Equal(new CssLength(2, "px"), style["text-decoration-thickness"]);
+        Assert.Equal(new CssKeyword("double"), style["text-decoration-style"]);
+        Assert.Equal(new CssColor(255, 0, 0), style["text-decoration-color"]);
+        Assert.Equal(new CssKeyword("auto"), reset["text-decoration-thickness"]);
     }
 
     [Theory]
@@ -243,7 +316,8 @@ public sealed class NoTextDecorationTests
     [InlineData("text-decoration-style:dashed")]
     [InlineData("text-decoration-style:wavy")]
     [InlineData("text-decoration-style:groove")]
-    [InlineData("text-decoration-thickness:1px")]
+    [InlineData("text-decoration-thickness:-1px")]
+    [InlineData("text-decoration:underline 1px 2px")]
     public void VisibleOrBroaderDecorationsRemainDiagnostics(string declaration)
     {
         var (result, style) = Compute("text-decoration:none;" + declaration);
@@ -255,7 +329,7 @@ public sealed class NoTextDecorationTests
     public void NoneUsesTheExistingSharedAssignmentLimit()
     {
         var document = HtmlParser.Parse("<!doctype html><a id=link>Visit</a>", cancellationToken: Cancellation).Document;
-        var exact = new CssOptions { MaxAssignments = 3 };
+        var exact = new CssOptions { MaxAssignments = 4 };
         Assert.Empty(CssStyleEngine.Compute(document, [new("a{text-decoration:none}")],
             includeUserAgent: false, options: exact, cancellationToken: Cancellation).Diagnostics);
         Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(document,
@@ -274,6 +348,7 @@ public sealed class NoTextDecorationTests
         var element = document.GetElementById("link")!;
         var initial = CssStyleEngine.Compute(document, includeUserAgent: false, cancellationToken: Cancellation);
         Assert.Equal(new CssKeyword("none"), initial.Styles[element]["text-decoration-line"]);
+        Assert.Equal(new CssKeyword("auto"), initial.Styles[element]["text-decoration-thickness"]);
         Assert.Equal(new CssKeyword("solid"), initial.Styles[element]["text-decoration-style"]);
         var propertyCount = initial.Styles[element].Properties.Count;
         var exact = new CssOptions { MaxAssignments = propertyCount };
@@ -281,6 +356,7 @@ public sealed class NoTextDecorationTests
             options: exact, cancellationToken: Cancellation);
         Assert.Empty(reset.Diagnostics);
         Assert.Equal(new CssKeyword("none"), reset.Styles[element]["text-decoration-line"]);
+        Assert.Equal(new CssKeyword("auto"), reset.Styles[element]["text-decoration-thickness"]);
         Assert.Equal(new CssKeyword("solid"), reset.Styles[element]["text-decoration-style"]);
         Assert.Equal(reset.Styles[element]["color"], reset.Styles[element]["text-decoration-color"]);
         Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(document, [new("a{all:initial}")],

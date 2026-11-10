@@ -122,24 +122,30 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 1em vertical margins, monospace family and preserved whitespace as `pre`.
 They use the normal cascade and require an explicitly configured face.
 `text-decoration-line` accepts `none`, `underline`, `overline` and `line-through`;
+non-inherited `text-decoration-thickness` accepts `auto`, `from-font`,
+`thin`/`medium`/`thick` and nonnegative supported lengths/percentages;
 non-inherited `text-decoration-style` accepts `solid` and `double`, with
 `solid` as its initial value. The `text-decoration` shorthand accepts at most
-one supported line, style and color component each in any order, resetting
-omitted components to their initial values. CSS-wide keywords use the normal
-cascade; `revert-layer` remains unsupported. `none` neither adds nor inhibits
+one supported line, thickness, style and color component each in any order,
+resetting omitted components to their initial values. CSS-wide keywords use
+the normal cascade; `revert-layer` remains unsupported. `none` neither adds nor inhibits
 ancestor decoration. Paint uses the decorating ancestor's computed
 style and `text-decoration-color`, which defaults to that element's computed
 color and is not inherited, plus the registered shaping font's OpenType
-metrics. Overlines use the registered font's cap height and underline thickness as
-a bounded user-agent metric policy; exact overline metrics are UA-defined.
+metrics. Percentages resolve against the decorating element's font size;
+`thin`/`medium`/`thick` use a bounded 1/3/5 CSS-pixel user-agent policy, and
+zero suppresses painting. Overlines use the registered font's cap height and
+underline thickness as a bounded metric policy; exact overline metrics are
+UA-defined.
 Double decorations paint two equal solid bands and an equal gap within the
-metric thickness. Dotted/dashed/wavy styles, other lines and custom thickness
-remain unsupported. The HTML
+metric thickness. Dotted/dashed/wavy styles, other lines, negative lengths and unlisted units
+remain unsupported. Level 3 behavior uses local ID `css-text-decoration`;
+thickness uses `css-text-decoration-4`. The HTML
 [phrasing-content UA rules](https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3)
 (local ID `html`) give `ins` and `u` the underline default. Line-through uses
 the exact registered font's OpenType strikeout metrics, and HTML `del`, `s`
-and `strike` receive its UA default. Other decoration styles and thickness
-values, atomic-inline decoration and skip-ink remain unsupported.
+and `strike` receive its UA default. Other decoration styles, atomic-inline
+decoration and skip-ink remain unsupported.
 The same HTML phrasing-content rules give `mark` a yellow
 `background-color` and black `color` through the normal cascade. Layout and
 paint support this only for bounded text-backed inline fragments; see the
@@ -149,7 +155,7 @@ paint support this only for bounded text-backed inline fragments; see the
 Official documents: manifest IDs `css-syntax`, `selectors`, `css-cascade`,
 `css-values`, `css-box`, `css-display`, `css-overflow`, `css-fonts`, `css-text`,
 `css-color`, `css-sizing`, `css-backgrounds`, `css-conditional-3`,
-`css-mediaqueries-5`, `css-text-decoration`, `css2-lists`,
+`css-mediaqueries-5`, `css-text-decoration`, `css-text-decoration-4`, `css2-lists`,
 `css-counter-styles` and `html`.
 Sources are in the [registry](../../../specs/manifest.json).
 See the [standards workflow](../../../docs/standards.md).

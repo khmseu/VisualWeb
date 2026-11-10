@@ -1419,6 +1419,16 @@ the complete rerun passed, including all 1,333 Browser tests. Commit
 x64/arm64 (run 42874627593) and CodeQL/Push on main (run 42874629254) pass.
 Pass 8 is complete; two requested increments remain.
 
+Pass 9 adds bounded `text-decoration-thickness` support from CSS Text
+Decoration Level 4. The non-inherited longhand accepts `auto`, `from-font`,
+the UA-mapped `thin`/`medium`/`thick` widths, and nonnegative supported
+lengths/percentages; the four-component shorthand includes and resets it.
+Underline, overline and line-through carry the selected thickness through
+preflight and rasterization, with explicit zero suppressing the paint command.
+CSS (1,287), Paint (88), the zero-warning solution build, all 16,437 solution
+tests, format verification and `git diff --check` pass locally. Pass 9 is
+locally complete; one requested increment remains, pending commit, push and CI.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

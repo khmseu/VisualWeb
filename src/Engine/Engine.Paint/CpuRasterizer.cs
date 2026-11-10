@@ -142,18 +142,21 @@ public static class CpuRasterizer
                     Rect(fill.Bounds);
                     break;
                 case DrawUnderline underline:
+                    if (underline.Thickness == 0) { break; }
                     ArgumentException.ThrowIfNullOrWhiteSpace(underline.FontIdentity);
                     ArgumentNullException.ThrowIfNull(underline.Color);
                     var underlineBounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
                     ValidateDecorationBounds(underlineBounds.First, underlineBounds.Second, "Underline");
                     break;
                 case DrawOverline overline:
+                    if (overline.Thickness == 0) { break; }
                     ArgumentException.ThrowIfNullOrWhiteSpace(overline.FontIdentity);
                     ArgumentNullException.ThrowIfNull(overline.Color);
                     var overlineBounds = OverlineBounds(overline, fonts.Resolve(overline.FontIdentity));
                     ValidateDecorationBounds(overlineBounds.First, overlineBounds.Second, "Overline");
                     break;
                 case DrawLineThrough lineThrough:
+                    if (lineThrough.Thickness == 0) { break; }
                     ArgumentException.ThrowIfNullOrWhiteSpace(lineThrough.FontIdentity);
                     ArgumentNullException.ThrowIfNull(lineThrough.Color);
                     var lineThroughBounds = LineThroughBounds(lineThrough, fonts.Resolve(lineThrough.FontIdentity));
@@ -222,17 +225,17 @@ public static class CpuRasterizer
                 paint.IsAntialias = false;
                 canvas.DrawRect(Rect(fill.Bounds), paint);
             }
-            else if (command is DrawUnderline underline)
+            else if (command is DrawUnderline underline && underline.Thickness != 0)
             {
                 var bounds = UnderlineBounds(underline, fonts.Resolve(underline.FontIdentity));
                 DrawDecoration(canvas, paint, bounds, underline.Color, deviceScale, scrollX, activeScrollY);
             }
-            else if (command is DrawOverline overline)
+            else if (command is DrawOverline overline && overline.Thickness != 0)
             {
                 var bounds = OverlineBounds(overline, fonts.Resolve(overline.FontIdentity));
                 DrawDecoration(canvas, paint, bounds, overline.Color, deviceScale, scrollX, activeScrollY);
             }
-            else if (command is DrawLineThrough lineThrough)
+            else if (command is DrawLineThrough lineThrough && lineThrough.Thickness != 0)
             {
                 var bounds = LineThroughBounds(lineThrough, fonts.Resolve(lineThrough.FontIdentity));
                 DrawDecoration(canvas, paint, bounds, lineThrough.Color, deviceScale, scrollX, activeScrollY);
@@ -322,10 +325,10 @@ public static class CpuRasterizer
         var size = Math.Round(underline.FontSize * 64, MidpointRounding.AwayFromZero) / 64;
         using var font = new SKFont(typeface, Float(size)) { Hinting = SKFontHinting.None };
         font.GetFontMetrics(out var metrics);
-        if (metrics.UnderlinePosition is not { } position
-            || metrics.UnderlineThickness is not { } thickness
-            || !float.IsFinite(position) || !float.IsFinite(thickness) || thickness <= 0)
-        { throw new UnsupportedPaintException("The registered font lacks usable underline metrics."); }
+        if (metrics.UnderlinePosition is not { } position || !float.IsFinite(position))
+        { throw new UnsupportedPaintException("The registered font lacks a usable underline position."); }
+        var thickness = ResolveDecorationThickness(underline.Thickness, underline.IsFromFont,
+            metrics.UnderlineThickness, metrics.UnderlineThickness, "Underline");
         return DecorationBounds(new(underline.X, underline.Baseline + position, underline.Width, thickness), underline.IsDouble);
     }
     private static (LayoutRect First, LayoutRect? Second) LineThroughBounds(DrawLineThrough lineThrough, SKTypeface typeface)
@@ -335,10 +338,10 @@ public static class CpuRasterizer
         var size = Math.Round(lineThrough.FontSize * 64, MidpointRounding.AwayFromZero) / 64;
         using var font = new SKFont(typeface, Float(size)) { Hinting = SKFontHinting.None };
         font.GetFontMetrics(out var metrics);
-        if (metrics.StrikeoutPosition is not { } position
-            || metrics.StrikeoutThickness is not { } thickness
-            || !float.IsFinite(position) || !float.IsFinite(thickness) || thickness <= 0)
-        { throw new UnsupportedPaintException("The registered font lacks usable strikeout metrics."); }
+        if (metrics.StrikeoutPosition is not { } position || !float.IsFinite(position))
+        { throw new UnsupportedPaintException("The registered font lacks a usable strikeout position."); }
+        var thickness = ResolveDecorationThickness(lineThrough.Thickness, lineThrough.IsFromFont,
+            metrics.UnderlineThickness, metrics.StrikeoutThickness, "Line-through");
         return DecorationBounds(new(lineThrough.X, lineThrough.Baseline + position - thickness,
             lineThrough.Width, thickness), lineThrough.IsDouble);
     }
@@ -349,12 +352,26 @@ public static class CpuRasterizer
         var size = Math.Round(overline.FontSize * 64, MidpointRounding.AwayFromZero) / 64;
         using var font = new SKFont(typeface, Float(size)) { Hinting = SKFontHinting.None };
         font.GetFontMetrics(out var metrics);
-        if (!float.IsFinite(metrics.CapHeight) || metrics.CapHeight <= 0
-            || metrics.UnderlineThickness is not { } thickness
-            || !float.IsFinite(thickness) || thickness <= 0)
-        { throw new UnsupportedPaintException("The registered font lacks usable overline metrics."); }
+        if (!float.IsFinite(metrics.CapHeight) || metrics.CapHeight <= 0)
+        { throw new UnsupportedPaintException("The registered font lacks a usable overline position."); }
+        var thickness = ResolveDecorationThickness(overline.Thickness, overline.IsFromFont,
+            metrics.UnderlineThickness, metrics.UnderlineThickness, "Overline");
         return DecorationBounds(new(overline.X, overline.Baseline - metrics.CapHeight,
             overline.Width, thickness), overline.IsDouble);
+    }
+    private static double ResolveDecorationThickness(double? requested, bool isFromFont,
+        float? preferred, float? automatic, string kind)
+    {
+        if (requested is { } specified)
+        {
+            if (isFromFont || !double.IsFinite(specified) || specified <= 0)
+            { throw new UnsupportedPaintException($"{kind} thickness must be positive and finite."); }
+            return specified;
+        }
+        var metric = isFromFont ? preferred ?? automatic : automatic;
+        if (metric is not { } value || !float.IsFinite(value) || value <= 0)
+        { throw new UnsupportedPaintException($"The registered font lacks usable {kind.ToLowerInvariant()} thickness metrics."); }
+        return value;
     }
     private static (LayoutRect First, LayoutRect? Second) DecorationBounds(LayoutRect bounds, bool isDouble)
     {

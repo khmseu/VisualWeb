@@ -118,6 +118,16 @@ x64/arm64 und CodeQL bestehen (Runs
 Pass 8 ist abgeschlossen; zwei Inkremente verbleiben
 ([KP-289](./Kontextprotokoll.md#kp-289---pass-8-css-text-decoration-overline),
 [KP-290](./Kontextprotokoll.md#kp-290---pass-8-committed-and-ci-green)).
+Pass 9 ergaenzt die begrenzte CSS-Text-Decoration-Level-4-Eigenschaft
+`text-decoration-thickness`: nicht geerbt, `auto` als Initialwert,
+`from-font`, die benannten UA-Breiten und nichtnegative unterstuetzte
+Laengen/Prozente. Der Shorthand setzt Thickness bei Auslassung auf `auto`
+zurueck. Underline, Overline und Line-through tragen die ausgewaehlte Breite bis
+zur vorab validierten Rasterung; explizite Null unterdrueckt die Ausgabe.
+CSS (1.287), Paint (88), Solution-Build (0 Warnungen/Fehler), alle 16.437
+Solution-Tests, Formatverifikation und `git diff --check` bestehen lokal.
+Feature-Commit, Push und Remote-CI stehen aus; danach bleibt ein angefordertes
+Inkrement. Siehe [KP-291](./Kontextprotokoll.md#kp-291---pass-9-css-text-decoration-thickness).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

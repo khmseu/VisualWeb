@@ -148,6 +148,8 @@ public sealed class PaintTests
         Assert.False(underline.IsDouble);
         Assert.Equal(glyph.FontIdentity, underline.FontIdentity);
         Assert.Equal(glyph.FontSize, underline.FontSize);
+        Assert.Null(underline.Thickness);
+        Assert.False(underline.IsFromFont);
         Assert.Throws<PaintLimitException>(() => Page(html, css, new() { MaxCommands = 1 }));
     }
 
@@ -180,12 +182,45 @@ public sealed class PaintTests
     public void DoubleOverlineUsesTheOriginatingStyleAcrossDescendants()
     {
         const string html = "<div><span>x</span></div>";
-        const string css = "div{color:blue;text-decoration:overline;text-decoration-color:red;text-decoration-style:double}"
-            + "span{color:green;text-decoration-style:solid;text-decoration-line:none}";
+        const string css = "div{color:blue;text-decoration:overline 2px double;text-decoration-color:red}"
+            + "span{color:green;text-decoration-thickness:5px;text-decoration-style:solid;text-decoration-line:none}";
         var overline = Assert.Single(Page(html, css).Commands.OfType<DrawOverline>());
 
         Assert.Equal(Red, overline.Color);
         Assert.True(overline.IsDouble);
+        Assert.Equal(2, overline.Thickness);
+    }
+
+    [Fact]
+    public void FromFontDecorationThicknessRetainsItsModeInTheDisplayList()
+    {
+        var underline = Assert.Single(Page("<p>x</p>", "p{text-decoration:underline from-font}")
+            .Commands.OfType<DrawUnderline>());
+
+        Assert.Null(underline.Thickness);
+        Assert.True(underline.IsFromFont);
+    }
+
+    [Theory]
+    [InlineData("underline")]
+    [InlineData("line-through")]
+    public void ExplicitThicknessIsCarriedForEachDecorationLine(string line)
+    {
+        var list = Page("<p>x</p>", $"p{{text-decoration:{line} 2px}}");
+        var thicknesses = list.Commands.OfType<DrawUnderline>().Select(command => command.Thickness)
+            .Concat(list.Commands.OfType<DrawOverline>().Select(command => command.Thickness))
+            .Concat(list.Commands.OfType<DrawLineThrough>().Select(command => command.Thickness));
+
+        Assert.Equal(2, Assert.Single(thicknesses));
+    }
+
+    [Fact]
+    public void ZeroDecorationThicknessOmitsThePaintCommand()
+    {
+        var list = Page("<p>x</p>", "p{text-decoration:underline;text-decoration-thickness:0}");
+
+        Assert.Single(list.Commands.OfType<DrawGlyphRun>());
+        Assert.Empty(list.Commands.OfType<DrawUnderline>());
     }
 
     [Fact]
@@ -282,6 +317,11 @@ public sealed class PaintTests
         Assert.Contains(Enumerable.Range(0, frame.Size.Height).SelectMany(y =>
                 Enumerable.Range(0, frame.Size.Width).Select(x => Pixel(frame, x, y))),
             pixel => pixel.R == 255 && pixel.G == 0 && pixel.B == 0);
+        var customFrame = CpuRasterizer.Render(new(40, 40,
+            [underline with { Thickness = 2 }]), fonts, scale: 8, cancellationToken: Cancellation);
+        var customRows = Enumerable.Range(0, customFrame.Size.Height)
+            .Count(y => Pixel(customFrame, 80, y) is { R: 255, G: < 80, B: < 80 });
+        Assert.InRange(customRows, 14, 16);
         const double longPageOffset = 9_999_980;
         var scrolled = CpuRasterizer.Render(new(40, 40,
             [underline with { Baseline = longPageOffset }]), fonts, scrollY: longPageOffset,
@@ -1185,6 +1225,15 @@ public sealed class PaintTests
         var doubleFrame = CpuRasterizer.Render(new(40, 40,
             [overline with { IsDouble = true }]), fonts, scale: 8, cancellationToken: Cancellation);
         Assert.Equal(2, RedBandCount(doubleFrame, 80));
+        var customFrame = CpuRasterizer.Render(new(40, 40,
+            [overline with { Thickness = 2 }]), fonts, scale: 8, cancellationToken: Cancellation);
+        var customRows = Enumerable.Range(0, customFrame.Size.Height)
+            .Count(y => Pixel(customFrame, 80, y) is { R: 255, G: < 80, B: < 80 });
+        Assert.InRange(customRows, 14, 16);
+        var customDoubleFrame = CpuRasterizer.Render(new(40, 40,
+            [overline with { IsDouble = true, Thickness = 2 }]), fonts, scale: 8,
+            cancellationToken: Cancellation);
+        Assert.Equal(2, RedBandCount(customDoubleFrame, 80));
         Assert.Throws<UnsupportedPaintException>(() => CpuRasterizer.Render(
             new(40, 40, [overline with { FontIdentity = "unregistered" }]), fonts,
             cancellationToken: Cancellation));
@@ -1205,6 +1254,20 @@ public sealed class PaintTests
         var list = new DisplayList(40, 40, [lineThrough]);
 
         var frame = CpuRasterizer.Render(list, fonts, cancellationToken: Cancellation);
+        using var typeface = SKTypeface.FromFile(FontPath);
+        using var skFont = new SKFont(typeface, 20) { Hinting = SKFontHinting.None };
+        skFont.GetFontMetrics(out var metrics);
+        var fromFont = CpuRasterizer.Render(new(40, 40,
+            [lineThrough with { IsFromFont = true }]), fonts, scale: 8, cancellationToken: Cancellation);
+        var explicitFromFont = CpuRasterizer.Render(new(40, 40,
+            [lineThrough with { Thickness = metrics.UnderlineThickness ?? throw new InvalidOperationException() }]),
+            fonts, scale: 8, cancellationToken: Cancellation);
+        Assert.Equal(explicitFromFont.Pixels.ToArray(), fromFont.Pixels.ToArray());
+        var customFrame = CpuRasterizer.Render(new(40, 40,
+            [lineThrough with { Thickness = 2 }]), fonts, scale: 8, cancellationToken: Cancellation);
+        var customRows = Enumerable.Range(0, customFrame.Size.Height)
+            .Count(y => Pixel(customFrame, 80, y) is { R: 255, G: < 80, B: < 80 });
+        Assert.InRange(customRows, 14, 16);
         Assert.Contains(Enumerable.Range(0, frame.Size.Height).SelectMany(y =>
                 Enumerable.Range(0, frame.Size.Width).Select(x => Pixel(frame, x, y))),
             pixel => pixel.R > pixel.G && pixel.R > pixel.B);

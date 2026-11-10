@@ -23,8 +23,12 @@ Finite `underline` and `line-through` decorations use the exact registered
 font's corresponding OpenType metrics; `overline` uses its cap height and underline
 thickness. The decorating ancestor's computed color and style are retained.
 `solid` and `double` are supported; double paints two bands and an equal gap
-within the metric thickness. Missing required metrics fail explicitly; other
-decoration styles and custom thickness remain unsupported.
+within the metric thickness. `text-decoration-thickness` supports `auto`,
+`from-font`, `thin`/`medium`/`thick` and nonnegative computed lengths, including
+explicit zero suppression. Explicit thickness is preflighted as part of the
+single decoration command; missing required position/metric data fails
+explicitly. Other decoration styles, negative lengths and unlisted units
+remain unsupported.
 Text-backed inline solid backgrounds use ordered `FillRectangle` fragments
 before line text and inside existing scroll clips. They share the display-list
 command budget; inline-widget/line-break backgrounds and non-color background

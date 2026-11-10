@@ -31,21 +31,30 @@ public sealed record PaintOptions
 
 public abstract record PaintCommand;
 public sealed record FillRectangle(LayoutRect Bounds, CssColor Color) : PaintCommand;
-/// <summary>A bounded solid or double underline using the registered font's OpenType metrics.</summary>
-/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">underline</see> and
-/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
+/// <summary>A bounded solid or double underline using registered font metrics and optional CSS thickness.</summary>
+/// <remarks>Spec: css-text-decoration and css-text-decoration-4;
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">underline</see>,
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>, and
+/// <see href="https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-thickness">thickness</see>.</remarks>
 public sealed record DrawUnderline(string FontIdentity, double FontSize, CssColor Color,
-    double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
-/// <summary>A bounded solid or double overline using the registered font's metrics.</summary>
-/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">overline</see> and
-/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
+    double X, double Baseline, double Width, bool IsDouble = false, double? Thickness = null,
+    bool IsFromFont = false) : PaintCommand;
+/// <summary>A bounded solid or double overline using registered font metrics and optional CSS thickness.</summary>
+/// <remarks>Spec: css-text-decoration and css-text-decoration-4;
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">overline</see>,
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>, and
+/// <see href="https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-thickness">thickness</see>.</remarks>
 public sealed record DrawOverline(string FontIdentity, double FontSize, CssColor Color,
-    double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
-/// <summary>A bounded solid or double line-through using the registered font's OpenType metrics.</summary>
-/// <remarks>Spec: css-text-decoration; <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line-through</see> and
-/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>.</remarks>
+    double X, double Baseline, double Width, bool IsDouble = false, double? Thickness = null,
+    bool IsFromFont = false) : PaintCommand;
+/// <summary>A bounded solid or double line-through using registered font metrics and optional CSS thickness.</summary>
+/// <remarks>Spec: css-text-decoration and css-text-decoration-4;
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-line">line-through</see>,
+/// <see href="https://drafts.csswg.org/css-text-decor-3/#propdef-text-decoration-style">style</see>, and
+/// <see href="https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-thickness">thickness</see>.</remarks>
 public sealed record DrawLineThrough(string FontIdentity, double FontSize, CssColor Color,
-    double X, double Baseline, double Width, bool IsDouble = false) : PaintCommand;
+    double X, double Baseline, double Width, bool IsDouble = false, double? Thickness = null,
+    bool IsFromFont = false) : PaintCommand;
 /// <summary>A bounded solid ellipse used by disc list markers.</summary>
 /// <remarks>Spec: css2-lists; <see href="https://www.w3.org/TR/CSS22/generate.html#list-style">list style</see>.</remarks>
 public sealed record FillEllipse(LayoutRect Bounds, CssColor Color) : PaintCommand;
@@ -472,20 +481,28 @@ public static class DisplayListBuilder
                                     CssKeyword { Value: "double" } => true,
                                     _ => throw new UnsupportedPaintException("Unsupported text decoration style.")
                                 };
+                                var (thickness, isFromFont) = decoration["text-decoration-thickness"] switch
+                                {
+                                    CssKeyword { Value: "auto" } => ((double?)null, false),
+                                    CssKeyword { Value: "from-font" } => ((double?)null, true),
+                                    CssLength { Unit: "px", Value: >= 0 } value => (value.Value, false),
+                                    _ => throw new UnsupportedPaintException("Unsupported text decoration thickness.")
+                                };
+                                if (thickness == 0) { continue; }
                                 if (decorationLine == "underline")
                                 {
                                     Add(new DrawUnderline(fragment.Run.FontIdentity, fragment.Run.FontSize,
-                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble, thickness, isFromFont));
                                 }
                                 else if (decorationLine == "overline")
                                 {
                                     Add(new DrawOverline(fragment.Run.FontIdentity, fragment.Run.FontSize,
-                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble, thickness, isFromFont));
                                 }
                                 else
                                 {
                                     Add(new DrawLineThrough(fragment.Run.FontIdentity, fragment.Run.FontSize,
-                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble));
+                                        color, fragment.X, fragment.Baseline, fragment.Run.Width, isDouble, thickness, isFromFont));
                                 }
                             }
                         }
