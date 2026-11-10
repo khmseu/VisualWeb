@@ -99,9 +99,11 @@ Pass 6 ist abgeschlossen; vier Inkremente verbleiben
 Pass 7 ergaenzt `text-decoration-style` mit `solid` und `double` sowie die
 begrenzte Zeilen-/Stil-/Farbkomposition des `text-decoration`-Shorthands.
 CSS (1.269), Paint (82), Solution-Build, Formatverifikation und 16.413
-serielle Solution-Tests bestehen lokal; Feature-Commit, Push und CI stehen
-noch aus. Der Zehnerauftrag hat bis zum Abschluss vier verbleibende Inkremente
-([KP-287](./Kontextprotokoll.md#kp-287---pass-7-css-text-decoration-style)).
+serielle Solution-Tests bestehen lokal. Commit `384e99b` ist gepusht; Linux
+(Run 42769753973), Windows confinement (Run 42769753360) und CodeQL
+(Run 42769753102) sind erfolgreich. Pass 7 ist abgeschlossen; drei
+Inkremente verbleiben ([KP-287](./Kontextprotokoll.md#kp-287---pass-7-css-text-decoration-style),
+[KP-288](./Kontextprotokoll.md#kp-288---pass-7-committed-and-ci-green)).
 
 - Abgeschlossener Auftrag: am 2026-11-01 wurden zehn getrennte
   Missing-Prioritaetsinkremente angefordert. Damit ist der fruehere Stopp aus

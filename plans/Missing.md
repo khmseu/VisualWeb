@@ -1401,8 +1401,10 @@ accepts at most one supported line, style and color component each in any
 order, resetting omitted values to `none`, `solid` and `currentColor`. Other
 decoration styles remain unsupported. CSS (1,269), Paint (82), the
 zero-warning solution build, format verification and all 16,413 serial solution
-tests pass locally. Commit, push and remote CI are pending; Pass 7 is not yet
-counted complete.
+tests pass locally. Commit `384e99b` is pushed to `main`; Linux development
+(run 42769753973), Windows confinement x64/arm64 (run 42769753360) and
+CodeQL/Push on main (run 42769753102) all pass. Pass 7 is complete; three
+requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 
