@@ -121,6 +121,10 @@ The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/renderin
 (ID `html`) give `listing`, `xmp` and `plaintext` the same block display,
 1em vertical margins, monospace family and preserved whitespace as `pre`.
 They use the normal cascade and require an explicitly configured face.
+The inherited CSS Text `text-indent` property accepts a single supported
+length or percentage, including negative values, and defaults to zero. The
+layout subset applies it to the first formatted line of block flow only;
+`hanging` and `each-line` modifiers remain unsupported.
 `text-decoration-line` accepts `none`, `underline`, `overline` and `line-through`;
 `text-decoration-line` accepts `none` alone or distinct combinations of
 `underline`, `overline` and `line-through`; other line values are unsupported.

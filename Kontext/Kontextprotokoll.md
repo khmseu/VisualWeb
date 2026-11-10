@@ -7622,3 +7622,40 @@ Aenderungen an Browser-Code oder diesem Test vorgenommen.
 
 **Status:** Pass 10 ist committed, gepusht und durch die genannten CI-Laeufe
 validiert. Der angeforderte Zehnerauftrag ist abgeschlossen.
+
+### KP-295 - Neuer Zehnerauftrag und Pass 1: text-indent
+
+- Dokumentiert am: 2026-11-10, Europe/Berlin.
+- Ereignisdatum: 2026-11-10, Europe/Berlin.
+- Erfassungsart: neue Nutzeranfrage; Umsetzung und fokussierte Validierung.
+- Quelle: ausdruecklicher neuer Aufruf `/missing-priority-implementation 10`
+  in diesem Gespraech; [Prioritaetsfolge](../plans/Missing.md#recommended-priority).
+- Bezug: neuer Zehnerauftrag nach Abschluss KP-294; waehlt die erste
+  umsetzbare Arbeit aus Prioritaet 1.
+
+**Auswahl (Ableitung):** Prioritaet 1 verlangt lesbare einfache Seiten und
+nennt gewoehnliche CSS-/Block-Inline-Darstellung. Die CSS-Text-Level-3-
+Eigenschaft `text-indent` fehlte in der Registry; der frische lokale
+CSS-Text-Cache (`css-text`, geprueft 2026-11-07) weist sie als geerbte
+`<length-percentage>`-Eigenschaft mit Initialwert `0` fuer Blockcontainer aus.
+Darauf gestuetzt wurde ein begrenzter First-Line-Schritt statt einer
+Spekulation ueber ein groesseres Parser- oder Layout-Subsystem ausgewaehlt.
+
+**Umsetzung (belegt):** `text-indent` ist geerbt und initial `0`; eine
+unterstuetzte Laenge/Prozentangabe kann positiv oder negativ sein und
+verschiebt/einengt nur die erste formatierte Zeile. `hanging`, `each-line`
+und Berechnungen bleiben ausgeschlossen. Prozentwerte nutzen die eigene
+Block-Content-Breite. Tabellen-Intrinsics beruecksichtigen Pixel-Einrueckung;
+Prozentwerte dort scheitern explizit, statt mit unbekannter Tabellenbreite
+naeherungsweise zu layouten.
+
+**Validierung (belegt):** CSS (1.302) und Layout (924) fokussierte Testprojekte
+bestehen. `dotnet build VisualWeb.slnx --no-restore` besteht mit 0 Warnungen
+und 0 Fehlern; `dotnet test VisualWeb.slnx --no-build` besteht mit 16.458
+Tests; Formatverifikation mit `dotnet format VisualWeb.slnx
+--verify-no-changes --no-restore --exclude third_party` und
+`git diff --check` bestehen ebenfalls.
+
+**Status:** Pass 1 lokal vollstaendig validiert; Commit, Push und Remote-CI
+stehen noch aus. Neun weitere Inkremente des Nutzerauftrags bleiben; Folgearbeit
+beginnt erst nach erfolgreicher CI-Pruefung dieses Passes.

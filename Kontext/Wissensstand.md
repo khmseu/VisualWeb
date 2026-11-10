@@ -8,6 +8,15 @@
 
 ## Aktueller Wissensstand
 
+Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
+Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS
+`text-indent` fuer begrenzte First-Line-Einrueckung im normalen Blockfluss.
+CSS (1.302) und Layout (924) fokussierte Tests, Solution-Build (0 Warnungen/
+Fehler), Solution-Volltest (16.458), Formatverifikation und `git diff --check`
+bestehen. Commit, Push und CI stehen noch aus.
+Chronologischer Beleg und Auswahlgrund stehen in
+[KP-295](./Kontextprotokoll.md#kp-295---neuer-zehnerauftrag-und-pass-1-text-indent).
+
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
 abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres
 einzelnes Inkrement bearbeitet:

@@ -1443,6 +1443,17 @@ confinement x64/arm64 (run 42893005685) and CodeQL (run 42893004754) pass.
 The first Windows x64 attempt hit an unrelated Browser test timeout; the full
 Windows rerun passed. Pass 10 completes the requested ten increments.
 
+For the newly requested ten-pass run, Pass 1 adds inherited CSS
+`text-indent` for bounded first-line indentation in ordinary block flow.
+Lengths and percentages, including negative values, are supported; percentages
+resolve against the block's content width. `hanging` and `each-line` remain
+unsupported. Automatic table intrinsic sizing includes pixel indents and
+rejects percentage indents explicitly. Focused CSS (1,302) and Layout (924)
+tests pass. The solution build passed with zero warnings/errors; all 16,458
+solution tests, format verification and `git diff --check` pass. Commit, push
+and CI remain pending. See the [CSS scope](../docs/css.md#cascade-and-computed-values)
+and [ordinary flow](../docs/text-layout.md#ordinary-flow).
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

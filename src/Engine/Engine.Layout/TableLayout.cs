@@ -671,7 +671,7 @@ public static partial class StaticLayout
             {
                 if (value is CssLength { Unit: "%" } && (name.Contains("width", StringComparison.Ordinal)
                     || name.StartsWith("padding-", StringComparison.Ordinal) || name.StartsWith("margin-", StringComparison.Ordinal)
-                    || name.Contains("height", StringComparison.Ordinal)))
+                    || name.Contains("height", StringComparison.Ordinal) || name == "text-indent"))
                 { throw new UnsupportedLayoutException("Percentage dimensions inside intrinsic table cells are unsupported."); }
             }
             var inline = new List<InlineUnit>();
@@ -684,7 +684,7 @@ public static partial class StaticLayout
                 if (child is DomElement block && IsBlock(block))
                 {
                     FlushIntrinsic();
-                    var intrinsic = Intrinsic(block, depth + 1);
+                    var intrinsic = Intrinsic(block, depth + 1, cell);
                     min = Math.Max(min, intrinsic.Minimum);
                     max = Math.Max(max, intrinsic.Maximum);
                 }
@@ -720,13 +720,12 @@ public static partial class StaticLayout
                 if (inline.Count == 0) { return; }
                 if (inline.Any(unit => unit.Kind == UnitKind.Widget))
                 { throw new UnsupportedLayoutException("Form widgets in intrinsic table cells are unsupported."); }
-                min = Math.Max(min, WidthOf(Inline(inline, style, 0, 0, 0)));
-                max = Math.Max(max, WidthOf(Inline(inline, style, 0, 0, double.MaxValue / 4)));
+                var indent = Dimension(style["text-indent"], 0) ?? 0;
+                min = Math.Max(min, WidthOf(Inline(inline, style, 0, 0, 0, indent)));
+                max = Math.Max(max, WidthOf(Inline(inline, style, 0, 0, double.MaxValue / 4, indent)));
                 inline.Clear();
             }
-            static double WidthOf(IEnumerable<LayoutLine> lines) => lines.Select(line =>
-                line.Fragments.Sum(fragment => fragment.Run.Width) + line.Widgets.Sum(widget => widget.Bounds.Width))
-                .DefaultIfEmpty().Max();
+            static double WidthOf(IEnumerable<LayoutLine> lines) => lines.Select(line => line.IntrinsicWidth).DefaultIfEmpty().Max();
         }
 
         private ArrangedTable ArrangeTable(TablePlan plan, double x, double y, int depth,

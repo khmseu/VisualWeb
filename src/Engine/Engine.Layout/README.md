@@ -3,7 +3,9 @@
 Phase-7 finite horizontal LTR normal-flow block/inline geometry and bounded
 space/internal-ASCII-hyphen line wrapping, with selected ASCII solidi
 and bounded ASCII infix separators and email joiners retained in unbroken
-words. Inputs are renderer-local DOM, computed CSS snapshots and an injected
+words. Inherited `text-indent` applies supported length/percentage first-line
+offsets; percentage indents in automatic table intrinsic sizing fail explicitly.
+Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
 Depends on Engine.Dom/Css/Text, not native OS backends, loading or chrome.

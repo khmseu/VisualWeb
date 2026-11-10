@@ -361,6 +361,13 @@ have zero intrinsic content size.
   parent's definite clamped content height. Against an indefinite height,
   percentage height is auto, percentage min-height is zero and max-height none.
 - Auto height from stacked block children and anonymous inline line groups.
+- Inherited `text-indent` applies a supported length/percentage to the first
+  formatted line only; negative values may move that line before the content
+  edge. Percentages use the block's own content width. Automatic table
+  intrinsic sizing includes pixel indents and rejects percentage indents.
+  `hanging` and `each-line` modifiers are unsupported. See CSS Text
+  [`text-indent`](https://drafts.csswg.org/css-text-3/#propdef-text-indent)
+  (local ID `css-text`).
 - Vertical margins between adjacent block siblings collapse, including
   positive and negative margins. Parent margins also collapse through eligible
   first/last block-child edges without intervening content/borders/padding; bottom

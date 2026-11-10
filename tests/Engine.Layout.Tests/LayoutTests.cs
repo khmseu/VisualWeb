@@ -3492,6 +3492,47 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void TextIndentOffsetsAndNarrowsOnlyTheFirstFormattedLine()
+    {
+        var box = Find(Layout("<p id=x>aa bb cc</p>", "#x{text-indent:10px}", width: 30).Root!, "x");
+
+        Assert.Equal(2, box.Lines.Count);
+        Assert.Equal(10, box.Lines[0].Fragments[0].X);
+        Assert.Equal(0, box.Lines[1].Fragments[0].X);
+        Assert.Equal(new LayoutRect(0, 0, 30, 10), box.Lines[0].Bounds);
+        Assert.Equal(new LayoutRect(0, 10, 30, 10), box.Lines[1].Bounds);
+    }
+
+    [Theory]
+    [InlineData("-5px", -5)]
+    [InlineData("10%", 3)]
+    public void TextIndentSupportsNegativeAndPercentageFirstLineOffsets(string indent, double expectedX)
+    {
+        var box = Find(Layout("<p id=x>aa bb cc</p>", "#x{text-indent:" + indent + "}", width: 30).Root!, "x");
+
+        Assert.Equal(expectedX, box.Lines[0].Fragments[0].X);
+        Assert.Equal(0, box.Lines[1].Fragments[0].X);
+    }
+
+    [Fact]
+    public void PixelTextIndentContributesToAutomaticTableIntrinsicSizing()
+    {
+        var cell = Find(UnorderedList("<table><tbody><tr><td id=x>a</td></tr></tbody></table>",
+            "td{text-indent:10px}", width: 20).Root!, "x");
+
+        Assert.True(cell.Content.Width >= 15);
+        Assert.Equal(cell.Content.X + 10, cell.Lines[0].Fragments[0].X);
+    }
+
+    [Fact]
+    public void PercentageTextIndentFailsExplicitlyInAutomaticTableIntrinsicSizing()
+    {
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tbody><tr><td id=x>a</td></tr></tbody></table>",
+                "td{text-indent:10%}", width: 100));
+    }
+
+    [Fact]
     public void JustifyAlignHintPreservesUnsupportedNoBreakSpaceBoundary()
     {
         Assert.Throws<UnsupportedLayoutException>(() =>

@@ -71,6 +71,7 @@ internal static class CssProperties
             ["font-style"] = new(new CssKeyword("normal"), true),
             ["line-height"] = new(new CssKeyword("normal"), true),
             ["text-align"] = new(new CssKeyword("start"), true),
+            ["text-indent"] = new(new CssLength(0, "px"), true),
             ["text-decoration-line"] = new(new CssKeyword("none"), false),
             ["text-decoration-thickness"] = new(new CssKeyword("auto"), false),
             ["text-decoration-style"] = new(new CssKeyword("solid"), false),
@@ -352,7 +353,8 @@ internal static class CssProperties
             || name is "width" or "height" or "min-width" or "min-height")) { return new CssKeyword(keyword); }
         if (keyword == "none" && name is "max-width" or "max-height") { return new CssKeyword(keyword); }
         var length = Length(token, !borderWidth);
-        return length is not null && (length.Value >= 0 || name.StartsWith("margin-", StringComparison.Ordinal)) ? length : null;
+        return length is not null && (length.Value >= 0 || name.StartsWith("margin-", StringComparison.Ordinal)
+            || name == "text-indent") ? length : null;
     }
 
     private static CssValue? ParseDecorationLines(IReadOnlyList<CssToken> tokens)

@@ -34,6 +34,7 @@ public sealed record LayoutLine(LayoutRect Bounds, double Baseline, IReadOnlyLis
     public IReadOnlyList<LayoutInlineWidget> Widgets { get; init; } = Array.Empty<LayoutInlineWidget>();
     /// <summary>Inline backgrounds in ancestor-before-descendant paint order.</summary>
     public IReadOnlyList<LayoutInlineBackground> InlineBackgrounds { get; init; } = Array.Empty<LayoutInlineBackground>();
+    internal double IntrinsicWidth { get; init; }
 }
 [SuppressMessage("Sonar", "S2094", Justification = "This intentional marker record is the closed layout-flow contract that distinguishes block and line items without mutable state.")]
 public abstract record LayoutFlowItem;
@@ -461,7 +462,7 @@ public static partial class StaticLayout
             void Flush()
             {
                 if (inline.Count == 0) { return; }
-                var formatted = Inline(inline, style, contentX, cursor, width);
+                var formatted = Inline(inline, style, contentX, cursor, width, Dimension(style["text-indent"], width) ?? 0);
                 blockLines.AddRange(formatted);
                 flow.AddRange(formatted.Select(line => new LayoutLineItem(line)));
                 if (formatted.Count > 0)
@@ -814,13 +815,15 @@ public static partial class StaticLayout
             }
         }
 
-        private List<LayoutLine> Inline(List<InlineUnit> input, CssComputedStyle blockStyle, double x, double y, double width)
+        private List<LayoutLine> Inline(List<InlineUnit> input, CssComputedStyle blockStyle, double x, double y, double width,
+            double firstLineIndent = 0)
         {
             var output = new List<LayoutLine>();
             var pending = new List<Placed>();
             var activeInline = new List<(DomElement Element, CssComputedStyle Style)>();
             var advance = 0.0;
             var hasContent = false;
+            var firstLine = true;
             InlineUnit? space = null;
             InlineUnit? previousWord = null;
             var previousWidgetAllowsWrap = false;
@@ -867,7 +870,7 @@ public static partial class StaticLayout
                     var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width, widget);
                     var widgetGap = space is not null && hasContent ? Shape(" ", space.Style) : null;
                     if (hasContent && (space?.Wrap == true || unit.Wrap && previousWord?.EndsWithAtomicGlue != true)
-                        && advance + (widgetGap?.Width ?? 0) + widgetWidth > width)
+                        && advance + (widgetGap?.Width ?? 0) + widgetWidth > AvailableWidth())
                     {
                         Emit(false, softWrap: true);
                         widgetGap = null;
@@ -901,7 +904,7 @@ public static partial class StaticLayout
                 var gap = space is not null && hasContent ? Shape(" ", space.Style) : null;
                 var breakable = space?.Wrap == true || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])
                     || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
-                if (hasContent && breakable && advance + (gap?.Width ?? 0) + run.Width > width)
+                if (hasContent && breakable && advance + (gap?.Width ?? 0) + run.Width > AvailableWidth())
                 {
                     Emit(false, softWrap: true);
                     gap = null;
@@ -922,6 +925,9 @@ public static partial class StaticLayout
             if (hasContent) { Emit(false); }
             return output;
 
+            double CurrentIndent() => firstLine ? firstLineIndent : 0;
+            double AvailableWidth() => Finite(width - CurrentIndent());
+
             void PlaceHyphenatedWord(InlineUnit unit)
             {
                 var remaining = unit.Text;
@@ -930,7 +936,7 @@ public static partial class StaticLayout
                 {
                     ChargeLineBreakWork(remaining.Length);
                     var whole = Shape(remaining, unit.Style);
-                    var available = width - advance - (gap?.Width ?? 0);
+                    var available = AvailableWidth() - advance - (gap?.Width ?? 0);
                     if (whole.Width <= available)
                     {
                         Place(whole);
@@ -1018,12 +1024,15 @@ public static partial class StaticLayout
                     ascent = Math.Max(ascent, extents.Ascent);
                     descent = Math.Max(descent, extents.Descent);
                 }
+                var lineIndent = CurrentIndent();
+                var lineWidth = Finite(width - lineIndent);
                 var align = ((CssKeyword)blockStyle["text-align"]).Value;
-                if (align == "justify" && softWrap && width > advance) { Justify(); }
-                var offset = align is "right" or "end" ? width - advance : align == "center" ? (width - advance) / 2 : 0;
+                if (align == "justify" && softWrap && lineWidth > advance) { Justify(lineWidth); }
+                var offset = Finite(lineIndent + (align is "right" or "end" ? lineWidth - advance
+                    : align == "center" ? (lineWidth - advance) / 2 : 0));
                 var baseline = y + ascent;
                 var fragments = pending.Where(p => p.Source is not null).Select(p => new LayoutTextFragment(p.Source!, p.Run,
-                    x + offset + p.Advance, baseline, p.Style)).ToList().AsReadOnly();
+                    Finite(x + offset + p.Advance), baseline, p.Style)).ToList().AsReadOnly();
                 var inlineBackgrounds = InlineBackgroundFragments(inlineStruts, x, offset, baseline);
                 var widgets = pending.Where(placed => placed.Widget is not null).Select(placed =>
                     new LayoutInlineWidget(placed.Widget!, Rect(x + offset + placed.Advance, y + ascent - placed.Height,
@@ -1031,12 +1040,14 @@ public static partial class StaticLayout
                 output.Add(new LayoutLine(Rect(x, y, width, ascent + descent), Finite(baseline), fragments)
                 {
                     Widgets = Array.AsReadOnly(widgets),
-                    InlineBackgrounds = Array.AsReadOnly(inlineBackgrounds)
+                    InlineBackgrounds = Array.AsReadOnly(inlineBackgrounds),
+                    IntrinsicWidth = Finite(Math.Max(0, advance + lineIndent))
                 });
                 y += ascent + descent;
                 pending.Clear();
                 advance = 0;
                 hasContent = false;
+                firstLine = false;
                 foreach (var (element, style) in activeInline)
                 {
                     pending.Add(new(null, Shape("", style), style, 0) { InlineElement = element });
@@ -1109,7 +1120,7 @@ public static partial class StaticLayout
                 return result;
             }
 
-            void Justify()
+            void Justify(double lineWidth)
             {
                 ChargeLineBreakWork(pending.Count);
                 var opportunities = 0;
@@ -1123,7 +1134,7 @@ public static partial class StaticLayout
                     if (placed.JustificationSpace) { opportunities++; }
                 }
                 if (opportunities == 0) { return; }
-                var slack = width - advance;
+                var slack = lineWidth - advance;
                 var shift = 0.0;
                 var seen = 0;
                 for (var index = 0; index < pending.Count; index++)
