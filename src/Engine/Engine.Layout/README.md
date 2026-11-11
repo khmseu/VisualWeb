@@ -13,6 +13,9 @@ and locale-sensitive behavior is deferred.
 Inherited `word-spacing` applies nonnegative supported lengths to collapsed
 and preserved ASCII spaces; negative lengths and non-ASCII word separators
 remain unsupported.
+`white-space:pre-wrap` preserves ASCII spaces and newlines, wraps after space
+sequences, and hangs line-ending spaces; tabs/form feeds and `break-spaces`
+remain unsupported.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.

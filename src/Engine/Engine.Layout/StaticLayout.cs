@@ -140,6 +140,9 @@ public sealed record LayoutOptions
 /// Bounded inter-word justification uses css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#text-align-property">text alignment</see> and
 /// <see href="https://drafts.csswg.org/css-text-3/#text-justify-property">justification methods</see>.
+/// Bounded pre-wrap preserves ASCII spaces/newlines, wraps after space sequences and hangs line-ending spaces;
+/// it follows css-text <see href="https://drafts.csswg.org/css-text-3/#white-space-property">white-space processing</see>
+/// (local ID css-text).
 /// Supported legacy list type hints follow html
 /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#lists">list rendering</see>.
 /// Hidden-until-found and hidden embed rendering are explicitly unsupported; see html
@@ -652,7 +655,7 @@ public static partial class StaticLayout
 
         private static bool CanSoftWrap(string whitespace) => whitespace switch
         {
-            "normal" or "pre-line" => true,
+            "normal" or "pre-line" or "pre-wrap" => true,
             "nowrap" or "pre" => false,
             _ => throw new UnsupportedLayoutException($"white-space:{whitespace} is outside the initial layout subset.")
         };
@@ -706,15 +709,15 @@ public static partial class StaticLayout
                     if (c is ' ' or '\n' or '\t' or '\f')
                     {
                         EmitWord();
-                        if (c == '\n' && whitespace is "pre" or "pre-line")
+                        if (c == '\n' && whitespace is "pre" or "pre-line" or "pre-wrap")
                         {
                             output.Add(new(text, inheritedStyle, "", UnitKind.Break, false)
                             { Backgrounds = backgroundOwners });
                         }
-                        else if (whitespace == "pre")
+                        else if (whitespace is "pre" or "pre-wrap")
                         {
                             if (c != ' ') { throw new UnsupportedLayoutException("Preserved tabs/form feeds require deferred tab-stop handling."); }
-                            output.Add(new(text, inheritedStyle, " ", UnitKind.PreservedSpace, false)
+                            output.Add(new(text, inheritedStyle, " ", UnitKind.PreservedSpace, whitespace == "pre-wrap")
                             { Backgrounds = backgroundOwners });
                         }
                         else
@@ -850,6 +853,8 @@ public static partial class StaticLayout
             var pending = new List<Placed>();
             var activeInline = new List<(DomElement Element, CssComputedStyle Style)>();
             var advance = 0.0;
+            var hangingWidth = 0.0;
+            var hasHangingSpaces = false;
             var hasContent = false;
             var firstLine = true;
             InlineUnit? space = null;
@@ -897,7 +902,8 @@ public static partial class StaticLayout
                     var widget = unit.Widget ?? throw new InvalidOperationException("Inline widget is missing its element.");
                     var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width, widget);
                     var widgetGap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
-                    if (hasContent && (space?.Wrap == true || unit.Wrap && previousWord?.EndsWithAtomicGlue != true)
+                    if (hasContent && (space?.Wrap == true || hasHangingSpaces
+                        || unit.Wrap && previousWord?.EndsWithAtomicGlue != true)
                         && advance + (widgetGap?.Width ?? 0) + widgetWidth > AvailableWidth())
                     {
                         Emit(false, softWrap: true);
@@ -912,6 +918,8 @@ public static partial class StaticLayout
                     space = null;
                     pending.Add(new(null, Shape("", unit.Style), unit.Style, advance, widget, widgetWidth, widgetHeight));
                     advance += widgetWidth;
+                    hangingWidth = 0;
+                    hasHangingSpaces = false;
                     hasContent = true;
                     previousWord = null;
                     previousWidgetAllowsWrap = unit.Wrap;
@@ -920,6 +928,11 @@ public static partial class StaticLayout
                 if (previousWord is not null && unit.Kind == UnitKind.Word)
                 {
                     throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
+                }
+                if (hasHangingSpaces && unit.Kind == UnitKind.Word
+                    && (unit.Text[0] == '\u00a0' || IsAtomicWrapGlue(unit.Text[0])))
+                {
+                    throw new UnsupportedLayoutException("Pre-wrap spaces adjacent to Unicode glue require deferred line-break backtracking.");
                 }
                 if (unit.HasHyphenBreaks)
                 {
@@ -931,8 +944,9 @@ public static partial class StaticLayout
                 var run = unit.Kind == UnitKind.PreservedSpace
                     ? ShapeWordSpace(unit.Style) : Shape(unit.Text, unit.Style);
                 var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
-                var breakable = space?.Wrap == true || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])
-                    || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
+                var breakable = space?.Wrap == true
+                    || unit.Kind != UnitKind.PreservedSpace && previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])
+                    || hasHangingSpaces && unit.Kind != UnitKind.PreservedSpace;
                 if (hasContent && breakable && advance + (gap?.Width ?? 0) + run.Width > AvailableWidth())
                 {
                     Emit(false, softWrap: true);
@@ -947,6 +961,16 @@ public static partial class StaticLayout
                 space = null;
                 pending.Add(new(unit.Source!, run, unit.Style, advance) { Backgrounds = unit.Backgrounds });
                 advance += run.Width;
+                if (unit.Kind == UnitKind.PreservedSpace && unit.Wrap)
+                {
+                    hangingWidth = Finite(hangingWidth + run.Width);
+                    hasHangingSpaces = true;
+                }
+                else
+                {
+                    hangingWidth = 0;
+                    hasHangingSpaces = false;
+                }
                 hasContent = true;
                 previousWord = unit.Kind == UnitKind.Word ? unit : null;
                 previousWidgetAllowsWrap = false;
@@ -988,7 +1012,7 @@ public static partial class StaticLayout
                         if (first is null) { first = candidate; firstEnd = end; }
                         if (candidate.Width <= available) { best = candidate; bestEnd = end; }
                     }
-                    if (best is null && hasContent && (space?.Wrap == true
+                    if (best is null && hasContent && (space?.Wrap == true || hasHangingSpaces
                         || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])))
                     {
                         Emit(false, softWrap: true);
@@ -1026,6 +1050,8 @@ public static partial class StaticLayout
                     space = null;
                     pending.Add(new(unit.Source!, run, unit.Style, advance) { Backgrounds = unit.Backgrounds });
                     advance += run.Width;
+                    hangingWidth = 0;
+                    hasHangingSpaces = false;
                     hasContent = true;
                 }
             }
@@ -1034,6 +1060,7 @@ public static partial class StaticLayout
             {
                 if (!force && !hasContent) { return; }
                 if (++lines > options.MaxLines) { throw new LayoutLimitException("Layout line limit exceeded."); }
+                var lineAdvance = Finite(Math.Max(0, advance - hangingWidth));
                 var strut = Shape("", blockStyle);
                 var (ascent, descent) = Extents(strut, blockStyle);
                 var inlineStruts = new Dictionary<DomElement, (double Ascent, double Descent)>(ReferenceEqualityComparer.Instance);
@@ -1063,14 +1090,14 @@ public static partial class StaticLayout
                     if (lastAlign != "auto") { align = lastAlign; }
                     else if (align == "justify") { align = "start"; }
                 }
-                if (align == "justify" && (softWrap || justifyLastLine) && lineWidth > advance)
+                if (align == "justify" && (softWrap || justifyLastLine) && lineWidth > lineAdvance)
                 {
-                    var justified = !intrinsicSizing && Justify(lineWidth);
+                    var justified = !intrinsicSizing && Justify(lineWidth, lineAdvance);
                     if (justifyLastLine && !justified) { align = "center"; }
                 }
                 else if (justifyLastLine) { align = "center"; }
-                var offset = Finite(lineIndent + (align is "right" or "end" ? lineWidth - advance
-                    : align == "center" ? (lineWidth - advance) / 2 : 0));
+                var offset = Finite(lineIndent + (align is "right" or "end" ? lineWidth - lineAdvance
+                    : align == "center" ? (lineWidth - lineAdvance) / 2 : 0));
                 var baseline = y + ascent;
                 var fragments = pending.Where(p => p.Source is not null).Select(p => new LayoutTextFragment(p.Source!, p.Run,
                     Finite(x + offset + p.Advance), baseline, p.Style)).ToList().AsReadOnly();
@@ -1082,11 +1109,13 @@ public static partial class StaticLayout
                 {
                     Widgets = Array.AsReadOnly(widgets),
                     InlineBackgrounds = Array.AsReadOnly(inlineBackgrounds),
-                    IntrinsicWidth = Finite(Math.Max(0, advance + lineIndent))
+                    IntrinsicWidth = Finite(Math.Max(0, lineAdvance + lineIndent))
                 });
                 y += ascent + descent;
                 pending.Clear();
                 advance = 0;
+                hangingWidth = 0;
+                hasHangingSpaces = false;
                 hasContent = false;
                 firstLine = false;
                 foreach (var (element, style) in activeInline)
@@ -1161,7 +1190,7 @@ public static partial class StaticLayout
                 return result;
             }
 
-            bool Justify(double lineWidth)
+            bool Justify(double lineWidth, double lineAdvance)
             {
                 ChargeLineBreakWork(pending.Count);
                 var opportunities = 0;
@@ -1175,7 +1204,7 @@ public static partial class StaticLayout
                     if (placed.JustificationSpace) { opportunities++; }
                 }
                 if (opportunities == 0) { return false; }
-                var slack = lineWidth - advance;
+                var slack = lineWidth - lineAdvance;
                 var shift = 0.0;
                 var seen = 0;
                 for (var index = 0; index < pending.Count; index++)

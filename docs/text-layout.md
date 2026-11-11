@@ -411,7 +411,7 @@ have zero intrinsic content size.
   [text alignment](https://drafts.csswg.org/css-text-3/#text-align-property)
   and [justification methods](https://drafts.csswg.org/css-text-3/#text-justify-property)
   (local ID `css-text`).
-- In `normal`/`pre-line`, a leading ASCII hyphen before a digit and internal
+- In `normal`/`pre-line`/`pre-wrap`, a leading ASCII hyphen before a digit and internal
   hyphens between ASCII letters/digits are supported within one text node.
   An internal hyphen is a soft break only before a letter, never before a
   digit. Negative numbers and dates such as `-1,000.25` and `2026-10-31`
@@ -425,7 +425,7 @@ have zero intrinsic content size.
   [LB21](https://www.unicode.org/reports/tr14/tr14-55.html#LB21) and
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) (local ID
   `unicode-linebreak`, UAX 14 revision 55).
-- In `normal`/`pre-line`, a solidus between two ASCII letters or two ASCII
+- In `normal`/`pre-line`/`pre-wrap`, a solidus between two ASCII letters or two ASCII
   digits in one text node is part of the unbroken shaped word, including
   `and/or`, `1/2` and `24/7` and mixtures with supported hyphen breaks. It can
   overflow and contributes its full unbreakable segment width to table sizing.
@@ -435,7 +435,7 @@ have zero intrinsic content size.
   [LB13](https://www.unicode.org/reports/tr14/tr14-55.html#LB13) and
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25)
   (local ID `unicode-linebreak`); it is not general URL or Unicode line breaking.
-- In `normal`/`pre-line`, `.`, `,`, `:` and `;` between ASCII letters or digits
+- In `normal`/`pre-line`/`pre-wrap`, `.`, `,`, `:` and `;` between ASCII letters or digits
   in one text node stay in the unbroken shaped word. This includes
   `example.com`, `1,000.25` and `12:30`; space and supported hyphen breaks
   remain available around the word. Intrinsic table sizing includes the full
@@ -444,7 +444,7 @@ have zero intrinsic content size.
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) and
   [LB29](https://www.unicode.org/reports/tr14/tr14-55.html#LB29) (local ID
   `unicode-linebreak`). This is not general punctuation or URL line breaking.
-- In `normal`/`pre-line`, internal `@`, `_` and `+` with an ASCII letter or
+- In `normal`/`pre-line`/`pre-wrap`, internal `@`, `_` and `+` with an ASCII letter or
   digit immediately on each side in the same text node stay in the unbroken
   shaped word. This allows examples such as `first.last+tag@example.com` and
   `user_name@example.com` without changing space or supported hyphen breaks.
@@ -455,8 +455,10 @@ have zero intrinsic content size.
   [LB28](https://www.unicode.org/reports/tr14/tr14-55.html#LB28) (local ID
   `unicode-linebreak`). Adjacent symbols, non-ASCII neighbors and cross-node
   words remain unsupported; this is not general email or URL line breaking.
-- white-space normal, nowrap, pre and pre-line; preserved ASCII spaces/newlines,
-  explicit br breaks. Preserved tabs/form feeds are unsupported.
+- white-space normal, nowrap, pre, pre-line and bounded pre-wrap; preserved
+  ASCII spaces/newlines and explicit br breaks. Pre-wrap wraps after a sequence
+  of preserved spaces and hangs end-of-line spaces. Preserved tabs/form feeds,
+  break-spaces and pre-wrap space runs adjacent to Unicode glue are unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
   including URLs, hyphens and internal punctuation, without introducing soft
   breaks. Overflow remains measurable for document scrolling. `pre` still
@@ -465,7 +467,7 @@ have zero intrinsic content size.
   path, with an explicitly registered monospace face.
   See [CSS Text white-space](https://drafts.csswg.org/css-text-3/#white-space-property)
   (local ID `css-text`). Script/bidi/control and missing-glyph failures remain.
-- In `normal`/`pre-line`, supported inline form controls provide soft-wrap
+- In `normal`/`pre-line`/`pre-wrap`, supported inline form controls provide soft-wrap
   opportunities on either side, including next to a no-break space (U+00A0).
   `pre`/`nowrap` do not soft-wrap at these boundaries. The surrounding
   inline's whitespace mode governs the boundary, independently of the
@@ -515,9 +517,9 @@ flow without specialized figure layout.
   nonwrapping pre/nowrap do not need this analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
-- Mixed whitespace modes inside inline elements, pre-wrap/break-spaces, tab
-  stops, other justification opportunities/methods, `text-align-last`,
-  `text-justify` and cross-node/style shaping inside an unbroken word.
+- Mixed whitespace modes inside inline elements, break-spaces, tab
+  stops, other justification opportunities/methods, `text-justify` and
+  cross-node/style shaping inside an unbroken word.
 - Margin collapse, floats, positioning, general inline-block, inline margins/
   padding/borders, backgrounds on or around atomic widgets, tables beyond the
   subset above, ruby, broader list markers, replaced elements,

@@ -7808,3 +7808,44 @@ sind erfolgreich.
 
 **Status:** Pass 4 ist lokal validiert, committed, gepusht und CI-geprueft;
 sechs weitere Inkremente bleiben.
+
+### KP-299 - Pass 5: bounded pre-wrap
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Umsetzung und lokale
+  Vollvalidierung, Commit und CI noch offen.
+- Quellen: vom Nutzer fortgefuehrter Auftrag
+  `/missing-priority-implementation 10`, [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [CSS guide](../docs/css.md#cascade-and-computed-values),
+  [layout guide](../docs/text-layout.md#ordinary-flow), lokaler `css-text` Cache
+  (Manifest geprueft am 2026-11-07), aktuelle Layout-Implementierung und Tests.
+- Bezug: fuenfter der zehn getrennten Missing-Prioritaetsinkremente; folgt auf
+  KP-298.
+
+**Auswahl (Ableitung):** Der aktive Tracker priorisiert lesbare, gewoehnlich
+gestaltete Seiten. Die Fortsetzung waehlte als naechsten kleinen Layoutschritt
+die bereits geparste, aber zuvor nicht layout-faehige CSS-Text-Variante
+`white-space:pre-wrap`; die Auswahl ist Arbeitsreihenfolge, keine gesonderte
+Nutzerentscheidung.
+
+**Umsetzung (belegt):** Begrenztes `pre-wrap` behaelt ASCII-Leerzeichen und
+Segment-Newlines, erzeugt Umbrueche nach Leerzeichensequenzen und behandelt
+Zeilenend-Leerzeichen als haengend, sodass sie nicht in Ausrichtung oder
+intrinsische Zeilenbreite eingehen. Gemischte Inline-Whitespace-Modi,
+Tabs/Form-Feeds, `break-spaces` und Leerzeichensequenzen neben Unicode-Glue
+bleiben explizit unsupported.
+
+**Validierung (belegt):** Layout (940) und CSS (1.344) Tests bestehen.
+`dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern;
+`dotnet test VisualWeb.slnx --no-build` besteht mit 16.516 Tests.
+Formatverifikation und `git diff --check` bestehen. Der lokale
+CSS-Text-Cache wurde am 2026-11-07 geprueft und war am 2026-11-11 aktuell.
+
+**Vorheriger CI-Nachtrag (belegt):** Der Windows-confinement-Workflow fuer den
+separaten Pass-4-Trackercommit `e2f3183` war zunaechst noch in Arbeit; Run
+[42933239637](https://github.com/khmseu/VisualWeb/actions/runs/42933239637)
+ist inzwischen erfolgreich.
+
+**Status:** Pass 5 ist lokal validiert; Commit und CI sind noch offen. Nach
+Abschluss dieses Inkrements verbleiben fuenf der zehn angeforderten Passes.

@@ -397,6 +397,11 @@ Inherited `word-spacing` defaults to `normal` and accepts nonnegative supported
 lengths, resolved to absolute lengths before inheritance. Layout adds that
 length to collapsed or preserved ASCII spaces. Negative lengths, percentage
 values and non-ASCII word separators remain unsupported.
+Layout also supports `white-space:pre-wrap` for preserved ASCII spaces and
+segment-break newlines, wrapping after each space sequence and hanging
+end-of-line spaces. Preserved tabs/form feeds and `break-spaces` remain outside
+the layout subset. Mixed whitespace modes inside inline content and pre-wrap
+space runs adjacent to Unicode glue remain explicit layout failures.
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. The finite `background` shorthand accepts one supported

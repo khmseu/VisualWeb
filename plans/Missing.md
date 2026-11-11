@@ -1508,6 +1508,16 @@ and Push on main/CodeQL
 ([42931828462](https://github.com/khmseu/VisualWeb/actions/runs/42931828462))
 pass. Pass 4 is complete; six increments remain.
 
+Pass 5 supports bounded `white-space:pre-wrap`: ASCII spaces and segment-break
+newlines are preserved, wrapping occurs after a sequence of spaces, and
+line-ending spaces hang outside line alignment and intrinsic width. Mixed
+whitespace modes, preserved tabs/form feeds, `break-spaces` and pre-wrap space
+runs adjacent to Unicode glue remain unsupported. CSS (1,344), Layout (940),
+the zero-warning solution build, all 16,516 solution tests, format verification
+and `git diff --check` pass locally. Commit and CI are pending; five further
+increments remain after this pass. See the [CSS scope](../docs/css.md#cascade-and-computed-values)
+and [ordinary flow](../docs/text-layout.md#ordinary-flow).
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

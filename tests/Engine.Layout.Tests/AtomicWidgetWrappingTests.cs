@@ -191,6 +191,8 @@ public sealed class AtomicWidgetWrappingTests
     [InlineData("normal", "pre", false, "1/2|[w]")]
     [InlineData("pre-line", "pre-wrap", true, "[w]|1/2")]
     [InlineData("pre-line", "nowrap", false, "1/2|[w]")]
+    [InlineData("pre-wrap", "normal", true, "[w]|1/2")]
+    [InlineData("pre-wrap", "normal", false, "1/2|[w]")]
     [InlineData("nowrap", "normal", true, "[w]1/2")]
     [InlineData("nowrap", "pre-line", false, "1/2[w]")]
     [InlineData("pre", "normal", true, "[w]1/2")]
@@ -272,7 +274,7 @@ public sealed class AtomicWidgetWrappingTests
     [InlineData("<span><input id=w></span>")]
     public void AtomicWidgetBoundariesRejectUnsupportedContainingWhitespaceWithoutText(string content)
     {
-        var (document, styles) = Page(content, "#p{white-space:pre-wrap}input{white-space:normal}");
+        var (document, styles) = Page(content, "#p{white-space:break-spaces}input{white-space:normal}");
         Assert.Throws<UnsupportedLayoutException>(() => Layout(document, styles, 20));
     }
 
