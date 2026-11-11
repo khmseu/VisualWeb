@@ -115,7 +115,9 @@ Arbeitsbudget bleiben erhalten. Layout (1.000), Text (19), fokussierte Layout-
 tests (128), natives Shaping (1), Solution-Build (0 Warnungen/Fehler),
 Solution-Volltest (16.578), Formatverifikation und `git diff --check` bestehen
 lokal; die exakte Umbruchgrenze ist 17 erfolgreich gegen 16 mit Limitfehler.
-Pass 10 ist lokal validiert; CI ist nach Push noch offen. Siehe
+Featurecommit `f0570c5` ist gepusht; Linux (Run 42967745855), Windows
+confinement (Run 42967745894) und CodeQL (Run 42967745101) bestehen.
+Pass 10 schliesst den angeforderten Zehnerauftrag ab. Siehe
 [KP-304](./Kontextprotokoll.md#kp-304---pass-10-u2010-umbrueche).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist

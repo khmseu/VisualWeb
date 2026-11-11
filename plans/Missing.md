@@ -1606,8 +1606,14 @@ hyphenation remain unsupported. Focused layout regressions (128), native
 shaping (1), Engine.Layout (1,000), Engine.Text (19), solution build
 (0 warnings/errors), full solution tests (16,578), format verification and
 `git diff --check` pass locally. The exact line-break budget succeeds at 17
-operations and fails at 16. Pass 10 is locally complete; its CI verification
-will be recorded after the feature commit is pushed. See
+operations and fails at 16. Feature commit `f0570c5` is pushed to `main`;
+Linux development
+(run [42967745855](https://github.com/khmseu/VisualWeb/actions/runs/42967745855)),
+Windows confinement
+(run [42967745894](https://github.com/khmseu/VisualWeb/actions/runs/42967745894))
+and Push on main/CodeQL
+(run [42967745101](https://github.com/khmseu/VisualWeb/actions/runs/42967745101))
+pass. Pass 10 completes the requested ten increments. See
 [Text and layout](../docs/text-layout.md#ordinary-flow).
 
 ### 6. A persistent browser JavaScript environment

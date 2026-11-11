@@ -8115,5 +8115,14 @@ zusaetzliche Regressionen decken Shaper-Abbruch und den nativen sichtbaren
 Glyphen ab. CSS Text Level 3 war laut Manifest zuletzt am 2026-11-07 geprueft,
 Unicode UAX #14 am 2026-10-31; am 2026-11-11 war kein Refresh erforderlich.
 
-**Status:** Alle zehn angeforderten Inkremente sind lokal validiert. Pass 10
-ist noch nicht committed/gepusht; dessen CI-Pruefung steht aus.
+**Git/CI (belegt):** Featurecommit `f0570c5` ist nach `main` gepusht. Linux
+development
+(Run [42967745855](https://github.com/khmseu/VisualWeb/actions/runs/42967745855)),
+Windows confinement
+(Run [42967745894](https://github.com/khmseu/VisualWeb/actions/runs/42967745894))
+und Push on main/CodeQL
+(Run [42967745101](https://github.com/khmseu/VisualWeb/actions/runs/42967745101))
+sind erfolgreich.
+
+**Status:** Pass 10 ist committed, gepusht und CI-geprueft. Damit sind alle
+zehn angeforderten Inkremente abgeschlossen.
