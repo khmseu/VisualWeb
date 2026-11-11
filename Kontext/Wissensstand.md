@@ -29,6 +29,16 @@ UTF-16-Laengenverschiebung. Nicht-ASCII-Buchstaben scheitern explizit;
 Commit `0200283` ist gepusht. Linux x64/ARM64 (Run 42925954320), Windows
 confinement x64/ARM64 (Run 42925954248) und Push-on-main/CodeQL (Run 42925954109) sind erfolgreich. Sieben Inkremente bleiben.
 Siehe [KP-297](./Kontextprotokoll.md#kp-297---pass-3-ascii-text-transform).
+Pass 4 ergaenzt geerbtes CSS-Text-`word-spacing` mit Initialwert `normal` und
+nichtnegativen unterstuetzten Laengen, die vor der Vererbung in absolute
+Laengen aufgeloest werden. Layout addiert den Abstand auf kollabierte und
+erhaltene ASCII-Leerzeichen vor dem Line-Fitting. Negative Laengen, Prozentwerte
+und nicht-ASCII-Worttrenner bleiben unsupported. CSS (1.344), Layout (931), der
+Solution-Build (0 Warnungen/Fehler), alle 16.507 Solution-Tests,
+Formatverifikation und `git diff --check` bestehen. Featurecommit `2dd5026` ist
+gepusht. Linux-Development (Run 42931828540), Windows confinement x64/arm64
+(Run 42931828466) und CodeQL (Run 42931828462) sind erfolgreich. Sechs
+Inkremente bleiben. Siehe [KP-298](./Kontextprotokoll.md#kp-298---pass-4-bounded-word-spacing).
 Siehe
 [KP-296](./Kontextprotokoll.md#kp-296---pass-2-text-align-last).
 Chronologischer Beleg und Auswahlgrund stehen in

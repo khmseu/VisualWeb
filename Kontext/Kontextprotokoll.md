@@ -7764,3 +7764,47 @@ sind erfolgreich.
 
 **Status:** Pass 3 ist lokal validiert, committed, gepusht und CI-geprueft;
 sieben weitere Inkremente bleiben.
+
+### KP-298 - Pass 4: bounded word-spacing
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Umsetzung,
+  Vollvalidierung und CI-Pruefung.
+- Quellen: ausdruecklicher Auftrag `/missing-priority-implementation 10`,
+  [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [CSS guide](../docs/css.md#cascade-and-computed-values),
+  [layout guide](../docs/text-layout.md#ordinary-flow), lokaler `css-text`
+  Cache (Manifest geprueft am 2026-11-07) und aktuelle CSS-/Layout-Quellen.
+- Bezug: vierter der zehn getrennten Missing-Prioritaetsinkremente; schliesst
+  an KP-297 an.
+
+**Auswahl (belegt/Ableitung):** Prioritaet 1 nennt gewoehnliche CSS- und
+Textdarstellung fuer einfache Seiten. `word-spacing` fehlte im CSS-Registry-
+und Layout-Pfad. Der lokale CSS Text Level 3 Cache definiert die Eigenschaft
+als geerbt, mit Initialwert `normal`, und einem absoluten Laengenwert. Gewaehlt
+wurde eine bounded Untermenge: nichtnegative, bereits unterstuetzte Laengen;
+negative Werte, Prozentwerte und nicht-ASCII-Worttrenner bleiben sichtbar
+unsupported.
+
+**Umsetzung (belegt):** `normal` und nichtnegative unterstuetzte Laengen werden
+geparst und vererbt; `em`/`rem` werden vor Vererbung zu absoluten Laengen
+aufgeloest. Layout addiert den Wert auf kollabierte und erhaltene ASCII-
+Leerzeichen vor Zeilenfitting und Umbruch. Source-DOM-Text bleibt unveraendert.
+
+**Validierung (belegt):** CSS (1.344) und Layout (931) Tests bestehen.
+`dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/Fehlern;
+`dotnet test VisualWeb.slnx --no-build` besteht mit 16.507 Tests.
+Formatverifikation und `git diff --check` bestehen.
+
+**Git/CI (belegt):** Featurecommit `2dd5026` ist nach `main` gepusht.
+Linux development
+(Run [42931828540](https://github.com/khmseu/VisualWeb/actions/runs/42931828540))
+Windows confinement x64/arm64
+(Run [42931828466](https://github.com/khmseu/VisualWeb/actions/runs/42931828466))
+und Push on main/CodeQL
+(Run [42931828462](https://github.com/khmseu/VisualWeb/actions/runs/42931828462))
+sind erfolgreich.
+
+**Status:** Pass 4 ist lokal validiert, committed, gepusht und CI-geprueft;
+sechs weitere Inkremente bleiben.

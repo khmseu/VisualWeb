@@ -1492,6 +1492,22 @@ and Push on main/CodeQL
 (run [42925954109](https://github.com/khmseu/VisualWeb/actions/runs/42925954109))
 all pass. Pass 3 is complete; seven increments remain.
 
+Pass 4 adds inherited CSS Text `word-spacing`, initially `normal`, with
+nonnegative supported lengths resolved to absolute lengths before inheritance.
+Layout applies the spacing to collapsed and preserved ASCII spaces before line
+fitting, including soft-wrap decisions. Negative lengths, percentages and
+non-ASCII word separators remain unsupported; see the [CSS scope](../docs/css.md#cascade-and-computed-values)
+and [ordinary flow](../docs/text-layout.md#ordinary-flow). CSS (1,344), Layout
+(931), the zero-warning solution build, all 16,507 solution tests, format
+verification and `git diff --check` pass locally. Feature commit `2dd5026` is
+pushed to `main`; Linux development (run
+[42931828540](https://github.com/khmseu/VisualWeb/actions/runs/42931828540)),
+Windows confinement x64/arm64
+([42931828466](https://github.com/khmseu/VisualWeb/actions/runs/42931828466))
+and Push on main/CodeQL
+([42931828462](https://github.com/khmseu/VisualWeb/actions/runs/42931828462))
+pass. Pass 4 is complete; six increments remain.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.
