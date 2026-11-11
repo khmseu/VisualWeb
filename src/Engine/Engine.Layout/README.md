@@ -19,6 +19,11 @@ each preserved ASCII space, including between adjacent spaces, and counts
 trailing spaces in line and intrinsic width, including around supported atomic
 inline form controls. Preserved tabs/form feeds, non-ASCII spaces and preserved
 spaces adjacent to Unicode glue remain unsupported.
+HTML `<wbr>` adds an optional break in wrapping whitespace modes and affects
+automatic table minimum-content sizing. Adjacent same-style text is shaped as
+one word when unbroken and source fragments are mapped at glyph-cluster
+boundaries; styled/inline-wrapped words or clusters crossing a source boundary
+fail explicitly. `pre` and `nowrap` suppress the opportunity.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
@@ -55,8 +60,8 @@ guide for exact geometry.
 Definition-list descriptions use the HTML start indent as a physical left
 margin in this horizontal LTR layout subset.
 
-Inputs: DOM, computed CSS and text metrics. Official document IDs: `css-box`,
-`css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,
+Inputs: DOM, computed CSS and text metrics. Official document IDs: `html`,
+`css-box`, `css-display`, `css-inline`, `css-text`, `css-values`, `css-sizing`,
 `css-overflow`, `css2-visual`, `css2-sizing`, `css2-lists`,
 `css-counter-styles`, `css2-tables`, `unicode-linebreak`.
 See the [standards workflow](../../../docs/standards.md).

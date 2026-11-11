@@ -7956,3 +7956,50 @@ sind erfolgreich.
 
 **Status:** Pass 7 ist lokal implementiert und validiert; drei der zehn
 angeforderten Inkremente verbleiben; Commit, Push und CI sind abgeschlossen.
+
+### KP-302 - Pass 8: WBR-Zeilenumbrueche
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Implementierung und
+  lokale Teilvalidierung, Volltest, Commit/Push/CI noch ausstehend.
+- Quellen: Nutzerauftrag `/missing-priority-implementation 10`,
+  [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [Text/Layout guide](../docs/text-layout.md#ordinary-flow),
+  [Engine.Layout guide](../src/Engine/Engine.Layout/README.md), HTML und CSS
+  Text Level 3 Cache (Manifest geprueft am 2026-11-07),
+  `src/Engine/Engine.Layout/StaticLayout.cs` und
+  `tests/Engine.Layout.Tests/WbrLayoutTests.cs`.
+- Bezug: achtes der zehn angeforderten getrennten Inkremente; folgt auf KP-301.
+
+**Auswahl (Ableitung):** Der Tracker priorisiert lesbare, gewoehnlich
+gestaltete Seiten. Die fruehere Suche nach `<wbr>` war nur ein Kandidat, keine
+Auswahl. Nach Pruefung der Inline-Shaping-Grenzen wurde eine begrenzte,
+testbare Variante gewaehlt, die ungebrochene Nachbartexte gemeinsam formt,
+damit Shaping-Kontext erhalten bleibt. Dies war keine gesonderte
+Nutzerentscheidung.
+
+**Umsetzung (belegt):** HTML `<wbr>` ist ein optionaler weicher Umbruchpunkt
+in `normal`, `pre-line`, `pre-wrap` und `break-spaces`; `pre` und `nowrap`
+unterdruecken ihn. Direkt benachbarte gleich formatierte Wortsegmente werden
+bei ungebrochenem Text zusammen geformt und Glyphcluster werden auf die
+urspruenglichen Textknoten abgebildet. WBR und unterstuetzte ASCII-
+Bindestrichpunkte teilen den begrenzten Greedy-Umbruchpfad und beeinflussen
+automatische Tabellen-Minimumsbreiten. Stil-/Inline-Wrapper-Grenzen sowie
+Glyphcluster ueber Quellknotengrenzen bleiben explizit unsupported.
+
+**Validierung (belegt):** Fokussierte Layout-Tests (16), Engine.Layout (967),
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.543),
+Formatverifikation und `git diff --check` bestehen. Der erste
+Solution-Volltestlauf hatte einen einzelnen Fehler in
+`ProcessTests.CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs`;
+der isolierte Zweifalltest und ein erneuter vollstaendiger Solution-Testlauf
+bestanden. Es erfolgte keine Aenderung an diesem Browser-Test. Die lokalen
+HTML- und CSS-Text-Caches wurden laut Manifest am 2026-11-07 geprueft; am
+2026-11-11 war kein Refresh erforderlich.
+
+**Git/CI:** Featurecommit, Push und CI stehen noch aus.
+
+**Status:** Pass 8 ist lokal implementiert und teilweise validiert; drei der
+zehn angeforderten Inkremente verbleiben, einschliesslich dieses aktiven
+Passes.

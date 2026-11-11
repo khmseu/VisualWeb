@@ -394,6 +394,18 @@ have zero intrinsic content size.
 - Shaped unbroken words, collapsing spaces, wrapping at spaces and supported
   internal hyphens, and overflow of unbreakable text. Exact fits do not wrap.
   Line-edge collapsible spaces drop.
+- HTML `<wbr>` supplies an optional line-break opportunity in wrapping
+  `white-space` modes, but does not force a break; `pre` and `nowrap` suppress
+  it. Adjacent same-style text nodes are shaped together when the opportunity
+  is unused, then glyphs are mapped back to their source nodes at shaping-cluster
+  boundaries. A cluster crossing a source boundary, a style change inside the
+  word, or an inline wrapper around the break fails explicitly. WBR opportunities
+  participate in automatic table minimum-content sizing and combine with the
+  supported ASCII hyphen breaks. See HTML
+  [the `wbr` element](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-wbr-element)
+  (local ID `html`) and CSS Text
+  [line breaking](https://drafts.csswg.org/css-text-3/#line-breaking)
+  (local ID `css-text`).
 - HTML `align` hints on `p` and `h1`–`h6` select the existing left, right,
   center and justify paths; they do not add layout behavior. See
   [HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
@@ -527,7 +539,9 @@ flow without specialized figure layout.
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
 - Mixed whitespace modes inside inline elements, tab stops, other
   justification opportunities/methods, `text-justify` and
-  cross-node/style shaping inside an unbroken word.
+  general cross-node/style shaping inside an unbroken word. The same-style
+  direct-text `<wbr>` subset above does not enable arbitrary inline-boundary
+  shaping.
 - Margin collapse, floats, positioning, general inline-block, inline margins/
   padding/borders, backgrounds on or around atomic widgets, tables beyond the
   subset above, ruby, broader list markers, replaced elements,

@@ -137,6 +137,9 @@ public sealed record LayoutOptions
 /// subject to the containing inline's supported white-space mode. Wrapping-mode GL
 /// (U+035C..U+0362 and following combining marks inheriting GL) beside a widget
 /// is rejected until line-break backtracking is supported; U+00A0 remains exempt.
+/// HTML wbr opportunities follow html
+/// <see href="https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-wbr-element">the wbr element</see>;
+/// same-style text stays one shaped run unless wrapping takes that opportunity.
 /// Bounded inter-word justification uses css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#text-align-property">text alignment</see> and
 /// <see href="https://drafts.csswg.org/css-text-3/#text-justify-property">justification methods</see>.
@@ -847,6 +850,16 @@ public static partial class StaticLayout
                     output.Add(new(null, style, "", UnitKind.Break, false));
                     return;
                 }
+                if (element.LocalName == "wbr")
+                {
+                    if (style["background-color"] is CssColor { Alpha: > 0 })
+                    {
+                        throw new UnsupportedLayoutException("Backgrounds on word-break elements require deferred break-fragment geometry.");
+                    }
+                    var whitespace = ((CssKeyword)style["white-space"]).Value;
+                    output.Add(new(null, style, "", UnitKind.SoftBreak, CanSoftWrap(whitespace)));
+                    return;
+                }
                 var currentBackgrounds = backgroundOwners;
                 if (style["background-color"] is CssColor { Alpha: > 0 } background)
                 {
@@ -858,15 +871,177 @@ public static partial class StaticLayout
             }
         }
 
+        private List<InlineUnit> CoalesceWbrWords(List<InlineUnit> input)
+        {
+            var output = new List<InlineUnit>(input.Count);
+            for (var index = 0; index < input.Count;)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                var first = input[index];
+                if (first.Kind != UnitKind.Word || index + 2 >= input.Count
+                    || input[index + 1].Kind != UnitKind.SoftBreak || input[index + 2].Kind != UnitKind.Word)
+                {
+                    output.Add(first);
+                    index++;
+                    continue;
+                }
+
+                var segments = new List<InlineWordSegment>();
+                var breakOffsets = new List<int>();
+                var text = new StringBuilder();
+                var nextIndex = index;
+                while (nextIndex + 2 < input.Count
+                    && input[nextIndex].Kind == UnitKind.Word
+                    && input[nextIndex + 1].Kind == UnitKind.SoftBreak
+                    && input[nextIndex + 2].Kind == UnitKind.Word)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    var word = input[nextIndex];
+                    var softBreak = input[nextIndex + 1];
+                    if (!ReferenceEquals(first.Style, word.Style))
+                    {
+                        throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
+                    }
+                    if (word.Source is null)
+                    {
+                        throw new InvalidOperationException("Inline word is missing its source text.");
+                    }
+                    ChargeLineBreakWork(word.Text.Length);
+                    text.Append(word.Text);
+                    segments.Add(new(word.Source, word.Text, word.Style, word.Backgrounds));
+                    if (softBreak.Wrap) { breakOffsets.Add(text.Length); }
+                    nextIndex += 2;
+                }
+                var lastWord = input[nextIndex];
+                if (!ReferenceEquals(first.Style, lastWord.Style))
+                {
+                    throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
+                }
+                if (lastWord.Source is null)
+                {
+                    throw new InvalidOperationException("Inline word is missing its source text.");
+                }
+                ChargeLineBreakWork(lastWord.Text.Length);
+                text.Append(lastWord.Text);
+                segments.Add(new(lastWord.Source, lastWord.Text, lastWord.Style, lastWord.Backgrounds));
+                if (input[nextIndex - 1].Wrap) { breakOffsets.Add(text.Length - lastWord.Text.Length); }
+                nextIndex++;
+                output.Add(first with
+                {
+                    Source = null,
+                    Text = text.ToString(),
+                    WordSegments = Array.AsReadOnly(segments.ToArray()),
+                    SoftBreakOffsets = Array.AsReadOnly(breakOffsets.ToArray()),
+                    HasHyphenBreaks = segments.Any(segment => segment.Text.Contains('-')),
+                    EndsWithAtomicGlue = lastWord.EndsWithAtomicGlue
+                });
+                index = nextIndex;
+            }
+            return output;
+        }
+
+        private (List<InlineWordSegment> Prefix, List<InlineWordSegment> Suffix) SplitWordSegments(
+            IReadOnlyList<InlineWordSegment> segments, int splitAt)
+        {
+            var prefix = new List<InlineWordSegment>();
+            var suffix = new List<InlineWordSegment>();
+            var remaining = splitAt;
+            foreach (var segment in segments)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (remaining == 0)
+                {
+                    suffix.Add(segment);
+                }
+                else if (remaining >= segment.Text.Length)
+                {
+                    prefix.Add(segment);
+                    remaining -= segment.Text.Length;
+                }
+                else
+                {
+                    prefix.Add(segment with { Text = segment.Text[..remaining] });
+                    suffix.Add(segment with { Text = segment.Text[remaining..] });
+                    remaining = 0;
+                }
+            }
+            if (remaining != 0 || prefix.Count == 0 || suffix.Count == 0)
+            {
+                throw new InvalidOperationException("Soft-wrap split does not match the gathered word segments.");
+            }
+            return (prefix, suffix);
+        }
+
+        private IReadOnlyList<ShapedRun> SplitShapedRun(ShapedRun run, IReadOnlyList<InlineWordSegment> segments)
+        {
+            if (segments.Count == 1) { return [run]; }
+            ChargeLineBreakWork(run.Text.Length);
+            if (!string.Equals(run.Text, string.Concat(segments.Select(segment => segment.Text)), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Shaped run does not match its gathered word segments.");
+            }
+            if (run.Glyphs.Count == 0)
+            {
+                if (run.Width != 0)
+                {
+                    throw new UnsupportedLayoutException("Word-break source mapping requires shaped glyph clusters.");
+                }
+                return segments.Select(segment => new ShapedRun(segment.Text, run.FontIdentity, run.FontSize,
+                    Array.Empty<ShapedGlyph>(), 0, run.Metrics)).ToArray();
+            }
+
+            var starts = new int[segments.Count + 1];
+            for (var index = 0; index < segments.Count; index++)
+            {
+                starts[index + 1] = checked(starts[index] + segments[index].Text.Length);
+            }
+            var clusterStarts = new List<int>();
+            var previousCluster = -1;
+            foreach (var glyph in run.Glyphs)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                if (glyph.Cluster < 0 || glyph.Cluster >= run.Text.Length || glyph.Cluster < previousCluster)
+                {
+                    throw new UnsupportedLayoutException("Word-break source mapping requires ordered in-range LTR glyph clusters.");
+                }
+                if (glyph.Cluster != previousCluster) { clusterStarts.Add(glyph.Cluster); }
+                previousCluster = glyph.Cluster;
+            }
+            var clusterIndex = 0;
+            for (var boundaryIndex = 1; boundaryIndex < starts.Length - 1; boundaryIndex++)
+            {
+                var boundary = starts[boundaryIndex];
+                while (clusterIndex < clusterStarts.Count && clusterStarts[clusterIndex] < boundary) { clusterIndex++; }
+                if (clusterIndex > 0 && (clusterIndex == clusterStarts.Count || clusterStarts[clusterIndex] > boundary))
+                {
+                    throw new UnsupportedLayoutException("A shaped glyph cluster crosses a word-break source boundary.");
+                }
+            }
+
+            var glyphGroups = Enumerable.Range(0, segments.Count).Select(_ => new List<ShapedGlyph>()).ToArray();
+            var segmentIndex = 0;
+            foreach (var glyph in run.Glyphs)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                while (segmentIndex < segments.Count - 1 && glyph.Cluster >= starts[segmentIndex + 1]) { segmentIndex++; }
+                glyphGroups[segmentIndex].Add(glyph with { Cluster = glyph.Cluster - starts[segmentIndex] });
+            }
+            return glyphGroups.Select((glyphs, index) => new ShapedRun(segments[index].Text, run.FontIdentity,
+                run.FontSize, Array.AsReadOnly(glyphs.ToArray()), glyphs.Sum(glyph => glyph.Advance), run.Metrics)).ToArray();
+        }
+
         private List<LayoutLine> Inline(List<InlineUnit> input, CssComputedStyle blockStyle, double x, double y, double width,
             double firstLineIndent = 0, bool intrinsicSizing = false)
         {
+            input = CoalesceWbrWords(input);
             var output = new List<LayoutLine>();
             var pending = new List<Placed>();
             var activeInline = new List<(DomElement Element, CssComputedStyle Style)>();
             var advance = 0.0;
             var hangingWidth = 0.0;
             var hasPreservedSpaceWrapOpportunity = false;
+            var hasSoftWrapOpportunity = false;
+            var wordBeforeUnmergedSoftBreak = false;
             var hasContent = false;
             var firstLine = true;
             InlineUnit? space = null;
@@ -887,10 +1062,18 @@ public static partial class StaticLayout
                     activeInline.RemoveAt(activeInline.Count - 1);
                     continue;
                 }
+                if (unit.Kind == UnitKind.SoftBreak)
+                {
+                    hasSoftWrapOpportunity |= unit.Wrap && hasContent;
+                    wordBeforeUnmergedSoftBreak |= previousWord is not null;
+                    previousWord = null;
+                    continue;
+                }
                 if (unit.Kind == UnitKind.Space)
                 {
                     space ??= unit;
                     previousWord = null;
+                    wordBeforeUnmergedSoftBreak = false;
                     continue;
                 }
                 if (unit.Kind == UnitKind.Break)
@@ -899,6 +1082,8 @@ public static partial class StaticLayout
                     Emit(true, lastLine: true);
                     previousWord = null;
                     previousWidgetAllowsWrap = false;
+                    hasSoftWrapOpportunity = false;
+                    wordBeforeUnmergedSoftBreak = false;
                     continue;
                 }
                 // Struts do not separate inline content, but spaces and forced breaks do.
@@ -914,7 +1099,7 @@ public static partial class StaticLayout
                     var widget = unit.Widget ?? throw new InvalidOperationException("Inline widget is missing its element.");
                     var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width, widget);
                     var widgetGap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
-                    if (hasContent && (space?.Wrap == true || hasPreservedSpaceWrapOpportunity
+                    if (hasContent && (space?.Wrap == true || hasPreservedSpaceWrapOpportunity || hasSoftWrapOpportunity
                         || unit.Wrap && previousWord?.EndsWithAtomicGlue != true)
                         && advance + (widgetGap?.Width ?? 0) + widgetWidth > AvailableWidth())
                     {
@@ -935,8 +1120,15 @@ public static partial class StaticLayout
                     hasContent = true;
                     previousWord = null;
                     previousWidgetAllowsWrap = unit.Wrap;
+                    hasSoftWrapOpportunity = false;
+                    wordBeforeUnmergedSoftBreak = false;
                     continue;
                 }
+                if (unit.Kind == UnitKind.Word && wordBeforeUnmergedSoftBreak)
+                {
+                    throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
+                }
+                wordBeforeUnmergedSoftBreak = false;
                 if (previousWord is not null && unit.Kind == UnitKind.Word)
                 {
                     throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
@@ -946,9 +1138,18 @@ public static partial class StaticLayout
                 {
                     throw new UnsupportedLayoutException("Preserved spaces adjacent to Unicode glue require deferred line-break backtracking.");
                 }
+                if (unit.WordSegments is { } wordSegments)
+                {
+                    PlaceWbrWord(unit, wordSegments, hasSoftWrapOpportunity);
+                    hasSoftWrapOpportunity = false;
+                    previousWord = unit;
+                    previousWidgetAllowsWrap = false;
+                    continue;
+                }
                 if (unit.HasHyphenBreaks)
                 {
-                    PlaceHyphenatedWord(unit);
+                    PlaceHyphenatedWord(unit, hasSoftWrapOpportunity);
+                    hasSoftWrapOpportunity = false;
                     previousWord = unit;
                     previousWidgetAllowsWrap = false;
                     continue;
@@ -956,7 +1157,7 @@ public static partial class StaticLayout
                 var run = unit.Kind == UnitKind.PreservedSpace
                     ? ShapeWordSpace(unit.Style) : Shape(unit.Text, unit.Style);
                 var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
-                var breakable = space?.Wrap == true
+                var breakable = hasSoftWrapOpportunity || space?.Wrap == true
                     || unit.Kind != UnitKind.PreservedSpace && previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])
                     || hasPreservedSpaceWrapOpportunity
                         && (unit.Kind != UnitKind.PreservedSpace || unit.BreakBetweenPreservedSpaces);
@@ -972,6 +1173,7 @@ public static partial class StaticLayout
                     advance += gap.Width;
                 }
                 space = null;
+                hasSoftWrapOpportunity = false;
                 pending.Add(new(unit.Source!, run, unit.Style, advance) { Backgrounds = unit.Backgrounds });
                 advance += run.Width;
                 if (unit.Kind == UnitKind.PreservedSpace && unit.Wrap)
@@ -994,7 +1196,111 @@ public static partial class StaticLayout
             double CurrentIndent() => firstLine ? firstLineIndent : 0;
             double AvailableWidth() => Finite(width - CurrentIndent());
 
-            void PlaceHyphenatedWord(InlineUnit unit)
+            void PlaceWbrWord(InlineUnit unit, IReadOnlyList<InlineWordSegment> segments, bool softBreakBefore)
+            {
+                var remaining = unit.Text;
+                var remainingSegments = segments;
+                var breakOffsets = unit.SoftBreakOffsets!.ToList();
+                var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
+                while (true)
+                {
+                    ChargeLineBreakWork(remaining.Length);
+                    var whole = Shape(remaining, unit.Style);
+                    var available = AvailableWidth() - advance - (gap?.Width ?? 0);
+                    if (whole.Width <= available)
+                    {
+                        Place(whole, remainingSegments);
+                        return;
+                    }
+
+                    ChargeLineBreakWork(remaining.Length);
+                    var candidates = new SortedSet<int>(breakOffsets.Where(offset => offset > 0 && offset < remaining.Length));
+                    if (unit.Wrap)
+                    {
+                        for (var index = 1; index < remaining.Length - 1; index++)
+                        {
+                            cancellation.ThrowIfCancellationRequested();
+                            if (remaining[index] == '-' && char.IsAsciiLetter(remaining[index + 1])
+                                && char.IsAsciiLetterOrDigit(remaining[index - 1]))
+                            {
+                                candidates.Add(index + 1);
+                            }
+                        }
+                    }
+
+                    ShapedRun? best = null;
+                    var bestEnd = 0;
+                    foreach (var end in candidates)
+                    {
+                        ChargeLineBreakWork(end);
+                        var candidate = Shape(remaining[..end], unit.Style);
+                        if (candidate.Width <= available)
+                        {
+                            best = candidate;
+                            bestEnd = end;
+                        }
+                    }
+                    if (best is null && hasContent && (softBreakBefore || space?.Wrap == true
+                        || hasPreservedSpaceWrapOpportunity
+                        || previousWidgetAllowsWrap && !IsAtomicWrapGlue(remaining[0])))
+                    {
+                        Emit(false, softWrap: true);
+                        space = null;
+                        gap = null;
+                        previousWidgetAllowsWrap = false;
+                        softBreakBefore = false;
+                        continue;
+                    }
+                    if (best is null && candidates.Count > 0)
+                    {
+                        bestEnd = candidates.Min;
+                        ChargeLineBreakWork(bestEnd);
+                        best = Shape(remaining[..bestEnd], unit.Style);
+                    }
+                    if (best is null)
+                    {
+                        Place(whole, remainingSegments);
+                        return;
+                    }
+
+                    var (prefixSegments, suffixSegments) = SplitWordSegments(remainingSegments, bestEnd);
+                    Place(best, prefixSegments);
+                    Emit(false, softWrap: true);
+                    ChargeLineBreakWork(remaining.Length - bestEnd);
+                    remaining = remaining[bestEnd..];
+                    remainingSegments = suffixSegments;
+                    breakOffsets = breakOffsets.Where(offset => offset > bestEnd)
+                        .Select(offset => offset - bestEnd).ToList();
+                    gap = null;
+                    softBreakBefore = false;
+                    previousWidgetAllowsWrap = false;
+                }
+
+                void Place(ShapedRun run, IReadOnlyList<InlineWordSegment> sourceSegments)
+                {
+                    if (gap is not null)
+                    {
+                        pending.Add(new(space!.Source!, gap, space.Style, advance)
+                        { Backgrounds = space.Backgrounds, JustificationSpace = true });
+                        advance += gap.Width;
+                    }
+                    space = null;
+                    var sourceRuns = SplitShapedRun(run, sourceSegments);
+                    for (var index = 0; index < sourceSegments.Count; index++)
+                    {
+                        var sourceSegment = sourceSegments[index];
+                        var sourceRun = sourceRuns[index];
+                        pending.Add(new(sourceSegment.Source, sourceRun, sourceSegment.Style, advance)
+                        { Backgrounds = sourceSegment.Backgrounds });
+                        advance += sourceRun.Width;
+                    }
+                    hangingWidth = 0;
+                    hasPreservedSpaceWrapOpportunity = false;
+                    hasContent = true;
+                }
+            }
+
+            void PlaceHyphenatedWord(InlineUnit unit, bool softBreakBefore)
             {
                 var remaining = unit.Text;
                 var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
@@ -1025,13 +1331,14 @@ public static partial class StaticLayout
                         if (first is null) { first = candidate; firstEnd = end; }
                         if (candidate.Width <= available) { best = candidate; bestEnd = end; }
                     }
-                    if (best is null && hasContent && (space?.Wrap == true || hasPreservedSpaceWrapOpportunity
+                    if (best is null && hasContent && (softBreakBefore || space?.Wrap == true || hasPreservedSpaceWrapOpportunity
                         || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])))
                     {
                         Emit(false, softWrap: true);
                         space = null;
                         gap = null;
                         previousWidgetAllowsWrap = false;
+                        softBreakBefore = false;
                         continue;
                     }
                     if (best is null)
@@ -1427,13 +1734,17 @@ public static partial class StaticLayout
             : throw new LayoutLimitException("Layout geometry exceeds finite numeric range.");
         private static LayoutRect Rect(double x, double y, double width, double height)
             => new(Finite(x), Finite(y), Finite(width), Finite(height));
-        private enum UnitKind { Word, Space, PreservedSpace, Break, Strut, EndStrut, Widget }
+        private enum UnitKind { Word, Space, PreservedSpace, Break, SoftBreak, Strut, EndStrut, Widget }
         private sealed record InlineBackgroundOwner(DomElement Element, CssColor Color, InlineBackgroundOwner? Parent);
+        private sealed record InlineWordSegment(DomText Source, string Text, CssComputedStyle Style,
+            InlineBackgroundOwner? Backgrounds);
         private sealed record InlineUnit(DomText? Source, CssComputedStyle Style, string Text, UnitKind Kind, bool Wrap)
         {
             public DomElement? Widget { get; init; }
             public DomElement? InlineElement { get; init; }
             public InlineBackgroundOwner? Backgrounds { get; init; }
+            public IReadOnlyList<InlineWordSegment>? WordSegments { get; init; }
+            public IReadOnlyList<int>? SoftBreakOffsets { get; init; }
             public bool HasHyphenBreaks { get; init; }
             public bool EndsWithAtomicGlue { get; init; }
             public bool HangAtLineEnd { get; init; }

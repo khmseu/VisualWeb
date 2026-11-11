@@ -76,6 +76,18 @@ Formatverifikation und `git diff --check` bestehen lokal. Featurecommit
 `c69f482` ist gepusht; Linux (Run 42949667326), Windows x64/arm64 (Run 42949667251) und CodeQL (Run 42949666801) sind gruen. Pass 7 ist
 abgeschlossen; drei angeforderte Inkremente verbleiben.
 Siehe [KP-301](./Kontextprotokoll.md#kp-301---pass-7-break-spaces-an-atomic-widgets).
+Im aktuellen Zehnerauftrag implementiert Pass 8 begrenzte HTML-`<wbr>`-
+Umbruchmoeglichkeiten in Wrapping-Whitespace-Modi und bei der automatischen
+Tabellen-Minimumsbreite.
+Benachbarte gleich formatierte Texte bleiben beim Formen ungebrochen ein Lauf;
+Glyphcluster werden an Quelltextknoten-Grenzen zugeordnet. `pre`/`nowrap`
+unterdruecken die Moeglichkeit. Layout (967), fokussierte Tests (16),
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.543),
+Formatverifikation und `git diff --check` bestehen. Ein erster Volltestlauf
+hatte einen Fehler im unabhaengigen CPU-throttled Browser-Prozesstest; dessen
+beide Faelle und der wiederholte Volltest bestehen. Pass 8 ist noch nicht
+committed/gepusht/CI-geprueft; drei angeforderte Inkremente verbleiben.
+Siehe [KP-302](./Kontextprotokoll.md#kp-302---pass-8-wbr-zeilenumbrueche).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
 abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres

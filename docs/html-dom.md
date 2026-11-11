@@ -76,7 +76,9 @@ after-after-body modes. Supported behavior includes:
 - Ordinary HTML body elements, correctly nested inline formatting, headings,
   paragraphs, block starts and scoped end tags.
 - List-item and definition-list implied closures, pre/listing/textarea first-LF
-  handling, void elements and ignored self-closing flags on non-void HTML.
+  handling, void elements (including `<wbr>`) and ignored self-closing flags on
+  non-void HTML. Layout interprets `<wbr>` as an optional line-break opportunity
+  within its bounded same-style text subset; it does not force a break.
 - `listing` parses ordinary child markup; `xmp` uses RAWTEXT until its end tag,
   while `plaintext` consumes the rest of the input as literal text. Neither
   literal mode interprets apparent links, styles or scripts as elements.

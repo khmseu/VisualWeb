@@ -1556,6 +1556,18 @@ and CodeQL
 (run [42949666801](https://github.com/khmseu/VisualWeb/actions/runs/42949666801))
 pass. Pass 7 is complete; three requested increments remain.
 
+Pass 8 (in progress) adds bounded HTML `<wbr>` opportunities to wrapping
+whitespace modes and automatic table minimum-content sizing. Adjacent
+same-style text is shaped together when unbroken and mapped to source nodes at
+glyph-cluster boundaries; unsupported style/inline-wrapper boundaries and
+clusters spanning source nodes fail explicitly. `pre` and `nowrap` suppress
+the opportunity. The focused tests (16), Layout suite (967), solution build
+(0 warnings/errors), full solution suite (16,543), format verification and
+`git diff --check` pass locally. One initial full-suite run had a single
+failure in the unrelated CPU-throttled browser process test; its two cases
+passed in isolation and the full-suite rerun passed. Three requested
+increments remain; commit, push and CI are pending.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.
