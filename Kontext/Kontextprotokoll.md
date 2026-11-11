@@ -7945,7 +7945,14 @@ besteht mit 16.527 Tests. Formatverifikation und `git diff --check` bestehen.
 Der lokale CSS Text Cache ist frisch (Manifestdatum 2026-11-07); kein Refresh
 war erforderlich.
 
-**Git/CI (offen):** Featurecommit, Push und CI-Ergebnisse stehen noch aus.
+**Git/CI (belegt):** Featurecommit `c69f482` ist nach `main` gepusht. Linux
+development
+(Run [42949667326](https://github.com/khmseu/VisualWeb/actions/runs/42949667326)),
+Windows confinement x64/arm64
+(Run [42949667251](https://github.com/khmseu/VisualWeb/actions/runs/42949667251))
+und Push on main/CodeQL
+(Run [42949666801](https://github.com/khmseu/VisualWeb/actions/runs/42949666801))
+sind erfolgreich.
 
 **Status:** Pass 7 ist lokal implementiert und validiert; drei der zehn
-angeforderten Inkremente verbleiben.
+angeforderten Inkremente verbleiben; Commit, Push und CI sind abgeschlossen.

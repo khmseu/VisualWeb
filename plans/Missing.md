@@ -1547,8 +1547,14 @@ individually; exact-fit content remains on one line. General inline-blocks,
 mixed whitespace modes, preserved tabs/form feeds, non-ASCII space separators
 and preserved spaces adjacent to Unicode glue remain unsupported. The Layout
 suite (951), solution build (0 warnings/errors), full solution suite (16,527),
-format verification and `git diff --check` pass locally. Commit, push and CI
-are pending; three requested increments remain.
+format verification and `git diff --check` pass locally. Feature commit
+`c69f482` is pushed to `main`; Linux development
+(run [42949667326](https://github.com/khmseu/VisualWeb/actions/runs/42949667326)),
+Windows confinement x64/arm64
+(run [42949667251](https://github.com/khmseu/VisualWeb/actions/runs/42949667251))
+and CodeQL
+(run [42949666801](https://github.com/khmseu/VisualWeb/actions/runs/42949666801))
+pass. Pass 7 is complete; three requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 
