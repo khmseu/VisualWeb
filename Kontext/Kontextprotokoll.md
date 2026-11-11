@@ -7813,8 +7813,8 @@ sechs weitere Inkremente bleiben.
 
 - Dokumentiert am: 2026-11-11, Europe/Berlin.
 - Ereignisdatum: 2026-11-11, Europe/Berlin.
-- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Umsetzung und lokale
-  Vollvalidierung, Commit und CI noch offen.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Umsetzung,
+  Vollvalidierung, Commit, Push und CI-Pruefung.
 - Quellen: vom Nutzer fortgefuehrter Auftrag
   `/missing-priority-implementation 10`, [Prioritaetstracker](../plans/Missing.md#recommended-priority),
   [CSS guide](../docs/css.md#cascade-and-computed-values),
@@ -7847,5 +7847,14 @@ separaten Pass-4-Trackercommit `e2f3183` war zunaechst noch in Arbeit; Run
 [42933239637](https://github.com/khmseu/VisualWeb/actions/runs/42933239637)
 ist inzwischen erfolgreich.
 
-**Status:** Pass 5 ist lokal validiert; Commit und CI sind noch offen. Nach
-Abschluss dieses Inkrements verbleiben fuenf der zehn angeforderten Passes.
+**Git/CI (belegt):** Featurecommit `23d1d91` ist nach `main` gepusht. Linux
+development
+(Run [42938502799](https://github.com/khmseu/VisualWeb/actions/runs/42938502799)),
+Windows confinement x64/arm64
+(Run [42938502824](https://github.com/khmseu/VisualWeb/actions/runs/42938502824))
+und Push on main/CodeQL
+(Run [42938502178](https://github.com/khmseu/VisualWeb/actions/runs/42938502178))
+sind erfolgreich.
+
+**Status:** Pass 5 ist lokal validiert, committed, gepusht und CI-geprueft;
+fuenf weitere Inkremente bleiben.

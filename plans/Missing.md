@@ -1514,8 +1514,15 @@ line-ending spaces hang outside line alignment and intrinsic width. Mixed
 whitespace modes, preserved tabs/form feeds, `break-spaces` and pre-wrap space
 runs adjacent to Unicode glue remain unsupported. CSS (1,344), Layout (940),
 the zero-warning solution build, all 16,516 solution tests, format verification
-and `git diff --check` pass locally. Commit and CI are pending; five further
-increments remain after this pass. See the [CSS scope](../docs/css.md#cascade-and-computed-values)
+and `git diff --check` pass locally. Feature commit `23d1d91` is pushed to
+`main`; Linux development (run
+[42938502799](https://github.com/khmseu/VisualWeb/actions/runs/42938502799)),
+Windows confinement x64/arm64
+([42938502824](https://github.com/khmseu/VisualWeb/actions/runs/42938502824))
+and Push on main/CodeQL
+([42938502178](https://github.com/khmseu/VisualWeb/actions/runs/42938502178))
+pass. Pass 5 is complete; five further increments remain. See the
+[CSS scope](../docs/css.md#cascade-and-computed-values)
 and [ordinary flow](../docs/text-layout.md#ordinary-flow).
 
 ### 6. A persistent browser JavaScript environment

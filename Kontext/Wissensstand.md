@@ -45,8 +45,11 @@ nach einer Leerzeichensequenz und Zeilenend-Leerzeichen haengen ausserhalb von
 Ausrichtung und intrinsischer Breite. Gemischte Whitespace-Modi, Tabs/Form
 Feeds, `break-spaces` und Glue-Nachbarschaft bleiben unsupported. CSS (1.344),
 Layout (940), Solution-Build (0 Warnungen/Fehler), alle 16.516 Solution-Tests,
-Formatverifikation und `git diff --check` bestehen lokal. Commit und CI sind
-noch offen; danach bleiben fuenf Inkremente. Siehe
+Formatverifikation und `git diff --check` bestehen lokal. Featurecommit
+`23d1d91` ist nach `main` gepusht; Linux-Development (Run 42938502799),
+Windows confinement x64/arm64 (Run 42938502824) und Push-on-main/CodeQL
+(Run 42938502178) sind erfolgreich. Pass 5 ist abgeschlossen; fuenf
+Inkremente bleiben. Siehe
 [KP-299](./Kontextprotokoll.md#kp-299---pass-5-bounded-pre-wrap).
 Siehe [KP-298](./Kontextprotokoll.md#kp-298---pass-4-bounded-word-spacing).
 Siehe
