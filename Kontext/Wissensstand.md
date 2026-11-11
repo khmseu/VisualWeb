@@ -85,8 +85,10 @@ unterdruecken die Moeglichkeit. Layout (967), fokussierte Tests (16),
 Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.543),
 Formatverifikation und `git diff --check` bestehen. Ein erster Volltestlauf
 hatte einen Fehler im unabhaengigen CPU-throttled Browser-Prozesstest; dessen
-beide Faelle und der wiederholte Volltest bestehen. Pass 8 ist noch nicht
-committed/gepusht/CI-geprueft; drei angeforderte Inkremente verbleiben.
+beide Faelle und der wiederholte Volltest bestehen. Featurecommit `c4e01e1` ist
+gepusht; Linux (Run 42957196183), Windows x64/arm64 (Run 42957196261) und
+CodeQL (Run 42957195483) sind gruen. Pass 8 ist abgeschlossen; zwei
+angeforderte Inkremente verbleiben.
 Siehe [KP-302](./Kontextprotokoll.md#kp-302---pass-8-wbr-zeilenumbrueche).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist

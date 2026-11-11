@@ -7961,8 +7961,7 @@ angeforderten Inkremente verbleiben; Commit, Push und CI sind abgeschlossen.
 
 - Dokumentiert am: 2026-11-11, Europe/Berlin.
 - Ereignisdatum: 2026-11-11, Europe/Berlin.
-- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Implementierung und
-  lokale Teilvalidierung, Volltest, Commit/Push/CI noch ausstehend.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Pass 8 abgeschlossen.
 - Quellen: Nutzerauftrag `/missing-priority-implementation 10`,
   [Prioritaetstracker](../plans/Missing.md#recommended-priority),
   [Text/Layout guide](../docs/text-layout.md#ordinary-flow),
@@ -7998,8 +7997,14 @@ bestanden. Es erfolgte keine Aenderung an diesem Browser-Test. Die lokalen
 HTML- und CSS-Text-Caches wurden laut Manifest am 2026-11-07 geprueft; am
 2026-11-11 war kein Refresh erforderlich.
 
-**Git/CI:** Featurecommit, Push und CI stehen noch aus.
+**Git/CI (belegt):** Featurecommit `c4e01e1` ist nach `main` gepusht. Linux
+development
+(Run [42957196183](https://github.com/khmseu/VisualWeb/actions/runs/42957196183)),
+Windows confinement x64/arm64
+(Run [42957196261](https://github.com/khmseu/VisualWeb/actions/runs/42957196261))
+und Push on main/CodeQL
+(Run [42957195483](https://github.com/khmseu/VisualWeb/actions/runs/42957195483))
+sind erfolgreich.
 
-**Status:** Pass 8 ist lokal implementiert und teilweise validiert; drei der
-zehn angeforderten Inkremente verbleiben, einschliesslich dieses aktiven
-Passes.
+**Status:** Pass 8 ist committed, gepusht und CI-geprueft; zwei der zehn
+angeforderten Inkremente verbleiben.

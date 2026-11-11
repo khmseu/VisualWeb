@@ -1565,8 +1565,14 @@ the opportunity. The focused tests (16), Layout suite (967), solution build
 (0 warnings/errors), full solution suite (16,543), format verification and
 `git diff --check` pass locally. One initial full-suite run had a single
 failure in the unrelated CPU-throttled browser process test; its two cases
-passed in isolation and the full-suite rerun passed. Three requested
-increments remain; commit, push and CI are pending.
+passed in isolation and the full-suite rerun passed. Feature commit `c4e01e1`
+is pushed to `main`; Linux development
+(run [42957196183](https://github.com/khmseu/VisualWeb/actions/runs/42957196183)),
+Windows confinement x64/arm64
+(run [42957196261](https://github.com/khmseu/VisualWeb/actions/runs/42957196261))
+and CodeQL
+(run [42957195483](https://github.com/khmseu/VisualWeb/actions/runs/42957195483))
+pass. Pass 8 is complete; two requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 
