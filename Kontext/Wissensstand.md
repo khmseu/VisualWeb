@@ -104,6 +104,19 @@ bestehen lokal. Featurecommit `6ae83a3` ist gepusht; Linux
 (Run 42963748532) bestehen. Pass 9 ist abgeschlossen; ein angefordertes
 Inkrement verbleibt. Siehe
 [KP-303](./Kontextprotokoll.md#kp-303---pass-9-weiche-trennzeichen).
+Pass 10 ergaenzt begrenzte U+2010-HYPHEN-Umbruchmoeglichkeiten: innerhalb
+eines Textknotens zwischen ASCII-Buchstaben oder Ziffern, mit Umbruch nach dem
+sichtbaren Bindestrich nur vor einem ASCII-Buchstaben. `pre`/`nowrap` umbrechen
+dort nicht. Fuehrende, abschliessende, wiederholte oder nicht-ASCII-benachbarte
+U+2010 sowie andere Gedankenstriche, allgemeine Unicode-Zeilenumbrueche und
+automatische Silbentrennung bleiben unsupported. Greedy-Fitting,
+`<wbr>`-Interaktion, Tabellen-Minimumsbreite, Abbruch und gemeinsames
+Arbeitsbudget bleiben erhalten. Layout (1.000), Text (19), fokussierte Layout-
+tests (128), natives Shaping (1), Solution-Build (0 Warnungen/Fehler),
+Solution-Volltest (16.578), Formatverifikation und `git diff --check` bestehen
+lokal; die exakte Umbruchgrenze ist 17 erfolgreich gegen 16 mit Limitfehler.
+Pass 10 ist lokal validiert; CI ist nach Push noch offen. Siehe
+[KP-304](./Kontextprotokoll.md#kp-304---pass-10-u2010-umbrueche).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
 abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres

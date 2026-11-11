@@ -438,14 +438,16 @@ have zero intrinsic content size.
   and [justification methods](https://drafts.csswg.org/css-text-3/#text-justify-property)
   (local ID `css-text`).
 - In `normal`/`pre-line`/`pre-wrap`/`break-spaces`, a leading ASCII hyphen
-  before a digit and internal hyphens between ASCII letters/digits are
-  supported within one text node.
-  An internal hyphen is a soft break only before a letter, never before a
-  digit. Negative numbers and dates such as `-1,000.25` and `2026-10-31`
-  therefore remain unbroken. The whole word stays one shaped run if it fits;
-  otherwise the last fitting eligible hyphen is used, or the first unbreakable
-  segment overflows. Fragments retain their source text node, including during
-  table intrinsic sizing and retained-document reflow.
+  before a digit and internal ASCII hyphens or U+2010 HYPHEN between ASCII
+  letters/digits are supported within one text node. An internal hyphen is a
+  soft break only before a letter, never before a digit. Negative numbers and
+  dates such as `-1,000.25` and `2026-10-31` therefore remain unbroken. An
+  internal U+2010 before a digit also stays unbroken. U+2010 stays visible at
+  the end of the broken line; leading, trailing, repeated or non-ASCII-adjacent
+  U+2010 and other dash characters remain unsupported. The whole word stays one shaped
+  run if it fits; otherwise the last fitting eligible hyphen is used, or the
+  first unbreakable segment overflows. Fragments retain their source text node,
+  including during table intrinsic sizing and retained-document reflow.
   See [CSS Text line breaking](https://drafts.csswg.org/css-text-3/#line-breaking)
   (local ID `css-text`) and Unicode 17
   [LB20a](https://www.unicode.org/reports/tr14/tr14-55.html#LB20a),
@@ -543,9 +545,10 @@ flow without specialized figure layout.
 - Bidi/RTL/auto direction, non-English language-specific layout, script
   itemization, advanced script/fallback/emoji shaping.
 - Full Unicode line breaking, automatic/dictionary hyphenation and other
-  punctuation-internal opportunities. The bounded manual U+00AD behavior above
-  is the only soft-hyphen support. In wrapping modes, leading hyphens not followed by ASCII
-  digits, trailing/repeated or non-ASCII-adjacent hyphens, leading/trailing,
+  punctuation-internal opportunities beyond the bounded ASCII/U+2010 hyphen
+  cases above. The bounded manual U+00AD behavior above is the only soft-hyphen
+  support. In wrapping modes, leading ASCII hyphens not followed by ASCII
+  digits, leading/trailing/repeated/non-ASCII-adjacent U+2010 hyphens, trailing/repeated or non-ASCII-adjacent ASCII hyphens, leading/trailing,
   repeated, mixed letter/digit or non-ASCII-adjacent solidi, adjacent internal
   infix separators, non-ASCII-adjacent infix separators, unsupported neighbors
   of internal `@`, `_` or `+`, and other unsupported internal punctuation fail;

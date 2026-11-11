@@ -8066,3 +8066,54 @@ sind erfolgreich.
 **Status:** Pass 9 ist committed, gepusht und CI-geprueft. Ein angefordertes
 Inkrement verbleibt; Pass 10 wird anhand des aktualisierten Trackers
 ausgewaehlt.
+
+### KP-304 - Pass 10: U+2010-Umbrueche
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; lokale Validierung
+  abgeschlossen, CI nach Push offen.
+- Quellen: Nutzerangabe `/missing-priority-implementation 10` (im
+  fortgesetzten Auftrag zusammengefasst), [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [Text/Layout guide](../docs/text-layout.md#ordinary-flow),
+  [Engine.Layout guide](../src/Engine/Engine.Layout/README.md),
+  [CSS Text Level 3 cache](../specs/cache/css-text.html) und
+  [Unicode 17 line-breaking cache](../specs/cache/unicode-linebreak.html);
+  Manifest-Pruefungen vom 2026-11-07 bzw. 2026-10-31; Layout/Text-Quellcode
+  und Regressionstests.
+- Bezug: zehntes der zehn angeforderten getrennten Inkremente; folgt auf KP-303.
+
+**Nutzerangabe:** Der Auftrag verlangt zehn getrennte Missing-Prioritaets-
+Inkremente. In der vorliegenden Fortsetzung wurde keine weitere Motivation
+oder detaillierte Verhaltenswahl angegeben.
+
+**Auswahl (Ableitung):** Der Text/Layout-Guide und die vorhandene Text-Engine
+belegen bereits begrenzte ASCII-Hyphen-Umbrueche; U+2010 war noch explizit
+unsupported, obwohl die Schrift es formen kann und die lokalen CSS Text-/UAX-14-
+Quellen eine Umbruchmoeglichkeit beschreiben. Die schmale Erweiterung wurde als
+naechster testbarer Lesbarkeitsgewinn ausgewaehlt. Dies ist eine technische
+Ableitung, keine separate Nutzerentscheidung und keine allgemeine Unicode-
+Zeilenumbruchimplementierung.
+
+**Umsetzung (belegt):** In `normal`, `pre-line`, `pre-wrap` und `break-spaces`
+ist U+2010 zwischen ASCII-Buchstaben oder Ziffern im selben Textknoten eine
+optionale Umbruchstelle; gebrochen wird nur nach U+2010 vor einem ASCII-
+Buchstaben. Der sichtbare U+2010 bleibt am Zeilenende. `pre` und `nowrap`
+erzeugen dort keinen Umbruch. Die bestehende Greedy-Fit-Suche teilt den Pfad
+mit ASCII-Bindestrichen und HTML-`<wbr>`; Tabellen-Minimumsbreite,
+Quellknotenidentitaet, Abbruch und gemeinsames Arbeitsbudget bleiben erhalten.
+Fuehrende, abschliessende, wiederholte oder nicht-ASCII-benachbarte U+2010 und
+andere Dash-Zeichen bleiben explizit unsupported; allgemeine Unicode-
+Zeilenumbrueche und automatische Silbentrennung bleiben ausserhalb des Umfangs.
+
+**Validierung (belegt):** Fokussierte U+2010-/Hyphen-Layouttests (128),
+natives Shaping (1), Engine.Layout (1.000), Engine.Text (19), Solution-Build
+(0 Warnungen/Fehler), Solution-Volltest (16.578), Formatverifikation und
+`git diff --check` bestehen lokal. Die Grenze fuer `aa<U+2010>bb` besteht bei
+17 Umbruchoperationen und loest bei 16 eine `LayoutLimitException` aus;
+zusaetzliche Regressionen decken Shaper-Abbruch und den nativen sichtbaren
+Glyphen ab. CSS Text Level 3 war laut Manifest zuletzt am 2026-11-07 geprueft,
+Unicode UAX #14 am 2026-10-31; am 2026-11-11 war kein Refresh erforderlich.
+
+**Status:** Alle zehn angeforderten Inkremente sind lokal validiert. Pass 10
+ist noch nicht committed/gepusht; dessen CI-Pruefung steht aus.

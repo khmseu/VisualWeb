@@ -54,6 +54,18 @@ public sealed class TextTests
     }
 
     [Fact]
+    public void VisibleU2010HyphenUsesItsNativeGlyph()
+    {
+        using var font = new TextFont(FontPath);
+        var plain = font.Shape("aa", 16, Cancellation);
+        var hyphen = font.Shape("aa\u2010", 16, Cancellation);
+        Assert.Equal("aa\u2010", hyphen.Text);
+        Assert.Equal(3, hyphen.Glyphs.Count);
+        Assert.Equal(2, hyphen.Glyphs[^1].Cluster);
+        Assert.True(hyphen.Width > plain.Width);
+    }
+
+    [Fact]
     public void SizeScaleIsLinearWithinNativeRoundingAndEmptyRunsHaveMetrics()
     {
         using var font = new TextFont(FontPath);

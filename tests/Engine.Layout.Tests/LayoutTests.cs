@@ -3110,6 +3110,80 @@ public sealed class LayoutTests
             string.Concat(actual).Replace(" ", "", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("normal")]
+    [InlineData("pre-line")]
+    [InlineData("pre-wrap")]
+    [InlineData("break-spaces")]
+    public void InternalU2010HyphensProvideSoftWrapOpportunities(string mode)
+    {
+        var (document, styles) = Page("<p id=x>aa\u2010bb</p>", "#x{white-space:" + mode + "}");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 15, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var lines = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(["aa\u2010", "bb"], lines);
+        Assert.All(box.Lines.SelectMany(line => line.Fragments), fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Fact]
+    public void MultipleU2010HyphensAndTableIntrinsicSizingUseTheSameBreaks()
+    {
+        var box = Find(Layout("<p id=x>aa\u2010bb\u2010cc</p>", width: 15).Root!, "x");
+        Assert.Equal(["aa\u2010", "bb\u2010", "cc"], box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+
+        var root = UnorderedList("<table id=t><tr><td id=c>aa\u2010bb</td></tr></table>", width: 10).Root!;
+        var cell = Find(root, "c");
+        Assert.Equal(15, cell.Content.Width);
+        Assert.Equal(["aa\u2010", "bb"], cell.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Theory]
+    [InlineData("pre")]
+    [InlineData("nowrap")]
+    public void U2010HyphensDoNotCreateWrapsWhenWrappingIsDisabled(string mode)
+    {
+        var box = Find(Layout("<p id=x>aa\u2010bb</p>", "#x{white-space:" + mode + "}", 10).Root!, "x");
+        var line = Assert.Single(box.Lines);
+        Assert.Equal("aa\u2010bb", string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+    }
+
+    [Fact]
+    public void U2010HyphenDoesNotBreakBeforeAnAsciiDigit()
+    {
+        var box = Find(Layout("<p id=x>aa\u20101</p>", width: 10).Root!, "x");
+        var line = Assert.Single(box.Lines);
+        Assert.Equal("aa\u20101", string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+    }
+
+    [Fact]
+    public void U2010HyphensShareGreedyFittingWithWbrOpportunities()
+    {
+        var box = Find(Layout("<p id=x>aa\u2010bb<wbr>cc</p>", width: 15).Root!, "x");
+        Assert.Equal(["aa\u2010", "bb", "cc"], box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Fact]
+    public void U2010HyphenBreakSearchSharesTheExactLineBreakBudget()
+    {
+        var exact = new LayoutOptions { MaxLineBreakOperations = 17 };
+        Assert.NotNull(Layout("<p>aa\u2010bb</p>", width: 15, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa\u2010bb</p>", width: 15,
+            options: exact with { MaxLineBreakOperations = 16 }));
+    }
+
+    [Fact]
+    public void U2010HyphenBreakSearchObservesCancellationFromTheShaper()
+    {
+        var (document, styles) = Page("<p>aa\u2010bb</p>");
+        using var cancellation = new CancellationTokenSource();
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            new CancelingShaper(cancellation), 15, 200, cancellationToken: cancellation.Token));
+    }
+
     [Fact]
     public void AnUnwrappedHyphenatedWordRemainsOneShapedRun()
     {
@@ -3236,6 +3310,17 @@ public sealed class LayoutTests
     public void OtherHyphenAndCrossNodeCasesRemainExplicitlyUnsupported(string text) =>
         Assert.Throws<UnsupportedLayoutException>(() => Layout("<p>" + text + "</p>"));
 
+    [Theory]
+    [InlineData("\u2010ab")]
+    [InlineData("ab\u2010")]
+    [InlineData("a\u2010\u2010b")]
+    public void U2010HyphensOutsideSupportedAsciiWordsRemainExplicitlyUnsupported(string text) =>
+        Assert.Throws<UnsupportedLayoutException>(() => Layout("<p>" + text + "</p>"));
+
+    [Fact]
+    public void U2010NextToUnsupportedTextStillFailsExplicitly() =>
+        Assert.Throws<UnsupportedTextException>(() => Layout("<p>a\u2010中</p>"));
+
     [Fact]
     public void HyphenBreakWorkAndExistingTextLimitsHaveExactSharedBoundaries()
     {
@@ -3276,11 +3361,15 @@ public sealed class LayoutTests
     }
 
     [Theory]
-    [InlineData("normal")]
-    [InlineData("pre-line")]
-    public void WrappingPunctuationStillRequiresSupportedLineBreakAnalysis(string mode) =>
+    [InlineData("normal", "a-b//c")]
+    [InlineData("pre-line", "a-b//c")]
+    [InlineData("normal", "a\u2011b")]
+    [InlineData("pre-line", "a\u2011b")]
+    [InlineData("normal", "a\u2013b")]
+    [InlineData("pre-line", "a\u2013b")]
+    public void WrappingPunctuationStillRequiresSupportedLineBreakAnalysis(string mode, string text) =>
         Assert.Throws<UnsupportedLayoutException>(() =>
-            Layout("<p>a-b//c</p>", "p{white-space:" + mode + "}"));
+            Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
 
     [Theory]
     [InlineData("nowrap", "\u202E")]

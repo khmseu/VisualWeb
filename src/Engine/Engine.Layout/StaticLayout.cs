@@ -112,8 +112,9 @@ public sealed record LayoutOptions
 /// Basic automatic tables follow local ID css2-tables,
 /// <see href="https://www.w3.org/TR/CSS22/tables.html#auto-table-layout">automatic table layout</see>,
 /// with canonical HTML boxes, separate borders and top-aligned cells only.
-/// Bounded ASCII alphanumeric hyphens use css-text
+/// Bounded ASCII hyphen and U+2010 opportunities use css-text
 /// <see href="https://drafts.csswg.org/css-text-3/#line-breaking">line breaking</see> and unicode-linebreak
+/// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#HH">HH</see>,
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB20a">LB20a</see>,
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB21">LB21</see>,
 /// <see href="https://www.unicode.org/reports/tr14/tr14-55.html#LB23">LB23</see> and
@@ -791,9 +792,20 @@ public static partial class StaticLayout
                                 }
                                 continue;
                             }
-                            if (c is '\\' or >= '\u2010' and <= '\u2015')
+                            if (c is '\\' or >= '\u2011' and <= '\u2015')
                             {
                                 throw new UnsupportedLayoutException("Punctuation line-break opportunities are deferred.");
+                            }
+                            if (c == '\u2010')
+                            {
+                                if (index == 0 || index == value.Length - 1
+                                    || !char.IsAsciiLetterOrDigit(value[index - 1])
+                                    || !char.IsAsciiLetterOrDigit(value[index + 1]))
+                                {
+                                    throw new UnsupportedLayoutException("Only internal U+2010 hyphens between ASCII letters or digits are supported in wrapping text.");
+                                }
+                                hasHyphenBreaks |= char.IsAsciiLetter(value[index + 1]);
+                                continue;
                             }
                             if (c == '-')
                             {
@@ -974,7 +986,8 @@ public static partial class StaticLayout
                     WordSegments = Array.AsReadOnly(segments.ToArray()),
                     SoftBreakOffsets = Array.AsReadOnly(breakOffsets.ToArray()),
                     ConditionalHyphens = Array.AsReadOnly(conditionalHyphens.ToArray()),
-                    HasHyphenBreaks = segments.Any(segment => segment.Text.Contains('-')),
+                    HasHyphenBreaks = segments.Any(segment =>
+                        segment.Text.Contains('-') || segment.Text.Contains('\u2010')),
                     EndsWithAtomicGlue = lastWord.EndsWithAtomicGlue
                 });
                 index = nextIndex;
@@ -1263,7 +1276,7 @@ public static partial class StaticLayout
                         for (var index = 1; index < remaining.Length - 1; index++)
                         {
                             cancellation.ThrowIfCancellationRequested();
-                            if (remaining[index] == '-' && char.IsAsciiLetter(remaining[index + 1])
+                            if ((remaining[index] is '-' or '\u2010') && char.IsAsciiLetter(remaining[index + 1])
                                 && char.IsAsciiLetterOrDigit(remaining[index - 1]))
                             {
                                 candidates.Add(index + 1);
@@ -1381,7 +1394,7 @@ public static partial class StaticLayout
                     for (var index = 0; index < remaining.Length; index++)
                     {
                         cancellation.ThrowIfCancellationRequested();
-                        if (remaining[index] != '-' || index == remaining.Length - 1
+                        if ((remaining[index] != '-' && remaining[index] != '\u2010') || index == remaining.Length - 1
                             || !char.IsAsciiLetter(remaining[index + 1])) { continue; }
                         var end = index + 1;
                         ChargeLineBreakWork(end);

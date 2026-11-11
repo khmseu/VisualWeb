@@ -1,7 +1,7 @@
 # Engine.Layout
 
 Phase-7 finite horizontal LTR normal-flow block/inline geometry and bounded
-space/internal-ASCII-hyphen line wrapping, with selected ASCII solidi
+space/internal-ASCII/U+2010-hyphen line wrapping, with selected ASCII solidi
 and bounded ASCII infix separators and email joiners retained in unbroken
 words. Inherited `text-indent` applies supported length/percentage first-line
 offsets; percentage indents in automatic table intrinsic sizing fail explicitly.
@@ -148,9 +148,9 @@ remain unsupported.
 Nonwrapping `pre`/`nowrap` text accepts supported Latin/common punctuation,
 including URLs and hyphens, retaining forced-break/space handling, overflow
 geometry and shared shaping/text limits. In wrapping modes, a leading hyphen
-before an ASCII digit and internal hyphens between ASCII letters/digits in one
-text node are supported; only an internal hyphen before a letter is a soft
-break. A solidus between two ASCII letters or two ASCII digits stays unbroken,
+before an ASCII digit and internal ASCII or U+2010 hyphens between ASCII
+letters/digits in one text node are supported; only an internal hyphen before
+a letter is a soft break. A solidus between two ASCII letters or two ASCII digits stays unbroken,
 allowing dates, negative numbers and fractions without general numeric breaking.
 Likewise `.`, `,`, `:` and `;` between ASCII letters or digits in one text
 node remain unbroken, including `example.com`, `1,000.25` and `12:30`.

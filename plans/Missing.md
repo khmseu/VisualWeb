@@ -1594,6 +1594,22 @@ and CodeQL
 pass. Pass 9 is complete; one requested increment remains. See
 [Text and layout](../docs/text-layout.md#ordinary-flow).
 
+Pass 10 adds bounded U+2010 HYPHEN soft-wrap opportunities in wrapping
+whitespace modes when the character is internal to one text node and adjacent
+to ASCII letters or digits. A break is allowed after U+2010 only before an
+ASCII letter, and the visible hyphen remains on the broken line. `pre` and
+`nowrap` do not wrap at U+2010. The existing greedy fitting, `<wbr>` interaction,
+automatic table minimum-content sizing, cancellation and shared work budget
+are retained. Leading, trailing, repeated and non-ASCII-adjacent U+2010
+characters, other dash characters, general Unicode line breaking and automatic
+hyphenation remain unsupported. Focused layout regressions (128), native
+shaping (1), Engine.Layout (1,000), Engine.Text (19), solution build
+(0 warnings/errors), full solution tests (16,578), format verification and
+`git diff --check` pass locally. The exact line-break budget succeeds at 17
+operations and fails at 16. Pass 10 is locally complete; its CI verification
+will be recorded after the feature commit is pushed. See
+[Text and layout](../docs/text-layout.md#ordinary-flow).
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.
