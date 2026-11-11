@@ -90,6 +90,17 @@ gepusht; Linux (Run 42957196183), Windows x64/arm64 (Run 42957196261) und
 CodeQL (Run 42957195483) sind gruen. Pass 8 ist abgeschlossen; zwei
 angeforderte Inkremente verbleiben.
 Siehe [KP-302](./Kontextprotokoll.md#kp-302---pass-8-wbr-zeilenumbrueche).
+Pass 9 ergaenzt begrenzte manuelle U+00AD-Umbruchmoeglichkeiten zwischen
+ASCII-Buchstaben oder Ziffern in einem Textknoten. Das Zeichen wird ohne
+Umbruch nicht geformt; beim gewaehlt gebrochenen Lauf wird U+00AD selbst als
+bedingter sichtbarer Glyph geformt. `pre`/`nowrap` blenden es aus. Fuehrende,
+abschliessende, wiederholte und nicht-ASCII-benachbarte weiche Trennzeichen
+bleiben unsupported; allgemeine Unicode-Zeilenumbrueche und automatische
+Silbentrennung ebenfalls. Layout (981), Text (18), fokussierte Layouttests
+(24), natives Shaping (1), Solution-Build (0 Warnungen/Fehler),
+Solution-Volltest (16.558), Formatverifikation und `git diff --check`
+bestehen lokal. Commit, Push und CI stehen aus; ein angefordertes Inkrement
+verbleibt. Siehe [KP-303](./Kontextprotokoll.md#kp-303---pass-9-weiche-trennzeichen).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
 abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres

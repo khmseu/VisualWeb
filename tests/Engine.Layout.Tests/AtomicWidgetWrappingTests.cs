@@ -597,11 +597,15 @@ public sealed class AtomicWidgetWrappingTests
     [InlineData("nowrap", false)]
     [InlineData("pre", true)]
     [InlineData("pre", false)]
-    public void AtomicWidgetBoundariesDoNotAcceptUnsupportedSoftHyphens(string mode, bool widgetFirst)
+    public void AtomicWidgetBoundariesPreserveSoftHyphenWrappingSemantics(string mode, bool widgetFirst)
     {
-        var content = widgetFirst ? "<input id=w>a\u00adb" : "a\u00adb<input id=w>";
+        var content = widgetFirst ? "<input id=w>aa\u00ADbb" : "aa\u00ADbb<input id=w>";
         var (document, styles) = Page(content, "#p{white-space:" + mode + "}");
-        Assert.Throws<UnsupportedTextException>(() => Layout(document, styles, 20));
+        var box = Layout(document, styles, 15);
+        var lineText = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)))
+            .Where(text => text.Length > 0);
+        var expected = mode is "normal" or "pre-line" ? new[] { "aa\u00AD", "bb" } : new[] { "aabb" };
+        Assert.Equal(expected, lineText);
     }
 
     [Theory]

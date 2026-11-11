@@ -3119,6 +3119,93 @@ public sealed class LayoutTests
         Assert.Equal(25, fragment.Run.Width);
     }
 
+    [Theory]
+    [InlineData("normal")]
+    [InlineData("pre-line")]
+    [InlineData("pre-wrap")]
+    [InlineData("break-spaces")]
+    public void SoftHyphensAreInvisibleUnlessTheirWrappingOpportunityIsChosen(string mode)
+    {
+        var (document, styles) = Page("<p id=x>aa\u00ADbb</p>", "#x{white-space:" + mode + "}");
+        var source = Assert.IsType<DomText>(document.GetElementById("x")!.ChildNodes[0]);
+        var box = Find(StaticLayout.Layout(document, styles, new MetricsShaper(), 15, 200,
+            cancellationToken: Cancellation).Root!, "x");
+        var lineText = box.Lines.Select(line => string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Equal(["aa\u00AD", "bb"], lineText);
+        Assert.All(box.Lines.SelectMany(line => line.Fragments), fragment => Assert.Same(source, fragment.Source));
+    }
+
+    [Theory]
+    [InlineData("pre")]
+    [InlineData("nowrap")]
+    public void SoftHyphensRemainInvisibleWhenWrappingIsDisabled(string mode)
+    {
+        var box = Find(Layout("<p id=x>aa\u00ADbb</p>", "#x{white-space:" + mode + "}", 15).Root!, "x");
+        var line = Assert.Single(box.Lines);
+        Assert.Equal("aabb", string.Concat(line.Fragments.Select(fragment => fragment.Run.Text)));
+        Assert.Single(line.Fragments);
+    }
+
+    [Fact]
+    public void HtmlSoftHyphenEntityUsesTheSameConditionalBreak()
+    {
+        var box = Find(Layout("<p id=x>aa&shy;bb</p>", width: 15).Root!, "x");
+        Assert.Equal(["aa\u00AD", "bb"], box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Fact]
+    public void MultipleSoftHyphensKeepTheirOffsetsAfterEarlierBreaks()
+    {
+        var box = Find(Layout("<p id=x>a\u00ADbc\u00ADd</p>", width: 10).Root!, "x");
+        Assert.Equal(["a\u00AD", "bc\u00AD", "d"], box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Fact]
+    public void SoftHyphenAndWbrOpportunitiesShareGreedyLineFitting()
+    {
+        var box = Find(Layout("<p id=x>aa\u00ADbb<wbr>cc</p>", width: 15).Root!, "x");
+        Assert.Equal(["aa\u00AD", "bb", "cc"], box.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Fact]
+    public void SoftHyphensContributeVisibleHyphensToAutomaticTableMinimumContentWidth()
+    {
+        var root = UnorderedList("<table id=t><tr><td id=c>aa\u00ADbb</td></tr></table>", width: 10).Root!;
+        var cell = Find(root, "c");
+        Assert.Equal(15, cell.Content.Width);
+        Assert.Equal(["aa\u00AD", "bb"], cell.Lines.Select(line =>
+            string.Concat(line.Fragments.Select(fragment => fragment.Run.Text))));
+    }
+
+    [Fact]
+    public void SoftHyphenBreakSearchSharesTheExactLineBreakBudget()
+    {
+        var exact = new LayoutOptions { MaxLineBreakOperations = 23 };
+        Assert.NotNull(Layout("<p>aa\u00ADbb</p>", width: 15, options: exact).Root);
+        Assert.Throws<LayoutLimitException>(() => Layout("<p>aa\u00ADbb</p>", width: 15,
+            options: exact with { MaxLineBreakOperations = 22 }));
+    }
+
+    [Fact]
+    public void SoftHyphenBreakSearchObservesCancellationFromTheShaper()
+    {
+        var (document, styles) = Page("<p>aa\u00ADbb</p>");
+        using var cancellation = new CancellationTokenSource();
+        Assert.Throws<OperationCanceledException>(() => StaticLayout.Layout(document, styles,
+            new CancelingShaper(cancellation), 15, 200, cancellationToken: cancellation.Token));
+    }
+
+    [Theory]
+    [InlineData("\u00ADab")]
+    [InlineData("ab\u00AD")]
+    [InlineData("a\u00AD\u00ADb")]
+    [InlineData("a\u00AD中")]
+    public void SoftHyphensOutsideSupportedAsciiWordsRemainExplicitlyUnsupported(string text) =>
+        Assert.Throws<UnsupportedLayoutException>(() => Layout("<p>" + text + "</p>"));
+
     [Fact]
     public void BrokenHyphenatedFragmentsRetainTheirSourceTextNode()
     {
@@ -3196,13 +3283,11 @@ public sealed class LayoutTests
             Layout("<p>a-b//c</p>", "p{white-space:" + mode + "}"));
 
     [Theory]
-    [InlineData("nowrap", "\u00AD")]
-    [InlineData("pre", "\u00AD")]
     [InlineData("nowrap", "\u202E")]
     [InlineData("pre", "\u202E")]
     [InlineData("nowrap", "\u4E00")]
     [InlineData("pre", "\u4E00")]
-    public void NonWrappingTextRetainsUnsupportedScriptControlAndSoftHyphenFailures(string mode, string text) =>
+    public void NonWrappingTextRetainsUnsupportedScriptAndControlFailures(string mode, string text) =>
         Assert.Throws<UnsupportedTextException>(() =>
             Layout("<p>" + text + "</p>", "p{white-space:" + mode + "}"));
 

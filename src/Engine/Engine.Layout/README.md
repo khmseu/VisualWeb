@@ -24,6 +24,11 @@ automatic table minimum-content sizing. Adjacent same-style text is shaped as
 one word when unbroken and source fragments are mapped at glyph-cluster
 boundaries; styled/inline-wrapped words or clusters crossing a source boundary
 fail explicitly. `pre` and `nowrap` suppress the opportunity.
+Manual U+00AD soft hyphens between ASCII letters or digits in one text node
+also provide bounded discretionary breaks. They stay invisible unless chosen,
+when U+00AD itself is shaped as the visible conditional glyph; `pre` and
+`nowrap` hide them without wrapping. General Unicode line breaking and
+automatic hyphenation remain unsupported.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.

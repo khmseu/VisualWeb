@@ -887,7 +887,9 @@ The email-joiner increment adds 74 net layout, native-content and local/process
 browser cases, including exact table widths, work limits, cancellation and
 retained link selection. The solution build, all 15,403 solution tests and
 solution formatting verification pass locally, as does the local V8 smoke.
-General email, URL and Unicode line breaking remain unsupported.
+General email/URL breaking, automatic hyphenation and Unicode line breaking
+remain unsupported; manual U+00AD opportunities in bounded ASCII words are now
+supported.
 The bounded numeric and atomic-control increment adds 350 net layout,
 native-content and local/process browser cases. It covers negative numbers,
 dates, fractions, mixed hyphen opportunities, intrinsic widths, whitespace,
@@ -1556,7 +1558,7 @@ and CodeQL
 (run [42949666801](https://github.com/khmseu/VisualWeb/actions/runs/42949666801))
 pass. Pass 7 is complete; three requested increments remain.
 
-Pass 8 (in progress) adds bounded HTML `<wbr>` opportunities to wrapping
+Pass 8 adds bounded HTML `<wbr>` opportunities to wrapping
 whitespace modes and automatic table minimum-content sizing. Adjacent
 same-style text is shaped together when unbroken and mapped to source nodes at
 glyph-cluster boundaries; unsupported style/inline-wrapper boundaries and
@@ -1573,6 +1575,17 @@ Windows confinement x64/arm64
 and CodeQL
 (run [42957195483](https://github.com/khmseu/VisualWeb/actions/runs/42957195483))
 pass. Pass 8 is complete; two requested increments remain.
+
+Pass 9 adds bounded manual U+00AD soft-hyphen opportunities between ASCII
+letters or digits within one text node. The character is omitted from
+unbroken shaping and shaped as the conditional glyph only when its break is
+selected; `pre` and `nowrap` hide it. Leading, trailing, repeated and
+non-ASCII-adjacent soft hyphens remain unsupported, as do general Unicode
+line breaking and automatic hyphenation. Focused layout regressions (24),
+native shaping (1), Engine.Layout (981), Engine.Text (18), solution build
+(0 warnings/errors), full solution tests (16,558), format verification and
+`git diff --check` pass locally. Commit, push and CI are pending; one requested
+increment remains. See [Text and layout](../docs/text-layout.md#ordinary-flow).
 
 ### 6. A persistent browser JavaScript environment
 
@@ -1604,7 +1617,10 @@ regressions.
 
 Remaining areas include:
 
-- RTL/bidi, complex-script shaping, Unicode line breaking, font fallback, and automatic font matching.
+- RTL/bidi, complex-script shaping, general Unicode line breaking and automatic
+  hyphenation, font fallback, and automatic font matching. Manual U+00AD
+  opportunities are supported only in the bounded ASCII subset documented in
+  [Text and layout](../docs/text-layout.md#ordinary-flow).
 - IME composition/preedit and accessibility integration. Clipboard support is
   bounded to browser-owned page-text copying and pasting or range copying in
   editable text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea

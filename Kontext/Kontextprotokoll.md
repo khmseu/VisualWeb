@@ -8008,3 +8008,55 @@ sind erfolgreich.
 
 **Status:** Pass 8 ist committed, gepusht und CI-geprueft; zwei der zehn
 angeforderten Inkremente verbleiben.
+
+### KP-303 - Pass 9: weiche Trennzeichen
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; lokal validiert,
+  Commit/Push/CI stehen aus.
+- Quellen: Nutzerangabe `/missing-priority-implementation 10` (im
+  fortgesetzten Auftrag zusammengefasst), [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [Text/Layout guide](../docs/text-layout.md#ordinary-flow),
+  [Engine.Layout guide](../src/Engine/Engine.Layout/README.md),
+  [CSS Text Level 3 cache](../specs/cache/css-text.html) und
+  [Unicode 17 line-breaking cache](../specs/cache/unicode-linebreak.html);
+  Manifest-Pruefungen vom 2026-11-07 bzw. 2026-10-31; Layout/Text-Quellcode
+  und Regressionstests.
+- Bezug: neuntes der zehn angeforderten getrennten Inkremente; folgt auf KP-302.
+
+**Nutzerangabe:** Der Auftrag verlangt zehn getrennte Missing-Prioritaets-
+Inkremente. In der vorliegenden Fortsetzung wurde keine weitere Motivation
+oder detaillierte Verhaltenswahl angegeben.
+
+**Auswahl (Ableitung):** Der aktualisierte Text/Layout-Guide fuehrte weiche
+Trennzeichen als unsupported auf; der Tracker priorisiert lesbare gewoehnliche
+Seiten. Eine begrenzte manuelle U+00AD-Gelegenheit wurde als naechste
+testbare Erweiterung umgesetzt. Der konkrete ASCII-/Einzeltextknoten-Umfang
+ist eine Implementierungsgrenze, keine gesonderte Nutzerentscheidung.
+
+**Umsetzung (belegt):** U+00AD zwischen ASCII-Buchstaben oder Ziffern in
+einem Textknoten ist in `normal`, `pre-line`, `pre-wrap` und `break-spaces`
+eine bedingte Umbruchmoeglichkeit. Ungebrochen wird das Zeichen ausgelassen;
+bei ausgewaehltem Umbruch wird U+00AD selbst als Glyph geformt. `pre` und
+`nowrap` blenden es ohne Umbruch aus. Quellknoten-Zuordnung, automatische
+Tabellen-Minimumsbreite, Greedy-Interaktion mit HTML `<wbr>` und
+ASCII-Bindestrichen, Abbruch und gemeinsames Umbrucharbeitsbudget bleiben
+erhalten. Fuehrende, abschliessende, wiederholte oder nicht-ASCII-benachbarte
+U+00AD-Zeichen scheitern explizit. Allgemeine Unicode-Zeilenumbrueche und
+automatische Silbentrennung bleiben ausserhalb des Umfangs.
+
+**Validierung (belegt):** Fokussierte Layouttests (24), natives
+Shaping-Regressionsbeispiel (1), Engine.Layout (981), Engine.Text (18),
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.558),
+Formatverifikation und `git diff --check` bestehen lokal. Fuer `aa<U+00AD>bb`
+besteht das exakte Umbruchlimit 23, waehrend 22 die Layoutgrenze ausloest;
+die Abbruchregression wird im Shaper ausgeloest. CSS Text Level 3 war laut
+Manifest zuletzt am 2026-11-07 geprueft, Unicode UAX #14 am 2026-10-31; am
+2026-11-11 war kein Refresh erforderlich.
+
+**Git/CI (offen):** Featurecommit, Push und Linux-/Windows-/CodeQL-CI stehen aus.
+
+**Status:** Pass 9 ist implementiert und lokal vollvalidiert. Ein angefordertes
+Inkrement verbleibt; Pass 10 wird erst nach Commit, Push und CI anhand des
+aktualisierten Trackers ausgewaehlt.

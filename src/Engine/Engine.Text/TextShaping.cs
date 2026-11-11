@@ -125,6 +125,10 @@ public sealed class TextFont : IDisposable
         buffer.Direction = Direction.LeftToRight;
         buffer.Script = Script.Latin;
         buffer.Language = new Language("en");
+        if (text.Length > 0 && text[^1] == '\u00AD')
+        {
+            buffer.Flags = BufferFlags.PreserveDefaultIgnorables;
+        }
         foreach (var rune in text.EnumerateRunes())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -153,7 +157,7 @@ public sealed class TextFont : IDisposable
             new(extents.Ascender / 64.0, -extents.Descender / 64.0, extents.LineGap / 64.0));
     }
 
-    /// <summary>Reject text needing script itemization, bidi, control handling or font fallback.</summary>
+    /// <summary>Reject text needing script itemization, bidi, control handling or font fallback, except a trailing conditional hyphen.</summary>
     public static void ValidateLatin(string text, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -162,6 +166,12 @@ public sealed class TextFont : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (!Rune.TryGetRuneAt(text, index, out var rune)) { throw new UnsupportedTextException("Text contains a lone UTF-16 surrogate."); }
             var value = rune.Value;
+            if (value == 0xAD && index > 0 && index + rune.Utf16SequenceLength == text.Length
+                && char.IsAsciiLetterOrDigit(text[index - 1]))
+            {
+                index += rune.Utf16SequenceLength;
+                continue;
+            }
             if (!(value is >= 0x20 and <= 0x7E or >= 0xA0 and <= 0x24F or >= 0x300 and <= 0x36F
                 or >= 0x2010 and <= 0x2027 or >= 0x2030 and <= 0x205E or >= 0xFB00 and <= 0xFB06)
                 || value is 0xAD or 0x2028 or 0x2029)

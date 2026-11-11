@@ -62,9 +62,10 @@ selection policy; missing faces, 900/other weights and oblique still fail.
 This stage shapes Latin/common text, combining marks and a finite punctuation
 subset with HarfBuzz's Latin script, English language and LTR direction.
 Ligatures, kerning and combining clusters are real native shaping.
-Unsupported scripts, bidi controls, soft hyphens, ZWJ/variation handling,
-controls, lone surrogates and missing glyphs throw UnsupportedTextException.
-Layout handles supported whitespace before calling the shaper.
+Unsupported scripts, bidi controls, ZWJ/variation handling, controls, lone
+surrogates and missing glyphs throw UnsupportedTextException. Text shaping
+accepts U+00AD only as the final character of a conditional-break candidate;
+static layout passes it only when that break is selected.
 
 ## Layout entry point
 
@@ -406,6 +407,19 @@ have zero intrinsic content size.
   (local ID `html`) and CSS Text
   [line breaking](https://drafts.csswg.org/css-text-3/#line-breaking)
   (local ID `css-text`).
+- U+00AD SOFT HYPHEN between ASCII letters or digits in one text node supplies
+  an optional break in `normal`, `pre-line`, `pre-wrap` and `break-spaces`.
+  The character is omitted from shaping when unbroken; when selected, U+00AD
+  itself is shaped as the visible conditional glyph. `pre` and `nowrap` hide
+  it without wrapping. Source-node identity, automatic table minimum-content
+  sizing, cancellation and the shared line-break work budget are retained.
+  Leading, trailing, repeated and non-ASCII-adjacent soft hyphens fail
+  explicitly; this does not add dictionary hyphenation or general Unicode line
+  breaking. See CSS Text
+  [hyphenation](https://drafts.csswg.org/css-text-3/#hyphenation)
+  and Unicode 17
+  [soft hyphen](https://www.unicode.org/reports/tr14/tr14-55.html#SoftHyphen)
+  (local IDs `css-text` and `unicode-linebreak`).
 - HTML `align` hints on `p` and `h1`–`h6` select the existing left, right,
   center and justify paths; they do not add layout behavior. See
   [HTML rendering hints](https://html.spec.whatwg.org/multipage/rendering.html#tables-2)
@@ -528,8 +542,9 @@ flow without specialized figure layout.
 
 - Bidi/RTL/auto direction, non-English language-specific layout, script
   itemization, advanced script/fallback/emoji shaping.
-- Full Unicode line breaking, hyphenation and other punctuation-internal
-  opportunities. In wrapping modes, leading hyphens not followed by ASCII
+- Full Unicode line breaking, automatic/dictionary hyphenation and other
+  punctuation-internal opportunities. The bounded manual U+00AD behavior above
+  is the only soft-hyphen support. In wrapping modes, leading hyphens not followed by ASCII
   digits, trailing/repeated or non-ASCII-adjacent hyphens, leading/trailing,
   repeated, mixed letter/digit or non-ASCII-adjacent solidi, adjacent internal
   infix separators, non-ASCII-adjacent infix separators, unsupported neighbors

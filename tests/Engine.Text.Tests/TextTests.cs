@@ -41,6 +41,19 @@ public sealed class TextTests
     }
 
     [Fact]
+    public void ConditionalSoftHyphenUsesItsNativeGlyphOnlyAtTheEndOfABrokenRun()
+    {
+        using var font = new TextFont(FontPath);
+        var plain = font.Shape("aa", 16, Cancellation);
+        var broken = font.Shape("aa\u00AD", 16, Cancellation);
+        Assert.Equal("aa\u00AD", broken.Text);
+        Assert.Equal(3, broken.Glyphs.Count);
+        Assert.Equal(2, broken.Glyphs[^1].Cluster);
+        Assert.True(broken.Width > plain.Width);
+        Assert.Throws<UnsupportedTextException>(() => font.Shape("a\u00ADb", 16, Cancellation));
+    }
+
+    [Fact]
     public void SizeScaleIsLinearWithinNativeRoundingAndEmptyRunsHaveMetrics()
     {
         using var font = new TextFont(FontPath);

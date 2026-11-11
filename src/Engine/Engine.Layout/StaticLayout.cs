@@ -706,9 +706,28 @@ public static partial class StaticLayout
                 var whitespace = ((CssKeyword)inheritedStyle["white-space"]).Value;
                 var canWrap = CanSoftWrap(whitespace);
                 var word = new StringBuilder();
-                foreach (var c in text.Data.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'))
+                var normalizedText = text.Data.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+                for (var index = 0; index < normalizedText.Length; index++)
                 {
                     cancellation.ThrowIfCancellationRequested();
+                    var c = normalizedText[index];
+                    if (c == '\u00AD')
+                    {
+                        if (index == 0 || index == normalizedText.Length - 1
+                            || !char.IsAsciiLetterOrDigit(normalizedText[index - 1])
+                            || !char.IsAsciiLetterOrDigit(normalizedText[index + 1]))
+                        {
+                            throw new UnsupportedLayoutException("Soft hyphens are supported only between ASCII letters or digits.");
+                        }
+                        EmitWord();
+                        ChargeLineBreakWork(1);
+                        output.Add(new(text, inheritedStyle, "", UnitKind.SoftBreak, canWrap)
+                        {
+                            Backgrounds = backgroundOwners,
+                            IsConditionalHyphen = true
+                        });
+                        continue;
+                    }
                     if (c is ' ' or '\n' or '\t' or '\f')
                     {
                         EmitWord();
@@ -888,6 +907,7 @@ public static partial class StaticLayout
 
                 var segments = new List<InlineWordSegment>();
                 var breakOffsets = new List<int>();
+                var conditionalHyphens = new List<InlineSoftHyphen>();
                 var text = new StringBuilder();
                 var nextIndex = index;
                 while (nextIndex + 2 < input.Count
@@ -902,14 +922,8 @@ public static partial class StaticLayout
                     {
                         throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
                     }
-                    if (word.Source is null)
-                    {
-                        throw new InvalidOperationException("Inline word is missing its source text.");
-                    }
-                    ChargeLineBreakWork(word.Text.Length);
-                    text.Append(word.Text);
-                    segments.Add(new(word.Source, word.Text, word.Style, word.Backgrounds));
-                    if (softBreak.Wrap) { breakOffsets.Add(text.Length); }
+                    AppendWord(word);
+                    AddBreak(softBreak, text.Length);
                     nextIndex += 2;
                 }
                 var lastWord = input[nextIndex];
@@ -917,21 +931,49 @@ public static partial class StaticLayout
                 {
                     throw new UnsupportedLayoutException("Text-node/style boundaries inside an unbroken word require cross-boundary shaping.");
                 }
-                if (lastWord.Source is null)
-                {
-                    throw new InvalidOperationException("Inline word is missing its source text.");
-                }
-                ChargeLineBreakWork(lastWord.Text.Length);
-                text.Append(lastWord.Text);
-                segments.Add(new(lastWord.Source, lastWord.Text, lastWord.Style, lastWord.Backgrounds));
-                if (input[nextIndex - 1].Wrap) { breakOffsets.Add(text.Length - lastWord.Text.Length); }
+                AddBreak(input[nextIndex - 1], text.Length);
+                AppendWord(lastWord);
                 nextIndex++;
+                void AppendWord(InlineUnit word)
+                {
+                    if (word.Source is null)
+                    {
+                        throw new InvalidOperationException("Inline word is missing its source text.");
+                    }
+                    ChargeLineBreakWork(word.Text.Length);
+                    text.Append(word.Text);
+                    var segment = new InlineWordSegment(word.Source, word.Text, word.Style, word.Backgrounds);
+                    if (segments.Count > 0 && ReferenceEquals(segments[^1].Source, segment.Source)
+                        && ReferenceEquals(segments[^1].Style, segment.Style)
+                        && ReferenceEquals(segments[^1].Backgrounds, segment.Backgrounds))
+                    {
+                        segments[^1] = segments[^1] with { Text = segments[^1].Text + segment.Text };
+                    }
+                    else { segments.Add(segment); }
+                }
+
+                void AddBreak(InlineUnit softBreak, int offset)
+                {
+                    if (!softBreak.Wrap) { return; }
+                    breakOffsets.Add(offset);
+                    if (softBreak.IsConditionalHyphen)
+                    {
+                        if (softBreak.Source is null)
+                        {
+                            throw new InvalidOperationException("Conditional hyphen is missing its source text.");
+                        }
+                        conditionalHyphens.Add(new(offset,
+                            new(softBreak.Source, "\u00AD", softBreak.Style, softBreak.Backgrounds)));
+                    }
+                }
+
                 output.Add(first with
                 {
                     Source = null,
                     Text = text.ToString(),
                     WordSegments = Array.AsReadOnly(segments.ToArray()),
                     SoftBreakOffsets = Array.AsReadOnly(breakOffsets.ToArray()),
+                    ConditionalHyphens = Array.AsReadOnly(conditionalHyphens.ToArray()),
                     HasHyphenBreaks = segments.Any(segment => segment.Text.Contains('-')),
                     EndsWithAtomicGlue = lastWord.EndsWithAtomicGlue
                 });
@@ -1201,6 +1243,7 @@ public static partial class StaticLayout
                 var remaining = unit.Text;
                 var remainingSegments = segments;
                 var breakOffsets = unit.SoftBreakOffsets!.ToList();
+                var conditionalHyphens = unit.ConditionalHyphens!.ToList();
                 var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
                 while (true)
                 {
@@ -1230,14 +1273,15 @@ public static partial class StaticLayout
 
                     ShapedRun? best = null;
                     var bestEnd = 0;
+                    InlineSoftHyphen? bestConditionalHyphen = null;
                     foreach (var end in candidates)
                     {
-                        ChargeLineBreakWork(end);
-                        var candidate = Shape(remaining[..end], unit.Style);
+                        var candidate = ShapeCandidate(end, out var conditionalHyphen);
                         if (candidate.Width <= available)
                         {
                             best = candidate;
                             bestEnd = end;
+                            bestConditionalHyphen = conditionalHyphen;
                         }
                     }
                     if (best is null && hasContent && (softBreakBefore || space?.Wrap == true
@@ -1254,8 +1298,7 @@ public static partial class StaticLayout
                     if (best is null && candidates.Count > 0)
                     {
                         bestEnd = candidates.Min;
-                        ChargeLineBreakWork(bestEnd);
-                        best = Shape(remaining[..bestEnd], unit.Style);
+                        best = ShapeCandidate(bestEnd, out bestConditionalHyphen);
                     }
                     if (best is null)
                     {
@@ -1264,6 +1307,10 @@ public static partial class StaticLayout
                     }
 
                     var (prefixSegments, suffixSegments) = SplitWordSegments(remainingSegments, bestEnd);
+                    if (bestConditionalHyphen is not null)
+                    {
+                        prefixSegments.Add(bestConditionalHyphen.HyphenSegment);
+                    }
                     Place(best, prefixSegments);
                     Emit(false, softWrap: true);
                     ChargeLineBreakWork(remaining.Length - bestEnd);
@@ -1271,6 +1318,8 @@ public static partial class StaticLayout
                     remainingSegments = suffixSegments;
                     breakOffsets = breakOffsets.Where(offset => offset > bestEnd)
                         .Select(offset => offset - bestEnd).ToList();
+                    conditionalHyphens = conditionalHyphens.Where(item => item.Offset > bestEnd)
+                        .Select(item => item with { Offset = item.Offset - bestEnd }).ToList();
                     gap = null;
                     softBreakBefore = false;
                     previousWidgetAllowsWrap = false;
@@ -1297,6 +1346,15 @@ public static partial class StaticLayout
                     hangingWidth = 0;
                     hasPreservedSpaceWrapOpportunity = false;
                     hasContent = true;
+                }
+
+                ShapedRun ShapeCandidate(int end, out InlineSoftHyphen? conditionalHyphen)
+                {
+                    conditionalHyphen = conditionalHyphens.FirstOrDefault(item => item.Offset == end);
+                    var candidateText = conditionalHyphen is null
+                        ? remaining[..end] : string.Concat(remaining[..end], "\u00AD");
+                    ChargeLineBreakWork(candidateText.Length);
+                    return Shape(candidateText, unit.Style);
                 }
             }
 
@@ -1738,6 +1796,7 @@ public static partial class StaticLayout
         private sealed record InlineBackgroundOwner(DomElement Element, CssColor Color, InlineBackgroundOwner? Parent);
         private sealed record InlineWordSegment(DomText Source, string Text, CssComputedStyle Style,
             InlineBackgroundOwner? Backgrounds);
+        private sealed record InlineSoftHyphen(int Offset, InlineWordSegment HyphenSegment);
         private sealed record InlineUnit(DomText? Source, CssComputedStyle Style, string Text, UnitKind Kind, bool Wrap)
         {
             public DomElement? Widget { get; init; }
@@ -1745,6 +1804,8 @@ public static partial class StaticLayout
             public InlineBackgroundOwner? Backgrounds { get; init; }
             public IReadOnlyList<InlineWordSegment>? WordSegments { get; init; }
             public IReadOnlyList<int>? SoftBreakOffsets { get; init; }
+            public IReadOnlyList<InlineSoftHyphen>? ConditionalHyphens { get; init; }
+            public bool IsConditionalHyphen { get; init; }
             public bool HasHyphenBreaks { get; init; }
             public bool EndsWithAtomicGlue { get; init; }
             public bool HangAtLineEnd { get; init; }
