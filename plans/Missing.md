@@ -1510,20 +1510,30 @@ pass. Pass 4 is complete; six increments remain.
 
 Pass 5 supports bounded `white-space:pre-wrap`: ASCII spaces and segment-break
 newlines are preserved, wrapping occurs after a sequence of spaces, and
-line-ending spaces hang outside line alignment and intrinsic width. Mixed
-whitespace modes, preserved tabs/form feeds, `break-spaces` and pre-wrap space
-runs adjacent to Unicode glue remain unsupported. CSS (1,344), Layout (940),
-the zero-warning solution build, all 16,516 solution tests, format verification
-and `git diff --check` pass locally. Feature commit `23d1d91` is pushed to
-`main`; Linux development (run
+line-ending spaces hang outside line alignment and intrinsic width. At the end
+of Pass 5, mixed whitespace modes, preserved tabs/form feeds, `break-spaces`
+and pre-wrap space runs adjacent to Unicode glue remained unsupported. CSS
+(1,344), Layout (940), the zero-warning solution build, all 16,516 solution
+tests, format verification and `git diff --check` pass locally. Feature commit
+`23d1d91` is pushed to `main`; Linux development (run
 [42938502799](https://github.com/khmseu/VisualWeb/actions/runs/42938502799)),
 Windows confinement x64/arm64
 ([42938502824](https://github.com/khmseu/VisualWeb/actions/runs/42938502824))
 and Push on main/CodeQL
 ([42938502178](https://github.com/khmseu/VisualWeb/actions/runs/42938502178))
-pass. Pass 5 is complete; five further increments remain. See the
+pass. Pass 5 was complete with five further increments remaining. See the
 [CSS scope](../docs/css.md#cascade-and-computed-values)
 and [ordinary flow](../docs/text-layout.md#ordinary-flow).
+
+Pass 6 adds bounded `white-space:break-spaces`: ASCII spaces and segment-break
+newlines are preserved, with a soft-wrap opportunity after every space,
+including between adjacent spaces. Trailing spaces contribute to line
+alignment and automatic table intrinsic width. Mixed whitespace modes,
+preserved tabs/form feeds, non-ASCII space separators, atomic-widget
+boundaries, and preserved spaces adjacent to Unicode glue remain unsupported.
+The Layout suite (946) and solution build (0 warnings/errors) pass; the full
+solution suite (16,522), format verification and `git diff --check` pass.
+Feature commit, push and CI are pending.
 
 ### 6. A persistent browser JavaScript environment
 

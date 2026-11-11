@@ -7858,3 +7858,38 @@ sind erfolgreich.
 
 **Status:** Pass 5 ist lokal validiert, committed, gepusht und CI-geprueft;
 fuenf weitere Inkremente bleiben.
+
+### KP-300 - Pass 6: bounded break-spaces
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Implementierung und
+  lokale Vollvalidierung, Commit/Push/CI-Pruefung noch ausstehend.
+- Quellen: vom Nutzer fortgefuehrter Auftrag
+  `/missing-priority-implementation 10`, [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [layout guide](../docs/text-layout.md#ordinary-flow), [Engine.Layout guide](../src/Engine/Engine.Layout/README.md),
+  lokaler `css-text` Cache (Manifest geprueft am 2026-11-07), aktuelle
+  Layout-Implementierung und Regressionstests.
+- Bezug: sechster der zehn getrennten Missing-Prioritaetsinkremente; folgt auf
+  KP-299.
+
+**Auswahl (Ableitung):** Der aktive Tracker priorisiert lesbare, gewoehnlich
+gestaltete Seiten. Da CSS `break-spaces` bereits als Wert angenommen wurde,
+Layout es aber zuvor ablehnte, wurde dessen klar begrenzte Textuntermenge als
+naechster Schritt gewaehlt. Dies war eine Arbeitsreihenfolge, keine gesonderte
+Nutzerentscheidung. Der frische lokale CSS Text Level 3 Cache beschreibt
+`break-spaces` wie `pre-wrap`, aber mit Umbruch nach jedem erhaltenen
+Leerzeichen und ohne Haengen am Zeilenende.
+
+**Umsetzung (belegt):** ASCII-Leerzeichen und Segment-Newlines bleiben
+erhalten; Umbruch ist nach jedem ASCII-Leerzeichen moeglich, auch zwischen
+benachbarten Leerzeichen. Zeilenend-Leerzeichen zaehlen zur Ausrichtung und
+automatischen Tabellen-Intrinsic-Breite. Tabs/Form-Feeds, Nicht-ASCII-
+Leerzeichentrenner, gemischte Inline-Whitespace-Modi, atomare Widget-Grenzen
+und erhaltene Leerzeichen neben Unicode-Glue bleiben explizit unsupported.
+
+**Validierung (belegt):** Die neuen sieben fokussierten Regressionen und alle
+946 Engine.Layout-Tests bestehen. `dotnet build VisualWeb.slnx` besteht mit
+null Warnungen/Fehlern; `dotnet test VisualWeb.slnx --no-build` besteht mit
+16.522 Tests. Formatverifikation und `git diff --check` bestehen.
+Commit, Push und CI-Pruefung stehen aus.

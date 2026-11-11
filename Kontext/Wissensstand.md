@@ -51,6 +51,16 @@ Windows confinement x64/arm64 (Run 42938502824) und Push-on-main/CodeQL
 (Run 42938502178) sind erfolgreich. Pass 5 ist abgeschlossen; fuenf
 Inkremente bleiben. Siehe
 [KP-299](./Kontextprotokoll.md#kp-299---pass-5-bounded-pre-wrap).
+Pass 6 implementiert bounded CSS `white-space:break-spaces`: ASCII-Leerzeichen
+und Segment-Newlines bleiben erhalten, mit Umbruchmoeglichkeiten nach jedem
+Leerzeichen einschliesslich benachbarter Leerzeichen. Zeilenend-Leerzeichen
+zaehlen zur Ausrichtung und automatischen Tabellen-Intrinsic-Breite. Gemischte
+Whitespace-Modi, Tabs/Form-Feeds, Nicht-ASCII-Leerzeichen, Widget-Grenzen und
+Glue-Nachbarschaft bleiben unsupported. Layout (946) und Solution-Build
+(0 Warnungen/Fehler), Solution-Volltest (16.522), Formatverifikation und
+`git diff --check` bestehen. Commit, Push und CI stehen aus. Vier Inkremente
+verbleiben.
+Siehe [KP-300](./Kontextprotokoll.md#kp-300---pass-6-bounded-break-spaces).
 Siehe [KP-298](./Kontextprotokoll.md#kp-298---pass-4-bounded-word-spacing).
 Siehe
 [KP-296](./Kontextprotokoll.md#kp-296---pass-2-text-align-last).

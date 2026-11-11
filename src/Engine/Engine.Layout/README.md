@@ -14,8 +14,10 @@ Inherited `word-spacing` applies nonnegative supported lengths to collapsed
 and preserved ASCII spaces; negative lengths and non-ASCII word separators
 remain unsupported.
 `white-space:pre-wrap` preserves ASCII spaces and newlines, wraps after space
-sequences, and hangs line-ending spaces; tabs/form feeds and `break-spaces`
-remain unsupported.
+sequences, and hangs line-ending spaces. Bounded `break-spaces` wraps after
+each preserved ASCII space, including between adjacent spaces, and counts
+trailing spaces in line and intrinsic width. Tabs/form feeds, non-ASCII spaces and
+`break-spaces` around atomic widgets remain unsupported.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.

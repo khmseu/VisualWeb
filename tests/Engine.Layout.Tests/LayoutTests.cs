@@ -3755,7 +3755,6 @@ public sealed class LayoutTests
     [InlineData("<p dir=rtl>x</p>", "")]
     [InlineData("<p>\u05D0</p>", "")]
     [InlineData("<p>ab<span>cd</span></p>", "")]
-    [InlineData("<p>x</p>", "p{white-space:break-spaces}")]
     [InlineData("<p>\t</p>", "p{white-space:pre}")]
     [InlineData("<p>-ab</p>", "")]
     [InlineData("<p lang=de>x</p>", "")]

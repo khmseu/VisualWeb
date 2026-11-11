@@ -435,7 +435,8 @@ have zero intrinsic content size.
   [LB13](https://www.unicode.org/reports/tr14/tr14-55.html#LB13) and
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25)
   (local ID `unicode-linebreak`); it is not general URL or Unicode line breaking.
-- In `normal`/`pre-line`/`pre-wrap`, `.`, `,`, `:` and `;` between ASCII letters or digits
+- In `normal`/`pre-line`/`pre-wrap`/`break-spaces`, `.`, `,`, `:` and `;`
+  between ASCII letters or digits
   in one text node stay in the unbroken shaped word. This includes
   `example.com`, `1,000.25` and `12:30`; space and supported hyphen breaks
   remain available around the word. Intrinsic table sizing includes the full
@@ -444,7 +445,8 @@ have zero intrinsic content size.
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) and
   [LB29](https://www.unicode.org/reports/tr14/tr14-55.html#LB29) (local ID
   `unicode-linebreak`). This is not general punctuation or URL line breaking.
-- In `normal`/`pre-line`/`pre-wrap`, internal `@`, `_` and `+` with an ASCII letter or
+- In `normal`/`pre-line`/`pre-wrap`/`break-spaces`, internal `@`, `_` and `+`
+  with an ASCII letter or
   digit immediately on each side in the same text node stay in the unbroken
   shaped word. This allows examples such as `first.last+tag@example.com` and
   `user_name@example.com` without changing space or supported hyphen breaks.
@@ -455,10 +457,15 @@ have zero intrinsic content size.
   [LB28](https://www.unicode.org/reports/tr14/tr14-55.html#LB28) (local ID
   `unicode-linebreak`). Adjacent symbols, non-ASCII neighbors and cross-node
   words remain unsupported; this is not general email or URL line breaking.
-- white-space normal, nowrap, pre, pre-line and bounded pre-wrap; preserved
-  ASCII spaces/newlines and explicit br breaks. Pre-wrap wraps after a sequence
-  of preserved spaces and hangs end-of-line spaces. Preserved tabs/form feeds,
-  break-spaces and pre-wrap space runs adjacent to Unicode glue are unsupported.
+- white-space normal, nowrap, pre, pre-line, bounded pre-wrap and bounded
+  break-spaces; preserved ASCII spaces/newlines and explicit br breaks.
+  Pre-wrap wraps after a sequence of preserved spaces and hangs end-of-line
+  spaces. Break-spaces wraps after each preserved ASCII space, including
+  between adjacent spaces, and trailing spaces contribute to line and
+  intrinsic width and alignment. Preserved tabs/form feeds, non-ASCII space
+  separators,
+  break-spaces around atomic widgets, and preserved space runs adjacent to
+  Unicode glue are unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
   including URLs, hyphens and internal punctuation, without introducing soft
   breaks. Overflow remains measurable for document scrolling. `pre` still
@@ -517,8 +524,8 @@ flow without specialized figure layout.
   nonwrapping pre/nowrap do not need this analysis.
   Ordinary Latin words, apostrophes, decimal points and trailing punctuation
   form unbroken runs; no dictionary breaking or grapheme emergency wrapping.
-- Mixed whitespace modes inside inline elements, break-spaces, tab
-  stops, other justification opportunities/methods, `text-justify` and
+- Mixed whitespace modes inside inline elements, tab stops, other
+  justification opportunities/methods, `text-justify` and
   cross-node/style shaping inside an unbroken word.
 - Margin collapse, floats, positioning, general inline-block, inline margins/
   padding/borders, backgrounds on or around atomic widgets, tables beyond the

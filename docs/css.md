@@ -399,9 +399,12 @@ length to collapsed or preserved ASCII spaces. Negative lengths, percentage
 values and non-ASCII word separators remain unsupported.
 Layout also supports `white-space:pre-wrap` for preserved ASCII spaces and
 segment-break newlines, wrapping after each space sequence and hanging
-end-of-line spaces. Preserved tabs/form feeds and `break-spaces` remain outside
-the layout subset. Mixed whitespace modes inside inline content and pre-wrap
-space runs adjacent to Unicode glue remain explicit layout failures.
+end-of-line spaces. Bounded `break-spaces` preserves the same characters but
+wraps after each ASCII space, including between adjacent spaces; trailing spaces
+count toward line alignment and automatic table intrinsic width. Preserved tabs/
+form feeds, non-ASCII space separators, `break-spaces` around atomic widgets,
+mixed whitespace modes inside inline content and preserved space runs adjacent
+to Unicode glue remain explicit layout failures.
 
 Shorthands: margin, padding, border-width, border-style, border-color, border and
 physical border sides. The finite `background` shorthand accepts one supported
