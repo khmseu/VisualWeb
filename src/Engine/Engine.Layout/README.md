@@ -10,6 +10,9 @@ intrinsic table measurement does not expand justified text.
 Inherited `text-transform` supports ASCII `uppercase` and `lowercase` before
 shaping without mutating source text; non-ASCII case mappings fail explicitly
 and locale-sensitive behavior is deferred.
+Inherited `word-spacing` applies nonnegative supported lengths to collapsed
+and preserved ASCII spaces; negative lengths and non-ASCII word separators
+remain unsupported.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.

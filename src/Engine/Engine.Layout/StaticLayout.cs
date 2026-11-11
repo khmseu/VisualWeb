@@ -896,7 +896,7 @@ public static partial class StaticLayout
                 {
                     var widget = unit.Widget ?? throw new InvalidOperationException("Inline widget is missing its element.");
                     var (widgetWidth, widgetHeight) = WidgetSize(unit.Style, width, widget);
-                    var widgetGap = space is not null && hasContent ? Shape(" ", space.Style) : null;
+                    var widgetGap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
                     if (hasContent && (space?.Wrap == true || unit.Wrap && previousWord?.EndsWithAtomicGlue != true)
                         && advance + (widgetGap?.Width ?? 0) + widgetWidth > AvailableWidth())
                     {
@@ -928,8 +928,9 @@ public static partial class StaticLayout
                     previousWidgetAllowsWrap = false;
                     continue;
                 }
-                var run = Shape(unit.Text, unit.Style);
-                var gap = space is not null && hasContent ? Shape(" ", space.Style) : null;
+                var run = unit.Kind == UnitKind.PreservedSpace
+                    ? ShapeWordSpace(unit.Style) : Shape(unit.Text, unit.Style);
+                var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
                 var breakable = space?.Wrap == true || previousWidgetAllowsWrap && !IsAtomicWrapGlue(unit.Text[0])
                     || unit.Kind == UnitKind.PreservedSpace && unit.Wrap;
                 if (hasContent && breakable && advance + (gap?.Width ?? 0) + run.Width > AvailableWidth())
@@ -959,7 +960,7 @@ public static partial class StaticLayout
             void PlaceHyphenatedWord(InlineUnit unit)
             {
                 var remaining = unit.Text;
-                var gap = space is not null && hasContent ? Shape(" ", space.Style) : null;
+                var gap = space is not null && hasContent ? ShapeWordSpace(space.Style) : null;
                 while (true)
                 {
                     ChargeLineBreakWork(remaining.Length);
@@ -1285,6 +1286,16 @@ public static partial class StaticLayout
                 || run.Metrics.Ascent < 0 || run.Metrics.Descent < 0)
             {
                 throw new InvalidOperationException("Text shaper returned invalid horizontal metrics.");
+            }
+            return run;
+        }
+
+        private ShapedRun ShapeWordSpace(CssComputedStyle style)
+        {
+            var run = Shape(" ", style);
+            if (style["word-spacing"] is CssLength { Unit: "px", Value: > 0 } spacing)
+            {
+                return run with { Width = Finite(run.Width + spacing.Value) };
             }
             return run;
         }

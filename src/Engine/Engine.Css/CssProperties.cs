@@ -74,6 +74,7 @@ internal static class CssProperties
             ["text-align-last"] = new(new CssKeyword("auto"), true),
             ["text-indent"] = new(new CssLength(0, "px"), true),
             ["text-transform"] = new(new CssKeyword("none"), true),
+            ["word-spacing"] = new(new CssKeyword("normal"), true),
             ["text-decoration-line"] = new(new CssKeyword("none"), false),
             ["text-decoration-thickness"] = new(new CssKeyword("auto"), false),
             ["text-decoration-style"] = new(new CssKeyword("solid"), false),
@@ -324,6 +325,12 @@ internal static class CssProperties
         { return Keyword(keyword, "auto", "start", "end", "left", "right", "center", "justify"); }
         if (name == "text-align") { return Keyword(keyword, "start", "end", "left", "right", "center", "justify"); }
         if (name == "text-transform") { return Keyword(keyword, "none", "uppercase", "lowercase"); }
+        if (name == "word-spacing")
+        {
+            if (keyword == "normal") { return new CssKeyword(keyword); }
+            var spacing = Length(token, false);
+            return spacing is { Value: >= 0 } ? spacing : null;
+        }
         if (name == "text-decoration-thickness")
         {
             if (keyword is "auto" or "from-font") { return new CssKeyword(keyword); }

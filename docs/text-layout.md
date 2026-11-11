@@ -382,6 +382,11 @@ have zero intrinsic content size.
   See CSS Text
   [`text-transform`](https://drafts.csswg.org/css-text-3/#propdef-text-transform)
   (local ID `css-text`).
+- Inherited `word-spacing` adds a supported nonnegative absolute length to
+  collapsed or preserved ASCII spaces before line fitting. Negative lengths,
+  percentage values and non-ASCII word separators are unsupported. See CSS Text
+  [`word-spacing`](https://drafts.csswg.org/css-text-3/#propdef-word-spacing)
+  (local ID `css-text`).
 - Vertical margins between adjacent block siblings collapse, including
   positive and negative margins. Parent margins also collapse through eligible
   first/last block-child edges without intervening content/borders/padding; bottom
