@@ -1584,8 +1584,15 @@ non-ASCII-adjacent soft hyphens remain unsupported, as do general Unicode
 line breaking and automatic hyphenation. Focused layout regressions (24),
 native shaping (1), Engine.Layout (981), Engine.Text (18), solution build
 (0 warnings/errors), full solution tests (16,558), format verification and
-`git diff --check` pass locally. Commit, push and CI are pending; one requested
-increment remains. See [Text and layout](../docs/text-layout.md#ordinary-flow).
+`git diff --check` pass locally. Feature commit `6ae83a3` is pushed to `main`;
+Linux development
+(run [42963750524](https://github.com/khmseu/VisualWeb/actions/runs/42963750524)),
+Windows confinement
+(run [42963748885](https://github.com/khmseu/VisualWeb/actions/runs/42963748885))
+and CodeQL
+(run [42963748532](https://github.com/khmseu/VisualWeb/actions/runs/42963748532))
+pass. Pass 9 is complete; one requested increment remains. See
+[Text and layout](../docs/text-layout.md#ordinary-flow).
 
 ### 6. A persistent browser JavaScript environment
 

@@ -8013,8 +8013,7 @@ angeforderten Inkremente verbleiben.
 
 - Dokumentiert am: 2026-11-11, Europe/Berlin.
 - Ereignisdatum: 2026-11-11, Europe/Berlin.
-- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; lokal validiert,
-  Commit/Push/CI stehen aus.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Pass 9 abgeschlossen.
 - Quellen: Nutzerangabe `/missing-priority-implementation 10` (im
   fortgesetzten Auftrag zusammengefasst), [Prioritaetstracker](../plans/Missing.md#recommended-priority),
   [Text/Layout guide](../docs/text-layout.md#ordinary-flow),
@@ -8055,8 +8054,15 @@ die Abbruchregression wird im Shaper ausgeloest. CSS Text Level 3 war laut
 Manifest zuletzt am 2026-11-07 geprueft, Unicode UAX #14 am 2026-10-31; am
 2026-11-11 war kein Refresh erforderlich.
 
-**Git/CI (offen):** Featurecommit, Push und Linux-/Windows-/CodeQL-CI stehen aus.
+**Git/CI (belegt):** Featurecommit `6ae83a3` ist nach `main` gepusht. Linux
+development
+(Run [42963750524](https://github.com/khmseu/VisualWeb/actions/runs/42963750524)),
+Windows confinement
+(Run [42963748885](https://github.com/khmseu/VisualWeb/actions/runs/42963748885))
+und Push on main/CodeQL
+(Run [42963748532](https://github.com/khmseu/VisualWeb/actions/runs/42963748532))
+sind erfolgreich.
 
-**Status:** Pass 9 ist implementiert und lokal vollvalidiert. Ein angefordertes
-Inkrement verbleibt; Pass 10 wird erst nach Commit, Push und CI anhand des
-aktualisierten Trackers ausgewaehlt.
+**Status:** Pass 9 ist committed, gepusht und CI-geprueft. Ein angefordertes
+Inkrement verbleibt; Pass 10 wird anhand des aktualisierten Trackers
+ausgewaehlt.

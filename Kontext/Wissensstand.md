@@ -99,8 +99,11 @@ bleiben unsupported; allgemeine Unicode-Zeilenumbrueche und automatische
 Silbentrennung ebenfalls. Layout (981), Text (18), fokussierte Layouttests
 (24), natives Shaping (1), Solution-Build (0 Warnungen/Fehler),
 Solution-Volltest (16.558), Formatverifikation und `git diff --check`
-bestehen lokal. Commit, Push und CI stehen aus; ein angefordertes Inkrement
-verbleibt. Siehe [KP-303](./Kontextprotokoll.md#kp-303---pass-9-weiche-trennzeichen).
+bestehen lokal. Featurecommit `6ae83a3` ist gepusht; Linux
+(Run 42963750524), Windows confinement (Run 42963748885) und CodeQL
+(Run 42963748532) bestehen. Pass 9 ist abgeschlossen; ein angefordertes
+Inkrement verbleibt. Siehe
+[KP-303](./Kontextprotokoll.md#kp-303---pass-9-weiche-trennzeichen).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
 abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres
