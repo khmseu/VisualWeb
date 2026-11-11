@@ -463,10 +463,10 @@ have zero intrinsic content size.
   Pre-wrap wraps after a sequence of preserved spaces and hangs end-of-line
   spaces. Break-spaces wraps after each preserved ASCII space, including
   between adjacent spaces, and trailing spaces contribute to line and
-  intrinsic width and alignment. Preserved tabs/form feeds, non-ASCII space
-  separators,
-  break-spaces around atomic widgets, and preserved space runs adjacent to
-  Unicode glue are unsupported.
+  intrinsic width and alignment, including preserved spaces adjacent to
+  supported atomic inline form controls. Preserved tabs/form feeds, non-ASCII
+  space separators and preserved space runs adjacent to Unicode glue are
+  unsupported.
   `pre`/`nowrap` accept the shaper's supported Latin/common punctuation,
   including URLs, hyphens and internal punctuation, without introducing soft
   breaks. Overflow remains measurable for document scrolling. `pre` still

@@ -1541,6 +1541,15 @@ and Push on main/CodeQL
 ([42943325315](https://github.com/khmseu/VisualWeb/actions/runs/42943325315))
 pass. Pass 6 is complete; four requested increments remain.
 
+Pass 7 extends bounded `white-space:break-spaces` wrapping to supported atomic
+inline form controls. Preserved spaces adjacent to a control can break
+individually; exact-fit content remains on one line. General inline-blocks,
+mixed whitespace modes, preserved tabs/form feeds, non-ASCII space separators
+and preserved spaces adjacent to Unicode glue remain unsupported. The Layout
+suite (951), solution build (0 warnings/errors), full solution suite (16,527),
+format verification and `git diff --check` pass locally. Commit, push and CI
+are pending; three requested increments remain.
+
 ### 6. A persistent browser JavaScript environment
 
 V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not wholly missing.

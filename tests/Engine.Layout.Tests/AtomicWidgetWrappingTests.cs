@@ -269,13 +269,40 @@ public sealed class AtomicWidgetWrappingTests
     }
 
     [Theory]
-    [InlineData("<input id=w>")]
-    [InlineData("<input id=a><input id=b>")]
-    [InlineData("<span><input id=w></span>")]
-    public void AtomicWidgetBoundariesRejectUnsupportedContainingWhitespaceWithoutText(string content)
+    [InlineData("<input id=w>", 20, "[w]")]
+    [InlineData("<button id=w></button>", 20, "[w]")]
+    [InlineData("<textarea id=w></textarea>", 20, "[w]")]
+    [InlineData("<select id=w></select>", 20, "[w]")]
+    [InlineData("<input id=a><input id=b>", 10, "[a]|[b]")]
+    [InlineData("<span><input id=w></span>", 20, "[w]")]
+    public void AtomicWidgetBoundariesSupportBreakSpacesWithoutText(
+        string content, double width, string expected)
     {
         var (document, styles) = Page(content, "#p{white-space:break-spaces}input{white-space:normal}");
-        Assert.Throws<UnsupportedLayoutException>(() => Layout(document, styles, 20));
+        var box = Layout(document, styles, width);
+
+        Assert.Equal(expected.Split('|'), DescribeLines(box));
+        AssertLineIdentityAndContiguousGeometry(box, width);
+    }
+
+    [Fact]
+    public void BreakSpacesWrapsPreservedSpacesOnBothSidesOfAnAtomicWidget()
+    {
+        var (document, styles) = Page("a  <input id=w>  b", "#p{white-space:break-spaces}");
+        var box = Layout(document, styles, 20);
+
+        Assert.Equal(["a  ", "[w]  ", "b"], DescribeLines(box));
+        AssertLineIdentityAndContiguousGeometry(box, 20);
+    }
+
+    [Fact]
+    public void BreakSpacesDoesNotWrapAnExactFitAcrossAnAtomicWidget()
+    {
+        var (document, styles) = Page("a <input id=w> b", "#p{white-space:break-spaces}");
+        var box = Layout(document, styles, 30);
+
+        Assert.Equal(["a [w] b"], DescribeLines(box));
+        AssertLineIdentityAndContiguousGeometry(box, 30);
     }
 
     [Theory]

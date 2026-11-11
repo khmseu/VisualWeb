@@ -817,10 +817,6 @@ public static partial class StaticLayout
                     }
                     // The surrounding inline's whitespace governs the atomic boundary, not the widget's contents.
                     var whitespace = ((CssKeyword)inheritedStyle["white-space"]).Value;
-                    if (whitespace == "break-spaces")
-                    {
-                        throw new UnsupportedLayoutException("break-spaces around atomic inline widgets is unsupported.");
-                    }
                     output.Add(new(null, widgetStyle, "", UnitKind.Widget, CanSoftWrap(whitespace)) { Widget = element });
                     return;
                 }

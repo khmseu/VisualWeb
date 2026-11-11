@@ -7911,3 +7911,41 @@ bestand.
 
 **Status:** Pass 6 ist lokal validiert, committed, gepusht und CI-geprueft;
 vier weitere Inkremente bleiben.
+
+### KP-301 - Pass 7: break-spaces an atomic widgets
+
+- Dokumentiert am: 2026-11-11, Europe/Berlin.
+- Ereignisdatum: 2026-11-11, Europe/Berlin.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Implementierung und
+  lokale Vollvalidierung, Commit/Push/CI noch ausstehend.
+- Quellen: Nutzerauftrag `/missing-priority-implementation 10`,
+  [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [Layout guide](../docs/text-layout.md#ordinary-flow),
+  [Engine.Layout guide](../src/Engine/Engine.Layout/README.md), CSS Text Level 3
+  Cache (Manifest geprueft am 2026-11-07), `StaticLayout` und
+  `AtomicWidgetWrappingTests`.
+- Bezug: siebtes der zehn angeforderten getrennten Inkremente; folgt auf KP-300.
+
+**Auswahl (Ableitung):** Pass 6 hatte `white-space:break-spaces` fuer ASCII-
+Leerzeichen implementiert, aber die Layout-Grenze zu atomaren Inline-Widgets
+noch explizit abgelehnt. Der Tracker priorisiert lesbare, gewoehnlich
+gestaltete Seiten; daher wurde diese eng gekoppelte, testbare Erweiterung
+gewaehlt. Das war keine gesonderte Nutzerentscheidung. Die fruehere
+Suchnotiz zu `wbr` war keine Auswahl.
+
+**Umsetzung (belegt):** Die explizite Ablehnung fuer die vier bereits
+unterstuetzten atomaren Inline-Formular-Steuerelemente wurde entfernt.
+Erhaltene Leerzeichen koennen vor und nach einem Widget einzeln umbrechen;
+exakt passende Inhalte bleiben auf derselben Zeile. Allgemeine Inline-Blocks
+bleiben unsupported.
+
+**Validierung (belegt):** Die Layout-Suite mit 951 Tests besteht. Der
+Solution-Build besteht mit null Warnungen/Fehlern; der volle Solution-Testlauf
+besteht mit 16.527 Tests. Formatverifikation und `git diff --check` bestehen.
+Der lokale CSS Text Cache ist frisch (Manifestdatum 2026-11-07); kein Refresh
+war erforderlich.
+
+**Git/CI (offen):** Featurecommit, Push und CI-Ergebnisse stehen noch aus.
+
+**Status:** Pass 7 ist lokal implementiert und validiert; drei der zehn
+angeforderten Inkremente verbleiben.

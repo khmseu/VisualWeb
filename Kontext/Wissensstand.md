@@ -68,6 +68,13 @@ Siehe
 [KP-296](./Kontextprotokoll.md#kp-296---pass-2-text-align-last).
 Chronologischer Beleg und Auswahlgrund stehen in
 [KP-295](./Kontextprotokoll.md#kp-295---neuer-zehnerauftrag-und-pass-1-text-indent).
+Pass 7 erweitert `white-space:break-spaces` um Umbrueche an unterstuetzten
+atomaren Inline-Formular-Steuerelementen; angrenzende erhaltene Leerzeichen
+bleiben einzeln umbrechbar, exakte Fits bleiben ungebrochen. Layout (951),
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.527),
+Formatverifikation und `git diff --check` bestehen lokal. Commit, Push und CI
+stehen noch aus; drei angeforderte Inkremente verbleiben.
+Siehe [KP-301](./Kontextprotokoll.md#kp-301---pass-7-break-spaces-an-atomic-widgets).
 
 Der zuvor dokumentierte Auftrag ueber zehn Missing-Prioritaetsinkremente ist
 abgeschlossen. Nach der anschliessenden Bitte um Fortsetzung wurde ein weiteres

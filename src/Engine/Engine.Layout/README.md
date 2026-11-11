@@ -16,8 +16,9 @@ remain unsupported.
 `white-space:pre-wrap` preserves ASCII spaces and newlines, wraps after space
 sequences, and hangs line-ending spaces. Bounded `break-spaces` wraps after
 each preserved ASCII space, including between adjacent spaces, and counts
-trailing spaces in line and intrinsic width. Tabs/form feeds, non-ASCII spaces and
-`break-spaces` around atomic widgets remain unsupported.
+trailing spaces in line and intrinsic width, including around supported atomic
+inline form controls. Preserved tabs/form feeds, non-ASCII spaces and preserved
+spaces adjacent to Unicode glue remain unsupported.
 Inputs are renderer-local DOM, computed CSS snapshots and an injected
 text shaper. Outputs are
 box/line/glyph-run snapshots, not pixels.
