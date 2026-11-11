@@ -58,7 +58,9 @@ zaehlen zur Ausrichtung und automatischen Tabellen-Intrinsic-Breite. Gemischte
 Whitespace-Modi, Tabs/Form-Feeds, Nicht-ASCII-Leerzeichen, Widget-Grenzen und
 Glue-Nachbarschaft bleiben unsupported. Layout (946) und Solution-Build
 (0 Warnungen/Fehler), Solution-Volltest (16.522), Formatverifikation und
-`git diff --check` bestehen. Commit, Push und CI stehen aus. Vier Inkremente
+`git diff --check` bestehen. Featurecommit `5b498da` ist gepusht; Linux
+(Run 42943325472), Windows x64/arm64 (Run 42943325301) und CodeQL
+(Run 42943325315) bestehen. Pass 6 ist abgeschlossen; vier Inkremente
 verbleiben.
 Siehe [KP-300](./Kontextprotokoll.md#kp-300---pass-6-bounded-break-spaces).
 Siehe [KP-298](./Kontextprotokoll.md#kp-298---pass-4-bounded-word-spacing).

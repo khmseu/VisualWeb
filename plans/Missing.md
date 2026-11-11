@@ -1533,7 +1533,13 @@ preserved tabs/form feeds, non-ASCII space separators, atomic-widget
 boundaries, and preserved spaces adjacent to Unicode glue remain unsupported.
 The Layout suite (946) and solution build (0 warnings/errors) pass; the full
 solution suite (16,522), format verification and `git diff --check` pass.
-Feature commit, push and CI are pending.
+Feature commit `5b498da` is pushed to `main`; Linux development
+(run [42943325472](https://github.com/khmseu/VisualWeb/actions/runs/42943325472)),
+Windows confinement x64/arm64
+([42943325301](https://github.com/khmseu/VisualWeb/actions/runs/42943325301))
+and Push on main/CodeQL
+([42943325315](https://github.com/khmseu/VisualWeb/actions/runs/42943325315))
+pass. Pass 6 is complete; four requested increments remain.
 
 ### 6. A persistent browser JavaScript environment
 

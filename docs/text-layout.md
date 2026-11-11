@@ -411,8 +411,9 @@ have zero intrinsic content size.
   [text alignment](https://drafts.csswg.org/css-text-3/#text-align-property)
   and [justification methods](https://drafts.csswg.org/css-text-3/#text-justify-property)
   (local ID `css-text`).
-- In `normal`/`pre-line`/`pre-wrap`, a leading ASCII hyphen before a digit and internal
-  hyphens between ASCII letters/digits are supported within one text node.
+- In `normal`/`pre-line`/`pre-wrap`/`break-spaces`, a leading ASCII hyphen
+  before a digit and internal hyphens between ASCII letters/digits are
+  supported within one text node.
   An internal hyphen is a soft break only before a letter, never before a
   digit. Negative numbers and dates such as `-1,000.25` and `2026-10-31`
   therefore remain unbroken. The whole word stays one shaped run if it fits;
@@ -425,8 +426,8 @@ have zero intrinsic content size.
   [LB21](https://www.unicode.org/reports/tr14/tr14-55.html#LB21) and
   [LB25](https://www.unicode.org/reports/tr14/tr14-55.html#LB25) (local ID
   `unicode-linebreak`, UAX 14 revision 55).
-- In `normal`/`pre-line`/`pre-wrap`, a solidus between two ASCII letters or two ASCII
-  digits in one text node is part of the unbroken shaped word, including
+- In `normal`/`pre-line`/`pre-wrap`/`break-spaces`, a solidus between two ASCII
+  letters or two ASCII digits in one text node is part of the unbroken shaped word, including
   `and/or`, `1/2` and `24/7` and mixtures with supported hyphen breaks. It can
   overflow and contributes its full unbreakable segment width to table sizing.
   This narrow behavior follows the
@@ -446,9 +447,9 @@ have zero intrinsic content size.
   [LB29](https://www.unicode.org/reports/tr14/tr14-55.html#LB29) (local ID
   `unicode-linebreak`). This is not general punctuation or URL line breaking.
 - In `normal`/`pre-line`/`pre-wrap`/`break-spaces`, internal `@`, `_` and `+`
-  with an ASCII letter or
-  digit immediately on each side in the same text node stay in the unbroken
-  shaped word. This allows examples such as `first.last+tag@example.com` and
+  with an ASCII letter or digit immediately on each side in the same text node
+  stay in the unbroken shaped word. This allows examples such as
+  `first.last+tag@example.com` and
   `user_name@example.com` without changing space or supported hyphen breaks.
   Table intrinsic sizing and retained reflow use the same unbroken segments.
   See Unicode 17 [LB23](https://www.unicode.org/reports/tr14/tr14-55.html#LB23),

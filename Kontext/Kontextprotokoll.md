@@ -7863,8 +7863,8 @@ fuenf weitere Inkremente bleiben.
 
 - Dokumentiert am: 2026-11-11, Europe/Berlin.
 - Ereignisdatum: 2026-11-11, Europe/Berlin.
-- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Implementierung und
-  lokale Vollvalidierung, Commit/Push/CI-Pruefung noch ausstehend.
+- Erfassungsart: Fortsetzung des aktiven Zehnerauftrags; Implementierung,
+  lokale Vollvalidierung, Commit, Push und CI-Pruefung.
 - Quellen: vom Nutzer fortgefuehrter Auftrag
   `/missing-priority-implementation 10`, [Prioritaetstracker](../plans/Missing.md#recommended-priority),
   [layout guide](../docs/text-layout.md#ordinary-flow), [Engine.Layout guide](../src/Engine/Engine.Layout/README.md),
@@ -7892,4 +7892,22 @@ und erhaltene Leerzeichen neben Unicode-Glue bleiben explizit unsupported.
 946 Engine.Layout-Tests bestehen. `dotnet build VisualWeb.slnx` besteht mit
 null Warnungen/Fehlern; `dotnet test VisualWeb.slnx --no-build` besteht mit
 16.522 Tests. Formatverifikation und `git diff --check` bestehen.
-Commit, Push und CI-Pruefung stehen aus.
+
+**Git/CI (belegt):** Featurecommit `5b498da` ist nach `main` gepusht. Linux
+development
+(Run [42943325472](https://github.com/khmseu/VisualWeb/actions/runs/42943325472)),
+Windows confinement x64/arm64
+(Run [42943325301](https://github.com/khmseu/VisualWeb/actions/runs/42943325301))
+und Push on main/CodeQL
+(Run [42943325315](https://github.com/khmseu/VisualWeb/actions/runs/42943325315))
+sind erfolgreich.
+
+**Vorheriger CI-Nachtrag (belegt):** Der Windows-Workflow fuer den
+Pass-5-Trackercommit `00f8c1a` schlug zunaechst im ARM64-Job an einem einzelnen
+Browser-Test-Timeout fehl; der unveraenderte Featurecommit `23d1d91` hatte
+bereits gruenes Windows-CI. Der Rerun des Trackercommits
+(Run [42939865004](https://github.com/khmseu/VisualWeb/actions/runs/42939865004))
+bestand.
+
+**Status:** Pass 6 ist lokal validiert, committed, gepusht und CI-geprueft;
+vier weitere Inkremente bleiben.
