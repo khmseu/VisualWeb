@@ -120,8 +120,10 @@ Annotationen (`rb`, `rtc`, `rp`, `rt`) mit implied-end-tag-Behandlung und
 Parsefehlern ausserhalb passender Kontexte. Ruby-spezifisches Styling/Layout
 bleibt unsupported. Engine.Html (7.278), Solution-Build (0 Warnungen/Fehler),
 Volltest (16.407), Formatverifikation und `git diff --check` bestehen.
-Commit/Push/CI stehen noch aus; die 10 angeforderten lokalen Inkremente sind
-damit implementiert. Siehe
+Commit `876590e` ist gepusht; Linux, Windows und Push on main sind erfolgreich
+(43164284447, 43164284462, 43164284241). Die 10 angeforderten Inkremente sind
+abgeschlossen. WHATWG HTML bleibt ein breites, nur teilweise implementiertes
+Ziel; die Nutzerprioritaet ist dadurch nicht vollstaendig erledigt. Siehe
 [KP-322](./Kontextprotokoll.md#kp-322---ruby-annotationen-pass-10).
 
 **Prioritaet (Nutzerangabe, 2026-11-12):** Zuerst soll die Implementierung des

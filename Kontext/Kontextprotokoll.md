@@ -8584,8 +8584,7 @@ Warnungen/Fehler, Solution-Volltest (16.403), Solution-Formatverifikation und
 
 - Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
 - Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
-- Erfassungsart: laufend dokumentiert; lokal validiert, Commit/Push und CI bei
-  Erfassung noch offen.
+- Erfassungsart: abgeschlossen; lokal validiert, committed, gepusht und CI-gruen.
 - Quelle: `plans/Missing.md`, HTML/DOM-Guide, Engine.Html README,
   `specs/cache/html.html`, Manifest, Parser/Testquellen und lokale Validierung.
 - Bezug: KP-321, REQ-005, DEC-012, Q-010 und Pass 10 des Zehn-Pass-Auftrags.
@@ -8605,4 +8604,6 @@ Stile und Annotation-Layout bleiben unsupported.
 
 **Validierung:** Engine.Html.Tests (7.278), Solution-Build ohne
 Warnungen/Fehler, Solution-Volltest (16.407), Solution-Formatverifikation und
-`git diff --check` bestanden. Commit/Push/CI stehen bei Erfassung noch aus.
+`git diff --check` bestanden. Commit `876590e` ist gepusht; Linux development
+(43164284447), Windows confinement (43164284462) und Push on main
+(43164284241) sind erfolgreich.
