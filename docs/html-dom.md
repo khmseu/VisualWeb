@@ -84,8 +84,9 @@ after-after-body modes. Supported behavior includes:
   literal mode interprets apparent links, styles or scripts as elements.
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
-- A bounded `select` subset containing direct `option` and `optgroup` children,
-  with text only inside options. The in-body recovery rules also insert `hr`
+- A bounded `select` subset containing direct `option` and `optgroup` children.
+  `textarea` uses the in-body RCDATA rules inside the current select context;
+  its initial LF is ignored. The in-body recovery rules also insert `hr`
   inside the select after implied option/group closure, close the select and
   reprocess an `input` start tag, and close-and-ignore a nested `select` start
   tag. Outside selects, `option` and `optgroup` use ordinary in-body insertion;

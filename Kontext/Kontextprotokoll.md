@@ -8432,7 +8432,8 @@ andere Select-Inhalte bleiben bestehen.
 **Validierung (belegt):** Engine.Html besteht mit 7.274 Tests; der Solution-
 Build besteht mit null Warnungen/Fehlern; der gesamte Solution-Testlauf
 besteht mit 16.602 Tests. Formatverifikation und `git diff --check` bestehen.
-Commit, Push und Remote-CI stehen noch aus.
+Commit, Push und Remote-CI standen bei Erfassung noch aus; die Fortsetzung ist
+in KP-317 dokumentiert.
 
 ### KP-315 - Pass 6 gepusht und CI-gruen
 
@@ -8479,4 +8480,62 @@ Verschachtelung, implizites Schliessen und anschliessende Geschwister.
 **Validierung (belegt):** Engine.Html besteht mit 7.274 Tests; der Solution-
 Build besteht mit null Warnungen/Fehlern; der gesamte Solution-Testlauf
 besteht mit 16.602 Tests. Formatverifikation und `git diff --check` bestehen.
-Commit, Push und Remote-CI stehen noch aus.
+Commit, Push und Remote-CI standen bei Erfassung noch aus; die Fortsetzung ist
+in KP-317 dokumentiert.
+
+### KP-317 - Pass 7 Commit und Push
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Git-Artefakt und Workflow-Pruefung.
+- Quelle: Git-Commit `6fa2b05`, GitHub Actions fuer dessen Commit.
+- Bezug: KP-316, Pass 7 des angeforderten Zehn-Pass-Laufs.
+
+**Belegt:** Commit `6fa2b05` (`feat(html): parse options outside selects`)
+wurde auf `main` erstellt und nach `origin/main` gepusht. Linux development
+(`43153874263`), Windows confinement (`43153874333`) und Push on main
+(`43153873946`) sind erfolgreich.
+
+### KP-318 - Pass 7 CI gruen
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Workflow-Ergebnis.
+- Quelle: GitHub Actions fuer Commit `6fa2b05`.
+- Bezug: KP-316, KP-317 und Pass 7.
+
+**Belegt:** Linux development (`43153874263`), Windows confinement
+(`43153874333`) und Push on main (`43153873946`) sind erfolgreich.
+
+### KP-319 - HTML-Textarea-RCDATA im Select-Kontext, Pass 8
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: standardsgestuetzte Implementierung und lokale Validierung;
+  finaler Solution-Volltest ist abgeschlossen.
+- Quellen: WHATWG HTML `html`, `#parsing-main-inbody` (Manifest geprueft
+  2026-11-07), [Engine.Html](../src/Engine/Engine.Html/HtmlParser.cs),
+  [Tree-Tests](../tests/Engine.Html.Tests/TreeTests.cs),
+  [HTML/DOM-Guide](../docs/html-dom.md#static-document-tree-subset),
+  [Prioritaetstracker](../plans/Missing.md#4-general-html-and-dom-compatibility).
+- Bezug: Nutzerprioritaet in KP-313; folgt auf Pass 7.
+
+**Auswahl (belegt):** Der aktuelle In-Body-Algorithmus verarbeitet
+`textarea` ueber RCDATA und ignoriert sein erstes LF. Anders als bei `input`
+schliesst dieser Algorithmus das Select nicht; der Parser verweigerte bisher
+den Starttag im Select-Kontext. Andere bislang nicht unterstuetzte
+Select-Inhalte bleiben ausserhalb dieses Inkrements.
+
+**Umsetzung (belegt):** `StartTextarea` teilt die bestehende Textmodus- und
+Erst-LF-Logik zwischen normalem Body-Modus und Select-Kontext. Das Select bleibt
+offen; das `textarea` wird in den aktuellen Knoten eingefuegt. Der Regressionstest
+prueft erstes LF, RCDATA-Referenzdekodierung, nachfolgende Option und fehlende
+Parsefehler. Ein `keygen`-Ausstieg aus dem Select wurde nach Pruefung der
+aktuellen Cache-Regeln nicht implementiert.
+
+**Validierung (belegt):** Engine.Html (7.275), Solution-Build (null
+Warnungen/Fehler), Formatverifikation und `git diff --check` bestehen. Ein
+frueherer Volltestlauf scheiterte in
+`Engine.Scripting.Tests.EventTests.ExactAncestorPathLimitPreflightsBeforeAnyListenerRuns`
+mit V8-Deadline; beide Faelle bestanden im isolierten Wiederholungslauf. Der
+erneute Volltest des finalen Codes besteht mit 16.603 Tests.

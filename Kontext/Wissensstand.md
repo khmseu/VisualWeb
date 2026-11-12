@@ -89,9 +89,20 @@ Selects im normalen In-Body-Pfad. Ein neuer `option`-Start und ein
 `optgroup`-Start schliessen ein gerade offenes `option` vor dem Einfuegen.
 Engine.Html (7.274), Solution-Build (0 Warnungen/Fehler),
 Solution-Volltest (16.602), Formatverifikation und `git diff --check`
-bestehen lokal. Commit, Push und Remote-CI stehen aus; danach bleiben drei
-angeforderte Inkremente. Siehe
-[KP-316](./Kontextprotokoll.md#kp-316---html-option-optgroup-im-body-pass-7).
+bestehen lokal. Commit `6fa2b05` ist gepusht; Linux-, Windows- und Push-
+Workflows bestehen (43153874263, 43153874333, 43153873946). Zwei
+angeforderte Inkremente verbleiben. Siehe
+[KP-316](./Kontextprotokoll.md#kp-316---html-option-optgroup-im-body-pass-7)
+bis [KP-318](./Kontextprotokoll.md#kp-318---pass-7-ci-gruen).
+
+Pass 8 implementiert die begrenzte RCDATA-Verarbeitung eines `textarea` im
+Select-Kontext entsprechend dem aktuellen In-Body-Algorithmus; das Select
+bleibt dabei offen. Engine.Html (7.275), Solution-Build (null Warnungen/
+Fehler), Solution-Volltest (16.603), Formatverifikation und `git diff --check`
+bestehen. Ein vorheriger Volltestlauf hatte einen V8-Deadlinefehler in einem
+unveraenderten Scripting-Test; der isolierte Wiederholungslauf und der finale
+Volltest bestanden. Commit und Push stehen aus. Siehe
+[KP-319](./Kontextprotokoll.md#kp-319---html-textarea-rcdata-im-select-kontext-pass-8).
 
 **Prioritaet (Nutzerangabe, 2026-11-12):** Zuerst soll die Implementierung des
 WHATWG HTML-Standards (`html`) vervollstaendigt werden; danach wird mit der

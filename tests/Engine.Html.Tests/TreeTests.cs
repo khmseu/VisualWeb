@@ -233,6 +233,21 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void TextareaInSelectUsesBodyModeRcdataAndKeepsTheSelectOpen()
+    {
+        var result = Parse("<!doctype html><select><option>before<textarea>\n&lt;inside&gt;</textarea>after"
+            + "</option><option>next</option></select>");
+        var select = Assert.IsType<DomElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        var options = select.ChildNodes.OfType<DomElement>().ToArray();
+
+        Assert.Equal(["option", "option"], options.Select(element => element.LocalName));
+        Assert.Equal(["textarea"], options[0].ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("<inside>", Assert.IsType<DomElement>(options[0].ChildNodes.OfType<DomElement>().Single()).TextContent);
+        Assert.Equal("before<inside>after", options[0].TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void NestedSelectStartClosesCurrentSelectAndIgnoresNestedStart()
     {
         var result = Parse("<!doctype html><select><option>before<select><p>after</p>");

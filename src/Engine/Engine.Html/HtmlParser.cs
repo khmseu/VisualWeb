@@ -369,10 +369,7 @@ public static class HtmlParser
                     case "title": StartText(tag, HtmlTextMode.Rcdata); return;
                     case "style" or "noframes": StartText(tag, HtmlTextMode.Rawtext); return;
                     case "script": StartText(tag, HtmlTextMode.ScriptData); return;
-                    case "textarea":
-                        StartText(tag, HtmlTextMode.Rcdata);
-                        ignoreNextLineFeed = true;
-                        return;
+                    case "textarea": StartTextarea(tag); return;
                     case "xmp":
                         CloseParagraph();
                         StartText(tag, HtmlTextMode.Rawtext);
@@ -1065,6 +1062,11 @@ public static class HtmlParser
                 BodyToken(tag);
                 return;
             }
+            if (!tag.IsEndTag && tag.Name == "textarea")
+            {
+                StartTextarea(tag);
+                return;
+            }
             if (!tag.IsEndTag && tag.Name == "select")
             {
                 Error("nested-select-start-tag");
@@ -1140,6 +1142,12 @@ public static class HtmlParser
             originalMode = mode;
             mode = Mode.Text;
             tokenizer.SetTextMode(textMode, tag.Name);
+        }
+
+        private void StartTextarea(HtmlTag tag)
+        {
+            StartText(tag, HtmlTextMode.Rcdata);
+            ignoreNextLineFeed = true;
         }
 
         private void Text(string data)
