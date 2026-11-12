@@ -8556,8 +8556,7 @@ confinement (`43157674486`) und Push on main (`43157673570`) sind erfolgreich.
 
 - Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
 - Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
-- Erfassungsart: laufend dokumentiert; lokal validiert, Commit/Push und CI bei
-  Erfassung noch offen.
+- Erfassungsart: abgeschlossen; lokal validiert, committed, gepusht und CI-gruen.
 - Quelle: `plans/Missing.md`, HTML/DOM-Guide, Engine.Html README,
   `specs/cache/html.html`, Parser/Testquellen und lokale Validierung.
 - Bezug: KP-320, REQ-005, DEC-012, Q-010 und Pass 9 des Zehn-Pass-Auftrags.
@@ -8577,5 +8576,33 @@ Algorithmen bleiben explizit unsupported.
 
 **Validierung:** Engine.Html.Tests (7.274), Solution-Build ohne
 Warnungen/Fehler, Solution-Volltest (16.403), Solution-Formatverifikation und
-`git diff --check` bestanden. Pass 9 ist noch nicht committed oder gepusht;
-CI laeuft daher noch nicht.
+`git diff --check` bestanden. Commit `7eb81d6` ist gepusht. Linux development
+(43159752712), Windows confinement (43159752772) und Push on main
+(43159752378) sind erfolgreich.
+
+### KP-322 - Ruby-Annotationen Pass 10
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: laufend dokumentiert; lokal validiert, Commit/Push und CI bei
+  Erfassung noch offen.
+- Quelle: `plans/Missing.md`, HTML/DOM-Guide, Engine.Html README,
+  `specs/cache/html.html`, Manifest, Parser/Testquellen und lokale Validierung.
+- Bezug: KP-321, REQ-005, DEC-012, Q-010 und Pass 10 des Zehn-Pass-Auftrags.
+
+**Auswahl (Ableitung):** Der HTML/DOM-Guide bezeichnet Ruby-Elemente noch als
+unsupported. Der aktuelle lokale Standard spezifiziert fuer `rb`/`rtc` sowie
+`rp`/`rt` eng begrenzte Starttagregeln mit impliziten Endtags. Diese Regeln
+koennen ohne Adoption-Agency- oder Ruby-Layout-Implementierung umgesetzt
+werden. Der Cache (`html`, `checkedAt` 2026-11-07) lag am 2026-11-12 innerhalb
+der 30-Tage-Frist; ein Refresh war nicht erforderlich.
+
+**Umsetzung:** `rb`/`rtc` und `rp`/`rt` verwenden die jeweiligen In-Body-
+Implizit-Endtagregeln; bei `rp`/`rt` bleibt ein offenes `rtc` erhalten.
+Starttags ausserhalb des passenden Ruby-Kontexts erzeugen Parsefehler und
+werden nach dem bestehenden Tree-Builder-Verhalten eingefuegt. Ruby-spezifische
+Stile und Annotation-Layout bleiben unsupported.
+
+**Validierung:** Engine.Html.Tests (7.278), Solution-Build ohne
+Warnungen/Fehler, Solution-Volltest (16.407), Solution-Formatverifikation und
+`git diff --check` bestanden. Commit/Push/CI stehen bei Erfassung noch aus.

@@ -84,6 +84,9 @@ after-after-body modes. Supported behavior includes:
   literal mode interprets apparent links, styles or scripts as elements.
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
+- Bounded ruby annotation tree construction for `rb`, `rtc`, `rp` and `rt`,
+  including the in-body implied-end-tag rules. Ruby-specific styling and
+  annotation layout are not implemented.
 - A bounded `select` subset with direct `option`/`optgroup` handling and
   ordinary in-body processing for other supported tokens, including block
   children in options and optgroups. `textarea` uses the in-body RCDATA rules
@@ -136,7 +139,7 @@ unsupported table tags outside the contexts covered above. The following
 additionally throw explicitly: templates, SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
-handling, framesets/frames, noscript, ruby and applet/marquee/object-specific
+handling, framesets/frames, noscript and applet/marquee/object-specific
 algorithms. Fragment parsing is not offered. Nested anchors/nobr, misnested
 formatting and closures requiring active-formatting reconstruction/adoption
 agency throw instead of returning an incorrect tree.

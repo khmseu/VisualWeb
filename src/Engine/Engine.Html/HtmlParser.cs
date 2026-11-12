@@ -415,6 +415,19 @@ public static class HtmlParser
                         if (InScope("select")) { throw Unsupported("Nested select elements are not implemented."); }
                         Insert(tag);
                         return;
+                    case "rb":
+                    case "rtc":
+                        if (InScope("ruby")) { GenerateImpliedEndTags(); }
+                        if (open[^1].LocalName != "ruby") { Error("ruby-base-start-tag-without-current-ruby"); }
+                        break;
+                    case "rp":
+                    case "rt":
+                        if (InScope("ruby")) { GenerateImpliedEndTags(except: "rtc"); }
+                        if (open[^1].LocalName is not ("ruby" or "rtc"))
+                        {
+                            Error("ruby-annotation-start-tag-without-current-ruby-or-rtc");
+                        }
+                        break;
                     case "table":
                         CloseParagraph();
                         Insert(tag);
@@ -963,9 +976,9 @@ public static class HtmlParser
             mode = Mode.InRow;
         }
 
-        private void GenerateImpliedEndTags()
+        private void GenerateImpliedEndTags(string? except = null)
         {
-            while (open.Count > 0 && ImpliedEndTags.Contains(open[^1].LocalName))
+            while (open.Count > 0 && ImpliedEndTags.Contains(open[^1].LocalName) && open[^1].LocalName != except)
             {
                 open.RemoveAt(open.Count - 1);
             }
@@ -1379,7 +1392,7 @@ public static class HtmlParser
     {
         "template",
         "svg", "math", "frameset", "frame", "noscript",
-        "applet", "marquee", "object", "ruby", "rb", "rt", "rtc", "rp"
+        "applet", "marquee", "object"
     };
     private static readonly HashSet<string> TableTags = new(StringComparer.Ordinal)
     {

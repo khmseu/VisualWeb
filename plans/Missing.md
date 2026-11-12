@@ -398,6 +398,10 @@ parser work includes:
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 
+Ruby annotation elements now have bounded `rb`/`rtc`/`rp`/`rt` start-tag
+construction and implied-end-tag handling; ruby-specific styling and layout
+remain unsupported.
+
 Legacy public/system doctypes now recover with `invalid-doctype` diagnostics
 instead of rejecting the page. The complete HTML initial-mode identifier
 tables select no-quirks/limited-quirks/quirks mode using ASCII comparisons,

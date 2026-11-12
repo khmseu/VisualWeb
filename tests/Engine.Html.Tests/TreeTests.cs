@@ -264,6 +264,36 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void RubyAnnotationStartTagsApplyImpliedEndTagRules()
+    {
+        var result = Parse("<!doctype html><ruby><rb>base<rtc><rt>reading<rt>alternate</rt></rtc>"
+            + "<rp>(</rp><rt>fallback</rt><rp>)</rp></ruby>");
+        var ruby = Assert.IsType<DomElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        var children = ruby.ChildNodes.OfType<DomElement>().ToArray();
+        var rb = Assert.IsType<DomElement>(children[0]);
+        var rtc = Assert.IsType<DomElement>(children[1]);
+
+        Assert.Equal(["rb", "rtc", "rp", "rt", "rp"], children.Select(element => element.LocalName));
+        Assert.Equal("base", rb.TextContent);
+        Assert.Equal(["rt", "rt"], rtc.ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("reading", rtc.FirstChild!.TextContent);
+        Assert.Equal("alternate", rtc.LastChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("<rb>outside</rb>", "ruby-base-start-tag-without-current-ruby")]
+    [InlineData("<rtc>outside</rtc>", "ruby-base-start-tag-without-current-ruby")]
+    [InlineData("<rp>outside</rp>", "ruby-annotation-start-tag-without-current-ruby-or-rtc")]
+    [InlineData("<rt>outside</rt>", "ruby-annotation-start-tag-without-current-ruby-or-rtc")]
+    public void RubyAnnotationStartOutsideRubyReportsParseError(string input, string expectedError)
+    {
+        var result = Parse(input);
+
+        Assert.Contains(result.Errors, error => error.Code == expectedError);
+    }
+
+    [Fact]
     public void NestedSelectStartClosesCurrentSelectAndIgnoresNestedStart()
     {
         var result = Parse("<!doctype html><select><option>before<select><p>after</p>");
@@ -516,7 +546,6 @@ public sealed class TreeTests
     [InlineData("<div><form></div><input>")]
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
-    [InlineData("<ruby>x")]
     [InlineData("<p><b>x</p>y")]
     [InlineData("<b><i>x</b>y</i>")]
     [InlineData("<a><a>x")]

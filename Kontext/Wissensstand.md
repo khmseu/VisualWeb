@@ -110,9 +110,19 @@ Pass 9 delegiert sonst nicht speziell behandelte Tokens im Select-Kontext an
 den begrenzten In-Body-Algorithmus, statt sie pauschal abzulehnen. Tests
 bestaetigen unterstuetzte Blockelemente in Optionen und Optgroups. Engine.Html
 (7.274), Solution-Build, Volltest (16.403), Formatverifikation und
-`git diff --check` bestehen. Die CI-Pruefung ist nach dem Commit noch zu
-verifizieren. Siehe
+`git diff --check` bestehen. Commit `7eb81d6` ist gepusht; Linux, Windows und
+Push on main sind erfolgreich (43159752712, 43159752772, 43159752378).
+Ein angefordertes Inkrement verbleibt. Siehe
 [KP-321](./Kontextprotokoll.md#kp-321---select-inhalte-mit-in-body-regeln-pass-9).
+
+Pass 10 implementiert die begrenzten In-Body-Starttagregeln fuer Ruby-
+Annotationen (`rb`, `rtc`, `rp`, `rt`) mit implied-end-tag-Behandlung und
+Parsefehlern ausserhalb passender Kontexte. Ruby-spezifisches Styling/Layout
+bleibt unsupported. Engine.Html (7.278), Solution-Build (0 Warnungen/Fehler),
+Volltest (16.407), Formatverifikation und `git diff --check` bestehen.
+Commit/Push/CI stehen noch aus; die 10 angeforderten lokalen Inkremente sind
+damit implementiert. Siehe
+[KP-322](./Kontextprotokoll.md#kp-322---ruby-annotationen-pass-10).
 
 **Prioritaet (Nutzerangabe, 2026-11-12):** Zuerst soll die Implementierung des
 WHATWG HTML-Standards (`html`) vervollstaendigt werden; danach wird mit der
