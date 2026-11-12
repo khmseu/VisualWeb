@@ -1314,6 +1314,12 @@ Continuation after the ten-pass request adds the standard HTML `<hr>` UA
 defaults and paints the required inset border with a deterministic 3D shade
 choice. The defaults remain in the normal disableable UA cascade; other
 non-solid border styles and legacy `hr` attribute hints remain unsupported.
+This follow-up maps the standard `hr[width]` dimension hint into
+the author presentational-hint cascade, including zero and percentages, with
+an aggregate raw UTF-16 limit. The existing block-width layout path handles
+the resulting size; other legacy `hr` hints remain unsupported. CSS (1,346),
+Layout (1,001), the zero-warning solution build, all 16,581 solution tests,
+format verification and `git diff --check` pass locally.
 This ten-pass request begins by painting CSS `outset` borders with the
 opposite deterministic light/dark sides, covering the common raised-edge
 effect. `groove`, `ridge`, dashed, dotted and double border styles remain

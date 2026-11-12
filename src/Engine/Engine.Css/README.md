@@ -26,9 +26,12 @@ HTML `col` width dimensions, including zero and percentages, map to the CSS
 `width` hint under the independent aggregate raw UTF-16 limit
 `MaxTableColumnWidthAttributeCharacters`; `colgroup` width attributes remain
 unsupported.
+HTML `hr[width]` dimension values, including zero and percentages, map to the
+CSS `width` hint under the independent aggregate raw UTF-16 limit
+`MaxHorizontalRuleWidthAttributeCharacters`; author CSS overrides the hint.
 The HTML `hr` UA rule sets gray `color`, a 1px inset border, 0.5em vertical
 margins and automatic horizontal margins. Legacy `hr` attribute hints remain
-unsupported.
+unsupported except for `width`.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
@@ -53,9 +56,10 @@ registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `MaxTableCellPaddingAttributeCharacters`,
 `MaxTableCellHeightAttributeCharacters`,
 `MaxTableRowHeightAttributeCharacters`,
-`MaxTableColumnWidthAttributeCharacters` and
-`MaxTableCellWidthAttributeCharacters` limits count raw UTF-16 attribute
-units, including invalid values, before parsing.
+`MaxTableColumnWidthAttributeCharacters`,
+`MaxHorizontalRuleWidthAttributeCharacters` and
+`MaxTableCellWidthAttributeCharacters` limits count raw UTF-16 attribute units,
+including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`, checked 2026-11-07) include `search { display:block }`
 as a normal, disableable UA declaration; it introduces no search widget.

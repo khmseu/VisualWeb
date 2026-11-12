@@ -1306,6 +1306,20 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void HorizontalRuleWidthAttributeSetsBlockWidthAndCanBeOverridden()
+    {
+        const string html = "<hr id=pixels width=30><hr id=percent width='50%'><hr id=zero width=0>";
+        var root = UnorderedList(html).Root!;
+
+        Assert.Equal(30, Find(root, "pixels").Content.Width);
+        Assert.Equal(50, Find(root, "percent").Content.Width);
+        Assert.Equal(0, Find(root, "zero").Content.Width);
+
+        var overridden = UnorderedList("<hr id=rule width=30>", "#rule{width:45px}").Root!;
+        Assert.Equal(45, Find(overridden, "rule").Content.Width);
+    }
+
+    [Fact]
     public void TableColumnWidthAttributeAppliesToEveryTrackInItsSpan()
     {
         const string html = """

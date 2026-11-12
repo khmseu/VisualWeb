@@ -6,10 +6,12 @@ namespace VisualWeb.Engine.Css.Tests;
 
 public sealed class HorizontalRuleDefaultsTests
 {
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
     [Fact]
     public void HorizontalRuleUsesStandardDisableableUaDefaults()
     {
-        var cancellation = TestContext.Current.CancellationToken;
+        var cancellation = Cancellation;
         var document = HtmlParser.Parse("<!doctype html><hr id=rule>", cancellationToken: cancellation).Document;
         var rule = document.GetElementById("rule")!;
 
@@ -36,5 +38,50 @@ public sealed class HorizontalRuleDefaultsTests
         Assert.Empty(withoutUa.Diagnostics);
         Assert.Equal(new CssKeyword("none"), withoutUa.Styles[rule]["border-top-style"]);
         Assert.Equal(new CssLength(0, "px"), withoutUa.Styles[rule]["margin-top"]);
+    }
+
+    [Fact]
+    public void HorizontalRuleWidthAttributeMapsDimensionValueAndYieldsToAuthorCascade()
+    {
+        var document = HtmlParser.Parse(
+            "<!doctype html><hr id=rule width=' 35trailing'><p id=other width=20></p>",
+            cancellationToken: Cancellation).Document;
+        var rule = document.GetElementById("rule")!;
+        var other = document.GetElementById("other")!;
+
+        var hinted = CssStyleEngine.Compute(document, includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(35, "px"), hinted.Styles[rule]["width"]);
+        Assert.Equal(new CssKeyword("auto"), hinted.Styles[other]["width"]);
+
+        var overridden = CssStyleEngine.Compute(document, [new("#rule{width:45px}")],
+            includeUserAgent: false, cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(45, "px"), overridden.Styles[rule]["width"]);
+    }
+
+    [Fact]
+    public void HorizontalRuleWidthAttributeHonorsInvalidValuesAssignmentAndAggregateLimits()
+    {
+        var oneRule = HtmlParser.Parse("<!doctype html><hr id=rule width=1>",
+            cancellationToken: Cancellation).Document;
+        var twoRules = HtmlParser.Parse("<!doctype html><hr width=1><hr width=2>",
+            cancellationToken: Cancellation).Document;
+        var invalidRule = HtmlParser.Parse("<!doctype html><hr width=invalid>",
+            cancellationToken: Cancellation).Document;
+
+        var exact = CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleWidthAttributeCharacters = 1, MaxAssignments = 1 },
+            cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(1, "px"), exact.Styles[oneRule.GetElementById("rule")!]["width"]);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(twoRules, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleWidthAttributeCharacters = 1 },
+            cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(twoRules, includeUserAgent: false,
+            options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(invalidRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleWidthAttributeCharacters = 6 },
+            cancellationToken: Cancellation));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleWidthAttributeCharacters = 0 },
+            cancellationToken: Cancellation));
     }
 }

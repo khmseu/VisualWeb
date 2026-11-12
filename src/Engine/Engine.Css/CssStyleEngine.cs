@@ -328,6 +328,13 @@ public static class CssStyleEngine
         return TryParseDimensionValue(width, context.Cancellation, "HTML table-column width attribute");
     }
 
+    private static CssLength? GetHorizontalRuleWidthHint(DomElement element, CssContext context)
+    {
+        if (element.LocalName != "hr" || element.GetAttribute("width") is not { } width) { return null; }
+        context.HorizontalRuleWidthCharacters(width.Length);
+        return TryParseDimensionValue(width, context.Cancellation, "HTML horizontal-rule width attribute");
+    }
+
     private static CssLength? GetTableCellWidthHint(DomElement element, CssContext context)
     {
         if (element.LocalName is not ("td" or "th") || element.GetAttribute("width") is not { } width)
@@ -558,6 +565,12 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("width", columnWidth, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetHorizontalRuleWidthHint(element, context) is { } horizontalRuleWidth)
+            {
+                context.Assignment();
+                Add(new("width", horizontalRuleWidth, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetTableCellWidthHint(element, context) is { } cellWidth)

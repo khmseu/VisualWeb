@@ -4,9 +4,20 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-11, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-12, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
+
+Am 2026-11-12 wurde ein neuer Auftrag ueber zehn getrennte
+Missing-Prioritaetsinkremente begonnen. Pass 1 implementiert den HTML-
+Presentational-Hint `hr[width]`: HTML-Dimensionswerte einschliesslich null und
+Prozent werden durch den vorhandenen Parser als CSS-`width` in die
+Author-Hint-Kaskade uebernommen; eine eigene aggregierte UTF-16-Grenze schuetzt
+den Attributscan. CSS (1.346), Layout (1.001), Solution-Build (0 Warnungen/
+Fehler), Solution-Volltest (16.581), Formatverifikation und `git diff --check`
+bestehen lokal. Push und CI stehen noch aus. Der lokale HTML-Standard wurde
+am 2026-11-07 geprueft; kein Cache-Refresh war erforderlich. Siehe
+[KP-305](./Kontextprotokoll.md#kp-305---pass-1-hr-width).
 
 Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS

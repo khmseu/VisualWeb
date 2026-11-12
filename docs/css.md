@@ -516,8 +516,11 @@ The HTML [horizontal-rule UA rule](https://html.spec.whatwg.org/multipage/render
 border, and 0.5em vertical plus automatic horizontal margins. The horizontal
 margins map the standard logical margins to physical sides in this LTR subset.
 `overflow:hidden` is omitted because `<hr>` is void and has no child content.
-The presentational hints for legacy `align`, `color`, `noshade`, `size` and
-`width` attributes remain unsupported.
+The `width` attribute maps HTML dimension values to the CSS `width` property
+at the author presentational-hint origin, including zero and percentages, under
+the bounded aggregate `MaxHorizontalRuleWidthAttributeCharacters` raw
+UTF-16-unit limit. Author CSS overrides the hint. The presentational hints
+for legacy `align`, `color`, `noshade` and `size` remain unsupported.
 
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`) style `listing`, `xmp` and `plaintext` like `pre`: block

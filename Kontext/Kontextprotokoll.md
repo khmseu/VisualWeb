@@ -8126,3 +8126,46 @@ sind erfolgreich.
 
 **Status:** Pass 10 ist committed, gepusht und CI-geprueft. Damit sind alle
 zehn angeforderten Inkremente abgeschlossen.
+
+### KP-305 - Pass 1: HTML hr[width]
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Umsetzung und lokale Validierung des ersten Inkrements eines
+  neuen Zehn-Pass-Auftrags; Commit/Push und CI sind noch offen.
+- Quellen: aktueller Nutzerturn mit Aufruf
+  `/missing-priority-implementation` und Argument `10`; [Prioritaetstracker](../plans/Missing.md#recommended-priority),
+  [CSS guide](../docs/css.md#cascade-and-computed-values), [HTML cache](../specs/cache/html.html)
+  (Manifest-ID `html`, geprueft 2026-11-07), [Engine.Css](../src/Engine/Engine.Css/README.md),
+  [Engine.Layout](../src/Engine/Engine.Layout/README.md), Quellcode und Regressionstests.
+- Bezug: Pass 1 von zehn angeforderten getrennten Inkrementen.
+
+**Nutzerangabe:** Der Aufruf fordert zehn Prioritaetsinkremente. Eine weitere
+Motivation oder konkrete Verhaltenswahl wurde nicht angegeben.
+
+**Auswahl (Ableitung):** Die priorisierte Luecke ist gewoehnliche HTML/CSS-
+Darstellung. `caption-side:bottom` war als Kandidat bereits implementiert
+([TableLayout.cs](../src/Engine/Engine.Layout/TableLayout.cs)); `colgroup[width]`
+ist im aktuellen HTML-Rendering-Abschnitt nicht als Presentational-Hint
+definiert. Daher wurde stattdessen der dort ausdruecklich definierte
+`hr[width]`-Hinweis gewaehlt. Diese Auswahl ist technische Priorisierung, keine
+separate Nutzerentscheidung.
+
+**Umsetzung (belegt):** `hr[width]` wird mit dem vorhandenen HTML-
+Dimensionsparser verarbeitet und als CSS-`width` am Author-Presentational-
+Hint-Ursprung gesetzt. Null und Prozentwerte bleiben fuer die bestehende
+Blocklayout-Geometrie erhalten; regulaere Autorenregeln koennen den Hinweis
+ueberschreiben. Eine eigene konfigurierbare aggregierte UTF-16-Grenze zaehlt
+auch ungueltige Werte vor dem Parsing. Andere legacy `hr`-Attribute und
+erweiterte HR-Darstellung bleiben ausserhalb des Inkrements.
+
+**Validierung (belegt):** Engine.Css (1.346) und Engine.Layout (1.001) bestehen.
+Der Solution-Build besteht mit null Warnungen/Fehlern; der volle
+Solution-Testlauf besteht mit 16.581 Tests. `dotnet format
+VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
+`git diff --check` bestehen. Der lokale HTML-Standard war laut Manifest am
+2026-11-07 geprueft; am 2026-11-12 war kein Refresh erforderlich. Remote-CI
+ist noch offen.
+
+**Status:** Implementiert und lokal validiert; Commit, Push und Remote-CI
+stehen aus.
