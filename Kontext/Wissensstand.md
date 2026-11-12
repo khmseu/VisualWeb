@@ -8,6 +8,13 @@
 
 ## Aktueller Wissensstand
 
+Am 2026-11-12 wurde [docs/standards.md](../docs/standards.md) auf Wunsch des
+Nutzers in den beiden Standards-Supporttabellen von Statusangaben auf
+approximative Prozentwerte umgestellt. Die Werte sind grobe, in 5%-Schritten
+gerundete Schaetzungen zur Breite der dokumentierten Feature-Unterstuetzung;
+sie zaehlen weder normative Anforderungen noch Testfaelle und sind keine
+Konformitaetswerte. Siehe [KP-323](./Kontextprotokoll.md#kp-323---approximative-standards-abdeckung).
+
 Am 2026-11-12 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente begonnen. Pass 1 implementiert den HTML-
 Presentational-Hint `hr[width]`: HTML-Dimensionswerte einschliesslich null und

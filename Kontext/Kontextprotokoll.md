@@ -8607,3 +8607,31 @@ Warnungen/Fehler, Solution-Volltest (16.407), Solution-Formatverifikation und
 `git diff --check` bestanden. Commit `876590e` ist gepusht; Linux development
 (43164284447), Windows confinement (43164284462) und Push on main
 (43164284241) sind erfolgreich.
+
+### KP-323 - Approximative Standards-Abdeckung
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Dokumentationsaenderung; lokal geprueft, nicht committed.
+- Quelle: Nutzerturn vom 2026-11-12: „in standards.md, can we replace 'partial'
+  with (approximated) completion percentages in the standards support columns?“
+- Bezug: [Standardsinventur](../docs/standards.md#support-status).
+
+**Nutzerangabe:** Der Nutzer wuenschte approximative Prozentwerte anstelle von
+`Partial` in den Standards-Supportspalten. Ein weitergehendes Motiv wurde
+nicht genannt.
+
+**Umsetzung und Abgrenzung:** Beide Supporttabellen verwenden nun eine
+Abdeckungsschaetzung in 5%-Schritten; die explizit nicht implementierte
+CSS-Overscroll-Zeile ist mit ~0% ausgewiesen. Die Werte schaetzen nur grob die
+Breite der in den Supportzeilen zusammengefassten Feature-Oberflaeche. Fuer
+diese Werte wurde kein vollstaendiges Code- oder Spezifikationsaudit
+durchgefuehrt. Sie werden nicht aus Normklauseln, Testmengen oder einem
+formalen Modell berechnet, sind zwischen Standards/Gruppen nicht vergleichbar
+und sagen keine Konformitaet aus. Vollstaendige Unterstuetzung wird weiterhin
+nicht behauptet.
+Die separate Tabelle fuer nur referenzierte, nicht implementierte Quellen
+bleibt als Beziehungsbeschreibung unveraendert.
+
+**Validierung:** Dokumentationsaenderung; keine Tests erforderlich. `git diff
+--check` und inhaltliche Pruefung der 30 Supportwerte ausgefuehrt.
