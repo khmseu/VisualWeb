@@ -8433,3 +8433,50 @@ andere Select-Inhalte bleiben bestehen.
 Build besteht mit null Warnungen/Fehlern; der gesamte Solution-Testlauf
 besteht mit 16.602 Tests. Formatverifikation und `git diff --check` bestehen.
 Commit, Push und Remote-CI stehen noch aus.
+
+### KP-315 - Pass 6 gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Commit-, Push- und Remote-CI-Nachtrag zu KP-314.
+- Quellen: Commit `cde2498`; GitHub Actions Runs
+  [43150699240](https://github.com/khmseu/VisualWeb/actions/runs/43150699240),
+  [43150699235](https://github.com/khmseu/VisualWeb/actions/runs/43150699235)
+  sowie [43150698566](https://github.com/khmseu/VisualWeb/actions/runs/43150698566).
+- Bezug: Abschluss des sechsten Inkrements; vier Inkremente des
+  Zehn-Pass-Auftrags verbleiben.
+
+**Abschluss (belegt):** `cde2498` ist auf `main` gepusht. Linux development
+(x64/arm64), Windows confinement (x64/arm64) und CodeQL sind erfolgreich.
+
+### KP-316 - HTML-Option/Optgroup im Body, Pass 7
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: standardsgestuetzte Implementierung und lokale Validierung;
+  Commit, Push und Remote-CI stehen noch aus.
+- Quellen: [Prioritaetstracker](../plans/Missing.md#4-general-html-and-dom-compatibility),
+  [HTML/DOM-Guide](../docs/html-dom.md#static-document-tree-subset),
+  [Standardsinventur](../docs/standards.md#support-status),
+  [Engine.Html](../src/Engine/Engine.Html/HtmlParser.cs),
+  [Tree-Tests](../tests/Engine.Html.Tests/TreeTests.cs), WHATWG HTML `html`
+  `#parsing-main-inbody` (Cache laut Manifest am 2026-11-07 geprueft).
+- Bezug: siebtes Inkrement des angeforderten Zehn-Pass-Laufs; HTML bleibt
+  nach der Nutzerentscheidung in KP-313 die vorrangige uebergeordnete Aufgabe.
+
+**Auswahl (Ableitung):** Der Tracker markierte Optionen und Optgroups ausserhalb
+von Selects als nicht unterstuetzt. Der lokale In-Body-Algorithmus erlaubt
+deren normale Einfuegung und verlangt, ein aktuelles `option` vor einem neuen
+`option` oder `optgroup` zu schliessen. Diese konkreten Regeln wurden
+ausgewaehlt; weitergehende aktive-Formatierungsrekonstruktion bleibt aus.
+
+**Umsetzung (belegt):** `option`- und `optgroup`-Starttags ausserhalb eines
+Selects werden im normalen Body-Pfad eingefuegt. Ist `option` aktuell, wird es
+vor beiden Starttags geschlossen; sonstige Tree-Building-Regeln bleiben
+unveraendert. Ein fokussierter Test prueft Datalist-Optionen, Optgroup-
+Verschachtelung, implizites Schliessen und anschliessende Geschwister.
+
+**Validierung (belegt):** Engine.Html besteht mit 7.274 Tests; der Solution-
+Build besteht mit null Warnungen/Fehlern; der gesamte Solution-Testlauf
+besteht mit 16.602 Tests. Formatverifikation und `git diff --check` bestehen.
+Commit, Push und Remote-CI stehen noch aus.

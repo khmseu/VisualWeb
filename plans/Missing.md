@@ -393,9 +393,9 @@ remain explicitly unsupported; rendering supports only the
 parser work includes:
 
 - Templates, general forms (only the simple form-pointer subset exists), select
-  contents beyond direct option/optgroup/text and the bounded
-  `hr`/`input`/nested-select recovery, SVG/MathML, and other specialized parsing
-  algorithms.
+  token handling beyond direct option/optgroup/text and recovery for
+  `hr`/`input`/nested-select, non-option children of an `optgroup` inside a
+  select, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 

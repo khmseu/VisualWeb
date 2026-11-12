@@ -88,7 +88,8 @@ after-after-body modes. Supported behavior includes:
   with text only inside options. The in-body recovery rules also insert `hr`
   inside the select after implied option/group closure, close the select and
   reprocess an `input` start tag, and close-and-ignore a nested `select` start
-  tag.
+  tag. Outside selects, `option` and `optgroup` use ordinary in-body insertion;
+  starting either while an `option` is current closes that option first.
 - Basic static table construction for `table`, `caption`, `colgroup`/`col`,
   `tbody`/`thead`/`tfoot`, `tr`, `td` and `th`, including implied
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
@@ -130,7 +131,8 @@ nearest ancestor `form`.
 Other tokens that require table foster parenting throw explicitly, as do
 unsupported table tags outside the contexts covered above. The following
 additionally throw explicitly: templates, SVG/MathML,
-unsupported select contents beyond the bounded recovery above (including optgroups outside selects and non-option optgroup children), textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
+unsupported select contents beyond the bounded recovery above, including
+non-option children of an `optgroup` inside a select; textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
 applet/marquee/object-specific algorithms. Fragment parsing is not
 offered. Nested anchors/nobr, misnested formatting and closures requiring
 active-formatting reconstruction/adoption agency throw instead of returning

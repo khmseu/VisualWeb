@@ -424,9 +424,9 @@ public static class HtmlParser
                         mode = Mode.InTable;
                         return;
                     case "option":
-                        throw Unsupported("Option elements outside the supported select subset are not implemented.");
                     case "optgroup":
-                        throw Unsupported("Optgroup elements outside the supported select subset are not implemented.");
+                        if (open.LastOrDefault()?.LocalName == "option") { Close("option"); }
+                        break;
                     case "hr":
                         CloseParagraph();
                         Insert(tag, push: false);

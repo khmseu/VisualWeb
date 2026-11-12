@@ -190,6 +190,25 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void OptionAndOptgroupStartsOutsideSelectUseBodyInsertionRules()
+    {
+        var result = Parse("<!doctype html><datalist><option value=a>Alpha<optgroup label=More>"
+            + "<option>Beta</option></optgroup><option value=c>Gamma<option value=d>Delta"
+            + "</option></datalist>");
+        var document = result.Document;
+        var datalist = Assert.IsType<DomElement>(Assert.Single(document.Descendants()
+            .OfType<DomElement>(), element => element.LocalName == "datalist"));
+        var children = datalist.ChildNodes.OfType<DomElement>().ToArray();
+
+        Assert.Equal(["option", "optgroup", "option", "option"], children.Select(element => element.LocalName));
+        Assert.Equal("Alpha", children[0].TextContent);
+        Assert.Equal("Gamma", children[2].TextContent);
+        Assert.Equal("Delta", children[3].TextContent);
+        Assert.Equal("Beta", Assert.IsType<DomElement>(children[1].FirstChild).TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void SelectHrClosesOpenOptionGroupsAndRemainsInsideSelect()
     {
         var result = Parse("<!doctype html><select><optgroup><option>A<hr></select>");
@@ -467,7 +486,6 @@ public sealed class TreeTests
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
     [InlineData("<ruby>x")]
-    [InlineData("<optgroup><option>x</optgroup>")]
     [InlineData("<select><option>x<div>y</div></select>")]
     [InlineData("<select><optgroup><div>x</div></optgroup></select>")]
     [InlineData("<p><b>x</p>y")]
