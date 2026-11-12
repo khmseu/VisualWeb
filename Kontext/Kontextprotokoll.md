@@ -8635,3 +8635,45 @@ bleibt als Beziehungsbeschreibung unveraendert.
 
 **Validierung:** Dokumentationsaenderung; keine Tests erforderlich. `git diff
 --check` und inhaltliche Pruefung der 30 Supportwerte ausgefuehrt.
+
+### KP-324 - Standardsprioritaet nach hoechster Teilabdeckung
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Dokumentationsaenderung; keine Featureimplementierung.
+- Quelle: Nutzerturn vom 2026-11-12: „replace the top standard priority
+  (currently html) with the standards that, at the time when we pick the next
+  feature, has the highest partial implementation percentage.“
+- Bezug: [Missing.md](../plans/Missing.md#recommended-priority),
+  [Standardsinventur](../docs/standards.md#support-status), DEC-033;
+  diese Entscheidung ersetzt die HTML-Top-Prioritaet aus KP-313.
+
+**Nutzerangabe:** Bei jeder naechsten standardsgetriebenen Featureauswahl soll
+der Standard mit dem aktuell hoechsten Teilabdeckungswert aus der
+Standardsinventur priorisiert werden. Der Nutzer waehlte keine konkrete
+Featureimplementierung fuer diesen Turn.
+
+**Operative Auslegung (Ableitung):** Der Wert wird bei jeder Auswahl neu
+gelesen; `~0%` und `100%` gelten nicht als teilweise Unterstuetzung.
+Gleichstaende werden gleichrangig behandelt. Gibt es fuer den hoechsten Wert
+keinen umsetzbaren Missing-Eintrag, wird der naechsthoehere Wert betrachtet.
+Diese Regeln machen die Nutzervorgabe anwendbar, wurden aber nicht einzeln
+vom Nutzer vorgegeben.
+
+**Belegte Momentaufnahme:** In der am 2026-11-12 geaenderten Inventur ist
+ECMAScript (`ecmascript`) mit ~85% der hoechste Wert unter den partiellen
+Unterstuetzungen. `Missing.md` weist entsprechend auf dieses Ergebnis hin,
+ohne den kuenftigen Auswahlwert festzuschreiben. Die vorhandenen nummerierten
+Simple-Site-Prioritaeten behalten ihre relative Reihenfolge fuer Arbeit, wenn
+keine standardsgetriebene Luecke mehr ausgewaehlt werden kann.
+
+**Abgrenzung:** Die Werte bleiben grobe, nicht rigoros vergleichbare
+Schaetzungen; ihre Nutzung als Rangfolge ist eine vom Nutzer gewuenschte
+Heuristik, keine Konformitaets- oder Qualitaetsmessung. Die Methodennotiz in
+`docs/standards.md` wurde deshalb praezisiert. Die fruehere HTML-first-
+Entscheidung bleibt als Historie in KP-313 erhalten, gilt aber nicht mehr als
+aktuelle Top-Standardsprioritaet.
+
+**Validierung:** Geaenderte Markdown-Dokumente und die neuen relativen Links
+geprueft; `git diff --check` bestanden. Keine Tests, Cache-Aktualisierung oder
+Featureaenderung vorgenommen.

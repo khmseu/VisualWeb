@@ -133,13 +133,18 @@ abgeschlossen. WHATWG HTML bleibt ein breites, nur teilweise implementiertes
 Ziel; die Nutzerprioritaet ist dadurch nicht vollstaendig erledigt. Siehe
 [KP-322](./Kontextprotokoll.md#kp-322---ruby-annotationen-pass-10).
 
-**Prioritaet (Nutzerangabe, 2026-11-12):** Zuerst soll die Implementierung des
-WHATWG HTML-Standards (`html`) vervollstaendigt werden; danach wird mit der
-bisherigen empfohlenen Prioritaetsfolge fortgefahren. Die neue Top-Prioritaet
-ist ein uebergeordnetes Ziel fuer kleine, belegte Inkremente, keine Aussage,
-dass der Standard bereits vollstaendig unterstuetzt wird. Details und
-Reihenfolge stehen in [Missing.md](../plans/Missing.md#recommended-priority);
-die Entscheidung ist in [KP-313](./Kontextprotokoll.md#kp-313---html-als-erste-prioritaet-und-pass-5-ci) erfasst.
+**Aktuelle Standardprioritaet (Nutzerangabe, 2026-11-12):** Vor jeder Auswahl
+eines standardsgetriebenen Features wird in
+[standards.md](../docs/standards.md#support-status) der Support-Eintrag mit dem
+hoechsten Wert unter den teilweise unterstuetzten Standards ausgewaehlt;
+Gleichstaende sind gleichrangig. Zum Zeitpunkt der Aenderung ist ECMAScript
+(`ecmascript`) mit ~85% am hoechsten. Der Wert wird bei jeder Auswahl neu
+geprueft und ist nur eine grobe Priorisierungsheuristik, keine
+Konformitaetsaussage. Dies ersetzt die zuvor beschlossene feste
+HTML-Top-Prioritaet aus
+[KP-313](./Kontextprotokoll.md#kp-313---html-als-erste-prioritaet-und-pass-5-ci).
+Danach bleibt die bisherige empfohlene Prioritaetsfolge in
+[Missing.md](../plans/Missing.md#recommended-priority) bestehen.
 
 Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS
@@ -1490,6 +1495,7 @@ abgelehnt und nicht geladen
 | DEC-030 | Auto-width tables solve `col`/`colgroup` percentage minimum constraints against the final table width using bounded deterministic bisection; fail explicitly if no finite width satisfies them                        | Ausdrueckliche Nutzerwahl Q-028; implementiert, voll lokal validiert, Commit `de132ad` gepusht und Linux-/Windows-/CodeQL-CI gruen                                     | Share evenly any group percentage deficit; charge solver scans/iterations to shared table-column operation/cancellation budgets; no approximate fallback                                 | Nutzerwahl 2026-11-07, 17:15 Europe/Berlin; CSS 2.2 `#auto-table-layout`; [KP-229](./Kontextprotokoll.md#kp-229---pass-5-auto-tabellen-prozentbreiten-umfang), [KP-230](./Kontextprotokoll.md#kp-230---pass-5-auto-tabellen-prozentbreiten-implementiert)                                                                                                                                 |
 | DEC-031 | HTML `table[width]` maps nonzero dimension values to pixel or percentage CSS width hints; percentages resolve against the containing block, and zero/invalid inputs add no hint                                       | Aus REQ-005, Missing-Tracker und frisch gepruefter HTML-Regel abgeleitet; implementiert, lokal validiert, Commit `fb73991` gepusht und Linux-/Windows-/CodeQL-CI gruen | Preserve the HTML dimension parser; bound aggregate raw attributes; fail explicitly outside the finite numeric range; keep width attributes on other table parts unsupported             | [KP-231](./Kontextprotokoll.md#kp-231---pass-6-html-table-width-hint), [KP-232](./Kontextprotokoll.md#kp-232---pass-6-committed-gepusht-und-ci-gruen), WHATWG HTML `#tables-2` and `#rules-for-parsing-dimension-values` (cache refreshed 2026-11-07)                                                                                                                                     |
 | DEC-032 | Valid `valign` on `tr`/row groups supplies a default for direct child table cells; the row wins over its group, and cell CSS or a cell `valign` hint overrides it                                                     | Ausdrueckliche Nutzerwahl `cell-default`; implementiert, lokal validiert, `dd42bec` gepusht und Linux-/Windows-/CodeQL-CI gruen                                        | This is bounded HTML compatibility behavior, not general CSS inheritance; unsupported values/targets still fail explicitly                                                               | [KP-238](./Kontextprotokoll.md#kp-238---naechster-tabellenpass-row-group-valign-offen), [KP-239](./Kontextprotokoll.md#kp-239---row-group-valign-als-zell-default-gewaehlt), [KP-240](./Kontextprotokoll.md#kp-240---pass-9-implementiert-und-lokal-vollvalidiert), [KP-241](./Kontextprotokoll.md#kp-241---pass-9-gepusht-und-ci-gruen)                                                  |
+| DEC-033 | At each next standards-driven feature selection, prioritize the partially implemented standard(s) with the highest current coverage estimate; treat ties equally and re-evaluate from `standards.md`                  | Nutzerangabe zur Rangfolge; Gleichstands- und Fallbackregel als Ableitung; ersetzt die HTML-first-Topprioritaet                                                        | Schaetzungen sind nur eine grobe Rangfolgeheuristik; waehle tatsaechliche offene Tracker-Luecken, keine Konformitaet oder Abschluss aus dem Prozentwert ableiten                         | Aktueller Nutzerturn; [Missing.md](../plans/Missing.md#recommended-priority), [standards.md](../docs/standards.md#support-status), [KP-324](./Kontextprotokoll.md#kp-324---standardsprioritaet-nach-hoechster-teilabdeckung)                                                                                                                                                              |
 
 ## Offene Fragen, Widersprueche und Risiken
 

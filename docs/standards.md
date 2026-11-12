@@ -111,7 +111,9 @@ applicable feature surface appears implemented, inferred from the scope
 described by each row and its linked guides. They use 5% increments and are not
 calculated from normative clauses, test counts, or a formal coverage model.
 Estimates across different standards, or rows that group multiple standards,
-are not directly comparable. They are not conformance scores; the scope
+are not rigorous apples-to-apples measurements; the
+[Missing priority](../plans/Missing.md#recommended-priority) uses them only as
+a rough selection heuristic. They are not conformance scores; the scope
 descriptions and subsystem guides remain the authoritative account of behavior
 and omissions.
 

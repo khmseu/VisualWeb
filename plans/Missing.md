@@ -1755,23 +1755,26 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 ## Recommended priority
 
-**Priority update (2026-11-12):** The first priority is to complete the
-implementation of the WHATWG HTML Standard (`html` in
-[`specs/manifest.json`](../specs/manifest.json)). Treat this as a broad,
-incremental objective, not a single deliverable: select bounded, testable HTML
-gaps from [General HTML and DOM compatibility](#4-general-html-and-dom-compatibility)
-and other HTML-defined behavior documented by the subsystem guides. Keep
-unsupported behavior explicit, and do not mark the standard complete or claim
-full support without evidence covering its applicable requirements. After this
-objective is complete, continue with the existing recommended priorities below,
-in their current order.
+**Standards-priority update (2026-11-12):** Before each next standards-driven
+feature selection, consult the approximate coverage estimates in
+[standards.md](../docs/standards.md#support-status). Select a bounded,
+testable, actionable gap for the partially implemented standard or standards
+whose estimate is currently highest (`>0%` and `<100%`); treat tied estimates
+equally and recalculate at the next feature selection. At this update,
+ECMAScript (`ecmascript`) is highest at ~85%. If the highest-ranked standard
+has no actionable Missing item, consider the next-highest partial estimate.
+These estimates are rough ordering heuristics, not conformance scores. Keep
+unsupported behavior explicit and do not mark a standard complete or claim
+full support without evidence covering its applicable requirements.
+Once no actionable standards-driven increment remains, continue with the
+existing recommended priorities below, in their current order.
 
-After the HTML objective, prioritize handling simple websites end to end before
-advanced web applications. Start with mostly static, document-oriented pages:
-readable text, ordinary styling, images, working links, scrolling and basic
-forms. Choose small, testable increments that remove concrete blockers on
-representative pages; do not require completion of an entire subsystem before
-improving another.
+Within the remaining priorities, favor handling simple websites end to end
+before advanced web applications. Start with mostly static, document-oriented
+pages: readable text, ordinary styling, images, working links, scrolling and
+basic forms. Choose small, testable increments that remove concrete blockers
+on representative pages; do not require completion of an entire subsystem
+before improving another.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
@@ -1811,10 +1814,12 @@ simple websites are safe to browse untrusted. Validate each increment with
 focused regressions and representative offline simple-site fixtures.
 
 _Priority order updated on 2026-10-28 to favor simple-site usability first;
-debugging and later targets clarified on 2026-10-31. On 2026-11-12, completion
-of the HTML standard was added as the first overarching objective; the
-existing recommended priorities retain their relative order and follow it.
-These are work-order changes, not new implementation or validation claims._
+debugging and later targets clarified on 2026-10-31. On 2026-11-12, an
+HTML-first overarching objective was introduced, then superseded by the
+estimate-based standards-selection rule above. The existing recommended
+priorities retain their relative order and follow when no actionable
+standards-driven increment remains. These are work-order changes, not new
+implementation or validation claims._
 
 *Status cross-checked against the implementation and subsystem guides on
 2026-10-19. Native Linux x64/ARM64 and Windows x64/ARM64 CI passed for commit
