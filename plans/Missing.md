@@ -1349,8 +1349,23 @@ aggregate raw UTF-16 limit. Empty and invalid color values leave `color`
 unchanged while attribute presence still triggers the solid border. `hr[size]`
 remains unsupported. CSS (1,350), the zero-warning solution build, all 16,586
 solution tests, format verification and `git diff --check` pass locally.
-Commit, push and remote CI are pending; seven increments will remain after
-Pass 3 completes.
+Commit `e84de9e` is pushed; Linux development
+([43135088646](https://github.com/khmseu/VisualWeb/actions/runs/43135088646)),
+Windows confinement
+([43135089070](https://github.com/khmseu/VisualWeb/actions/runs/43135089070))
+and CodeQL
+([43135088626](https://github.com/khmseu/VisualWeb/actions/runs/43135088626))
+pass. Pass 3 is complete; seven increments remain.
+
+Pass 4 implements the standard `hr[size]` hints. With `color` or `noshade`
+present, the parsed non-negative integer sets all four border widths to half
+its value; otherwise size 1 sets the bottom border width to zero and sizes
+above 1 set height to size minus 2 pixels. Without `color`/`noshade`, size 0
+and invalid values add no size hint. The scan has an independent aggregate raw
+UTF-16 limit. CSS (1,352), Layout (1,003), the zero-warning solution build, all
+16,589 solution tests, format verification and `git diff --check` pass locally.
+Commit, push and remote CI are pending; six increments will remain after
+Pass 4 completes.
 
 This ten-pass request begins by painting CSS `outset` borders with the
 opposite deterministic light/dark sides, covering the common raised-edge

@@ -8233,8 +8233,11 @@ Inkremente verbleiben.
 - Erfassungsart: Fortsetzung des laufenden Zehn-Pass-Auftrags.
 - Quellen: `specs/cache/html.html:102288-102317` (HTML 15.3.11; Manifest-
   Pruefdatum 2026-11-07), `src/Engine/Engine.Css/CssStyleEngine.cs`,
-  `tests/Engine.Css.Tests/HorizontalRuleDefaultsTests.cs` und lokale
-  Validierungsläufe.
+  `tests/Engine.Css.Tests/HorizontalRuleDefaultsTests.cs`, Commit `e84de9e`
+  und GitHub Actions Runs
+  [43135088646](https://github.com/khmseu/VisualWeb/actions/runs/43135088646),
+  [43135089070](https://github.com/khmseu/VisualWeb/actions/runs/43135089070)
+  sowie [43135088626](https://github.com/khmseu/VisualWeb/actions/runs/43135088626).
 - Bezug: KP-307; Pass 3 des Zehn-Pass-Auftrags.
 
 **Umsetzung (belegt):** `hr[color]` und `hr[noshade]` setzen alle vier
@@ -8254,7 +8257,68 @@ bestehende Assignment-Budget.
 **Validierung (belegt):** Der fokussierte HR-Testsatz besteht (7), der gesamte
 CSS-Satz besteht (1.350), der Solution-Build besteht mit null Warnungen/
 Fehlern und alle 16.586 Solution-Tests bestehen. Formatverifikation und
-`git diff --check` bestehen. Commit, Push und Remote-CI stehen noch aus.
+`git diff --check` bestehen. Commit `e84de9e` ist gepusht. Linux development,
+Windows confinement und CodeQL sind erfolgreich.
 
-**Status:** Lokal validiert; Pass 3 bleibt bis Commit, Push und erfolgreicher
-CI offen. Danach verbleiben sieben angeforderte Inkremente.
+**Status:** Pass 3 ist committed, gepusht und CI-geprueft; sieben angeforderte
+Inkremente verbleiben.
+
+### KP-309 - Pass 4 waehlt hr size
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Technische Auswahl, abgeleitet aus dem priorisierten
+  Kompatibilitaetsziel und einem explizit dokumentierten Restpunkt.
+- Quellen: `plans/Missing.md` (Abschnitt 5, HR-Folgeinkremente),
+  `specs/cache/html.html:102288-102317` (HTML 15.3.11; Manifest-
+  Pruefdatum 2026-11-07), `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Layout/StaticLayout.cs` und `docs/text-layout.md`
+  (Abschnitt "Ordinary flow").
+- Bezug: KP-308; vierter Pass des Zehn-Pass-Auftrags.
+
+**Auswahl (Ableitung):** Der aktuelle Plan dokumentiert `hr[size]` als
+unsupported, waehrend die lokale HTML-Spezifikation den begrenzten Algorithmus
+explizit festlegt. Die bereits vorhandene CSS-Nichtnegativ-Integerverarbeitung,
+Borderbreiten und Blockhoehen bieten Integrationspfade; sie beweisen noch nicht
+die korrekte Hint-Prioritaet oder endgueltige HR-Geometrie. Die Auswahl ist
+technische Priorisierung, keine separate Nutzerentscheidung.
+
+**Verhaltensgrundlage (belegt):** Bei `color` oder `noshade` werden alle
+Borderbreiten auf die Haelfte des geparsten Werts gesetzt. Andernfalls setzt
+size 1 die untere Borderbreite auf 0; Werte ueber 1 setzen die Hoehe auf
+size minus 2 px; size 0 fuehrt ohne `color`/`noshade` zu keinem Hint.
+Ungueltige Werte fuehren immer zu keinem Hint; Attributarbeit muss durch eine
+eigene aggregierte UTF-16-Grenze begrenzt bleiben.
+
+**Status zum Auswahlzeitpunkt:** Ausgewaehlt, noch nicht implementiert. Die
+Umsetzung und Validierung sind in KP-310 dokumentiert.
+
+### KP-310 - Pass 4: hr size implementiert
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Implementierung und lokale Validierung der Auswahl aus KP-309.
+- Quellen: `specs/cache/html.html:102288-102317` (HTML 15.3.11; Manifest-
+  Pruefdatum 2026-11-07), `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Css/CssSyntax.cs`,
+  `tests/Engine.Css.Tests/HorizontalRuleDefaultsTests.cs`,
+  `tests/Engine.Layout.Tests/LayoutTests.cs`,
+  `docs/css.md` und `docs/text-layout.md`.
+- Bezug: KP-309; vierter Pass des Zehn-Pass-Auftrags.
+
+**Umsetzung (belegt):** `hr[size]` nutzt die vorhandene bounded
+Nichtnegativ-Integerverarbeitung und eine eigene aggregierte UTF-16-Grenze.
+Mit `color` oder `noshade` werden alle vier Borderbreiten auf die Haelfte des
+Werts gesetzt. Andernfalls setzt size 1 nur die untere Borderbreite auf 0,
+waehrend Werte ueber 1 die Hoehe auf size minus 2 px setzen. Size 0 ohne
+`color`/`noshade` und ungueltige Werte erzeugen keinen Size-Hint. Alle
+Hint-Zuweisungen zaehlen gegen das CSS-Assignment-Budget und bleiben durch
+Autoren-CSS ueberschreibbar.
+
+**Validierung (belegt):** Engine.Css (1.352) und Engine.Layout (1.003)
+bestehen. Der Solution-Build hat null Warnungen/Fehler, alle 16.589
+Solution-Tests, Formatverifikation und `git diff --check` bestehen. Commit,
+Push und Remote-CI stehen aus.
+
+**Status:** Implementiert und lokal validiert; Pass 4 bleibt bis Commit, Push
+und erfolgreicher CI offen.

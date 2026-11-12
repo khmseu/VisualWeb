@@ -1320,6 +1320,26 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void HorizontalRuleSizeAttributeSetsBlockHeightAndBorderWidths()
+    {
+        const string html =
+            "<hr id=height size=6><hr id=one size=1><hr id=noshade noshade size=6>"
+            + "<hr id=zero noshade size=0><hr id=overridden size=6>";
+        var root = UnorderedList(html,
+            "hr{font-size:0;line-height:0}#overridden{height:10px;border-bottom-width:4px}").Root!;
+
+        Assert.Equal(4, Find(root, "height").Content.Height);
+        Assert.Equal(6, Find(root, "height").BorderBox.Height);
+        Assert.Equal(0, Find(root, "one").Content.Height);
+        Assert.Equal(1, Find(root, "one").BorderBox.Height);
+        Assert.Equal(0, Find(root, "noshade").Content.Height);
+        Assert.Equal(6, Find(root, "noshade").BorderBox.Height);
+        Assert.Equal(0, Find(root, "zero").BorderBox.Height);
+        Assert.Equal(10, Find(root, "overridden").Content.Height);
+        Assert.Equal(15, Find(root, "overridden").BorderBox.Height);
+    }
+
+    [Fact]
     public void HorizontalRuleAlignmentAttributePositionsExplicitWidth()
     {
         const string html =

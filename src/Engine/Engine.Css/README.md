@@ -37,10 +37,18 @@ The presence of `hr[color]` or `hr[noshade]` maps to a solid border style.
 independent aggregate raw UTF-16 limit
 `MaxHorizontalRuleColorAttributeCharacters`; empty and `transparent` values
 leave the color unchanged. Author CSS overrides both hints.
+The `hr[size]` hint uses HTML non-negative integer parsing under the
+independent aggregate raw UTF-16 limit
+`MaxHorizontalRuleSizeAttributeCharacters`. With `color` or `noshade`, it sets
+all four border widths to half the parsed size; otherwise size 1 sets the
+bottom border width to zero and sizes above 1 set height to size minus 2 px.
+Without `color` or `noshade`, zero and invalid values add no size hint; with
+either attribute, zero sets all border widths to zero. Author CSS overrides
+the hint.
 The HTML `hr` UA rule sets gray `color`, a 1px inset border, 0.5em vertical
 margins and automatic horizontal margins. Legacy `hr` attribute hints remain
-unsupported except for `width`, the supported alignment values, and the
-documented `color`/`noshade` subset. `size` remains unsupported.
+unsupported except for `width`, the supported alignment values, `color`,
+`noshade` and `size`.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
@@ -67,7 +75,8 @@ registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `MaxTableRowHeightAttributeCharacters`,
 `MaxTableColumnWidthAttributeCharacters`,
 `MaxHorizontalRuleWidthAttributeCharacters`,
-`MaxHorizontalRuleColorAttributeCharacters` and
+`MaxHorizontalRuleColorAttributeCharacters`,
+`MaxHorizontalRuleSizeAttributeCharacters` and
 `MaxTableCellWidthAttributeCharacters` limits count raw UTF-16 attribute units,
 including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)

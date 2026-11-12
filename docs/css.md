@@ -529,7 +529,14 @@ algorithm as the `color` property. Color scanning has its own aggregate
 `MaxHorizontalRuleColorAttributeCharacters` raw UTF-16-unit limit, including
 empty and invalid values. Empty and `transparent` colors do not override the
 UA color, but attribute presence still selects a solid border. Author CSS
-overrides both hints. `size` and other `align` values remain unsupported.
+overrides both hints. The `size` attribute uses HTML non-negative integer
+parsing under the independent aggregate
+`MaxHorizontalRuleSizeAttributeCharacters` raw UTF-16-unit limit. With
+`color` or `noshade`, it sets all four border widths to half the parsed size;
+otherwise, size 1 sets the bottom border width to zero and sizes above 1 set
+height to size minus 2 pixels. Without `color` or `noshade`, zero and invalid
+values add no size hint; with either attribute, zero sets all border widths to
+zero. Author CSS overrides the size hints; other `align` values remain unsupported.
 
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`) style `listing`, `xmp` and `plaintext` like `pre`: block

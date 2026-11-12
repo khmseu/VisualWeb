@@ -190,4 +190,85 @@ public sealed class HorizontalRuleDefaultsTests
             options: new() { MaxHorizontalRuleColorAttributeCharacters = 0 },
             cancellationToken: Cancellation));
     }
+
+    [Fact]
+    public void HorizontalRuleSizeAttributeMapsConditionalHintsAndYieldsToAuthorCascade()
+    {
+        var document = HtmlParser.Parse(
+            "<!doctype html><hr id=height size=' +6tail'><hr id=one size=1>"
+            + "<hr id=color color=red size=5><hr id=noshade noshade size=4>"
+            + "<hr id=zero size=0><hr id=zero-noshade noshade size=0>"
+            + "<hr id=negative size=-1><hr id=invalid size=invalid>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+
+        var height = styles.Styles[document.GetElementById("height")!];
+        Assert.Equal(new CssLength(4, "px"), height["height"]);
+        Assert.Equal(new CssLength(1, "px"), height["border-top-width"]);
+
+        var one = styles.Styles[document.GetElementById("one")!];
+        Assert.Equal(new CssKeyword("auto"), one["height"]);
+        Assert.Equal(new CssLength(0, "px"), one["border-bottom-width"]);
+
+        var color = styles.Styles[document.GetElementById("color")!];
+        Assert.Equal(new CssColor(255, 0, 0), color["color"]);
+        Assert.Equal(new CssKeyword("solid"), color["border-top-style"]);
+        foreach (var side in new[] { "top", "right", "bottom", "left" })
+        { Assert.Equal(new CssLength(2.5, "px"), color[$"border-{side}-width"]); }
+
+        var noShade = styles.Styles[document.GetElementById("noshade")!];
+        Assert.Equal(new CssLength(2, "px"), noShade["border-left-width"]);
+        Assert.Equal(new CssKeyword("solid"), noShade["border-left-style"]);
+
+        var zeroNoShade = styles.Styles[document.GetElementById("zero-noshade")!];
+        foreach (var side in new[] { "top", "right", "bottom", "left" })
+        { Assert.Equal(new CssLength(0, "px"), zeroNoShade[$"border-{side}-width"]); }
+
+        foreach (var id in new[] { "zero", "negative", "invalid" })
+        {
+            var rule = styles.Styles[document.GetElementById(id)!];
+            Assert.Equal(new CssKeyword("auto"), rule["height"]);
+            Assert.Equal(new CssLength(1, "px"), rule["border-bottom-width"]);
+        }
+
+        var overridden = CssStyleEngine.Compute(document,
+            [new("#height{height:20px;border-bottom-width:7px}")], cancellationToken: Cancellation);
+        var overriddenRule = overridden.Styles[document.GetElementById("height")!];
+        Assert.Equal(new CssLength(20, "px"), overriddenRule["height"]);
+        Assert.Equal(new CssLength(7, "px"), overriddenRule["border-bottom-width"]);
+    }
+
+    [Fact]
+    public void HorizontalRuleSizeAttributeHonorsAggregateAndAssignmentLimits()
+    {
+        var oneRule = HtmlParser.Parse("<!doctype html><hr id=rule size=6>",
+            cancellationToken: Cancellation).Document;
+        var twoRules = HtmlParser.Parse("<!doctype html><hr size=6><hr size=5>",
+            cancellationToken: Cancellation).Document;
+        var invalidRule = HtmlParser.Parse("<!doctype html><hr size=invalid>",
+            cancellationToken: Cancellation).Document;
+        var coloredRule = HtmlParser.Parse("<!doctype html><hr id=colored color=red size=6>",
+            cancellationToken: Cancellation).Document;
+
+        Assert.Equal(new CssLength(4, "px"),
+            CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+                options: new() { MaxHorizontalRuleSizeAttributeCharacters = 1, MaxAssignments = 1 },
+                cancellationToken: Cancellation).Styles[oneRule.GetElementById("rule")!]["height"]);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(twoRules, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleSizeAttributeCharacters = 1 },
+            cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(invalidRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleSizeAttributeCharacters = 6 },
+            cancellationToken: Cancellation));
+        Assert.Equal(new CssLength(3, "px"),
+            CssStyleEngine.Compute(coloredRule, includeUserAgent: false,
+                options: new() { MaxHorizontalRuleSizeAttributeCharacters = 1, MaxAssignments = 9 },
+                cancellationToken: Cancellation).Styles[coloredRule.GetElementById("colored")!]["border-top-width"]);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(coloredRule, includeUserAgent: false,
+            options: new() { MaxAssignments = 8 }, cancellationToken: Cancellation));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleSizeAttributeCharacters = 0 },
+            cancellationToken: Cancellation));
+    }
 }

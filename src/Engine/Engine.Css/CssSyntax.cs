@@ -75,6 +75,10 @@ public sealed record CssOptions
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#the-hr-element-2">horizontal-rule color hint</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-a-legacy-colour-value">legacy color values</see>.</remarks>
     public int MaxHorizontalRuleColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in horizontal-rule size attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#the-hr-element-2">horizontal-rule size hints</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers">non-negative integers</see>.</remarks>
+    public int MaxHorizontalRuleSizeAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate raw UTF-16 units in table-cell width attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table cell width hints</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values">dimension values</see>.</remarks>
@@ -99,6 +103,7 @@ public sealed record CssOptions
             || MaxTableCellPaddingAttributeCharacters <= 0 || MaxTableCellHeightAttributeCharacters <= 0
             || MaxTableRowHeightAttributeCharacters <= 0 || MaxTableColumnWidthAttributeCharacters <= 0
             || MaxHorizontalRuleWidthAttributeCharacters <= 0 || MaxHorizontalRuleColorAttributeCharacters <= 0
+            || MaxHorizontalRuleSizeAttributeCharacters <= 0
             || MaxTableCellWidthAttributeCharacters <= 0
             || MaxTokens <= 0 || MaxDepth <= 0 || MaxDiagnostics <= 0
             || MaxElements <= 0 || MaxStyleSources <= 0 || MaxRules <= 0 || MaxAssignments <= 0
@@ -139,6 +144,7 @@ internal sealed class CssContext
     private int tableColumnWidthCharacters;
     private int horizontalRuleWidthCharacters;
     private int horizontalRuleColorCharacters;
+    private int horizontalRuleSizeCharacters;
     private int tableCellWidthCharacters;
 
     // Fixed per matching call so reused selector lists never retain another call's scoping root.
@@ -279,6 +285,14 @@ internal sealed class CssContext
         if (length > Options.MaxHorizontalRuleColorAttributeCharacters - horizontalRuleColorCharacters)
         { throw new CssLimitException("CSS horizontal-rule color attribute character limit exceeded."); }
         horizontalRuleColorCharacters += length;
+    }
+
+    internal void HorizontalRuleSizeCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxHorizontalRuleSizeAttributeCharacters - horizontalRuleSizeCharacters)
+        { throw new CssLimitException("CSS horizontal-rule size attribute character limit exceeded."); }
+        horizontalRuleSizeCharacters += length;
     }
 
     internal void TableCellWidthCharacters(int length)

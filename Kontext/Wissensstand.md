@@ -37,9 +37,23 @@ als vier CSS-Border-Side-Style-Longhands hinzu und mappt gueltige
 `hr[color]`-Werte auf CSS `color`. Eine eigene aggregierte UTF-16-Grenze
 begrenzt die Attributwerte; `hr[size]` bleibt unsupported. CSS (1.350),
 Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.586),
+Formatverifikation und `git diff --check` bestehen lokal. Commit `e84de9e`
+ist gepusht; Linux, Windows confinement und CodeQL bestehen (Runs 43135088646,
+43135089070 und 43135088626). Pass 3 ist abgeschlossen; sieben angeforderte
+Inkremente bleiben. Siehe
+[KP-308](./Kontextprotokoll.md#kp-308---pass-3-hr-color-und-noshade).
+
+Pass 4 implementiert den HTML-Presentational-Hint `hr[size]`: mit
+`color`/`noshade` setzt er alle vier Borderbreiten auf die Haelfte des
+geparsten Werts; andernfalls setzt size 1 die untere Borderbreite auf 0 und
+Werte groesser als 1 die Hoehe auf size-2 px. Ohne `color`/`noshade` erzeugt
+size 0 keinen Hint; ungueltige Werte erzeugen immer keinen Size-Hint. Eine
+eigene aggregierte UTF-16-Grenze begrenzt den Scan. CSS (1.352), Layout
+(1.003), Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.589),
 Formatverifikation und `git diff --check` bestehen lokal. Commit, Push und
-Remote-CI stehen aus; danach bleiben sieben angeforderte Inkremente.
-Siehe [KP-308](./Kontextprotokoll.md#kp-308---pass-3-hr-color-und-noshade).
+Remote-CI stehen aus; danach bleiben sechs angeforderte Inkremente. Siehe
+[KP-309](./Kontextprotokoll.md#kp-309---pass-4-waehlt-hr-size) und
+[KP-310](./Kontextprotokoll.md#kp-310---pass-4-hr-size-implementiert).
 
 Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS

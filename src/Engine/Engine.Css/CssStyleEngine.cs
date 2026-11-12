@@ -600,14 +600,45 @@ public static class CssStyleEngine
                     presentationalHint: true);
             }
             var horizontalRuleColorAttribute = element.LocalName == "hr" ? element.GetAttribute("color") : null;
+            var horizontalRuleNoShadeAttribute = element.LocalName == "hr" ? element.GetAttribute("noshade") : null;
             if (element.LocalName == "hr"
-                && (horizontalRuleColorAttribute is not null || element.GetAttribute("noshade") is not null))
+                && (horizontalRuleColorAttribute is not null || horizontalRuleNoShadeAttribute is not null))
             {
                 foreach (var side in new[] { "top", "right", "bottom", "left" })
                 {
                     context.Assignment();
                     Add(new($"border-{side}-style", new CssKeyword("solid"), false, 0), CssOrigin.Author, false,
                         new(), -1, presentationalHint: true);
+                }
+            }
+            if (element.LocalName == "hr" && element.GetAttribute("size") is { } horizontalRuleSizeAttribute)
+            {
+                context.HorizontalRuleSizeCharacters(horizontalRuleSizeAttribute.Length);
+                if (TryParseNonNegativeInteger(horizontalRuleSizeAttribute, context.Cancellation,
+                    out var horizontalRuleSize, "horizontal-rule size"))
+                {
+                    if (horizontalRuleColorAttribute is not null || horizontalRuleNoShadeAttribute is not null)
+                    {
+                        var borderWidth = new CssLength(horizontalRuleSize / 2, "px");
+                        foreach (var side in new[] { "top", "right", "bottom", "left" })
+                        {
+                            context.Assignment();
+                            Add(new($"border-{side}-width", borderWidth, false, 0), CssOrigin.Author, false,
+                                new(), -1, presentationalHint: true);
+                        }
+                    }
+                    else if (horizontalRuleSize == 1)
+                    {
+                        context.Assignment();
+                        Add(new("border-bottom-width", new CssLength(0, "px"), false, 0), CssOrigin.Author, false,
+                            new(), -1, presentationalHint: true);
+                    }
+                    else if (horizontalRuleSize > 1)
+                    {
+                        context.Assignment();
+                        Add(new("height", new CssLength(horizontalRuleSize - 2, "px"), false, 0),
+                            CssOrigin.Author, false, new(), -1, presentationalHint: true);
+                    }
                 }
             }
             if (horizontalRuleColorAttribute is not null)
