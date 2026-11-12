@@ -29,9 +29,12 @@ unsupported.
 HTML `hr[width]` dimension values, including zero and percentages, map to the
 CSS `width` hint under the independent aggregate raw UTF-16 limit
 `MaxHorizontalRuleWidthAttributeCharacters`; author CSS overrides the hint.
+HTML `hr[align]` accepts ASCII-case-insensitive `left`, `right` and `center`,
+mapping to the existing physical horizontal margins (zero/auto for left or
+right, auto/auto for center); author CSS overrides the hints.
 The HTML `hr` UA rule sets gray `color`, a 1px inset border, 0.5em vertical
 margins and automatic horizontal margins. Legacy `hr` attribute hints remain
-unsupported except for `width`.
+unsupported except for `width` and the supported alignment values.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.

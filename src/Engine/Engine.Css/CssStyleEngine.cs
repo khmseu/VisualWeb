@@ -335,6 +335,19 @@ public static class CssStyleEngine
         return TryParseDimensionValue(width, context.Cancellation, "HTML horizontal-rule width attribute");
     }
 
+    private static string? GetHorizontalRuleAlignmentHint(DomElement element)
+    {
+        if (element.LocalName != "hr") { return null; }
+        var align = element.GetAttribute("align");
+        return align is { Length: 4 or 5 or 6 } ? CssText.Lower(align) switch
+        {
+            "left" => "left",
+            "right" => "right",
+            "center" => "center",
+            _ => null
+        } : null;
+    }
+
     private static CssLength? GetTableCellWidthHint(DomElement element, CssContext context)
     {
         if (element.LocalName is not ("td" or "th") || element.GetAttribute("width") is not { } width)
@@ -571,6 +584,19 @@ public static class CssStyleEngine
             {
                 context.Assignment();
                 Add(new("width", horizontalRuleWidth, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+            }
+            if (GetHorizontalRuleAlignmentHint(element) is { } horizontalRuleAlignment)
+            {
+                CssValue leftMargin = horizontalRuleAlignment == "left"
+                    ? new CssLength(0, "px") : new CssKeyword("auto");
+                CssValue rightMargin = horizontalRuleAlignment == "right"
+                    ? new CssLength(0, "px") : new CssKeyword("auto");
+                context.Assignment();
+                Add(new("margin-left", leftMargin, false, 0), CssOrigin.Author, false, new(), -1,
+                    presentationalHint: true);
+                context.Assignment();
+                Add(new("margin-right", rightMargin, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
             if (GetTableCellWidthHint(element, context) is { } cellWidth)

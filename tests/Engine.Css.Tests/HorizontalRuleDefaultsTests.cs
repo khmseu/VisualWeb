@@ -84,4 +84,45 @@ public sealed class HorizontalRuleDefaultsTests
             options: new() { MaxHorizontalRuleWidthAttributeCharacters = 0 },
             cancellationToken: Cancellation));
     }
+
+    [Fact]
+    public void HorizontalRuleAlignmentAttributeMapsSupportedValuesAndYieldsToAuthorCascade()
+    {
+        var document = HtmlParser.Parse(
+            "<!doctype html><hr id=left align=LEFT><hr id=right align=right>"
+            + "<hr id=center align=center><hr id=invalid align=middle><hr id=unsupported align=justify>",
+            cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+
+        var left = styles.Styles[document.GetElementById("left")!];
+        Assert.Equal(new CssLength(0, "px"), left["margin-left"]);
+        Assert.Equal(new CssKeyword("auto"), left["margin-right"]);
+
+        var right = styles.Styles[document.GetElementById("right")!];
+        Assert.Equal(new CssKeyword("auto"), right["margin-left"]);
+        Assert.Equal(new CssLength(0, "px"), right["margin-right"]);
+
+        foreach (var id in new[] { "center", "invalid", "unsupported" })
+        {
+            var style = styles.Styles[document.GetElementById(id)!];
+            Assert.Equal(new CssKeyword("auto"), style["margin-left"]);
+            Assert.Equal(new CssKeyword("auto"), style["margin-right"]);
+        }
+
+        var overridden = CssStyleEngine.Compute(document, [new("#left{margin-left:12px;margin-right:15px}")],
+            cancellationToken: Cancellation);
+        Assert.Equal(new CssLength(12, "px"), overridden.Styles[document.GetElementById("left")!]["margin-left"]);
+        Assert.Equal(new CssLength(15, "px"), overridden.Styles[document.GetElementById("left")!]["margin-right"]);
+    }
+
+    [Fact]
+    public void HorizontalRuleAlignmentAttributeCountsBothHintAssignments()
+    {
+        var document = HtmlParser.Parse("<!doctype html><hr align=left>",
+            cancellationToken: Cancellation).Document;
+
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(document,
+            includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
+    }
 }

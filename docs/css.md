@@ -519,8 +519,12 @@ margins map the standard logical margins to physical sides in this LTR subset.
 The `width` attribute maps HTML dimension values to the CSS `width` property
 at the author presentational-hint origin, including zero and percentages, under
 the bounded aggregate `MaxHorizontalRuleWidthAttributeCharacters` raw
-UTF-16-unit limit. Author CSS overrides the hint. The presentational hints
-for legacy `align`, `color`, `noshade` and `size` remain unsupported.
+UTF-16-unit limit. The `align` attribute accepts ASCII-case-insensitive
+`left`, `right` and `center`, mapping to physical horizontal margins at the
+same origin: `left` uses zero/auto, `right` uses auto/zero, and `center` uses
+auto/auto. Author CSS overrides both hints. Presentational hints for
+legacy `color`, `noshade` and `size`, and other `align` values, remain
+unsupported.
 
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`) style `listing`, `xmp` and `plaintext` like `pre`: block

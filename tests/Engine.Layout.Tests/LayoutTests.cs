@@ -1320,6 +1320,25 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void HorizontalRuleAlignmentAttributePositionsExplicitWidth()
+    {
+        const string html =
+            "<hr id=left align=left width=20><hr id=right align=right width=20>"
+            + "<hr id=center align=center width=20><hr id=overridden align=left width=20>";
+        var document = HtmlParser.Parse("<!doctype html>" + html, cancellationToken: Cancellation).Document;
+        var styles = CssStyleEngine.Compute(document,
+            [new("body{margin:0}hr{font-size:10px;line-height:10px}#overridden{margin-left:10px;margin-right:auto}")],
+            cancellationToken: Cancellation);
+        var root = StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 200,
+            cancellationToken: Cancellation).Root!;
+
+        Assert.Equal(0, Find(root, "left").BorderBox.X);
+        Assert.Equal(78, Find(root, "right").BorderBox.X);
+        Assert.Equal(39, Find(root, "center").BorderBox.X);
+        Assert.Equal(10, Find(root, "overridden").BorderBox.X);
+    }
+
+    [Fact]
     public void TableColumnWidthAttributeAppliesToEveryTrackInItsSpan()
     {
         const string html = """
