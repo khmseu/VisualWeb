@@ -17,10 +17,29 @@ den Attributscan. CSS (1.346), Layout (1.001), Solution-Build (0 Warnungen/
 Fehler), Solution-Volltest (16.581), Formatverifikation und `git diff --check`
 bestehen lokal. Featurecommit `23609d6` ist gepusht; Linux, Windows
 confinement und CodeQL bestehen (Runs 43126817154, 43126816817 und
-43126816471). Pass 1 ist abgeschlossen; neun Inkremente bleiben. Der lokale
+43126816471). Pass 1 ist abgeschlossen. Pass 2 ergaenzt `hr[align]` fuer
+ASCII-case-insensitive `left`, `right` und `center` als physische
+Horizontalmargen-Hinweise. CSS (1.348), Layout (1.002), Solution-Build
+(0 Warnungen/Fehler), Solution-Volltest (16.584), Formatverifikation und
+`git diff --check` bestehen. Featurecommit `d203532` ist gepusht; Linux,
+Windows confinement und CodeQL bestehen (Runs 43130981709, 43130981534 und
+43130981386). Auch der Dokumentationscommit `6b42d5d` besteht in Linux,
+Windows confinement und Push on main (Runs 43128251676, 43128251643 und
+43128250644). Pass 2 ist abgeschlossen; acht Inkremente bleiben. Der lokale
 HTML-Standard wurde am 2026-11-07 geprueft; kein Cache-Refresh war
 erforderlich. Siehe
-[KP-305](./Kontextprotokoll.md#kp-305---pass-1-hr-width).
+[KP-305](./Kontextprotokoll.md#kp-305---pass-1-hr-width),
+[KP-306](./Kontextprotokoll.md#kp-306---pass-1-commit-push-und-ci) und
+[KP-307](./Kontextprotokoll.md#kp-307---pass-2-hr-align).
+
+Pass 3 fuegt den HTML-Presentational-Hint fuer `hr[color]` und `hr[noshade]`
+als vier CSS-Border-Side-Style-Longhands hinzu und mappt gueltige
+`hr[color]`-Werte auf CSS `color`. Eine eigene aggregierte UTF-16-Grenze
+begrenzt die Attributwerte; `hr[size]` bleibt unsupported. CSS (1.350),
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.586),
+Formatverifikation und `git diff --check` bestehen lokal. Commit, Push und
+Remote-CI stehen aus; danach bleiben sieben angeforderte Inkremente.
+Siehe [KP-308](./Kontextprotokoll.md#kp-308---pass-3-hr-color-und-noshade).
 
 Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS

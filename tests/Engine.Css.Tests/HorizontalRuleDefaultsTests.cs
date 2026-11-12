@@ -125,4 +125,69 @@ public sealed class HorizontalRuleDefaultsTests
         Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(document,
             includeUserAgent: false, options: new() { MaxAssignments = 1 }, cancellationToken: Cancellation));
     }
+
+    [Fact]
+    public void HorizontalRuleColorAndNoShadeHintsSetSolidBordersAndLegacyColor()
+    {
+        var document = HtmlParser.Parse(
+            "<!doctype html><hr id=color color=red><hr id=noshade noshade>"
+            + "<hr id=empty color=''><hr id=transparent color=transparent><hr id=plain>",
+            cancellationToken: Cancellation).Document;
+        Assert.Equal(string.Empty, document.GetElementById("noshade")!.GetAttribute("noshade"));
+        var styles = CssStyleEngine.Compute(document, cancellationToken: Cancellation);
+        Assert.Empty(styles.Diagnostics);
+
+        var color = styles.Styles[document.GetElementById("color")!];
+        Assert.Equal(new CssColor(255, 0, 0), color["color"]);
+        foreach (var side in new[] { "top", "right", "bottom", "left" })
+        { Assert.Equal(new CssKeyword("solid"), color[$"border-{side}-style"]); }
+
+        var noShade = styles.Styles[document.GetElementById("noshade")!];
+        Assert.Equal(new CssColor(128, 128, 128), noShade["color"]);
+        Assert.Equal(new CssKeyword("solid"), noShade["border-top-style"]);
+
+        foreach (var id in new[] { "empty", "transparent" })
+        {
+            var rule = styles.Styles[document.GetElementById(id)!];
+            Assert.Equal(new CssColor(128, 128, 128), rule["color"]);
+            Assert.Equal(new CssKeyword("solid"), rule["border-top-style"]);
+        }
+
+        var plain = styles.Styles[document.GetElementById("plain")!];
+        Assert.Equal(new CssColor(128, 128, 128), plain["color"]);
+        Assert.Equal(new CssKeyword("inset"), plain["border-top-style"]);
+
+        var overridden = CssStyleEngine.Compute(document,
+            [new("#color{color:blue;border-style:inset}")], cancellationToken: Cancellation);
+        var overriddenRule = overridden.Styles[document.GetElementById("color")!];
+        Assert.Equal(new CssColor(0, 0, 255), overriddenRule["color"]);
+        Assert.Equal(new CssKeyword("inset"), overriddenRule["border-top-style"]);
+    }
+
+    [Fact]
+    public void HorizontalRuleColorHintUsesAggregateAndAssignmentLimits()
+    {
+        var oneRule = HtmlParser.Parse("<!doctype html><hr id=rule color=red>",
+            cancellationToken: Cancellation).Document;
+        var twoRules = HtmlParser.Parse("<!doctype html><hr color=red><hr color=blue>",
+            cancellationToken: Cancellation).Document;
+        var transparentRule = HtmlParser.Parse("<!doctype html><hr color=transparent>",
+            cancellationToken: Cancellation).Document;
+
+        Assert.Equal(new CssColor(255, 0, 0),
+            CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+                options: new() { MaxHorizontalRuleColorAttributeCharacters = 3, MaxAssignments = 5 },
+                cancellationToken: Cancellation).Styles[oneRule.GetElementById("rule")!]["color"]);
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(twoRules, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleColorAttributeCharacters = 6 },
+            cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(transparentRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleColorAttributeCharacters = 10 },
+            cancellationToken: Cancellation));
+        Assert.Throws<CssLimitException>(() => CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+            options: new() { MaxAssignments = 4 }, cancellationToken: Cancellation));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CssStyleEngine.Compute(oneRule, includeUserAgent: false,
+            options: new() { MaxHorizontalRuleColorAttributeCharacters = 0 },
+            cancellationToken: Cancellation));
+    }
 }

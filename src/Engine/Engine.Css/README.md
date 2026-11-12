@@ -32,9 +32,15 @@ CSS `width` hint under the independent aggregate raw UTF-16 limit
 HTML `hr[align]` accepts ASCII-case-insensitive `left`, `right` and `center`,
 mapping to the existing physical horizontal margins (zero/auto for left or
 right, auto/auto for center); author CSS overrides the hints.
+The presence of `hr[color]` or `hr[noshade]` maps to a solid border style.
+`hr[color]` values additionally use the legacy-color algorithm under the
+independent aggregate raw UTF-16 limit
+`MaxHorizontalRuleColorAttributeCharacters`; empty and `transparent` values
+leave the color unchanged. Author CSS overrides both hints.
 The HTML `hr` UA rule sets gray `color`, a 1px inset border, 0.5em vertical
 margins and automatic horizontal margins. Legacy `hr` attribute hints remain
-unsupported except for `width` and the supported alignment values.
+unsupported except for `width`, the supported alignment values, and the
+documented `color`/`noshade` subset. `size` remains unsupported.
 HTML `body text` uses the same legacy-color algorithm as a bounded inherited
 `color` presentational hint. Its independent per-computation raw UTF-16 limit
 is `MaxBodyTextColorAttributeCharacters`.
@@ -60,7 +66,8 @@ registered faces; there is no implicit fallback, font loading, synthesis or CSS
 `MaxTableCellHeightAttributeCharacters`,
 `MaxTableRowHeightAttributeCharacters`,
 `MaxTableColumnWidthAttributeCharacters`,
-`MaxHorizontalRuleWidthAttributeCharacters` and
+`MaxHorizontalRuleWidthAttributeCharacters`,
+`MaxHorizontalRuleColorAttributeCharacters` and
 `MaxTableCellWidthAttributeCharacters` limits count raw UTF-16 attribute units,
 including invalid values, before parsing.
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)

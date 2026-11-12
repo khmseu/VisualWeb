@@ -599,6 +599,27 @@ public static class CssStyleEngine
                 Add(new("margin-right", rightMargin, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
             }
+            var horizontalRuleColorAttribute = element.LocalName == "hr" ? element.GetAttribute("color") : null;
+            if (element.LocalName == "hr"
+                && (horizontalRuleColorAttribute is not null || element.GetAttribute("noshade") is not null))
+            {
+                foreach (var side in new[] { "top", "right", "bottom", "left" })
+                {
+                    context.Assignment();
+                    Add(new($"border-{side}-style", new CssKeyword("solid"), false, 0), CssOrigin.Author, false,
+                        new(), -1, presentationalHint: true);
+                }
+            }
+            if (horizontalRuleColorAttribute is not null)
+            {
+                context.HorizontalRuleColorCharacters(horizontalRuleColorAttribute.Length);
+                if (HtmlLegacyColor.Parse(horizontalRuleColorAttribute, context.Cancellation) is { } horizontalRuleColor)
+                {
+                    context.Assignment();
+                    Add(new("color", horizontalRuleColor, false, 0), CssOrigin.Author, false, new(), -1,
+                        presentationalHint: true);
+                }
+            }
             if (GetTableCellWidthHint(element, context) is { } cellWidth)
             {
                 context.Assignment();

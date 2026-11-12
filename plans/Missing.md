@@ -1327,6 +1327,31 @@ Windows confinement
 and CodeQL
 ([43126816471](https://github.com/khmseu/VisualWeb/actions/runs/43126816471))
 pass. Pass 1 is complete; nine increments remain in this request.
+
+Pass 2 supports the standard `hr[align]` values `left`, `right` and `center`
+as physical horizontal-margin presentational hints. Invalid and unsupported
+values add no hint, and ordinary author CSS still overrides the attributes.
+CSS (1,348), Layout (1,002), the zero-warning solution build, all 16,584
+solution tests, format verification and `git diff --check` pass locally.
+Commit `d203532` is pushed; Linux development
+([43130981709](https://github.com/khmseu/VisualWeb/actions/runs/43130981709)),
+Windows confinement
+([43130981534](https://github.com/khmseu/VisualWeb/actions/runs/43130981534))
+and Push on main/CodeQL
+([43130981386](https://github.com/khmseu/VisualWeb/actions/runs/43130981386))
+pass. Pass 2 is complete; eight increments remain.
+
+Pass 3 adds the standard solid-border hint for `hr[color]` and `hr[noshade]`,
+and maps valid `hr[color]` legacy values to CSS `color`. The four border-side
+longhands are emitted individually so they enter the supported cascade;
+ordinary author CSS overrides them. Color-attribute scanning has an independent
+aggregate raw UTF-16 limit. Empty and invalid color values leave `color`
+unchanged while attribute presence still triggers the solid border. `hr[size]`
+remains unsupported. CSS (1,350), the zero-warning solution build, all 16,586
+solution tests, format verification and `git diff --check` pass locally.
+Commit, push and remote CI are pending; seven increments will remain after
+Pass 3 completes.
+
 This ten-pass request begins by painting CSS `outset` borders with the
 opposite deterministic light/dark sides, covering the common raised-edge
 effect. `groove`, `ridge`, dashed, dotted and double border styles remain

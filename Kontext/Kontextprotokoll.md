@@ -8188,3 +8188,73 @@ diesen Commit erfolgreich.
 
 **Status:** Pass 1 ist committed, gepusht und CI-geprueft; neun angeforderte
 Inkremente verbleiben.
+
+### KP-307 - Pass 2: hr align
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Implementierungs- und CI-Nachtrag zum laufenden
+  Zehn-Pass-Auftrag.
+- Quellen: `specs/cache/html.html:102288-102317` (HTML 15.3.11; Cache laut
+  Manifest am 2026-11-07 geprueft), Commit `d2035326c85b625998c64f361bc1cc1dcdea75f9`,
+  CSS/Layout-Tests und GitHub Actions Runs
+  [43130981709](https://github.com/khmseu/VisualWeb/actions/runs/43130981709),
+  [43130981534](https://github.com/khmseu/VisualWeb/actions/runs/43130981534)
+  sowie [43130981386](https://github.com/khmseu/VisualWeb/actions/runs/43130981386).
+- Bezug: Fortsetzung nach KP-306; zwei der zehn angeforderten Inkremente sind
+  abgeschlossen.
+
+**Auswahl (belegt):** Der lokale HTML-Rendering-Standard definiert
+`hr[align=left|right|center i]` als Presentational Hints auf den physischen
+Horizontalmargen. Die Implementierung nutzt den vorhandenen bounded
+Blocklayoutpfad; eine neue Layoutregel oder ein zusaetzlicher Attributscan
+war nicht erforderlich. Dies war eine technische Auswahl, keine neue
+Nutzerentscheidung.
+
+**Umsetzung (belegt):** Nur `left`, `right` und `center` werden
+ASCII-case-insensitive akzeptiert. Links/rechts verwenden null bzw. auto,
+zentriert verwendet auto auf beiden Seiten. Andere Werte, darunter `middle`
+und `justify`, erzeugen keinen Hinweis. Autoren-CSS kann die Hinweise wie
+ueblich ueberschreiben.
+
+**Validierung (belegt):** CSS (1.348) und Layout (1.002) bestehen; der
+Solution-Build hat null Warnungen/Fehler, alle 16.584 Solution-Tests,
+Formatverifikation und `git diff --check` bestehen. Commit `d203532` ist
+gepushed. Linux, Windows confinement und Push on main/CodeQL sind erfolgreich.
+Der vorherige Kontextcommit `6b42d5d` besteht ebenfalls alle drei Workflows.
+
+**Status:** Pass 2 ist committed, gepusht und CI-geprueft; acht angeforderte
+Inkremente verbleiben.
+
+### KP-308 - Pass 3: hr color und noshade
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Fortsetzung des laufenden Zehn-Pass-Auftrags.
+- Quellen: `specs/cache/html.html:102288-102317` (HTML 15.3.11; Manifest-
+  Pruefdatum 2026-11-07), `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `tests/Engine.Css.Tests/HorizontalRuleDefaultsTests.cs` und lokale
+  Validierungsläufe.
+- Bezug: KP-307; Pass 3 des Zehn-Pass-Auftrags.
+
+**Umsetzung (belegt):** `hr[color]` und `hr[noshade]` setzen alle vier
+Border-Side-Style-Eigenschaften auf `solid`; ein gueltiger `hr[color]`-
+Legacywert setzt zusaetzlich die CSS-Farbe. Ein eigener aggregierter
+UTF-16-Zaehler begrenzt die Farbwerte. Leere/ungueltige Werte beeinflussen
+die Farbe nicht, die Attributpraesenz loest aber weiterhin den solid-Hinweis
+aus. `hr[size]` bleibt unsupported.
+
+**Fehlerdiagnose (belegt):** Der erste fokussierte Test schlug am berechneten
+`border-top-style` fehl. Die Attributpraesenz war korrekt geparst; Ursache war,
+dass ein direkt eingespeister `border-style`-Shorthand in diesem Stilpfad nicht
+wie Deklarations-Shorthands in Longhands expandiert wird. Die Implementierung
+erzeugt nun die vier Longhands einzeln und zaehlt jede Zuordnung gegen das
+bestehende Assignment-Budget.
+
+**Validierung (belegt):** Der fokussierte HR-Testsatz besteht (7), der gesamte
+CSS-Satz besteht (1.350), der Solution-Build besteht mit null Warnungen/
+Fehlern und alle 16.586 Solution-Tests bestehen. Formatverifikation und
+`git diff --check` bestehen. Commit, Push und Remote-CI stehen noch aus.
+
+**Status:** Lokal validiert; Pass 3 bleibt bis Commit, Push und erfolgreicher
+CI offen. Danach verbleiben sieben angeforderte Inkremente.

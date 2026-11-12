@@ -523,8 +523,13 @@ UTF-16-unit limit. The `align` attribute accepts ASCII-case-insensitive
 `left`, `right` and `center`, mapping to physical horizontal margins at the
 same origin: `left` uses zero/auto, `right` uses auto/zero, and `center` uses
 auto/auto. Author CSS overrides both hints. Presentational hints for
-legacy `color`, `noshade` and `size`, and other `align` values, remain
-unsupported.
+`color` and `noshade` now set a solid border style when either attribute is
+present; a valid `color` value also maps through the HTML legacy-color
+algorithm as the `color` property. Color scanning has its own aggregate
+`MaxHorizontalRuleColorAttributeCharacters` raw UTF-16-unit limit, including
+empty and invalid values. Empty and `transparent` colors do not override the
+UA color, but attribute presence still selects a solid border. Author CSS
+overrides both hints. `size` and other `align` values remain unsupported.
 
 The [HTML flow-content defaults](https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3)
 (local ID `html`) style `listing`, `xmp` and `plaintext` like `pre`: block
