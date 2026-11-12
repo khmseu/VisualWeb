@@ -290,6 +290,12 @@ equal pixel `padding-top`, `padding-right`, `padding-bottom` and `padding-left`
 hints on the table's corresponding `td`/`th` cells. The table attribute is
 counted once toward its independent aggregate raw UTF-16 limit, including
 invalid values; ordinary author CSS overrides the hint.
+HTML `table[border]` maps a parsed non-negative integer as a presentational
+hint to all four table border widths in pixels; parse errors default to 1px.
+When the value is nonzero or parsing fails, the UA table rules add outset table
+borders and 1px inset borders on corresponding cells; zero does not activate
+those rules. Its aggregate raw UTF-16 scan has an independent limit, and
+ordinary author CSS overrides the hint and UA rules.
 The boolean `nowrap` attribute on `td`/`th` maps by presence to the existing
 `white-space:nowrap` text flow; its value is ignored and ordinary author CSS
 overrides the hint. `nowrap` on other table parts remains unsupported.
@@ -329,10 +335,10 @@ cell alignments, nonzero cell margins, cell maximum height,
 nonautomatic table/row-group heights, row heights other than auto or
 nonnegative pixels, row min/max heights, other row/group sizing and decorations,
 and legacy presentation attributes other than the supported table
-`width`/`cellspacing`/`cellpadding` hints and cell `nowrap`/pixel `height`/`width`
-(`height` on other table parts, percentage cell/row heights, percentage cell
-widths, `width` on other table parts, `border`, `nowrap` on other table parts,
-plus `width` on non-table parts). The table's
+`width`/`cellspacing`/`cellpadding`/`border` hints and cell `nowrap`/pixel
+`height`/`width` (`height` on other table parts, percentage cell/row heights,
+percentage cell widths, `width` on other table parts, `border`/`nowrap` on
+other table parts, plus `width` on non-table parts). The table's
 ASCII-case-insensitive
 `align=center` hint centers it using auto inline margins in the horizontal LTR
 subset. Cell `td`/`th` `align` attributes support ASCII-case-insensitive

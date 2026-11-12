@@ -259,6 +259,13 @@ the independent aggregate raw UTF-16 limit
 `MaxTableCellPaddingAttributeCharacters`, including invalid values. The hint
 uses the author presentational-hint cascade, so ordinary author CSS overrides
 it; `cellpadding` on other elements remains unsupported.
+HTML `table[border]` maps its non-negative-integer value as a presentational
+hint to all four table border widths in pixels; parse errors default to 1px.
+When the value is nonzero or parsing fails, the UA table rules add outset
+table borders and 1px inset borders to corresponding cells; zero does not
+activate those rules. The aggregate raw UTF-16 scan has its own
+`MaxTableBorderAttributeCharacters` limit, and author CSS overrides both the
+hint and UA rules. `border` on other elements remains unsupported.
 HTML `td[nowrap]` and `th[nowrap]` map the boolean attribute's presence to
 `white-space:nowrap` through the same author hint cascade. The attribute's
 value is ignored; ordinary author CSS can override the hint. Other table

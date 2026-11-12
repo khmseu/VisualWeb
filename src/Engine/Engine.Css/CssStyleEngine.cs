@@ -153,6 +153,15 @@ public static class CssStyleEngine
             && CssText.Lower(align) == "center";
     }
 
+    /// <summary>Reports whether the bounded HTML table border hint applies.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/tables.html#tables-2">table border rendering</see>.</remarks>
+    public static bool HasSupportedTableBorderHint(DomElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.LocalName == "table" && element.GetAttribute("border") is not null;
+    }
+
     /// <summary>Reports whether a supported alignment hint applies to an HTML table cell.</summary>
     /// <remarks>Spec: html;
     /// <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table-cell alignment hints</see>.</remarks>
@@ -276,6 +285,25 @@ public static class CssStyleEngine
             ? GetValignHint(group) : null;
     }
 
+    private static DomElement? GetTableBorderCellRuleTable(DomElement element, out CssSpecificity specificity)
+    {
+        specificity = default;
+        if (element.LocalName is not ("td" or "th")
+            || element.ParentNode is not DomElement { LocalName: "tr" } row) { return null; }
+        if (row.ParentNode is DomElement { LocalName: "table" } table)
+        {
+            specificity = new(0, 1, 3);
+            return table;
+        }
+        if (row.ParentNode is DomElement { LocalName: "thead" or "tbody" or "tfoot" } group
+            && group.ParentNode is DomElement { LocalName: "table" } groupTable)
+        {
+            specificity = new(0, 1, 4);
+            return groupTable;
+        }
+        return null;
+    }
+
     private static string? GetValignHint(DomElement element)
     {
         if (element.LocalName is not ("td" or "th" or "thead" or "tbody" or "tfoot" or "tr")) { return null; }
@@ -297,6 +325,24 @@ public static class CssStyleEngine
         if (!TryParseNonNegativeInteger(cellspacing, context.Cancellation, out var value)) { return null; }
         var length = new CssLength(value, "px");
         return new(length, length);
+    }
+
+    private readonly record struct TableBorderHint(CssLength Width, bool HasVisibleBorder);
+
+    private static TableBorderHint? GetTableBorderHint(DomElement table, CssContext context,
+        Dictionary<DomElement, TableBorderHint?> cache)
+    {
+        if (cache.TryGetValue(table, out var hint)) { return hint; }
+        hint = null;
+        if (table.LocalName == "table" && table.GetAttribute("border") is { } border)
+        {
+            context.TableBorderCharacters(border.Length);
+            var parsed = TryParseNonNegativeInteger(border, context.Cancellation, out var value, "table border");
+            if (!parsed) { value = 1; }
+            hint = new TableBorderHint(new CssLength(value, "px"), !parsed || value != 0);
+        }
+        cache.Add(table, hint);
+        return hint;
     }
 
     private static CssLength? GetTableWidthHint(DomElement element, CssContext context)
@@ -501,13 +547,19 @@ public static class CssStyleEngine
         var rules = new List<StyleRule>();
         var order = 0;
         var sourceCount = 0;
-        if (includeUserAgent) { Compile(new(UserAgentStyleSheet, CssOrigin.UserAgent)); }
+        var userAgentOrder = -1;
+        if (includeUserAgent)
+        {
+            Compile(new(UserAgentStyleSheet, CssOrigin.UserAgent));
+            userAgentOrder = order - 1;
+        }
         foreach (var source in sources ?? []) { Compile(source); }
         var bodyLinkColors = GetBodyLinkColorHints(document, context);
         var linkSelector = bodyLinkColors.Count == 0 ? null
             : CssSelectorList.Compile(CssSyntax.Tokens(":link", context), context);
         var styles = new Dictionary<DomElement, CssComputedStyle>();
         var tableCellPaddingHints = new Dictionary<DomElement, CssLength?>();
+        var tableBorderHints = new Dictionary<DomElement, TableBorderHint?>();
         var tableAncestors = new Dictionary<DomElement, DomElement?>();
         foreach (var node in document.Descendants())
         {
@@ -561,6 +613,24 @@ public static class CssStyleEngine
                 context.Assignment();
                 Add(new("width", tableWidth, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
+            }
+            if (element.LocalName == "table" && GetTableBorderHint(element, context, tableBorderHints) is { } tableBorder)
+            {
+                foreach (var side in new[] { "top", "right", "bottom", "left" })
+                {
+                    context.Assignment();
+                    Add(new($"border-{side}-width", tableBorder.Width, false, 0), CssOrigin.Author, false,
+                        new(), -1, presentationalHint: true);
+                }
+                if (includeUserAgent && tableBorder.HasVisibleBorder)
+                {
+                    foreach (var side in new[] { "top", "right", "bottom", "left" })
+                    {
+                        context.Assignment();
+                        Add(new($"border-{side}-style", new CssKeyword("outset"), false, 0), CssOrigin.UserAgent,
+                            false, new(0, 1, 1), userAgentOrder);
+                    }
+                }
             }
             if (GetTableCellHeightHint(element, context) is { } cellHeight)
             {
@@ -656,6 +726,23 @@ public static class CssStyleEngine
                 context.Assignment();
                 Add(new("width", cellWidth, false, 0), CssOrigin.Author, false, new(), -1,
                     presentationalHint: true);
+            }
+            var borderRuleSpecificity = default(CssSpecificity);
+            var borderRuleTable = includeUserAgent
+                ? GetTableBorderCellRuleTable(element, out borderRuleSpecificity)
+                : null;
+            if (borderRuleTable is not null
+                && GetTableBorderHint(borderRuleTable, context, tableBorderHints) is { HasVisibleBorder: true })
+            {
+                foreach (var side in new[] { "top", "right", "bottom", "left" })
+                {
+                    context.Assignment();
+                    Add(new($"border-{side}-width", new CssLength(1, "px"), false, 0), CssOrigin.UserAgent, false,
+                        borderRuleSpecificity, userAgentOrder);
+                    context.Assignment();
+                    Add(new($"border-{side}-style", new CssKeyword("inset"), false, 0), CssOrigin.UserAgent, false,
+                        borderRuleSpecificity, userAgentOrder);
+                }
             }
             if (element.LocalName is ("td" or "th")
                 && tableAncestor is { } table

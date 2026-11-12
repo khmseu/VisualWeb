@@ -8320,5 +8320,55 @@ bestehen. Der Solution-Build hat null Warnungen/Fehler, alle 16.589
 Solution-Tests, Formatverifikation und `git diff --check` bestehen. Commit,
 Push und Remote-CI stehen aus.
 
-**Status:** Implementiert und lokal validiert; Pass 4 bleibt bis Commit, Push
-und erfolgreicher CI offen.
+**Status zum Validierungszeitpunkt:** Implementiert und lokal validiert; Commit,
+Push und CI standen noch aus. Der spaetere Nachtrag KP-311 dokumentiert den
+Abschluss.
+
+### KP-311 - Pass 4: CI gruen
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Remote-CI-Nachtrag zu KP-310.
+- Quellen: Commit `91f7b7f` und GitHub Actions Runs
+  [43139094812](https://github.com/khmseu/VisualWeb/actions/runs/43139094812),
+  [43139094632](https://github.com/khmseu/VisualWeb/actions/runs/43139094632)
+  sowie [43139094157](https://github.com/khmseu/VisualWeb/actions/runs/43139094157).
+- Bezug: KP-310; vier von zehn angeforderten Inkrementen sind abgeschlossen.
+
+**Git/CI (belegt):** Commit `91f7b7f` ist nach `main` gepusht. Linux
+development, Windows confinement und CodeQL sind fuer diesen Commit
+erfolgreich.
+
+**Status:** Pass 4 ist committed, gepusht und CI-geprueft; sechs angeforderte
+Inkremente verbleiben.
+
+### KP-312 - Pass 5: table border
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: laufend dokumentiert.
+- Quellen: `plans/Missing.md` (Tabellenstatus und Pass 5), `docs/text-layout.md`
+  (Tabellenlimits), `src/Engine/Engine.Css/CssStyleEngine.cs`,
+  `src/Engine/Engine.Layout/TableLayout.cs`, fokussierte Regressionen und
+  `specs/cache/html.html#tables-2` / `#tables-3`. Der lokale HTML-Cache wurde
+  am 2026-11-07 geprueft und war nicht refresh-faellig.
+- Bezug: Fortsetzung des Zehn-Inkrement-Auftrags nach KP-311; Pass 5 von zehn.
+
+**Auswahl (belegt):** `caption-side:bottom` war bereits implementiert und wurde
+nicht wiederholt. Stattdessen wurde `table[border]` gewaehlt, weil der
+Tabellenstatus und die Layoutdokumentation es noch als unsupported fuehrten.
+
+**Umsetzung:** Nichtnegative Integer werden als Autor-Presentational-Hints auf
+alle vier Tabellen-Borderbreiten abgebildet; Parsefehler ergeben 1px. Davon
+getrennt aktivieren nichtnull/ungueltige Werte die bedingten UA-Regeln fuer
+outset Tabellenrahmen und 1px inset Zellenrahmen. Null aktiviert die UA-Regeln
+nicht. UA-Stile bleiben disablebar und spaetere UA-Regeln behalten ihre
+Quellreihenfolge; das Attribut hat ein eigenes aggregiertes UTF-16-Limit.
+
+**Validierung (belegt):** CSS (1.360), Layout (1.004) und Paint (90)
+fokussierte Tests bestehen; Solution-Build besteht mit null Warnungen und
+Fehlern, alle 16.599 Solution-Tests, Formatverifikation und `git diff --check`
+bestehen ebenfalls.
+
+**Status:** Implementiert und lokal validiert; Commit, Push und Remote-CI
+stehen aus. Pass 5 ist lokal abgeschlossen; fuenf Inkremente verbleiben.

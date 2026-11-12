@@ -133,6 +133,10 @@ The table `cellpadding` hint maps parsed non-negative integers to equal pixel
 padding on all four sides of corresponding cells. Cell padding participates in
 the existing intrinsic sizing and arrangement; `cellpadding` on other table
 parts remains unsupported.
+The table `border` hint maps non-negative integers to all four table border
+widths, with parse errors defaulting to 1px. When nonzero or invalid, UA table
+rules use outset table borders and 1px inset cell borders; zero does not
+activate those rules. `border` on other table parts remains unsupported.
 The boolean `nowrap` attribute on `td`/`th` maps by presence to the existing
 nonwrapping text flow; other table parts' `nowrap` attributes remain
 unsupported.

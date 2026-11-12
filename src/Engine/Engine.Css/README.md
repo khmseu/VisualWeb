@@ -12,6 +12,11 @@ raw UTF-16 limit, `MaxTableBackgroundColorAttributeCharacters`.
 HTML table `cellpadding` maps successfully parsed non-negative integers to all
 four padding properties of corresponding `td`/`th` cells. Its independent
 aggregate raw UTF-16 limit is `MaxTableCellPaddingAttributeCharacters`.
+HTML `table[border]` maps non-negative integer values as presentational hints
+to all four table border widths; parse errors default to 1px. When nonzero or
+invalid, UA table rules add outset table and 1px inset cell border styles.
+Zero does not activate those rules. Its independent aggregate raw UTF-16 limit
+is `MaxTableBorderAttributeCharacters`.
 HTML `td`/`th` `nowrap` maps boolean-attribute presence to `white-space:nowrap`
 at the author presentational-hint origin.
 HTML `td`/`th` nonzero `height` dimensions map to the CSS `height` hint, under

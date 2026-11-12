@@ -17,12 +17,13 @@ public sealed class PaintTests
     private static readonly CssColor Green = new(0, 128, 0);
     private static string FontPath => Path.Combine(AppContext.BaseDirectory, "Data", "NotoSans.ttf");
 
-    private static DisplayList Page(string html, string css = "", PaintOptions? options = null)
+    private static DisplayList Page(string html, string css = "", PaintOptions? options = null,
+        bool includeUserAgent = false)
     {
         var document = HtmlParser.Parse("<!doctype html>" + html, cancellationToken: Cancellation).Document;
         var styles = CssStyleEngine.Compute(document,
             [new("html,body,div,p{display:block} head{display:none} *{margin:0; font-size:10px;line-height:10px}" + css)],
-            includeUserAgent: false, cancellationToken: Cancellation);
+            includeUserAgent, cancellationToken: Cancellation);
         var layout = StaticLayout.Layout(document, styles, new MetricsShaper(), 100, 100, cancellationToken: Cancellation);
         return DisplayListBuilder.Build(layout, styles, options, Cancellation);
     }
@@ -709,6 +710,20 @@ public sealed class PaintTests
         Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(frame, 8, 15));
         Assert.Equal(((byte)192, (byte)192, (byte)192, (byte)255), Pixel(frame, 0, 8));
         Assert.Equal(((byte)64, (byte)64, (byte)64, (byte)255), Pixel(frame, 15, 8));
+    }
+
+    [Fact]
+    public void TableBorderAttributePaintsTheEquivalentOutsetAndInsetBorders()
+    {
+        const string content = "<table><tr><td>x</td></tr></table>";
+        const string tableDisplay =
+            "table{display:table}tbody{display:table-row-group}tr{display:table-row}td{display:table-cell}";
+        var fromAttribute = Page("<table border=1><tr><td>x</td></tr></table>", tableDisplay,
+            includeUserAgent: true);
+        var fromCss = Page(content, tableDisplay + "table{border:1px outset}td{border:1px inset}",
+            includeUserAgent: true);
+
+        Assert.Equal(fromCss.Commands.OfType<FillRectangle>(), fromAttribute.Commands.OfType<FillRectangle>());
     }
 
     [Fact]

@@ -1194,6 +1194,28 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void TableBorderAttributeMatchesEquivalentCssAndZeroRemainsUnbordered()
+    {
+        const string html = "<table id=t><tr><td id=cell>x</td></tr></table>";
+        var attributeBorder = UnorderedList(
+            "<table id=t border=2><tr><td id=cell>x</td></tr></table>").Root!;
+        var cssBorder = UnorderedList(html, "table{border:2px outset}td{border:1px inset}").Root!;
+        foreach (var id in new[] { "t", "cell" })
+        {
+            Assert.Equal(Find(cssBorder, id).BorderBox, Find(attributeBorder, id).BorderBox);
+            Assert.Equal(Find(cssBorder, id).Content, Find(attributeBorder, id).Content);
+        }
+
+        var zeroBorder = UnorderedList(
+            "<table id=t border=0><tr><td id=cell>x</td></tr></table>").Root!;
+        var plain = UnorderedList(html).Root!;
+        Assert.Equal(Find(plain, "t").BorderBox, Find(zeroBorder, "t").BorderBox);
+        Assert.Equal(Find(plain, "cell").BorderBox, Find(zeroBorder, "cell").BorderBox);
+        Assert.Throws<UnsupportedLayoutException>(() =>
+            UnorderedList("<table><tbody border=1><tr><td>x</td></tr></tbody></table>"));
+    }
+
+    [Fact]
     public void InvalidTableCellpaddingLeavesDefaultCellPaddingAndCellAttributesRemainUnsupported()
     {
         var root = UnorderedList("""

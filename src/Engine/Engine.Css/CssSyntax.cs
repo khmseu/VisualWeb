@@ -51,6 +51,10 @@ public sealed record CssOptions
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/rendering.html#tables-2">table width hint</see> and
     /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values">dimension values</see>.</remarks>
     public int MaxTableWidthAttributeCharacters { get; init; } = 4 * 1024 * 1024;
+    /// <summary>Maximum aggregate raw UTF-16 units in table border attributes per style computation.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/tables.html#tables-2">table border rendering</see> and
+    /// <see href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-non-negative-integers">non-negative integers</see>.</remarks>
+    public int MaxTableBorderAttributeCharacters { get; init; } = 4 * 1024 * 1024;
     /// <summary>Maximum aggregate raw UTF-16 units in table bgcolor attributes per style computation.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/tables.html#tables-2">table background-color hints</see>.</remarks>
     public int MaxTableBackgroundColorAttributeCharacters { get; init; } = 4 * 1024 * 1024;
@@ -99,7 +103,8 @@ public sealed record CssOptions
             || MaxBodyTextColorAttributeCharacters <= 0 || MaxBodyLinkColorAttributeCharacters <= 0
             || MaxFontColorAttributeCharacters <= 0 || MaxFontFaceAttributeCharacters <= 0
             || MaxFontSizeAttributeCharacters <= 0 || MaxTableSpacingAttributeCharacters <= 0
-            || MaxTableWidthAttributeCharacters <= 0 || MaxTableBackgroundColorAttributeCharacters <= 0
+            || MaxTableWidthAttributeCharacters <= 0 || MaxTableBorderAttributeCharacters <= 0
+            || MaxTableBackgroundColorAttributeCharacters <= 0
             || MaxTableCellPaddingAttributeCharacters <= 0 || MaxTableCellHeightAttributeCharacters <= 0
             || MaxTableRowHeightAttributeCharacters <= 0 || MaxTableColumnWidthAttributeCharacters <= 0
             || MaxHorizontalRuleWidthAttributeCharacters <= 0 || MaxHorizontalRuleColorAttributeCharacters <= 0
@@ -137,6 +142,7 @@ internal sealed class CssContext
     private int fontSizeCharacters;
     private int tableSpacingCharacters;
     private int tableWidthCharacters;
+    private int tableBorderCharacters;
     private int tableBackgroundColorCharacters;
     private int tableCellPaddingCharacters;
     private int tableCellHeightCharacters;
@@ -237,6 +243,14 @@ internal sealed class CssContext
         if (length > Options.MaxTableWidthAttributeCharacters - tableWidthCharacters)
         { throw new CssLimitException("CSS table width attribute character limit exceeded."); }
         tableWidthCharacters += length;
+    }
+
+    internal void TableBorderCharacters(int length)
+    {
+        Cancellation.ThrowIfCancellationRequested();
+        if (length > Options.MaxTableBorderAttributeCharacters - tableBorderCharacters)
+        { throw new CssLimitException("CSS table border attribute character limit exceeded."); }
+        tableBorderCharacters += length;
     }
 
     internal void TableBackgroundColorCharacters(int length)

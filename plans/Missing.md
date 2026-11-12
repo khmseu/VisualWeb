@@ -936,7 +936,8 @@ findings on unchanged lines; all changed test files pass a targeted check.
 Basic canonical HTML tables now support automatic intrinsic column sizing,
 separate borders, one or two spacing lengths (one for both axes, or horizontal
 then vertical), the HTML `cellspacing`, nonzero `table[width]`,
-`table[cellpadding]`, and nonzero `td`/`th` `height` hints,
+`table[cellpadding]`, bounded `table[border]`, and nonzero `td`/`th` `height`
+hints,
 top-aligned text/block cells, and table/cell/row/group/column background colors
 and solid borders through ordinary paint flow. Table widths act as minima;
 header/footer groups are ordered around body groups.
@@ -952,8 +953,8 @@ constraints equally across tracks; the total column grid is capped by
 one caption, and bounded column/group tracks and widths are supported as
 documented. Anonymous/arbitrary CSS tables, collapsed borders, fixed layout,
 nested tables/widgets, percentages inside cells and other legacy presentation
-attributes (including `height` on other table parts, `border` and `nowrap`
-outside `td`/`th`) remain unsupported. See the
+attributes (including `height` on other table parts, `border` on table parts
+other than `table`, and `nowrap` outside `td`/`th`) remain unsupported. See the
 [exact supported scope and limits](../docs/text-layout.md#basic-automatic-tables).
 The table increment adds 32 regressions covering CSS, intrinsic/actual geometry,
 exact work limits and cancellation, native pixels, and local/process
@@ -1364,8 +1365,24 @@ above 1 set height to size minus 2 pixels. Without `color`/`noshade`, size 0
 and invalid values add no size hint. The scan has an independent aggregate raw
 UTF-16 limit. CSS (1,352), Layout (1,003), the zero-warning solution build, all
 16,589 solution tests, format verification and `git diff --check` pass locally.
-Commit, push and remote CI are pending; six increments will remain after
-Pass 4 completes.
+Commit `91f7b7f` is pushed; Linux development
+([43139094812](https://github.com/khmseu/VisualWeb/actions/runs/43139094812)),
+Windows confinement
+([43139094632](https://github.com/khmseu/VisualWeb/actions/runs/43139094632))
+and CodeQL
+([43139094157](https://github.com/khmseu/VisualWeb/actions/runs/43139094157))
+pass. Pass 4 is complete; six increments remain.
+
+Pass 5 implements bounded HTML `table[border]` rendering. Parsed
+non-negative integers become four table border-width presentational hints;
+parse errors default to 1px. When the value is nonzero or invalid, conditional
+UA rules add outset table borders and 1px inset borders on corresponding cells;
+zero does not activate those rules. The author-hint and UA origins remain
+separate, with later UA rules retaining their cascade order. CSS (1,360),
+Layout (1,004) and Paint (90) focused suites pass; the zero-warning solution
+build, all 16,599 solution tests, format verification and `git diff --check`
+pass locally. Commit, push and CI are pending. Pass 5 is complete; five
+increments remain.
 
 This ten-pass request begins by painting CSS `outset` borders with the
 opposite deterministic light/dark sides, covering the common raised-edge

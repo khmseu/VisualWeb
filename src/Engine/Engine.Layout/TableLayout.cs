@@ -619,8 +619,8 @@ public static partial class StaticLayout
                 || element.GetAttribute("height") is not null
                     && !CssStyleEngine.HasSupportedTableCellHeightHint(element)
                     && !CssStyleEngine.HasSupportedTableRowHeightHint(element)
-                || new[] { "border" }
-                    .Any(attribute => element.GetAttribute(attribute) is not null)
+                || element.GetAttribute("border") is not null
+                    && !CssStyleEngine.HasSupportedTableBorderHint(element)
                 || element.GetAttribute("nowrap") is not null
                     && !CssStyleEngine.HasSupportedTableCellNowrapHint(element)
                 || element.GetAttribute("cellpadding") is not null && element.LocalName != "table"

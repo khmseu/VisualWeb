@@ -50,10 +50,25 @@ Werte groesser als 1 die Hoehe auf size-2 px. Ohne `color`/`noshade` erzeugt
 size 0 keinen Hint; ungueltige Werte erzeugen immer keinen Size-Hint. Eine
 eigene aggregierte UTF-16-Grenze begrenzt den Scan. CSS (1.352), Layout
 (1.003), Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.589),
-Formatverifikation und `git diff --check` bestehen lokal. Commit, Push und
-Remote-CI stehen aus; danach bleiben sechs angeforderte Inkremente. Siehe
+Formatverifikation und `git diff --check` bestehen lokal. Commit `91f7b7f`
+ist gepusht; Linux, Windows confinement und CodeQL bestehen (Runs 43139094812,
+43139094632 und 43139094157). Pass 4 ist abgeschlossen; sechs angeforderte
+Inkremente bleiben. Siehe
 [KP-309](./Kontextprotokoll.md#kp-309---pass-4-waehlt-hr-size) und
-[KP-310](./Kontextprotokoll.md#kp-310---pass-4-hr-size-implementiert).
+[KP-310](./Kontextprotokoll.md#kp-310---pass-4-hr-size-implementiert) sowie
+[KP-311](./Kontextprotokoll.md#kp-311---pass-4-ci-gruen).
+
+Pass 5 implementiert begrenztes Rendering von HTML `table[border]`.
+Nichtnegative Integerwerte werden als presentational hints fuer alle vier
+Tabellenrahmenbreiten verwendet; Parsefehler ergeben 1px. Nur bei nichtnull
+oder ungueltigem Wert kommen die getrennten UA-Regeln fuer erhabene
+Tabellenraender und 1px eingesenkte Zellraender hinzu. Der Attributscan hat ein
+eigenes aggregiertes UTF-16-Limit; Autoren-CSS und UA-Kaskade bleiben getrennt.
+CSS (1.360), Layout (1.004), Paint (90) und der Solution-Build (0 Warnungen/
+Fehler), Solution-Volltest (16.599), Formatverifikation und `git diff --check`
+bestehen. Commit, Push und CI stehen noch aus. Pass 5 ist lokal abgeschlossen;
+fuenf angeforderte Inkremente bleiben. Siehe
+[KP-312](./Kontextprotokoll.md#kp-312---pass-5-table-border).
 
 Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS
