@@ -1381,8 +1381,13 @@ zero does not activate those rules. The author-hint and UA origins remain
 separate, with later UA rules retaining their cascade order. CSS (1,360),
 Layout (1,004) and Paint (90) focused suites pass; the zero-warning solution
 build, all 16,599 solution tests, format verification and `git diff --check`
-pass locally. Commit, push and CI are pending. Pass 5 is complete; five
-increments remain.
+pass locally. Commit `8ace1a1` is pushed; Linux development
+([43145540509](https://github.com/khmseu/VisualWeb/actions/runs/43145540509)),
+Windows confinement
+([43145540433](https://github.com/khmseu/VisualWeb/actions/runs/43145540433))
+and CodeQL
+([43145540214](https://github.com/khmseu/VisualWeb/actions/runs/43145540214))
+pass. Pass 5 is complete; five increments remain.
 
 This ten-pass request begins by painting CSS `outset` borders with the
 opposite deterministic light/dark sides, covering the common raised-edge
@@ -1744,11 +1749,23 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 ## Recommended priority
 
-Prioritize handling simple websites end to end before advanced web applications.
-Start with mostly static, document-oriented pages: readable text, ordinary
-styling, images, working links, scrolling and basic forms. Choose small,
-testable increments that remove concrete blockers on representative pages;
-do not require completion of an entire subsystem before improving another.
+**Priority update (2026-11-12):** The first priority is to complete the
+implementation of the WHATWG HTML Standard (`html` in
+[`specs/manifest.json`](../specs/manifest.json)). Treat this as a broad,
+incremental objective, not a single deliverable: select bounded, testable HTML
+gaps from [General HTML and DOM compatibility](#4-general-html-and-dom-compatibility)
+and other HTML-defined behavior documented by the subsystem guides. Keep
+unsupported behavior explicit, and do not mark the standard complete or claim
+full support without evidence covering its applicable requirements. After this
+objective is complete, continue with the existing recommended priorities below,
+in their current order.
+
+After the HTML objective, prioritize handling simple websites end to end before
+advanced web applications. Start with mostly static, document-oriented pages:
+readable text, ordinary styling, images, working links, scrolling and basic
+forms. Choose small, testable increments that remove concrete blockers on
+representative pages; do not require completion of an entire subsystem before
+improving another.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
@@ -1788,8 +1805,10 @@ simple websites are safe to browse untrusted. Validate each increment with
 focused regressions and representative offline simple-site fixtures.
 
 _Priority order updated on 2026-10-28 to favor simple-site usability first;
-debugging and later targets clarified on 2026-10-31. These are work-order
-changes, not new implementation or validation claims._
+debugging and later targets clarified on 2026-10-31. On 2026-11-12, completion
+of the HTML standard was added as the first overarching objective; the
+existing recommended priorities retain their relative order and follow it.
+These are work-order changes, not new implementation or validation claims._
 
 *Status cross-checked against the implementation and subsystem guides on
 2026-10-19. Native Linux x64/ARM64 and Windows x64/ARM64 CI passed for commit

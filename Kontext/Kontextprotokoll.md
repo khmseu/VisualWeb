@@ -8370,5 +8370,33 @@ fokussierte Tests bestehen; Solution-Build besteht mit null Warnungen und
 Fehlern, alle 16.599 Solution-Tests, Formatverifikation und `git diff --check`
 bestehen ebenfalls.
 
-**Status:** Implementiert und lokal validiert; Commit, Push und Remote-CI
-stehen aus. Pass 5 ist lokal abgeschlossen; fuenf Inkremente verbleiben.
+**Status bei Erfassung:** Implementiert und lokal validiert; Commit, Push und
+Remote-CI standen noch aus. Der spaetere Abschluss ist in KP-313 festgehalten.
+
+### KP-313 - HTML als erste Prioritaet und Pass 5 CI
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerentscheidung und Remote-CI-Nachtrag.
+- Quellen: Nutzernachricht vom 2026-11-12; `plans/Missing.md`;
+  Commit `8ace1a1`; GitHub Actions Runs
+  [43145540509](https://github.com/khmseu/VisualWeb/actions/runs/43145540509),
+  [43145540433](https://github.com/khmseu/VisualWeb/actions/runs/43145540433)
+  sowie [43145540214](https://github.com/khmseu/VisualWeb/actions/runs/43145540214).
+- Bezug: Fortsetzung nach KP-312; dokumentiert Pass-5-Abschluss und neue
+  Arbeitsreihenfolge.
+
+**Nutzerangabe (beschlossen):** „The first priority is to complete the
+implementation of the `html` standard. after that, continue with the current
+priorities.“ Die bestehende empfohlene Reihenfolge bleibt hinter diesem neuen
+vorrangigen Ziel erhalten.
+
+**Einordnung:** Das HTML-Ziel ist ein uebergeordnetes Arbeitsziel, das in
+kleine, testbare Inkremente zerlegt wird. Der Tracker behauptet damit weder
+bereits vollstaendige HTML-Unterstuetzung noch eine Konformitaetsbewertung;
+der aktuelle Support-Status bleibt in der Standardsinventur dokumentiert.
+
+**Pass-5-Abschluss (belegt):** Commit `8ace1a1` ist gepusht. Linux development,
+Windows confinement und CodeQL sind erfolgreich. Die bei KP-312 noch offenen
+CI-Punkte sind damit abgeschlossen; fuenf Inkremente des vorigen
+Zehn-Inkrement-Auftrags verbleiben.

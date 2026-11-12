@@ -66,9 +66,18 @@ Tabellenraender und 1px eingesenkte Zellraender hinzu. Der Attributscan hat ein
 eigenes aggregiertes UTF-16-Limit; Autoren-CSS und UA-Kaskade bleiben getrennt.
 CSS (1.360), Layout (1.004), Paint (90) und der Solution-Build (0 Warnungen/
 Fehler), Solution-Volltest (16.599), Formatverifikation und `git diff --check`
-bestehen. Commit, Push und CI stehen noch aus. Pass 5 ist lokal abgeschlossen;
-fuenf angeforderte Inkremente bleiben. Siehe
+bestehen. Commit `8ace1a1` ist gepusht; Linux, Windows confinement und CodeQL
+sind gruen (Runs 43145540509, 43145540433 und 43145540214). Pass 5 ist
+abgeschlossen; fuenf angeforderte Inkremente bleiben. Siehe
 [KP-312](./Kontextprotokoll.md#kp-312---pass-5-table-border).
+
+**Prioritaet (Nutzerangabe, 2026-11-12):** Zuerst soll die Implementierung des
+WHATWG HTML-Standards (`html`) vervollstaendigt werden; danach wird mit der
+bisherigen empfohlenen Prioritaetsfolge fortgefahren. Die neue Top-Prioritaet
+ist ein uebergeordnetes Ziel fuer kleine, belegte Inkremente, keine Aussage,
+dass der Standard bereits vollstaendig unterstuetzt wird. Details und
+Reihenfolge stehen in [Missing.md](../plans/Missing.md#recommended-priority);
+die Entscheidung ist in [KP-313](./Kontextprotokoll.md#kp-313---html-als-erste-prioritaet-und-pass-5-ci) erfasst.
 
 Am 2026-11-10 wurde ein neuer Auftrag ueber zehn getrennte
 Missing-Prioritaetsinkremente erteilt. Pass 1 implementiert geerbtes CSS
