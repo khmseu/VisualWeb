@@ -8169,3 +8169,22 @@ ist noch offen.
 
 **Status:** Implementiert und lokal validiert; Commit, Push und Remote-CI
 stehen aus.
+
+### KP-306 - Pass 1: Commit, Push und CI
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Remote-Bestaetigung nach KP-305; ersetzt dessen damaligen
+  offenen Commit-/CI-Status.
+- Quellen: Commit `23609d6627a2544f8a9b557108cc996205afbd96` und GitHub Actions
+  Runs [43126817154](https://github.com/khmseu/VisualWeb/actions/runs/43126817154),
+  [43126816817](https://github.com/khmseu/VisualWeb/actions/runs/43126816817)
+  sowie [43126816471](https://github.com/khmseu/VisualWeb/actions/runs/43126816471).
+- Bezug: Abschluss des ersten Inkrements im aktuellen Zehn-Pass-Auftrag.
+
+**Git/CI (belegt):** Featurecommit `23609d6` ist nach `main` gepusht.
+Linux development, Windows confinement und Push on main/CodeQL sind fuer
+diesen Commit erfolgreich.
+
+**Status:** Pass 1 ist committed, gepusht und CI-geprueft; neun angeforderte
+Inkremente verbleiben.
