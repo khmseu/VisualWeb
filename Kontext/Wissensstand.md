@@ -101,8 +101,18 @@ bleibt dabei offen. Engine.Html (7.275), Solution-Build (null Warnungen/
 Fehler), Solution-Volltest (16.603), Formatverifikation und `git diff --check`
 bestehen. Ein vorheriger Volltestlauf hatte einen V8-Deadlinefehler in einem
 unveraenderten Scripting-Test; der isolierte Wiederholungslauf und der finale
-Volltest bestanden. Commit und Push stehen aus. Siehe
-[KP-319](./Kontextprotokoll.md#kp-319---html-textarea-rcdata-im-select-kontext-pass-8).
+Volltest bestanden. Commit `9630078` ist gepusht; Linux-, Windows- und Push-
+Workflows sind erfolgreich (43157674488, 43157674486, 43157673570). Siehe
+KP-319 und
+[KP-320](./Kontextprotokoll.md#kp-320---pass-8-commit-und-push).
+
+Pass 9 delegiert sonst nicht speziell behandelte Tokens im Select-Kontext an
+den begrenzten In-Body-Algorithmus, statt sie pauschal abzulehnen. Tests
+bestaetigen unterstuetzte Blockelemente in Optionen und Optgroups. Engine.Html
+(7.274), Solution-Build, Volltest (16.403), Formatverifikation und
+`git diff --check` bestehen. Die CI-Pruefung ist nach dem Commit noch zu
+verifizieren. Siehe
+[KP-321](./Kontextprotokoll.md#kp-321---select-inhalte-mit-in-body-regeln-pass-9).
 
 **Prioritaet (Nutzerangabe, 2026-11-12):** Zuerst soll die Implementierung des
 WHATWG HTML-Standards (`html`) vervollstaendigt werden; danach wird mit der

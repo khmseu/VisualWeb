@@ -333,7 +333,7 @@ public static class HtmlParser
             }
         }
 
-        private void BodyToken(HtmlToken token)
+        private void BodyToken(HtmlToken token, bool fromSelectContext = false)
         {
             if (token is HtmlCharacters text)
             {
@@ -347,14 +347,14 @@ public static class HtmlParser
             if (token is HtmlEndOfFile)
             {
                 var selectIndexAtEof = open.FindLastIndex(element => element.LocalName == "select");
-                if (selectIndexAtEof >= 0) { SelectToken(token, selectIndexAtEof); return; }
+                if (!fromSelectContext && selectIndexAtEof >= 0) { SelectToken(token, selectIndexAtEof); return; }
                 if (open.Any(e => !ImplicitlyClosable.Contains(e.LocalName))) { Error("unclosed-elements-at-eof"); }
                 return;
             }
 
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token."); }
             var selectIndex = open.FindLastIndex(element => element.LocalName == "select");
-            if (selectIndex >= 0)
+            if (!fromSelectContext && selectIndex >= 0)
             {
                 SelectToken(token, selectIndex);
                 return;
@@ -1062,11 +1062,6 @@ public static class HtmlParser
                 BodyToken(tag);
                 return;
             }
-            if (!tag.IsEndTag && tag.Name == "textarea")
-            {
-                StartTextarea(tag);
-                return;
-            }
             if (!tag.IsEndTag && tag.Name == "select")
             {
                 Error("nested-select-start-tag");
@@ -1116,7 +1111,7 @@ public static class HtmlParser
                 CloseAt(selectIndex);
                 return;
             }
-            throw Unsupported("Only option and optgroup children with text are supported inside select elements.");
+            BodyToken(token, fromSelectContext: true);
         }
 
         private DomElement Insert(HtmlTag token, bool push = true)

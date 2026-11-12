@@ -8539,3 +8539,43 @@ frueherer Volltestlauf scheiterte in
 `Engine.Scripting.Tests.EventTests.ExactAncestorPathLimitPreflightsBeforeAnyListenerRuns`
 mit V8-Deadline; beide Faelle bestanden im isolierten Wiederholungslauf. Der
 erneute Volltest des finalen Codes besteht mit 16.603 Tests.
+
+### KP-320 - Pass 8 Commit und Push
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Git-Artefakt und laufende Workflow-Pruefung.
+- Quelle: Git-Commit `9630078`, GitHub Actions fuer dessen Commit.
+- Bezug: KP-319, Pass 8 des angeforderten Zehn-Pass-Laufs.
+
+**Belegt:** Commit `9630078` (`feat(html): parse textarea in select context`)
+wurde nach `origin/main` gepusht. Linux development (`43157674488`), Windows
+confinement (`43157674486`) und Push on main (`43157673570`) sind erfolgreich.
+
+### KP-321 - Select-Inhalte mit In-Body-Regeln Pass 9
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: laufend dokumentiert; lokal validiert, Commit/Push und CI bei
+  Erfassung noch offen.
+- Quelle: `plans/Missing.md`, HTML/DOM-Guide, Engine.Html README,
+  `specs/cache/html.html`, Parser/Testquellen und lokale Validierung.
+- Bezug: KP-320, REQ-005, DEC-012, Q-010 und Pass 9 des Zehn-Pass-Auftrags.
+
+**Auswahl (Ableitung):** Der begrenzte Select-Algorithmus behandelte ausser
+den bereits ergaenzten Spezialfaellen alle uebrigen Tokens als unsupported.
+Der Standard leitet weitere Tokens jedoch in den In-Body-Algorithmus weiter.
+Ein begrenzter Delegationspfad kann vorhandene In-Body-Unterstuetzung
+wiederverwenden, ohne Foster Parenting oder andere nicht implementierte
+Algorithmen vorzutaueschen.
+
+**Umsetzung:** Select-Tokens, fuer die keine bestehende Select-Sonderregel
+greift, werden an die vorhandenen In-Body-Regeln delegiert. Eine Kontextmarke
+verhindert die erneute Weiterleitung in den Select-Handler. Tests bestaetigen
+Blockelemente in `option` und `optgroup`; weitere unsupported In-Body-
+Algorithmen bleiben explizit unsupported.
+
+**Validierung:** Engine.Html.Tests (7.274), Solution-Build ohne
+Warnungen/Fehler, Solution-Volltest (16.403), Solution-Formatverifikation und
+`git diff --check` bestanden. Pass 9 ist noch nicht committed oder gepusht;
+CI laeuft daher noch nicht.

@@ -7,9 +7,9 @@ references are embedded [pinned data](Data/README.md).
 
 Tree construction supplies implicit html/head/body, head metadata/text elements,
 ordinary body elements, lists, paragraphs, headings, void elements, bounded
-select/optgroup parsing with body-mode option/optgroup insertion, bounded
-textarea RCDATA handling inside selects, and `hr`/`input`/nested-select
-recovery, a simple table
+select/optgroup parsing with ordinary in-body handling for the supported
+content subset, bounded textarea RCDATA handling, and `hr`/`input`/nested
+`select` recovery, a simple table
 caption/column-group/section/row/cell subset, inert in-table `script`/`style`
 text, table `type=hidden` inputs and text-only table foster parenting, bounded
 nested-table recovery and the in-table form-pointer exception, and

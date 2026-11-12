@@ -248,6 +248,22 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void OtherSupportedBodyTokensUseInBodyRulesInsideSelect()
+    {
+        var result = Parse("<!doctype html><select><option>before<div>inside</div>after</option>"
+            + "<optgroup><div>group</div><option>next</option></optgroup></select>");
+        var select = Assert.IsType<DomElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        var elements = select.ChildNodes.OfType<DomElement>().ToArray();
+
+        Assert.Equal(["option", "optgroup"], elements.Select(element => element.LocalName));
+        Assert.Equal(["div"], elements[0].ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("beforeinsideafter", elements[0].TextContent);
+        Assert.Equal(["div", "option"], elements[1].ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("group", elements[1].FirstChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public void NestedSelectStartClosesCurrentSelectAndIgnoresNestedStart()
     {
         var result = Parse("<!doctype html><select><option>before<select><p>after</p>");
@@ -501,8 +517,6 @@ public sealed class TreeTests
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
     [InlineData("<ruby>x")]
-    [InlineData("<select><option>x<div>y</div></select>")]
-    [InlineData("<select><optgroup><div>x</div></optgroup></select>")]
     [InlineData("<p><b>x</p>y")]
     [InlineData("<b><i>x</b>y</i>")]
     [InlineData("<a><a>x")]

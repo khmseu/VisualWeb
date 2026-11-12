@@ -84,13 +84,15 @@ after-after-body modes. Supported behavior includes:
   literal mode interprets apparent links, styles or scripts as elements.
 - Merged text nodes, null removal in body and recovery diagnostics.
 - Raw script/style content without executing it or interpreting its markup.
-- A bounded `select` subset containing direct `option` and `optgroup` children.
-  `textarea` uses the in-body RCDATA rules inside the current select context;
-  its initial LF is ignored. The in-body recovery rules also insert `hr`
-  inside the select after implied option/group closure, close the select and
-  reprocess an `input` start tag, and close-and-ignore a nested `select` start
-  tag. Outside selects, `option` and `optgroup` use ordinary in-body insertion;
-  starting either while an `option` is current closes that option first.
+- A bounded `select` subset with direct `option`/`optgroup` handling and
+  ordinary in-body processing for other supported tokens, including block
+  children in options and optgroups. `textarea` uses the in-body RCDATA rules
+  in the current select context; its initial LF is ignored. The in-body
+  recovery rules also insert `hr` inside the select after implied option/group
+  closure, close the select and reprocess an `input` start tag, and
+  close-and-ignore a nested `select` start tag. Outside selects, `option` and
+  `optgroup` use ordinary in-body insertion; starting either while an `option`
+  is current closes that option first.
 - Basic static table construction for `table`, `caption`, `colgroup`/`col`,
   `tbody`/`thead`/`tfoot`, `tr`, `td` and `th`, including implied
   `colgroup`/`tbody`/`tr`, scoped closure, whitespace and comments. Cell
@@ -132,12 +134,12 @@ nearest ancestor `form`.
 Other tokens that require table foster parenting throw explicitly, as do
 unsupported table tags outside the contexts covered above. The following
 additionally throw explicitly: templates, SVG/MathML,
-unsupported select contents beyond the bounded recovery above, including
-non-option children of an `optgroup` inside a select; textarea-specific form semantics beyond first-LF handling, framesets/frames, noscript, ruby and
-applet/marquee/object-specific algorithms. Fragment parsing is not
-offered. Nested anchors/nobr, misnested formatting and closures requiring
-active-formatting reconstruction/adoption agency throw instead of returning
-an incorrect tree.
+unsupported select contents whose ordinary in-body processing requires
+unimplemented algorithms; textarea-specific form semantics beyond first-LF
+handling, framesets/frames, noscript, ruby and applet/marquee/object-specific
+algorithms. Fragment parsing is not offered. Nested anchors/nobr, misnested
+formatting and closures requiring active-formatting reconstruction/adoption
+agency throw instead of returning an incorrect tree.
 
 Doctype classification follows the cached
 [initial insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode)
