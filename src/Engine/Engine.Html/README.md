@@ -7,12 +7,13 @@ references are embedded [pinned data](Data/README.md).
 
 Tree construction supplies implicit html/head/body, head metadata/text elements,
 ordinary body elements, lists, paragraphs, headings, void elements, bounded
-select/optgroup parsing, a simple table caption/column-group/section/row/cell
-subset, inert in-table `script`/`style` text, table `type=hidden` inputs and
-text-only table foster parenting, bounded nested-table recovery and the
-in-table form-pointer exception, and root-attribute merging for in-table
-`html` starts. Other tokens requiring table foster parenting remain
-unsupported. Legacy doctypes preserve public/system identifiers and recover
+select/optgroup parsing with `hr`/`input`/nested-select recovery, a simple table
+caption/column-group/section/row/cell subset, inert in-table `script`/`style`
+text, table `type=hidden` inputs and text-only table foster parenting, bounded
+nested-table recovery and the in-table form-pointer exception, and
+root-attribute merging for in-table `html` starts. Other tokens requiring
+table foster parenting remain unsupported. Legacy doctypes preserve
+public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and
 additional quirks-layout behavior is not implied.

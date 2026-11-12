@@ -392,7 +392,10 @@ remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 
-- Templates, general forms (only the simple form-pointer subset exists), unsupported select contents, SVG/MathML, and other specialized parsing algorithms.
+- Templates, general forms (only the simple form-pointer subset exists), select
+  contents beyond direct option/optgroup/text and the bounded
+  `hr`/`input`/nested-select recovery, SVG/MathML, and other specialized parsing
+  algorithms.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 

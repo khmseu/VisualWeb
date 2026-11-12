@@ -190,6 +190,42 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void SelectHrClosesOpenOptionGroupsAndRemainsInsideSelect()
+    {
+        var result = Parse("<!doctype html><select><optgroup><option>A<hr></select>");
+        var select = Assert.IsType<DomElement>(Assert.Single(result.Document.Descendants()
+            .OfType<DomElement>(), element => element.LocalName == "select"));
+
+        Assert.Equal(["optgroup", "hr"], select.ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("A", select.FirstChild!.TextContent);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void InputStartInSelectClosesSelectAndReprocessesInput()
+    {
+        var result = Parse("<!doctype html><select><option>before<input name=after><p>tail</p>");
+        var body = result.Document.Body!;
+
+        Assert.Equal(["select", "input", "p"], body.ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Equal("before", body.FirstChild!.TextContent);
+        Assert.Equal("after", body.ChildNodes.OfType<DomElement>().ElementAt(1).GetAttribute("name"));
+        Assert.Contains(result.Errors, error => error.Code == "input-start-tag-in-select");
+    }
+
+    [Fact]
+    public void NestedSelectStartClosesCurrentSelectAndIgnoresNestedStart()
+    {
+        var result = Parse("<!doctype html><select><option>before<select><p>after</p>");
+        var body = result.Document.Body!;
+
+        Assert.Equal(["select", "p"], body.ChildNodes.OfType<DomElement>().Select(element => element.LocalName));
+        Assert.Single(Descendants(result.Document), element => element.LocalName == "select");
+        Assert.Equal("after", body.LastChild!.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "nested-select-start-tag");
+    }
+
+    [Fact]
     public void SimpleTablesBuildSectionsRowsAndCells()
     {
         var result = Parse("<!doctype html><table id=t>\n<!--inside--><tr id=first><td>A<td>B</tr></tbody>\n"

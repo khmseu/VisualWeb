@@ -1058,6 +1058,30 @@ public static class HtmlParser
                 return;
             }
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in select."); }
+            if (!tag.IsEndTag && tag.Name == "input")
+            {
+                Error("input-start-tag-in-select");
+                CloseAt(selectIndex);
+                BodyToken(tag);
+                return;
+            }
+            if (!tag.IsEndTag && tag.Name == "select")
+            {
+                Error("nested-select-start-tag");
+                CloseAt(selectIndex);
+                return;
+            }
+            if (!tag.IsEndTag && tag.Name == "hr")
+            {
+                GenerateImpliedEndTags();
+                if (open.Skip(selectIndex + 1).Any(element => element.LocalName is "option" or "optgroup"))
+                {
+                    Error("hr-start-tag-with-open-option-or-optgroup");
+                }
+
+                Insert(tag, push: false);
+                return;
+            }
             if (!tag.IsEndTag && tag.Name == "option")
             {
                 if (open[^1].LocalName == "option") { Close("option"); }

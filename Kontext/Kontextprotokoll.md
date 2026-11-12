@@ -8400,3 +8400,36 @@ der aktuelle Support-Status bleibt in der Standardsinventur dokumentiert.
 Windows confinement und CodeQL sind erfolgreich. Die bei KP-312 noch offenen
 CI-Punkte sind damit abgeschlossen; fuenf Inkremente des vorigen
 Zehn-Inkrement-Auftrags verbleiben.
+
+### KP-314 - HTML-Select-Recovery, Pass 6
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: standardsgestuetzte Implementierung und lokale Validierung;
+  Commit, Push und Remote-CI stehen noch aus.
+- Quellen: [Prioritaetstracker](../plans/Missing.md#4-general-html-and-dom-compatibility),
+  [HTML/DOM-Guide](../docs/html-dom.md#static-document-tree-subset),
+  [Engine.Html](../src/Engine/Engine.Html/HtmlParser.cs),
+  [Tree-Tests](../tests/Engine.Html.Tests/TreeTests.cs), WHATWG HTML `html`
+  `#parsing-main-inbody` (Cache laut Manifest am 2026-11-07 geprueft).
+- Bezug: sechstes Inkrement des angeforderten Zehn-Pass-Laufs; HTML ist nach
+  der Nutzerentscheidung in KP-313 die vorrangige uebergeordnete Aufgabe.
+
+**Auswahl (Ableitung):** Der Tree-Builder brach Select-Parsing fuer jedes Token
+ausser Optionen, Optgroups, Text und einigen End-Tags ab. Der lokale HTML-
+Algorithmus spezifiziert begrenzte In-Body-Recovery fuer `hr`, `input` und
+verschachtelte `select`-Starttags. Diese eng abgegrenzten Faelle wurden
+ausgewaehlt; Templates, Fragment-Parsing, Adoption-Agency und andere
+Select-Inhalte bleiben ausserhalb.
+
+**Umsetzung (belegt):** `hr` wird nach implizitem Schliessen offener Optionen
+und Gruppen als direktes Select-Kind eingefuegt. `input` schliesst das Select
+und wird im Body-Modus erneut verarbeitet. Ein verschachteltes `select`
+schliesst das aktuelle Select und wird ignoriert. Alle drei Pfade haben
+fokussierte Regressionstests; bestehende explizite Unsupported-Fehler fuer
+andere Select-Inhalte bleiben bestehen.
+
+**Validierung (belegt):** Engine.Html besteht mit 7.274 Tests; der Solution-
+Build besteht mit null Warnungen/Fehlern; der gesamte Solution-Testlauf
+besteht mit 16.602 Tests. Formatverifikation und `git diff --check` bestehen.
+Commit, Push und Remote-CI stehen noch aus.
