@@ -131,7 +131,7 @@ public static class InlinePageScripts
             {
                 throw new PageNavigationException("External modules are deferred; no module source was fetched.");
             }
-            ValidateSchedulingAttributes(element, "module");
+            ValidateSchedulingAttributes(element, "module", ignoreDefer: true);
             return ScriptKind.Module;
         }
         if (kind.Equals("importmap", StringComparison.OrdinalIgnoreCase)
@@ -144,9 +144,10 @@ public static class InlinePageScripts
             : ScriptKind.Inert;
     }
 
-    private static void ValidateSchedulingAttributes(DomElement element, string scriptKind)
+    private static void ValidateSchedulingAttributes(DomElement element, string scriptKind, bool ignoreDefer = false)
     {
-        if (element.GetAttribute("async") is not null || element.GetAttribute("defer") is not null
+        if (element.GetAttribute("async") is not null
+            || (!ignoreDefer && element.GetAttribute("defer") is not null)
             || element.GetAttribute("for") is not null || element.GetAttribute("event") is not null)
         {
             throw new PageNavigationException($"Scheduling attributes are outside the inline {scriptKind} subset.");

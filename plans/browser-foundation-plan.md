@@ -289,7 +289,9 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   before DOMContentLoaded. Native module-evaluation promises and top-level
   await share the page-script deadline, cancellation, DOM/events/microtask
   budgets and transactional publication. Static/dynamic imports, external
-  modules, module loaders and module scheduling attributes remain unsupported.
+  modules, module loaders and module `async` scheduling remain unsupported;
+  module `defer` has no effect and is ignored. Classic `async`/`defer` and
+  legacy `for`/`event` scheduling remain unsupported.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

@@ -9064,3 +9064,37 @@ dieser Checkpoint bestaetigt nur lokale Implementierung und Verifikation.
 **Belegt:** Featurecommit `a3611e0` wurde auf `main` gepusht. Linux development,
 Windows confinement (x64 und arm64) sowie CodeQL sind erfolgreich. Damit ist
 der Modulinkrement-Pass lokal verifiziert, committed, gepusht und CI-bestaetigt.
+
+### KP-339 - HTML module defer semantics pass
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: standardspriorisierte Passauswahl, Implementierung und lokale
+  Verifikation.
+- Quellen: zusammengefasste Nutzerauftraege im aktuellen Turn zur dynamischen
+  Auswahl nach Prozent-Rangfolge und zum Fortsetzen in einzelnen Paessen;
+  [Missing.md](../plans/Missing.md#recommended-priority),
+  [standards.md](../docs/standards.md#support-status),
+  [HTML-Standardcache](../specs/cache/html.html#the-script-element) (Manifest-
+  Pruefdatum 2026-11-07),
+  [InlinePageScripts.cs](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [InlineScriptTests.cs](../tests/VisualWeb.Browser.Tests/InlineScriptTests.cs).
+
+**Ableitung zur Auswahl:** ECMAScript bleibt mit ~85% der hoechste partielle
+Wert. Die im Tracker verbliebenen ECMAScript-Luecken erfordern jedoch Modul-
+Loader/Ressourcen oder persistentere Event-Loop-Faehigkeiten, die ausserhalb
+der genehmigten Phase 11w liegen. HTML und DOM folgen bei ~20%; gewaehlt wurde
+die eng umrissene HTML-Regel fuer `defer` bei Inline-Modulen.
+
+**Belegt:** Der lokale HTML-Standard sagt ausdruecklich, dass `defer` auf
+Modulskripte keinen Effekt hat. PageRendering ignoriert dieses Attribut jetzt
+fuer Inline-Module, waehrend Modul-`async`, klassische `async`/`defer` und
+Legacy-`for`/`event` weiter explizit abgelehnt werden. Der Browser-
+Regressionstest prueft Ausfuehrung und Reihenfolge fuer Local- und Process-
+Renderer.
+
+**Belegt, lokal:** Der gezielte Regressionstest bestand fuer beide Renderer;
+VisualWeb.Browser 1.341 Tests, Solution-Build ohne Warnungen/Fehler,
+Solution-Volltest 16.626 Tests, Formatverifikation, `git diff --check` sowie
+V8Smoke lokal und unter required-confined Bedingungen bestanden. Commit, Push
+und CI stehen noch aus; die Prozent-Schaetzung fuer HTML bleibt unveraendert.

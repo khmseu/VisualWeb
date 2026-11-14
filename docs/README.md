@@ -38,8 +38,9 @@ without enabling browser page scripts.
 Phase 11d adds explicit opt-in parser-blocking classic execution for inline and
 browser-brokered external scripts, transactional publication and retained
 scripted DOM repainting. IPC v49 carries bounded script source request/response
-data only. Modules, async/defer scheduling and persistent event loops remain
-deferred.
+data only. Phase 11w adds import-free inline modules; module `defer` is ignored,
+while module `async`, classic async/defer scheduling and persistent event loops
+remain deferred.
 Phase 11e adds bounded element attributes, element/text/fragment creation and
 branded Node navigation/mutation while keeping dynamically inserted scripts inert.
 Phase 11f adds opt-in finite native Promise/queueMicrotask checkpoints, bounded

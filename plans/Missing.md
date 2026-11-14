@@ -1716,9 +1716,11 @@ However:
   renderer-local host/listeners after initial execution, but only for bounded
   trusted link-event dispatch (1024 click/auxclick events combined per document; failures invalidate the
   host until reload); no timers, tasks or other callbacks run later.
-- Modules, `async`/`defer`, timers, workers, script-visible networking/storage,
-  and full Window/Web IDL behavior are
-  unimplemented and lower-priority work.
+- Bounded import-free inline modules with top-level `await` are implemented;
+  module `defer` has no effect and is ignored. Module imports/loaders and
+  `async` scheduling, classic `async`/`defer`, timers, workers, script-visible
+  networking/storage, and full Window/Web IDL behavior remain unimplemented
+  and lower-priority work.
 - Synthetic events, finite lifecycle/microtask processing and the narrow link-click
   dispatch exist, but not general ongoing page interaction.
 - WebAssembly is explicitly disabled in the current host.
@@ -1775,6 +1777,13 @@ unsupported behavior explicit and do not mark a standard complete or claim
 full support without evidence covering its applicable requirements.
 Once no actionable standards-driven increment remains, continue with the
 existing recommended priorities below, in their current order.
+
+**Standards-selection update (2026-11-14):** ECMAScript remains highest at
+~85%, but its remaining tracker gaps require module loaders/resources or
+persistent event-loop capabilities that are outside approved phase 11w. The
+next partial estimates are HTML and DOM (~20%); this pass selected the
+standards-defined HTML behavior that `defer` has no effect on inline modules.
+It does not enable module `async`, imports or external module loading.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

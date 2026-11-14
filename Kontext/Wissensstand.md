@@ -22,7 +22,7 @@ arm64) und CodeQL waren erfolgreich.
 Siehe [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)
 und [KP-334](./Kontextprotokoll.md#kp-334---commit-push-und-ci-bestaetigt).
 
-**Aktueller Pass (2026-11-14):** Phase 11w fuegt opt-in importfreie Inline-
+**Abgeschlossener Pass (2026-11-14):** Phase 11w fuegt opt-in importfreie Inline-
 Module nach Parsing und `interactive`, vor `DOMContentLoaded` hinzu.
 Top-Level-await darf nur innerhalb derselben Deadline/Cancellation und
 Readiness-/DOM-/Microtaskbudgets abschliessen; Imports, externe Module,
@@ -42,7 +42,25 @@ Windows confinement x64/arm64
 ([Run 43553596192](https://github.com/khmseu/VisualWeb/actions/runs/43553596192))
 und CodeQL ([Run 43553596120](https://github.com/khmseu/VisualWeb/actions/runs/43553596120))
 sind erfolgreich.
-Der naechste Standardsinkrement-Pass soll die Rangfolge erneut anhand von
+
+**Aktueller Pass (2026-11-14; lokal verifiziert, Commit/CI ausstehend):**
+Die Rangfolge wurde erneut geprueft: ECMAScript bleibt mit ~85% vorne, aber
+seine verbliebenen Tracker-Luecken erfordern Modul-Loader/Ressourcen oder
+persistentere Event-Loop-Faehigkeiten ausserhalb der gebilligten Phase 11w.
+HTML und DOM liegen bei ~20%; als naechster begrenzter HTML-Punkt wurde die
+Regel umgesetzt, dass `defer` auf Inline-Modulen keinen Effekt hat und
+ignoriert wird. Modul-`async`, Importe und externe Modulquellen bleiben
+unsupported. Das ist die Anwendung der bestehenden Nutzer-Rangfolgeregel auf
+die genehmigten Phasengrenzen, keine separate Nutzerwahl fuer Modulimporte.
+Der lokale HTML-Cache vom 2026-11-07 war juenger als 30 Tage.
+
+Lokale Verifikation: der Regressionstest lief fuer Local- und Process-Renderer
+(2 Faelle), Browser-Tests 1.341, Solution-Build ohne Warnungen/Fehler,
+Solution-Volltest 16.626, Formatverifikation, `git diff --check` sowie V8Smoke
+lokal und unter required-confined Bedingungen bestanden. Commit/Push und CI
+stehen noch aus. Siehe
+[KP-339](./Kontextprotokoll.md#kp-339---html-module-defer-semantics-pass).
+Die naechste Auswahl soll die Rangfolge erneut anhand von
 [Missing.md](../plans/Missing.md) und den approximativen Prozentwerten
 bestimmen, statt hier vorweggenommen zu werden. Siehe
 [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen),

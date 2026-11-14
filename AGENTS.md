@@ -317,8 +317,9 @@
   rejected module evaluation invalidates the candidate; preserve the committed
   page.
 - Provide no module loader or network/file access. Static/dynamic imports,
-  external modules, import maps, speculation rules and module scheduling
-  attributes remain unsupported. Preserve inline CSP checks.
+  external modules, import maps, speculation rules, module `async`, classic
+  `async`/`defer` and legacy `for`/`event` remain unsupported. Module `defer`
+  has no effect and is ignored. Preserve inline CSP checks.
 
 HTML scheduling, full DOM, and generated Web IDL bindings remain deferred. Run
 V8Smoke explicitly; Windows/arm64 guarantees require native target evidence.

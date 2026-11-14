@@ -679,7 +679,7 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task InlineModuleTopLevelAwaitCompletesBeforeDomContentLoadedAndPaint(bool process)
+    public async Task InlineModuleDeferIsIgnoredAndAwaitsBeforeDomContentLoadedAndPaint(bool process)
     {
         using IPageRenderer renderer = process
             ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
@@ -687,7 +687,7 @@ public sealed class InlineScriptTests
         var page = Page("""
             <!doctype html><title>Original</title><style>body{margin:0;background-color:red}</style>
             <script>globalThis.moduleOrder=['classic-before'];</script>
-            <script type="module">
+            <script type="module" defer>
             if(document.readyState!=='interactive')throw Error('module readiness');
             moduleOrder.push('module-start');
             await Promise.resolve();

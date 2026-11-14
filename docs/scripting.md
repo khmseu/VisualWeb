@@ -342,11 +342,13 @@ character limits as classic sources, and share their DOM, event and microtask
 budgets.
 
 There is no document/module loader. Static and dynamic imports, external
-`type="module"` sources, import maps, speculation rules, and module scheduling
-attributes (`async`, `defer`, legacy `for`/`event`) fail explicitly. Modules
-cannot fetch or access files; V8 document access remains disabled. Inline CSP
-nonce/hash checks still apply before execution. This is a bounded development
-subset, not full HTML module scheduling or a persistent JavaScript event loop.
+`type="module"` sources, import maps, speculation rules, module `async`, and
+legacy `for`/`event` attributes fail explicitly. The `defer` attribute has no
+effect on modules and is ignored. Classic `async`/`defer` scheduling remains
+unsupported. Modules cannot fetch or access files; V8 document access remains
+disabled. Inline CSP nonce/hash checks still apply before execution. This is a
+bounded development subset, not full HTML module scheduling or a persistent
+JavaScript event loop.
 
 ## Minimal live DOM bindings (phase 11c)
 
@@ -1072,9 +1074,10 @@ whitespace; MIME parameters do not match an essence. Other data-block types
 remain inert, and classic `nomodule` elements are skipped. Empty classic and
 module sources do not consume a source slot. Inline `type="module"` sources use
 the bounded phase-11w scheduling above. External modules, import maps and
-speculation rules remain unsupported. `async`/`defer`/legacy `for`/`event`
-scheduling attributes fail when encountered; rejecting scheduling attributes
-rather than ignoring them is an explicit restriction of this foundation.
+speculation rules remain unsupported. Module `defer` is ignored as required by
+HTML; module `async`, classic `async`/`defer`, and legacy `for`/`event`
+scheduling attributes fail when encountered. Rejecting unsupported scheduling
+rather than approximating it is an explicit restriction of this foundation.
 Render-blocking stylesheet behavior and the broader HTML preparation/error-
 reporting algorithms are not claimed.
 

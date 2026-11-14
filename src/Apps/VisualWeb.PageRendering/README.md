@@ -25,9 +25,10 @@ Phase 11d adds explicit `executeInlineScripts: true` parser-blocking classic
 execution with live DOM bindings. Phase 11w also queues import-free inline
 modules during parsing and evaluates them after the parser and interactive
 readiness transition, before DOMContentLoaded; bounded top-level await shares
-the initial page-script deadline. Imports, external modules and module fetching
-remain unsupported. Both features require explicit opt-in; default rendering
-remains script-free. Publication pins every successful parsed DOM for scroll/resize; at most one
+the initial page-script deadline. The module `defer` attribute is ignored;
+module `async`, imports, external modules and module fetching remain
+unsupported. Both features require explicit opt-in; default rendering remains
+script-free. Publication pins every successful parsed DOM for scroll/resize; at most one
 unpublished candidate is retained alongside it. Navigation/reload uses a fresh
 host; lost DOM requires explicit reload rather than repeating execution.
 Opted-in documents keep their renderer-local host/listeners for bounded trusted
