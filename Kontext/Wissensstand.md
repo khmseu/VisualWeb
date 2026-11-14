@@ -63,6 +63,14 @@ CodeQL sind erfolgreich. Beim ersten Linux-Lauf fiel ein nicht geaenderter
 Shell-Pixeltest auf ARM64 aus; der vollstaendige Linux-Rerun bestand. Siehe
 [KP-339](./Kontextprotokoll.md#kp-339---html-module-defer-semantics-pass) und
 [KP-340](./Kontextprotokoll.md#kp-340---commit-push-und-ci-bestaetigt).
+
+**Nachtraegliche Schaetzungsaktualisierung (2026-11-14):** Auf Nutzerbitte
+wurde die ECMAScript-Schaetzung in [standards.md](../docs/standards.md#support-status)
+von ~85% auf ~90% neu bewertet. Browser-spezifische Globals, Timer, Worker und
+der HTML-Event-Loop werden nicht als ECMAScript-Luecken gezaehlt; deaktivierte
+Modulimport-Aufloesung sowie `SharedArrayBuffer`/`Atomics` bleiben wesentliche
+Luecken. Die Schaetzung ist weiterhin grob und keine Konformitaetspruefung.
+Siehe [KP-341](./Kontextprotokoll.md#kp-341---ecmascript-estimate-reassessment).
 Die naechste Auswahl soll die Rangfolge erneut anhand von
 [Missing.md](../plans/Missing.md) und den approximativen Prozentwerten
 bestimmen, statt hier vorweggenommen zu werden. Siehe

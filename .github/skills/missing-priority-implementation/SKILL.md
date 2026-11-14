@@ -47,7 +47,8 @@ moving to another priority.
    Keep tests offline.
 5. Implement the change, its focused tests, and directly related documentation.
    Update `plans/Missing.md` to describe exactly what changed and what remains;
-   do not mark a broad priority complete when only an increment is done.
+   update `docs/standards.md` if relevant,
+   and do not mark a broad priority complete when only an increment is done.
 6. Run the smallest relevant test command, then any required build, format,
    or platform smoke validation warranted by the change. Fix regressions caused
    by the change. Do not suppress failures or claim unrun target validation.

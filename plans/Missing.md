@@ -1785,6 +1785,15 @@ next partial estimates are HTML and DOM (~20%); this pass selected the
 standards-defined HTML behavior that `defer` has no effect on inline modules.
 It does not enable module `async`, imports or external module loading.
 
+**ECMAScript estimate review (2026-11-14):** Following a request to reassess
+the estimate, [standards.md](../docs/standards.md#support-status) now gives
+ECMAScript ~90% rather than ~85%. The estimate counts ECMAScript language
+features; browser-specific globals, timers, workers and the persistent HTML
+event loop are host/platform behavior and are excluded. Module import
+resolution and `SharedArrayBuffer`/`Atomics` remain disabled. This is still a
+rough estimate, not a conformance audit; ECMAScript remains the highest
+partial estimate.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

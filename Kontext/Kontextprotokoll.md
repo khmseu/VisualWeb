@@ -9119,3 +9119,27 @@ bestand auf x64 und ARM64. Der Linux-Baseline-Lauf fuer Commit
 `a3611e0` hatte zuvor ebenfalls beide Architekturen bestanden. Kein Code wurde
 zur Behebung dieser einmaligen Abweichung geaendert; sie wird als nicht
 wiederholter CI-Fehler dokumentiert, nicht als reproduzierbarer Produktfehler.
+
+### KP-341 - ECMAScript estimate reassessment
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: standards-support estimate review.
+- Quelle: Nutzerantwort auf die Klaerung zum Update von [standards.md](../docs/standards.md):
+  "reassess the ecmascript percentage estimate"; [ECMAScript cache](../specs/cache/ecmascript.html)
+  (Manifest-Checkdatum 2026-11-07); [scripting.md](../docs/scripting.md);
+  [V8ScriptHost.cs](../src/Engine/Engine.Scripting/V8ScriptHost.cs);
+  [Missing.md](../plans/Missing.md#recommended-priority).
+
+**Nutzerangabe:** Die ungefaehre ECMAScript-Abdeckung soll neu bewertet werden.
+Eine konkrete Zielzahl wurde nicht vorgegeben.
+
+**Ableitung / Vorschlag umgesetzt:** Die Schaetzung wurde von ~85% auf ~90%
+angehoben. Die bisherige ECMAScript-Zeile zaehlte browser-spezifische Globals,
+Timer, Worker und einen persistenten HTML-Event-Loop als Luecken; dies sind
+Host-/Plattformverhalten und keine ECMAScript-Sprachfeatures. Weiter abgezogen
+werden die nicht unterstuetzte Modulimport-Aufloesung sowie die im Host
+deaktivierten `SharedArrayBuffer`/`Atomics`. Die Einordnung ist eine grobe
+heuristische Neubewertung, keine vollstaendige ECMA-262-Anforderungspruefung.
+`Missing.md` wurde angepasst, damit die aktuelle Prozent-Rangfolge konsistent
+bleibt. Es erfolgte keine Codeaenderung oder Laufzeitvalidierung.
