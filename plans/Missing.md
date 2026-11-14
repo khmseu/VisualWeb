@@ -1871,6 +1871,21 @@ stale-pixel assertion in the unchanged browser shell test; the next failed-job
 rerun passed on ARM64. Linux x64 and Trunk checks passed on the initial run;
 Windows x64/ARM64 and CodeQL passed.
 
+**Local validation:** 14 focused Display-P3 cases and all 1,435 CSS tests pass.
+Debug and Release solution builds have zero warnings/errors; both full
+solution suites pass all 16,701 tests; format verification passes. Code review
+approved the implementation. No CSS-specific native smoke applies.
+Feature commit `6ecc220` was pushed with remote main updates integrated by
+merge commit `375cfb5`. Linux development
+([run 43617047610](https://github.com/khmseu/VisualWeb/actions/runs/43617047610)),
+Windows confinement
+([run 43617047675](https://github.com/khmseu/VisualWeb/actions/runs/43617047675))
+and CodeQL
+([run 43617046891](https://github.com/khmseu/VisualWeb/actions/runs/43617046891))
+all pass. Linux passed on x64/ARM64 with Trunk checks; Windows passed on
+x64/ARM64. The run also included upstream commit `893a937`, which adds a
+wait-for-pages step to the previously flaky shell repaint test.
+
 **Pass 5 selection (2026-11-14):** CSS Color remains the highest actionable
 partial standard (~40% versus CSS Syntax at ~35%). After encoded Display-P3,
 this increment adds linear-light Display-P3 (`color(display-p3-linear ...)`):
@@ -1886,22 +1901,31 @@ case-insensitive space names, bounded source channels, sRGB-gamut rejection
 and atomic shorthand behavior are covered. Thirteen focused linear Display-P3
 cases and all 1,447 CSS tests pass. Debug/Release solution builds have zero
 warnings/errors, and both full suites pass all 16,713 tests. Format verification
-and `git diff --check` pass. Commit, push and CI remain pending.
-
-**Local validation:** 14 focused Display-P3 cases and all 1,435 CSS tests pass.
-Debug and Release solution builds have zero warnings/errors; both full
-solution suites pass all 16,701 tests; format verification passes. Code review
-approved the implementation. No CSS-specific native smoke applies.
-Feature commit `6ecc220` was pushed with remote main updates integrated by
-merge commit `375cfb5`. Linux development
-([run 43617047610](https://github.com/khmseu/VisualWeb/actions/runs/43617047610)),
-Windows confinement
-([run 43617047675](https://github.com/khmseu/VisualWeb/actions/runs/43617047675))
+and `git diff --check` pass. Commit `cc550b8` is pushed. Linux development
+([run 43621051210](https://github.com/khmseu/VisualWeb/actions/runs/43621051210))
 and CodeQL
-([run 43617046891](https://github.com/khmseu/VisualWeb/actions/runs/43617046891))
-all pass. Linux passed on x64/ARM64 with Trunk checks; Windows passed on
-x64/ARM64. The run also included upstream commit `893a937`, which adds a
-wait-for-pages step to the previously flaky shell repaint test.
+([run 43621051599](https://github.com/khmseu/VisualWeb/actions/runs/43621051599))
+pass. Windows confinement
+([run 43621051186](https://github.com/khmseu/VisualWeb/actions/runs/43621051186))
+passes on x64/arm64. Pass 5 is complete; five of the ten requested increments
+remain.
+
+**Pass 6 selection (2026-11-14):** CSS Color remains the highest actionable
+partial standard (~40% versus CSS Syntax at ~35%). The next finite `color()`
+space, A98 RGB, defines `[0,1]` channels, percentages, its transfer exponent
+and D65 primaries/conversion in CSS Color 4 sections 10.6, 11 and 19. This
+increment adds bounded `color(a98-rgb ...)` conversion only for results inside
+sRGB; other spaces and gamut mapping remain unsupported. The local source was
+checked 2026-11-07 and is fresh.
+
+**Pass 6 implementation (focused tests pass):** The A98 transfer exponent and
+the cached D65 conversion matrices now feed the shared sRGB gamut check and
+rounded 8-bit output. The standards' A98 example, numeric/percentage channels,
+`none`, alpha, invalid syntax/ranges and atomic shorthand behavior have
+regressions; 13 focused tests and all 1,460 CSS tests pass. Debug/Release
+solution builds have zero warnings/errors; both full suites pass all 16,726
+tests. Format verification and `git diff --check` pass. Commit, push and CI
+remain pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

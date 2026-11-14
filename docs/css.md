@@ -534,6 +534,12 @@ uses the same primaries and D65 white point, and converts directly to linear
 sRGB before the sRGB transfer function. Out-of-gamut results are diagnosed,
 not gamut-mapped. Other color spaces, color interpolation and higher-precision
 management remain unsupported.
+[`color(a98-rgb ...)`](https://www.w3.org/TR/css-color-4/#predefined-a98-rgb)
+(`css-color`) accepts the same bounded numeric/percentage channels, `none`
+components and optional slash alpha. It applies the A98 transfer exponent and
+D65 conversion matrices, then accepts only results inside the sRGB gamut;
+out-of-gamut results are diagnosed rather than gamut-mapped. Other color
+spaces, color interpolation and higher-precision management remain unsupported.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.

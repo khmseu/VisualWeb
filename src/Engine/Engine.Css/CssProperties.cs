@@ -523,7 +523,10 @@ internal static class CssProperties
     {
         if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident) { return null; }
         var space = CssText.Lower(args[0].Value);
-        if (space is not ("srgb" or "srgb-linear" or "display-p3" or "display-p3-linear")) { return null; }
+        if (space is not ("srgb" or "srgb-linear" or "display-p3" or "display-p3-linear" or "a98-rgb"))
+        {
+            return null;
+        }
         var values = ColorFunctionComponents(args.Skip(1).ToList(), legacy: false);
         if (values is null) { return null; }
         var channels = new double[values.Count];
@@ -537,6 +540,13 @@ internal static class CssProperties
         {
             if (DisplayP3ToSrgb(channels[0], channels[1], channels[2], linearInput: space == "display-p3-linear")
                 is not { } converted) { return null; }
+            channels[0] = converted.Red;
+            channels[1] = converted.Green;
+            channels[2] = converted.Blue;
+        }
+        else if (space == "a98-rgb")
+        {
+            if (A98RgbToSrgb(channels[0], channels[1], channels[2]) is not { } converted) { return null; }
             channels[0] = converted.Red;
             channels[1] = converted.Green;
             channels[2] = converted.Blue;
@@ -564,15 +574,34 @@ internal static class CssProperties
         var srgbGreen = -5617931d / 133579120 * linearRed + 139197051d / 133579120 * linearGreen;
         var srgbBlue = -1323971d / 67420360 * linearRed - 1514763d / 19262960 * linearGreen
             + 148092003d / 134840720 * linearBlue;
-        if (!IsInSrgbGamut(srgbRed) || !IsInSrgbGamut(srgbGreen) || !IsInSrgbGamut(srgbBlue))
+        return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue);
+    }
+
+    private static (double Red, double Green, double Blue)? A98RgbToSrgb(double red, double green, double blue)
+    {
+        var linearRed = Math.Pow(red, 563d / 256);
+        var linearGreen = Math.Pow(green, 563d / 256);
+        var linearBlue = Math.Pow(blue, 563d / 256);
+
+        // Combined CSS Color 4 A98 RGB to XYZ D65 to linear sRGB matrices.
+        var srgbRed = 66942405d / 47872228 * linearRed - 19070177d / 47872228 * linearGreen;
+        var srgbGreen = linearGreen;
+        var srgbBlue = -11512411d / 268173353 * linearGreen + 279685764d / 268173353 * linearBlue;
+        return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue);
+    }
+
+    private static (double Red, double Green, double Blue)? EncodeSrgbIfInGamut(
+        double red, double green, double blue)
+    {
+        if (!IsInSrgbGamut(red) || !IsInSrgbGamut(green) || !IsInSrgbGamut(blue))
         {
             return null;
         }
 
         return (
-            EncodeSrgbChannel(Math.Clamp(srgbRed, 0, 1)),
-            EncodeSrgbChannel(Math.Clamp(srgbGreen, 0, 1)),
-            EncodeSrgbChannel(Math.Clamp(srgbBlue, 0, 1)));
+            EncodeSrgbChannel(Math.Clamp(red, 0, 1)),
+            EncodeSrgbChannel(Math.Clamp(green, 0, 1)),
+            EncodeSrgbChannel(Math.Clamp(blue, 0, 1)));
     }
 
     private static double LinearizeSrgbChannel(double channel) =>

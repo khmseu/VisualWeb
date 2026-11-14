@@ -127,7 +127,10 @@ colors outside the sRGB gamut rather than gamut-mapping.
 `color(display-p3-linear ...)` accepts the same bounded channels as linear-light
 Display-P3, converts directly to linear sRGB and then applies the sRGB transfer
 function. It also rejects results outside the sRGB gamut rather than
-gamut-mapping. Other color spaces and system colors remain unsupported. All
+gamut-mapping.
+`color(a98-rgb ...)` accepts the same bounded channels, applies the A98 transfer
+exponent and D65 conversion matrices, and rejects converted colors outside the
+sRGB gamut. Other color spaces and system colors remain unsupported. All
 supported colors use rounded 8-bit sRGB output.
 The existing 8-bit sRGB parser accepts modern space-separated `rgb()`/`rgba()`
 with mixed numeric/percentage channels, optional slash alpha and `none` as
