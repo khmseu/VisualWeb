@@ -478,12 +478,13 @@ internal static class CssProperties
         }
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
-        if (function is not ("rgb" or "rgba" or "hsl" or "hsla")) { return null; }
+        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
         var values = ColorFunctionComponents(args, legacy);
         if (values is null) { return null; }
         if (function is "hsl" or "hsla") { return HslColor(values, legacy); }
+        if (function == "hwb") { return legacy ? null : HwbColor(values); }
         if (legacy)
         {
             if (values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
@@ -531,9 +532,47 @@ internal static class CssProperties
         saturation = Math.Max(0, saturation) / 100;
         lightness /= 100;
         var chroma = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+        var (red, green, blue) = HueChannels(hue, chroma);
+        var offset = lightness - chroma / 2;
+        return new CssColor(SrgbChannel(red + offset), SrgbChannel(green + offset), SrgbChannel(blue + offset),
+            SrgbChannel(alphaValue));
+    }
+
+    private static CssColor? HwbColor(IReadOnlyList<CssToken> values)
+    {
+        if (Hue(values[0], allowNone: true) is not { } hue
+            || ColorComponent(values[1], allowNone: true) is not { } whiteness
+            || ColorComponent(values[2], allowNone: true) is not { } blackness) { return null; }
+        var alpha = values.Count == 4 ? ColorComponent(values[3], allowNone: true) : 1;
+        if (alpha is null) { return null; }
+        var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage ? alpha.Value / 100 : alpha.Value;
+
+        var total = whiteness + blackness;
+        if (total >= 100)
+        {
+            var scale = Math.Max(Math.Abs(whiteness), Math.Abs(blackness));
+            var scaledWhite = whiteness / scale;
+            var scaledBlack = blackness / scale;
+            var gray = scaledWhite / (scaledWhite + scaledBlack);
+            return new CssColor(SrgbChannel(gray), SrgbChannel(gray), SrgbChannel(gray), SrgbChannel(alphaValue));
+        }
+
+        var whiteRatio = whiteness / 100;
+        var blackRatio = blackness / 100;
+        var (red, green, blue) = HueChannels(hue, chroma: 1);
+        var remainingHue = 1 - whiteRatio - blackRatio;
+        return new CssColor(
+            SrgbChannel(red * remainingHue + whiteRatio),
+            SrgbChannel(green * remainingHue + whiteRatio),
+            SrgbChannel(blue * remainingHue + whiteRatio),
+            SrgbChannel(alphaValue));
+    }
+
+    private static (double Red, double Green, double Blue) HueChannels(double hue, double chroma)
+    {
         var sector = hue / 60;
         var second = chroma * (1 - Math.Abs(sector % 2 - 1));
-        var (red, green, blue) = sector switch
+        return sector switch
         {
             < 1 => (chroma, second, 0d),
             < 2 => (second, chroma, 0d),
@@ -542,9 +581,6 @@ internal static class CssProperties
             < 5 => (second, 0d, chroma),
             _ => (chroma, 0d, second)
         };
-        var offset = lightness - chroma / 2;
-        static byte Channel(double value) => (byte)Math.Round(Math.Clamp(value * 255, 0, 255), MidpointRounding.AwayFromZero);
-        return new CssColor(Channel(red + offset), Channel(green + offset), Channel(blue + offset), Channel(alphaValue));
     }
 
     private static double? Hue(CssToken token, bool allowNone)
@@ -568,6 +604,9 @@ internal static class CssProperties
 
     private static double? ColorComponent(CssToken token, bool allowNone) => allowNone && IsNone(token)
         ? 0 : token.Kind is CssTokenKind.Number or CssTokenKind.Percentage ? Number(token) : null;
+
+    private static byte SrgbChannel(double value) =>
+        (byte)Math.Round(Math.Clamp(value * 255, 0, 255), MidpointRounding.AwayFromZero);
 
     private static bool IsNone(CssToken token) => token.Kind == CssTokenKind.Ident && CssText.Lower(token.Value) == "none";
 

@@ -647,6 +647,13 @@ interpolation remain unsupported. See the [CSS color scope](../docs/css.md#casca
 Its 50 regressions, solution build and all 14,761 solution tests pass locally;
 formatting reports only the three findings reproduced on base `ad0bca6`.
 
+The finite color parser now also supports CSS Color 4 `hwb()` values: hue
+angles, numeric/percentage/`none` whiteness and blackness, optional slash alpha,
+and achromatic normalization when whiteness plus blackness is at least 100.
+Comma syntax is rejected, and results use the existing bounded 8-bit sRGB
+representation. Other color spaces, interpolation and missing-component
+preservation remain unsupported. See the [CSS color scope](../docs/css.md#cascade-and-computed-values).
+
 The finite `background` shorthand now accepts one supported color and optional
 `none`, with transparent reset when the color is omitted. CSS-wide keywords,
 currentColor, inline/source-order/important cascade and existing limits apply.
@@ -1793,6 +1800,16 @@ event loop are host/platform behavior and are excluded. Module import
 resolution and `SharedArrayBuffer`/`Atomics` remain disabled. This is still a
 rough estimate, not a conformance audit; ECMAScript remains the highest
 partial estimate.
+
+**Standards-selection update (2026-11-14, after estimate review):** For this
+pass, ECMAScript remained the highest partial estimate (~90%) but its remaining
+tracked items require work outside approved phase 11w. CSS Syntax and CSS Color
+were tied next at ~35%; CSS Color was selected because its documented finite
+color parser had a concrete, bounded gap in the standard `hwb()` notation.
+This pass adds that syntax and its static sRGB conversion. The CSS Color
+estimate is now ~40%; CSS Syntax at ~35% is consequently the highest remaining
+partial estimate for the next selection. The earlier note selecting HTML/DOM
+as next is superseded by this re-evaluation.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
