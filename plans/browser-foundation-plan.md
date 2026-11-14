@@ -283,6 +283,13 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   before detached clone allocation; copies keep payload/order and document
   ownership but never parent/listener identity. Script Document clones remain
   deferred because bindings own exactly one document facade.
+  Phase 11w adds opt-in import-free inline modules. Parser callbacks queue module
+  sources while parser-blocking classics retain their parser positions; after
+  parsing, modules execute in source order after the interactive transition and
+  before DOMContentLoaded. Native module-evaluation promises and top-level
+  await share the page-script deadline, cancellation, DOM/events/microtask
+  budgets and transactional publication. Static/dynamic imports, external
+  modules, module loaders and module scheduling attributes remain unsupported.
 - Subsequent V8 integration and WebIDL-generated DOM bindings; HTML event loop.
 - Full Fetch (CORS, CSP, caching), service workers.
 - Flexbox, grid, tables, floats, positioning, transforms, animations.

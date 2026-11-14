@@ -60,6 +60,10 @@ Phase 11u adds doctype lookup/metadata over the same primitive-only bridge.
 Identifiers are inert strings, not resource requests or mode-selection inputs.
 Phase 11v adds detached native node clones through bounded script preflight;
 parents/listeners are omitted and each returned root gets a fresh identity.
+Phase 11w queues import-free inline modules during parsing, evaluates them after
+the interactive readiness transition and before DOMContentLoaded, and bounds
+top-level-await completion by the shared script deadline/cancellation. Modules
+have no loader, and unresolved/rejected evaluation fails navigation transactionally.
 Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
 [scripting guide](../scripting.md) for scope and target evidence.
 

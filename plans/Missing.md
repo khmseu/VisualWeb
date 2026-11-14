@@ -363,10 +363,14 @@ fails the navigation. Missing pieces include:
 
 Unsupported linked-stylesheet semantics are explicitly rejected rather than merely
 ignored. When page scripts are opted in, inline and external classic scripts
-execute in parser order at their parser position. External HTTP(S) source is
-fetched by the browser through a bounded CSP-checked, cookie-free broker; async,
-defer, modules, integrity/CORS/referrer-policy/fetch-priority/nonce and full
-HTML script preparation remain unsupported.
+execute in parser order at their parser position. External HTTP(S) classic
+source is fetched by the browser through a bounded CSP-checked, cookie-free
+broker. Import-free inline modules run after parsing and before
+`DOMContentLoaded`; top-level `await` must settle within the shared script
+deadline. Module imports, external modules and a module loader remain
+unsupported, as do `async`/`defer` scheduling, external-classic
+integrity/CORS/referrer-policy/fetch-priority/nonce attributes and full HTML
+script preparation.
 
 Evidence: `stylesheet collection`, `script classification`, `HTML loading policy`, and `networking scope`.
 
@@ -1797,11 +1801,11 @@ priorities below; the choice of protocol and its scope remain open. See the
    scrolling/overflow, keyboard focus and form issues that prevent using simple
    sites. Avoid adding advanced input APIs ahead of basic usability.
 4. **Small amounts of page JavaScript** once the static browsing path works.
-   Parser-blocking inline and external classic scripts are now implemented as
-   an opt-in bounded subset. Prioritize remaining DOM/event behavior and
-   scheduling/lifecycle integration needed by simple interactions. Full
-   application frameworks, modules, workers and the wider browser API surface
-   have lower priority.
+   Parser-blocking inline/external classic scripts and import-free inline
+   modules with deadline-bounded top-level `await` are opt-in bounded subsets.
+   Prioritize remaining DOM/event behavior and scheduling/lifecycle integration
+   needed by simple interactions. Full application frameworks, module imports,
+   workers and the wider browser API surface have lower priority.
 5. **Broader production security and isolation** beyond the existing protections,
    including general request authorization and wider SOP/CORS/CSP coverage,
    before claiming safe browsing of arbitrary untrusted sites. Completing this

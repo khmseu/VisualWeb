@@ -304,6 +304,22 @@
   the single-document bridge; native Document clones preserve mode and remap
   cloned owners.
 
+### Phase 11w — Import-free inline modules
+
+- Queue eligible inline modules during parsing; run them after the parser and
+  `interactive` transition, before `DOMContentLoaded`. Preserve parser-blocking
+  classic order.
+- Share source count/character limits, one deadline/cancellation, DOM/event/
+  microtask budgets and transactional publication across classics, modules and
+  readiness. Await native module-evaluation promises through a private JS
+  monitor; do not expose CLR callbacks or enable Task/promise conversion.
+- Top-level `await` must settle under the shared deadline. Unresolved or
+  rejected module evaluation invalidates the candidate; preserve the committed
+  page.
+- Provide no module loader or network/file access. Static/dynamic imports,
+  external modules, import maps, speculation rules and module scheduling
+  attributes remain unsupported. Preserve inline CSP checks.
+
 HTML scheduling, full DOM, and generated Web IDL bindings remain deferred. Run
 V8Smoke explicitly; Windows/arm64 guarantees require native target evidence.
 

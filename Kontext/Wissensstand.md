@@ -4,24 +4,45 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-12, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-14, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
-Am 2026-11-12 wurde der naechste standardspriorisierte Pass gewaehlt, als
-ECMAScript mit ~85% die hoechste aktuelle Teilabdeckung hatte. Pass 1
-implementiert opt-in parser-blockierende Ausfuehrung aller klassischen
-Inline- und externen Scripts. Externe Scripts werden am Parser-Haltepunkt
-ueber begrenztes Request/Response-IPC im Browser abgerufen; die Single-Process-
-Variante rendert auf einem stabilen eigenen Thread. CSP, HTTP(S)-Begrenzung,
-Cookies-off, MIME-/Quellenlimits, Deadlines und Transaktionsverhalten bleiben
-aktiv. Module, async/defer, Render-Blocking-Stylesheet-Verhalten und vollstaendige
-HTML-Scriptvorbereitung bleiben unsupported. Build (0 Warnungen/Fehler),
-alle 16.613 Solution-Tests, Format- und Whitespacepruefung sowie lokale und
-required-confined V8Smoke-Laeufe bestehen. Commit `1bcdf59` ist gepusht; Linux
-development, Windows confinement (x64 und arm64) und CodeQL sind erfolgreich.
+Am 2026-11-12 wurde der standardspriorisierte Pass gewaehlt, als ECMAScript mit
+~85% die hoechste aktuelle Teilabdeckung hatte. Pass 1 implementiert opt-in
+parser-blockierende Ausfuehrung aller klassischen Inline- und externen Scripts.
+Externe Scripts werden am Parser-Haltepunkt ueber begrenztes
+Request/Response-IPC im Browser abgerufen; die Single-Process-Variante rendert
+auf einem stabilen eigenen Thread. CSP, HTTP(S)-Begrenzung, Cookies-off,
+MIME-/Quellenlimits, Deadlines und Transaktionsverhalten bleiben aktiv.
+Build (0 Warnungen/Fehler), alle 16.613 Solution-Tests, Format- und
+Whitespacepruefung sowie lokale und required-confined V8Smoke-Laeufe bestanden.
+Commit `1bcdf59` ist gepusht; Linux development, Windows confinement (x64 und
+arm64) und CodeQL waren erfolgreich.
 Siehe [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)
 und [KP-334](./Kontextprotokoll.md#kp-334---commit-push-und-ci-bestaetigt).
+
+**Aktueller Pass (2026-11-14):** Phase 11w fuegt opt-in importfreie Inline-
+Module nach Parsing und `interactive`, vor `DOMContentLoaded` hinzu.
+Top-Level-await darf nur innerhalb derselben Deadline/Cancellation und
+Readiness-/DOM-/Microtaskbudgets abschliessen; Imports, externe Module,
+Loader, Datei-/Netzwerkzugriff und weitere Modulplanung bleiben unsupported.
+Classic- und Modulquellen teilen Anzahl- und Zeichenlimits. Fehler,
+Abbruch und Timeout invalidieren den Kandidaten, nicht das committed Dokument.
+Die Nutzerentscheidung Q-036 hebt nur den vorherigen Top-Level-await-Ausschluss
+auf; sie erteilt keine Import- oder Netzwerkberechtigung. Der lokale
+ECMAScript-Cache vom 2026-11-07 war juenger als 30 Tage.
+
+Lokale Verifikation: Engine.Scripting 362 Tests, Browser 1.341 Tests,
+Solution-Build ohne Warnungen/Fehler, Solution-Volltest 16.626 Tests,
+Formatverifikation, `git diff --check` sowie V8Smoke lokal und unter
+required-confined Bedingungen bestanden. Commit, Push und CI stehen noch aus.
+Der naechste Standardsinkrement-Pass soll die Rangfolge erneut anhand von
+[Missing.md](../plans/Missing.md) und den approximativen Prozentwerten
+bestimmen, statt hier vorweggenommen zu werden. Siehe
+[KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen),
+[KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt)
+und [KP-337](./Kontextprotokoll.md#kp-337---importfreie-inline-module-implementiert).
 
 Am 2026-11-12 wurde [docs/standards.md](../docs/standards.md) auf Wunsch des
 Nutzers in den beiden Standards-Supporttabellen von Statusangaben auf
@@ -161,14 +182,14 @@ HTML-Top-Prioritaet aus
 Danach bleibt die bisherige empfohlene Prioritaetsfolge in
 [Missing.md](../plans/Missing.md#recommended-priority) bestehen.
 
-**Beschlossene Richtung DEC-034 (Nutzerwahl, 2026-11-12):** Fuer das naechste
-ECMAScript-Inkrement wird parser-blockierende Ausfuehrung klassischer externer
-Skripte mit CSP-gesteuertem HTTP(S)-Abruf einschliesslich Cross-Origin-Faellen
-verfolgt. Die Roadmap stellt externe Skripte bislang zurueck; die ausgewaehlte
-Richtung erweitert diesen Umfang. Die konkrete, begrenzte Umsetzung muss
-weiterhin Renderer-Netzwerkzugriff vermeiden und bestehende Request-, Budget-,
-Abbruch- und Transaktionsregeln erhalten. Siehe
-[KP-326](./Kontextprotokoll.md#kp-326---parser-blockierende-externe-klassiker-gewaehlt).
+**Beschlossene Richtung DEC-034 (Nutzerwahl, 2026-11-12; umgesetzt):** Der
+damalige ECMAScript-Pass erweiterte die Roadmap um parser-blockierende
+Ausfuehrung klassischer externer Skripte mit CSP-gesteuertem HTTP(S)-Abruf
+einschliesslich Cross-Origin-Faellen. Die Umsetzung blieb browservermittelt und
+bewahrte Request-, Budget-, Abbruch- und Transaktionsregeln; Commit und CI sind
+in [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)
+und [KP-334](./Kontextprotokoll.md#kp-334---commit-push-und-ci-bestaetigt)
+belegt. Diese Wahl entscheidet nicht ueber ECMAScript-Module; siehe Q-034.
 
 **Beschlossene Umsetzung Q-031 (Nutzerwahl, 2026-11-12):** Parser-blockierende
 Skriptquellen werden am Parser-Haltepunkt ueber Request/Response-IPC vom Browser
@@ -1531,7 +1552,7 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | DEC-031 | HTML `table[width]` maps nonzero dimension values to pixel or percentage CSS width hints; percentages resolve against the containing block, and zero/invalid inputs add no hint                                       | Aus REQ-005, Missing-Tracker und frisch gepruefter HTML-Regel abgeleitet; implementiert, lokal validiert, Commit `fb73991` gepusht und Linux-/Windows-/CodeQL-CI gruen | Preserve the HTML dimension parser; bound aggregate raw attributes; fail explicitly outside the finite numeric range; keep width attributes on other table parts unsupported                                | [KP-231](./Kontextprotokoll.md#kp-231---pass-6-html-table-width-hint), [KP-232](./Kontextprotokoll.md#kp-232---pass-6-committed-gepusht-und-ci-gruen), WHATWG HTML `#tables-2` and `#rules-for-parsing-dimension-values` (cache refreshed 2026-11-07)                                                                                                                                     |
 | DEC-032 | Valid `valign` on `tr`/row groups supplies a default for direct child table cells; the row wins over its group, and cell CSS or a cell `valign` hint overrides it                                                     | Ausdrueckliche Nutzerwahl `cell-default`; implementiert, lokal validiert, `dd42bec` gepusht und Linux-/Windows-/CodeQL-CI gruen                                        | This is bounded HTML compatibility behavior, not general CSS inheritance; unsupported values/targets still fail explicitly                                                                                  | [KP-238](./Kontextprotokoll.md#kp-238---naechster-tabellenpass-row-group-valign-offen), [KP-239](./Kontextprotokoll.md#kp-239---row-group-valign-als-zell-default-gewaehlt), [KP-240](./Kontextprotokoll.md#kp-240---pass-9-implementiert-und-lokal-vollvalidiert), [KP-241](./Kontextprotokoll.md#kp-241---pass-9-gepusht-und-ci-gruen)                                                  |
 | DEC-033 | At each next standards-driven feature selection, prioritize the partially implemented standard(s) with the highest current coverage estimate; treat ties equally and re-evaluate from `standards.md`                  | Nutzerangabe zur Rangfolge; Gleichstands- und Fallbackregel als Ableitung; ersetzt die HTML-first-Topprioritaet                                                        | Schaetzungen sind nur eine grobe Rangfolgeheuristik; waehle tatsaechliche offene Tracker-Luecken, keine Konformitaet oder Abschluss aus dem Prozentwert ableiten                                            | Aktueller Nutzerturn; [Missing.md](../plans/Missing.md#recommended-priority), [standards.md](../docs/standards.md#support-status), [KP-324](./Kontextprotokoll.md#kp-324---standardsprioritaet-nach-hoechster-teilabdeckung)                                                                                                                                                              |
-| DEC-034 | Implement parser-blocking execution for external classic scripts with CSP-governed HTTP(S) loading, including cross-origin cases                                                                                      | Nutzerwahl umgesetzt und lokal validiert; commit/push/CI ausstehend                                                                                                    | Browser-owned loading only; preserve opt-in script policy, CSP, request/resource limits, cancellation and transactional publication; modules, async/defer and persistent event-loop support remain deferred | [KP-326](./Kontextprotokoll.md#kp-326---parser-blockierende-externe-klassiker-gewaehlt), [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)                                                                                                                                                                                               |
+| DEC-034 | Implement parser-blocking execution for external classic scripts with CSP-governed HTTP(S) loading, including cross-origin cases                                                                                      | Nutzerwahl umgesetzt, committed, gepusht und durch Linux/Windows/CodeQL-CI bestaetigt                                                                                  | Browser-owned loading only; preserve opt-in script policy, CSP, request/resource limits, cancellation and transactional publication; modules, async/defer and persistent event-loop support remain deferred | [KP-326](./Kontextprotokoll.md#kp-326---parser-blockierende-externe-klassiker-gewaehlt), [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert), [KP-334](./Kontextprotokoll.md#kp-334---commit-push-und-ci-bestaetigt)                                                                                                                       |
 
 ## Offene Fragen, Widersprueche und Risiken
 
@@ -1570,6 +1591,13 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-031 | Wie sollen parser-blockierende externe Skripte Browser-Ressourcenabrufe erhalten, ohne dem Renderer Netzwerkzugriff zu geben: vorab bereitgestellter begrenzter Snapshot oder Request/Response-IPC am Parser-Haltepunkt?                  | Beantwortet und lokal umgesetzt: Request/Response-IPC am Parser-Haltepunkt                                                                                                                                    | Keine Renderer-Netzwerkfaehigkeit; weitere Ressourcentypen nicht aus dieser Entscheidung ableiten                                                                                                                                     | Nutzerwahl `parser_pause_ipc`; [renderer-processes.md](../docs/renderer-processes.md#private-stream-protocol-v49), [KP-328](./Kontextprotokoll.md#kp-328---parser-pause-ipc-fuer-externe-skripte-gewaehlt), [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)                                                                                                                     |
 | Q-032 | Soll die parser-pausierende Skript-Broker-Unterstuetzung auch im Single-Process-Modus gelten, obwohl dort ein synchrones Netzwerk-Warten den nativen Shell-Thread blockieren wuerde?                                                      | Beantwortet und lokal umgesetzt: asynchroner Abruf, stabiler dedizierter Renderer-Thread                                                                                                                      | Keine UI-Blockierung oder Netzwerkaufrufe aus Renderer-Engine                                                                                                                                                                         | Nutzerwahl `async_single_process_architecture`; [browser-shell.md](../docs/browser-shell.md#navigation-and-page-policy), [KP-330](./Kontextprotokoll.md#kp-330---asynchrone-single-process-renderarchitektur-gewaehlt), [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)                                                                                                         |
 | Q-033 | Soll die neue Parser-Ausfuehrung auch Inline-Klassiker in Inline-only-Dokumenten vom bisherigen Post-Parse-Zeitpunkt auf Parserabschluss umstellen?                                                                                       | Beantwortet und umgesetzt: parser-blockierende HTML-Reihenfolge fuer alle klassischen Inline- und externen Skripte                                                                                            | Alle parser-inserted Klassiker am Parserposition ausfuehren; vollstaendige HTML-Vorbereitung bleibt deferred                                                                                                                          | Nutzerwahl nach Klaerung der HTML-Anforderungen; [HTML #script-processing-model](https://html.spec.whatwg.org/multipage/scripting.html#script-processing-model), [KP-332](./Kontextprotokoll.md#kp-332---parserreihenfolge-fuer-alle-klassiker-beschlossen), [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)                                                                    |
+| Q-034 | Welchen Umfang soll das naechste ECMAScript-Modulinkrement haben: importfreie Inline-Module als erster Schritt oder einen begrenzten statischen Abhaengigkeitsgraphen mit browservermitteltem Ressourcenabruf?                            | Beantwortet: importfreie Inline-Module; sie laufen nach Parsing vor DOMContentLoaded; Imports bleiben aus                                                                                                     | Keine Modulimporte oder Modulgraph-/Scheduling-Erweiterung; der fruehere Top-Level-await-Ausschluss wurde durch Q-036 ersetzt                                                                                                         | Nutzerwahl `inline_only`; [Missing.md](../plans/Missing.md#recommended-priority), [standards.md](../docs/standards.md#support-status), [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen), [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt)                                                                                                                             |
+| Q-035 | Wie soll die Implementierung Top-Level-await in Inline-Modulen zuverlaessig ausschliessen, wenn ClearScript es nativ zulaesst?                                                                                                            | Offen; die Modulhost-Ausfuehrung warf beim lokalen Probeaufruf keinen synchronen Fehler; async Modulevaluation kann readiness und Taskbudget ueberschreiten                                                   | Nutzer zwischen konservativem Verbot von `await`-Syntax im gesamten Modul, einem separaten begrenzten Async-Evaluationsdesign oder Blockieren weiterer Aktionen waehlen lassen                                                        | Lokaler ClearScript-7.5.1.1-Probe; [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen), [ClearScript Top-Level Await](https://github.com/ClearFoundry/ClearScript/blob/master/docs/_posts/2022-2-4-top-level-await.md)                                                                                                                                                                                         |
+
+| Q-036 | Soll der gewaehlte Modulumfang Top-Level-await ausschliessen oder begrenzt asynchron auswerten? | Beantwortet: Nutzer revidiert den Ausschluss und waehlt begrenzte asynchrone Auswertung unter Readiness-/Taskbudget | Keine unbeschraenkte Promise-Wartezeit und keine Import-/Netzwerkberechtigung; Cancellation, Fehler und Fristen muessen explizit abgedeckt sein | Nutzerwahl `support-bounded-async`; [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt), [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen) |
+
+Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
+festgehaltene Ausschluss von Top-Level-await ist ersetzt.
 
 ## Arbeitsstand und Nachweise
 

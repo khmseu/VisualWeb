@@ -193,6 +193,13 @@ browser-brokered external classics execute in parser order before parsing
 continues, so later input is not yet in the DOM. This is a finite subset, not
 the complete HTML script preparation, render-blocking stylesheet, scheduling
 or error-reporting algorithms; without opt-in, scripts remain inert.
+Phase 11w queues inline `type="module"` sources at the same parser boundary,
+then executes them in source order after parsing and after the `interactive`
+readiness transition, before `DOMContentLoaded`. Top-level `await` must settle
+within the shared page-script deadline; unresolved or rejected module
+evaluation fails the candidate. Static/dynamic imports, external modules and a
+module loader remain unsupported. This scheduling remains in PageRendering;
+Engine.Html still constructs a static tree without executing script.
 Phase 11e also exposes bounded native attribute operations, element/text/fragment
 factories and Node mutation/navigation through branded wrappers. It reuses these
 native checked algorithms without adding events or dynamic script execution.

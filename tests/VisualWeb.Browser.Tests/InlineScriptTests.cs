@@ -679,6 +679,73 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task InlineModuleTopLevelAwaitCompletesBeforeDomContentLoadedAndPaint(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title><style>body{margin:0;background-color:red}</style>
+            <script>globalThis.moduleOrder=['classic-before'];</script>
+            <script type="module">
+            if(document.readyState!=='interactive')throw Error('module readiness');
+            moduleOrder.push('module-start');
+            await Promise.resolve();
+            moduleOrder.push('module-finish');
+            document.addEventListener('DOMContentLoaded',()=>{
+                moduleOrder.push('DOMContentLoaded');
+                document.title=moduleOrder.join(',');
+                document.body.setAttribute('style','background-color:blue');
+            });
+            </script>
+            <script>moduleOrder.push('classic-after');</script>
+            """);
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+        Assert.Equal("classic-before,classic-after,module-start,module-finish,DOMContentLoaded", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RejectedInlineModuleCannotReplaceCommittedPage(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var good = Page();
+        var committed = await renderer.RenderAsync(good, Viewport, Cancellation);
+        renderer.CommitDocument(good.DocumentId);
+        var rejected = Page("""
+            <!doctype html><title>Before</title>
+            <script type="module">
+            document.title='partial';
+            await Promise.reject(new Error('module fixture'));
+            </script>
+            """);
+
+        if (process)
+        {
+            await Assert.ThrowsAsync<PageNavigationException>(() => renderer.RenderAsync(rejected, Viewport, Cancellation));
+        }
+        else
+        {
+            await Assert.ThrowsAsync<ScriptExecutionException>(() => renderer.RenderAsync(rejected, Viewport, Cancellation));
+        }
+
+        var retained = await renderer.RenderRetainedAsync(good, new(25, 20, 1), Cancellation);
+        Assert.Equal(committed.Title, retained.Title);
+        Assert.Equal("Script title", (await renderer.RenderAsync(Page(), Viewport, Cancellation)).Title);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ReadinessFailureCannotPublishAndFreshPageCanRecover(bool process)
     {
         using IPageRenderer renderer = process

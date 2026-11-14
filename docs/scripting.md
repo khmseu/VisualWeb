@@ -1,14 +1,16 @@
-# V8 host, DOM bindings and opt-in inline pages (phases 11a–11v)
+# V8 host, DOM bindings and opt-in inline pages (phases 11a–11w)
 
 The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
 small renderer-local native host, not a web-browser JavaScript environment.
 **Page scripts remain disabled by default.** Phase 11d explicitly opts into the
 bounded parser-blocking classic-script subset below, including browser-brokered
-external scripts. Full DOM/Web IDL bindings, other HTML script scheduling and
-event loops, modules, timers, workers and script-visible network/storage APIs
-are deferred. IPC carries only document identities, trusted script/repaint
-policy and bounded script request/response data, never DOM or V8 objects.
+external scripts. Phase 11w adds import-free inline module scripts after parsing,
+including top-level `await` bounded by the same page-script deadline. External
+modules, imports, other scheduling, timers, workers and script-visible
+network/storage APIs remain deferred. IPC carries only document identities,
+trusted script/repaint policy and bounded script request/response data, never
+DOM or V8 objects.
 
 ## Ownership and values
 
@@ -278,13 +280,17 @@ This finite post-parse sequence references HTML's
 [current document readiness](https://html.spec.whatwg.org/#current-document-readiness)
 and [the end](https://html.spec.whatwg.org/#the-end):
 
-1. All initial classic sources and their native microtasks observe
+1. Parser-blocking classic sources and their native microtasks observe
    `document.readyState === 'loading'`, despite the already parsed DOM.
 2. Transition to `interactive`, dispatch a nonbubbling/noncancelable
    `readystatechange`, and drain/verify the native microtask checkpoint.
-3. Dispatch exactly one bubbling/noncancelable `DOMContentLoaded` at document,
+3. Opted-in import-free inline modules run in source order while readiness is
+   `interactive`. Their module-evaluation promises, including top-level `await`,
+   must settle before the same navigation deadline and before `DOMContentLoaded`.
+   Module rejection, timeout or cancellation fails the candidate transactionally.
+4. Dispatch exactly one bubbling/noncancelable `DOMContentLoaded` at document,
    still interactive, then drain/verify its native checkpoint.
-4. Transition to `complete`, dispatch another nonbubbling/noncancelable
+5. Transition to `complete`, dispatch another nonbubbling/noncancelable
    `readystatechange`, and drain/verify its native checkpoint before painting.
 
 readyState is a readonly nonconfigurable document property with receiver checks.
@@ -295,7 +301,7 @@ private lifecycle. Dispatch uses captured internal constructors/algorithms,
 not replaceable document methods, Event globals or caller-supplied option
 objects. Listener lists and normal phase/cancellation/cleanup rules still apply.
 
-All sources, lifecycle listeners and native jobs share **one navigation
+All classic sources, modules, lifecycle listeners and native jobs share **one navigation
 deadline, DOM callback budget, listener invocation budget and microtask quota**.
 The three lifecycle stages do not consume source slots/characters and do not
 reset counters. Failures at a stage/checkpoint prevent subsequent stages and
@@ -311,10 +317,36 @@ completes this lifecycle; static mode still creates no V8 host. Navigation/reloa
 uses a fresh host/readiness state. This is intentionally **not full HTML
 scheduling**: DOMContentLoaded is normally a queued global task, readiness
 depends on parser/deferred/async scripts and subresources, and complete normally
-precedes Window load. Here no external resources/modules/deferred scripts are
+precedes Window load. Here no module loader or external module resources are
 supported, the complete transition means only this finite execution finished,
 and there is no Window/load dispatch, timing API, persistent task queue, parser
 interleaving, error-report-and-continue, or input event delivery.
+
+## Bounded inline modules (phase 11w)
+
+With the existing explicit page-script opt-in, parser callbacks queue eligible
+`type="module"` inline sources in document order. Parser-blocking classic scripts
+still execute at their parser positions. After parsing, the renderer transitions
+readiness to `interactive`, runs the queued modules sequentially, and only then
+dispatches `DOMContentLoaded`. Modules use ClearScript's native module
+evaluation, preserving module scope and top-level-await behavior.
+
+The host observes each native module-evaluation promise through a private,
+captured JavaScript closure. It does not expose a CLR callback, convert the
+promise to a .NET Task, or yield V8 ownership to another thread. The renderer
+checks completion while the existing linked cancellation/deadline is active.
+An unresolved top-level await therefore fails at the page-script deadline;
+module rejection or interruption invalidates the host and prevents publication.
+Module sources count toward the same 64-source, per-source and aggregate
+character limits as classic sources, and share their DOM, event and microtask
+budgets.
+
+There is no document/module loader. Static and dynamic imports, external
+`type="module"` sources, import maps, speculation rules, and module scheduling
+attributes (`async`, `defer`, legacy `for`/`event`) fail explicitly. Modules
+cannot fetch or access files; V8 document access remains disabled. Inline CSP
+nonce/hash checks still apply before execution. This is a bounded development
+subset, not full HTML module scheduling or a persistent JavaScript event loop.
 
 ## Minimal live DOM bindings (phase 11c)
 
@@ -1024,9 +1056,10 @@ declared charset or UTF-8. Classic external scripts do not use CORS. Integrity,
 implemented and cause navigation failure. This does not add general Fetch or
 resource scheduling.
 
-After parsing, the finite phase-11h readiness events/checkpoints run. The idle
-host stays with that renderer-local document for link-click dispatch (see
-below); it runs nothing else. Stylesheets are collected from the
+After parsing, the finite lifecycle transitions to `interactive`, evaluates
+queued import-free modules, dispatches DOMContentLoaded, and completes its
+checkpoints. The idle host stays with that renderer-local document for link-click
+dispatch (see below); it runs nothing else. Stylesheets are collected from the
 mutated DOM, and style/layout/display lists/pixels are computed afresh. Live
 title changes become the page/tab/window title; a script may change an embedded
 style's `textContent` before stylesheet collection. All existing CSS/layout/paint
@@ -1036,12 +1069,14 @@ Classification uses HTML's type/legacy-language selection and ASCII matching
 against the complete JavaScript MIME essence list. Missing/empty `type` and
 default/empty `language` select classic scripts. Type values strip only ASCII
 whitespace; MIME parameters do not match an essence. Other data-block types
-remain inert, and classic `nomodule` elements are skipped. Empty classic sources
-do not consume a source slot. Modules/import maps/speculation rules and
-`async`/`defer`/legacy `for`/`event` scheduling attributes fail when encountered;
-rejecting scheduling attributes rather than ignoring them is an explicit
-restriction of this foundation. Render-blocking stylesheet behavior and the
-broader HTML preparation/error-reporting algorithms are not claimed.
+remain inert, and classic `nomodule` elements are skipped. Empty classic and
+module sources do not consume a source slot. Inline `type="module"` sources use
+the bounded phase-11w scheduling above. External modules, import maps and
+speculation rules remain unsupported. `async`/`defer`/legacy `for`/`event`
+scheduling attributes fail when encountered; rejecting scheduling attributes
+rather than ignoring them is an explicit restriction of this foundation.
+Render-blocking stylesheet behavior and the broader HTML preparation/error-
+reporting algorithms are not claimed.
 
 The existing host limits apply unchanged: **64 sources, 65,536 UTF-16 characters
 per source, 262,144 aggregate source characters and one two-second page-script
@@ -1064,11 +1099,12 @@ resize fails with an explicit reload requirement instead of silently executing
 scripts again. Reload/new navigation may create a replacement worker/context.
 Static-mode resize behavior is unchanged. Retained DOM never crosses IPC.
 
-There is still no Window/global browser API, automatic event-handler dispatch, timer,
-HTML event loop, module loader, origin/CSP enforcement or script-visible
-network/storage. Finite native microtask checkpoints are not an HTML event-loop
-scheduler; there is no live host remaining after initial execution. Do not use
-this mode for hostile content, even with OS confinement.
+There is still no Window/global browser API, automatic event-handler dispatch,
+timer, module loader, origin/CSP enforcement or script-visible network/storage.
+Finite native microtask checkpoints and bounded top-level-await completion are
+not an HTML event-loop scheduler; no module task or pending promise is retained
+after initial execution. Do not use this mode for hostile content, even with OS
+confinement.
 
 ## Bounds and failure
 

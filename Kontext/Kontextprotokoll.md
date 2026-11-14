@@ -8964,3 +8964,88 @@ Smoke-Pruefungen einschliesslich des confined Opt-in-Scriptlaufs.
 
 **Status:** KP-333 ist implementiert, lokal validiert, committed, gepusht und
 durch alle drei CI-Workflows erfolgreich geprueft.
+
+### KP-335 - ECMAScript-Module-Umfang offen
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Prioritaetspruefung und vor Implementierung erforderliche
+  Umfangsklaerung.
+- Quelle: Nutzerauftrag im aktuellen Turn; sauberer Worktree auf `main` bei
+  `62cba76`; [Missing.md](../plans/Missing.md#recommended-priority),
+  [standards.md](../docs/standards.md#support-status),
+  [V8ScriptHost.cs](../src/Engine/Engine.Scripting/V8ScriptHost.cs),
+  [Engine.Scripting README](../src/Engine/Engine.Scripting/README.md) und
+  lokale ClearScript-7.5.1.1-Paketdokumentation sowie die
+  [ClearScript-Notiz zu Top-Level-await](https://github.com/ClearFoundry/ClearScript/blob/master/docs/_posts/2022-2-4-top-level-await.md).
+
+**Belegt:** Bei dieser Auswahl fuehrt ECMAScript mit ~85% die teilweise
+implementierten Standards an. Der Tracker nennt Module als nicht implementiert.
+Der Host setzt klassische Scripte um und besitzt keine Modul-/HTML-Modulintegration;
+die lokale ClearScript-Dokumentation weist native JavaScript-Modulunterstuetzung
+aus. Der lokale ECMA-262-Cache wurde am 2026-11-07 geprueft und ist am
+Dokumentationsdatum weniger als 30 Tage alt. Noch wurde keine Modulimplementierung
+begonnen oder eine Modulabruffreigabe erteilt.
+
+**Nutzerwahl Q-034:** Der erste Schritt soll importfreie Inline-Module nach
+dem Parsen und vor `DOMContentLoaded` ausfuehren. Imports und Top-Level-await
+bleiben in diesem Inkrement ausgeschlossen; die gewaehlte Begrenzung vermeidet
+Modulgraph- und Abrufpolitik, ohne klassischen Skriptzeitpunkt auf Module zu
+uebertragen. Die alternative Erweiterung auf statische Abhaengigkeitsgraphen
+mit browservermitteltem Ressourcenabruf wurde fuer diesen Pass nicht gewaehlt.
+Weitere Modulgraph-/Scheduling-Entscheidungen bleiben offen. Die Nutzerwahl
+Q-036 hebt den Ausschluss von Top-Level-await auf.
+
+**Belegt / technischer Blocker Q-035:** Ein lokaler Probeaufruf mit
+`DocumentInfo.Category = ModuleCategory.Standard` und Top-Level-`await`
+lieferte keinen synchronen Fehler. ClearScript dokumentiert fuer die
+eingebettete V8-Version, dass Top-Level-await nicht mehr per Engine-Einstellung
+abschaltbar ist; async Modul-Auswertung ist somit nicht als sofortige synchrone
+Ausfuehrung zu behandeln. Der testweise Host-Prototyp wurde entfernt;
+es bleibt keine Produktcodeaenderung aus diesem Probeversuch. Vor der
+Implementierung muss gewaehlt werden, ob die kleine Teilmenge konservativ jedes
+`await`-Token im Modul ablehnt (auch innerhalb async functions), ob ein
+separates bounded Async-Modul-Auswertungsdesign verfolgt werden soll oder ob
+weitere Aktionen blockieren. Die offene Frage Q-035 wurde mit der Nutzerwahl
+Q-036 beantwortet.
+
+### KP-336 - Begrenzte Top-Level-await-Auswertung gewaehlt
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerentscheidung nach technischer Blockerfrage.
+- Quelle: ausdrueckliche Nutzerwahl `support-bounded-async` im Anschluss an Q-035.
+
+**Nutzerangabe / beschlossen:** Der Umfang wird revidiert: importfreie Inline-
+Module duerfen Top-Level-await verwenden, wenn ihre asynchrone Auswertung
+begrenzt innerhalb des vorhandenen Readiness-/Taskbudgets abgeschlossen wird.
+Das vorherige Ausschlusskriterium ist ersetzt. Diese Wahl erteilt keine
+Netzwerk-/Importberechtigung und erlaubt keine unbeschraenkte Promise-Wartezeit.
+Konkrete Laufzeitintegration, Cancellation, Fehlerbehandlung und Tests bleiben
+Implementierungsanforderungen und muessen als Produktverhalten verifiziert
+werden; die Nutzerwahl ist kein Implementierungs- oder Testnachweis.
+
+### KP-337 - Importfreie Inline-Module implementiert
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Implementierungs- und Verifikationscheckpoint.
+- Quellen: [V8ScriptHost.cs](../src/Engine/Engine.Scripting/V8ScriptHost.cs),
+  [ModuleEvaluationBindings.cs](../src/Engine/Engine.Scripting/ModuleEvaluationBindings.cs),
+  [InlinePageScripts.cs](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  zugehoerige Engine.Scripting-/Browser-Tests, [Missing.md](../plans/Missing.md)
+  und [scripting.md](../docs/scripting.md).
+
+**Belegt:** Phase 11w reiht parser-entdeckte Inline-Module nach Parsing und dem
+Readiness-Uebergang zu `interactive`, aber vor `DOMContentLoaded` ein. Klassiker
+behalten ihre Parserpositionen. Native Modulevaluation wird ueber einen privaten
+JavaScript-Monitor beobachtet; Top-Level-await muss die gemeinsame Frist und
+Cancellation einhalten. Import, Loader, externe Module und Datei-/Netzwerkzugriff
+bleiben ausgeschlossen. Classic- und Modulquellen teilen Zaehl-/Zeichenlimits
+sowie Lebenszyklusbudgets; Fehler oder Abbruch lassen keinen Kandidaten committen.
+
+**Belegt, lokal:** Engine.Scripting 362 Tests, VisualWeb.Browser 1.341 Tests,
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.626 Tests),
+Formatverifikation, `git diff --check` sowie lokaler und required-confined V8Smoke
+bestanden. Commit/Push/CI sind zum Dokumentationszeitpunkt noch nicht erfolgt;
+dieser Checkpoint bestaetigt nur lokale Implementierung und Verifikation.

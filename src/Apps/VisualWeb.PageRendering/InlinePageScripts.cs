@@ -5,12 +5,15 @@ using VisualWeb.Engine.Scripting;
 
 namespace VisualWeb.PageRendering;
 
-/// <summary>Finite parser-blocking classic-script policy for opted-in page rendering.</summary>
-/// <remarks>Specs: html, mime-sniffing;
+/// <summary>Bounded classic and import-free module script policy for opted-in page rendering.</summary>
+/// <remarks>Specs: html, mime-sniffing, ecmascript;
 /// <see href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element">script preparation</see>,
-/// <see href="https://mimesniff.spec.whatwg.org/#javascript-mime-type-essence-match">script type matching</see>.</remarks>
+/// <see href="https://mimesniff.spec.whatwg.org/#javascript-mime-type-essence-match">script type matching</see>,
+/// <see href="https://tc39.es/ecma262/#sec-moduleevaluation">ModuleEvaluation</see>.</remarks>
 public static class InlinePageScripts
 {
+    private enum ScriptKind { Inert, Classic, Module }
+
     private static readonly HashSet<string> ClassicTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
@@ -31,18 +34,12 @@ public static class InlinePageScripts
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (element.LocalName != "script") { continue; }
-            var type = element.GetAttribute("type");
-            var language = element.GetAttribute("language");
-            var kind = type is not null ? type.Length == 0 ? "text/javascript" : type.Trim(' ', '\t', '\n', '\r', '\f')
-                : string.IsNullOrEmpty(language) ? "text/javascript" : "text/" + language;
-            if (kind.Any(character => character > 0x7f)) { continue; }
-            if (kind.Equals("module", StringComparison.OrdinalIgnoreCase)
-                || kind.Equals("importmap", StringComparison.OrdinalIgnoreCase)
-                || kind.Equals("speculationrules", StringComparison.OrdinalIgnoreCase))
+            var scriptKind = Classify(element);
+            if (scriptKind == ScriptKind.Module)
             {
-                throw new PageNavigationException("Modules, import maps and speculation rules are deferred.");
+                throw new PageNavigationException("Inline modules require parser-integrated module scheduling.");
             }
-            if (!ClassicTypes.Contains(kind) || element.GetAttribute("nomodule") is not null) { continue; }
+            if (scriptKind != ScriptKind.Classic) { continue; }
             if (element.GetAttribute("src") is not null)
             {
                 throw new PageNavigationException("External scripts are deferred; no script was fetched.");
@@ -90,11 +87,20 @@ public static class InlinePageScripts
         var scripts = 0;
         try
         {
-            host.ExecuteInitialDocumentParserBatch((execute, taskToken) =>
+            host.ExecuteInitialDocumentParserBatch((execute, queueModule, taskToken) =>
             {
                 parsed = HtmlParser.Parse(html, options, taskToken, document, element =>
                 {
-                    if (!IsClassicScript(element)) { return; }
+                    var kind = Classify(element);
+                    if (kind == ScriptKind.Inert) { return; }
+                    if (kind == ScriptKind.Module)
+                    {
+                        var moduleSource = string.Concat(element.ChildNodes.OfType<DomText>().Select(node => node.Data));
+                        if (moduleSource.Length == 0) { return; }
+                        queueModule(moduleSource);
+                        scripts++;
+                        return;
+                    }
                     var effectiveBase = ParserBaseUrl(document, pageUrl, baseUrl, taskToken);
                     var source = ReadClassicSource(element, pageUrl, effectiveBase, scriptLoader, taskToken);
                     if (source.Length == 0) { return; }
@@ -112,30 +118,45 @@ public static class InlinePageScripts
         }
     }
 
-    private static bool IsClassicScript(DomElement element)
+    private static ScriptKind Classify(DomElement element)
     {
         var type = element.GetAttribute("type");
         var language = element.GetAttribute("language");
         var kind = type is not null ? type.Length == 0 ? "text/javascript" : type.Trim(' ', '\t', '\n', '\r', '\f')
             : string.IsNullOrEmpty(language) ? "text/javascript" : "text/" + language;
-        if (kind.Any(character => character > 0x7f)) { return false; }
-        if (kind.Equals("module", StringComparison.OrdinalIgnoreCase)
-            || kind.Equals("importmap", StringComparison.OrdinalIgnoreCase)
+        if (kind.Any(character => character > 0x7f)) { return ScriptKind.Inert; }
+        if (kind.Equals("module", StringComparison.OrdinalIgnoreCase))
+        {
+            if (element.GetAttribute("src") is not null)
+            {
+                throw new PageNavigationException("External modules are deferred; no module source was fetched.");
+            }
+            ValidateSchedulingAttributes(element, "module");
+            return ScriptKind.Module;
+        }
+        if (kind.Equals("importmap", StringComparison.OrdinalIgnoreCase)
             || kind.Equals("speculationrules", StringComparison.OrdinalIgnoreCase))
         {
-            throw new PageNavigationException("Modules, import maps and speculation rules are deferred.");
+            throw new PageNavigationException("Import maps and speculation rules are unsupported.");
         }
-        return ClassicTypes.Contains(kind) && element.GetAttribute("nomodule") is null;
+        return ClassicTypes.Contains(kind) && element.GetAttribute("nomodule") is null
+            ? ScriptKind.Classic
+            : ScriptKind.Inert;
+    }
+
+    private static void ValidateSchedulingAttributes(DomElement element, string scriptKind)
+    {
+        if (element.GetAttribute("async") is not null || element.GetAttribute("defer") is not null
+            || element.GetAttribute("for") is not null || element.GetAttribute("event") is not null)
+        {
+            throw new PageNavigationException($"Scheduling attributes are outside the inline {scriptKind} subset.");
+        }
     }
 
     private static string ReadClassicSource(DomElement element, BrowserUrl pageUrl, BrowserUrl? baseUrl,
         PageScriptResourceLoader? scriptLoader, CancellationToken cancellationToken)
     {
-        if (element.GetAttribute("async") is not null || element.GetAttribute("defer") is not null
-            || element.GetAttribute("for") is not null || element.GetAttribute("event") is not null)
-        {
-            throw new PageNavigationException("Script scheduling attributes are outside the parser-blocking classic subset.");
-        }
+        ValidateSchedulingAttributes(element, "classic");
         if (element.GetAttribute("src") is { } sourceUrl)
         {
             if (element.GetAttribute("integrity") is not null || element.GetAttribute("crossorigin") is not null

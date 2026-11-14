@@ -32,6 +32,12 @@ ExecuteInitialDocumentBatch with interactive/DOMContentLoaded/complete events,
 private trusted dispatch and native checkpoints between stages. Requires
 document/events/microtasks; all stages share the initial task budgets.
 This finite post-parse approximation does not add Window/load or retain V8.
+Phase 11w adds import-free inline module evaluation after parsing and after the
+interactive transition, before DOMContentLoaded. A private native-JavaScript
+monitor waits for module-evaluation promises and top-level await under the same
+deadline, cancellation, DOM and microtask budgets. Modules have no loader,
+static/dynamic imports fail, and no CLR callbacks or Task/promise conversion
+are exposed.
 Phase 11i adds document/element/fragment queries, static branded NodeList
 snapshots and Element matches/closest via Engine.Css's bounded selector matcher.
 Result identities are preflighted atomically and native matching observes

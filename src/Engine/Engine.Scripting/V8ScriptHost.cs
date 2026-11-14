@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.ClearScript;
+using Microsoft.ClearScript.JavaScript;
 using Microsoft.ClearScript.V8;
 using VisualWeb.Engine.Dom;
 
@@ -32,6 +33,7 @@ public sealed class V8ScriptHost : IDisposable
     private readonly DomBindings? dom;
     private readonly ScriptObject? microtasks;
     private readonly ScriptObject? events;
+    private readonly ScriptObject? moduleCompletion;
     private readonly ScriptObject? wrapNode;
     private readonly bool documentLifecycle;
     private bool initialDocumentExecuted;
@@ -98,8 +100,9 @@ public sealed class V8ScriptHost : IDisposable
                     ?? throw new InvalidOperationException("DOM bootstrap did not return its private wrapper lookup.");
             }
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }
+            if (enableDocumentLifecycle) { moduleCompletion = (ScriptObject)engine.Evaluate(ModuleEvaluationBindings.Bootstrap); }
         }
-        catch { wrapNode?.Dispose(); dom?.Dispose(); engine.Dispose(); throw; }
+        catch { moduleCompletion?.Dispose(); wrapNode?.Dispose(); dom?.Dispose(); engine.Dispose(); throw; }
     }
 
     public ScriptValue Evaluate(string source, CancellationToken cancellationToken = default)
@@ -136,13 +139,31 @@ public sealed class V8ScriptHost : IDisposable
         ExecuteBatch(sources, true, cancellationToken);
     }
 
-    /// <summary>Execute classic scripts as the parser reaches them, then complete the finite document lifecycle.</summary>
-    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
+    /// <summary>Execute parser-blocking classics and finite document readiness under one task budget.</summary>
+    /// <remarks>Spec: html;
+    /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
     /// <see href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element">prepare the script element</see>,
-    /// and <see href="https://html.spec.whatwg.org/#the-end">the end</see>. One task deadline, cancellation registration,
-    /// DOM budget and aggregate script count/character limit cover parsing, each source and lifecycle checkpoints.
+    /// and <see href="https://html.spec.whatwg.org/#the-end">the end</see>.
+    /// One task deadline, cancellation registration, DOM budget and aggregate script count/character limit cover
+    /// parsing, each source and lifecycle checkpoints.
     /// The parser callback must not perform renderer-owned network I/O.</remarks>
     public void ExecuteInitialDocumentParserBatch(Action<Action<string>, CancellationToken> parse,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(parse);
+        ExecuteInitialDocumentParserBatch((executeClassic, queueModule, token) => parse(executeClassic, token),
+            cancellationToken);
+    }
+
+    /// <summary>Execute classic scripts during parsing, then import-free modules before DOMContentLoaded.</summary>
+    /// <remarks>Specs: html, ecmascript;
+    /// <see href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element">prepare the script element</see>,
+    /// <see href="https://html.spec.whatwg.org/multipage/webappapis.html#run-a-module-script">run a module script</see>,
+    /// and <see href="https://tc39.es/ecma262/#sec-moduleevaluation">ModuleEvaluation</see>.
+    /// Module evaluation promises, including top-level await, must settle within this task's deadline and cancellation.
+    /// Modules receive no loader or network access; all sources share the parser batch's count and character limits.</remarks>
+    public void ExecuteInitialDocumentParserBatch(
+        Action<Action<string>, Action<string>, CancellationToken> parse,
         CancellationToken cancellationToken = default)
     {
         CheckUsable();
@@ -151,36 +172,88 @@ public sealed class V8ScriptHost : IDisposable
         if (initialDocumentExecuted) { throw new InvalidOperationException("Initial document lifecycle has already executed."); }
         var scripts = 0;
         var characters = 0;
+        var modules = new List<string>();
         try
         {
             Run(deadlineToken =>
             {
                 initialDocumentExecuted = true;
-                parse(source =>
+                void QueueModule(string source)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    deadlineToken.ThrowIfCancellationRequested();
                     ValidateSource(source);
-                    if (scripts >= MaxBatchScripts) { throw new ScriptLimitException("Classic-script batch count limit exceeded."); }
+                    if (scripts >= MaxBatchScripts) { throw new ScriptLimitException("Module-script batch count limit exceeded."); }
                     var total = checked(characters + source.Length);
-                    if (total > MaxBatchSourceCharacters) { throw new ScriptLimitException("Classic-script batch character limit exceeded."); }
+                    if (total > MaxBatchSourceCharacters) { throw new ScriptLimitException("Module-script batch character limit exceeded."); }
                     CheckExecutionDeadline();
                     characters = total;
                     scripts++;
-                    engine.Execute(source);
-                    CheckEvents("checkpoint");
-                    CheckMicrotasks("checkpoint");
-                }, deadlineToken);
-                foreach (var stage in new[] { "interactive", "dom-content-loaded", "complete" })
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    CheckEvents(stage);
-                    CheckEvents("checkpoint");
-                    CheckMicrotasks("checkpoint");
+                    modules.Add(source);
                 }
+
+                parse(
+                    source =>
+                    {
+                        deadlineToken.ThrowIfCancellationRequested();
+                        ValidateSource(source);
+                        if (scripts >= MaxBatchScripts) { throw new ScriptLimitException("Script batch count limit exceeded."); }
+                        var total = checked(characters + source.Length);
+                        if (total > MaxBatchSourceCharacters) { throw new ScriptLimitException("Script batch character limit exceeded."); }
+                        CheckExecutionDeadline();
+                        characters = total;
+                        scripts++;
+                        engine.Execute(source);
+                        CheckEvents("checkpoint");
+                        CheckMicrotasks("checkpoint");
+                    },
+                    QueueModule,
+                    deadlineToken);
+                CheckLifecycleStage("interactive", deadlineToken);
+                foreach (var module in modules) { ExecuteModule(module, deadlineToken); }
+                CheckLifecycleStage("dom-content-loaded", deadlineToken);
+                CheckLifecycleStage("complete", deadlineToken);
                 return 0;
             }, cancellationToken);
         }
         catch { poisoned = true; throw; }
+    }
+
+    private void CheckLifecycleStage(string stage, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CheckEvents(stage);
+        CheckEvents("checkpoint");
+        CheckMicrotasks("checkpoint");
+    }
+
+    private void ExecuteModule(string source, CancellationToken cancellationToken)
+    {
+        CheckExecutionDeadline();
+        using var module = engine.Compile(new DocumentInfo { Category = ModuleCategory.Standard }, source);
+        using var evaluation = engine.Evaluate(module) as ScriptObject
+            ?? throw new ScriptExecutionException("Inline module evaluation did not return a completion promise.");
+        using var readCompletion = moduleCompletion!.InvokeAsFunction(evaluation) as ScriptObject
+            ?? throw new InvalidOperationException("Module completion monitor did not return a private reader.");
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CheckExecutionDeadline();
+            var status = readCompletion.InvokeAsFunction();
+            if (status is not int state) { throw new InvalidOperationException("Module completion monitor returned an invalid state."); }
+            if (state == 1)
+            {
+                CheckEvents("checkpoint");
+                CheckMicrotasks("checkpoint");
+                return;
+            }
+            if (state == 2)
+            {
+                poisoned = true;
+                throw new ScriptExecutionException("Inline module evaluation rejected; navigation cannot be committed.");
+            }
+            if (state != 0) { throw new InvalidOperationException("Module completion monitor returned an unknown state."); }
+            cancellationToken.WaitHandle.WaitOne(1);
+        }
     }
 
     /// <summary>Dispatch one trusted, bubbling, cancelable <c>click</c> Event at a connected bound-document element.</summary>
@@ -448,8 +521,12 @@ public sealed class V8ScriptHost : IDisposable
                 try { events?.Dispose(); }
                 finally
                 {
-                    try { microtasks?.Dispose(); }
-                    finally { wrapNode?.Dispose(); }
+                    try { moduleCompletion?.Dispose(); }
+                    finally
+                    {
+                        try { microtasks?.Dispose(); }
+                        finally { wrapNode?.Dispose(); }
+                    }
                 }
             }
             finally { evaluate.Dispose(); }

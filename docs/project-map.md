@@ -4,7 +4,8 @@ Platform projects, Core URL/Encoding/MIME, Engine.Net/Html/Dom/Css/Text/Layout/P
 and VisualWeb.Browser/PageRendering/Renderer plus IPC are implemented.
 Core.Primitives remains a library placeholder; Engine.Scripting supplies the
 bounded V8 host and minimal live DOM bindings. PageRendering supports explicit
-opt-in parser-blocking inline and browser-brokered external classic scripts. The browser executable is
+opt-in parser-blocking inline and browser-brokered external classic scripts,
+plus bounded import-free inline modules with top-level await. The browser executable is
 explicitly development-only, not isolated production browsing.
 CLI multiprocess modes require supported renderer confinement by default;
 unsandboxed development requires explicit trusted-content acknowledgement.
