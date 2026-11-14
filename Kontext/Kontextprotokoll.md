@@ -9227,3 +9227,515 @@ unveraendert; der plattformunabhaengige Lintlauf wird nicht wiederholt.
 **Validierung:** GitHub bestaetigte den Action-SHA; `git diff --check HEAD`
 bestand. `actionlint`, `yamllint` und die Trunk-CLI waren lokal nicht
 installiert. Daher ist der Workflow-Lauf noch nicht bestaetigt.
+
+### KP-345 - CSS Color HWB pass
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerauftrag, den naechsten Missing-Prioritaetspass umzusetzen.
+- Quellen: aktuelle `/missing-priority-implementation`-Anweisung und die in der
+  Gespraechszusammenfassung ueberlieferte Nutzerregel zur Auswahl der aktuell
+  hoechsten Teilabdeckung; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md#cascade-and-computed-values),
+  [CSS-Color-Cache](../specs/cache/css-color.html#the-hwb-notation) und
+  [Manifest](../specs/manifest.json).
+
+**Nutzerangabe:** Den naechsten Missing-Prioritaetspass fortsetzen. Die
+konkrete Funktion wurde nicht direkt vorgegeben; die Auswahl folgt der
+ueberlieferten Regel, beim Auswahlzeitpunkt die hoechste umsetzbare
+Teilabdeckung zu bearbeiten.
+
+**Belegt:** ECMAScript war mit ~90% die hoechste Teilabdeckung, hatte laut
+Tracker jedoch keine naechste umsetzbare Luecke innerhalb Phase 11w. CSS
+Syntax und CSS Color waren mit ~35% gleichauf. Der CSS-Parser unterstuetzte
+RGB und HSL, aber kein HWB. `specs/manifest.json` weist fuer `css-color`
+`checkedAt` 2026-11-07 aus (sieben Tage vor diesem Pass); der Cache wurde
+deshalb nicht aktualisiert.
+
+**Auswahl als Ableitung:** CSS Color `hwb()` wurde als bounded, direkt
+implementierbare Luecke innerhalb des Gleichstands ausgewaehlt. Es wurde keine
+separate Nutzerwahl fuer Syntaxdetails eingeholt, da die akzeptierte Grammatik
+und Umrechnung aus CSS Color 4 abgeleitet und die Grenzen auf statische
+8-bit-sRGB-Ausgabe beschraenkt wurden.
+
+**Umsetzung:** `hwb()` akzeptiert Hue-Winkel, numerische/prozentuale/`none`
+Weiss- und Schwarzanteile sowie optionale Slash-Alpha. Kommas sind ungueltig;
+Weiss-/Schwarzwerte ausserhalb des Nennbereichs bleiben gueltig, und bei
+Summe >=100 wird gemaess Spezifikation achromatisch normalisiert. Hue-Kanal-
+Berechnung wird mit HSL geteilt. Tests pruefen Standardfarben, Winkel,
+Zahlen/Prozente, `none`, Kommentare, Out-of-range-Normalisierung,
+Shorthands und invalid-atomicity. CSS-Leitfaden, Engine.Css-README,
+Standardsabdeckung (~40%) und Missing-Tracker wurden aktualisiert; die
+vorherige HTML/DOM-Auswahlnotiz ist als durch die Schaetzungsaktualisierung
+ersetzt markiert.
+
+**Validierung:** CSS-Tests: 1.377 bestanden; Solution-Volltest: 16.643
+bestanden; Solution-Build: 0 Warnungen/Fehler; Formatverifikation und
+`git diff --check` bestanden. Commit `62ed6b7` ist auf `main` gepusht. Linux
+development (Run 43597326583), Windows confinement (Run 43597326700) und
+CodeQL (Run 43597326615) sind erfolgreich.
+
+### KP-346 - CSS Syntax Unicode-Range-Token pass
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerauftrag, den Missing-Prioritaetspass fortzusetzen; die
+  Skill-Anweisung enthaelt `ARGUMENTS: 10`.
+- Quellen: aktuelle `/missing-priority-implementation`-Anweisung;
+  [Missing](../plans/Missing.md), [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md#syntax-and-recovery),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md),
+  lokaler [CSS-Syntax-Cache](../specs/cache/css-syntax.html#consume-unicode-range-token)
+  und [Manifest](../specs/manifest.json).
+
+**Nutzerangabe:** Den naechsten Missing-Prioritaetspass fortsetzen; die
+konkrete CSS-Funktion wurde nicht direkt vorgegeben.
+
+**Belegt:** Nach CSS Color HWB (~40%) war CSS Syntax (~35%) die hoechste
+teilweise implementierte Standardsabdeckung. Der CSS-Tokenizer schloss die
+Unicode-Range-Token-Erweiterung explizit aus. Der Manifest-Eintrag
+`css-syntax.checkedAt` ist 2026-11-07 und damit am Ereignistag sieben Tage alt;
+die lokale Spezifikation war frisch und wurde nicht aktualisiert.
+
+**Auswahl als Ableitung:** Die optionale Erweiterung wurde gewaehlt, weil sie
+als klar begrenzte, explizit dokumentierte Syntaxluecke des hoeher priorisierten
+Standards testbar war. Die Funktion bleibt opt-in, weil die Spezifikation
+Unicode-Range-Tokens nur beim Parsen des `unicode-range`-Descriptors vorsieht.
+Das ist keine Zusage fuer `@font-face` oder Schriftladen.
+
+**Umsetzung:** `CssOptions.EnableUnicodeRangeTokenExtension` erlaubt die
+Tokenisierung von hexadezimalen Werten, Wildcards und Bindestrich-Bereichen in
+typisierte inklusive Grenzen. Standardtokenisierung bleibt unveraendert.
+CSS-Leitfaden, Engine.Css-README, Support-Inventar und Missing-Tracker
+beschreiben die Funktion und die verbleibenden Grenzen.
+
+**Validierung:** CSS-Tests: 1.387 bestanden. Debug-/Release-Solution-Builds
+ohne Warnungen oder Fehler; Debug-/Release-Volltests mit je 16.653
+bestanden; Formatverifikation bestanden. Commit `d125818` ist auf `main`
+gepusht. CodeQL ([Run 43604030064](https://github.com/khmseu/VisualWeb/actions/runs/43604030064)),
+Windows confinement ([Run 43604030114](https://github.com/khmseu/VisualWeb/actions/runs/43604030114))
+und Linux development ([Run 43604030279](https://github.com/khmseu/VisualWeb/actions/runs/43604030279))
+sind erfolgreich. Im ersten Linux-ARM64-Versuch schlug
+`ShellTests.CloseActiveTabRepaintsRemainingTabRatherThanLeavingStalePixels`
+bei einem Pixelvergleich fehl; der Workflow-Rerun bestand auf ARM64 und x64.
+Ein frueherer Linux-Lauf auf dem Basiscommit `62ed6b7` bestand ebenfalls.
+Der einmalige Testfehler wurde nicht als reproduzierbarer Produktfehler
+behandelt und nicht durch Codeaenderungen behoben.
+
+### KP-347 - CSS Color sRGB function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerauftrag, den Missing-Prioritaetspass mit
+  `ARGUMENTS: 10` fortzusetzen.
+- Quellen: aktuelle Nutzeranweisung in dieser Sitzung;
+  [Missing](../plans/Missing.md), [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md), [Engine.Css-README](../src/Engine/Engine.Css/README.md),
+  lokaler [CSS-Color-Cache](../specs/cache/css-color.html#color-function)
+  und [Manifest](../specs/manifest.json).
+
+**Nutzerangabe:** Den Missing-Prioritaetspass mit `ARGUMENTS: 10` fortsetzen;
+die konkrete naechste Funktion wurde nicht direkt vorgegeben.
+
+**Belegt:** Nach dem Unicode-Range-Pass liegen CSS Color bei ~40% und CSS
+Syntax bei ~35%. Der CSS-Color-Guide dokumentierte die `color()`-Funktion und
+weitere Farbraeume als unsupported. `CssProperties.Color` verarbeitete
+RGB/HSL/HWB, aber keine `color()`-Form. `css-color.checkedAt` ist
+2026-11-07; die lokale Quelle war unter 30 Tage alt und wurde nicht
+aktualisiert.
+
+**Auswahl als Ableitung:** CSS Color `color(srgb ...)` wurde als kleine,
+beobachtbare Erweiterung der dokumentierten Luecke gewaehlt. Der Umfang bleibt
+auf In-Gamut-sRGB beschraenkt; andere Farbraeume und Gamut-Mapping werden nicht
+impliziert.
+
+**Umsetzung:** Der Parser akzeptiert drei numerische oder prozentuale Kanaele,
+`none` als null und optionale Slash-Alpha. Alpha wird fuer die vorhandene
+8-bit-Ausgabe geklemmt; Out-of-Gamut-Kanaele und nicht unterstuetzte
+Farbraeume erzeugen weiterhin ungueltige-Wert-Diagnosen. Tests pruefen
+Berechnung, Ablehnung, Cascade-Erhalt und atomare Shorthands. CSS-Leitfaden,
+Engine.Css-README, Standards-Inventar und Missing-Tracker wurden aktualisiert.
+
+**Lokale Validierung:** 17 fokussierte Faelle, alle 1.404 CSS-Tests,
+Debug-/Release-Solution-Builds (je 0 Warnungen/Fehler), Debug-/Release-
+Volltests (je 16.670), Formatverifikation und `git diff --check` bestanden.
+Commit `02c13ac` ist nach `main` gepusht. Linux development
+([Run 43608274646](https://github.com/khmseu/VisualWeb/actions/runs/43608274646)),
+Windows confinement ([Run 43608274684](https://github.com/khmseu/VisualWeb/actions/runs/43608274684))
+und CodeQL ([Run 43608274473](https://github.com/khmseu/VisualWeb/actions/runs/43608274473))
+sind erfolgreich; Windows bestand auf x64 und arm64.
+
+### KP-348 - CSS Color sRGB-linear function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; dritter Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung in dieser Sitzung;
+  [Missing](../plans/Missing.md), [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md), [Engine.Css-README](../src/Engine/Engine.Css/README.md),
+  lokaler [CSS-Color-Cache](../specs/cache/css-color.html#predefined-sRGB-linear)
+  und [Manifest](../specs/manifest.json).
+
+**Nutzerangabe:** Den Missing-Prioritaetspass mit `ARGUMENTS: 10` fortsetzen;
+die konkrete naechste Luecke wurde nicht direkt vorgegeben.
+
+**Belegt:** Nach Commit `02c13ac` unterstuetzt `color()` nur `srgb`; der
+CSS-Color-Guide bezeichnet weitere Farbraeume als unsupported. Die lokale
+CSS-Color-Spezifikation dokumentiert `srgb-linear` mit linearem Transfer und
+In-Gamut-Bereich [0,1]; die Manifestpruefung ist `2026-11-07`, also juenger
+als 30 Tage.
+
+**Auswahl als Ableitung:** `color(srgb-linear ...)` wurde als naechste
+abgegrenzte Erweiterung desselben hoechstpriorisierten CSS-Color-Standards
+gewaehlt. Implementiert wird nur der In-Gamut-Fall mit vorhandener 8-bit-sRGB-
+Ausgabe; keine anderen Farbraeume oder Gamut-Mapping.
+
+**Umsetzung:** Der Parser akzeptiert numerische/prozentuale Kanaele, `none` und
+optionale Slash-Alpha. Die RGB-Kanaele nutzen vor der Ausgabe die CSS-
+Transferfunktion vom linearen zum gamma-kodierten sRGB. Out-of-Gamut-Werte und
+andere Farbraeume bleiben explizite Diagnosen. Tests decken die CSS-Beispiele,
+Transferfunktionsgrenze, Prozentwerte, Fehler, Cascade und atomare Shorthands
+ab. CSS-Leitfaden, Engine.Css-README, Standards-Inventar und Missing-Tracker
+sind aktualisiert.
+
+**Lokale Validierung:** 18 fokussierte Faelle, alle 1.421 CSS-Tests,
+Debug-/Release-Solution-Builds (je 0 Warnungen/Fehler), Debug-/Release-
+Volltests (je 16.687), Formatverifikation und `git diff --check` bestanden.
+Code-Review genehmigte die Aenderung. Commit `6f2cf3c` ist nach `main`
+gepusht. Linux development
+([Run 43612068563](https://github.com/khmseu/VisualWeb/actions/runs/43612068563)),
+Windows confinement ([Run 43612068566](https://github.com/khmseu/VisualWeb/actions/runs/43612068566))
+und CodeQL ([Run 43612068784](https://github.com/khmseu/VisualWeb/actions/runs/43612068784))
+sind erfolgreich. Linux x64 und Trunk bestanden im ersten Lauf; Windows
+x64/arm64 und CodeQL ebenfalls. Linux ARM64 scheiterte zuerst und beim ersten
+Job-Rerun jeweils an
+`ShellTests.CloseActiveTabRepaintsRemainingTabRatherThanLeavingStalePixels`
+in der unveraenderten Datei `tests/VisualWeb.Browser.Tests/ShellTests.cs`;
+ein weiterer Job-Rerun bestand. Der Linux-Workflow ist damit gruen.
+
+### KP-349 - CSS Color Display-P3 function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; vierter Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung in dieser Sitzung;
+  [Missing](../plans/Missing.md), [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md), [Engine.Css-README](../src/Engine/Engine.Css/README.md),
+  lokaler [CSS-Color-Cache](../specs/cache/css-color.html#predefined-display-p3)
+  und [Manifest](../specs/manifest.json).
+
+**Nutzerangabe:** Den Missing-Prioritaetspass mit `ARGUMENTS: 10` fortsetzen;
+die konkrete naechste Luecke wurde nicht direkt vorgegeben.
+
+**Belegt:** Nach `color(srgb-linear ...)` blieb CSS Color (~40%) die hoechste
+actionable Teilabdeckung nach dem fuer Phase 11w ausgeschlossenen ECMAScript-
+Rest; CSS Syntax liegt bei ~35%. Der CSS-Color-Guide bezeichnet `display-p3`
+als unsupported. Der lokale CSS Color 4 Abschnitt 10.4 beschreibt [0,1]-
+Kanaele, dieselbe Transferkurve wie sRGB und ein D65-Weiss; der Farbkonversions-
+Algorithmus und Beispielmatrizen stehen in den Abschnitten 11 und 19.
+`css-color.checkedAt` ist 2026-11-07 und damit juenger als 30 Tage.
+
+**Auswahl als Ableitung:** Gewaehlt wurde ein begrenzter `color(display-p3 ...)`
+Pfad fuer Quellkanaele in [0,1], der nur nach sRGB konvertierbare Werte
+innerhalb des vorhandenen sRGB-Ausgabegamuts annimmt. Gamut-Mapping,
+Out-of-Range-Quellwerte und andere Farbraeume bleiben ausgeschlossen.
+
+**Umsetzung:** P3-Kanaele nutzen die sRGB-Transferkurve, werden ueber die
+CSS-Color-Matrizen nach linearem sRGB umgerechnet und nur bei sRGB-in-Gamut-
+Ergebnissen in die vorhandene gerundete 8-bit-Ausgabe ueberfuehrt. Zahlen,
+Prozentwerte, `none`, Slash-Alpha, Gross-/Kleinschreibung,
+Langhand-/Shorthand-Kaskade, Fehlerbehandlung und atomare Shorthands sind
+abgedeckt. CSS-Leitfaden, Engine.Css-README, Support-Inventar und
+Missing-Tracker wurden aktualisiert.
+
+**Lokale Validierung:** 14 fokussierte Faelle, alle 1.435 CSS-Tests,
+Debug-/Release-Solution-Builds (je 0 Warnungen/Fehler), Debug-/Release-
+Volltests (je 16.701), Formatverifikation und `git diff --check` bestanden.
+Code-Review genehmigte die Aenderung. Feature-Commit `6ecc220` wurde erstellt
+und nach Integration der unabhaengigen, inzwischen auf `main` veroeffentlichten
+Test-/CI-Aenderungen als Merge-Commit `375cfb5` gepusht. Linux development
+([Run 43617047610](https://github.com/khmseu/VisualWeb/actions/runs/43617047610)),
+Windows confinement ([Run 43617047675](https://github.com/khmseu/VisualWeb/actions/runs/43617047675))
+und CodeQL ([Run 43617046891](https://github.com/khmseu/VisualWeb/actions/runs/43617046891))
+sind erfolgreich; Linux bestand auf x64/arm64 einschliesslich Trunk, Windows
+auf x64/arm64. Das integrierte upstream Commit `893a937` enthaelt einen
+Wartepunkt fuer denselben Browser-Shell-Pixelfall, der in KP-348 als flakig
+protokolliert wurde.
+
+### KP-350 - CSS Color linear Display-P3 function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; fuenfter Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung in dieser Sitzung;
+  [Missing](../plans/Missing.md), [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md), [Engine.Css-README](../src/Engine/Engine.Css/README.md),
+  lokaler [CSS-Color-Cache](../specs/cache/css-color.html#predefined-display-p3-linear)
+  und [Manifest](../specs/manifest.json).
+- Bezug: Fortsetzung nach KP-349; CSS Color bleibt die hoechste umsetzbare
+  Teilabdeckung (~40% gegenueber CSS Syntax mit ~35%).
+
+**Nutzerangabe:** Den Missing-Prioritaetspass mit zehn Inkrementen fortsetzen;
+die konkrete naechste Luecke wurde nicht direkt vorgegeben.
+
+**Belegt:** CSS Color 4 Abschnitt 10.5 definiert `display-p3-linear` mit
+denselben Primaerfarben und D65-Weisspunkt wie `display-p3`, jedoch ohne
+Gamma-Kodierung der Eingabekanaele. Die lokale Konversionsdefinition und
+Beispielwerte wurden in Abschnitten 11 und 19 geprueft. `css-color.checkedAt`
+ist 2026-11-07 und damit juenger als 30 Tage.
+
+**Auswahl als Ableitung:** Ergaenzt wird die gleiche begrenzte Konversion wie
+fuer `display-p3`, ohne Quellkanaele vor der Matrix linear zu dekodieren.
+Quellkanaele bleiben auf [0,1] begrenzt; nur Ergebnisse im sRGB-Ausgabegamut
+werden akzeptiert. Gamut-Mapping, andere Farbraeume und hoehere
+Praezisionsausgabe bleiben ausgeschlossen.
+
+**Umsetzung und lokale CSS-Validierung:** Der vorhandene Display-P3-Matrixpfad
+nimmt fuer `display-p3-linear` lineare Eingangswerte an und kodiert das
+konvertierte sRGB-Ergebnis mit der sRGB-Transferfunktion. Dreizehn fokussierte
+Faelle und der CSS-Gesamttestsatz (1.447) bestehen. Debug-/Release-Solution-
+Builds bestehen mit null Warnungen/Fehlern; beide Volltests bestehen mit
+16.713 Tests. Formatverifikation und `git diff --check` bestehen.
+CSS-Leitfaden, Engine.Css-README, Support-Inventar, Missing-Tracker und
+Wissensstand sind aktualisiert.
+
+**Commit und CI (belegt):** Feature-Commit `cc550b8` ist gepusht. Linux
+development (Run 43621051210), Windows confinement (Run 43621051186 auf
+x64/arm64) und CodeQL (Run 43621051599) bestehen. Pass 5 ist abgeschlossen;
+fuenf der zehn angeforderten Inkremente bleiben.
+
+### KP-351 - CSS Color A98 RGB function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; sechster Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung in dieser Sitzung;
+  [Missing](../plans/Missing.md), [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md), [Engine.Css-README](../src/Engine/Engine.Css/README.md),
+  lokaler [CSS-Color-Cache](../specs/cache/css-color.html#predefined-a98-rgb)
+  und [Manifest](../specs/manifest.json).
+- Bezug: Fortsetzung nach KP-350; CSS Color bleibt die hoechste umsetzbare
+  Teilabdeckung (~40% gegenueber CSS Syntax mit ~35%).
+
+**Nutzerangabe:** Den Missing-Prioritaetspass mit zehn Inkrementen fortsetzen;
+die konkrete naechste Luecke wurde nicht direkt vorgegeben.
+
+**Belegt:** CSS Color 4 Abschnitt 10.6 definiert A98-RGB-Eingaben im Bereich
+[0,1] und den linearen Transferexponenten 563/256. Abschnitt 11 beschreibt
+Farbkonversionen; Abschnitt 19 enthaelt die A98-/XYZ-/sRGB-Matrizen und den
+gerundeten Beispielwert. `css-color.checkedAt` ist 2026-11-07 und damit juenger
+als 30 Tage. Der Status zu ~40% CSS Color und ~35% CSS Syntax ist im lokalen
+Standardsinventar belegt.
+
+**Auswahl als Ableitung:** Nach sRGB, linearem sRGB, Display-P3 und linearem
+Display-P3 wird die naechste endliche RGB-Farbraumdefinition gewaehlt. Der
+Umfang beschraenkt sich auf [0,1]-Kanaele und die vorhandene 8-bit-sRGB-Ausgabe;
+Werte ausserhalb des sRGB-Ausgabegamuts werden abgelehnt. Gamut-Mapping und
+andere Farbformate bleiben ausgeschlossen.
+
+**Umsetzung und fokussierte Validierung:** `color(a98-rgb ...)` nutzt den
+Transferexponenten und die aus den CSS-Color-Matrizen zusammengesetzte
+D65-Konversion in lineares sRGB. Die bestehende sRGB-Gamutpruefung und
+Transferkodierung bleiben geteilt. Tests fuer das CSS-Color-Beispiel,
+Zahlen/Prozente, `none`, Alpha, Gross-/Kleinschreibung, Syntax und Bereich,
+In-Gamut-Ausgabe sowie atomare Shorthands bestehen (13 fokussierte Faelle).
+CSS-Leitfaden, Engine.Css-README, Support-Inventar, Missing-Tracker und
+Wissensstand sind aktualisiert. Dreizehn fokussierte Faelle und alle 1.460
+CSS-Tests bestehen. Debug-/Release-Solution-Builds bestehen ohne
+Warnungen/Fehler; beide Volltests bestehen mit 16.726 Tests.
+Formatverifikation und `git diff --check` bestehen. Feature-Commit `b0ef6e6`
+ist gepusht; Linux development (Run 43625000259), Windows confinement
+(Run 43625000194) und CodeQL (Run 43624999793) bestehen. Pass 6 ist damit
+abgeschlossen.
+
+### KP-352 - CSS Color Rec. 2020 function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; siebter Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung und der vorherige Hinweis dieser Sitzung,
+  dass jeder Pass separat committed und gepusht werden soll; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status), [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#predefined-rec2020) und
+  [Manifest](../specs/manifest.json).
+- Bezug: Fortsetzung nach KP-351; CSS Color bleibt die hoechste umsetzbare
+  Teilabdeckung (~40%).
+
+**Nutzerangabe:** Zehn getrennte Missing-Prioritaetspass-Inkremente fortsetzen
+und jeden Pass einzeln committen und pushen.
+
+**Belegt:** CSS Color 4 Abschnitt 10.8 beschreibt Rec. 2020 mit Kanalen im
+Bereich [0,1], D65-Weisspunkt und Transferexponent 2,4. Abschnitt 19 enthaelt
+die Rec.-2020-/XYZ-/sRGB-Konversionsmatrizen. Das Manifest weist fuer
+`css-color.checkedAt` den 2026-11-07 aus; die Quelle ist nach der
+30-Tage-Regel frisch. CSS Color (~40%) liegt im lokalen Standardsinventar ueber
+CSS Syntax (~35%).
+
+**Auswahl als Ableitung:** `color(rec2020 ...)` wurde als begrenzter naechster
+RGB-Profilinkrement gewaehlt. D65 erlaubt die Konversion ohne den zusaetzlichen
+D50-Weisspunkt-Adaptionsschritt von ProPhoto RGB; ausserhalb des sRGB-Gamuts
+liegende Ergebnisse bleiben Diagnosen, nicht gamut-gemappt. Diese Auswahl
+verschiebt ProPhoto RGB und weitere Farbraeume, sie erklaert sie nicht fuer
+unwichtig oder unzulaessig.
+
+**Umsetzung und lokale Validierung:** `color(rec2020 ...)` akzeptiert
+Zahlen/Prozente, `none` und optionale Slash-Alpha, linearisiert mit
+`Math.Pow(channel, 2.4)`, wendet die aus dem Cache zusammengesetzte
+D65-Matrix an und nutzt die gemeinsame sRGB-Gamutpruefung/-Kodierung. Tests
+decken das konvertierte Farbbeispiel, neutrale Prozentkanaele, Alpha, `none`,
+Bereich/Syntax, primaere Rec.-2020-Ausser-Gamutwerte sowie atomare Shorthands
+ab (13 fokussierte Faelle). Alle 1.473 CSS-Tests, Debug-/Release-Solution-Builds (null Warnungen/Fehler),
+beide Volltests (16.739), Formatverifikation und `git diff --check` bestehen.
+Feature-Commit `26f354f` ist gepusht. Linux development (Run 43629055052),
+Windows confinement (Run 43629055107) und CodeQL (Run 43629054825) bestehen.
+Pass 7 ist abgeschlossen; drei der zehn Inkremente bleiben.
+
+### KP-353 - CSS Color D65 XYZ function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; achter Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung und der vorherige Hinweis dieser Sitzung,
+  dass jeder Pass separat committed und gepusht werden soll; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status), [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#predefined-xyz) und
+  [Manifest](../specs/manifest.json).
+- Bezug: Fortsetzung nach KP-352; CSS Color bleibt die hoechste umsetzbare
+  Teilabdeckung (~40%).
+
+**Nutzerangabe:** Zehn getrennte Missing-Prioritaetspass-Inkremente fortsetzen
+und jeden Pass einzeln committen und pushen.
+
+**Belegt:** CSS Color 4 Abschnitt 10.9 beschreibt `xyz-d65` und `xyz` als
+D65-Referenzweiss, erlaubt Werte ausserhalb 0..1 und untersagt deren Klemmen.
+Abschnitt 19 enthaelt die direkte D65-XYZ-zu-linearem-sRGB-Matrix. Das Manifest
+weist fuer `css-color.checkedAt` den 2026-11-07 aus; die Quelle ist nach der
+30-Tage-Regel frisch. CSS Color (~40%) liegt im lokalen Standardsinventar ueber
+CSS Syntax (~35%).
+
+**Auswahl als Ableitung:** Die naechste endliche Farbraum-API ist der
+D65-XYZ-Raum mit seinem standarddefinierten `xyz`-Alias. Werte werden nicht
+auf den Eingabebereich geklemmt; die statische Implementierung bleibt auf
+Ergebnisse im sRGB-Gamut begrenzt. D50-XYZ, ProPhoto RGB, Gamut-Mapping und
+hoehere Praezisionsausgabe bleiben offen.
+
+**Umsetzung und lokale Validierung:** `color(xyz-d65 ...)` und `color(xyz ...)`
+konvertieren endliche Zahlen-/Prozentwerte ohne Eingangsbereichsbegrenzung
+direkt ueber die CSS-Matrix zu linearem sRGB. Die gemeinsame Gamutpruefung
+verwirft Ergebnisse ausserhalb sRGB; Slash-Alpha und `none` folgen dem
+bestehenden Parser. Dreizehn fokussierte Tests decken den CSS-Color-Beispielwert,
+D65-Weiss mit >100%-Prozentkanal, Alias, `none`, Alpha, Syntax, nicht
+unterstuetztes D50, Gamut und atomare Shorthands ab. Die gezielten Tests (13),
+alle CSS-Tests (1.486), Debug-Solution-Build (null Warnungen/Fehler),
+Debug-Volltests (16.752), Release-Solution-Build (null Warnungen/Fehler),
+beide Volltestlaeufe (16.752), Formatverifikation und `git diff --check`
+bestehen. Feature-Commit `efe9268` ist gepusht. Linux development
+(Run 43633273119), Windows confinement (Run 43633272906) und CodeQL
+(Run 43633272613) bestehen. Pass 8 ist abgeschlossen; zwei der zehn
+Inkremente bleiben.
+
+### KP-354 - CSS Color D50 XYZ function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; neunter Pass
+  dieser Serie.
+- Quellen: aktuelle Nutzeranweisung und der vorherige Hinweis dieser Sitzung,
+  dass jeder Pass separat committed und gepusht werden soll; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status), [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#predefined-xyz) und
+  [Manifest](../specs/manifest.json).
+- Bezug: Fortsetzung nach KP-353; CSS Color bleibt die hoechste umsetzbare
+  Teilabdeckung (~40%).
+
+**Nutzerangabe:** Zehn getrennte Missing-Prioritaetspass-Inkremente fortsetzen
+und jeden Pass einzeln committen und pushen.
+
+**Belegt:** CSS Color 4 Abschnitt 10.9 definiert `xyz-d50` mit D50-Referenzweiss,
+nicht geklemmten XYZ-Komponenten und einem expliziten Beispiel, das dem
+D65-XYZ-Wert entspricht. Die lokale Konversionsroutine enthaelt die
+Bradford-D50-zu-D65-Matrix; `css-color.checkedAt` ist 2026-11-07 und nach der
+30-Tage-Regel frisch.
+Der CSS-Color-Supportwert (~40%) liegt ueber CSS Syntax (~35%).
+
+**Auswahl als Ableitung:** `color(xyz-d50 ...)` ist die naechste koharente
+Erweiterung der zuvor implementierten D65-XYZ-Konversion. Es nutzt die
+standardisierte Bradford-Anpassung und behaelt die vorhandene Grenze
+8-bit-sRGB-Ausgabe mit sRGB-Gamutdiagnosen. ProPhoto RGB, Gamut-Mapping und
+hoehere Praezisionsausgabe bleiben offen; es wurde keine Konformitaet des
+gesamten Farbraums behauptet.
+
+**Umsetzung und lokale Validierung:** `CssProperties` nimmt `xyz-d50` in den
+`color()`-Parser auf, laesst endliche Zahlen-/Prozentkomponenten ungeklemmt,
+wendet die Bradford-Matrix an und delegiert an die bestehende
+D65-XYZ-zu-sRGB-Gamut-/Kodierungsroutine. Zwolf fokussierte Faelle decken das
+CSS-Beispiel, D50-Weiss, neutrale Werte, `none`, Alpha, Syntax, Gamut und
+atomare Shorthands ab; eine vorherige D65-Regression, die D50 als unsupported
+erwartete, wurde aktualisiert. CSS-Leitfaden, Engine.Css-README,
+Standardsinventar und Missing-Tracker sind aktualisiert. Der CSS-Testlauf hat
+1.497 Tests bestanden; Debug-/Release-Solution-Builds melden null Warnungen
+und Fehler, beide Volltestlaeufe bestehen mit 16.763 Tests, Formatverifikation
+und `git diff --check` bestehen. `10c7b37` ist nach `main` gepusht; Linux
+development (Run 43637147140) und CodeQL (Run 43637147000) bestehen; Windows
+x64 besteht ebenfalls. Windows ARM64 schlug in einem nicht geaenderten
+External-Script-Browsertest durch eine ueberschrittene V8-Ausfuehrungsdeadline
+fehl. Der fehlgeschlagene ARM64-Job wurde erneut ausgefuehrt und bestand;
+Windows x64/ARM64 (Run 43637147165) sind nun gruen.
+
+### KP-355 - CSS Color ProPhoto RGB function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: derselbe Nutzerauftrag mit `ARGUMENTS: 10`; zehnter und
+  letzter angeforderter Pass.
+- Quellen: aktuelle Nutzeranweisung und der vorherige Hinweis dieser Sitzung,
+  dass jeder Pass separat committed und gepusht werden soll; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status), [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#predefined-prophoto-rgb) und
+  [Manifest](../specs/manifest.json).
+- Bezug: Fortsetzung nach KP-354; CSS Color bleibt die hoechste umsetzbare
+  Teilabdeckung (~40%).
+
+**Nutzerangabe:** Zehn getrennte Missing-Prioritaetspass-Inkremente fortsetzen
+und jeden Pass einzeln committen und pushen.
+
+**Belegt:** CSS Color 4 Abschnitt 10.7 beschreibt ProPhoto RGB mit
+D50-Weisspunkt, Gamma 1/1,8 und einem linearen Transferteil bis 16/512. Der
+lokale CSS-Color-Cache ist laut `checkedAt` am 2026-11-07 geprueft und unter
+30 Tage alt. Der vorhandene Parser unterstuetzt weitere begrenzte `color()`
+Profile, waehrend XYZ-D50 seit Pass 9 Bradford-Anpassung verwendet.
+
+**Auswahl als Ableitung:** `color(prophoto-rgb ...)` wurde als letzter kleiner
+Profileintrag gewaehlt: seine D50-zu-sRGB-Strecke kann die in Pass 9
+implementierte Anpassungsroutine wiederverwenden. Der Pass erweitert weder
+ProPhoto-Farbmanagement allgemein noch Gamut-Mapping oder Praezisionsausgabe.
+
+**Umsetzung und lokale Validierung:** Der Parser akzeptiert begrenzte
+Zahlen-/Prozentkanaele, `none` und Slash-Alpha. Die Transferfunktion
+linearisiert den Bereich bis 1/32 durch Division durch 16 und den restlichen
+Bereich mit Exponent 1,8; die ProPhoto-Farbmatrix liefert XYZ-D50, danach
+folgen Bradford-Anpassung, sRGB-Gamutpruefung und 8-bit-Kodierung. Vierzehn
+fokussierte Faelle decken eine CSS-Farbprobe, die lineare Toe, Neutrale, `none`,
+Alpha, Syntax, Bereich, Out-of-gamut und atomare Shorthands ab. CSS-Leitfaden,
+Engine.Css-README, Supportinventar und Missing-Tracker sind aktualisiert.
+Der CSS-Testlauf hat 1.511 Tests bestanden; Debug-/Release-Solution-Builds
+melden null Warnungen/Fehler, beide Volltestlaeufe bestehen mit 16.777 Tests,
+Formatverifikation und `git diff --check` bestehen. `e9211b4` ist auf `main`
+gepusht. Linux development
+([Run 43641784100](https://github.com/khmseu/VisualWeb/actions/runs/43641784100)),
+Windows confinement
+([Run 43641784214](https://github.com/khmseu/VisualWeb/actions/runs/43641784214))
+und CodeQL
+([Run 43641783907](https://github.com/khmseu/VisualWeb/actions/runs/43641783907))
+sind erfolgreich; damit ist Pass 10 CI-gruen.

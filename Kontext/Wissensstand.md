@@ -8,6 +8,179 @@
 
 ## Aktueller Wissensstand
 
+**Aktueller Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
+Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-
+Transferkurve (Gamma 1,8 und linearer Toe), dem ProPhoto-zu-D50-XYZ-Matrixpfad
+und bestehender Bradford-D50-zu-D65-/sRGB-Gamutkonversion. Vierzehn
+fokussierte Tests, alle 1.511 CSS-Tests, Debug-/Release-Solution-Builds ohne
+Warnungen/Fehler und beide Volltests (16.777) bestehen; Formatverifikation
+und `git diff --check` bestehen. Feature-Commit `e9211b4` ist auf `main`
+gepusht; Linux development (Run 43641784100), Windows confinement
+(Run 43641784214) und CodeQL (Run 43641783907) sind erfolgreich. Zehn
+angeforderte Inkremente sind lokal validiert und einzeln committed/gepusht;
+Pass 10 ist der letzte. Siehe
+[KP-355](./Kontextprotokoll.md#kp-355---css-color-prophoto-rgb-function),
+[Missing](../plans/Missing.md) und die Guide-Dokumentation.
+
+**Aktueller Standards-Pass (2026-11-14; gepusht, CI laeuft):**
+Pass 9 ergaenzt `color(xyz-d50 ...)` mit der Bradford-D50-zu-D65-Anpassung
+vor der bestehenden XYZ-D65-zu-linearem-sRGB-Konversion. Endliche
+Zahlen-/Prozentkanaele bleiben ungeklemmt; Ergebnisse ausserhalb des sRGB-
+Gamuts bleiben Diagnosen. Zwoelf fokussierte Tests, alle 1.497 CSS-Tests,
+Debug-/Release-Solution-Builds ohne Warnungen/Fehler und beide Volltests
+(16.763) bestehen; Formatverifikation und `git diff --check` bestehen.
+Feature-Commit `10c7b37` ist gepusht; Linux development (Run 43637147140),
+CodeQL (Run 43637147000) und Windows x64 bestehen. Windows ARM64 fiel in einem
+unveraenderten External-Script-Browsertest durch ein ueberschrittenes
+V8-Ausfuehrungsdeadline fehl. Der Windows-Workflow wurde erfolgreich
+wiederholt; Windows x64/ARM64 sind gruen (Run 43637147165).
+Der lokale CSS-Color-Cache ist laut Manifest am 2026-11-07 geprueft und frisch.
+Zwei der zehn angeforderten Inkremente bleiben; jeder Pass soll separat
+committed und gepusht werden. Siehe [KP-354](./Kontextprotokoll.md#kp-354---css-color-d50-xyz-function),
+[Missing](../plans/Missing.md) und die Guide-Dokumentation.
+
+**Aktueller Standards-Pass (2026-11-14; gepusht, CI-gruen):**
+Pass 8 fuegt `color(xyz-d65 ...)` und das D65-Alias `color(xyz ...)` hinzu.
+Endliche Zahlen-/Prozentkanaele werden nicht auf [0,1] begrenzt; nach direkter
+XYZ-D65-zu-linearem-sRGB-Konversion werden nur Ausgaben im sRGB-Gamut
+akzeptiert. Dreizehn fokussierte und alle 1.486 CSS-Tests bestehen. Debug- und
+Release-Solution-Builds bestehen ohne Warnungen/Fehler; beide Volltests
+bestehen mit 16.752 Tests. Formatverifikation und `git diff --check` bestehen.
+Feature-Commit `efe9268` ist gepusht; Linux development (Run 43633273119),
+Windows confinement (Run 43633272906) und CodeQL (Run 43633272613) bestehen.
+Pass 8 ist abgeschlossen; zwei der zehn Inkremente bleiben. Der lokale
+CSS-Color-Cache ist laut Manifest am 2026-11-07 geprueft und frisch. Siehe
+[KP-353](./Kontextprotokoll.md#kp-353---css-color-d65-xyz-function),
+[Missing](../plans/Missing.md) und die Guide-Dokumentation.
+
+**Vorheriger Standards-Pass (2026-11-14; gepusht, CI-gruen):**
+Pass 7 ergaenzt begrenztes `color(rec2020 ...)`. Die Eingabekanaele werden
+mit dem Rec.-2020-Exponenten 2,4 linearisiert und ueber die D65-Konversionsmatrix
+in lineares sRGB umgerechnet. Werte ausserhalb des sRGB-Gamuts bleiben
+Diagnosen; die statische Ausgabe bleibt gerundetes 8-bit-sRGB. Dreizehn
+fokussierte und alle 1.473 CSS-Tests bestehen. Debug-/Release-Solution-Builds
+und beide Volltests (16.739) bestehen; Formatverifikation und `git diff --check`
+bestehen. Feature-Commit `26f354f` ist gepusht; Linux development
+(Run 43629055052), Windows confinement (Run 43629055107) und CodeQL
+(Run 43629054825) bestehen. Pass 7 ist abgeschlossen; drei der zehn
+Inkremente bleiben. Siehe
+[KP-352](./Kontextprotokoll.md#kp-352---css-color-rec-2020-function).
+
+Pass 6 fuegt begrenztes `color(a98-rgb ...)` hinzu. Die Kanaele werden mit dem
+A98-Transferexponenten linearisiert und ueber die CSS-Color-D65-Matrizen in
+den sRGB-Farbraum konvertiert. Ergebnisse ausserhalb des sRGB-Gamuts bleiben
+Diagnosen; die Ausgabe ist gerundetes 8-bit-sRGB. Dreizehn fokussierte Tests
+und alle 1.460 CSS-Tests bestehen. Debug-/Release-Solution-Builds bestehen ohne
+Warnungen/Fehler; beide Volltests bestehen mit 16.726 Tests.
+Formatverifikation und `git diff --check` bestehen. Feature-Commit `b0ef6e6`
+ist gepusht; Linux development (Run 43625000259), Windows confinement
+(Run 43625000194) und CodeQL (Run 43624999793) bestehen. Siehe
+[KP-351](./Kontextprotokoll.md#kp-351---css-color-a98-rgb-function),
+[Missing](../plans/Missing.md) und die Guide-Dokumentation.
+
+**Vorheriger Standards-Pass (2026-11-14; gepusht, CI-gruen):**
+Pass 5 ergaenzt lineares Display-P3: `color(display-p3-linear ...)` nutzt
+dieselben Primaerfarben und denselben D65-Weisspunkt wie `display-p3`, aber
+keine Eingangs-Gammakodierung. Ausserhalb des sRGB-Gamuts liegende Werte bleiben
+Diagnosen, nicht gamut-gemappt. Dreizehn fokussierte Tests und alle 1.447
+CSS-Tests bestehen. Debug-/Release-Solution-Builds bestehen mit null
+Warnungen/Fehlern; beide Volltests bestehen mit 16.713 Tests. Formatverifikation
+und `git diff --check` bestehen. Feature-Commit `cc550b8` ist gepusht; Linux
+development (Run 43621051210), Windows confinement (Run 43621051186; x64/arm64)
+und CodeQL (Run 43621051599) sind erfolgreich. Pass 5 ist abgeschlossen; fuenf
+der zehn angeforderten Inkremente bleiben. Der lokale CSS-Color-Cache ist laut
+Manifest am 2026-11-07 geprueft und frisch. Siehe
+[KP-350](./Kontextprotokoll.md#kp-350---css-color-linear-display-p3-function).
+
+**Vorheriger Standards-Pass (2026-11-14; gepusht, CI-gruen):**
+Nach `color(srgb-linear ...)` wurde CSS Color weiter geprueft. `color(display-p3
+...)` nimmt In-Gamut-Quellkanaele an und konvertiert ueber lineares Display-P3
+in den sRGB-Farbraum; nur konvertierte Werte innerhalb des sRGB-Gamuts werden
+angenommen. Andere Farbraeume und Gamut-Mapping bleiben unsupported. Die
+Ausgabe bleibt gerundetes 8-bit-sRGB. Der lokale CSS-Color-Cache war laut
+Manifest am 2026-11-07 geprueft und frisch. 14 fokussierte P3-Faelle, alle
+1.435 CSS-Tests, Debug-/Release-Builds ohne Warnungen/Fehler, Debug-/Release-
+Volltests (je 16.701), Formatverifikation und `git diff --check` bestanden;
+Code-Review war approved. Feature-Commit `6ecc220` wurde mit den
+zwischenzeitlich auf `main` veroeffentlichten Test-/CI-Aenderungen im Merge-
+Commit `375cfb5` gepusht. Linux development (43617047610; x64, ARM64 und
+Trunk), Windows confinement (43617047675; x64/arm64) und CodeQL (43617046891)
+sind erfolgreich. Im Linux-Lauf war der upstream Test-Wartepunkt
+`893a937` enthalten. Siehe
+[KP-349](./Kontextprotokoll.md#kp-349---css-color-display-p3-function).
+
+**Vorheriger Standards-Pass (2026-11-14; gepusht, CI-gruen):**
+Nach `color(srgb ...)` wurde CSS Color weiter geprueft. Der noch
+unsupported lineare sRGB-Farbraum hat einen bounded Transferfunktionspfad:
+`color(srgb-linear ...)`. Der Parser akzeptiert In-Gamut-Zahlen/Prozente,
+`none` und optionale Slash-Alpha; lineare RGB-Kanaele werden gemaess CSS-
+Transferfunktion vor gerundetem 8-bit-sRGB-Ausgang kodiert. Andere
+Farbraeume und Out-of-Gamut-Kanaele bleiben unsupported. Der lokale
+CSS-Color-Cache war laut Manifest am 2026-11-07 geprueft und frisch.
+18 fokussierte Faelle, der CSS-Gesamttestsatz (1.421), Debug-/Release-
+Solution-Builds ohne Warnungen/Fehler, Debug-/Release-Volltests (je 16.687),
+Formatverifikation und `git diff --check` bestanden. Code-Review war approved.
+Commit `6f2cf3c` ist nach `main` gepusht. Linux development
+(43612068563), Windows confinement (43612068566) und CodeQL (43612068784)
+sind erfolgreich. Im Linux-ARM64-Job schlug der unveraenderte Browser-Shell-
+Pixelfall beim Initialversuch und ersten Job-Rerun fehl; ein weiterer Rerun
+bestand. Linux x64 und Trunk-Checks bestanden im ersten Lauf, Windows x64 und
+ARM64 sowie CodeQL ebenfalls. Siehe
+[KP-348](./Kontextprotokoll.md#kp-348---css-color-srgb-linear-function) und
+[Missing](../plans/Missing.md).
+
+**Vorheriger Standards-Pass (2026-11-14; gepusht, CI-gruen):**
+Nach dem Unicode-Range-Pass wurde CSS Color (~40%) erneut geprueft. Die zuvor
+unsupported `color()`-Syntax hatte eine begrenzte, umsetzbare In-Gamut-Luecke:
+`color(srgb ...)`. `CssProperties` nimmt nun drei Zahlen-/Prozentkanaele,
+`none` als null und optionale Slash-Alpha an; andere Farbraeume und
+Out-of-Gamut-Kanaele bleiben Diagnosen. Die Ausgabe bleibt gerundetes 8-bit
+sRGB. Der lokale CSS-Color-Cache war laut Manifest am 2026-11-07 geprueft und
+frisch. Die 17 fokussierten Tests, der CSS-Gesamttestsatz (1.404), Debug-/Release-
+Solution-Builds ohne Warnungen/Fehler, Debug-/Release-Volltests (je 16.670),
+Formatverifikation und `git diff --check` bestanden. Commit `02c13ac` ist nach
+`main` gepusht; Linux development (43608274646), Windows confinement auf
+x64/arm64 (43608274684) und CodeQL (43608274473) sind erfolgreich.
+Weitere Farbraeume, Systemfarben und Farbinterpolation bleiben unsupported.
+Siehe [KP-347](./Kontextprotokoll.md#kp-347---css-color-srgb-function).
+
+**Vorheriger Standards-Pass (2026-11-14; Commit gepusht, CI-gruen):**
+Die CSS-Syntax-Teilabdeckung (~35%) wurde nach CSS Color (~40%) erneut
+ausgewaehlt, weil der Tokenizer eine opt-in Unicode-Range-Erweiterung
+explizit ausschloss. `CssOptions.EnableUnicodeRangeTokenExtension` gibt
+hexadezimale, Wildcard- und Bindestrich-Bereiche als inklusive typisierte
+Grenzen aus; standardmaessig bleibt sie ausgeschaltet. Das fuegt weder
+`@font-face` noch Descriptorvalidierung, Fontloading oder -auswahl hinzu.
+Der lokale CSS-Syntax-Cache war laut Manifest am 2026-11-07 geprueft und
+frisch. CSS-Tests (1.387), Debug-/Release-Builds, Debug-/Release-Volltests
+(je 16.653) und Formatverifikation bestanden. Commit `d125818` ist gepusht;
+Linux development, Windows confinement und CodeQL sind erfolgreich. Ein
+einmaliger Linux-ARM64-Pixelfehler im unveraenderten Browser-Shell-Test
+bestand beim Workflow-Rerun; ein vorheriger Linux-Lauf auf dem Basiscommit
+`62ed6b7` war ebenfalls erfolgreich. Siehe
+[KP-346](./Kontextprotokoll.md#kp-346---css-syntax-unicode-range-token-pass).
+
+**Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht und CI-gruen):**
+Aufgrund der festgelegten Auswahl nach der hoechsten noch umsetzbaren
+Teilabdeckung wurden nach ECMAScript (~90%, verbleibende Punkte ausserhalb
+Phase 11w) CSS Syntax und CSS Color (~35%, Gleichstand) betrachtet. CSS Color
+wurde wegen der konkreten Luecke `hwb()` gewaehlt. Der CSS-Parser implementiert
+nun HWB-Hue, numerische/prozentuale/`none`-Weiss- und Schwarzanteile,
+optionale Slash-Alpha, den achromatischen Fall ab Summe 100 und statische
+8-bit-sRGB-Ausgabe; Komma-Syntax bleibt ungueltig. Werte ausserhalb des
+Nennbereichs bleiben gueltig. Andere Farbraeume, Interpolation,
+Missing-Component-Erhaltung und hochpraezises Farbmanagement bleiben
+unsupported. Der CSS-Color-Schaetzwert wurde in
+[standards.md](../docs/standards.md#support-status) von ~35% auf ~40%
+aktualisiert; CSS Syntax (~35%) ist danach die naechste hoechste
+Teilabdeckung. Der lokale CSS-Color-Cache war laut Manifest am 2026-11-07
+geprueft und somit nicht stale. CSS-Tests (1.377), Solution-Volltest
+(16.643), Solution-Build (0 Warnungen/Fehler), Formatverifikation und
+`git diff --check` bestanden. Commit `62ed6b7` ist auf `main` gepusht; Linux
+development (Run 43597326583), Windows confinement (Run 43597326700) und
+CodeQL (Run 43597326615) sind erfolgreich. Siehe
+[KP-345](./Kontextprotokoll.md#kp-345---css-color-hwb-pass).
+
 Am 2026-11-12 wurde der standardspriorisierte Pass gewaehlt, als ECMAScript mit
 ~85% die hoechste aktuelle Teilabdeckung hatte. Pass 1 implementiert opt-in
 parser-blockierende Ausfuehrung aller klassischen Inline- und externen Scripts.
