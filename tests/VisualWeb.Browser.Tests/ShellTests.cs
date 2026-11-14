@@ -4512,15 +4512,25 @@ public sealed class ShellTests
         var window = shell.OpenWindow();
         shell.Tick();
         var first = window.ActiveTab!;
+        Wait(first);
         var other = shell.Controller.CreateTab(window.Id);
         shell.Controller.Navigate(other.Id, "data:text/html," + Uri.EscapeDataString("<!doctype html><style>body{margin:0;background-color:blue}</style>"));
-        shell.Tick();
+        Wait(other);
+        Assert.Equal((byte)255, system.Items[0].Pixels![120 * system.Items[0].Size.Width * 4]);
         var count = shell.PresentedFrames;
         system.Events.Enqueue(new KeyChanged(system.Items[0].Id, (int)SDL.Scancode.W, 0, (ushort)SDL.Keymod.Ctrl, true, false));
         shell.Tick();
         Assert.Equal(first.Id, window.ActiveTabId);
         Assert.True(shell.PresentedFrames > count);
         Assert.NotEqual((byte)255, system.Items[0].Pixels![120 * system.Items[0].Size.Width * 4]);
+
+        void Wait(BrowserTab tab)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.Null(tab.Error);
+        }
     }
 
     [Theory]
