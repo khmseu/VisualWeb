@@ -2020,8 +2020,14 @@ path. Out-of-sRGB results remain diagnostics. Fourteen focused tests cover the
 standard color example, the linear toe, neutral channels, alpha, syntax/range
 failures, gamut rejection and atomic shorthands. All 1,511 CSS tests pass;
 Debug/Release solution builds have zero warnings/errors; both full suites pass
-all 16,777 tests. Format verification and `git diff --check` pass. This is the
-tenth and final requested increment; feature commit and remote CI are pending.
+all 16,777 tests. Format verification and `git diff --check` pass. Feature
+commit `e9211b4` is pushed to `main`. Linux development
+([run 43641784100](https://github.com/khmseu/VisualWeb/actions/runs/43641784100)),
+Windows confinement
+([run 43641784214](https://github.com/khmseu/VisualWeb/actions/runs/43641784214))
+and CodeQL
+([run 43641783907](https://github.com/khmseu/VisualWeb/actions/runs/43641783907))
+all pass. This is the tenth and final requested increment.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
