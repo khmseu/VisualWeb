@@ -120,5 +120,6 @@ Windows targets.
 The phase-11a [V8 host probe](scripting.md) is also scheduled in native Windows
 x64/arm64 CI under this same profile; Linux host validation does not certify
 ClearScript compatibility with AppContainer. Page scripts remain disabled by
-default; `--enable-inline-scripts` opts into bounded post-parse inline classic
-execution. External scripts and a persistent browser event loop remain deferred.
+default; `--enable-inline-scripts` opts into bounded parser-blocking inline and
+browser-brokered external classic execution. Modules, broader HTML scheduling
+and a persistent browser event loop remain deferred.

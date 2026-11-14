@@ -539,6 +539,14 @@ public sealed record RendererMessage
     public string? FocusEventType { get; init; }
     /// <summary>Click-result replies only: whether a page listener canceled the trusted click.</summary>
     public bool? DefaultPrevented { get; init; }
+    /// <summary>Parser-pause script exchange only: monotonically increasing request ID within one render.</summary>
+    public int ScriptRequestId { get; init; }
+    /// <summary>Parser-pause script exchange only: absolute HTTP(S) URL selected by the renderer-local parser.</summary>
+    public string? ScriptUrl { get; init; }
+    /// <summary>Script-response only: decoded source of one browser-fetched classic script.</summary>
+    public string? ScriptSource { get; init; }
+    /// <summary>Script-response only: visible browser-side fetch/policy failure.</summary>
+    public string? ScriptError { get; init; }
     public PageLinkTarget[]? LinkTargets { get; init; }
     public PageFragmentTarget[]? FragmentTargets { get; init; }
     public PageStylesheet[]? Stylesheets { get; init; }
@@ -559,10 +567,12 @@ public static class RendererProtocol
     private const string ClickResultKind = "click-result";
     private const string FocusKind = "focus";
     private const string FocusResultKind = "focus-result";
+    private const string ScriptRequestKind = "script-request";
+    private const string ScriptResponseKind = "script-response";
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 48;
+    public const int Version = 49;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -594,6 +604,9 @@ public static class RendererProtocol
     public const int MaxStylesheetCharacters = 256 * 1024;
     /// <summary>Budget for the UTF-8 JSON serialization of the whole linked stylesheet collection.</summary>
     public const int MaxStylesheetBytes = 1024 * 1024;
+    public const int MaxScriptRequests = 64;
+    public const int MaxScriptSourceCharacters = 64 * 1024;
+    public const int MaxScriptBatchCharacters = 256 * 1024;
 
     [SuppressMessage("Sonar", "S3776:Cognitive Complexity of methods should not be too high", Justification = "This is the versioned untrusted-message boundary; ordered kind scoping and payload checks form one auditable finite protocol state machine.")]
     public static void Validate(RendererMessage message, int payloadLength)
@@ -616,10 +629,14 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Base URL overrides belong only to render requests."); }
         if (message.Kind != RenderKind && message.ScrollOffsets is not null)
         { throw new IpcProtocolException("Nested scroll offsets belong only to render requests."); }
+        if (message.Kind is not (ScriptRequestKind or ScriptResponseKind)
+            && (message.ScriptRequestId != 0 || message.ScriptUrl is not null
+                || message.ScriptSource is not null || message.ScriptError is not null))
+        { throw new IpcProtocolException("Script exchange fields belong only to script broker messages."); }
         if ((message.Kind != RenderKind && (message.ScrollY != 0 || message.ScrollX != 0))
             || (message.Kind != FrameKind && (message.ScrollHeight != 0 || message.ScrollWidth != 0)))
         { throw new IpcProtocolException("Scroll fields belong only to render requests and frame replies respectively."); }
-        if ((message.Kind is not (RenderKind or ClickKind or FocusKind)
+        if ((message.Kind is not (RenderKind or ClickKind or FocusKind or ScriptRequestKind or ScriptResponseKind)
                 && (message.DocumentId != Guid.Empty || message.ExecuteInlineScripts))
             || (message.Kind != RenderKind && (message.CommittedDocumentId != Guid.Empty || message.ReuseDocument)))
         { throw new IpcProtocolException("Document policy fields belong only to render or click requests."); }
@@ -716,6 +733,38 @@ public static class RendererProtocol
                     || message.PixelHeight != 0 || message.Stride != 0 || message.Title is not null
                     || message.Status is not null || message.Error is not null || message.SandboxProfile is not null)
                 { throw new IpcProtocolException("Invalid renderer focus-result reply."); }
+                break;
+            case ScriptRequestKind:
+                if (payloadLength != 0 || message.DocumentId == Guid.Empty
+                    || message.ScriptRequestId is < 1 or > MaxScriptRequests
+                    || string.IsNullOrEmpty(message.ScriptUrl) || message.ScriptUrl.Length > MaxTextCharacters
+                    || BrowserUrl.ParseResult(message.ScriptUrl).Url is not { } scriptUrl
+                    || scriptUrl.Href != message.ScriptUrl || scriptUrl.Protocol is not ("http:" or "https:")
+                    || message.ScriptSource is not null || message.ScriptError is not null
+                    || message.ExecuteInlineScripts || message.Url is not null || message.BaseUrl is not null
+                    || message.Html is not null || message.Diagnostics is not null || message.StatusCode != 0
+                    || message.Width != 0 || message.Height != 0 || message.Scale != 0
+                    || message.PixelWidth != 0 || message.PixelHeight != 0 || message.Stride != 0
+                    || message.Title is not null || message.Status is not null || message.Error is not null
+                    || message.SandboxProfile is not null)
+                { throw new IpcProtocolException("Invalid parser-pause script request fields or limits."); }
+                break;
+            case ScriptResponseKind:
+                if (payloadLength != 0 || message.DocumentId == Guid.Empty
+                    || message.ScriptRequestId is < 1 or > MaxScriptRequests
+                    || string.IsNullOrEmpty(message.ScriptUrl) || message.ScriptUrl.Length > MaxTextCharacters
+                    || BrowserUrl.ParseResult(message.ScriptUrl).Url is not { } responseUrl
+                    || responseUrl.Href != message.ScriptUrl || responseUrl.Protocol is not ("http:" or "https:")
+                    || (message.ScriptSource is null) == (message.ScriptError is null)
+                    || message.ScriptSource is { Length: > MaxScriptSourceCharacters }
+                    || message.ScriptError is { Length: 0 or > MaxTextCharacters }
+                    || message.ExecuteInlineScripts || message.Url is not null || message.BaseUrl is not null
+                    || message.Html is not null || message.Diagnostics is not null || message.StatusCode != 0
+                    || message.Width != 0 || message.Height != 0 || message.Scale != 0
+                    || message.PixelWidth != 0 || message.PixelHeight != 0 || message.Stride != 0
+                    || message.Title is not null || message.Status is not null || message.Error is not null
+                    || message.SandboxProfile is not null)
+                { throw new IpcProtocolException("Invalid parser-pause script response fields or limits."); }
                 break;
             case ClickResultKind:
                 if (payloadLength != 0 || message.Url is not null || message.Html is not null || message.Diagnostics is not null

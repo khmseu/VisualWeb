@@ -343,8 +343,8 @@ or be `*`; redirects are restricted to the effective initial stylesheet origin.
 This intentionally narrow policy is not full Fetch CORS. Any stylesheet failure
 fails the navigation. Missing pieces include:
 
-- Conditional/layer/late CSS imports, `url()` resources, external scripts (JavaScript
-  referenced by a `<script src="...">` URL rather than inline script text), images,
+- Conditional/layer/late CSS imports, `url()` resources, non-classic script
+  resources and unsupported classic-script attributes, images,
   fonts, media, and frame resources; media queries beyond exact comma-separated
   `all`/`screen`/`print` type lists, alternate/titled linked sheets,
   full CORS/SOP and
@@ -362,9 +362,11 @@ fails the navigation. Missing pieces include:
 - MIME sniffing. The byte-level HTML charset prescan (`<meta charset>`, pragma, XML declaration; first 1024 bytes) now feeds navigation decoding, but statistical/locale encoding detection, container inheritance and the parser's reparse on a later conflicting declaration are absent.
 
 Unsupported linked-stylesheet semantics are explicitly rejected rather than merely
-ignored. When inline page scripting is enabled, classic scripts with a `src`
-attribute (for example, `<script src="app.js"></script>`) are rejected; their
-source is not fetched or executed.
+ignored. When page scripts are opted in, inline and external classic scripts
+execute in parser order at their parser position. External HTTP(S) source is
+fetched by the browser through a bounded CSP-checked, cookie-free broker; async,
+defer, modules, integrity/CORS/referrer-policy/fetch-priority/nonce and full
+HTML script preparation remain unsupported.
 
 Evidence: `stylesheet collection`, `script classification`, `HTML loading policy`, and `networking scope`.
 
@@ -1704,13 +1706,14 @@ V8 and substantial bounded DOM bindings **are implemented**. JavaScript is not w
 However:
 
 - Page scripting is disabled by default.
-- Enabled scripts are post-parse inline classics only.
+- Enabled scripts include bounded parser-blocking inline and browser-brokered
+  external classic scripts.
 - There is no persistent HTML event loop. Opted-in documents now retain their
   renderer-local host/listeners after initial execution, but only for bounded
   trusted link-event dispatch (1024 click/auxclick events combined per document; failures invalidate the
   host until reload); no timers, tasks or other callbacks run later.
-- Modules, external scripts (`<script src="...">` resources), timers, workers,
-  script-visible networking/storage, and full Window/Web IDL behavior are
+- Modules, `async`/`defer`, timers, workers, script-visible networking/storage,
+  and full Window/Web IDL behavior are
   unimplemented and lower-priority work.
 - Synthetic events, finite lifecycle/microtask processing and the narrow link-click
   dispatch exist, but not general ongoing page interaction.
@@ -1794,10 +1797,11 @@ priorities below; the choice of protocol and its scope remain open. See the
    scrolling/overflow, keyboard focus and form issues that prevent using simple
    sites. Avoid adding advanced input APIs ahead of basic usability.
 4. **Small amounts of page JavaScript** once the static browsing path works.
-   Prioritize external classic scripts (`<script src="...">`), the DOM/events
-   needed by simple interactions, and bounded scheduling/lifecycle integration.
-   Full application frameworks, modules, workers and the wider browser API
-   surface have lower priority.
+   Parser-blocking inline and external classic scripts are now implemented as
+   an opt-in bounded subset. Prioritize remaining DOM/event behavior and
+   scheduling/lifecycle integration needed by simple interactions. Full
+   application frameworks, modules, workers and the wider browser API surface
+   have lower priority.
 5. **Broader production security and isolation** beyond the existing protections,
    including general request authorization and wider SOP/CORS/CSP coverage,
    before claiming safe browsing of arbitrary untrusted sites. Completing this

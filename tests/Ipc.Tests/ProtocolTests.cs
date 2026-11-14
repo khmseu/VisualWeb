@@ -84,7 +84,7 @@ public sealed class ProtocolTests
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(48, RendererProtocol.Version);
+        Assert.Equal(49, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
@@ -885,7 +885,7 @@ public sealed class ProtocolTests
     [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(48, RendererProtocol.Version);
+        Assert.Equal(49, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -1146,6 +1146,49 @@ public sealed class ProtocolTests
         Height = 2,
         Scale = 1
     };
+
+    [Fact]
+    public async Task ParserPauseScriptMessagesAreBoundedAndRoundTripWithDocumentAndRequestIdentity()
+    {
+        var documentId = Request.DocumentId;
+        var request = new RendererMessage
+        {
+            Kind = "script-request",
+            Id = 1,
+            DocumentId = documentId,
+            ScriptRequestId = 1,
+            ScriptUrl = "https://cdn.example.test/app.js"
+        };
+        RendererProtocol.Validate(request, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(request with
+        { ScriptUrl = "file:///tmp/app.js" }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(request with
+        { ScriptSource = "not-a-request-field" }, 0));
+
+        var response = new RendererMessage
+        {
+            Kind = "script-response",
+            Id = 1,
+            DocumentId = documentId,
+            ScriptRequestId = 1,
+            ScriptUrl = request.ScriptUrl,
+            ScriptSource = "document.title='loaded';"
+        };
+        RendererProtocol.Validate(response, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(response with
+        { ScriptError = "also set" }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(response with
+        { ScriptSource = new string('x', RendererProtocol.MaxScriptSourceCharacters + 1) }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(response with
+        { ScriptRequestId = RendererProtocol.MaxScriptRequests + 1 }, 0));
+
+        using var wire = new MemoryStream();
+        await new RendererChannel(Stream.Null, wire).WriteAsync(response, cancellationToken: Cancellation);
+        wire.Position = 0;
+        var packet = await new RendererChannel(wire, Stream.Null).ReadAsync(Cancellation);
+        Assert.Equal(response, packet!.Message);
+    }
+
     [Fact]
     public async Task MessagesAndRawPixelsRoundTripWithoutUnicodeOrBgraLoss()
     {

@@ -94,8 +94,8 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 - Windowing/input: SDL3 behind `Platform.Abstractions`, with both X11 and Wayland backends supported and selectable on Linux (auto-detect via `WAYLAND_DISPLAY`/`DISPLAY`, override via config/env).
 - Graphics/text: SkiaSharp for rasterization, HarfBuzzSharp for shaping.
 - JavaScript: V8 through ClearScript (approved phase 11a host foundation).
-  Explicit post-parse inline scripting and bounded live DOM facades are
-  implemented; full Web IDL and HTML scheduling/event-loop integration remain deferred.
+  Explicit parser-blocking classic page scripts and bounded live DOM facades are
+  implemented; other HTML scheduling and event-loop integration remain deferred.
 - Tests: xUnit v3; WPT-derived data used where available.
 - Standards: every public interface documents the spec section it implements (URL + section anchor) in XML doc comments.
 - Standards cache: `specs/` holds local copies of the referenced specifications, with a manifest recording source URL and fetch date; a refresh tool re-downloads entries older than 30 days. This is independent of the test suites.
@@ -199,11 +199,14 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   Approved phase 11c adds a minimal live renderer-local title/ID/textContent
   binding foundation through private primitive-only callbacks with ownership,
   receiver/identity and resource-budget tests. Page execution remains disabled.
-  Approved phase 11d adds explicit opt-in post-parse inline classic execution
-  followed by style/layout/paint recomputation. Script errors fail navigation
-  transactionally; committed mutated DOM is retained for resize without
-  reexecution, with fresh DOM/host on navigation/reload. IPC v3 carries document
-  identity and trusted policy only. External scripts and event loops remain deferred.
+  Approved phase 11d adds explicit opt-in parser-blocking classic execution for
+  inline and browser-brokered external scripts, followed by style/layout/paint
+  recomputation. Script errors fail navigation transactionally; committed
+  mutated DOM is retained for resize without reexecution, with fresh DOM/host on
+  navigation/reload. External source is fetched by the browser while parsing is
+  paused; IPC v49 carries bounded URL/source request-response data only, never
+  fetch authority or DOM/V8 objects. Modules, async/defer scheduling, timers,
+  and persistent event loops remain deferred.
   Approved phase 11e expands live DOM facades with bounded element attributes,
   element/text/fragment factories, document roots and branded Node mutation/
   navigation. Native checked algorithms, shared lifetime identities and
@@ -211,7 +214,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   No innerHTML, selectors, events or dynamic script scheduling is added.
   Approved phase 11f adds finite native Promise/queueMicrotask checkpoints after
   each classic script, with bounded queues, shared execution/DOM budgets and
-  transactional page failure. External scripts, timers, event dispatch, ordinary
+  transactional page failure. Timers, event dispatch, ordinary
   Promise rejection reporting and a persistent browser event loop remain deferred.
   Approved phase 11g adds native Event/EventTarget plus synchronous Node/document
   capture/target/bubble propagation, once/passive/cancellation controls and
@@ -222,7 +225,7 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
   readystatechange and one DOMContentLoaded with private dispatch/checkpoints.
   Initial sources and lifecycle callbacks share the same navigation budgets;
   failures remain transactional. This finite post-parse lifecycle does not
-  add Window/load, timers, external scripts or persistent V8.
+  add Window/load, timers or persistent V8.
   Phase 11i continues with bounded querySelector/querySelectorAll, static
   NodeList facades and Element matches/closest, reusing Engine.Css. Existing
   selectors only; :scope, live collections and full Web IDL remain deferred.
@@ -290,5 +293,5 @@ Establish a .NET 10 monorepo with one project per browser subsystem behind stand
 
 ### Open Questions
 
-1. Extend the finite post-parse inline subset toward standards-compliant HTML
-   script scheduling, error reporting and event-loop lifecycles.
+1. Extend the finite parser-blocking classic subset toward broader HTML script
+   preparation, scheduling, error reporting and event-loop lifecycles.

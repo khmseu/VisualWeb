@@ -1,9 +1,12 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
+using VisualWeb.Engine.Scripting;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
+using VisualWeb.PageRendering;
 using VisualWeb.Platform.Linux.Sandbox;
 using VisualWeb.Platform.Windows.Sandbox;
 
@@ -110,6 +113,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
     }
     public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         RenderAsync(page, viewport, cancellationToken, reuseDocument: false);
+    public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport,
+        PageScriptResourceLoader? scriptLoader, CancellationToken cancellationToken) =>
+        RenderAsync(page, viewport, cancellationToken, reuseDocument: false, scriptLoader);
     public Task<BrowserPage> RenderRetainedAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         RenderAsync(page, viewport, cancellationToken, reuseDocument: true);
     public void CommitDocument(Guid documentId)
@@ -121,7 +127,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
     }
     private async Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken,
-        bool reuseDocument)
+        bool reuseDocument, PageScriptResourceLoader? scriptLoader = null)
     {
         ArgumentNullException.ThrowIfNull(page);
         lock (sync) { ObjectDisposedException.ThrowIf(disposed, this); }
@@ -171,7 +177,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 TextTargets = Array.AsReadOnly(packet.Message.TextTargets!),
                 ScrollContainers = Array.AsReadOnly(packet.Message.ScrollContainers ?? Array.Empty<PageScrollContainer>())
             };
-        }).ConfigureAwait(false);
+        }, scriptLoader, page.DocumentId).ConfigureAwait(false);
     }
     public bool DispatchesLinkClicks => executeInlineScripts;
     public bool DispatchesPageFocusEvents => executeInlineScripts;
@@ -278,7 +284,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             : throw new IpcProtocolException("Renderer focus reply has the wrong kind.")).ConfigureAwait(false);
     }
     private async Task<T> ExchangeAsync<T>(RendererMessage request, bool drain, CancellationToken cancellationToken,
-        Func<RendererPacket, T> accept)
+        Func<RendererPacket, T> accept, PageScriptResourceLoader? scriptLoader = null, Guid scriptDocumentId = default)
     {
         using var deadline = drain
             ? CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)
@@ -316,8 +322,57 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 }
             }
             await current.Channel.WriteAsync(request, cancellationToken: deadline.Token).ConfigureAwait(false);
-            var packet = await Receive(current, deadline.Token).ConfigureAwait(false);
-            if (packet.Message.Id != request.Id) { throw new IpcProtocolException("Renderer reply identity does not match its request."); }
+            var scriptRequestId = 0;
+            var scriptCharacters = 0;
+            RendererPacket packet;
+            while (true)
+            {
+                packet = await Receive(current, deadline.Token).ConfigureAwait(false);
+                if (packet.Message.Id != request.Id) { throw new IpcProtocolException("Renderer reply identity does not match its request."); }
+                if (packet.Message.Kind != "script-request") { break; }
+
+                var scriptRequest = packet.Message;
+                if (request.Kind != "render" || scriptRequest.DocumentId != scriptDocumentId
+                    || scriptRequest.ScriptRequestId != ++scriptRequestId)
+                { throw new IpcProtocolException("Parser-pause script request identity does not match its render exchange."); }
+
+                string? source = null;
+                string? scriptError = null;
+                if (scriptLoader is null)
+                {
+                    scriptError = "External scripts require the browser-owned script resource broker.";
+                }
+                else
+                {
+                    try
+                    {
+                        source = await scriptLoader(BrowserUrl.Parse(scriptRequest.ScriptUrl!), deadline.Token).ConfigureAwait(false);
+                        var characters = checked(scriptCharacters + source.Length);
+                        if (source.Length > RendererProtocol.MaxScriptSourceCharacters
+                            || characters > RendererProtocol.MaxScriptBatchCharacters)
+                        {
+                            source = null;
+                            scriptError = "External script batch character limit exceeded.";
+                        }
+                        else { scriptCharacters = characters; }
+                    }
+                    catch (PageNavigationException exception)
+                    {
+                        scriptError = BoundText(exception.Message);
+                    }
+                }
+
+                await current.Channel.WriteAsync(new RendererMessage
+                {
+                    Kind = "script-response",
+                    Id = request.Id,
+                    DocumentId = scriptDocumentId,
+                    ScriptRequestId = scriptRequestId,
+                    ScriptUrl = scriptRequest.ScriptUrl,
+                    ScriptSource = source,
+                    ScriptError = scriptError
+                }, cancellationToken: deadline.Token).ConfigureAwait(false);
+            }
             if (packet.Message.Kind == "error") { throw new PageNavigationException(packet.Message.Error!); }
             var result = accept(packet);
             // Drain superseded exchanges under the deadline so retained DOM survives and replies stay aligned.
@@ -348,6 +403,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         finally { exchange.Release(); }
     }
+    private static string BoundText(string text) => text.Length <= RendererProtocol.MaxTextCharacters
+        ? text : text[..(RendererProtocol.MaxTextCharacters - 3)] + "...";
     private static async Task<RendererPacket> Receive(Connection owner, CancellationToken cancellationToken)
     {
         var packet = await owner.Channel.ReadAsync(cancellationToken).ConfigureAwait(false);

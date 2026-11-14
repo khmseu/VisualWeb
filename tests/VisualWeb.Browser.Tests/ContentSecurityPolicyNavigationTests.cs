@@ -34,6 +34,53 @@ public sealed class ContentSecurityPolicyNavigationTests
     }
 
     [Fact]
+    public async Task ExternalScriptLoaderAllowsCspAuthorizedCrossOriginRedirectWithoutCookies()
+    {
+        var requests = new List<HttpRequestMessage>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request);
+            return request.RequestUri!.AbsolutePath switch
+            {
+                "/" => Html("<script src='https://cdn.example.test/scripts/entry.js'></script>",
+                    "script-src https://cdn.example.test/scripts/"),
+                "/scripts/entry.js" => Redirect("https://cdn.example.test/redirected.js"),
+                "/redirected.js" => JavaScript("document.title='external';"),
+                _ => throw new InvalidOperationException("A script request escaped CSP validation.")
+            };
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+        var script = await source.LoadScriptAsync(page,
+            BrowserUrl.Parse("https://cdn.example.test/scripts/entry.js"), Cancellation);
+
+        Assert.Equal("document.title='external';", script);
+        Assert.Equal(["https://example.test/", "https://cdn.example.test/scripts/entry.js",
+            "https://cdn.example.test/redirected.js"], requests.Select(request => request.RequestUri!.AbsoluteUri));
+        Assert.All(requests, request => Assert.False(request.Headers.Contains("Cookie")));
+    }
+
+    [Fact]
+    public async Task ExternalScriptLoaderBlocksCspDeniedCrossOriginBeforeRequest()
+    {
+        var requests = new List<string>();
+        using var source = new GetPageSource(new Handler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsoluteUri);
+            return request.RequestUri.AbsolutePath == "/"
+                ? Html("<script src='https://cdn.example.test/entry.js'></script>", "script-src 'self'")
+                : throw new InvalidOperationException("A CSP-denied script was fetched.");
+        }));
+
+        var page = await source.LoadAsync(BrowserUrl.Parse("https://example.test/"), Cancellation);
+        var error = await Assert.ThrowsAsync<PageNavigationException>(() => source.LoadScriptAsync(page,
+            BrowserUrl.Parse("https://cdn.example.test/entry.js"), Cancellation));
+
+        Assert.Contains("Content-Security-Policy", error.Message, StringComparison.Ordinal);
+        Assert.Equal(["https://example.test/"], requests);
+    }
+
+    [Fact]
     public async Task MatchingNonceAllowsInlineClassicScript()
     {
         using var source = Serving("<script nonce='YWJj'>document.title='allowed'</script>", "script-src 'nonce-YWJj'");
@@ -600,6 +647,16 @@ public sealed class ContentSecurityPolicyNavigationTests
             Content = new StringContent(body, Encoding.UTF8)
         };
         response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/css");
+        return response;
+    }
+
+    private static HttpResponseMessage JavaScript(string body)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, Encoding.UTF8)
+        };
+        response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/javascript");
         return response;
     }
 

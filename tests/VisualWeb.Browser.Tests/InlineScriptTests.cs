@@ -515,7 +515,7 @@ public sealed class InlineScriptTests
             ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
             : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
         var page = Page("""
-            <!doctype html><style>body{margin:0;background-color:red}body.blue{background-color:blue}</style>
+            <!doctype html><style>body{margin:0;background-color:red}body.blue{background-color:blue}</style><body>
             <script>
             let list=document.body.classList;
             document.addEventListener('DOMContentLoaded',()=>{
@@ -732,7 +732,7 @@ public sealed class InlineScriptTests
             ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
             : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
         var page = Page("""
-            <!doctype html><style>body{margin:0;background-color:red}</style>
+            <!doctype html><style>body{margin:0;background-color:red}</style><body>
             <script>
             let order=[];
             document.addEventListener('paint',()=>order.push('capture'),true);
@@ -784,7 +784,7 @@ public sealed class InlineScriptTests
             ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
             : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
         var page = Page("""
-            <!doctype html><style>body{margin:0;background-color:red}</style>
+            <!doctype html><style>body{margin:0;background-color:red}</style><body>
             <script>
             let order=[];
             queueMicrotask(()=>{order.push('queue');document.body.setAttribute('style','background-color:blue');
@@ -827,7 +827,7 @@ public sealed class InlineScriptTests
             ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
             : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
         var page = Page("""
-            <!doctype html><style>body{margin:0;background-color:white}</style>
+            <!doctype html><style>body{margin:0;background-color:white}</style><body>
             <script>
             document.body.setAttribute('style','background-color:blue');
             let box = document.createElement('div');
@@ -857,17 +857,67 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task RemovedInitialScriptsStillExecuteTheirPreflightSnapshot(bool process)
+    public async Task ExternalClassicScriptsPauseParsingAndUseTheEffectiveBase(bool process)
     {
         using IPageRenderer renderer = process
             ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
             : new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
-        var rendered = await renderer.RenderAsync(Page("""
-            <!doctype html><style>body{margin:0}</style>
-            <script>let later = document.getElementById('later'); later.parentNode.removeChild(later);</script>
-            <script id="later">document.title = 'detached snapshot';</script>
-            """), Viewport, Cancellation);
-        Assert.Equal("detached snapshot", rendered.Title);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"), """
+            <!doctype html><head><base href="https://cdn.example.test/scripts/"></head><body>
+            <script>document.title='first'</script>
+            <script src="entry.js"></script>
+            <p id="later">later</p>
+            <script>document.title += document.getElementById('later').textContent</script>
+            """, 200, []);
+        var requested = new List<string>();
+        var rendered = await renderer.RenderAsync(page, Viewport, (url, _) =>
+        {
+            requested.Add(url.Href);
+            return Task.FromResult("""
+                document.title += document.getElementById('later') ? '-too-late' : '-external';
+                """);
+        }, Cancellation);
+
+        Assert.Equal(["https://cdn.example.test/scripts/entry.js"], requested);
+        Assert.Equal("first-externallater", rendered.Title);
+    }
+
+    [Fact]
+    public async Task LocalParserPauseAwaitsBrowserFetchOffTheCallingThread()
+    {
+        using var renderer = new LocalPageRenderer(() =>
+            new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true), executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"),
+            "<script src='https://cdn.example.test/entry.js'></script>", 200, []);
+        var source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callerThread = Environment.CurrentManagedThreadId;
+        var loaderThread = 0;
+        var rendering = renderer.RenderAsync(page, Viewport, (_, _) =>
+        {
+            loaderThread = Environment.CurrentManagedThreadId;
+            return source.Task;
+        }, Cancellation);
+
+        Assert.False(rendering.IsCompleted);
+        Assert.Equal(callerThread, Environment.CurrentManagedThreadId);
+        source.SetResult("document.title='loaded';");
+
+        Assert.Equal("loaded", (await rendering).Title);
+        Assert.NotEqual(callerThread, loaderThread);
+    }
+
+    [Fact]
+    public async Task LocalRendererKeepsPageEventsDisabledWithoutScriptOptIn()
+    {
+        using var renderer = new LocalPageRenderer(() =>
+            new StaticPageRenderer(FontPath, 1000), executeInlineScripts: false);
+        var rendered = await renderer.RenderAsync(Page(
+            "<!doctype html><title>before</title><script>document.title='unexpected';</script>"),
+            Viewport, Cancellation);
+
+        Assert.False(renderer.DispatchesLinkClicks);
+        Assert.False(renderer.DispatchesPageFocusEvents);
+        Assert.Equal("before", rendered.Title);
     }
 
     [Fact]
@@ -881,19 +931,31 @@ public sealed class InlineScriptTests
         var changed = enabled.Render(Page(), Viewport, Cancellation);
         Assert.Equal("Script title", changed.Title);
         Assert.Equal(new byte[] { 255, 0, 0, 255 }, changed.Frame.Pixels.Span[..4].ToArray());
-        Assert.Contains("Post-parse inline scripts: 2", changed.Status);
+        Assert.Contains("Parser-blocking classic scripts: 2", changed.Status);
     }
 
     [Fact]
-    public void CompleteDocumentSourcesAreSnapshottedBeforeEarlierScriptsMutateThem()
+    public async Task ParserBlockingScriptResolvesAgainstTheBaseAvailableAtItsPosition()
     {
         using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
-        var page = renderer.Render(Page("""
-            <!doctype html><style>body{margin:0}</style>
-            <script>document.getElementById('later').textContent = "throw Error('must not execute mutated source')";</script>
-            <script id="later">document.title = 'original snapshot';</script>
-            """), Viewport, Cancellation);
-        Assert.Equal("original snapshot", page.Title);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"), """
+            <!doctype html><head>
+            <script src="first.js"></script>
+            <base href="https://cdn.example.test/scripts/">
+            <script src="second.js"></script>
+            </head>
+            """, 200, [])
+        {
+            BaseUrl = BrowserUrl.Parse("https://cdn.example.test/scripts/")
+        };
+        var requested = new List<string>();
+        await renderer.RenderAsync(page, Viewport, (url, _) =>
+        {
+            requested.Add(url.Href);
+            return Task.FromResult("");
+        }, Cancellation);
+
+        Assert.Equal(["https://example.test/first.js", "https://cdn.example.test/scripts/second.js"], requested);
     }
 
     [Theory]

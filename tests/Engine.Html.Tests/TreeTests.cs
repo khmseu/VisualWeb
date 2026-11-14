@@ -78,6 +78,20 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void ScriptCompletionCallbackRunsAtTheParserPositionIncludingEof()
+    {
+        var document = new DomDocument();
+        var observed = new List<string?>();
+        var parsed = HtmlParser.Parse("<!doctype html><body><script>1</script><p id=later>text</p>"
+            + "<script>2", options: null, cancellationToken: TestContext.Current.CancellationToken,
+            document: document, scriptCompleted: script =>
+                observed.Add(document.GetElementById("later")?.TextContent + ":" + script.TextContent));
+
+        Assert.Equal(new[] { ":1", "text:2" }, observed);
+        Assert.NotNull(parsed.Document.GetElementById("later"));
+    }
+
+    [Fact]
     public void BodyAndRootAttributesMergeWithoutOverwritingFirstValues()
     {
         var result = Parse("<html id=a><body id=b><html id=c lang=en><body id=d class=x>");

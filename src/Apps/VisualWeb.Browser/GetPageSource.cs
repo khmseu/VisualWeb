@@ -2,6 +2,7 @@ using VisualWeb.Core.Encoding;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Html;
 using VisualWeb.Engine.Net;
+using VisualWeb.Engine.Scripting;
 using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.Browser;
@@ -48,6 +49,8 @@ public interface IPageSource : IDisposable
         CancellationToken cancellationToken, bool preventHttpsDowngrade,
         Func<BrowserUrl, BrowserUrl>? rewriteDestination) =>
         throw new PageNavigationException("The configured page source does not enforce asynchronous per-hop navigation authorization and destination rewriting.");
+    Task<string> LoadScriptAsync(LoadedPage document, BrowserUrl url, CancellationToken cancellationToken) =>
+        throw new PageNavigationException("The configured page source does not provide browser-owned external script loading.");
 }
 
 /// <summary>Browser-owned GET navigation, without ambient cookies or renderer network capabilities.</summary>
@@ -157,6 +160,58 @@ public sealed class GetPageSource : IPageSource
             cancellationToken: cancellationToken, preventHttpsDowngrade: preventHttpsDowngrade,
             rewriteDestination: rewriteDestination, isNavigationRequest: true).ConfigureAwait(false);
         return await CreateLoadedPageAsync(response, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<string> LoadScriptAsync(LoadedPage document, BrowserUrl url, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(url);
+        if (url.Protocol is not ("http:" or "https:"))
+        {
+            throw new PageNavigationException("External classic scripts are limited to HTTP(S) resources.");
+        }
+
+        var policy = document.ContentSecurityPolicyFields.Count == 0
+            ? null
+            : ContentSecurityPolicy.Parse(document.ContentSecurityPolicyFields, []);
+        ResourceResponse response;
+        try
+        {
+            response = await loader.LoadAuthorizedNavigationAsync(url,
+                (destination, redirects, _) => ValueTask.FromResult(
+                    policy?.AllowsScript(destination, document.Origin, redirects) ?? true),
+                includeCookies: false, cancellationToken,
+                preventHttpsDowngrade: document.Url.Protocol == "https:",
+                rewriteDestination: policy is null ? null : policy.UpgradeScriptUrl).ConfigureAwait(false);
+        }
+        catch (ResourceLoadException exception)
+        {
+            var message = exception.Error == ResourceError.NavigationDenied && policy is not null
+                ? $"Content-Security-Policy blocked external script {url.Href}."
+                : $"External script {url.Href} failed to load: {exception.Message}";
+            throw new PageNavigationException(message);
+        }
+
+        if (response.StatusCode is < 200 or > 299)
+        {
+            throw new PageNavigationException($"External script {url.Href} returned HTTP {response.StatusCode}.");
+        }
+        if (response.ContentType is not { } contentType
+            || !InlinePageScripts.IsJavaScriptMimeType(contentType.Essence))
+        {
+            throw new PageNavigationException($"External script {url.Href} has an unsupported JavaScript MIME type.");
+        }
+
+        var encoding = contentType.Parameters.TryGetValue("charset", out var label)
+            ? WebEncoding.ForLabel(label)
+            : WebEncoding.ForLabel("UTF-8");
+        var source = response.DecodeText(encoding).Text;
+        if (source.Length > V8ScriptHost.MaxSourceCharacters)
+        {
+            throw new PageNavigationException(
+                $"External script {url.Href} exceeds the {V8ScriptHost.MaxSourceCharacters}-character source limit.");
+        }
+        return source;
     }
     private async Task<LoadedPage> CreateLoadedPageAsync(ResourceResponse response, CancellationToken cancellationToken)
     {

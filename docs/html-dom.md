@@ -187,9 +187,12 @@ The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup
 and element textContent through private primitive-only callbacks, not CLR nodes.
-The parser itself never executes scripts. PageRendering's optional phase-11d
-inline classic batch runs only after whole-document parsing; this is not
-parser-blocking script integration.
+With explicit page-script opt-in, PageRendering invokes a bounded callback
+when the parser completes each eligible classic script element. Inline and
+browser-brokered external classics execute in parser order before parsing
+continues, so later input is not yet in the DOM. This is a finite subset, not
+the complete HTML script preparation, render-blocking stylesheet, scheduling
+or error-reporting algorithms; without opt-in, scripts remain inert.
 Phase 11e also exposes bounded native attribute operations, element/text/fragment
 factories and Node mutation/navigation through branded wrappers. It reuses these
 native checked algorithms without adding events or dynamic script execution.

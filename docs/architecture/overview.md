@@ -19,7 +19,8 @@ Engine.Paint uses SkiaSharp CPU rasterization with explicit exact-byte font reso
 V8 is embedded through ClearScript with matching Linux/Windows x64/arm64 native
 assets. Phase 11a establishes private thread-owned isolates, copied primitive
 results and native confinement probes. Phase 11c adds minimal live DOM facades;
-phase 11d optionally executes inline classics after whole-document parsing.
+phase 11d optionally executes inline and browser-brokered external classic
+scripts at parser position.
 Phase 11e expands the live facade with bounded attributes, node factories and
 checked tree mutation/navigation; newly inserted script elements stay inert.
 Phase 11f adds finite native Promise/queueMicrotask checkpoints with shared task

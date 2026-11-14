@@ -35,11 +35,13 @@ Phase 11b adds persistent classic-script global lexical state and bounded
 ordered batches; page execution and HTML script scheduling remain deferred.
 Phase 11c adds minimal live title/ID/textContent DOM facades and binding probes,
 without enabling browser page scripts.
-Phase 11d adds explicit opt-in post-parse inline classic page execution,
-transactional publication and retained scripted DOM repainting via IPC v3.
-External scripts, HTML scheduling and event loops remain deferred.
+Phase 11d adds explicit opt-in parser-blocking classic execution for inline and
+browser-brokered external scripts, transactional publication and retained
+scripted DOM repainting. IPC v49 carries bounded script source request/response
+data only. Modules, async/defer scheduling and persistent event loops remain
+deferred.
 Phase 11e adds bounded element attributes, element/text/fragment creation and
-branded Node navigation/mutation while preserving the initial script snapshot.
+branded Node navigation/mutation while keeping dynamically inserted scripts inert.
 Phase 11f adds opt-in finite native Promise/queueMicrotask checkpoints, bounded
 task queues and shared deadlines before painting; persistent event loops remain
 deferred. See the [scripting guide](scripting.md) for exact limits and deviations.

@@ -133,6 +133,34 @@ try
                     Stylesheets = request.Stylesheets!,
                     BaseUrl = request.BaseUrl is null ? null : BrowserUrl.Parse(request.BaseUrl)
                 };
+                var scriptRequestId = 0;
+                string FetchScript(BrowserUrl url, CancellationToken token)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (++scriptRequestId > RendererProtocol.MaxScriptRequests)
+                    { throw new PageNavigationException("External script request count limit exceeded."); }
+                    channel.WriteAsync(new()
+                    {
+                        Kind = "script-request",
+                        Id = request.Id,
+                        DocumentId = request.DocumentId,
+                        ScriptRequestId = scriptRequestId,
+                        ScriptUrl = url.Href
+                    }, cancellationToken: token).GetAwaiter().GetResult();
+                    var response = channel.ReadAsync(token).GetAwaiter().GetResult()
+                        ?? throw new IOException("Browser closed the renderer channel during an external script request.");
+                    if (response.Message.Kind != "script-response" || response.Message.Id != request.Id
+                        || response.Message.DocumentId != request.DocumentId
+                        || response.Message.ScriptRequestId != scriptRequestId
+                        || response.Message.ScriptUrl != url.Href)
+                    { throw new IpcProtocolException("Browser script response does not match the pending parser request."); }
+                    if (response.Message.ScriptError is { } error) { throw new PageNavigationException(error); }
+                    return response.Message.ScriptSource
+                        ?? throw new IpcProtocolException("Browser script response omitted its source.");
+                }
+                PageScriptResourceLoader? scriptLoader = request.ExecuteInlineScripts
+                    ? (url, token) => Task.FromResult(FetchScript(url, token))
+                    : null;
                 var rendered = active.Render(page,
                     new(request.Width, request.Height, request.Scale)
                     {
@@ -140,7 +168,7 @@ try
                         ScrollX = request.ScrollX,
                         ScrollOffsets = request.ScrollOffsets ?? Array.Empty<PageScrollOffset>()
                     },
-                    CancellationToken.None, request.ReuseDocument);
+                    CancellationToken.None, request.ReuseDocument, scriptLoader);
                 var frame = rendered.Frame;
                 channel.WriteAsync(new()
                 {

@@ -682,8 +682,8 @@ ports and URL components are preserved. Cross-origin link navigations are not
 upgraded (forms are the exception). Explicit address-bar navigations and other
 request types do not inherit the page's upgrade policy.
 `script-src-elem` governs script checks with fallback through `script-src` to
-`default-src`; external script loading itself remains deferred. The policy
-checks linked stylesheets and CSS imports against the effective
+`default-src`; it is checked before each browser-brokered external classic
+script request and redirect. The policy checks linked stylesheets and CSS imports against the effective
 `style-src-elem` source list before each browser-owned request and redirect; the
 existing stricter same-origin HTTP(S) stylesheet rule remains in force.
 Event-handler and `javascript:` hashes, meta policies, report-only mode,
@@ -715,10 +715,12 @@ BrowserController owns independent per-tab IPageSource/IPageRenderer instances.
 GetPageSource uses a separate ResourceLoader per tab, with **4 MiB responses**,
 existing redirect/deadline limits and cookies **off**. Fetch is asynchronous;
 completion is observed in the main-thread pump. In single-process mode,
-DOM/style/layout, HarfBuzz and Skia remain synchronous on the UI thread and can
-pause responsiveness. In multiprocess mode those operations run on each
-worker's main thread; the browser pumps asynchronous replies. SDL and chrome
-stay on the browser UI thread in both modes.
+DOM/style/layout, HarfBuzz and Skia run on a dedicated renderer-owner thread;
+the browser pumps asynchronous load/render replies, including while external
+classic scripts pause parsing for a browser-owned asynchronous fetch. In
+multiprocess mode those operations run on each worker's main thread and script
+fetches use bounded request/response IPC. SDL and chrome stay on the browser UI
+thread in both modes.
 
 Only `text/html` is accepted, except that explicitly selected local files
 without MIME metadata are treated as HTML. There is **no MIME sniffing**.
@@ -850,8 +852,9 @@ general mixed-content policy for other subresources remain unimplemented; the na
 guard does not provide those policies. Caching remains unimplemented; unsupported CSS
 still yields diagnostics that fail layout.
 Scripts are inert by default; the explicit
-`--enable-inline-scripts` phase-11d option executes a bounded inline classic batch
-after parsing and before stylesheet collection. See the
+`--enable-inline-scripts` phase-11d option executes bounded inline and
+browser-brokered external classic scripts as the parser reaches them, before
+parsing continues. See the
 [scripting guide](scripting.md) for exact classification, limits and deviations.
 Its phase-11e bindings also allow bounded attributes and node creation/mutation;
 new inline styles and tree edits participate in the post-script paint pass,
@@ -866,8 +869,9 @@ still reject navigation. No automatic input/load events or `on*` handlers run.
 Phase 11h runs finite loading/interactive/DOMContentLoaded/complete readiness
 and readystatechange events before paint, with native checkpoints between
 stages and shared navigation budgets. Listener failures preserve the published
-page; retained resize never repeats lifecycle. This is a post-parse
-approximation, not HTML scheduling or Window/load support.
+page; retained resize never repeats lifecycle. The initial scripts are
+parser-blocking, but this finite lifecycle remains an approximation, not the
+complete HTML scheduling model or Window/load support.
 Phase 11i exposes bounded querySelector/querySelectorAll and Element
 matches/closest. Static list wrappers retain node identity; query-driven
 lifecycle style/title changes participate in paint and retained resize.
@@ -906,8 +910,7 @@ name/public/system identifiers. Existing parser legacy-mode rejection,
 no identifier fetching and transactional/retained rendering remain unchanged.
 Phase 11v allows lifecycle scripts to deep-clone style elements and insert
 them into the live tree; detached clones have no style effect until insertion.
-Cloned script elements remain inert and the finite initial script snapshot is
-unchanged.
+Cloned script elements remain inert; dynamic insertions do not schedule scripts.
 Pass 5 retains each opted-in document's renderer-local host/listeners. Primary
 pointer activation (press/release on the same anchor) dispatches a trusted
 bubbling, cancelable `click` Event at that anchor, repaints the retained DOM and
@@ -1012,7 +1015,7 @@ link activations described above.
 General CSS overflow semantics beyond the documented nested-wheel subset,
 horizontal scrolling, downloads, persistent
 sessions, complete browser history, page storage, images and media remain
-unsupported. Post-parse inline scripting remains explicit opt-in, not a full
+unsupported. Parser-blocking classic page scripts remain explicit opt-in, not a full
 event loop. Native page crashes can terminate the entire shell in single-
 process mode; multiprocess mode contains worker failures to their tab.
 Browser-native chrome/platform crashes remain shell failures. Supported

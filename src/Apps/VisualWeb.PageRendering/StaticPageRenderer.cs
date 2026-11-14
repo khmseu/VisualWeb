@@ -102,6 +102,9 @@ public sealed class StaticPageRenderer : IPageRenderer
     }
     public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         Task.FromResult(Render(page, viewport, cancellationToken));
+    public Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, PageScriptResourceLoader? scriptLoader,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(Render(page, viewport, cancellationToken, scriptLoader: scriptLoader));
     public Task<BrowserPage> RenderRetainedAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         Task.FromResult(Render(page, viewport, cancellationToken, reuseDocument: true));
     public bool HasDocument(Guid documentId) => committed?.Source.DocumentId == documentId || candidate?.Source.DocumentId == documentId;
@@ -116,7 +119,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         else if (committed?.Source.DocumentId != documentId) { throw new PageNavigationException("Document is not retained."); }
     }
-    public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken, bool reuseDocument = false)
+    public BrowserPage Render(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken,
+        bool reuseDocument = false, PageScriptResourceLoader? scriptLoader = null)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(page);
@@ -136,9 +140,17 @@ public sealed class StaticPageRenderer : IPageRenderer
         }
         else
         {
-            var fresh = HtmlParser.Parse(page.Html, options.Html, cancellationToken);
-            var (host, scripts) = executeInlineScripts ? InlinePageScripts.Execute(fresh.Document, cancellationToken) : (null, 0);
-            state = new(page, fresh, scripts, host);
+            if (executeInlineScripts)
+            {
+                var (parsed, host, scripts) = InlinePageScripts.ParseAndExecute(page.Html, page.Url, page.BaseUrl,
+                    options.Html, scriptLoader, cancellationToken);
+                state = new(page, parsed, scripts, host);
+            }
+            else
+            {
+                var parsed = HtmlParser.Parse(page.Html, options.Html, cancellationToken);
+                state = new(page, parsed, 0, null);
+            }
         }
         try { return Publish(state, page, viewport, cancellationToken, reuseDocument); }
         catch { if (!reuseDocument && !ReferenceEquals(candidate, state)) { state.Release(); } throw; }
@@ -315,7 +327,7 @@ public sealed class StaticPageRenderer : IPageRenderer
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
         if (executeInlineScripts)
         {
-            status += $" Post-parse inline scripts: {state.Scripts}; link-click listeners retained; no HTML scheduling/event loop.";
+            status += $" Parser-blocking classic scripts: {state.Scripts}; link-click listeners retained; no persistent HTML event loop.";
         }
         // One visit budget covers both layout passes; completed ancestor chains are memoized per pass.
         var maxFragmentAncestorVisits = 2L * ((long)options.Layout.MaxNodes + options.Layout.MaxShapingCalls

@@ -3797,9 +3797,10 @@ public sealed class ShellTests
         using var system = new Windows();
         using var shell = new DevelopmentShell(system, FontPath);
         var window = shell.OpenWindow();
-        shell.Tick();
-        var native = system.Items[0];
         var tab = window.ActiveTab!;
+        shell.Tick();
+        WaitForPage();
+        var native = system.Items[0];
         using var chrome = new ShellChrome(FontPath, 1_000_000);
         var targets = chrome.Render(window, shell.Controller.Page(tab.Id), native.Size, native.Density).Targets;
         Assert.Empty(shell.Controller.Page(tab.Id)!.LinkTargets);
@@ -3817,6 +3818,16 @@ public sealed class ShellTests
         Key(SDL.Keymod.Shift);
         Assert.True(native.TextInput);
         Assert.Single(tab.History.Entries);
+
+        void WaitForPage()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while ((tab.IsLoading || shell.Controller.Page(tab.Id) is null) && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.NotNull(shell.Controller.Page(tab.Id));
+            Assert.Null(tab.Error);
+        }
 
         void Key(SDL.Keymod mod) =>
             shell.Dispatch(new KeyChanged(native.Id, (int)SDL.Scancode.Tab, 0, (ushort)mod, true, false));
@@ -4267,13 +4278,15 @@ public sealed class ShellTests
         using var system = new Windows();
         using var shell = new DevelopmentShell(system, FontPath);
         var first = shell.OpenWindow();
+        var tab = first.ActiveTab!;
         shell.Tick();
-        Assert.NotNull(shell.Controller.Page(first.ActiveTab!.Id));
+        WaitForNavigation();
+        Assert.NotNull(shell.Controller.Page(tab.Id));
         var native = system.Items[0];
         Assert.NotNull(native.Pixels);
         Key(SDL.Scancode.T, SDL.Keymod.Ctrl);
         Assert.Equal(2, first.Tabs.Count);
-        var tab = first.ActiveTab!;
+        tab = first.ActiveTab!;
         Key(SDL.Scancode.L, SDL.Keymod.Ctrl);
         Assert.True(native.TextInput);
         var blue = "data:text/html," + Uri.EscapeDataString("<!doctype html><style>body{margin:0;background-color:blue}</style>");
@@ -4281,12 +4294,14 @@ public sealed class ShellTests
         shell.Tick();
         Key(SDL.Scancode.Return);
         Assert.False(native.TextInput);
+        WaitForConfirmation();
         Assert.True(shell.HasPendingNavigationConfirmation(tab.Id));
         Assert.Equal("Allow data URL navigation",
             shell.PendingNavigationConfirmationMessage(tab.Id));
+        var historyCount = tab.History.Entries.Count;
         Key(SDL.Scancode.Return);
-        WaitForNavigation();
-        Assert.Equal(2, tab.History.Entries.Count);
+        WaitForNavigation(() => tab.History.Entries.Count == historyCount + 1);
+        Assert.Equal(historyCount + 1, tab.History.Entries.Count);
         var at = 120 * native.Size.Width * 4;
         Assert.Equal(new byte[] { 255, 0, 0, 255 }, native.Pixels.AsSpan(at, 4).ToArray());
         Key(SDL.Scancode.N, SDL.Keymod.Ctrl);
@@ -4309,12 +4324,24 @@ public sealed class ShellTests
             system.Events.Enqueue(new KeyChanged(native.Id, (int)scan, 0, (ushort)mod, true, false));
             shell.Tick();
         }
-        void WaitForNavigation()
+        void WaitForNavigation(Func<bool>? ready = null)
         {
             var deadline = DateTime.UtcNow.AddSeconds(30);
-            do { shell.Tick(); Thread.Sleep(5); } while (tab.IsLoading && DateTime.UtcNow < deadline);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while ((tab.IsLoading || shell.Controller.Page(tab.Id) is null || ready?.Invoke() == false)
+                && DateTime.UtcNow < deadline);
             Assert.False(tab.IsLoading);
             Assert.Null(tab.Error);
+            Assert.True(ready?.Invoke() ?? true);
+        }
+        void WaitForConfirmation()
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!shell.HasPendingNavigationConfirmation(tab.Id) && DateTime.UtcNow < deadline)
+            {
+                shell.Tick();
+                Thread.Sleep(5);
+            }
         }
     }
     [Fact]
@@ -4658,6 +4685,7 @@ public sealed class ShellTests
         shell.Tick();
         Assert.Equal(2, window.Tabs.Count);
         var active = window.ActiveTab!;
+        WaitForPage(active);
         system.Events.Enqueue(new PointerButtonChanged(native.Id, 1, true, 220, 70));
         system.Events.Enqueue(new TextEntered(native.Id, "data:text/html,a"));
         shell.Tick();
@@ -4672,6 +4700,16 @@ public sealed class ShellTests
         Assert.Single(window.Tabs);
         Assert.False(shell.Controller.Session.Contains(active.Id));
         Assert.False(native.TextInput);
+
+        void WaitForPage(BrowserTab tab)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while ((tab.IsLoading || shell.Controller.Page(tab.Id) is null) && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.NotNull(shell.Controller.Page(tab.Id));
+            Assert.Null(tab.Error);
+        }
     }
     [Fact]
     public void ControlVPastesClipboardTextIntoSelectedAddressAndNavigates()
@@ -4747,6 +4785,7 @@ public sealed class ShellTests
         using var shell = new DevelopmentShell(system, FontPath);
         var first = shell.OpenWindow(); shell.OpenWindow();
         shell.Tick();
+        WaitForPage();
         var native = system.Items[0];
         native.Size = new(4096, 4096);
         shell.Tick();
@@ -4756,6 +4795,17 @@ public sealed class ShellTests
         shell.Tick();
         Assert.DoesNotContain("framebuffer limit", native.Title);
         Assert.NotNull(shell.Controller.Page(first.ActiveTab!.Id));
+
+        void WaitForPage()
+        {
+            var tab = first.ActiveTab!;
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            do { shell.Tick(); Thread.Sleep(5); }
+            while ((tab.IsLoading || shell.Controller.Page(tab.Id) is null) && DateTime.UtcNow < deadline);
+            Assert.False(tab.IsLoading);
+            Assert.NotNull(shell.Controller.Page(tab.Id));
+            Assert.Null(tab.Error);
+        }
     }
     [Fact]
     public void EveryMultiprocessShellModeEnablesOriginIsolatedNavigationWithoutOptOut()

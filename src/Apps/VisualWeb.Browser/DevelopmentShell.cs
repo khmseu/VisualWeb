@@ -107,7 +107,8 @@ public sealed class DevelopmentShell : IDisposable
         var multiprocess = rendererPath is not null;
         chrome = new(fontPath, settings.MaxFramePixels, multiprocess, requireSandbox);
         Controller = new(() => new GetPageSource(pageTransportFactory?.Invoke(), hstsPolicyStore), () => rendererPath is null
-            ? new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts, boldFontPath, italicFontPath, boldItalicFontPath)
+            ? new LocalPageRenderer(() => new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts,
+                boldFontPath, italicFontPath, boldItalicFontPath), executeInlineScripts)
             : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts,
                 boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath), settings,
             // Every multiprocess mode (confined or explicitly unsandboxed) rotates renderers per origin; there is no opt-out.

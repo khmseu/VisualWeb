@@ -8677,3 +8677,272 @@ aktuelle Top-Standardsprioritaet.
 **Validierung:** Geaenderte Markdown-Dokumente und die neuen relativen Links
 geprueft; `git diff --check` bestanden. Keine Tests, Cache-Aktualisierung oder
 Featureaenderung vorgenommen.
+
+### KP-325 - Offene Auswahl zum naechsten ECMAScript-Inkrement
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Workflow-Fortsetzung; keine Implementierung begonnen.
+- Quellen: aktueller Nutzerturn `/missing-priority-implementation`; [Missing.md](../plans/Missing.md#recommended-priority);
+  [standards.md](../docs/standards.md#implemented-subsets);
+  [browser-foundation-plan.md](../plans/browser-foundation-plan.md#open-questions);
+  [InlinePageScripts.cs](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs);
+  [browser-shell.md](../docs/browser-shell.md#navigation-and-page-policy);
+  [ECMAScript-Cache](../specs/cache/ecmascript.html).
+
+**Nutzerangabe:** Der Nutzer hat den Missing-Prioritaetsworkflow ohne
+Passanzahl erneut aufgerufen. Die Auswahlregel priorisiert zum Auswahlzeitpunkt
+den teilweise abgedeckten Standard mit der hoechsten Schaetzung; ECMAScript
+steht in der aktuellen Inventur bei ~85%.
+
+**Belegte Evidenz:** `InlinePageScripts.Collect` weist `<script src>` explizit
+zurueck, bevor ein Abruf erfolgt. Der Tracker nennt externe klassische Skripte
+als moegliche Luecke. Der genehmigte Plan fuehrt externe Skripte und allgemeines
+HTML-Scheduling als zurueckgestellt; die offene Frage in diesem Pass betrifft
+damit einen Umfang, den die vorhandene Roadmap nicht bereits festlegt. Die
+ECMAScript-Quelle ist lokal vorhanden und ihr Manifest-Checkdatum
+2026-11-07 liegt innerhalb des 30-Tage-Aktualisierungsfensters am
+Dokumentationstag. Der Arbeitsbaum war sauber; `main` lag einen lokalen Commit
+(`002d943`) vor `origin/main`.
+
+**Offen (Ableitung):** Eine Erweiterung erfordert eine Entscheidung zwischen
+einem engen Post-Parse-Subset mit abweichender Skriptzeitplanung und
+parser-blockierender HTML-Semantik; ausserdem muss die Ressourcenauthorisierung
+(same-origin-only oder CSP-autorisierte Cross-Origin-Quellen) festgelegt
+werden. Keine dieser Optionen ist vom Nutzer gebilligt. Es wurde deshalb
+weder implementiert noch auf einen anderen Standard ausgewichen; Q-030 haelt
+die Auswahl fest.
+
+**Naechster Schritt:** Dem Nutzer konkrete, roadmap-kompatible Optionen
+einschliesslich Blockieren anbieten und bis zur Antwort warten. Erst danach
+den gewaehlten Umfang spezifizieren und implementieren.
+
+### KP-326 - Parser-blockierende externe Klassiker gewaehlt
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: ausdrueckliche Nutzerwahl nach Klaerungsfrage; noch keine
+  Implementierung.
+- Quelle: Nutzerantwort auf die strukturierte Klaerungsfrage:
+  `parser_blocking` (Standards-nahe parser-blockierende Klassiker, CSP-gesteuerter
+  HTTP(S)-Abruf einschliesslich Cross-Origin).
+- Bezug: DEC-034, Q-030, [Missing.md](../plans/Missing.md#6-a-persistent-browser-javascript-environment),
+  [browser-foundation-plan.md](../plans/browser-foundation-plan.md#open-questions),
+  [HTML-Quelle](../specs/cache/html.html#prepare-the-script-element),
+  [Fetch-Quelle](../specs/cache/fetch.html#concept-request-mode),
+  [CSP3-Quelle](../specs/cache/csp3.html#script-src-elem-pre-request).
+
+**Nutzerentscheidung:** Der Nutzer waehlte „Standards-aligned classic scripts“:
+parser-blockierende Reihenfolge, CSP-gesteuerte HTTP(S)-Quellen einschliesslich
+Cross-Origin-Verhalten und begrenzte Fehlerbehandlung. Dies erweitert den
+bisher genehmigten Umfang, der externe Skripte ausdruecklich zurueckstellt.
+
+**Abgrenzung:** Die Auswahl legt die Richtung fest, nicht jede Implementierungs-
+und Fehlersemantik. Sie genehmigt weder Module noch `async`/`defer`, allgemeine
+HTML-Scheduling-Aufgaben, Renderer-Netzwerkzugriff oder ein Abschwaechen von
+CSP, Origin-/Redirect-Pruefungen, Request-Limits, Abbruch, Transaktions-,
+Prozess- oder Confinement-Garantien. Diese Grenzen muessen vor der Umsetzung
+mit der Pipeline und den lokal gecachten HTML-, Fetch- und CSP-Regeln abgeglichen
+werden. Die betreffenden Cache-Checks vom 2026-11-07 (HTML/Fetch) und
+2026-10-15 (CSP3) liegen am Dokumentationstag innerhalb von 30 Tagen.
+
+**Naechster Schritt:** Den Parser-/Renderer-/Browser-Ladepfad unter diesen
+Grenzen konkretisieren und einen kleinen, testbaren Ende-zu-Ende-Umfang
+bestimmen. Noch wurden keine Dateien ausserhalb der Kontextprotokolle
+geaendert.
+
+### KP-327 - Broker-Architektur fuer parser-blockierende Skriptabrufe
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Implementierungsanalyse; keine Verhaltensaenderung oder
+  Implementierung.
+- Quellen: Parser-/Prozess-/Ressourcenpfad-Analyse in diesem Turn;
+  [HTML-Quelle](../specs/cache/html.html#prepare-the-script-element);
+  [renderer-processes.md](../docs/renderer-processes.md#private-stream-protocol-v48);
+  [networking.md](../docs/networking.md#schemes-and-redirects);
+  [KP-326](./Kontextprotokoll.md#kp-326---parser-blockierende-externe-klassiker-gewaehlt).
+
+**Belegte Evidenz:** `HtmlParser.Parse` ist synchron und der geeignete
+Script-Endtag-Haltepunkt liegt vor dem Lesen des naechsten Tokens. Der Browser
+besitzt den HTTP(S)-Loader und CSP-/Redirect-Policy; Renderer-Worker erhalten
+derzeit nur Dokument- und Stylesheet-Snapshots und haben keine
+Ressourcenladefaehigkeit. Das v48-Protokoll serialisiert einen vollstaendigen
+Request/Reply-Austausch und invalidiert den Kanal bei nicht synchronisierbaren
+Antworten. Eine begrenzte, browserseitig vorab geladene Textressourcenliste
+koennte parser-blockierende Ausfuehrung in Dokumentreihenfolge bei
+unveraendertem Netzwerkgrenzverlauf ermoeglichen. Ein Abruf genau am Parser-
+Haltepunkt benoetigte dagegen einen neuen Broker-Request-/Response-Austausch.
+
+**Entscheidung:** Nutzer waehlte in der strukturierten Klaerung `parser_pause_ipc`:
+Der Renderer pausiert am Script-Parser-Haltepunkt, fordert die Ressource ueber
+IPC vom Browser an und setzt nach der Antwort fort. Der Browser bleibt einziger
+Ressourcenabrufpfad; Renderer-Netzwerkzugriff und Vorababrufe spaeterer Skripte
+sind ausgeschlossen. Der Nutzer akzeptierte damit die noetige Erweiterung von
+Framing, Identitaetspruefungen, Deadlines, Cancellation und Recovery; die
+konkreten Grenzen muessen in Code/Tests definiert werden.
+
+### KP-328 - Parser-pause IPC fuer externe Skripte gewaehlt
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: ausdrueckliche Nutzerwahl.
+- Quelle: Antwort auf die Q-031 Klaerungsfrage: `parser_pause_ipc`.
+- Bezug: DEC-034, Q-030/Q-031, [KP-326](./Kontextprotokoll.md#kp-326---parser-blockierende-externe-klassiker-gewaehlt), [KP-327](./Kontextprotokoll.md#kp-327---broker-architektur-fuer-parser-blockierende-skriptabrufe), [renderer-processes.md](../docs/renderer-processes.md#private-stream-protocol-v48).
+
+**Nutzerentscheidung:** Parser-Haltepunkt Request/Response-IPC statt
+Vorab-Snapshot. Die Beschlossene Ausfuehrungsrichtung umfasst weiter klassische
+parser-blockierende Skripte, CSP-gesteuerte HTTP(S)-Quellen einschliesslich
+Cross-Origin und einen netzwerkfreien Renderer.
+
+**Naechster Schritt:** Einen begrenzten, serialisierten Script-Request samt
+expliziter Antwort im bestehenden per-tab Kanal spezifizieren und entlang
+Browser-Fetch, Parser-Wartepunkt, Cancellation, Deadlines und Transaktionsfehlern
+implementieren und testen. Keine breitere Event-Loop-, Modul- oder
+`async`/`defer`-Semantik ableiten.
+
+### KP-329 - Single-Process-Umfang fuer Script-Broker offen
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Implementierungsanalyse; Nutzerentscheidung erforderlich.
+- Quellen: [browser-shell.md](../docs/browser-shell.md#run-it),
+  [architecture overview](../docs/architecture/overview.md#windows-tabs-and-processes),
+  [KP-328](./Kontextprotokoll.md#kp-328---parser-pause-ipc-fuer-externe-skripte-gewaehlt).
+
+**Belegte Evidenz:** Der ausgewaehlte Parser-Pause-Austausch setzt den
+Prozesskanal zwischen Browser und Renderer voraus. Single-Process verwendet
+stattdessen den lokalen `StaticPageRenderer`; sein `RenderAsync` umschliesst
+derzeit synchrone native Verarbeitung. Ein synchroner Browser-Netzwerkabruf von
+diesem Pfad wuerde den Shell-Thread blockieren und gegen die dokumentierte
+Trennung asynchronen Ladens von owning-thread Rendering verstossen.
+
+**Offen:** Ob diese ECMAScript-Erweiterung nur im Multiprocess-Modus verfuegbar
+sein soll, ob Single-Process explizit synchron blockieren darf, oder ob zuerst
+eine groessere asynchrone Single-Process-Renderarchitektur erforderlich ist.
+Diese Entscheidung aendert den Nutzerumfang und kann nicht aus der Wahl des
+IPC-Brokers abgeleitet werden.
+
+**Naechster Schritt:** Nutzer soll die drei Umfaenge oder die Blockieroption
+waehlen. Keine Implementierung der externen Skriptbehandlung beginnen, bevor
+der Single-Process-Umfang geklaert ist.
+
+### KP-330 - Asynchrone Single-Process-Renderarchitektur gewaehlt
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: ausdrueckliche Nutzerwahl.
+- Quelle: Antwort auf die Q-032 Klaerungsfrage: `async_single_process_architecture`.
+- Bezug: DEC-034, Q-030 bis Q-032, [KP-328](./Kontextprotokoll.md#kp-328---parser-pause-ipc-fuer-externe-skripte-gewaehlt), [KP-329](./Kontextprotokoll.md#kp-329---single-process-umfang-fuer-script-broker-offen).
+
+**Nutzerentscheidung:** Auch Single-Process soll externe parser-blockierende
+Skripte unterstuetzen, jedoch ohne den Shell-/native Thread waehrend
+asynchronem Browser-Broker-Fetch zu blockieren. Dazu soll vorab eine
+asynchrone lokale Renderarchitektur geschaffen werden.
+
+**Abgrenzung:** Der lokale Renderer muss native Ressourcen auf einem stabilen
+dedizierten Thread erstellen, verwenden und freigeben. Parser und V8 bleiben
+auf diesem Thread; waehrend der Browser-Fetch laeuft, darf nur der Renderer-
+Thread warten, nicht der Shell-Thread. Renderer-Engine bleibt netzwerkfrei.
+
+**Naechster Schritt:** Einen thread-affinen lokalen Renderer-Executor mit
+abbrechbarem async Broker-Callback implementieren und denselben Source-Loader-
+Vertrag wie beim Prozess-IPC nutzen. Diese Entscheidung erweitert den
+Implementierungsumfang; sie ist keine Freigabe fuer weitere allgemeine
+Scripting-/Event-Loop-Funktionen.
+
+### KP-331 - Inline-Script-Timing und Kompatibilitaet offen
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: ausfuehrungs- und testgestuetzter Befund; Nutzerentscheidung offen.
+- Quelle: aktueller Implementierungs-/Validierungslauf in dieser Sitzung.
+- Bezug: DEC-034, Q-030 bis Q-033, [KP-330](./Kontextprotokoll.md#kp-330---asynchrone-single-process-renderarchitektur-gewaehlt), [InlineScriptTests.cs](../tests/VisualWeb.Browser.Tests/InlineScriptTests.cs), [Missing.md](../plans/Missing.md#6-a-persistent-browser-javascript-environment).
+
+**Belegt:** Die Parser-Erweiterung fuehrt Inline-Klassiker beim Parserabschluss
+aus. Ein vollstaendiger Solution-Build war erfolgreich. Der gezielte
+HTML-Parser-Callbacktest bestand; von sechs gezielten Browser-Tests bestanden
+vier, zwei schlugen wegen einer falschen erwarteten Titelzeichenfolge im
+Test-Fixture fehl. Ein anschliessend gestarteter Browser-Volltest wurde nach
+mehr als 100 gemeldeten Fehlschlaegen abgebrochen. Die sichtbaren Beispiele
+zeigen bestehende Inline-Seiten-Tests, die davon ausgehen, dass nachfolgende
+Elemente beim Script bereits geparst sind. Der Volltest ist wegen Abbruch kein
+vollstaendiges Testergebnis; es wurde kein Baseline-Test gegen den Basiscommit
+ausgefuehrt.
+
+**Beantwortet durch KP-332:** Nutzer fragte nach dem HTML-Standard und waehlt
+anschliessend ausdruecklich `all-classic-parser-blocking`. Die verbleibende
+Umsetzung soll daher die Post-Parse-Ausnahme fuer Inline-only-Dokumente
+entfernen und die bestehenden, direkt betroffenen Tests/Erwartungen anpassen.
+
+**Naechster Schritt:** Betroffene Tests und Dokumentation auf die beschlossene
+Parserreihenfolge aktualisieren; dann die fokussierten Suiten ausfuehren und
+die tatsaechlichen Ergebnisse festhalten.
+
+### KP-332 - Parserreihenfolge fuer alle Klassiker beschlossen
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: ausdrueckliche Nutzerwahl nach Rueckfrage zur Norm.
+- Quelle: Nutzerantwort `all-classic-parser-blocking` auf Q-033.
+- Bezug: DEC-034, Q-030 bis Q-033, [KP-331](./Kontextprotokoll.md#kp-331---inline-script-timing-und-kompatibilitaet-offen), gecachte [HTML-Quelle](../specs/cache/html.html#script-processing-model).
+
+**Nutzerentscheidung:** Parser-blockierende Reihenfolge gilt fuer alle
+klassischen Parser-Skripte, inline wie extern; Inline-only-Dokumente werden
+nicht auf das bisherige Post-Parse-Modell zurueckgesetzt.
+
+**Normgrundlage:** HTML schreibt vor, dass ein externes klassisches Skript ohne
+`async`/`defer` den Parser bis zum Abruf und zur Ausfuehrung blockiert. Ein
+Inline-Klassiker wird beim Vorbereiten unmittelbar ausgefuehrt (vorbehaltlich
+render-blockierender Stylesheets). Beide folgen daher der Dokumentreihenfolge;
+spaetere Elemente sind beim Script nicht bereits geparst.
+Quelle: HTML
+[`#attr-script-async`](https://html.spec.whatwg.org/multipage/scripting.html#attr-script-async)
+und
+[`#script-processing-model`](https://html.spec.whatwg.org/multipage/scripting.html#script-processing-model);
+lokaler Stand in `specs/cache/html.html`, zuletzt aktualisiert 2026-11-07.
+
+**Naechster Schritt:** Bestehende Testfixtures, die Post-Parse-Sichtbarkeit
+voraussetzen, auf explizite Bereitschaftsbehandlung oder Parser-kompatible
+Positionierung umstellen. Keine allgemeine Aenderung an Script-Opt-in oder
+anderen Scheduling-Arten ableiten.
+
+### KP-333 - Parser-blockierende Klassiker implementiert und validiert
+
+- Dokumentiert am: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-12, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Implementierungs-, Dokumentations- und Testnachweis.
+- Quelle: Arbeitsbaum und Validierung dieses Passes; zuvor getroffene
+  Nutzerentscheidungen in KP-326, KP-328, KP-330 und KP-332.
+- Bezug: DEC-034, Q-030 bis Q-033; [Missing.md](../plans/Missing.md),
+  [InlinePageScripts.cs](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [HtmlParser.cs](../src/Engine/Engine.Html/HtmlParser.cs),
+  [RendererProtocol.cs](../src/Ipc/Ipc.Contracts/RendererProtocol.cs).
+
+**Belegt:** Der Parser fuehrt opt-in klassische Inline- und externe Scripts
+an ihrer Parserposition aus. Externe HTTP(S)-Quellen werden vom Browserprozess
+geladen und an der Parserpause ueber IPC als begrenzter Quelltext oder Fehler
+zurueckgegeben; der Renderer behaelt keine Netzwerkfaehigkeit. CSP wird vor
+Abruf und Redirect angewandt, Cookies bleiben deaktiviert, Antworten benoetigen
+einen JavaScript-MIME-Typ und Quellgroesse, Requestanzahl, Identitaet und
+Navigationdeadline sind begrenzt. Die lokale Renderer-Variante nutzt einen
+stabilen eigenen Thread, sodass Fetch nicht den Shell-/UI-Thread blockiert.
+Modules, `async`/`defer`, Integritaets-/CORS-/Referrer-Metadaten,
+render-blockierende Stylesheet-Zeitsemantik und allgemeine HTML-
+Vorbereitungs-/Fehleralgorithmen bleiben ausgeschlossen.
+
+**Validierung:** `dotnet build VisualWeb.slnx --no-restore` bestand mit null
+Warnungen und Fehlern. `dotnet test VisualWeb.slnx --no-build` bestand mit
+16.613 Tests und null Fehlschlaegen/Skips. Der gezielte Browserlauf fuer
+Inline-/External-Script- und CSP-Faelle bestand (88 Tests). Die
+Formatverifikation, `git diff --check` sowie lokale und required-confined
+V8Smoke-Laeufe bestanden. Zuvor deckte der erste
+vollstaendige Browserlauf veraltete Shell-Testannahmen auf: Tests erwarteten
+ein synchron verfuegbares lokales Frame und sofortige Navigationsergebnisse.
+Die Fixtures wurden auf das asynchrone Pumpen bis zur Page-/History-
+Veroeffentlichung umgestellt; die gezielten Wiederholungen und der finale
+Solution-Volltest bestanden. Ein frueher abgebrochener/fehlgeschlagener Lauf
+ist kein Endergebnis.
+
+**Status:** Implementiert und lokal validiert. Commit, Push und CI stehen aus.
+Windows-/ARM-Nativevalidierung ist durch diesen Linux-Lauf nicht belegt.

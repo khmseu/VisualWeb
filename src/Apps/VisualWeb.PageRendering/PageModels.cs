@@ -110,6 +110,11 @@ public readonly record struct PageViewport(double Width, double Height, double S
     public double ScrollX { get; init; }
     public IReadOnlyList<PageScrollOffset> ScrollOffsets { get; init; } = Array.Empty<PageScrollOffset>();
 }
+
+/// <summary>Browser-owned asynchronous fetch of one absolute external classic-script URL.</summary>
+/// <remarks>The callback returns decoded source or throws a visible navigation failure; it is never serialized to a renderer worker.</remarks>
+public delegate Task<string> PageScriptResourceLoader(BrowserUrl url, CancellationToken cancellationToken);
+
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 {
     public IReadOnlyList<PageLinkTarget> LinkTargets { get; init; } = Array.Empty<PageLinkTarget>();
@@ -160,6 +165,9 @@ public enum PageFocusEventType { Focus, Blur }
 public interface IPageRenderer : IDisposable
 {
     Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken);
+    /// <summary>Render a new document with an optional browser-owned parser-pause script source broker.</summary>
+    Task<BrowserPage> RenderAsync(LoadedPage page, PageViewport viewport, PageScriptResourceLoader? scriptLoader,
+        CancellationToken cancellationToken) => RenderAsync(page, viewport, cancellationToken);
     /// <summary>Repaint a committed document without repeating script execution.</summary>
     Task<BrowserPage> RenderRetainedAsync(LoadedPage page, PageViewport viewport, CancellationToken cancellationToken) =>
         RenderAsync(page, viewport, cancellationToken);

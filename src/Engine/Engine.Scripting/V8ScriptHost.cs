@@ -136,6 +136,53 @@ public sealed class V8ScriptHost : IDisposable
         ExecuteBatch(sources, true, cancellationToken);
     }
 
+    /// <summary>Execute classic scripts as the parser reaches them, then complete the finite document lifecycle.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#tree-construction">tree construction</see>,
+    /// <see href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element">prepare the script element</see>,
+    /// and <see href="https://html.spec.whatwg.org/#the-end">the end</see>. One task deadline, cancellation registration,
+    /// DOM budget and aggregate script count/character limit cover parsing, each source and lifecycle checkpoints.
+    /// The parser callback must not perform renderer-owned network I/O.</remarks>
+    public void ExecuteInitialDocumentParserBatch(Action<Action<string>, CancellationToken> parse,
+        CancellationToken cancellationToken = default)
+    {
+        CheckUsable();
+        ArgumentNullException.ThrowIfNull(parse);
+        if (!documentLifecycle) { throw new InvalidOperationException("Document lifecycle was not enabled for this host."); }
+        if (initialDocumentExecuted) { throw new InvalidOperationException("Initial document lifecycle has already executed."); }
+        var scripts = 0;
+        var characters = 0;
+        try
+        {
+            Run(deadlineToken =>
+            {
+                initialDocumentExecuted = true;
+                parse(source =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ValidateSource(source);
+                    if (scripts >= MaxBatchScripts) { throw new ScriptLimitException("Classic-script batch count limit exceeded."); }
+                    var total = checked(characters + source.Length);
+                    if (total > MaxBatchSourceCharacters) { throw new ScriptLimitException("Classic-script batch character limit exceeded."); }
+                    CheckExecutionDeadline();
+                    characters = total;
+                    scripts++;
+                    engine.Execute(source);
+                    CheckEvents("checkpoint");
+                    CheckMicrotasks("checkpoint");
+                }, deadlineToken);
+                foreach (var stage in new[] { "interactive", "dom-content-loaded", "complete" })
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    CheckEvents(stage);
+                    CheckEvents("checkpoint");
+                    CheckMicrotasks("checkpoint");
+                }
+                return 0;
+            }, cancellationToken);
+        }
+        catch { poisoned = true; throw; }
+    }
+
     /// <summary>Dispatch one trusted, bubbling, cancelable <c>click</c> Event at a connected bound-document element.</summary>
     /// <remarks>Specs: dom, html;
     /// <see href="https://dom.spec.whatwg.org/#concept-event-dispatch">dispatch</see>,
@@ -253,7 +300,10 @@ public sealed class V8ScriptHost : IDisposable
         if (source.Length > MaxSourceCharacters) { throw new ScriptLimitException("Script source character limit exceeded."); }
     }
 
-    private T Run<T>(Func<T> execute, CancellationToken cancellationToken)
+    private T Run<T>(Func<T> execute, CancellationToken cancellationToken) =>
+        Run(_ => execute(), cancellationToken);
+
+    private T Run<T>(Func<CancellationToken, T> execute, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -268,7 +318,7 @@ public sealed class V8ScriptHost : IDisposable
             {
                 CheckEvents("begin");
                 CheckMicrotasks("begin");
-                result = execute();
+                result = execute(deadline.Token);
                 CheckEvents("end");
                 CheckMicrotasks("end");
             }

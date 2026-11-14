@@ -2314,10 +2314,13 @@ public sealed class BrowserController : IDisposable
                     ScrollY = operation.RestoreScrollY
                 };
                 operation.Viewport = requested with { ScrollOffsets = SnapshotScrollOffsets(content[operation.Tab]) };
-                var renderer = operation.Renderer = Select(content[operation.Tab], operation, document);
+                var renderOwner = content[operation.Tab];
+                var renderer = operation.Renderer = Select(renderOwner, operation, document);
                 operation.Render = operation.Resize
                     ? renderer.RenderRetainedAsync(document, operation.Viewport.Value, operation.Cancellation.Token)
-                    : renderer.RenderAsync(document, operation.Viewport.Value, operation.Cancellation.Token);
+                    : renderer.RenderAsync(document, operation.Viewport.Value,
+                        (url, token) => renderOwner.Source.LoadScriptAsync(document, url, token),
+                        operation.Cancellation.Token);
                 if (!operation.Render.IsCompleted) { finished = false; return; }
             }
             var rendered = operation.Render.GetAwaiter().GetResult();

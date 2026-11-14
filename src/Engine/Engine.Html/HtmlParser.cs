@@ -26,6 +26,14 @@ public static class HtmlParser
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
         new Builder(input, options ?? new(), cancellationToken).Run();
 
+    public static HtmlParseResult Parse(string input, HtmlParserOptions? options, CancellationToken cancellationToken,
+        DomDocument document, Action<DomElement>? scriptCompleted)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        if (document.ChildNodes.Count != 0) { throw new ArgumentException("The parser destination document must be empty.", nameof(document)); }
+        return new Builder(input, options ?? new(), cancellationToken, document, scriptCompleted).Run();
+    }
+
     private enum Mode
     {
         Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text,
@@ -34,12 +42,13 @@ public static class HtmlParser
 
     private sealed class Builder
     {
-        private readonly DomDocument document = new();
+        private readonly DomDocument document;
         private readonly List<DomElement> open = [];
         private readonly List<HtmlParseError> errors = [];
         private readonly HtmlParserOptions options;
         private readonly HtmlTokenizer tokenizer;
         private readonly CancellationToken cancellationToken;
+        private readonly Action<DomElement>? scriptCompleted;
         private Mode mode;
         private Mode originalMode;
         private int nodes = 1;
@@ -49,11 +58,14 @@ public static class HtmlParser
         private readonly StringBuilder textBuffer = new();
         private readonly StringBuilder tableTextBuffer = new();
 
-        public Builder(string input, HtmlParserOptions options, CancellationToken cancellationToken)
+        public Builder(string input, HtmlParserOptions options, CancellationToken cancellationToken,
+            DomDocument? document = null, Action<DomElement>? scriptCompleted = null)
         {
             options.Validate();
             this.options = options;
             this.cancellationToken = cancellationToken;
+            this.document = document ?? new DomDocument();
+            this.scriptCompleted = scriptCompleted;
             tokenizer = new(input, options: options, cancellationToken: cancellationToken);
         }
 
@@ -104,6 +116,10 @@ public static class HtmlParser
         }
 
         private DomNode Current => open.Count == 0 ? document : open[^1];
+        private void CompleteScript()
+        {
+            if (Current is DomElement { LocalName: "script" } script) { scriptCompleted?.Invoke(script); }
+        }
         private bool IsWhitespace(HtmlToken token) => token is HtmlCharacters text && text.Data.All(HtmlTokenizer.Whitespace);
 
         private void Process(HtmlToken token)
@@ -272,6 +288,8 @@ public static class HtmlParser
                         if (token is HtmlEndOfFile)
                         {
                             Error("eof-in-text-element");
+                            FlushText();
+                            CompleteScript();
                             open.RemoveAt(open.Count - 1);
                             if (originalMode == Mode.AfterHead) { open.Remove(document.Head!); }
                             mode = originalMode;
@@ -280,6 +298,8 @@ public static class HtmlParser
 
                         if (token is HtmlTag { IsEndTag: true })
                         {
+                            FlushText();
+                            CompleteScript();
                             open.RemoveAt(open.Count - 1);
                             if (originalMode == Mode.AfterHead) { open.Remove(document.Head!); }
                             mode = originalMode;

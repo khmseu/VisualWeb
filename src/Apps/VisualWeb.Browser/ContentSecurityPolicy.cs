@@ -64,8 +64,8 @@ internal sealed class ContentSecurityPolicy
     internal bool AllowsInlineStyle(string? nonce, string source) => AllowsInline("style-src-elem", nonce, source);
     internal bool AllowsInlineStyleAttribute() => policies.All(policy => AllowsAllInline(policy.StyleAttributeDirective()));
     internal bool AllowsInlineStyleAttribute(string source) => AllowsInline("style-src", null, source, styleAttribute: true);
-    internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin) =>
-        policies.All(policy => Allows(policy.ScriptElementDirective(), resource, documentOrigin));
+    internal bool AllowsScript(BrowserUrl resource, SecurityOrigin documentOrigin, int redirectCount = 0) =>
+        policies.All(policy => Allows(policy.ScriptElementDirective(), resource, documentOrigin, redirectCount));
     internal bool AllowsStyle(BrowserUrl resource, SecurityOrigin documentOrigin, int redirectCount = 0) =>
         policies.All(policy => Allows(policy.StyleElementDirective(), resource, documentOrigin, redirectCount));
     internal bool AllowsFormAction(BrowserUrl resource, SecurityOrigin documentOrigin) =>
@@ -76,6 +76,8 @@ internal sealed class ContentSecurityPolicy
         UpgradesInsecureRequests && url.Protocol == "http:" && sourceOrigin.IsSameOrigin(url.Origin)
             ? UpgradeHttpUrl(url) : url;
     internal BrowserUrl UpgradeStyleUrl(BrowserUrl url) =>
+        UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
+    internal BrowserUrl UpgradeScriptUrl(BrowserUrl url) =>
         UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;
     internal BrowserUrl UpgradeFormSubmissionUrl(BrowserUrl url) =>
         UpgradesInsecureRequests && url.Protocol == "http:" ? UpgradeHttpUrl(url) : url;

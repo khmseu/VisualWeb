@@ -4,10 +4,11 @@ The approved embedding is **Microsoft ClearScript V8 7.5.1.1**, with matching
 native packages for Linux/Windows x64 and arm64. Engine.Scripting now provides a
 small renderer-local native host, not a web-browser JavaScript environment.
 **Page scripts remain disabled by default.** Phase 11d explicitly opts into the
-post-parse inline subset below. Full DOM/Web IDL bindings,
-Full HTML script scheduling and event loops, modules, timers, workers and script-visible
-network/storage APIs are deferred. IPC v3 carries only document identities and
-trusted script/repaint policy, never DOM or V8 objects.
+bounded parser-blocking classic-script subset below, including browser-brokered
+external scripts. Full DOM/Web IDL bindings, other HTML script scheduling and
+event loops, modules, timers, workers and script-visible network/storage APIs
+are deferred. IPC carries only document identities, trusted script/repaint
+policy and bounded script request/response data, never DOM or V8 objects.
 
 ## Ownership and values
 
@@ -99,8 +100,8 @@ checkpoint DOM/style/title changes reach paint and retained resize.
 
 No new CLR callback is installed: the private task controller and queued
 functions remain native JavaScript closures. Ordinary Promise rejection
-reporting, HTML error events, timers, automatic browser events, external scripts and a
-persistent host after page execution remain deferred.
+reporting, HTML error events, timers, automatic browser events, non-classic
+external script types and a persistent host after page execution remain deferred.
 
 ## Bounded synchronous synthetic events (phase 11g)
 
@@ -987,14 +988,15 @@ conversion hooks remain ordinary script effects.
 
 This does not add `childNodes`/`children` collections, `innerHTML`, selectors,
 clone/import/adopt APIs, shadow DOM, events or observers. Appending or changing
-script elements **never schedules execution**. Phase 11d still executes only its
-initial source snapshot, including an initially collected script detached by an
-earlier script. New embedded styles and inline attribute/tree changes feed the
-post-script style/layout/paint pass, and the mutated DOM remains retained for
-resize without repeating execution. Unsupported CSS/layout/resource features
-still fail explicitly; this is not broader HTML element behavior.
+script elements **never schedules execution**. During the initial parse, only
+parser-inserted eligible scripts execute when the parser reaches them; removal
+or mutation of later script elements does not create a queued snapshot. Embedded
+styles and inline attribute/tree changes feed the final style/layout/paint pass,
+and the mutated DOM remains retained for resize without repeating execution.
+Unsupported CSS/layout/resource features still fail explicitly; this is not
+broader HTML element behavior.
 
-## Opt-in inline page execution (phase 11d)
+## Opt-in parser-blocking classic page scripts (phase 11d)
 
 Add `--enable-inline-scripts` to an explicit browser mode.
 It preserves the CLI's mandatory confinement policy (or explicit trusted-content
@@ -1004,15 +1006,25 @@ syscall policy or resource quotas. The API equivalent is
 Without this option, script elements remain inert and existing static rendering
 behavior is preserved. Engine.Content itself remains offline and script-free.
 
-The page renderer parses the complete document, snapshots all eligible sources
-in connected tree order, validates their entire count/character budget, then
-executes one classic batch in a fresh document-bound V8 host. Later elements are
-already visible to earlier scripts. Sources modified or detached by an earlier
-script still run from the snapshot. This is deliberately **not parser-blocking
-HTML script preparation/scheduling**. Global lexical state persists between the
-batch's scripts, but not between navigations or tabs.
+The opted-in page renderer pauses tree construction when it reaches each
+eligible inline or external classic script, executes it, then resumes parsing.
+Earlier scripts cannot observe later parser input, and scripts run in parser
+order in one fresh document-bound V8 host. External source is fetched
+asynchronously by the browser's tab-owned GET loader while the local renderer
+thread or process worker waits at the parser pause. The renderer has no network
+capability. Global lexical state persists across scripts in that navigation,
+but not between navigations or tabs.
 
-After execution and the finite phase-11h readiness events/checkpoints, the idle
+External scripts are limited to successful HTTP(S) responses with a recognized
+JavaScript MIME essence. The browser applies the document's bounded
+`script-src-elem`/`script-src`/`default-src` policy before each request and
+redirect, disables cookies, enforces HTTPS downgrade protection and decodes the
+declared charset or UTF-8. Classic external scripts do not use CORS. Integrity,
+`crossorigin`, `referrerpolicy`, `fetchpriority` and `nonce` attributes are not
+implemented and cause navigation failure. This does not add general Fetch or
+resource scheduling.
+
+After parsing, the finite phase-11h readiness events/checkpoints run. The idle
 host stays with that renderer-local document for link-click dispatch (see
 below); it runs nothing else. Stylesheets are collected from the
 mutated DOM, and style/layout/display lists/pixels are computed afresh. Live
@@ -1024,15 +1036,15 @@ Classification uses HTML's type/legacy-language selection and ASCII matching
 against the complete JavaScript MIME essence list. Missing/empty `type` and
 default/empty `language` select classic scripts. Type values strip only ASCII
 whitespace; MIME parameters do not match an essence. Other data-block types
-remain inert, and classic `nomodule` elements are skipped. Empty inline classic
-sources do not consume a source slot. Executable `src` attributes (including an
-empty value), modules/import maps/speculation rules and
-`async`/`defer`/legacy `for`/`event` scheduling attributes fail during preflight;
-no subresource is fetched. Rejecting inline async/defer rather than ignoring
-them is an explicit restriction of this foundation.
+remain inert, and classic `nomodule` elements are skipped. Empty classic sources
+do not consume a source slot. Modules/import maps/speculation rules and
+`async`/`defer`/legacy `for`/`event` scheduling attributes fail when encountered;
+rejecting scheduling attributes rather than ignoring them is an explicit
+restriction of this foundation. Render-blocking stylesheet behavior and the
+broader HTML preparation/error-reporting algorithms are not claimed.
 
 The existing host limits apply unchanged: **64 sources, 65,536 UTF-16 characters
-per source, 262,144 aggregate source characters and one two-second batch
+per source, 262,144 aggregate source characters and one two-second page-script
 deadline**, plus the live-binding budgets above. Caller cancellation, runtime/
 syntax errors, unsupported executable features and resource limits fail the
 navigation explicitly. Unlike HTML's error-report-and-continue behavior, later
@@ -1225,9 +1237,10 @@ tabs and multiple windows. Formatting, editor diagnostics and diff whitespace
 checks are clean; no owned renderer workers or resource scopes remain.
 Independently, all **58 official references** are cached/fresh with no network
 refresh needed. Native Windows/ARM checks are wired in target CI but were not
-executed on this Linux x64 host. Page scripts remain disabled unless explicitly
-enabled; external scripts, HTML scheduling/event loops and production web
-security remain unfinished.
+executed on this Linux x64 host. At this earlier phase, page scripts remained
+disabled unless explicitly enabled; parser-blocking external scripts were added
+in a later bounded increment. Full HTML scheduling/event loops and production
+web security remain unfinished.
 
 ## Phase-11e validation outcome
 
@@ -1271,8 +1284,9 @@ with microtask-driven title/pixels and tab/history/window lifecycle.
 Formatting, editor diagnostics and whitespace checks are clean; no owned
 workers/resource scopes remain. All **58 official references** are independently
 cached/fresh without network refresh. Windows/ARM guarantees still require
-native target evidence. External scripts, timers, events, ordinary Promise
-rejection reporting and a persistent HTML event loop remain deferred.
+native target evidence. At this validation stage external scripts, timers,
+events, ordinary Promise rejection reporting and a persistent HTML event loop
+remained deferred; the later phase-11d increment adds the bounded classic subset.
 
 ## Phase-11g validation outcome
 
@@ -1294,8 +1308,9 @@ title/pixels and tab/history/window lifecycle. Formatting, editor diagnostics
 and whitespace checks are clean; no owned worker/resource scopes remain.
 All **58 official references** are independently cached/fresh with no network
 refresh needed. Windows/ARM evidence remains native target-CI work. Automatic
-browser events, handlers/default actions, AbortSignal, external scripts, timers,
-Promise rejection reporting and a persistent HTML event loop remain deferred.
+browser events, handlers/default actions, AbortSignal, external scripts at this
+phase's validation (the bounded classic subset was added later under phase 11d),
+timers, Promise rejection reporting and a persistent HTML event loop remain deferred.
 
 ## Phase-11h validation outcome
 
@@ -1320,8 +1335,9 @@ Formatting, editor diagnostics and whitespace checks are clean; no owned
 workers/resource scopes remain. All **58 official references** are independently
 cached/fresh without network refresh. Windows/ARM still require native target
 evidence. This remains a finite post-parse approximation: Window/load, input
-events, timers, external scripts, ordinary Promise rejection reporting and a
-persistent event loop are deferred.
+events, timers, external scripts at this phase's validation, ordinary Promise
+rejection reporting and a persistent event loop are deferred. Phase 11d later
+adds only the bounded parser-blocking classic subset.
 
 ## Phase-11i validation outcome
 
@@ -1346,7 +1362,7 @@ style/complexity advisories in the DOM bridge, not build failures. No owned
 workers/resource scopes remain. All **58 official references**
 are independently cached/fresh without network refresh. Windows/ARM still
 require native target evidence. Unsupported selectors, full WebIDL NodeList,
-external scripts and a persistent event loop remain deferred.
+non-classic external script types and a persistent event loop remain deferred.
 
 ## Phase-11j validation outcome
 
@@ -1369,8 +1385,8 @@ frames respectively and exercising tabs/history/windows. Formatting, editor
 diagnostics and whitespace checks are clean; no owned workers/resource scopes
 remain. All **58 official references** are independently cached/fresh without
 network refresh. Windows/ARM still require native target evidence. Full
-DOMTokenList WebIDL/DOMException objects, external scripts and persistent V8
-event loops remain deferred.
+DOMTokenList WebIDL/DOMException objects, non-classic external script types and
+persistent V8 event loops remain deferred.
 
 ## Phase-11k validation outcome
 

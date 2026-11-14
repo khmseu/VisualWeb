@@ -82,7 +82,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v48
+## Private stream protocol v49
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -171,6 +171,12 @@ GUID, script opt-in, target identity and `focus`/`blur` event type, plus an empt
 The worker dispatches into its retained renderer-local host; no DOM/V8 object or
 navigation capability crosses IPC. Event-only fields are rejected on other
 message kinds, and older versions fail closed.
+Version 49 adds bounded `script-request`/`script-response` messages for an
+opted-in parser pause. The worker sends only the absolute HTTP(S) script URL,
+document/request identities and a bounded request sequence; the browser applies
+its navigation deadline and script loader policy, then returns bounded source
+text or an explicit error. No renderer fetch capability or response headers
+cross IPC, and request/response identity must match exactly.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require
@@ -185,13 +191,13 @@ Requests have increasing positive IDs;
 linked stylesheet collection (request URL plus decoded CSS text only) and CSS viewport/
 scale and a nonnegative bounded CSS-pixel scroll offset, a nonempty document GUID,
 the last committed document GUID, explicit
-inline-script opt-in and retained-document repaint intent. Script policy is
+parser-blocking classic-script opt-in and retained-document repaint intent. Script policy is
 fixed by the first request and cannot change within a tab channel. Publication
 acknowledgement pins the worker's prior candidate on the next request; another
 candidate cannot evict the committed DOM. These fields are rejected on replies
 and handshakes. A reply is `frame` (title/status/CSS viewport/scale/pixel dimensions/stride/pixels/scroll height and bounded link/form/text targets) or `error`
 (explicit page failure). No navigation/fetch command can be initiated by a
-worker. No V8/DOM objects cross IPC. Optional post-parse inline execution uses
+worker. No V8/DOM objects cross IPC. Optional parser-blocking classic execution uses
 the [finite scripting policy](scripting.md); v42+ link events and v48 focus/blur
 dispatch are bounded hooks. General DOM input/events, event loops and display-list
 IPC remain deferred. The browser separately brokers bounded link,

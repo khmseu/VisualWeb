@@ -44,6 +44,25 @@ public sealed class DocumentLifecycleTests
     }
 
     [Fact]
+    public void ParserOrderedBatchSharesGlobalLexicalsAndCompletesReadinessAfterParsing()
+    {
+        var document = Document();
+        using var host = Host(document);
+        var parserFinished = false;
+        host.ExecuteInitialDocumentParserBatch((execute, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            execute("let first='one'; document.title=first;");
+            execute("document.title += '-two';");
+            parserFinished = true;
+        }, Cancellation);
+
+        Assert.True(parserFinished);
+        Assert.Equal("one-two", document.Title);
+        Assert.Equal("complete", host.Evaluate("document.readyState", Cancellation).Text);
+    }
+
+    [Fact]
     public void CallerTamperingCannotSuppressPrivateDispatchOrForgeTrustedEvents()
     {
         using var host = Host();
