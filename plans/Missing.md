@@ -1811,6 +1811,20 @@ estimate is now ~40%; CSS Syntax at ~35% is consequently the highest remaining
 partial estimate for the next selection. The earlier note selecting HTML/DOM
 as next is superseded by this re-evaluation.
 
+**CSS Syntax selection update (2026-11-14):** The next bounded gap was the
+optional `unicode-range` token extension, explicitly excluded from the existing
+tokenizer. `CssOptions.EnableUnicodeRangeTokenExtension` now enables typed
+inclusive ranges for hexadecimal, wildcard and hyphenated forms; the option
+defaults off so ordinary tokenization is unchanged. This is syntax support
+only: `@font-face`, descriptor validation, font loading and font selection
+remain unsupported. CSS Syntax remains approximately 35% and remains the
+highest partial standard for the next selection; these estimates are rough
+ordering heuristics, not conformance scores. The local `css-syntax` source was
+checked 2026-11-07 in the manifest and was fresh, so no cache refresh was
+needed. CSS tests (1,387), Debug and Release solution builds, Debug and Release
+full-suite runs (16,653 each), and format verification pass. No CSS-specific
+native smoke applies.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

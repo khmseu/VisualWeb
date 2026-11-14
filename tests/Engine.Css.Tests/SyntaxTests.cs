@@ -32,6 +32,63 @@ public sealed class SyntaxTests
     }
 
     [Fact]
+    public void UnicodeRangeTokensAreOptInAndPreserveNormalTokenizationByDefault()
+    {
+        var standard = new CssTokenizer("U+4");
+        Assert.Equal(CssTokenKind.Ident, standard.Read().Kind);
+        Assert.Equal(CssTokenKind.Number, standard.Read().Kind);
+
+        var tokenizer = new CssTokenizer("u+4?", new() { EnableUnicodeRangeTokenExtension = true });
+        var token = tokenizer.Read();
+        Assert.Equal(CssTokenKind.UnicodeRange, token.Kind);
+        Assert.Equal(new CssUnicodeRange(0x40, 0x4F), token.UnicodeRange);
+        Assert.Equal("u+4?", token.Text);
+        Assert.Equal(CssTokenKind.Eof, tokenizer.Read().Kind);
+    }
+
+    [Fact]
+    public void UnicodeRangeExtensionIsAvailableWhileParsingDescriptorValues()
+    {
+        var declarations = CssSyntax.ParseDeclarations(
+            "unicode-range: U+4??, U+1-3",
+            new() { EnableUnicodeRangeTokenExtension = true },
+            Cancellation);
+
+        Assert.Empty(declarations.Diagnostics);
+        Assert.Equal(
+            new[] { new CssUnicodeRange(0x400, 0x4FF), new CssUnicodeRange(1, 3) },
+            declarations.Declarations.Single().Value
+                .Where(token => token.Kind == CssTokenKind.UnicodeRange)
+                .Select(token => token.UnicodeRange!.Value));
+    }
+
+    [Theory]
+    [InlineData("U+10FFFF", 0x10FFFF, 0x10FFFF, "")]
+    [InlineData("U+1-3", 1, 3, "")]
+    [InlineData("u+??", 0, 0xFF, "")]
+    [InlineData("U+1234567", 0x123456, 0x123456, "7")]
+    [InlineData("U+110000", 0x110000, 0x110000, "")]
+    public void UnicodeRangeExtensionConsumesTheBoundedSyntaxPrefix(string input, int start, int end, string remainder)
+    {
+        var tokenizer = new CssTokenizer(input, new() { EnableUnicodeRangeTokenExtension = true });
+        var token = tokenizer.Read();
+        Assert.Equal(CssTokenKind.UnicodeRange, token.Kind);
+        Assert.Equal(new CssUnicodeRange(start, end), token.UnicodeRange);
+        if (remainder.Length > 0) { Assert.Equal(remainder, tokenizer.Read().Value); }
+        Assert.Equal(CssTokenKind.Eof, tokenizer.Read().Kind);
+    }
+
+    [Theory]
+    [InlineData("U+")]
+    [InlineData("U+G")]
+    [InlineData("x+1")]
+    public void UnicodeRangeExtensionRequiresTheSpecifiedPrefix(string input)
+    {
+        var tokenizer = new CssTokenizer(input, new() { EnableUnicodeRangeTokenExtension = true });
+        Assert.NotEqual(CssTokenKind.UnicodeRange, tokenizer.Read().Kind);
+    }
+
+    [Fact]
     public void LoneSurrogatesArePreprocessedWithoutTestTransportEncoding()
     {
         var input = new string(['\uD800', 'x', '\uDC00']);

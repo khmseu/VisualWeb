@@ -10,14 +10,21 @@ public enum CssTokenKind
 {
     Ident, Function, AtKeyword, Hash, String, BadString, Url, BadUrl, Delim,
     Number, Percentage, Dimension, Whitespace, Colon, Semicolon, Comma,
-    OpenSquare, CloseSquare, OpenParen, CloseParen, OpenBrace, CloseBrace, Cdo, Cdc, Eof
+    OpenSquare, CloseSquare, OpenParen, CloseParen, OpenBrace, CloseBrace, Cdo, Cdc, Eof, UnicodeRange
 }
 
-/// <summary>A decoded token with its normalized spelling and Syntax flags.</summary>
+/// <summary>An inclusive Unicode code-point range carried by an opt-in CSS token.</summary>
+/// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#typedef-unicode-range-token">unicode-range token</see>.</remarks>
+public readonly record struct CssUnicodeRange(int Start, int End);
+
+/// <summary>A CSS token with its decoded value, source spelling and Syntax flags.</summary>
 /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#tokenization">token types</see>.</remarks>
 public sealed record CssToken(CssTokenKind Kind, string Value, int Offset, string Text,
     string Unit = "", bool IsId = false, bool IsInteger = false)
 {
+    /// <summary>The inclusive range carried by an opt-in Unicode-range token; otherwise null.</summary>
+    public CssUnicodeRange? UnicodeRange { get; init; }
+
     public bool IsDelimiter(string value) => Kind == CssTokenKind.Delim && Value == value;
 }
 
@@ -90,6 +97,9 @@ public sealed record CssOptions
     public int MaxTokens { get; init; } = 1_000_000;
     public int MaxDepth { get; init; } = 128;
     public int MaxDiagnostics { get; init; } = 10_000;
+    /// <summary>Enables the CSS Syntax unicode-range token extension for descriptor parsing.</summary>
+    /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#consume-unicode-range-token">unicode-range tokens</see>.</remarks>
+    public bool EnableUnicodeRangeTokenExtension { get; init; }
     public int MaxElements { get; init; } = 100_000;
     public int MaxStyleSources { get; init; } = 256;
     public int MaxRules { get; init; } = 100_000;
@@ -326,7 +336,7 @@ internal sealed class CssContext
     }
 }
 
-/// <summary>First-party CSS Syntax tokenizer, excluding the optional Unicode-range token extension.</summary>
+/// <summary>First-party CSS Syntax tokenizer, with optional Unicode-range tokenization.</summary>
 /// <remarks>Spec: css-syntax; <see href="https://www.w3.org/TR/css-syntax-3/#consume-token">consume a token</see>.</remarks>
 public sealed class CssTokenizer
 {
@@ -393,6 +403,10 @@ public sealed class CssTokenizer
             while (Space(Peek())) { context.Cancellation.ThrowIfCancellationRequested(); position++; }
             return Token(CssTokenKind.Whitespace, " ");
         }
+        if (context.Options.EnableUnicodeRangeTokenExtension && StartsUnicodeRange())
+        {
+            return UnicodeRangeToken();
+        }
         if (c is '"' or '\'') { return String(c); }
         if (c == '#' && (Name(Peek(1)) || Escape(position + 1)))
         {
@@ -437,8 +451,57 @@ public sealed class CssTokenizer
             _ => CssTokenKind.Delim
         }, c.ToString());
 
-        CssToken Token(CssTokenKind kind, string value, string unit = "", bool id = false, bool integer = false)
-            => new(kind, value, start, input[start..position], unit, id, integer);
+        CssToken Token(CssTokenKind kind, string value, string unit = "", bool id = false, bool integer = false,
+            CssUnicodeRange? unicodeRange = null)
+        {
+            var token = new CssToken(kind, value, start, input[start..position], unit, id, integer);
+            return unicodeRange is { } range ? token with { UnicodeRange = range } : token;
+        }
+
+        CssToken UnicodeRangeToken()
+        {
+            position += 2;
+            var firstSegmentStart = position;
+            var hexDigits = 0;
+            while (hexDigits < 6 && char.IsAsciiHexDigit(Peek()))
+            {
+                context.Cancellation.ThrowIfCancellationRequested();
+                position++;
+                hexDigits++;
+            }
+            if (hexDigits < 6)
+            {
+                while (hexDigits < 6 && Peek() == '?')
+                {
+                    context.Cancellation.ThrowIfCancellationRequested();
+                    position++;
+                    hexDigits++;
+                }
+            }
+
+            var firstSegment = input[firstSegmentStart..position];
+            var hasWildcard = firstSegment.Contains('?');
+            var rangeStart = ParseHex(hasWildcard ? firstSegment.Replace('?', '0') : firstSegment);
+            var rangeEnd = hasWildcard ? ParseHex(firstSegment.Replace('?', 'F')) : rangeStart;
+            if (!hasWildcard && Peek() == '-' && char.IsAsciiHexDigit(Peek(1)))
+            {
+                position++;
+                var rangeEndStart = position;
+                var rangeEndDigits = 0;
+                while (rangeEndDigits < 6 && char.IsAsciiHexDigit(Peek()))
+                {
+                    context.Cancellation.ThrowIfCancellationRequested();
+                    position++;
+                    rangeEndDigits++;
+                }
+                rangeEnd = ParseHex(input[rangeEndStart..position]);
+            }
+
+            var value = input[start..position];
+            return Token(CssTokenKind.UnicodeRange, value, unicodeRange: new(rangeStart, rangeEnd));
+        }
+
+        static int ParseHex(string value) => int.Parse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
         CssToken String(char quote)
         {
@@ -569,6 +632,8 @@ public sealed class CssTokenizer
 
     private char Peek(int distance = 0) => position + distance < input.Length ? input[position + distance] : '\0';
     private bool Starts(string text) => input.AsSpan(position).StartsWith(text, StringComparison.Ordinal);
+    private bool StartsUnicodeRange() => (Peek() is 'u' or 'U') && Peek(1) == '+'
+        && (Peek(2) == '?' || char.IsAsciiHexDigit(Peek(2)));
     private bool Escape(int at) => at < input.Length && input[at] == '\\' && (at + 1 == input.Length || input[at + 1] != '\n');
     private bool StartsIdent(int at)
     {

@@ -3,6 +3,9 @@
 Phase-6 first-party CSS Syntax tokenization/parsing, static HTML selectors and
 typed computed styles. UA/user/author/inline cascade, !important, specificity,
 inheritance, CSS-wide keywords and initial block/inline properties are supported.
+`CssOptions.EnableUnicodeRangeTokenExtension` opts into CSS Syntax
+`unicode-range` tokens for descriptor parsing; it defaults off and does not add
+`@font-face`, descriptor validation or font loading.
 HTML `body bgcolor` uses the HTML legacy-color algorithm as a bounded
 `background-color` presentational hint. Its independent per-computation raw
 UTF-16 limit is `MaxBodyBackgroundColorAttributeCharacters`.

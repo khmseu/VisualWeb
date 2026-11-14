@@ -44,6 +44,11 @@ nodes nor style dictionaries are IPC identities or security principals.
 [CssTokenizer](../src/Engine/Engine.Css/CssSyntax.cs) implements CSS Syntax
 tokenization: identifiers/functions, hashes and ID flags, at-keywords, strings,
 URLs, numbers/percentages/dimensions, delimiters, brackets, CDO/CDC and whitespace.
+The optional `CssOptions.EnableUnicodeRangeTokenExtension` recognizes bounded
+`U+` hexadecimal, wildcard and range forms as typed Unicode-range tokens for
+descriptor parsing. It is disabled by default because CSS Syntax uses this
+special token only when parsing a `unicode-range` descriptor; enabling it does
+not add `@font-face`, font loading or font selection.
 Comments are removed without merging neighboring tokens. CR/CRLF/form feed
 become LF; NUL and lone surrogates become U+FFFD. Escapes decode CSS code points,
 including the recoverable escaped-EOF rule. Numeric spelling, integer flags,
@@ -56,8 +61,8 @@ components, EOF block closure, trailing whitespace and `!important`.
 At-rules are retained by stylesheet syntax parsing; the style engine evaluates
 only the bounded `@media` subset below. Declaration-block at-rules and nested
 style rules produce explicit diagnostics while following declarations remain
-parseable. CSS nesting, descriptor contexts and the optional Unicode-range
-tokenization extension are not implemented.
+parseable. CSS nesting and descriptor contexts remain unsupported; only
+stand-alone opt-in Unicode-range tokenization is available.
 
 Diagnostics contain a code, message and **normalized UTF-16 offset within the
 individual input**, not byte offsets or line/column positions. Results expose
