@@ -30,7 +30,7 @@ jobs:
       - name: Run fast tests
         run: >-
           dotnet test VisualWeb.slnx --configuration Release --no-build
-          --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Html.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
+          --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
       - name: Repeat CPU-pressure renderer recovery
         shell: pwsh
         run: |
@@ -50,5 +50,3 @@ jobs:
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
       - name: Run slow scripting tests
         run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build
-      - name: Run slow HTML corpus tests
-        run: dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj --configuration Release --no-build

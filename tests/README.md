@@ -320,10 +320,10 @@ dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```
 
-CI runs the solution tests outside the browser, HTML and scripting projects
-first. These fast tests must pass before CI runs the slower browser integration,
-HTML fixture-corpus and native scripting suites. A failure in the fast stage
-stops the job before the slow suites begin.
+CI runs the solution tests outside the browser and scripting projects first.
+These fast tests, including the HTML fixture corpus, must pass before CI runs
+the slower browser integration and native scripting suites. A failure in the
+fast stage stops the job before the slow suites begin.
 
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy
