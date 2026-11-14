@@ -523,8 +523,10 @@ internal static class CssProperties
     {
         if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident) { return null; }
         var space = CssText.Lower(args[0].Value);
+        var xyzD50 = space == "xyz-d50";
         var xyzD65 = space is "xyz" or "xyz-d65";
-        if (!xyzD65 && space is not ("srgb" or "srgb-linear" or "display-p3" or "display-p3-linear" or "a98-rgb" or "rec2020"))
+        if (!xyzD50 && !xyzD65
+            && space is not ("srgb" or "srgb-linear" or "display-p3" or "display-p3-linear" or "a98-rgb" or "rec2020"))
         {
             return null;
         }
@@ -536,8 +538,15 @@ internal static class CssProperties
             if (ColorComponent(values[i], allowNone: true) is not { } component) { return null; }
             channels[i] = values[i].Kind == CssTokenKind.Percentage ? component / 100 : component;
         }
-        if (!xyzD65 && channels.Take(3).Any(channel => channel is < 0 or > 1)) { return null; }
-        if (xyzD65)
+        if (!xyzD50 && !xyzD65 && channels.Take(3).Any(channel => channel is < 0 or > 1)) { return null; }
+        if (xyzD50)
+        {
+            if (XyzD50ToSrgb(channels[0], channels[1], channels[2]) is not { } converted) { return null; }
+            channels[0] = converted.Red;
+            channels[1] = converted.Green;
+            channels[2] = converted.Blue;
+        }
+        else if (xyzD65)
         {
             if (XyzD65ToSrgb(channels[0], channels[1], channels[2]) is not { } converted) { return null; }
             channels[0] = converted.Red;
@@ -628,6 +637,15 @@ internal static class CssProperties
         var srgbGreen = -851781d / 878810 * x + 1648619d / 878810 * y + 36519d / 878810 * z;
         var srgbBlue = 705d / 12673 * x - 2585d / 12673 * y + 705d / 667 * z;
         return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue);
+    }
+
+    private static (double Red, double Green, double Blue)? XyzD50ToSrgb(double x, double y, double z)
+    {
+        // CSS Color 4 Bradford chromatic adaptation from D50 to D65.
+        var d65X = 0.955473421488075 * x - 0.02309845494876471 * y + 0.06325924320057072 * z;
+        var d65Y = -0.0283697093338637 * x + 1.0099953980813041 * y + 0.021041441191917323 * z;
+        var d65Z = 0.012314014864481998 * x - 0.020507649298898964 * y + 1.330365926242124 * z;
+        return XyzD65ToSrgb(d65X, d65Y, d65Z);
     }
 
     private static (double Red, double Green, double Blue)? EncodeSrgbIfInGamut(

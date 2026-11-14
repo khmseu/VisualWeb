@@ -1967,8 +1967,33 @@ numeric/percentage channels, including values outside [0,1], are preserved
 through conversion; only out-of-sRGB results are diagnosed. Thirteen focused
 tests and all 1,486 CSS tests pass. Debug/Release solution builds have zero
 warnings/errors; both full suites pass all 16,752 tests. Format verification
-and `git diff --check` pass. Commit and push are next; remote CI has not
-started.
+and `git diff --check` pass. Feature commit `efe9268` is pushed. Linux
+development
+([run 43633273119](https://github.com/khmseu/VisualWeb/actions/runs/43633273119)),
+Windows confinement
+([run 43633272906](https://github.com/khmseu/VisualWeb/actions/runs/43633272906))
+and CodeQL
+([run 43633272613](https://github.com/khmseu/VisualWeb/actions/runs/43633272613))
+all pass. Pass 8 is complete; two of the ten requested increments remain.
+
+**Pass 9 selection (2026-11-14):** CSS Color remains the highest actionable
+partial standard (~40%). The next increment adds `color(xyz-d50 ...)` from CSS
+Color 4 section 10.9. Its finite XYZ components are not range-clamped;
+conversion applies the specification's Bradford D50-to-D65 adaptation before
+the existing XYZ-D65-to-linear-sRGB conversion. Results outside the supported
+sRGB output gamut remain diagnostics. The local CSS Color cache checked
+2026-11-07 is fresh. D50 values, aliases in other profiles, gamut mapping and
+higher-precision color management remain outside this increment.
+
+**Pass 9 implementation (locally validated):** `color(xyz-d50 ...)` applies
+the CSS Color 4 Bradford adaptation, then reuses the bounded XYZ-D65-to-linear-
+sRGB conversion and final sRGB gamut check. Finite numeric/percentage
+components, including `none` and slash alpha, share the existing `color()`
+parser. Twelve focused tests cover the CSS example and white, neutral values,
+alpha, syntax/range failures, gamut rejection and atomic shorthands. All 1,497
+CSS tests pass; Debug/Release solution builds have zero warnings/errors; both
+full suites pass all 16,763 tests. Format verification and `git diff --check`
+pass. The feature commit and remote CI are pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

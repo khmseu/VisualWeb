@@ -26,7 +26,6 @@ public sealed class XyzD65ColorFunctionTests
     [InlineData("color(xyz-d65 1px 0 0)")]
     [InlineData("color(xyz-d65 0.5 0.5 0.5 / 0.5 / 1)")]
     [InlineData("color(xyz-d65, 1, 0, 0)")]
-    [InlineData("color(xyz-d50 0.5 0.5 0.5)")]
     [InlineData("color(xyz-d65 1e999 0 0)")]
     public void UnsupportedOrOutOfGamutXyzColorsDoNotOverrideEarlierColor(string input)
     {
