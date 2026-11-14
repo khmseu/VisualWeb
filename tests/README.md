@@ -314,10 +314,16 @@ dotnet test tests/Engine.Layout.Tests/Engine.Layout.Tests.csproj
 dotnet test tests/Engine.Paint.Tests/Engine.Paint.Tests.csproj
 dotnet test tests/Engine.Content.Tests/Engine.Content.Tests.csproj
 dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj
+dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj
 dotnet test tests/Ipc.Tests/Ipc.Tests.csproj
 dotnet build VisualWeb.slnx
 dotnet test VisualWeb.slnx --no-build
 ```
+
+CI runs the solution tests outside the browser, HTML and scripting projects
+first. These fast tests must pass before CI runs the slower browser integration,
+HTML fixture-corpus and native scripting suites. A failure in the fast stage
+stops the job before the slow suites begin.
 
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy

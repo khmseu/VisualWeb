@@ -27,6 +27,10 @@ jobs:
           dotnet-version: 10.0.401
           architecture: ${{ matrix.architecture }}
       - run: dotnet build VisualWeb.slnx --configuration Release
+      - name: Run fast tests
+        run: >-
+          dotnet test VisualWeb.slnx --configuration Release --no-build
+          --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Html.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
       - name: Repeat CPU-pressure renderer recovery
         shell: pwsh
         run: |
@@ -35,7 +39,6 @@ jobs:
             dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer" --logger "console;verbosity=normal"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-      - run: dotnet test VisualWeb.slnx --configuration Release --no-build
       - run: dotnet run --project tools/V8Smoke --configuration Release --no-build -- --require-sandbox --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- windows
       # The single-process opt-out is only for trusted offline development smoke.
@@ -43,3 +46,9 @@ jobs:
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf
+      - name: Run slow browser tests
+        run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
+      - name: Run slow scripting tests
+        run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build
+      - name: Run slow HTML corpus tests
+        run: dotnet test tests/Engine.Html.Tests/Engine.Html.Tests.csproj --configuration Release --no-build
