@@ -540,6 +540,11 @@ components and optional slash alpha. It applies the A98 transfer exponent and
 D65 conversion matrices, then accepts only results inside the sRGB gamut;
 out-of-gamut results are diagnosed rather than gamut-mapped. Other color
 spaces, color interpolation and higher-precision management remain unsupported.
+[`color(rec2020 ...)`](https://www.w3.org/TR/css-color-4/#predefined-rec2020)
+(`css-color`) accepts the same bounded channels, `none` components and optional
+slash alpha. It applies the Rec. 2020 transfer curve and D65 conversion matrices,
+then accepts only results inside the sRGB gamut; out-of-gamut results are
+diagnosed rather than gamut-mapped.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.

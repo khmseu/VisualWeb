@@ -1924,8 +1924,29 @@ rounded 8-bit output. The standards' A98 example, numeric/percentage channels,
 `none`, alpha, invalid syntax/ranges and atomic shorthand behavior have
 regressions; 13 focused tests and all 1,460 CSS tests pass. Debug/Release
 solution builds have zero warnings/errors; both full suites pass all 16,726
-tests. Format verification and `git diff --check` pass. Commit, push and CI
-remain pending.
+tests. Format verification and `git diff --check` pass. Commit `b0ef6e6` is
+pushed; Linux development
+([run 43625000259](https://github.com/khmseu/VisualWeb/actions/runs/43625000259)),
+Windows confinement
+([run 43625000194](https://github.com/khmseu/VisualWeb/actions/runs/43625000194))
+and CodeQL
+([run 43624999793](https://github.com/khmseu/VisualWeb/actions/runs/43624999793))
+all pass.
+
+**Pass 7 selection (2026-11-14):** CSS Color remains the highest actionable
+partial standard (~40%). The next bounded profile selected is `rec2020`
+(CSS Color 4 section 10.8), with [0,1] channels, a 2.4 transfer exponent and
+D65 primaries. Its conversion can reuse the existing sRGB gamut rejection and
+8-bit output policy. D50 ProPhoto RGB, other color spaces and gamut mapping
+remain unsupported; the local CSS Color cache checked 2026-11-07 is fresh.
+
+**Pass 7 implementation (locally validated):** `color(rec2020 ...)` applies
+the 2.4 transfer exponent and the composed D65 conversion matrix, then reuses
+the shared sRGB gamut check and 8-bit encoding. Thirteen focused tests and all
+1,473 CSS tests pass. Debug/Release solution builds have zero warnings/errors;
+both full test suites pass all 16,739 tests. Format verification and
+`git diff --check` pass. The feature commit and push are next; remote CI has not
+started.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
