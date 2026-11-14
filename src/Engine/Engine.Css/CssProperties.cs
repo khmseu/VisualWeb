@@ -479,13 +479,14 @@ internal static class CssProperties
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
         if (function == "color") { return ColorFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
-        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb")) { return null; }
+        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
         var values = ColorFunctionComponents(args, legacy);
         if (values is null) { return null; }
         if (function is "hsl" or "hsla") { return HslColor(values, legacy); }
         if (function == "hwb") { return legacy ? null : HwbColor(values); }
+        if (function == "lab") { return legacy ? null : LabColor(values); }
         if (legacy)
         {
             if (values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
@@ -744,6 +745,44 @@ internal static class CssProperties
             SrgbChannel(green * remainingHue + whiteRatio),
             SrgbChannel(blue * remainingHue + whiteRatio),
             SrgbChannel(alphaValue));
+    }
+
+    private static CssColor? LabColor(IReadOnlyList<CssToken> values)
+    {
+        if (values.Any(token => token.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(token))
+            || ColorComponent(values[0], allowNone: true) is not { } lightness
+            || ColorComponent(values[1], allowNone: true) is not { } a
+            || ColorComponent(values[2], allowNone: true) is not { } b) { return null; }
+
+        if (values[1].Kind == CssTokenKind.Percentage) { a *= 1.25; }
+        if (values[2].Kind == CssTokenKind.Percentage) { b *= 1.25; }
+        lightness = Math.Clamp(lightness, 0, 100);
+        var alpha = values.Count == 4 ? ColorComponent(values[3], allowNone: true) : 1;
+        if (alpha is null) { return null; }
+        var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage
+            ? alpha.Value / 100 : alpha.Value;
+
+        if (lightness == 0) { return new CssColor(0, 0, 0, SrgbChannel(alphaValue)); }
+        if (lightness == 100) { return new CssColor(255, 255, 255, SrgbChannel(alphaValue)); }
+
+        var fy = (lightness + 16) / 116;
+        var fx = fy + a / 500;
+        var fz = fy - b / 200;
+        var x = 0.96422 * LabInverse(fx);
+        var y = LabInverse(fy);
+        var z = 0.82521 * LabInverse(fz);
+        if (XyzD50ToSrgb(x, y, z) is not { } converted) { return null; }
+
+        return new CssColor(SrgbChannel(converted.Red), SrgbChannel(converted.Green), SrgbChannel(converted.Blue),
+            SrgbChannel(alphaValue));
+    }
+
+    private static double LabInverse(double value)
+    {
+        const double epsilon = 216d / 24389;
+        const double kappa = 24389d / 27;
+        var cubed = value * value * value;
+        return cubed > epsilon ? cubed : (116 * value - 16) / kappa;
     }
 
     private static (double Red, double Green, double Blue) HueChannels(double hue, double chroma)

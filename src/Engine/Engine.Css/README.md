@@ -150,6 +150,13 @@ representation. HWB supports angle hues, numeric/percentage/`none` white and
 black components, optional slash alpha, and out-of-range white/black values;
 their sum at or above 100 produces an achromatic result. Comma syntax is
 unsupported.
+The bounded `lab()` function accepts numeric/percentage lightness and
+signed numeric/percentage a/b components, `none` and optional slash alpha.
+Lightness clamps to 0..100; percentages on the a/b axes map -100%..100% to
+-125..125. CIE Lab D50 converts through Bradford adaptation to sRGB; endpoint
+lightness maps to black/white, while other out-of-gamut results remain
+unsupported. Interpolation, missing-component preservation and higher-
+precision color management remain unsupported.
 Saturation above 100 and lightness outside 0..100 remain explicit diagnostics.
 Supported lengths also include the CSS absolute units `in`, `cm`, `mm`, `Q`,
 `pt` and `pc`, converted to CSS pixels for all existing length-valued

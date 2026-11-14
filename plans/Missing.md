@@ -2029,6 +2029,24 @@ and CodeQL
 ([run 43641783907](https://github.com/khmseu/VisualWeb/actions/runs/43641783907))
 all pass. This is the tenth and final requested increment.
 
+**Next standards selection (2026-11-14):** Starting a new ten-increment run,
+ECMAScript remains the highest estimate (~90%), but its remaining tracked
+gaps require module loading or persistent browser event-loop behavior outside
+approved phase 11w. CSS Color (~40%) is the highest actionable partial
+standard, ahead of CSS Syntax (~35%). This increment adds bounded CSS Color 4
+`lab()` conversion into the existing 8-bit sRGB representation. Lightness is
+clamped as specified, a/b percentages use the -125..125 reference range, and
+the two lightness endpoints map to black/white; other out-of-sRGB results
+remain diagnostics rather than receiving general gamut mapping. The rough
+CSS Color estimate is now ~45%; interpolation, missing-component preservation,
+other device-independent color functions and high-precision output remain
+unsupported.
+
+**Pass 1 local validation:** All 15 focused `lab()` cases and all 1,526 CSS
+tests pass. Debug and Release solution builds complete with zero warnings or
+errors; both full solution test runs pass all 16,792 tests. Solution format
+verification and `git diff --check` pass. No CSS-specific native smoke applies.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

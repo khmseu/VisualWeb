@@ -513,6 +513,14 @@ remain valid; a sum of at least 100 produces gray at the white/(white+black)
 ratio. Comma syntax is invalid. HWB, like the other supported functions,
 converts to clamped, rounded 8-bit sRGB; interpolation, missing-component
 preservation and higher-precision color management remain unsupported.
+[`lab()`](https://www.w3.org/TR/css-color-4/#funcdef-lab) (`css-color`)
+accepts numeric or percentage lightness and signed numeric/percentage a/b
+components, plus `none` and optional slash alpha. Lightness is clamped to
+0..100; a/b percentages map -100%..100% to -125..125. CIE Lab D50 values are
+adapted to D65 and converted to sRGB; the endpoint lightness values map to
+black/white. Other out-of-sRGB results remain diagnostics rather than receiving
+general gamut mapping. Interpolation, missing-component preservation and
+higher-precision color management remain unsupported.
 [`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
 (`css-color`) accepts in-gamut numeric or percentage channels, with `none`
 mapped to zero and optional slash alpha. Out-of-gamut channels and other color
