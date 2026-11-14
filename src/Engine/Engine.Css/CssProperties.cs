@@ -478,7 +478,7 @@ internal static class CssProperties
         }
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
-        if (function == "color") { return SrgbColor(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
+        if (function == "color") { return ColorFunctionSrgb(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
         if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
@@ -519,10 +519,11 @@ internal static class CssProperties
         return values;
     }
 
-    private static CssColor? SrgbColor(IReadOnlyList<CssToken> args)
+    private static CssColor? ColorFunctionSrgb(IReadOnlyList<CssToken> args)
     {
-        if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident
-            || CssText.Lower(args[0].Value) != "srgb") { return null; }
+        if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident) { return null; }
+        var space = CssText.Lower(args[0].Value);
+        if (space is not ("srgb" or "srgb-linear")) { return null; }
         var values = ColorFunctionComponents(args.Skip(1).ToList(), legacy: false);
         if (values is null) { return null; }
         var channels = new double[values.Count];
@@ -532,6 +533,15 @@ internal static class CssProperties
             channels[i] = values[i].Kind == CssTokenKind.Percentage ? component / 100 : component;
         }
         if (channels.Take(3).Any(channel => channel is < 0 or > 1)) { return null; }
+        if (space == "srgb-linear")
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                channels[i] = channels[i] > 0.0031308
+                    ? 1.055 * Math.Pow(channels[i], 1 / 2.4) - 0.055
+                    : 12.92 * channels[i];
+            }
+        }
         return new CssColor(SrgbChannel(channels[0]), SrgbChannel(channels[1]), SrgbChannel(channels[2]),
             values.Count == 4 ? SrgbChannel(channels[3]) : (byte)255);
     }

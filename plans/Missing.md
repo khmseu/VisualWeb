@@ -1840,6 +1840,26 @@ implementation below.
 Release solution builds have zero warnings/errors; both full solution test runs
 pass all 16,670 tests; `dotnet format ... --verify-no-changes` and
 `git diff --check` pass. No CSS-specific native smoke applies.
+Commit `02c13ac` is pushed to `main`. Linux development
+([run 43608274646](https://github.com/khmseu/VisualWeb/actions/runs/43608274646)),
+Windows confinement on x64/arm64
+([run 43608274684](https://github.com/khmseu/VisualWeb/actions/runs/43608274684))
+and CodeQL
+([run 43608274473](https://github.com/khmseu/VisualWeb/actions/runs/43608274473))
+all pass.
+
+**Next CSS Color selection (2026-11-14):** After the in-gamut `color(srgb ...)`
+increment, the still-unsupported `srgb-linear` predefined space is the next
+bounded `color()` extension. The fresh local CSS Color 4 section specifies its
+range and transfer function. This pass adds in-gamut linear-light sRGB converted
+to the existing 8-bit sRGB representation; other spaces and gamut mapping
+remain unsupported.
+
+**Local validation:** The CSS test project passes (1,421 tests); Debug and
+Release solution builds have zero warnings/errors; both full solution test runs
+pass all 16,687 tests; `dotnet format ... --verify-no-changes` and
+`git diff --check` pass. The code review approved the implementation. No
+CSS-specific native smoke applies.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

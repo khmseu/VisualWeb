@@ -519,6 +519,11 @@ mapped to zero and optional slash alpha. Out-of-gamut channels and other color
 spaces are diagnosed rather than gamut-mapped or approximated; alpha is clamped
 to the supported 8-bit range. The result uses the same rounded 8-bit sRGB
 representation, without color interpolation or higher-precision management.
+[`color(srgb-linear ...)`](https://www.w3.org/TR/css-color-4/#predefined-sRGB-linear)
+(`css-color`) accepts the same bounded channels in linear-light sRGB and
+converts them with the CSS sRGB transfer function before 8-bit quantization.
+Other color spaces, gamut mapping, color interpolation and higher-precision
+management remain unsupported.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.

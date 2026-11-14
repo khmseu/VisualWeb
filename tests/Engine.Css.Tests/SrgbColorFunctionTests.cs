@@ -23,7 +23,6 @@ public sealed class SrgbColorFunctionTests
 
     [Theory]
     [InlineData("color(display-p3 1 0 0)")]
-    [InlineData("color(srgb-linear 1 0 0)")]
     [InlineData("color(srgb 1.01 0 0)")]
     [InlineData("color(srgb 0 -0.01 0)")]
     [InlineData("color(srgb 101% 0 0)")]
