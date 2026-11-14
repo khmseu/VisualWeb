@@ -123,9 +123,12 @@ numeric/percentage channels, `none` as zero, and slash alpha; linear-light sRGB
 uses the CSS transfer function before quantization.
 `color(display-p3 ...)` accepts in-range numeric/percentage channels, `none`
 and slash alpha, converts through linear light to sRGB, and rejects converted
-colors outside the sRGB gamut rather than gamut-mapping. Other color spaces and
-system colors remain unsupported. All supported colors use rounded 8-bit sRGB
-output.
+colors outside the sRGB gamut rather than gamut-mapping.
+`color(display-p3-linear ...)` accepts the same bounded channels as linear-light
+Display-P3, converts directly to linear sRGB and then applies the sRGB transfer
+function. It also rejects results outside the sRGB gamut rather than
+gamut-mapping. Other color spaces and system colors remain unsupported. All
+supported colors use rounded 8-bit sRGB output.
 The existing 8-bit sRGB parser accepts modern space-separated `rgb()`/`rgba()`
 with mixed numeric/percentage channels, optional slash alpha and `none` as
 zero for static output, alongside the existing comma-separated syntax.

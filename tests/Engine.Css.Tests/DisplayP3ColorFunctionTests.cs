@@ -28,7 +28,6 @@ public sealed class DisplayP3ColorFunctionTests
     [InlineData("color(display-p3 0.5 0.5)")]
     [InlineData("color(display-p3 0.5 0.5 0.5 / 0.5 / 1)")]
     [InlineData("color(display-p3, 1, 0, 0)")]
-    [InlineData("color(display-p3-linear 0.5 0.5 0.5)")]
     public void UnsupportedOrOutOfGamutDisplayP3ColorsDoNotOverrideEarlierColor(string input)
     {
         var (result, style) = Compute("color:red;color:" + input);

@@ -527,8 +527,13 @@ converts them with the CSS sRGB transfer function before 8-bit quantization.
 mapped to zero and optional slash alpha. It converts the sRGB-transfer-encoded
 Display-P3 channels through linear light to sRGB, accepting only results inside
 the sRGB gamut; out-of-gamut results are diagnosed, not gamut-mapped. These
-colors also use rounded 8-bit sRGB output. Other color spaces, color
-interpolation and higher-precision management remain unsupported.
+colors also use rounded 8-bit sRGB output.
+[`color(display-p3-linear ...)`](https://www.w3.org/TR/css-color-4/#predefined-display-p3-linear)
+(`css-color`) accepts the same bounded channels in linear-light Display-P3,
+uses the same primaries and D65 white point, and converts directly to linear
+sRGB before the sRGB transfer function. Out-of-gamut results are diagnosed,
+not gamut-mapped. Other color spaces, color interpolation and higher-precision
+management remain unsupported.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.

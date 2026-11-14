@@ -1871,19 +1871,37 @@ stale-pixel assertion in the unchanged browser shell test; the next failed-job
 rerun passed on ARM64. Linux x64 and Trunk checks passed on the initial run;
 Windows x64/ARM64 and CodeQL passed.
 
-**Next CSS Color selection (2026-11-14):** CSS Color remains the highest
-actionable partial standard (~40% versus CSS Syntax at ~35%) after
-`color(srgb-linear ...)`. The bounded Display-P3 color space specifies an
-sRGB transfer curve and D65 conversion; this increment accepts source channels
-in [0,1] and only converts results within the existing sRGB gamut. Other
-out-of-gamut results remain diagnosed rather than gamut-mapped. The local
-`css-color` document was checked 2026-11-07 and is fresh.
+**Pass 5 selection (2026-11-14):** CSS Color remains the highest actionable
+partial standard (~40% versus CSS Syntax at ~35%). After encoded Display-P3,
+this increment adds linear-light Display-P3 (`color(display-p3-linear ...)`):
+the same primaries and D65 white point, but linear input channels. Inputs stay
+bounded to [0,1], and converted values outside sRGB remain diagnosed rather
+than gamut-mapped. CSS Color 4 section 10.5 and the conversion algorithm in
+sections 11 and 19 are in the local cache, checked 2026-11-07 and fresh.
+
+**Pass 5 implementation (locally validated):** The existing P3 matrix now
+accepts linear channels without source gamma decoding before applying the sRGB
+output transfer function. Numeric/percentage inputs, `none`, slash alpha,
+case-insensitive space names, bounded source channels, sRGB-gamut rejection
+and atomic shorthand behavior are covered. Thirteen focused linear Display-P3
+cases and all 1,447 CSS tests pass. Debug/Release solution builds have zero
+warnings/errors, and both full suites pass all 16,713 tests. Format verification
+and `git diff --check` pass. Commit, push and CI remain pending.
 
 **Local validation:** 14 focused Display-P3 cases and all 1,435 CSS tests pass.
 Debug and Release solution builds have zero warnings/errors; both full
 solution suites pass all 16,701 tests; format verification passes. Code review
 approved the implementation. No CSS-specific native smoke applies.
-Commit, push and CI are pending.
+Feature commit `6ecc220` was pushed with remote main updates integrated by
+merge commit `375cfb5`. Linux development
+([run 43617047610](https://github.com/khmseu/VisualWeb/actions/runs/43617047610)),
+Windows confinement
+([run 43617047675](https://github.com/khmseu/VisualWeb/actions/runs/43617047675))
+and CodeQL
+([run 43617046891](https://github.com/khmseu/VisualWeb/actions/runs/43617046891))
+all pass. Linux passed on x64/ARM64 with Trunk checks; Windows passed on
+x64/ARM64. The run also included upstream commit `893a937`, which adds a
+wait-for-pages step to the previously flaky shell repaint test.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
