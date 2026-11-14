@@ -479,7 +479,7 @@ internal static class CssProperties
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
         if (function == "color") { return ColorFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
-        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab")) { return null; }
+        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
         var values = ColorFunctionComponents(args, legacy);
@@ -487,6 +487,7 @@ internal static class CssProperties
         if (function is "hsl" or "hsla") { return HslColor(values, legacy); }
         if (function == "hwb") { return legacy ? null : HwbColor(values); }
         if (function == "lab") { return legacy ? null : LabColor(values); }
+        if (function == "lch") { return legacy ? null : LchColor(values); }
         if (legacy)
         {
             if (values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
@@ -756,12 +757,38 @@ internal static class CssProperties
 
         if (values[1].Kind == CssTokenKind.Percentage) { a *= 1.25; }
         if (values[2].Kind == CssTokenKind.Percentage) { b *= 1.25; }
-        lightness = Math.Clamp(lightness, 0, 100);
         var alpha = values.Count == 4 ? ColorComponent(values[3], allowNone: true) : 1;
         if (alpha is null) { return null; }
         var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage
             ? alpha.Value / 100 : alpha.Value;
 
+        return LabToSrgb(lightness, a, b, alphaValue);
+    }
+
+    private static CssColor? LchColor(IReadOnlyList<CssToken> values)
+    {
+        if (values[0].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(values[0])
+            || values[1].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(values[1])
+            || values[2].Kind is not (CssTokenKind.Number or CssTokenKind.Dimension) && !IsNone(values[2])
+            || values.Count == 4
+                && values[3].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(values[3])
+            || ColorComponent(values[0], allowNone: true) is not { } lightness
+            || ColorComponent(values[1], allowNone: true) is not { } chroma
+            || Hue(values[2], allowNone: true) is not { } hue) { return null; }
+
+        chroma = Math.Max(0, chroma);
+        if (values[1].Kind == CssTokenKind.Percentage) { chroma *= 1.5; }
+        var alpha = values.Count == 4 ? ColorComponent(values[3], allowNone: true) : 1;
+        if (alpha is null) { return null; }
+        var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage
+            ? alpha.Value / 100 : alpha.Value;
+        var radians = (chroma <= 0.0015 ? 0 : hue) * Math.PI / 180;
+        return LabToSrgb(lightness, chroma * Math.Cos(radians), chroma * Math.Sin(radians), alphaValue);
+    }
+
+    private static CssColor? LabToSrgb(double lightness, double a, double b, double alphaValue)
+    {
+        lightness = Math.Clamp(lightness, 0, 100);
         if (lightness == 0) { return new CssColor(0, 0, 0, SrgbChannel(alphaValue)); }
         if (lightness == 100) { return new CssColor(255, 255, 255, SrgbChannel(alphaValue)); }
 

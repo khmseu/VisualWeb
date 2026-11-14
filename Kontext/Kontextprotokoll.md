@@ -9739,3 +9739,86 @@ Windows confinement
 und CodeQL
 ([Run 43641783907](https://github.com/khmseu/VisualWeb/actions/runs/43641783907))
 sind erfolgreich; damit ist Pass 10 CI-gruen.
+
+### KP-356 - CSS Color Lab function
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14.
+- Quelle: aktueller Nutzeraufruf `/missing-priority-implementation` mit
+  `ARGUMENTS: 10`; aktueller Worktree und lokale Validierung.
+- Bezug: Fortsetzung nach KP-355; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#funcdef-lab) und
+  [Manifest](../specs/manifest.json).
+
+**Nutzerangabe:** Einen neuen Lauf von zehn getrennten, einzeln validierten,
+committeten und gepushten Missing-Prioritaetsinkrementen beginnen.
+
+**Belegte Auswahl:** Der CSS-Color-Cache wurde laut Manifest-`checkedAt` am
+2026-11-07 geprueft und ist am Dokumentationstag weniger als 30 Tage alt.
+Die Standardsuebersicht schaetzt ECMAScript mit ~90% am hoechsten ein; dessen
+verbleibende Missing-Punkte benoetigen Modul-Loader oder einen persistenten
+Browser-Eventloop ausserhalb der genehmigten Phase 11w. CSS Color (~40%) lag
+vor CSS Syntax (~35%). Der CSS Parser hatte keinen CSS-Color-4-`lab()`-Pfad;
+die vorhandene Bradford-/XYZ-/sRGB-Pipeline und atomare Shorthands konnten
+wiederverwendet werden.
+
+**Auswahl als Ableitung:** `lab()` ist ein begrenztes, testbares
+CSS-Color-Inkrement, ohne die breiteren LCH/Oklab-Funktionen, Interpolation
+oder Gamut-Mapping vorwegzunehmen. Der ungefaehre CSS-Color-Schaetzwert wurde
+nach dieser Verhaltenserweiterung von ~40% auf ~45% angepasst.
+
+**Umsetzung und lokale Validierung:** `lab()` akzeptiert numerische und
+prozentuale L/a/b-Komponenten, `none` sowie Slash-Alpha. L wird geklemmt;
+a/b-Prozente werden mit der CSS-Color-Referenzspanne skaliert. L=0/100 wird
+direkt schwarz/weiss ausgegeben; andere aus sRGB fallende Konversionen
+bleiben Diagnosen. Fuenfzehn fokussierte Faelle decken Spezifikationsbeispiele,
+Prozentachsen, clamped Lightness, Alpha, `none`, Syntax-/Gamutfehler und
+atomare Shorthands ab. Alle 1.526 CSS-Tests bestehen. Debug-/Release-
+Solution-Builds melden null Warnungen/Fehler; beide Volltests bestehen mit
+16.792 Faellen. Formatverifikation und `git diff --check` bestehen. Es gibt
+keinen CSS-spezifischen nativen Smoke-Test. Commit `7d914ce` ist auf `main`
+gepusht. Linux development (Run 43648220375), Windows confinement
+(Run 43648220396) und CodeQL (Run 43648220466) sind erfolgreich.
+
+### KP-357 - CSS Color LCH selection
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14.
+- Quelle: erneute Prioritaetspruefung in der aktuellen Sitzung nach CI-Abschluss
+  von Commit `7d914ce`.
+- Bezug: Fortsetzung nach KP-356; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#funcdef-lch) und
+  [Manifest](../specs/manifest.json).
+
+**Belegt:** Linux development (Run 43648220375), Windows confinement
+(Run 43648220396) und CodeQL (Run 43648220466) fuer `7d914ce` sind erfolgreich.
+Nach Pass 1 schaetzt `standards.md` CSS Color mit ~45% hoeher als CSS Syntax
+mit ~35%. Der CSS-Color-Cache hat `checkedAt` 2026-11-07 und ist unter 30 Tage
+alt. Suche im CSS-Parser und CSS-Tests findet keine `lch()`-Unterstuetzung.
+Der lokale CSS-Color-4-Abschnitt spezifiziert Prozent-Chroma bis 150,
+Clamping von negativem Chroma, Hue-Winkel und Konversion nach Lab; die
+vorhandene D50-/sRGB-Pipeline kann wiederverwendet werden.
+
+**Auswahl als Ableitung:** Ein isolierter `lch()`-Parser/-Konverter ist ein
+kleines, standardsdefiniertes CSS-Color-Inkrement. Nicht-endpoint Ergebnisse
+ausserhalb des sRGB-Gamuts bleiben Diagnosen; kein allgemeines Gamut-Mapping.
+
+**Umsetzung:** `lch()` akzeptiert numerische/prozentuale Lightness und Chroma,
+Hue-Winkel, `none` und Slash-Alpha. 100% Chroma entspricht 150; negative
+Chroma wird auf null geklemmt und Hue bei Chroma <= 0.0015 als powerless
+behandelt. Nach Konversion der polaren Koordinaten in CIE Lab D50 wird die
+vorhandene Bradford-/sRGB-Pipeline genutzt. Lightness wird auf 0..100
+geklemmt; Endpunkte ergeben schwarz/weiss und weitere aus sRGB fallende
+Ergebnisse bleiben Diagnosen. Keine allgemeine Gamutabbildung.
+
+**Lokale Validierung:** Der gezielte LCH-Satz besteht mit 19 Faellen; alle
+1.545 CSS-Tests bestehen. Debug-/Release-Solution-Builds haben null
+Warnungen/Fehler; beide Volltests bestehen mit 16.811 Faellen. Die
+Formatverifikation und `git diff --check` bestehen. Feature-Commit, Push und
+CI sind offen. Kein CSS-spezifischer nativer Smoke-Test.

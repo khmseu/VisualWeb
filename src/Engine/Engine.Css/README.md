@@ -157,6 +157,12 @@ Lightness clamps to 0..100; percentages on the a/b axes map -100%..100% to
 lightness maps to black/white, while other out-of-gamut results remain
 unsupported. Interpolation, missing-component preservation and higher-
 precision color management remain unsupported.
+The bounded `lch()` function accepts numeric/percentage lightness and chroma,
+hue angles, `none` components and slash alpha. Chroma percentages map 100% to
+150; negative chroma clamps to zero, and hue becomes powerless at chroma <=
+0.0015. Polar values convert through CIE Lab D50 into the existing sRGB path;
+lightness clamps and endpoint values map to black/white. Other out-of-gamut
+results remain unsupported.
 Saturation above 100 and lightness outside 0..100 remain explicit diagnostics.
 Supported lengths also include the CSS absolute units `in`, `cm`, `mm`, `Q`,
 `pt` and `pc`, converted to CSS pixels for all existing length-valued

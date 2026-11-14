@@ -521,6 +521,15 @@ adapted to D65 and converted to sRGB; the endpoint lightness values map to
 black/white. Other out-of-sRGB results remain diagnostics rather than receiving
 general gamut mapping. Interpolation, missing-component preservation and
 higher-precision color management remain unsupported.
+[`lch()`](https://www.w3.org/TR/css-color-4/#funcdef-lch) (`css-color`)
+accepts numeric or percentage lightness and chroma, hue angles, `none`
+components and optional slash alpha. Chroma percentages map 100% to 150;
+negative chroma clamps to zero, and hue is powerless at chroma <= 0.0015.
+Polar chroma/hue converts to CIE Lab D50 before the existing D65/sRGB path.
+Lightness clamps to 0..100 and its endpoints map to black/white. Other
+out-of-sRGB results remain diagnostics rather than receiving general gamut
+mapping. Interpolation, missing-component preservation and higher-precision
+color management remain unsupported.
 [`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
 (`css-color`) accepts in-gamut numeric or percentage channels, with `none`
 mapped to zero and optional slash alpha. Out-of-gamut channels and other color

@@ -2047,6 +2047,25 @@ tests pass. Debug and Release solution builds complete with zero warnings or
 errors; both full solution test runs pass all 16,792 tests. Solution format
 verification and `git diff --check` pass. No CSS-specific native smoke applies.
 
+**Pass 2 standards selection (2026-11-14):** CSS Color is now estimated at
+~45%, still above CSS Syntax at ~35%; ECMAScript remains higher overall but
+its remaining tracker gaps are outside phase 11w. The next explicit CSS Color
+gap is `lch()`: a bounded CIE LCH parser can use the existing Lab D50-to-sRGB
+path after converting chroma and hue to a/b. This pass will preserve negative
+chroma clamping, L clamping, hue-angle forms and alpha, while retaining the
+existing explicit diagnostic for non-endpoint colors outside sRGB.
+
+**Pass 2 implementation and local validation:** `lch()` accepts numeric or
+percentage lightness/chroma, hue angles, `none` and slash alpha. Chroma
+percentages map 100% to 150; negative chroma clamps to zero, and hue is
+powerless at chroma <= 0.0015. The parser converts polar coordinates through
+the existing Lab D50-to-sRGB path, clamps lightness and retains explicit
+diagnostics for other out-of-gamut results. Nineteen focused cases and all
+1,545 CSS tests pass. Debug/Release solution builds have zero warnings/errors;
+both full solution test runs pass all 16,811 tests. Formatting verification
+and `git diff --check` pass. Commit, push and CI are pending. No CSS-specific
+native smoke applies.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

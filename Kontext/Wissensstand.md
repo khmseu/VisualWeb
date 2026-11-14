@@ -8,7 +8,23 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
+**Aktueller Standards-Pass (2026-11-14; lokal validiert; Commit/CI offen):**
+Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
+Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
+Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
+Hue bei Chroma <= 0.0015 als powerless behandelt. LCH wird in Lab D50
+umgerechnet und durch die vorhandene Bradford-/sRGB-Pipeline verarbeitet.
+L-Endpunkte ergeben schwarz/weiss; andere Ergebnisse ausserhalb sRGB bleiben
+Diagnosen. 19 fokussierte Faelle und alle 1.545 CSS-Tests bestehen.
+Debug-/Release-Builds melden null Warnungen/Fehler; beide Volltestlaeufe
+bestehen mit je 16.811 Tests. Formatverifikation und `git diff --check`
+bestehen. CSS Color wird grob mit ~50% geschaetzt.
+Feature-Commit, Push und CI stehen noch aus. Pass 1 (`7d914ce`) ist gepusht;
+Linux development, Windows confinement und CodeQL sind erfolgreich. Siehe
+[KP-356](./Kontextprotokoll.md#kp-356---css-color-lab-function) und
+[KP-357](./Kontextprotokoll.md#kp-357---css-color-lch-selection).
+
+**Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-
 Transferkurve (Gamma 1,8 und linearer Toe), dem ProPhoto-zu-D50-XYZ-Matrixpfad
 und bestehender Bradford-D50-zu-D65-/sRGB-Gamutkonversion. Vierzehn
