@@ -478,7 +478,7 @@ internal static class CssProperties
         }
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
-        if (function == "color") { return ColorFunctionSrgb(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
+        if (function == "color") { return ColorFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
         if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
@@ -519,11 +519,11 @@ internal static class CssProperties
         return values;
     }
 
-    private static CssColor? ColorFunctionSrgb(IReadOnlyList<CssToken> args)
+    private static CssColor? ColorFunction(IReadOnlyList<CssToken> args)
     {
         if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident) { return null; }
         var space = CssText.Lower(args[0].Value);
-        if (space is not ("srgb" or "srgb-linear")) { return null; }
+        if (space is not ("srgb" or "srgb-linear" or "display-p3")) { return null; }
         var values = ColorFunctionComponents(args.Skip(1).ToList(), legacy: false);
         if (values is null) { return null; }
         var channels = new double[values.Count];
@@ -533,18 +533,53 @@ internal static class CssProperties
             channels[i] = values[i].Kind == CssTokenKind.Percentage ? component / 100 : component;
         }
         if (channels.Take(3).Any(channel => channel is < 0 or > 1)) { return null; }
-        if (space == "srgb-linear")
+        if (space == "display-p3")
+        {
+            if (DisplayP3ToSrgb(channels[0], channels[1], channels[2]) is not { } converted) { return null; }
+            channels[0] = converted.Red;
+            channels[1] = converted.Green;
+            channels[2] = converted.Blue;
+        }
+        else if (space == "srgb-linear")
         {
             for (var i = 0; i < 3; i++)
             {
-                channels[i] = channels[i] > 0.0031308
-                    ? 1.055 * Math.Pow(channels[i], 1 / 2.4) - 0.055
-                    : 12.92 * channels[i];
+                channels[i] = EncodeSrgbChannel(channels[i]);
             }
         }
         return new CssColor(SrgbChannel(channels[0]), SrgbChannel(channels[1]), SrgbChannel(channels[2]),
             values.Count == 4 ? SrgbChannel(channels[3]) : (byte)255);
     }
+
+    private static (double Red, double Green, double Blue)? DisplayP3ToSrgb(double red, double green, double blue)
+    {
+        var linearRed = LinearizeSrgbChannel(red);
+        var linearGreen = LinearizeSrgbChannel(green);
+        var linearBlue = LinearizeSrgbChannel(blue);
+
+        // Combined CSS Color 4 Display-P3 to XYZ D65 to linear sRGB matrices.
+        var srgbRed = 3685649d / 3008840 * linearRed - 676809d / 3008840 * linearGreen;
+        var srgbGreen = -5617931d / 133579120 * linearRed + 139197051d / 133579120 * linearGreen;
+        var srgbBlue = -1323971d / 67420360 * linearRed - 1514763d / 19262960 * linearGreen
+            + 148092003d / 134840720 * linearBlue;
+        if (!IsInSrgbGamut(srgbRed) || !IsInSrgbGamut(srgbGreen) || !IsInSrgbGamut(srgbBlue))
+        {
+            return null;
+        }
+
+        return (
+            EncodeSrgbChannel(Math.Clamp(srgbRed, 0, 1)),
+            EncodeSrgbChannel(Math.Clamp(srgbGreen, 0, 1)),
+            EncodeSrgbChannel(Math.Clamp(srgbBlue, 0, 1)));
+    }
+
+    private static double LinearizeSrgbChannel(double channel) =>
+        channel <= 0.04045 ? channel / 12.92 : Math.Pow((channel + 0.055) / 1.055, 2.4);
+
+    private static double EncodeSrgbChannel(double channel) =>
+        channel > 0.0031308 ? 1.055 * Math.Pow(channel, 1 / 2.4) - 0.055 : 12.92 * channel;
+
+    private static bool IsInSrgbGamut(double channel) => channel >= -1e-12 && channel <= 1 + 1e-12;
 
     private static CssColor? HslColor(IReadOnlyList<CssToken> values, bool legacy)
     {

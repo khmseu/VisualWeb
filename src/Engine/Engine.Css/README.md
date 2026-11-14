@@ -120,9 +120,12 @@ Color values include the complete 148-name opaque sRGB table in CSS Color 4
 ASCII case-insensitive; transparent/currentColor retain their separate behavior.
 The bounded `color(srgb ...)` and `color(srgb-linear ...)` forms accept in-gamut
 numeric/percentage channels, `none` as zero, and slash alpha; linear-light sRGB
-uses the CSS transfer function before quantization. Out-of-gamut channels,
-other color spaces and system colors remain unsupported. All supported colors
-use rounded 8-bit sRGB output.
+uses the CSS transfer function before quantization.
+`color(display-p3 ...)` accepts in-range numeric/percentage channels, `none`
+and slash alpha, converts through linear light to sRGB, and rejects converted
+colors outside the sRGB gamut rather than gamut-mapping. Other color spaces and
+system colors remain unsupported. All supported colors use rounded 8-bit sRGB
+output.
 The existing 8-bit sRGB parser accepts modern space-separated `rgb()`/`rgba()`
 with mixed numeric/percentage channels, optional slash alpha and `none` as
 zero for static output, alongside the existing comma-separated syntax.

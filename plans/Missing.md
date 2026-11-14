@@ -1860,6 +1860,30 @@ Release solution builds have zero warnings/errors; both full solution test runs
 pass all 16,687 tests; `dotnet format ... --verify-no-changes` and
 `git diff --check` pass. The code review approved the implementation. No
 CSS-specific native smoke applies.
+Commit `6f2cf3c` is pushed to `main`. Linux development
+([run 43612068563](https://github.com/khmseu/VisualWeb/actions/runs/43612068563)),
+Windows confinement
+([run 43612068566](https://github.com/khmseu/VisualWeb/actions/runs/43612068566))
+and CodeQL
+([run 43612068784](https://github.com/khmseu/VisualWeb/actions/runs/43612068784))
+all pass. Linux ARM64's initial run and first failed-job rerun hit the same
+stale-pixel assertion in the unchanged browser shell test; the next failed-job
+rerun passed on ARM64. Linux x64 and Trunk checks passed on the initial run;
+Windows x64/ARM64 and CodeQL passed.
+
+**Next CSS Color selection (2026-11-14):** CSS Color remains the highest
+actionable partial standard (~40% versus CSS Syntax at ~35%) after
+`color(srgb-linear ...)`. The bounded Display-P3 color space specifies an
+sRGB transfer curve and D65 conversion; this increment accepts source channels
+in [0,1] and only converts results within the existing sRGB gamut. Other
+out-of-gamut results remain diagnosed rather than gamut-mapped. The local
+`css-color` document was checked 2026-11-07 and is fresh.
+
+**Local validation:** 14 focused Display-P3 cases and all 1,435 CSS tests pass.
+Debug and Release solution builds have zero warnings/errors; both full
+solution suites pass all 16,701 tests; format verification passes. Code review
+approved the implementation. No CSS-specific native smoke applies.
+Commit, push and CI are pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
