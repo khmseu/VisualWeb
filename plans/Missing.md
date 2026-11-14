@@ -1945,7 +1945,29 @@ the 2.4 transfer exponent and the composed D65 conversion matrix, then reuses
 the shared sRGB gamut check and 8-bit encoding. Thirteen focused tests and all
 1,473 CSS tests pass. Debug/Release solution builds have zero warnings/errors;
 both full test suites pass all 16,739 tests. Format verification and
-`git diff --check` pass. The feature commit and push are next; remote CI has not
+`git diff --check` pass. Feature commit `26f354f` is pushed. Linux development
+([run 43629055052](https://github.com/khmseu/VisualWeb/actions/runs/43629055052)),
+Windows confinement
+([run 43629055107](https://github.com/khmseu/VisualWeb/actions/runs/43629055107))
+and CodeQL
+([run 43629054825](https://github.com/khmseu/VisualWeb/actions/runs/43629054825))
+all pass. Pass 7 is complete; three of the ten requested increments remain.
+
+**Pass 8 selection (2026-11-14):** CSS Color remains the highest actionable
+partial standard (~40%). The next increment adds `color(xyz-d65 ...)` and its
+`color(xyz ...)` alias from CSS Color 4 section 10.9. Unlike RGB profiles,
+XYZ channels are not range-clamped; D65 XYZ converts directly to linear sRGB,
+and results outside the supported sRGB output gamut remain diagnostics.
+`xyz-d50` and gamut mapping remain unsupported. The local CSS Color cache
+checked 2026-11-07 is fresh.
+
+**Pass 8 implementation (locally validated):** `color(xyz-d65 ...)` and
+`color(xyz ...)` use the CSS Color 4 D65 XYZ-to-linear-sRGB matrix. Finite
+numeric/percentage channels, including values outside [0,1], are preserved
+through conversion; only out-of-sRGB results are diagnosed. Thirteen focused
+tests and all 1,486 CSS tests pass. Debug/Release solution builds have zero
+warnings/errors; both full suites pass all 16,752 tests. Format verification
+and `git diff --check` pass. Commit and push are next; remote CI has not
 started.
 
 Within the remaining priorities, favor handling simple websites end to end

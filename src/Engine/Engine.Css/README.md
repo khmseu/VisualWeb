@@ -132,8 +132,11 @@ gamut-mapping.
 exponent and D65 conversion matrices, and rejects converted colors outside the
 sRGB gamut. `color(rec2020 ...)` accepts the same bounded channels, applies its
 2.4 transfer exponent and D65 conversion matrices, and also rejects converted
-colors outside the sRGB gamut. Other color spaces and system colors remain
-unsupported. All supported colors use rounded 8-bit sRGB output.
+colors outside the sRGB gamut. `color(xyz-d65 ...)` and its `color(xyz ...)`
+alias accept finite numeric/percentage components without clamping their range,
+convert directly to linear sRGB, and reject results outside its gamut. D50 XYZ,
+other color spaces and system colors remain unsupported. All supported colors
+use rounded 8-bit sRGB output.
 The existing 8-bit sRGB parser accepts modern space-separated `rgb()`/`rgba()`
 with mixed numeric/percentage channels, optional slash alpha and `none` as
 zero for static output, alongside the existing comma-separated syntax.

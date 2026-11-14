@@ -545,6 +545,12 @@ spaces, color interpolation and higher-precision management remain unsupported.
 slash alpha. It applies the Rec. 2020 transfer curve and D65 conversion matrices,
 then accepts only results inside the sRGB gamut; out-of-gamut results are
 diagnosed rather than gamut-mapped.
+[`color(xyz-d65 ...)`](https://www.w3.org/TR/css-color-4/#predefined-xyz) and
+its `color(xyz ...)` alias (`css-color`) accept finite numeric/percentage
+components without clamping their range, plus `none` and optional slash alpha.
+They convert D65 XYZ directly to linear sRGB and diagnose results outside the
+sRGB gamut. The D50 XYZ space, color interpolation and higher-precision
+management remain unsupported.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.
