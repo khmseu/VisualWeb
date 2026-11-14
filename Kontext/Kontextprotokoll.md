@@ -8946,3 +8946,21 @@ ist kein Endergebnis.
 
 **Status:** Implementiert und lokal validiert. Commit, Push und CI stehen aus.
 Windows-/ARM-Nativevalidierung ist durch diesen Linux-Lauf nicht belegt.
+
+### KP-334 - Commit, Push und CI bestaetigt
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Git- und CI-Nachweis fuer KP-333.
+- Quelle: Commit `1bcdf59f984f83f2ea906cc8d31967dd78487397`; GitHub Actions
+  Runs 43542534727, 43542534134 und 43542533841.
+
+**Belegt:** Der Parser-Script-Inkrement wurde als
+`feat(scripting): execute parser-blocking classic scripts` committed und nach
+`origin/main` gepusht. Linux development, Windows confinement (Windows x64 und
+arm64) sowie CodeQL liefen fuer diesen Commit erfolgreich. Beide Windows-Jobs
+bestanden ausserdem Build, Solution-Tests, V8Smoke, PlatformSmoke und Browser-
+Smoke-Pruefungen einschliesslich des confined Opt-in-Scriptlaufs.
+
+**Status:** KP-333 ist implementiert, lokal validiert, committed, gepusht und
+durch alle drei CI-Workflows erfolgreich geprueft.

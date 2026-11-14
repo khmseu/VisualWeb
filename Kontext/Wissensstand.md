@@ -17,8 +17,11 @@ Variante rendert auf einem stabilen eigenen Thread. CSP, HTTP(S)-Begrenzung,
 Cookies-off, MIME-/Quellenlimits, Deadlines und Transaktionsverhalten bleiben
 aktiv. Module, async/defer, Render-Blocking-Stylesheet-Verhalten und vollstaendige
 HTML-Scriptvorbereitung bleiben unsupported. Build (0 Warnungen/Fehler),
-alle 16.613 Solution-Tests, Format- und Whitespacepruefung bestehen lokal.
-Commit/Push/CI stehen noch aus; siehe [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert).
+alle 16.613 Solution-Tests, Format- und Whitespacepruefung sowie lokale und
+required-confined V8Smoke-Laeufe bestehen. Commit `1bcdf59` ist gepusht; Linux
+development, Windows confinement (x64 und arm64) und CodeQL sind erfolgreich.
+Siehe [KP-333](./Kontextprotokoll.md#kp-333---parser-blockierende-klassiker-implementiert-und-validiert)
+und [KP-334](./Kontextprotokoll.md#kp-334---commit-push-und-ci-bestaetigt).
 
 Am 2026-11-12 wurde [docs/standards.md](../docs/standards.md) auf Wunsch des
 Nutzers in den beiden Standards-Supporttabellen von Statusangaben auf
