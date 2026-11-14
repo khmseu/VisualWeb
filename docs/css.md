@@ -513,6 +513,12 @@ remain valid; a sum of at least 100 produces gray at the white/(white+black)
 ratio. Comma syntax is invalid. HWB, like the other supported functions,
 converts to clamped, rounded 8-bit sRGB; interpolation, missing-component
 preservation and higher-precision color management remain unsupported.
+[`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
+(`css-color`) accepts in-gamut numeric or percentage channels, with `none`
+mapped to zero and optional slash alpha. Out-of-gamut channels and other color
+spaces are diagnosed rather than gamut-mapped or approximated; alpha is clamped
+to the supported 8-bit range. The result uses the same rounded 8-bit sRGB
+representation, without color interpolation or higher-precision management.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.

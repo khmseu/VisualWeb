@@ -1825,6 +1825,22 @@ needed. CSS tests (1,387), Debug and Release solution builds, Debug and Release
 full-suite runs (16,653 each), and format verification pass. No CSS-specific
 native smoke applies.
 
+**Next standards selection (2026-11-14):** Rechecking the remaining gaps after
+the Unicode-range tokenizer extension found no comparably bounded CSS Syntax
+increment in the tracker: its remaining at-rule semantics are broad and span
+other feature specifications. CSS Color remains higher at ~40% versus CSS
+Syntax at ~35%, and its documented unsupported `color()` syntax has a bounded
+in-gamut `color(srgb ...)` subset. This pass adds that subset with explicit
+diagnostics for unsupported spaces and out-of-gamut channels. The local
+`css-color` source was checked 2026-11-07 in the manifest and was fresh; no
+refresh was needed. Validation and remaining gaps are recorded after the
+implementation below.
+
+**Local validation:** The CSS test project passes (1,404 tests); Debug and
+Release solution builds have zero warnings/errors; both full solution test runs
+pass all 16,670 tests; `dotnet format ... --verify-no-changes` and
+`git diff --check` pass. No CSS-specific native smoke applies.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

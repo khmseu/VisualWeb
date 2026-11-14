@@ -118,7 +118,10 @@ Depends on Engine.Dom only; no native, networking or script dependency.
 Color values include the complete 148-name opaque sRGB table in CSS Color 4
 (`css-color`), including gray/grey and cyan/magenta aliases. Names remain
 ASCII case-insensitive; transparent/currentColor retain their separate behavior.
-System colors and color spaces beyond the bounded RGB, HSL and HWB forms remain unsupported.
+The bounded `color(srgb ...)` form also accepts in-gamut numeric/percentage
+channels, `none` as zero, and slash alpha; out-of-gamut channels, other color
+spaces and system colors remain unsupported. All supported colors use rounded
+8-bit sRGB output.
 The existing 8-bit sRGB parser accepts modern space-separated `rgb()`/`rgba()`
 with mixed numeric/percentage channels, optional slash alpha and `none` as
 zero for static output, alongside the existing comma-separated syntax.

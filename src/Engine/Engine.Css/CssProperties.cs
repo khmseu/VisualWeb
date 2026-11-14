@@ -478,6 +478,7 @@ internal static class CssProperties
         }
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
+        if (function == "color") { return SrgbColor(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
         if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
@@ -516,6 +517,23 @@ internal static class CssProperties
         var values = args.Take(3).ToList();
         if (args.Count == 5) { values.Add(args[4]); }
         return values;
+    }
+
+    private static CssColor? SrgbColor(IReadOnlyList<CssToken> args)
+    {
+        if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident
+            || CssText.Lower(args[0].Value) != "srgb") { return null; }
+        var values = ColorFunctionComponents(args.Skip(1).ToList(), legacy: false);
+        if (values is null) { return null; }
+        var channels = new double[values.Count];
+        for (var i = 0; i < values.Count; i++)
+        {
+            if (ColorComponent(values[i], allowNone: true) is not { } component) { return null; }
+            channels[i] = values[i].Kind == CssTokenKind.Percentage ? component / 100 : component;
+        }
+        if (channels.Take(3).Any(channel => channel is < 0 or > 1)) { return null; }
+        return new CssColor(SrgbChannel(channels[0]), SrgbChannel(channels[1]), SrgbChannel(channels[2]),
+            values.Count == 4 ? SrgbChannel(channels[3]) : (byte)255);
     }
 
     private static CssColor? HslColor(IReadOnlyList<CssToken> values, bool legacy)
