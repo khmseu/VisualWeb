@@ -136,7 +136,9 @@ colors outside the sRGB gamut. `color(xyz-d65 ...)` and its `color(xyz ...)`
 alias accept finite numeric/percentage components without clamping their range
 and convert directly to linear sRGB. `color(xyz-d50 ...)` accepts the same
 unclamped inputs and applies Bradford D50-to-D65 adaptation before converting
-to linear sRGB. All XYZ forms reject results outside the sRGB gamut. Other
+to linear sRGB. `color(prophoto-rgb ...)` accepts bounded channels, applies its
+gamma-1.8 transfer curve and D50 conversion matrix, then uses the same Bradford
+adaptation. XYZ and ProPhoto results outside the sRGB gamut are rejected. Other
 color spaces and system colors remain unsupported. All supported colors use
 rounded 8-bit sRGB output.
 The existing 8-bit sRGB parser accepts modern space-separated `rgb()`/`rgba()`

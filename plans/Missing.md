@@ -1993,7 +1993,35 @@ parser. Twelve focused tests cover the CSS example and white, neutral values,
 alpha, syntax/range failures, gamut rejection and atomic shorthands. All 1,497
 CSS tests pass; Debug/Release solution builds have zero warnings/errors; both
 full suites pass all 16,763 tests. Format verification and `git diff --check`
-pass. The feature commit and remote CI are pending.
+pass. Feature commit `10c7b37` is pushed. Linux development
+([run 43637147140](https://github.com/khmseu/VisualWeb/actions/runs/43637147140))
+and CodeQL
+([run 43637147000](https://github.com/khmseu/VisualWeb/actions/runs/43637147000))
+pass. Windows x64 and ARM64
+([run 43637147165](https://github.com/khmseu/VisualWeb/actions/runs/43637147165))
+also pass after rerunning the failed ARM64 job; its initial failure was an
+unmodified external-script test exceeding its V8 execution deadline. Pass 9 is
+complete; one of the ten requested increments remains.
+
+**Pass 10 selection (2026-11-14):** CSS Color remains the highest actionable
+partial standard (~40%). The final increment adds bounded `color(prophoto-rgb
+...)` support from CSS Color 4 section 10.7. It applies the specified gamma-1.8
+transfer curve with its linear toe, converts through the ProPhoto-to-D50-XYZ
+matrix and uses the existing Bradford D50-to-D65 and XYZ-to-sRGB path. Results
+outside the supported sRGB output gamut remain diagnostics. The local CSS Color
+cache checked 2026-11-07 is fresh; gamut mapping and high-precision color
+management remain out of scope.
+
+**Pass 10 implementation (locally validated):** `color(prophoto-rgb ...)`
+accepts bounded numeric/percentage channels, `none` and slash alpha. It uses
+the CSS Color 4 gamma-1.8 transfer curve with its linear toe, converts through
+the ProPhoto-to-D50-XYZ matrix and reuses the bounded Bradford/D65 XYZ-to-sRGB
+path. Out-of-sRGB results remain diagnostics. Fourteen focused tests cover the
+standard color example, the linear toe, neutral channels, alpha, syntax/range
+failures, gamut rejection and atomic shorthands. All 1,511 CSS tests pass;
+Debug/Release solution builds have zero warnings/errors; both full suites pass
+all 16,777 tests. Format verification and `git diff --check` pass. This is the
+tenth and final requested increment; feature commit and remote CI are pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

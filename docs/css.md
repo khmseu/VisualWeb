@@ -545,6 +545,11 @@ spaces, color interpolation and higher-precision management remain unsupported.
 slash alpha. It applies the Rec. 2020 transfer curve and D65 conversion matrices,
 then accepts only results inside the sRGB gamut; out-of-gamut results are
 diagnosed rather than gamut-mapped.
+[`color(prophoto-rgb ...)`](https://www.w3.org/TR/css-color-4/#predefined-prophoto-rgb)
+(`css-color`) accepts bounded numeric/percentage channels, `none` as zero and
+optional slash alpha. It applies the ProPhoto RGB transfer curve and D50 matrix,
+then CSS Color 4's Bradford D50-to-D65 adaptation before conversion to linear
+sRGB. Results outside the sRGB gamut are diagnosed rather than gamut-mapped.
 [`color(xyz-d50 ...)`](https://www.w3.org/TR/css-color-4/#predefined-xyz)
 (`css-color`) accepts finite numeric/percentage components without clamping
 their range, plus `none` and optional slash alpha. It applies CSS Color 4's

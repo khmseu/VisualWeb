@@ -523,9 +523,10 @@ internal static class CssProperties
     {
         if (args.Count == 0 || args[0].Kind != CssTokenKind.Ident) { return null; }
         var space = CssText.Lower(args[0].Value);
+        var prophotoRgb = space == "prophoto-rgb";
         var xyzD50 = space == "xyz-d50";
         var xyzD65 = space is "xyz" or "xyz-d65";
-        if (!xyzD50 && !xyzD65
+        if (!prophotoRgb && !xyzD50 && !xyzD65
             && space is not ("srgb" or "srgb-linear" or "display-p3" or "display-p3-linear" or "a98-rgb" or "rec2020"))
         {
             return null;
@@ -549,6 +550,13 @@ internal static class CssProperties
         else if (xyzD65)
         {
             if (XyzD65ToSrgb(channels[0], channels[1], channels[2]) is not { } converted) { return null; }
+            channels[0] = converted.Red;
+            channels[1] = converted.Green;
+            channels[2] = converted.Blue;
+        }
+        else if (prophotoRgb)
+        {
+            if (ProPhotoRgbToSrgb(channels[0], channels[1], channels[2]) is not { } converted) { return null; }
             channels[0] = converted.Red;
             channels[1] = converted.Green;
             channels[2] = converted.Blue;
@@ -613,6 +621,24 @@ internal static class CssProperties
         var srgbBlue = -11512411d / 268173353 * linearGreen + 279685764d / 268173353 * linearBlue;
         return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue);
     }
+
+    private static (double Red, double Green, double Blue)? ProPhotoRgbToSrgb(double red, double green, double blue)
+    {
+        var linearRed = LinearizeProPhotoChannel(red);
+        var linearGreen = LinearizeProPhotoChannel(green);
+        var linearBlue = LinearizeProPhotoChannel(blue);
+
+        // CSS Color 4 ProPhoto RGB to XYZ D50 matrix.
+        var xyzX = 0.79776664490064230 * linearRed + 0.13518129740053308 * linearGreen
+            + 0.03134773412839220 * linearBlue;
+        var xyzY = 0.28807482881940130 * linearRed + 0.71183523424187300 * linearGreen
+            + 0.00008993693872564 * linearBlue;
+        var xyzZ = 0.82510460251046020 * linearBlue;
+        return XyzD50ToSrgb(xyzX, xyzY, xyzZ);
+    }
+
+    private static double LinearizeProPhotoChannel(double channel) =>
+        channel <= 1d / 32 ? channel / 16 : Math.Pow(channel, 1.8);
 
     private static (double Red, double Green, double Blue)? Rec2020ToSrgb(double red, double green, double blue)
     {
