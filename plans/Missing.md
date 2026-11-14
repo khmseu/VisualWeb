@@ -2063,8 +2063,30 @@ the existing Lab D50-to-sRGB path, clamps lightness and retains explicit
 diagnostics for other out-of-gamut results. Nineteen focused cases and all
 1,545 CSS tests pass. Debug/Release solution builds have zero warnings/errors;
 both full solution test runs pass all 16,811 tests. Formatting verification
-and `git diff --check` pass. Commit, push and CI are pending. No CSS-specific
-native smoke applies.
+and `git diff --check` pass. Commit `ef8a24d` is pushed. Linux development
+([run 43652149635](https://github.com/khmseu/VisualWeb/actions/runs/43652149635))
+and CodeQL
+([run 43652149331](https://github.com/khmseu/VisualWeb/actions/runs/43652149331))
+pass. Windows confinement
+([run 43652149569](https://github.com/khmseu/VisualWeb/actions/runs/43652149569))
+also passes. No CSS-specific native smoke applies.
+
+**Pass 3 standards selection (2026-11-15):** ECMAScript remains the highest
+estimate (~90%), but its remaining tracked gaps are outside approved phase
+11w. CSS Color (~50%) remains the highest actionable partial standard, ahead
+of CSS Syntax (~35%). The CSS Color 4 `oklab()` function is absent from the
+parser and CSS tests; the local cache is fresh (`checkedAt` 2026-11-07). This
+selection adds only bounded `oklab()` conversion: clamp lightness, map percent
+a/b from -100%..100% to -0.4..0.4, map `none` to zero, accept slash alpha,
+convert through Oklab D65 to XYZ D65 and existing sRGB conversion, and diagnose
+non-endpoint out-of-gamut results. `oklch()` remains a separate gap.
+
+**Pass 3 implementation and local validation:** The parser supports the bounded
+`oklab()` subset described above, including endpoint black/white mapping and
+atomic color shorthands. Eighteen focused cases and all 1,563 CSS tests pass.
+Debug/Release solution builds have zero warnings/errors; both full solution
+test runs pass all 16,829 tests. Formatting verification and `git diff --check`
+pass. Commit and CI status are pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

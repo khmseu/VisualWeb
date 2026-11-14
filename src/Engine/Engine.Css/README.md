@@ -163,6 +163,13 @@ hue angles, `none` components and slash alpha. Chroma percentages map 100% to
 0.0015. Polar values convert through CIE Lab D50 into the existing sRGB path;
 lightness clamps and endpoint values map to black/white. Other out-of-gamut
 results remain unsupported.
+The bounded `oklab()` function accepts numeric/percentage lightness and a/b
+components, `none` and optional slash alpha. Lightness percentages map 0..100%
+to 0..1 and clamp to that range; a/b percentages map -100%..100% to -0.4..0.4.
+Endpoint lightness maps to black/white; other colors convert through Oklab D65
+and XYZ D65 to sRGB, with out-of-gamut results remaining unsupported.
+Interpolation, missing-component preservation and higher-precision color
+management remain unsupported.
 Saturation above 100 and lightness outside 0..100 remain explicit diagnostics.
 Supported lengths also include the CSS absolute units `in`, `cm`, `mm`, `Q`,
 `pt` and `pc`, converted to CSS pixels for all existing length-valued

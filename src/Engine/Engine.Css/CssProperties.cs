@@ -479,7 +479,7 @@ internal static class CssProperties
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
         if (function == "color") { return ColorFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
-        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch")) { return null; }
+        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
         var values = ColorFunctionComponents(args, legacy);
@@ -488,6 +488,7 @@ internal static class CssProperties
         if (function == "hwb") { return legacy ? null : HwbColor(values); }
         if (function == "lab") { return legacy ? null : LabColor(values); }
         if (function == "lch") { return legacy ? null : LchColor(values); }
+        if (function == "oklab") { return legacy ? null : OklabColor(values); }
         if (legacy)
         {
             if (values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
@@ -784,6 +785,47 @@ internal static class CssProperties
             ? alpha.Value / 100 : alpha.Value;
         var radians = (chroma <= 0.0015 ? 0 : hue) * Math.PI / 180;
         return LabToSrgb(lightness, chroma * Math.Cos(radians), chroma * Math.Sin(radians), alphaValue);
+    }
+
+    private static CssColor? OklabColor(IReadOnlyList<CssToken> values)
+    {
+        if (values.Any(token => token.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(token))
+            || ColorComponent(values[0], allowNone: true) is not { } lightness
+            || ColorComponent(values[1], allowNone: true) is not { } a
+            || ColorComponent(values[2], allowNone: true) is not { } b) { return null; }
+
+        if (values[0].Kind == CssTokenKind.Percentage) { lightness /= 100; }
+        if (values[1].Kind == CssTokenKind.Percentage) { a *= 0.004; }
+        if (values[2].Kind == CssTokenKind.Percentage) { b *= 0.004; }
+        var alpha = values.Count == 4 ? ColorComponent(values[3], allowNone: true) : 1;
+        if (alpha is null) { return null; }
+        var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage
+            ? alpha.Value / 100 : alpha.Value;
+
+        return OklabToSrgb(lightness, a, b, alphaValue);
+    }
+
+    private static CssColor? OklabToSrgb(double lightness, double a, double b, double alphaValue)
+    {
+        lightness = Math.Clamp(lightness, 0, 1);
+        if (lightness == 0) { return new CssColor(0, 0, 0, SrgbChannel(alphaValue)); }
+        if (lightness == 1) { return new CssColor(255, 255, 255, SrgbChannel(alphaValue)); }
+
+        // CSS Color 4 Oklab to XYZ D65 transform.
+        var l = lightness + 0.3963377773761749 * a + 0.2158037573099136 * b;
+        var m = lightness - 0.1055613458156586 * a - 0.0638541728258133 * b;
+        var s = lightness - 0.0894841775298119 * a - 1.2914855480194092 * b;
+        l *= l * l;
+        m *= m * m;
+        s *= s * s;
+
+        var x = 1.2268798758459243 * l - 0.5578149944602171 * m + 0.2813910456659647 * s;
+        var y = -0.0405757452148008 * l + 1.1122868032803170 * m - 0.0717110580655164 * s;
+        var z = -0.0763729366746601 * l - 0.4214933324022432 * m + 1.5869240198367816 * s;
+        if (XyzD65ToSrgb(x, y, z) is not { } converted) { return null; }
+
+        return new CssColor(SrgbChannel(converted.Red), SrgbChannel(converted.Green), SrgbChannel(converted.Blue),
+            SrgbChannel(alphaValue));
     }
 
     private static CssColor? LabToSrgb(double lightness, double a, double b, double alphaValue)

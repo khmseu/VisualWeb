@@ -4,11 +4,11 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-14, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-15, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-14; lokal validiert; Commit/CI offen):**
+**Aktueller Standards-Pass (2026-11-15; lokal validiert, Commit/Push/CI ausstehend):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -18,11 +18,21 @@ L-Endpunkte ergeben schwarz/weiss; andere Ergebnisse ausserhalb sRGB bleiben
 Diagnosen. 19 fokussierte Faelle und alle 1.545 CSS-Tests bestehen.
 Debug-/Release-Builds melden null Warnungen/Fehler; beide Volltestlaeufe
 bestehen mit je 16.811 Tests. Formatverifikation und `git diff --check`
-bestehen. CSS Color wird grob mit ~50% geschaetzt.
-Feature-Commit, Push und CI stehen noch aus. Pass 1 (`7d914ce`) ist gepusht;
-Linux development, Windows confinement und CodeQL sind erfolgreich. Siehe
-[KP-356](./Kontextprotokoll.md#kp-356---css-color-lab-function) und
-[KP-357](./Kontextprotokoll.md#kp-357---css-color-lch-selection).
+bestehen. CSS Color wird grob mit ~50% geschaetzt. Commit `ef8a24d` ist auf
+`main` gepusht. Linux development (Run 43652149635), Windows confinement
+(Run 43652149569) und CodeQL (Run 43652149331) sind erfolgreich. Pass 1
+(`7d914ce`) hatte ebenfalls gruenes CI. Pass 3 implementiert bounded
+CSS-Color-4-`oklab()`. CSS Color (~55%) bleibt die hoechste actionable
+Teilspezifikation nach dem ausserhalb Phase 11w blockierten ECMAScript (~90%),
+vor CSS Syntax (~35%). 18 fokussierte Faelle, alle 1.563 CSS-Tests,
+Debug-/Release-Builds ohne Warnungen/Fehler und beide Volltests mit je 16.829
+Tests bestehen. Formatverifikation und `git diff --check` bestehen. Commit,
+Push und CI sind ausstehend; nach Pass 3 bleiben sieben der zehn gewuenschten
+Passes. Den naechsten Schritt nach dem Push erneut gegen den Tracker
+priorisieren. Siehe
+[KP-356](./Kontextprotokoll.md#kp-356---css-color-lab-function),
+[KP-357](./Kontextprotokoll.md#kp-357---css-color-lch-selection) und
+[KP-358](./Kontextprotokoll.md#kp-358---css-color-oklab-selection).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

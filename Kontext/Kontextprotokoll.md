@@ -9785,8 +9785,8 @@ gepusht. Linux development (Run 43648220375), Windows confinement
 
 ### KP-357 - CSS Color LCH selection
 
-- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
-- Ereignisdatum: 2026-11-14.
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14 bis 2026-11-15.
 - Quelle: erneute Prioritaetspruefung in der aktuellen Sitzung nach CI-Abschluss
   von Commit `7d914ce`.
 - Bezug: Fortsetzung nach KP-356; [Missing](../plans/Missing.md),
@@ -9820,5 +9820,47 @@ Ergebnisse bleiben Diagnosen. Keine allgemeine Gamutabbildung.
 **Lokale Validierung:** Der gezielte LCH-Satz besteht mit 19 Faellen; alle
 1.545 CSS-Tests bestehen. Debug-/Release-Solution-Builds haben null
 Warnungen/Fehler; beide Volltests bestehen mit 16.811 Faellen. Die
-Formatverifikation und `git diff --check` bestehen. Feature-Commit, Push und
-CI sind offen. Kein CSS-spezifischer nativer Smoke-Test.
+Formatverifikation und `git diff --check` bestehen. Commit `ef8a24d` ist auf
+`main` gepusht. Linux development (Run 43652149635), Windows confinement
+(Run 43652149569) und CodeQL (Run 43652149331) sind erfolgreich. Kein
+CSS-spezifischer nativer Smoke-Test.
+
+### KP-358 - CSS Color Oklab selection
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quelle: erneute Prioritaetspruefung nach den erfolgreichen CI-Laeufen fuer
+  Commit `ef8a24d`.
+- Bezug: Fortsetzung nach KP-357; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md),
+  [Engine.Css-README](../src/Engine/Engine.Css/README.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#funcdef-oklab) und
+  [Manifest](../specs/manifest.json).
+
+**Belegt:** Linux development (Run 43652149635), Windows confinement
+(Run 43652149569) und CodeQL (Run 43652149331) fuer `ef8a24d` sind erfolgreich.
+`standards.md` schaetzt CSS Color mit ~50% hoeher als CSS Syntax mit ~35%;
+ECMAScript liegt bei ~90%, aber die verbliebenen Missing-Punkte sind ausserhalb
+der genehmigten Phase 11w. Das Manifest nennt fuer CSS Color
+`checkedAt` 2026-11-07; die Quelle ist am Ereignistag weniger als 30 Tage alt.
+Die Suche im CSS-Parser und CSS-Tests findet kein `oklab()`.
+
+**Auswahl als Ableitung:** Ein isolierter statischer `oklab()`-Pfad ist das
+naechste bounded CSS-Color-Inkrement. Umgerechnet wird via Oklab D65 zu XYZ
+D65 und die vorhandene XYZ-D65-/sRGB-Pipeline; Prozentachsen, Lightness-
+Clamping, `none`, Alpha und Gamutdiagnostik bleiben auf diese Funktion
+beschraenkt. `oklch()`, Gamut-Mapping, Interpolation und hoehere Praezision
+bleiben offen.
+
+**Umsetzung:** `oklab()` parst numerische/prozentuale Lightness und a/b-Werte,
+`none` und Slash-Alpha. Lightness wird auf 0..1 geklemmt; a/b-Prozentwerte
+werden mit 0.004 skaliert. Die inverse Oklab-Matrix liefert XYZ D65, danach
+folgt die bestehende XYZ-D65-zu-sRGB- und Gamutpruefung. Endpunkte werden
+schwarz/weiss; andere Out-of-Gamut-Werte liefern wie vorgesehen Diagnosen.
+Color-, Background- und Border-Shorthands wenden gueltige Werte atomar an.
+
+**Lokale Validierung:** 18 fokussierte Oklab-Faelle und alle 1.563 CSS-Tests
+bestehen. Debug-/Release-Solution-Builds: null Warnungen/Fehler. Beide
+Volltestlaeufe bestehen mit je 16.829 Tests. Formatverifikation und
+`git diff --check` bestehen. Commit, Push und CI stehen noch aus.

@@ -530,6 +530,14 @@ Lightness clamps to 0..100 and its endpoints map to black/white. Other
 out-of-sRGB results remain diagnostics rather than receiving general gamut
 mapping. Interpolation, missing-component preservation and higher-precision
 color management remain unsupported.
+[`oklab()`](https://www.w3.org/TR/css-color-4/#funcdef-oklab) (`css-color`)
+accepts numeric or percentage lightness and a/b components, `none` and optional
+slash alpha. Lightness percentages map 0..100% to 0..1 and clamp to that range;
+a/b percentages map -100%..100% to -0.4..0.4. Endpoint lightness maps to
+black/white. Other colors convert through Oklab D65 and XYZ D65 to sRGB; results
+outside the sRGB gamut remain diagnostics rather than receiving general gamut
+mapping. Interpolation, missing-component preservation and higher-precision
+color management remain unsupported.
 [`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
 (`css-color`) accepts in-gamut numeric or percentage channels, with `none`
 mapped to zero and optional slash alpha. Out-of-gamut channels and other color
