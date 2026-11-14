@@ -21,12 +21,16 @@ jobs:
           - runner: windows-11-arm
             architecture: arm64
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
           dotnet-version: 10.0.401
           architecture: ${{ matrix.architecture }}
       - run: dotnet build VisualWeb.slnx --configuration Release
+      - name: Run fast tests
+        run: >-
+          dotnet test VisualWeb.slnx --configuration Release --no-build
+          --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
       - name: Repeat CPU-pressure renderer recovery
         shell: pwsh
         run: |
@@ -35,7 +39,6 @@ jobs:
             dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer" --logger "console;verbosity=normal"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-      - run: dotnet test VisualWeb.slnx --configuration Release --no-build
       - run: dotnet run --project tools/V8Smoke --configuration Release --no-build -- --require-sandbox --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- windows
       # The single-process opt-out is only for trusted offline development smoke.
@@ -43,3 +46,7 @@ jobs:
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf
+      - name: Run slow browser tests
+        run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
+      - name: Run slow scripting tests
+        run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build
