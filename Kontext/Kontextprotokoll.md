@@ -9098,3 +9098,24 @@ VisualWeb.Browser 1.341 Tests, Solution-Build ohne Warnungen/Fehler,
 Solution-Volltest 16.626 Tests, Formatverifikation, `git diff --check` sowie
 V8Smoke lokal und unter required-confined Bedingungen bestanden. Commit, Push
 und CI stehen noch aus; die Prozent-Schaetzung fuer HTML bleibt unveraendert.
+
+### KP-340 - Commit, Push und CI bestaetigt
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Git- und CI-Verifikationscheckpoint.
+- Quellen: Commit `3a341bd546db0b4fa914e04c7a37fa40acd9a322`,
+  Push nach `origin/main`, GitHub Actions Runs
+  [Linux development 43576201110](https://github.com/khmseu/VisualWeb/actions/runs/43576201110),
+  [Windows confinement 43576201225](https://github.com/khmseu/VisualWeb/actions/runs/43576201225)
+  und [CodeQL 43576200682](https://github.com/khmseu/VisualWeb/actions/runs/43576200682).
+
+**Belegt:** Commit `3a341bd` ist auf `main` gepusht. Windows x64/arm64 und
+CodeQL bestanden. Der erste Linux-Lauf bestand auf x64, aber ARM64 meldete
+`ShellTests.CloseActiveTabRepaintsRemainingTabRatherThanLeavingStalePixels`
+bei einem Pixelvergleich; dieser Test und Browser-Shell-Code waren von diesem
+Diff nicht geaendert. Ein Rerun des Linux-Workflows auf demselben Commit
+bestand auf x64 und ARM64. Der Linux-Baseline-Lauf fuer Commit
+`a3611e0` hatte zuvor ebenfalls beide Architekturen bestanden. Kein Code wurde
+zur Behebung dieser einmaligen Abweichung geaendert; sie wird als nicht
+wiederholter CI-Fehler dokumentiert, nicht als reproduzierbarer Produktfehler.
