@@ -9143,3 +9143,87 @@ deaktivierten `SharedArrayBuffer`/`Atomics`. Die Einordnung ist eine grobe
 heuristische Neubewertung, keine vollstaendige ECMA-262-Anforderungspruefung.
 `Missing.md` wurde angepasst, damit die aktuelle Prozent-Rangfolge konsistent
 bleibt. Es erfolgte keine Codeaenderung oder Laufzeitvalidierung.
+
+### KP-342 - Reproducible standards freshness and validation guidance
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerreview und Aktualisierung des Implementierungs-Workflows.
+- Quelle: Nutzerhinweise zur Unzuverlaessigkeit von Cache-Datei-mtime und zur
+  Unterbestimmtheit von Tests/Validierung; [SpecManifest.cs](../tools/SpecCache/SpecManifest.cs#L50),
+  [tests README](../tests/README.md), [AGENTS.md](../AGENTS.md#validation-commands-repository-root),
+  [Linux CI](../.github/workflows/linux-development.yml) und
+  [Windows CI](../.github/workflows/windows-confinement.yml).
+
+**Nutzerangabe:** Die Dateisystem-mtime ist kein reproduzierbarer Ersatz fuer
+das im Manifest erfasste Quellenalter. Die Test- und Folgevalidierung soll
+konkrete Projekt-/Repository-Kommandos und CI-Erwartungen nennen.
+
+**Umsetzung:** Die Prioritaets-Skill-Anweisung verwendet jetzt ausschliesslich
+`checkedAt` mit Fallback auf `fetchedAt`; fehlende Zeitstempel gelten als
+veraltet und die Cache-Datei-mtime wird nicht verwendet. Ein fehlender
+Manifesteintrag muss vor dem Refresh fuer die offizielle Quelle ergaenzt werden.
+Die Validierung verweist auf Testprojekt-Kommandos und den verpflichtenden
+Repository-Baseline-Block in `AGENTS.md`, nennt Release-Build/-Solutiontests
+der CI und verweist fuer plattformspezifische Smokes auf die Workflows.
+
+**Belegt:** Der aktive PR-Abruf ergab keinen aktiven Pull Request fuer den
+ausgecheckten Branch; die Hinweise wurden deshalb als direkte
+Arbeitsbereichsaenderung umgesetzt, ohne Review-Threads aufzuloesen. Es handelt
+sich um Dokumentation, nicht um Code- oder Standardsverhaltensaenderungen.
+
+**Validierung:** `git diff --check` und die Pruefung der relativen
+Dokumentations-/Workflow-Links bestanden. Tests wurden fuer diese
+dokumentationsbasierte Aenderung nicht ausgefuehrt.
+
+### KP-343 - Pin Trunk plugins to pinact v5 fix
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerauftrag zur Werkzeugkonfiguration.
+- Quelle: Nutzerbitte, den Plugin-Stand auf den Fix aus
+  [trunk-io/plugins#1180](https://github.com/trunk-io/plugins/pull/1180) zu pinnen;
+  [lokale Trunk-Konfiguration](../.trunk/trunk.yaml).
+
+**Nutzerangabe:** Die Plugin-Quelle soll den Pinact-v5-Fix aus PR #1180 erhalten.
+
+**Belegt:** PR #1180 stand bei Abruf auf `OPEN`, ohne Merge-Commit. Sein
+Head-Commit `3ce6333bf6eb9cf4faa912e04bb3d9776bd4c5b9` umfasst den Wechsel der
+Pinact-CLI-Flags von einzelnen zu doppelten Bindestrichen und aktualisiert
+`known_good_version` von 4.0.0 auf 5.0.0. Die lokale Konfiguration aktiviert
+Pinact 5.0.2.
+
+**Umsetzung:** `plugins.sources[].ref` in `.trunk/trunk.yaml` zeigt jetzt auf
+diesen unveraenderlichen Commit statt `v1.11.0`. Bereits vorhandene
+Linter-Versionsaenderungen in der Datei wurden beibehalten; andere staged
+Aenderungen wurden nicht beruehrt.
+
+**Validierung:** GitHub bestaetigte, dass der SHA existiert;
+`git diff --check` bestand. Der Trunk-CLI war nicht installiert, daher wurde
+kein Trunk-Lintlauf ausgefuehrt. Es wurde kein Commit erstellt.
+
+### KP-344 - Trunk CI installation
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Nutzerauftrag zur CI-Werkzeugausfuehrung.
+- Quelle: Nutzerbitte, Trunk in den Workflows/Actions mit der Projektkonfiguration
+  zu installieren; [Trunk Action README](https://github.com/trunk-io/trunk-action/blob/main/readme.md),
+  [Action-Metadaten](https://github.com/trunk-io/trunk-action/blob/main/action.yaml),
+  [Linux workflow](../.github/workflows/linux-development.yml).
+
+**Nutzerangabe:** Die GitHub-Workflows/Actions sollen Trunk mit
+`.trunk/trunk.yaml` installieren bzw. verwenden.
+
+**Umgesetzte Ableitung:** Der Linux-Entwicklungsworkflow hat einen separaten
+`Trunk checks`-Job mit `check-mode: all` erhalten. Er laeuft einmal unabhaengig
+von der x64/ARM64-Matrix, nutzt `trunk-io/trunk-action` am unveraenderlichen
+Commit `04ba50e7658c81db7356da96657e6e77f220bfa3` (v1), und gewaehrt nur
+`contents: read` sowie `checks: write` fuer Check-Anmerkungen. Die offizielle
+Action installiert bei Bedarf den Launcher und nutzt die im Repository
+konfigurierte CLI-/Linter-/Plugin-Version. Die Windows-Smoke-Matrix bleibt
+unveraendert; der plattformunabhaengige Lintlauf wird nicht wiederholt.
+
+**Validierung:** GitHub bestaetigte den Action-SHA; `git diff --check HEAD`
+bestand. `actionlint`, `yamllint` und die Trunk-CLI waren lokal nicht
+installiert. Daher ist der Workflow-Lauf noch nicht bestaetigt.

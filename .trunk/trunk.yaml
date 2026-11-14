@@ -4,10 +4,12 @@ version: 0.1
 cli:
   version: 1.29.0
 # Trunk provides extensibility via plugins. (https://docs.trunk.io/plugins)
+# ref was v1.11.0 (latest), can likely go back to a release version with the next release
+# pinact fix is in 3ce6333bf6eb9cf4faa912e04bb3d9776bd4c5b9
 plugins:
   sources:
     - id: trunk
-      ref: v1.11.0
+      ref: 3ce6333bf6eb9cf4faa912e04bb3d9776bd4c5b9
       uri: https://github.com/trunk-io/plugins
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
@@ -20,13 +22,13 @@ lint:
     - shellcheck@0.11.0
     - shfmt@3.14.1
     - yamllint@1.38.0
-    - pinact@4.1.1
-    - checkov@3.4.3
+    - pinact@5.0.2
+    - checkov@3.4.5
     - actionlint@1.7.12
     - git-diff-check
     - markdownlint@0.50.0
-    - prettier@3.9.10
-    - trufflehog@3.99.8
+    - prettier@3.10.1
+    - trufflehog@3.99.9
   ignore:
     - linters: [checkov, prettier]
       paths:

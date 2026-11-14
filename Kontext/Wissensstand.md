@@ -79,6 +79,32 @@ bestimmen, statt hier vorweggenommen zu werden. Siehe
 und [KP-337](./Kontextprotokoll.md#kp-337---importfreie-inline-module-implementiert),
 [KP-338](./Kontextprotokoll.md#kp-338---commit-push-und-ci-bestaetigt).
 
+**Workflowpraezisierung (2026-11-14):** Die Prioritaets-Skill-Anweisung
+bestimmt Standardsquellen-Alter jetzt nur aus `specs/manifest.json`
+(`checkedAt`, ersatzweise `fetchedAt`); fehlende Zeitstempel gelten als
+veraltet und Dateisystem-mtime wird nicht herangezogen. Testauswahl und
+Pflichtvalidierung verweisen auf [tests/README.md](../tests/README.md) und den
+Validierungsblock in [AGENTS.md](../AGENTS.md#validation-commands-repository-root);
+Release-Build/-Solutiontest und plattformspezifische CI-Smokes sind ebenfalls
+benannt. Siehe [KP-342](./Kontextprotokoll.md#kp-342---reproducible-standards-freshness-and-validation-guidance).
+
+**Trunk-Plugin-Pin (2026-11-14):** `.trunk/trunk.yaml` pinnt die Plugin-Quelle
+auf den Head-Commit `3ce6333bf6eb9cf4faa912e04bb3d9776bd4c5b9` von
+[trunk-io/plugins#1180](https://github.com/trunk-io/plugins/pull/1180). Der
+Commit enthaelt die Pinact-v5-Long-Flag-Korrektur und das passende bekannte
+Pinact-Minimum; die PR war bei Pruefung noch offen. Vorhandene Tool-Version-
+Aenderungen in derselben Datei blieben erhalten. Der Trunk-CLI war nicht
+installiert; SHA-Verifikation und `git diff --check` bestanden. Siehe
+[KP-343](./Kontextprotokoll.md#kp-343---pin-trunk-plugins-to-pinact-v5-fix).
+
+**Trunk-CI (2026-11-14):** Der Linux-Entwicklungsworkflow fuehrt Trunk jetzt
+einmal als separaten Job mit `check-mode: all` aus, ueber `trunk-action` mit
+fixiertem Action-SHA. Die Action bezieht CLI- und Plugin-Versionen aus
+`.trunk/trunk.yaml`; dadurch gibt es keinen doppelten Lauf pro Linux-
+Architektur. Lokal waren `actionlint`, `yamllint` und die Trunk-CLI nicht
+installiert; der Workflow muss noch in CI verifiziert werden. Siehe
+[KP-344](./Kontextprotokoll.md#kp-344---trunk-ci-installation).
+
 Am 2026-11-12 wurde [docs/standards.md](../docs/standards.md) auf Wunsch des
 Nutzers in den beiden Standards-Supporttabellen von Statusangaben auf
 approximative Prozentwerte umgestellt. Die Werte sind grobe, in 5%-Schritten

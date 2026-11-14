@@ -39,19 +39,33 @@ moving to another priority.
    the user chooses to block further actions, report the unresolved decision
    and stop until the user resolves it.
 4. For standards-dependent changes, read the relevant local files under
-   `specs/cache/`. If a required document is missing, or its recorded fetch date
-   in `specs/manifest.json` (or, if absent, the file's last-modified time) is more
-   than 30 days old, run
+   `specs/cache/` and the matching entry in `specs/manifest.json`. Determine
+   freshness only from the manifest's `checkedAt` timestamp, falling back to
+   `fetchedAt`; missing timestamps are stale. Never use the cached file's
+   last-modified time. If the cache document is missing or its manifest
+   timestamp is stale (more than 30 days old), run
    `dotnet run --project tools/SpecCache -- specs/manifest.json` before
-   implementation. Report refresh failures and any stale source relied upon.
-   Keep tests offline.
+   implementation. If the manifest entry is missing, add a valid entry for the
+   official source before refreshing it. Report refresh failures and any stale
+   source relied upon. Keep tests offline.
 5. Implement the change, its focused tests, and directly related documentation.
    Update `plans/Missing.md` to describe exactly what changed and what remains;
    update `docs/standards.md` if relevant,
    and do not mark a broad priority complete when only an increment is done.
-6. Run the smallest relevant test command, then any required build, format,
-   or platform smoke validation warranted by the change. Fix regressions caused
-   by the change. Do not suppress failures or claim unrun target validation.
+6. Run the focused test project for the changed subsystem first; use the
+   [test-project commands](../../../tests/README.md) to select it. Then follow
+   the repository's [validation commands](../../../AGENTS.md#validation-commands-repository-root):
+   run `dotnet build VisualWeb.slnx`, all affected test projects,
+   `dotnet test VisualWeb.slnx --no-build`, and
+   `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`.
+   The CI workflows use Release solution build/test commands
+   (`dotnet build VisualWeb.slnx --configuration Release` and
+   `dotnet test VisualWeb.slnx --configuration Release --no-build`) and add
+   native smoke checks; run applicable platform smokes from the subsystem guide
+   and [Linux](../../workflows/linux-development.yml) or
+   [Windows](../../workflows/windows-confinement.yml) workflow. Fix regressions
+   caused by the change. Do not suppress failures or claim unrun target
+   validation.
    If failures are pre-existing and unrelated to the change, do not fix them
    in this increment; verify they fail on the base commit, report them
    explicitly in the summary and commit body, and proceed only if the change's
