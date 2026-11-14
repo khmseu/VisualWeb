@@ -9049,3 +9049,18 @@ Solution-Build (0 Warnungen/Fehler), Solution-Volltest (16.626 Tests),
 Formatverifikation, `git diff --check` sowie lokaler und required-confined V8Smoke
 bestanden. Commit/Push/CI sind zum Dokumentationszeitpunkt noch nicht erfolgt;
 dieser Checkpoint bestaetigt nur lokale Implementierung und Verifikation.
+
+### KP-338 - Commit, Push und CI bestaetigt
+
+- Dokumentiert am: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-14, Europe/Berlin (UTC+01:00).
+- Erfassungsart: Git- und CI-Verifikationscheckpoint.
+- Quellen: Commit `a3611e00077b1d9444fb5df2687e9e872ffbb65e`,
+  `git push origin main`, GitHub Actions Runs
+  [Linux development 43553596121](https://github.com/khmseu/VisualWeb/actions/runs/43553596121),
+  [Windows confinement 43553596192](https://github.com/khmseu/VisualWeb/actions/runs/43553596192)
+  und [CodeQL 43553596120](https://github.com/khmseu/VisualWeb/actions/runs/43553596120).
+
+**Belegt:** Featurecommit `a3611e0` wurde auf `main` gepusht. Linux development,
+Windows confinement (x64 und arm64) sowie CodeQL sind erfolgreich. Damit ist
+der Modulinkrement-Pass lokal verifiziert, committed, gepusht und CI-bestaetigt.

@@ -36,13 +36,19 @@ ECMAScript-Cache vom 2026-11-07 war juenger als 30 Tage.
 Lokale Verifikation: Engine.Scripting 362 Tests, Browser 1.341 Tests,
 Solution-Build ohne Warnungen/Fehler, Solution-Volltest 16.626 Tests,
 Formatverifikation, `git diff --check` sowie V8Smoke lokal und unter
-required-confined Bedingungen bestanden. Commit, Push und CI stehen noch aus.
+required-confined Bedingungen bestanden. Commit `a3611e0` ist gepusht. Linux
+development ([Run 43553596121](https://github.com/khmseu/VisualWeb/actions/runs/43553596121)),
+Windows confinement x64/arm64
+([Run 43553596192](https://github.com/khmseu/VisualWeb/actions/runs/43553596192))
+und CodeQL ([Run 43553596120](https://github.com/khmseu/VisualWeb/actions/runs/43553596120))
+sind erfolgreich.
 Der naechste Standardsinkrement-Pass soll die Rangfolge erneut anhand von
 [Missing.md](../plans/Missing.md) und den approximativen Prozentwerten
 bestimmen, statt hier vorweggenommen zu werden. Siehe
 [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen),
 [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt)
-und [KP-337](./Kontextprotokoll.md#kp-337---importfreie-inline-module-implementiert).
+und [KP-337](./Kontextprotokoll.md#kp-337---importfreie-inline-module-implementiert),
+[KP-338](./Kontextprotokoll.md#kp-338---commit-push-und-ci-bestaetigt).
 
 Am 2026-11-12 wurde [docs/standards.md](../docs/standards.md) auf Wunsch des
 Nutzers in den beiden Standards-Supporttabellen von Statusangaben auf
