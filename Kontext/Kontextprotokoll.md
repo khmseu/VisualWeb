@@ -10290,3 +10290,50 @@ und `git diff --check` bestehen.
 **Status / naechster Schritt:** Pass 9 ist lokal implementiert und validiert;
 Featurecommit, Push und Remote-CI stehen aus. Nach erfolgreicher CI bleibt ein
 angefordertes Inkrement.
+
+### KP-375 - XYZ-D65 color-mix CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Featurecommit `ee1d18b`; GitHub Actions runs
+  [43681056081](https://github.com/khmseu/VisualWeb/actions/runs/43681056081),
+  [43681056228](https://github.com/khmseu/VisualWeb/actions/runs/43681056228)
+  und [43681055444](https://github.com/khmseu/VisualWeb/actions/runs/43681055444).
+- Bezug: KP-373 und KP-374; Pass 9 von zehn angeforderten
+  Missing-Prioritaetsinkrementen.
+
+**Belegt:** Commit `ee1d18b` ist gepusht. Linux development, Windows
+confinement einschliesslich x64 und ARM64 sowie CodeQL sind erfolgreich.
+Pass 9 ist vollstaendig; ein angefordertes Inkrement verbleibt. Der in KP-374
+dokumentierte Status ohne Commit/Push/CI ist durch diesen Nachweis ersetzt.
+
+### KP-376 - XYZ-D50 color-mix als Pass 10 gewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Erfassungsart: technische Auswahlableitung aus Prioritaet, lokalem
+  Standardtext und Implementierungsstand; keine separate Nutzerwahl.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  CSS Color 4 local cache (`checkedAt` 2026-11-07),
+  [color-interpolation-method](../specs/cache/css-color.html#color-interpolation-method),
+  [xyz-space grammar](../specs/cache/css-color.html#typedef-xyz-space),
+  CSS Color 5 local cache (`checkedAt` 2026-11-15),
+  [color-mix space](../specs/cache/css-color-5.html#color-mix-space),
+  [CSS support inventory](../docs/standards.md#support-status) and
+  [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs).
+- Bezug: KP-375; zehntes und letztes Inkrement des angeforderten Zehn-Pass-
+  Auftrags.
+
+**Auswahl als Ableitung:** CSS Color 4 (~60%) bleibt die hoechste actionable
+Teilspezifikation; innerhalb der freigegebenen Phase 11w hat die hoeher
+eingeschaetzte ECMAScript-Unterstuetzung weiterhin keinen passenden offenen
+Inkrementumfang. Die lokale `<xyz-space>`-Grammatik enthaelt `xyz-d50` als
+separaten Wert; `xyz` bleibt der D65-Alias. CSS Color 5 verwendet diese
+Interpolationsraeume fuer `color-mix()`. Pass 10 fuegt daher explizites
+`in xyz-d50` fuer genau zwei vorhandene statische Farben hinzu: Eingaben aus
+linear sRGB ueber XYZ D65 und Bradford-Anpassung in D50 konvertieren, mit der
+bestehenden Prozentnormalisierung und premultipliziertem Alpha mischen und
+ueber die vorhandene D50-zu-sRGB-Gamutpruefung in die 8-bit-Ausgabe
+zurueckwandeln. Kein Gamut-Mapping, keine weiteren Farbquellen und keine
+weitere Praezision werden zugesagt. Beide lokalen Quellen sind gemaess Manifest
+frisch. Umsetzung und Tests stehen aus; dies ist der letzte angeforderte Pass.

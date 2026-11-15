@@ -2248,8 +2248,27 @@ expected unsupported-value diagnostic. All 41 focused color-mix cases and
 1,624 CSS tests pass. Debug and Release solution builds have zero
 warnings/errors; both complete solution test suites pass 16,890 tests.
 Format verification and `git diff --check` pass. Feature commit, push and
-remote CI remain pending; after Pass 9, one further requested increment
-remains.
+remote CI are recorded below.
+
+**Pass 9 commit, push and CI (2026-11-15):** Feature commit `ee1d18b` is
+pushed. Linux development (run 43681056081), Windows confinement
+(run 43681056228, x64 and ARM64) and CodeQL (run 43681055444) all pass.
+Pass 9 is complete; one requested increment remains.
+
+**Pass 10 selection (2026-11-15):** Complete the bounded CSS Color 5
+`color-mix()` interpolation-space subset with explicit `in xyz-d50`. Convert
+the two existing 8-bit sRGB inputs through linear sRGB, XYZ D65 and the
+CSS-Color-4 Bradford D65-to-D50 adaptation; mix XYZ D50 coordinates using the
+existing percentage normalization and premultiplied-alpha behavior; convert
+through the existing XYZ-D50-to-sRGB gamut check and 8-bit output. Keep the
+two-static-color boundary and explicit out-of-gamut diagnostics; add no gamut
+mapping, additional input colors or color-management precision. `xyz-d50` is
+a separate `<xyz-space>` value; `xyz` remains the D65 alias. The local CSS
+Color 4 (`checkedAt` 2026-11-07) and CSS Color 5 (`checkedAt` 2026-11-15)
+sources are fresh. See the [CSS Color 4 interpolation space](../specs/cache/css-color.html#color-interpolation-method),
+[XYZ space grammar](../specs/cache/css-color.html#typedef-xyz-space), and
+[CSS Color 5 color-mix space](../specs/cache/css-color-5.html#color-mix-space).
+Implementation and tests remain.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
