@@ -2358,7 +2358,20 @@ record initialization, and Web IDL remain unsupported. The local URL Standard
 cache has `checkedAt: 2026-11-07` and is fresh; no refresh is needed.
 Four focused tests and all 4,005 Core tests pass. The solution build has zero
 warnings/errors, all 16,913 solution tests pass, and formatting verification
-passes. Commit, push and CI remain pending.
+passes. Commit `8af42a6` is pushed to `main`; Linux, Windows confinement
+(x64 and arm64), and CodeQL workflows pass.
+
+### Pass 5: URLSearchParams append()
+
+WHATWG URL and Encoding remain tied at ~30%; this pass continues the URL
+subset with the separate `URLSearchParams.append(name, value)` operation.
+Append scalar-value-normalizes both strings and adds a duplicate tuple at the
+end without URL-object synchronization. Other mutation methods,
+stringification, and Web IDL remain unsupported. The URL Standard cache is
+fresh (`checkedAt: 2026-11-07`); no refresh is needed. Five focused
+URLSearchParams tests and all 4,006 Core tests pass. The solution build has
+zero warnings/errors, all 16,914 solution tests pass, and formatting
+verification passes. Commit, push, and CI remain pending.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the

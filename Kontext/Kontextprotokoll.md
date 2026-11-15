@@ -10678,4 +10678,64 @@ Solution-Tests bestehen; `dotnet build VisualWeb.slnx` hat null
 Warnungen/Fehler, und Formatverifikation besteht. Die lokale URL-Quelle ist
 innerhalb des 30-Tage-Fensters; kein Cache-Refresh erforderlich.
 
-**Status / naechster Schritt:** Lokal validiert, Commit/Push/CI stehen aus.
+**Status / naechster Schritt:** Lokal validiert; Commit `8af42a6` ist auf
+`main` gepusht. Linux, Windows und CodeQL-CI laufen.
+
+### KP-388 - Pass 4 CI-gruen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Commit `8af42a6`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43722086300),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43722086314)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43722085905).
+- Bezug: schliesst Pass 4 aus KP-387 ab.
+
+**Ergebnis (belegt):** `8af42a6` steht auf `main`. Linux development,
+Windows confinement (x64 und arm64) sowie Push-on-main/CodeQL endeten
+erfolgreich. Die lokale Vollvalidierung ist in KP-387 dokumentiert.
+
+**Naechster Schritt:** Pass 4 ist abgeschlossen. Fuer Pass 5 WHATWG-only
+Prioritaeten und offene, konkrete Teilbereiche anhand des aktuellen Trackers
+und Supportinventars neu bewerten.
+
+### KP-389 - Pass 5 URLSearchParams.append() ausgewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: WHATWG-Rangfolge neu geprueft; Auswahl ist eine begruendete
+  Ableitung, keine gesonderte Nutzerwahl.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [Support inventory](../docs/standards.md#support-status),
+  [Core URL guide](../docs/core.md#url),
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs) und die lokale
+  [URL Standard append algorithm](../specs/cache/url.html#dom-urlsearchparams-append).
+  Das Manifest meldet fuer `url` `checkedAt: 2026-11-07`.
+- Bezug: folgt auf den in KP-388 abgeschlossenen Pass 4 und DEC-033.
+
+**Auswahl (Ableitung):** WHATWG URL und Encoding stehen weiter gleichauf bei
+~30%; URLSearchParams wurde im Pass 4 als bounded Core subset begonnen.
+Pass 5 ergaenzt genau einen getrennten Algorithmusschritt: `append(name,
+value)` mit USVString-Normalisierung und geordneter Duplikat-Erhaltung. Da
+der Core-Typ kein verbundenes URL-Objekt hat, gibt es keine URL-Query-
+Synchronisierung. Sonstige Mutation, Stringifizierung und Web IDL bleiben
+ausserhalb dieses Inkrements.
+
+**Status:** Implementierung lokal validiert (belegt): fuenf fokussierte
+URLSearchParams-Tests und alle 4.006 Core-Tests bestehen. Der Solution-Build
+hat null Warnungen/Fehler, alle 16.914 Solution-Tests bestehen, und
+Formatverifikation besteht. Commit, Push und CI stehen aus.
+
+### KP-390 - Pass 5 lokal validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: lokale Befehlsausgabe fuer `dotnet test tests/Core.Tests/Core.Tests.csproj`,
+  `dotnet build VisualWeb.slnx`, `dotnet test VisualWeb.slnx --no-build` und
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`.
+- Bezug: schliesst die lokale Implementierung aus KP-389 ab.
+
+**Ergebnis (belegt):** Alle fuenf fokussierten URLSearchParams-Tests und
+4.006 Core-Tests bestehen. Der Solution-Build hat null Warnungen/Fehler;
+16.914 Solution-Tests und die Formatverifikation bestehen.
+
+**Status / naechster Schritt:** Commit, Push und CI fuer Pass 5 stehen aus.

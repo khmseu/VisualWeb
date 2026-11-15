@@ -2,10 +2,10 @@ using System.Text;
 
 namespace VisualWeb.Core.Url;
 
-/// <summary>Provides a bounded string-initialization and lookup subset of WHATWG <c>URLSearchParams</c>.</summary>
+/// <summary>Provides a bounded string-initialization, lookup, and append subset of WHATWG <c>URLSearchParams</c>.</summary>
 /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#interface-urlsearchparams">URLSearchParams</see> and
 /// <see href="https://url.spec.whatwg.org/#concept-urlencoded-string-parser">the URL-encoded string parser</see>.
-/// This immutable .NET snapshot does not implement mutation, stringification, URL-object linkage, or Web IDL.</remarks>
+/// This .NET subset has no linked URL object and does not provide other mutations, stringification, or Web IDL.</remarks>
 public sealed class UrlSearchParams
 {
     private static readonly UTF8Encoding Utf8 = new(false, false);
@@ -22,6 +22,16 @@ public sealed class UrlSearchParams
     /// <summary>Gets the number of parsed name-value tuples.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-size">URLSearchParams.size</see>.</remarks>
     public int Size => _entries.Count;
+
+    /// <summary>Appends a scalar-value name and value pair to the end of the tuple list.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-append">URLSearchParams.append()</see>.
+    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    public void Append(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+        _entries.Add((ToScalarValueString(name), ToScalarValueString(value)));
+    }
 
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
@@ -72,6 +82,7 @@ public sealed class UrlSearchParams
         return entries;
     }
 
+    // Compact decoded bytes inside this component without touching delimiters.
     private static string DecodeComponent(byte[] bytes, int start, int length)
     {
         var end = start + length;

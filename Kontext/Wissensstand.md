@@ -35,8 +35,13 @@ Fuer Pass 4 wurde aus dem Gleichstand bei ~30% die WHATWG-URL-Luecke
 `getAll()` als bounded Core-Teilmenge ohne Mutationen, URL-Verknuepfung oder
 Web IDL. Vier fokussierte Tests, 4.005 Core-Tests und 16.913 Solution-Tests
 bestehen; Build ohne Warnungen/Fehler und Formatverifikation bestehen. Pass 4
-ist lokal validiert, Commit/Push/CI stehen aus. Siehe Q-037 und KP-379 bis
-KP-387.
+ist abgeschlossen. Commit `8af42a6` ist auf `main` gepusht; Linux, Windows
+x64/arm64 und CodeQL-CI sind gruen. Fuer Pass 5 wurde aus dem weiterhin
+gleichrangigen WHATWG-URL-Standard der distincte Mutationsschritt
+`URLSearchParams.append()` gewaehlt. Fuenf fokussierte URLSearchParams-Tests,
+4.006 Core-Tests und 16.914 Solution-Tests bestehen; der Build ist ohne
+Warnungen/Fehler und die Formatverifikation besteht. Commit, Push und CI stehen
+aus. Siehe Q-037 und KP-379 bis KP-390.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
