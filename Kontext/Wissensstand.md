@@ -89,6 +89,27 @@ bestehen; Build und Formatverifikation bestehen. Commit/Push und CI fuer Pass
 (Run `43742818336`), Windows confinement (Run `43742818364`) und CodeQL
 (Run `43742818324`) bestehen. Der angeforderte Zehnerlauf ist abgeschlossen.
 
+**Ressourcen-Testzeiten aus dem letzten CI-Lauf (2026-11-15):** In den vier
+Konfigurationen Linux x64, Linux arm64, Windows x64 und Windows arm64 wurden
+die gesamten Browser-Testprojekte in 1:17, 1:25, 2:19 und 2:11 ausgefuehrt;
+die Script-Testprojekte in 8, 10, 10 und 10 Sekunden. Das sind Suite-Zeiten,
+keine Einzeltestzeiten. Einzelzeiten wurden nur fuer die fuenffach wiederholte
+`WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer`-Theory
+ausgegeben: pro Fall (Deadline / Cancellation) x64 etwa 33.4 / 5.0 Sekunden,
+arm64 etwa 33.8 / 3.4 Sekunden. Der dedizierte Fuenf-Durchlaeufe-Schritt
+dauerte insgesamt 3:24 (x64) bzw. 3:20 (arm64). Fuer die uebrigen
+Ressourcenfaelle liefern diese Logs keine individuellen Dauern; sie sind nur
+im Browser-Suite-Gesamtwert enthalten. Siehe KP-409.
+
+**Einzeltest-Timing beauftragt (2026-11-15):** Der Nutzer hat die Ausgabe der
+Laufzeiten aller zuvor genannten Ressourcen-Tests, Push und anschliessende
+Analyse der vier CI-Konfigurationen beauftragt. Die beiden Workflows verwenden
+nun fuer schnelle, Browser- und Scripting-Tests den vorhandenen VSTest-
+Konsolenlogger mit `verbosity=normal`; Testcode, Fristen, Auswahl und Wiederholungen
+bleiben unveraendert. Elf ausgewaehlte Release-Browser-Testfaelle bestehen lokal
+und geben Einzelzeiten aus; Windows-Faelle kehren auf Linux frueh zurueck und
+zaehlen nicht als Windows-Nachweis. Push und CI-Auswertung stehen aus. Siehe KP-410.
+
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;

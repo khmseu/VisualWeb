@@ -325,6 +325,14 @@ These fast tests, including the HTML fixture corpus, must pass before CI runs
 the slower browser integration and native scripting suites. A failure in the
 fast stage stops the job before the slow suites begin.
 
+All three test stages use `--logger "console;verbosity=normal"` on Linux and
+Windows x64/arm64. CI logs include each test name, theory arguments, outcome,
+and runner-reported duration, including successful resource-exhaustion tests.
+Durations cover the complete test case, not just its pressure phase, and are
+rounded by the console logger. Platform-guarded tests that return early still
+appear as passed; their timings do not measure the unsupported-platform scenario.
+The Windows CPU-pressure recovery step retains its five additional repetitions.
+
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy
 test suites; add meaningful tests as their implementations are introduced.

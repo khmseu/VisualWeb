@@ -11112,3 +11112,59 @@ confinement auf x64 und arm64 sowie CodeQL sind erfolgreich. Damit sind alle
 zehn angeforderten Inkremente abgeschlossen.
 
 **Status:** Abgeschlossen.
+
+### KP-409 - CI-Zeiten der Ressourcen-Tests erfragt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Linux development Run
+  [43744828543](https://github.com/khmseu/VisualWeb/actions/runs/43744828543)
+  (Linux x64/arm64) und Windows confinement Run
+  [43744828599](https://github.com/khmseu/VisualWeb/actions/runs/43744828599)
+  (Windows x64/arm64), jeweils auf Commit `2a363736c5a776b3408cfd39572c3e2e8fcef08b`;
+  ausserdem die zugehoerigen Job-Logs und PR-Beschreibung #25.
+- Bezug: Nutzer fragte nach CI-Laufzeiten der zuvor aufgelisteten
+  Ressourcen-Druck- und Erholungstests je Testkonfiguration.
+
+**Ergebnis (Belegt):** `VisualWeb.Browser.Tests` dauerte Linux x64 1:17,
+Linux arm64 1:25, Windows x64 2:19 und Windows arm64 2:11. `Engine.Scripting.Tests`
+dauerte entsprechend 8, 10, 10 und 10 Sekunden. Diese Logs nennen keine
+Einzeldauern fuer die einzelnen Ressourcen-Tests, sondern nur diese
+Assembliesummen. Eine Ausnahme ist die in Windows-CI fuenfmal wiederholte
+`WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer`-
+Theory: Die Deadline-Faelle lagen im Mittel bei 33.4 Sekunden (x64) und
+33.8 Sekunden (arm64); Cancellation bei 5.0 und 3.4 Sekunden. Die fuenf
+Testprozess-Durchlaeufe dauerten zusammen 3:23.6 (x64) bzw. 3:20.4 (arm64).
+Die uebrigen genannten Ressourcenfaelle sind in den Suite-Zeiten enthalten,
+aber daraus nicht einzeln messbar.
+
+**Status:** Messdaten dokumentiert; keine Test- oder CI-Konfiguration geaendert.
+
+### KP-410 - Einzeltest-Zeiten in allen vier CI-Konfigurationen beauftragt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quelle: Nutzerturn dieser Sitzung um 20:30 Europe/Berlin; die beiden
+  [Linux](../.github/workflows/linux-development.yml)- und
+  [Windows](../.github/workflows/windows-confinement.yml)-Workflows sowie
+  [Testleitfaden](../tests/README.md).
+- Bezug: schliesst die Messluecke aus KP-409.
+
+**Auftrag (Nutzerangabe):** Alle zuvor genannten Ressourcen-Tests sollen ihre
+Laufzeit ausgeben; die Aenderung soll gepusht und die ausgeloesten CI-Logs
+analysiert werden.
+
+**Umsetzung (Belegt):** Vorhandenen VSTest-Konsolenlogger mit
+`console;verbosity=normal` in allen drei Teststufen beider Workflows aktiviert.
+Keine eigenen Timer oder Aenderungen an Testlogik, Fristen, Filtern oder
+Wiederholungen: der Runner misst bereits komplette Testfaelle einschliesslich
+Theory-Argumenten. Konsolenausgabe rundet; fruehe Plattform-Returns sind keine
+Messung des nicht unterstuetzten Szenarios. Elf ausgewaehlte Release-
+Browser-Testfaelle bestehen lokal und zeigen Einzelzeiten.
+
+**Validierung (Belegt):** Alle 16.920 Solution-Tests mit `dotnet test
+VisualWeb.slnx --no-build` bestehen; auch die Formatverifikation besteht.
+Es wurden nur Workflow-Argumente und Dokumentation geaendert, keine
+Anwendungs- oder Testbinaerdateien.
+
+**Status:** Lokal validiert; Commit/Push und vierfacher CI-Nachweis stehen aus.

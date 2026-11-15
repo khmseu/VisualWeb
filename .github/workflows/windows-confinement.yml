@@ -31,6 +31,7 @@ jobs:
         run: >-
           dotnet test VisualWeb.slnx --configuration Release --no-build
           --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
+          --logger "console;verbosity=normal"
       - name: Repeat CPU-pressure renderer recovery
         shell: pwsh
         run: |
@@ -47,6 +48,6 @@ jobs:
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - name: Run slow browser tests
-        run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
+        run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
       - name: Run slow scripting tests
-        run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build
+        run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
