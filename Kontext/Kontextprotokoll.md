@@ -10723,7 +10723,7 @@ ausserhalb dieses Inkrements.
 **Status:** Implementierung lokal validiert (belegt): fuenf fokussierte
 URLSearchParams-Tests und alle 4.006 Core-Tests bestehen. Der Solution-Build
 hat null Warnungen/Fehler, alle 16.914 Solution-Tests bestehen, und
-Formatverifikation besteht. Commit, Push und CI stehen aus.
+Formatverifikation besteht. Commit `6d4a1ec` ist auf `main` gepusht; CI laeuft.
 
 ### KP-390 - Pass 5 lokal validiert
 
@@ -10738,4 +10738,22 @@ Formatverifikation besteht. Commit, Push und CI stehen aus.
 4.006 Core-Tests bestehen. Der Solution-Build hat null Warnungen/Fehler;
 16.914 Solution-Tests und die Formatverifikation bestehen.
 
-**Status / naechster Schritt:** Commit, Push und CI fuer Pass 5 stehen aus.
+**Status / naechster Schritt:** Commit `6d4a1ec` ist auf `main` gepusht;
+Linux development, Windows confinement x64/arm64 und CodeQL bestehen.
+
+### KP-391 - Pass 5 CI-gruen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Commit `6d4a1ec`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43724886757),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43724886699)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43724886303).
+- Bezug: schliesst Pass 5 aus KP-389/KP-390 ab.
+
+**Ergebnis (belegt):** `6d4a1ec` steht auf `main`. Linux development,
+Windows confinement (x64 und arm64) sowie Push-on-main/CodeQL endeten
+erfolgreich. Die lokale Vollvalidierung ist in KP-390 dokumentiert.
+
+**Naechster Schritt:** Fuer Pass 6 WHATWG-only Prioritaeten und offene,
+konkrete Teilbereiche anhand des aktuellen Trackers und Supportinventars
+erneut bewerten.

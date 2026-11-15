@@ -40,8 +40,9 @@ x64/arm64 und CodeQL-CI sind gruen. Fuer Pass 5 wurde aus dem weiterhin
 gleichrangigen WHATWG-URL-Standard der distincte Mutationsschritt
 `URLSearchParams.append()` gewaehlt. Fuenf fokussierte URLSearchParams-Tests,
 4.006 Core-Tests und 16.914 Solution-Tests bestehen; der Build ist ohne
-Warnungen/Fehler und die Formatverifikation besteht. Commit, Push und CI stehen
-aus. Siehe Q-037 und KP-379 bis KP-390.
+Warnungen/Fehler und die Formatverifikation besteht. Commit `6d4a1ec` ist auf
+`main` gepusht; Linux, Windows x64/arm64 und CodeQL-CI sind gruen. Pass 5 ist
+abgeschlossen. Siehe Q-037 und KP-379 bis KP-391.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
