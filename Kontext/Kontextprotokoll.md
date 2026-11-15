@@ -10038,3 +10038,28 @@ V8-Deadline fehl; dessen isolierter Lauf mit beiden Testvarianten und die
 vollstaendige Debug-Wiederholung bestanden. Auch der Release-Volltestlauf
 bestand. CSS-spezifische native Smokes gelten fuer diese parserseitige
 Aenderung nicht. Commit, Push und CI stehen noch aus.
+
+### KP-366 - Oklab color-mix commit, push und CI
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Commit `8df2c07`; GitHub Actions
+  [Linux development 43668545805](https://github.com/khmseu/VisualWeb/actions/runs/43668545805),
+  [Windows confinement 43668545852](https://github.com/khmseu/VisualWeb/actions/runs/43668545852)
+  und [CodeQL 43668545368](https://github.com/khmseu/VisualWeb/actions/runs/43668545368);
+  [Missing](../plans/Missing.md) und
+  [Wissensstand](./Wissensstand.md).
+- Bezug: Fortsetzung von KP-365 und Pass 6 des Zehn-Inkrement-Auftrags.
+
+**Git/CI (belegt):** Commit `8df2c07` ist auf `main` gepusht. Windows
+confinement und CodeQL bestehen. Die Linux-development-Jobs x64 und arm64
+bestehen jeweils Build, Tests und native Smokes; der Workflow als Ganzes ist
+fehlgeschlagen, weil der getrennte Trunk-checks-Job meldet, dass `check
+uploads` und `check all` nicht mehr unterstuetzt werden. Der Linux-Workflow
+ist daher nicht als bestanden zu werten; die gemeldete Ursache liegt im
+Trunk-checks-Modus, nicht in den Linux-Entwicklungsjobs.
+
+**Status:** Pass 6 ist committed und gepusht. Lokale Validierung, Windows und
+CodeQL sind erfolgreich; Linux-Codejobs sind erfolgreich, aber das
+Gesamtworkflow-Ergebnis bleibt wegen des Trunk-checks-Fehlers rot. Vier
+angeforderte Inkremente verbleiben.

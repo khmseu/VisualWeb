@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; Pass 6 lokal validiert, Commit/Push/CI ausstehend):**
+**Aktueller Standards-Pass (2026-11-15; Pass 6 committed/gepusht, Linux-Trunk-Check fehlgeschlagen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -69,9 +69,14 @@ sowie Debug-/Release-Solution-Builds ohne Warnungen/Fehler bestehen. Beide
 Debug-/Release-Volltests bestehen 16.875 Tests, ebenso die Formatverifikation
 und `git diff --check`. Ein erster Debug-Volltestlauf traf einen V8-Deadline-
 Timeout in einem isolierten Prozessrenderer-Test; der isolierte Test und der
-vollstaendige Debug-Wiederholungslauf bestanden. Commit/Push/CI fuer Pass 6
-stehen aus. Siehe [KP-364](./Kontextprotokoll.md#kp-364---oklab-color-mix-selection)
-und [KP-365](./Kontextprotokoll.md#kp-365---oklab-color-mix-lokale-validierung).
+vollstaendige Debug-Wiederholungslauf bestanden. Commit `8df2c07` ist gepusht.
+Windows confinement (Run 43668545852) und CodeQL (Run 43668545368) bestehen.
+Linux-x64/-arm64-Builds, Tests und native Smokes bestehen; der Linux-Workflow
+ist wegen des separaten Trunk-Checks fehlgeschlagen, dessen `check uploads` /
+`check all`-Modus nicht mehr unterstuetzt wird. Vier angeforderte Inkremente
+verbleiben. Siehe [KP-364](./Kontextprotokoll.md#kp-364---oklab-color-mix-selection),
+[KP-365](./Kontextprotokoll.md#kp-365---oklab-color-mix-lokale-validierung)
+und [KP-366](./Kontextprotokoll.md#kp-366---oklab-color-mix-commit-push-und-ci).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

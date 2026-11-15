@@ -2156,8 +2156,13 @@ builds have zero warnings/errors; both full solution suites pass all 16,875
 tests. Formatting and `git diff --check` pass. An initial Debug full-suite run
 hit a V8 deadline in one unrelated process-renderer test; the isolated
 two-case test and complete Debug retry both passed. The Release full suite also
-passed. CSS-specific native smokes do not apply. Commit, push and CI remain
-pending.
+passed. CSS-specific native smokes do not apply. Commit `8df2c07` is pushed to
+`main`. Windows confinement (run 43668545852) and CodeQL (run 43668545368)
+passed. Both Linux development architecture jobs passed their builds, tests
+and native smokes, but the workflow failed in the separate Trunk checks job
+because its configured `check uploads` / `check all` mode is no longer
+supported. Pass 6's code-validation jobs are green; the Linux workflow as a
+whole is not.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
