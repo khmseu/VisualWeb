@@ -9904,3 +9904,69 @@ ausserhalb sRGB bleiben Diagnosen.
 bestehen. Debug-/Release-Solution-Builds: null Warnungen/Fehler. Beide
 Volltestlaeufe bestehen mit je 16.849 Tests. Formatverifikation und
 `git diff --check` bestehen. Commit, Push und CI stehen noch aus.
+
+### KP-360 - Oklch CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Commit `4e0779e`; GitHub Actions
+  [Linux development 43658994675](https://github.com/khmseu/VisualWeb/actions/runs/43658994675),
+  [Windows confinement 43658994676](https://github.com/khmseu/VisualWeb/actions/runs/43658994676)
+  und [CodeQL 43658994696](https://github.com/khmseu/VisualWeb/actions/runs/43658994696).
+- Bezug: Fortsetzung von KP-359; [Missing](../plans/Missing.md) und
+  [Wissensstand](./Wissensstand.md).
+
+**Belegt:** Commit `4e0779e` mit bounded CSS-Color-4-`oklch()` wurde auf
+`main` gepusht. Linux development, Windows confinement und CodeQL sind fuer
+den Commit erfolgreich abgeschlossen. Die lokalen 20 fokussierten Tests,
+1.583 CSS-Tests, Debug-/Release-Builds und vollstaendigen Solution-Tests
+standen bereits in KP-359; CI bestaetigt den gepushten Stand.
+
+### KP-361 - Bounded color-mix selection
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  [Standardsstatus](../docs/standards.md#support-status),
+  [CSS Color 5 local cache](../specs/cache/css-color-5.html#color-mix),
+  [CSS Values 5 local cache](../specs/cache/css-values-5.html#normalize-mix-percentages),
+  manifest entries `css-color-5` and `css-values-5`.
+- Bezug: Fortsetzung nach KP-360 und Nutzerziel fuer zehn getrennte
+  Missing-Prioritaetsinkremente.
+
+**Auswahl als Ableitung:** CSS Color 4 (~60%) bleibt das hoechste actionable
+partielle Inventar; seine verbleibenden Interpolations-/Praezisionsbausteine
+haben ohne einen konkreten statischen Farbverbraucher keinen eigenstaendigen
+sichtbaren Effekt. Die neue CSS-Color-5-Funktion `color-mix()` schafft diesen
+statischen Anwendungsfall. Gewaehlt wurde ein enger Teilumfang mit genau zwei
+Farben und explizitem `in srgb`; CSS Values 5 normalisiert deren Gewichte und
+CSS Color 4 definiert premultiplizierte Alpha-Interpolation. Default Oklab,
+andere Interpolationsraeume, verschachtelte Mixe, `currentColor` und `none`
+bleiben explizit unsupported.
+
+**Belegt:** Die zuvor fehlenden offiziellen Quellen CSS Color 5 und CSS Values
+5 wurden im Manifest registriert und vom SpecCache erfolgreich heruntergeladen;
+die relevanten Abschnitte wurden lokal gelesen. Die zulaessigen Formen
+diagnostizierten vor der Parsererweiterung wie erwartet als unsupported; danach
+bestehen alle 20 fokussierten `ColorMixFunctionTests` und die gesamte CSS-Suite
+mit 1.603 Tests. Solution-Build, Volltests und Formatpruefung stehen noch aus.
+
+### KP-362 - Color-mix lokale Validierung
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: `dotnet build VisualWeb.slnx`,
+  `dotnet build VisualWeb.slnx --configuration Release`,
+  `dotnet test VisualWeb.slnx --no-build`,
+  `dotnet test VisualWeb.slnx --configuration Release --no-build`,
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+  und `git diff --check`.
+- Bezug: KP-361; Implementierung in
+  [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs) und
+  [ColorMixFunctionTests.cs](../tests/Engine.Css.Tests/ColorMixFunctionTests.cs).
+
+**Belegt:** Debug- und Release-Solution-Builds bestanden jeweils mit null
+Warnungen und Fehlern. Der Debug- und Release-Volltestlauf bestanden jeweils
+alle 16.869 Tests; darin bestanden alle 1.603 CSS-Tests. Formatverifikation
+und `git diff --check` bestanden. CSS-spezifische native Smokes gelten fuer
+diese parserseitige Aenderung nicht. Commit, Push und CI stehen noch aus.

@@ -478,6 +478,7 @@ internal static class CssProperties
         }
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
+        if (function == "color-mix") { return ColorMixFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
         if (function == "color") { return ColorFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
         if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
@@ -507,6 +508,91 @@ internal static class CssProperties
                 : numbers[index]!.Value * (alpha ? 255 : 1), 0, 255),
             MidpointRounding.AwayFromZero);
         return new CssColor(Channel(0), Channel(1), Channel(2), values.Count == 4 ? Channel(3, true) : (byte)255);
+    }
+
+    private static CssColor? ColorMixFunction(IReadOnlyList<CssToken> args)
+    {
+        var groups = new List<List<CssToken>> { new() };
+        var stack = new Stack<CssTokenKind>();
+        foreach (var token in args)
+        {
+            if (token.Kind == CssTokenKind.Comma && stack.Count == 0)
+            {
+                groups.Add([]);
+                continue;
+            }
+
+            groups[^1].Add(token);
+            if (CssText.Opens(token.Kind)) { stack.Push(CssText.Closing(token.Kind)); }
+            else if (stack.TryPeek(out var close) && token.Kind == close) { stack.Pop(); }
+        }
+
+        if (groups.Count != 3 || groups[0].Count != 2
+            || groups[0][0].Kind != CssTokenKind.Ident || CssText.Lower(groups[0][0].Value) != "in"
+            || groups[0][1].Kind != CssTokenKind.Ident || CssText.Lower(groups[0][1].Value) != "srgb")
+        {
+            return null;
+        }
+
+        var colors = new CssColor[2];
+        var percentages = new double?[2];
+        for (var index = 0; index < colors.Length; index++)
+        {
+            var colorTokens = groups[index + 1].ToList();
+            var percentageIndex = colorTokens.Count > 0 && colorTokens[0].Kind == CssTokenKind.Percentage
+                ? 0
+                : colorTokens.Count > 0 && colorTokens[^1].Kind == CssTokenKind.Percentage ? colorTokens.Count - 1 : -1;
+            if (percentageIndex >= 0)
+            {
+                if (Number(colorTokens[percentageIndex]) is not { } percentage || percentage is < 0 or > 100) { return null; }
+                percentages[index] = percentage;
+                colorTokens.RemoveAt(percentageIndex);
+            }
+
+            if (colorTokens.Count == 0
+                || colorTokens.Any(token => IsNone(token)
+                    || token.Kind == CssTokenKind.Function && CssText.Lower(token.Value) == "color-mix")
+                || Color(colorTokens) is not CssColor color)
+            {
+                return null;
+            }
+
+            colors[index] = color;
+        }
+
+        if (percentages[0] is null && percentages[1] is null)
+        {
+            percentages[0] = 50;
+            percentages[1] = 50;
+        }
+        else if (percentages[0] is null)
+        {
+            percentages[0] = 100 - percentages[1]!.Value;
+        }
+        else if (percentages[1] is null)
+        {
+            percentages[1] = 100 - percentages[0]!.Value;
+        }
+
+        var total = percentages[0]!.Value + percentages[1]!.Value;
+        var progress = total == 0 ? 0.5 : percentages[1]!.Value / total;
+        var alphaMultiplier = Math.Min(total, 100) / 100;
+        var firstAlpha = colors[0].Alpha / 255d;
+        var secondAlpha = colors[1].Alpha / 255d;
+        var mixedAlpha = firstAlpha * (1 - progress) + secondAlpha * progress;
+
+        byte MixChannel(byte first, byte second)
+        {
+            var premultiplied = first / 255d * firstAlpha * (1 - progress)
+                + second / 255d * secondAlpha * progress;
+            return SrgbChannel(mixedAlpha == 0 ? premultiplied : premultiplied / mixedAlpha);
+        }
+
+        return new CssColor(
+            MixChannel(colors[0].Red, colors[1].Red),
+            MixChannel(colors[0].Green, colors[1].Green),
+            MixChannel(colors[0].Blue, colors[1].Blue),
+            SrgbChannel(mixedAlpha * alphaMultiplier));
     }
 
     private static List<CssToken>? ColorFunctionComponents(IReadOnlyList<CssToken> args, bool legacy)

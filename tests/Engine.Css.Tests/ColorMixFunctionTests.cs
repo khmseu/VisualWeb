@@ -1,0 +1,84 @@
+using VisualWeb.Engine.Html;
+using Xunit;
+
+namespace VisualWeb.Engine.Css.Tests;
+
+public sealed class ColorMixFunctionTests
+{
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    [Theory]
+    [InlineData("color-mix(in srgb, red, blue)", 128, 0, 128, 255)]
+    [InlineData("color-mix(IN SRGB, red 25%, blue)", 64, 0, 191, 255)]
+    [InlineData("color-mix(in srgb, 25% red, blue)", 64, 0, 191, 255)]
+    [InlineData("color-mix(in srgb, red 20%, blue 60%)", 64, 0, 191, 204)]
+    [InlineData("color-mix(in srgb, red 70%, blue 70%)", 128, 0, 128, 255)]
+    [InlineData("color-mix(in srgb, peru 40%, palegoldenrod)", 225, 192, 127, 255)]
+    [InlineData("color-mix(in srgb, rgba(255, 0, 0, 0.7) 25%, rgba(0, 255, 0, 0.2) 75%)", 137, 118, 0, 83)]
+    [InlineData("color-mix(in srgb, red 0%, blue 0%)", 128, 0, 128, 0)]
+    public void SupportedSrgbMixesNormalizeAndComputePremultipliedChannels(
+        string input, byte red, byte green, byte blue, byte alpha)
+    {
+        var (result, style) = Compute("color:" + input);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
+    }
+
+    [Fact]
+    public void NestedRgbCommasAreNotTreatedAsMixSeparators()
+    {
+        var (result, style) = Compute("color:color-mix(in srgb, rgb(255, 0, 0) 25%, rgba(0, 0, 255, 1))");
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(64, 0, 191), style["color"]);
+    }
+
+    [Theory]
+    [InlineData("color-mix(red, blue)")]
+    [InlineData("color-mix(in oklab, red, blue)")]
+    [InlineData("color-mix(in srgb-linear, red, blue)")]
+    [InlineData("color-mix(in srgb, red -1%, blue)")]
+    [InlineData("color-mix(in srgb, red 101%, blue)")]
+    [InlineData("color-mix(in srgb, red, blue, green)")]
+    [InlineData("color-mix(in srgb, none, blue)")]
+    [InlineData("color-mix(in srgb, red, currentColor)")]
+    [InlineData("color-mix(in srgb, color-mix(in srgb, red, blue), green)")]
+    public void UnsupportedColorMixFormsDoNotOverrideEarlierColor(string input)
+    {
+        var (result, style) = Compute("color:red;color:" + input);
+        Assert.NotEmpty(result.Diagnostics);
+        Assert.Equal(new CssColor(255, 0, 0), style["color"]);
+    }
+
+    [Fact]
+    public void ColorMixWorksInLonghandsAndAtomicShorthands()
+    {
+        var (result, style) = Compute(
+            "color:color-mix(in srgb, red, blue);" +
+            "background:none color-mix(in srgb, white 50%, black);" +
+            "border:1px solid color-mix(in srgb, red 25%, blue)");
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(128, 0, 128), style["color"]);
+        Assert.Equal(new CssColor(128, 128, 128), style["background-color"]);
+        Assert.Equal(new CssColor(64, 0, 191), style["border-top-color"]);
+        Assert.Equal(new CssLength(1, "px"), style["border-top-width"]);
+    }
+
+    [Fact]
+    public void UnsupportedMixCannotPartiallyApplyShorthands()
+    {
+        var (result, style) = Compute(
+            "border:3px solid red;border:1px solid color-mix(in oklab, red, blue);" +
+            "background:blue;background:none color-mix(in srgb, red -1%, blue)");
+        Assert.Equal(2, result.Diagnostics.Count);
+        Assert.Equal(new CssLength(3, "px"), style["border-top-width"]);
+        Assert.Equal(new CssColor(255, 0, 0), style["border-top-color"]);
+        Assert.Equal(new CssColor(0, 0, 255), style["background-color"]);
+    }
+
+    private static (CssStyleResult Result, CssComputedStyle Style) Compute(string declarations)
+    {
+        var document = HtmlParser.Parse("<!doctype html><p id=p>Text</p>", cancellationToken: Cancellation).Document;
+        var result = CssStyleEngine.Compute(document, [new("p{" + declarations + "}")], cancellationToken: Cancellation);
+        return (result, result.Styles[document.GetElementById("p")!]);
+    }
+}

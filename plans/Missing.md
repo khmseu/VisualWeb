@@ -2110,7 +2110,29 @@ and exclude gamut mapping/interpolation.
 existing D65-to-sRGB and gamut checks. Twenty focused cases and all 1,583 CSS
 tests pass. Debug/Release solution builds have zero warnings/errors; both full
 solution test runs pass all 16,849 tests. Formatting verification and
-`git diff --check` pass. Commit and CI status are pending.
+`git diff --check` pass. Commit `4e0779e` is pushed to `main`. Linux
+development (run 43658994675), Windows confinement (run 43658994676), and
+CodeQL (run 43658994696) passed.
+
+**Pass 5 standards selection (2026-11-15):** CSS Color Level 4 remains the
+highest actionable partial standard (~60%), but its interpolation gap has no
+independent static consumer in the existing property set. To provide an
+observable color-mixing value without approximating its default Oklab behavior,
+this increment selects the bounded CSS Color Level 5
+`color-mix()` subset: exactly two colors with explicit `in srgb`, percentage
+normalization from CSS Values Level 5, and CSS Color 4 premultiplied-alpha
+interpolation. Default Oklab, other interpolation spaces, nested mixes,
+`currentColor` and missing `none` values remain diagnosed. Added local manifest
+entries for CSS Color 5 and CSS Values 5; both sources downloaded successfully
+on 2026-11-15 and were read before implementation.
+
+**Pass 5 implementation and focused validation:** Added exactly-two-color
+`color-mix(in srgb, ...)` parsing, optional 0..100% weights, omitted-weight
+distribution, forced percentage normalization, residual-alpha scaling and
+premultiplied interpolation. Twenty focused regressions and all 1,603 CSS
+tests pass. Debug/Release solution builds have zero warnings/errors; both full
+solution test runs pass all 16,869 tests; format verification and
+`git diff --check` pass. Commit, push and CI remain pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

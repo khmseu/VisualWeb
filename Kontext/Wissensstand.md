@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; Pass 4 lokal validiert, Commit/Push/CI ausstehend):**
+**Aktueller Standards-Pass (2026-11-15; Pass 5 lokal validiert, Commit/Push/CI ausstehend):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -34,12 +34,27 @@ vor CSS Syntax (~35%) die hoechste actionable Teilspezifikation, waehrend
 ECMAScript (~90%) ausserhalb Phase 11w bleibt. 20 fokussierte Faelle, alle
 1.583 CSS-Tests, Debug-/Release-Builds ohne Warnungen/Fehler und beide
 Volltests mit je 16.849 Tests bestehen; Formatverifikation und
-`git diff --check` bestehen. Commit, Push und CI stehen aus. Nach Pass 4
-bleiben sechs der zehn gewuenschten Passes. Siehe
+`git diff --check` bestehen. Commit `4e0779e` ist auf `main` gepusht.
+Linux development (Run 43658994675), Windows confinement (Run 43658994676)
+und CodeQL (Run 43658994696) sind erfolgreich. Nach Pass 4 bleiben sechs der
+zehn gewuenschten Passes. Siehe
 [KP-356](./Kontextprotokoll.md#kp-356---css-color-lab-function),
 [KP-357](./Kontextprotokoll.md#kp-357---css-color-lch-selection) und
 [KP-358](./Kontextprotokoll.md#kp-358---css-color-oklab-selection) sowie
-[KP-359](./Kontextprotokoll.md#kp-359---pass-3-ci-and-oklch-selection).
+[KP-359](./Kontextprotokoll.md#kp-359---pass-3-ci-and-oklch-selection) und
+[KP-360](./Kontextprotokoll.md#kp-360---oklch-ci-bestaetigt).
+Pass 5 waehlt begrenztes CSS-Color-5-`color-mix(in srgb, ...)`, weil damit
+ein statischer Farbverbraucher fuer die bislang ungenutzte CSS-Color-4-
+Interpolation entsteht. Exakt zwei Farben und explizites
+`srgb` werden mit CSS Values 5 Prozentnormalisierung und CSS Color 4
+premultipliziertem Alpha gemischt; Standard-Oklab und andere Mischraeume
+bleiben Diagnosen. CSS Color 5/Values 5 wurden neu in das Manifest aufgenommen
+und am 2026-11-15 geladen. 20 fokussierte und alle 1.603 CSS-Tests bestehen;
+Debug-/Release-Builds sind warnungs-/fehlerfrei und beide Volltests bestehen
+16.869 Tests; Format und `git diff --check` bestehen. Commit/Push/CI stehen
+noch aus. Nach Pass 5 verbleiben fuenf der zehn gewuenschten Passes. Siehe
+[KP-361](./Kontextprotokoll.md#kp-361---bounded-color-mix-selection) und
+[KP-362](./Kontextprotokoll.md#kp-362---color-mix-lokale-validierung).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

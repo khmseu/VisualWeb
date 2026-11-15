@@ -46,9 +46,9 @@
       "title": "ClearScript V8 host API and resource constraints",
       "url": "https://github.com/microsoft/ClearScript/blob/7.5.1/ClearScript/V8/V8ScriptEngine.cs",
       "file": "clearscript-v8.html",
-      "fetchedAt": "2026-10-11T17:17:18.94426+00:00",
-      "checkedAt": "2026-10-11T17:17:18.94426+00:00",
-      "eTag": "W/\u00223df95a52c0123cdb803f2160cb56c654\u0022",
+      "fetchedAt": "2026-11-15T00:49:36.130547+00:00",
+      "checkedAt": "2026-11-15T00:49:36.130547+00:00",
+      "eTag": "W/\u00220bca1774f698df46bda40d35f46746a0\u0022",
       "lastModified": null
     },
     {
@@ -56,9 +56,9 @@
       "title": "ClearScript V8 heap and external allocation constraints",
       "url": "https://github.com/microsoft/ClearScript/blob/7.5.1/ClearScript/V8/V8RuntimeConstraints.cs",
       "file": "clearscript-v8-constraints.html",
-      "fetchedAt": "2026-10-11T17:17:19.4968523+00:00",
-      "checkedAt": "2026-10-11T17:17:19.4968523+00:00",
-      "eTag": "W/\u002295475107e0ab909b8deb3e048be5e073\u0022",
+      "fetchedAt": "2026-11-15T00:49:36.9285123+00:00",
+      "checkedAt": "2026-11-15T00:49:36.9285123+00:00",
+      "eTag": "W/\u00225ceaacdcc3c5d6f304f42bc5a2433a66\u0022",
       "lastModified": null
     },
     {
@@ -96,9 +96,9 @@
       "title": "Bubblewrap namespace sandbox design and invocation",
       "url": "https://github.com/containers/bubblewrap/blob/v0.9.0/bwrap.xml",
       "file": "bubblewrap.html",
-      "fetchedAt": "2026-10-11T17:17:19.9035563+00:00",
-      "checkedAt": "2026-10-11T17:17:19.9035563+00:00",
-      "eTag": "W/\u00229bce7387e30196fd885ea40e87bc120e\u0022",
+      "fetchedAt": "2026-11-15T00:49:37.5309123+00:00",
+      "checkedAt": "2026-11-15T00:49:37.5309123+00:00",
+      "eTag": "W/\u002299b5ec44269c226fbddc03b2a48c1094\u0022",
       "lastModified": null
     },
     {
@@ -116,9 +116,9 @@
       "title": "libseccomp filter rules and architecture handling",
       "url": "https://github.com/seccomp/libseccomp/blob/v2.5.5/doc/man/man3/seccomp_rule_add.3",
       "file": "libseccomp.html",
-      "fetchedAt": "2026-10-11T17:17:20.4487931+00:00",
-      "checkedAt": "2026-10-11T17:17:20.4487931+00:00",
-      "eTag": "W/\u00229a0f0842eaf31fe1205a2240b0e885f4\u0022",
+      "fetchedAt": "2026-11-15T00:49:38.2959805+00:00",
+      "checkedAt": "2026-11-15T00:49:38.2959805+00:00",
+      "eTag": "W/\u0022e31ce11b03a2bdca3df3010585cb13fd\u0022",
       "lastModified": null
     },
     {
@@ -230,6 +230,16 @@
       "checkedAt": "2026-11-07T17:41:35.2532929+00:00",
       "eTag": "\u00226aedffa8-135593\u0022",
       "lastModified": "2026-11-06T16:26:16+00:00"
+    },
+    {
+      "id": "css-color-5",
+      "title": "CSS Color Module Level 5",
+      "url": "https://www.w3.org/TR/css-color-5/",
+      "file": "css-color-5.html",
+      "fetchedAt": "2026-11-15T00:49:38.5464244+00:00",
+      "checkedAt": "2026-11-15T00:49:38.5464244+00:00",
+      "eTag": null,
+      "lastModified": "2026-11-14T16:45:20+00:00"
     },
     {
       "id": "css-sizing",
@@ -366,10 +376,10 @@
       "title": "Content Security Policy Level 3",
       "url": "https://www.w3.org/TR/CSP3/",
       "file": "csp3.html",
-      "fetchedAt": "2026-10-15T17:16:23.5764491+00:00",
-      "checkedAt": "2026-10-15T17:16:23.5764491+00:00",
+      "fetchedAt": "2026-11-15T00:49:38.7645738+00:00",
+      "checkedAt": "2026-11-15T00:49:38.7645738+00:00",
       "eTag": null,
-      "lastModified": "2026-09-16T13:44:14+00:00"
+      "lastModified": "2026-10-27T09:11:13+00:00"
     },
     {
       "id": "public-suffix-list",
@@ -377,7 +387,7 @@
       "url": "https://publicsuffix.org/list/",
       "file": "public-suffix-list.html",
       "fetchedAt": "2026-10-15T18:23:19.2822886+00:00",
-      "checkedAt": "2026-10-15T18:23:19.2822886+00:00",
+      "checkedAt": "2026-11-15T00:49:38.9146768+00:00",
       "eTag": "\u002289611f1c94c39134f92f4a88d6a4980f\u0022",
       "lastModified": "2026-10-07T07:28:29+00:00"
     },
@@ -470,6 +480,16 @@
       "checkedAt": "2026-11-07T17:41:45.4758141+00:00",
       "eTag": "\u00226aedffa8-ec2d1\u0022",
       "lastModified": "2026-11-06T16:26:16+00:00"
+    },
+    {
+      "id": "css-values-5",
+      "title": "CSS Values and Units Level 5",
+      "url": "https://drafts.csswg.org/css-values-5/",
+      "file": "css-values-5.html",
+      "fetchedAt": "2026-11-15T00:50:53.9861973+00:00",
+      "checkedAt": "2026-11-15T00:50:53.9861973+00:00",
+      "eTag": "\u00226af8913a-efcd3\u0022",
+      "lastModified": "2026-11-14T16:50:02+00:00"
     },
     {
       "id": "css-box",
