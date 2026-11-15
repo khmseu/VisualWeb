@@ -56,6 +56,11 @@ public sealed class UrlSearchParams
         return _entries.Where(entry => entry.Name == scalarName).Select(entry => entry.Value).ToArray();
     }
 
+    /// <summary>Determines whether an entry has the given scalar-value name.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-has">URLSearchParams.has()</see>.
+    /// This subset does not filter by value.</remarks>
+    public bool Has(string name) => Get(name) is not null;
+
     private static List<(string Name, string Value)> Parse(string input)
     {
         var bytes = Utf8.GetBytes(input);

@@ -40,11 +40,12 @@ behavior does not add nested browsing contexts or sandbox flags; other
 inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
-WHATWG string initializer, `append()`, and ordered `size`, `get()` and `getAll()`
-subset. It decodes `application/x-www-form-urlencoded` tuples, preserving
-duplicates. This standalone Core API does not provide other mutation methods,
-stringification, URL-object linkage, iterable/record initialization or Web IDL
-bindings. Mutable DOM URL setters remain deferred.
+WHATWG string initializer, `append()`, ordered `size`, `get()` and `getAll()`,
+plus name-only `has()`. It decodes `application/x-www-form-urlencoded` tuples,
+preserving duplicates. This standalone Core API does not provide the optional
+`has(name, value)` filter, other mutation methods, stringification, URL-object
+linkage, iterable/record initialization or Web IDL bindings. Mutable DOM URL
+setters remain deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 
 ## Encoding

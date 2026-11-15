@@ -65,4 +65,15 @@ public sealed class UrlSearchParamsTests
         Assert.Equal(new[] { "first", "second", "third" }, parameters.GetAll("a"));
         Assert.Equal("\uFFFD", parameters.Get("\uFFFD"));
     }
+
+    [Fact]
+    public void HasMatchesDuplicateNamesAndNormalizesScalarValueStrings()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+        var parameters = new UrlSearchParams("a=first&a=second&%EF%BF%BD=value");
+
+        Assert.True(parameters.Has("a"));
+        Assert.True(parameters.Has(unpairedSurrogate));
+        Assert.False(parameters.Has("missing"));
+    }
 }

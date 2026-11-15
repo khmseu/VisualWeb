@@ -14,7 +14,7 @@ WHATWG-Standards nach den Schaetzungen im Support-Inventar gerankt; aktuell
 sind WHATWG URL und Encoding mit je ~30% gleichauf. Der bereits begonnene
 CSS-Color-Pass 1 bleibt davon unberuehrt. Siehe DEC-033 und KP-382.
 
-**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 4 in Arbeit):** Der
+**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 6 ausgewaehlt):** Der
 aktuelle Auftrag fordert zehn neue getrennte Inkremente. Pass 1, CSS-Color-4-
 Ray-Trace-Mapping fuer encoded und lineare Display-P3-Werte, wurde vor der
 Regelaenderung in KP-382 gewaehlt und davon nicht rueckwirkend geaendert;
@@ -42,7 +42,12 @@ gleichrangigen WHATWG-URL-Standard der distincte Mutationsschritt
 4.006 Core-Tests und 16.914 Solution-Tests bestehen; der Build ist ohne
 Warnungen/Fehler und die Formatverifikation besteht. Commit `6d4a1ec` ist auf
 `main` gepusht; Linux, Windows x64/arm64 und CodeQL-CI sind gruen. Pass 5 ist
-abgeschlossen. Siehe Q-037 und KP-379 bis KP-391.
+abgeschlossen. Fuer Pass 6 wurde im weiterhin gleichrangigen WHATWG-URL-
+Standard die begrenzte `URLSearchParams.has(name)`-Operation ausgewaehlt.
+Der optionale Wertfilter bleibt ausserhalb des Inkrements. Siehe Q-037 und
+KP-379 bis KP-393. Sechs fokussierte URLSearchParams-Tests, 4.007 Core-Tests
+und 16.915 Solution-Tests bestehen; der Build ist ohne Warnungen/Fehler und
+die Formatverifikation besteht. Commit, Push und CI fuer Pass 6 stehen aus.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
