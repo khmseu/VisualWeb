@@ -217,7 +217,7 @@ public sealed class ProcessTests
     }
     [Theory]
     [InlineData(true)]
-    [InlineData(false)]
+    [InlineData(false, Explicit = true)]
     public async Task WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(bool cancel)
     {
         if (!OperatingSystem.IsWindows()) { return; }
@@ -398,7 +398,7 @@ public sealed class ProcessTests
         Assert.Null(renderer.TakeFailure());
     }
     [Theory]
-    [InlineData(false)]
+    [InlineData(false, Explicit = true)]
     [InlineData(true)]
     public async Task CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(bool cancel)
     {

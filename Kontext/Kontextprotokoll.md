@@ -11227,3 +11227,48 @@ verkuerzt noch Wiederholungen oder Sicherheitspruefungen entfernt.
 
 **Status:** Instrumentierung committed/gepusht, CI erfolgreich, Vergleich
 dokumentiert. Trunk meldete nur bestehende Tool-/Runner-Migrationshinweise.
+
+### KP-412 - CPU-Deadline-Faelle nur noch explizit ausfuehren
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Nutzerturn dieser Sitzung um 21:48 Europe/Berlin;
+  [ProcessTests.cs](../tests/VisualWeb.Browser.Tests/ProcessTests.cs),
+  [Linux-Workflow](../.github/workflows/linux-development.yml),
+  [Windows-Workflow](../.github/workflows/windows-confinement.yml) und
+  [Testleitfaden](../tests/README.md#opt-in-cpu-deadline-tests);
+  offizielle [xUnit RunSettings](https://xunit.net/docs/config-runsettings#explicit)
+  sowie XML-Dokumentation des lokal installierten xUnit-v3-Pakets 3.2.2.
+- Bezug: Nutzerentscheidung nach den Messungen aus KP-411.
+
+**Anforderung (Nutzerangabe, beschlossen):** Die erheblich langsameren
+CPU-Deadline-Tests sollen plattformuebergreifend nur auf ausdrueckliche
+Anforderung laufen.
+
+**Umsetzung (Belegt):** Ausschliesslich `InlineData(false)` der beiden
+CPU-Cancellation/Deadline-Theories wird mit `Explicit = true` markiert.
+Keine eigenen Skip-Flags oder fruehen Returns: der Runner selektiert die
+Zeilen, Cancellation bleibt nicht-explizit. Normale lokale Laeufe und
+automatische Push-/PR-CI ueberspringen die beiden Deadline-Faelle. Die
+bestehenden fuenf Windows-Wiederholungen fuehren deshalb weiterhin Cancellation,
+aber keine Deadline-Wartezeit aus. Beide Workflows erhalten ein manuelles
+`run_cpu_deadline_tests`-Boolean (Default `false`); nur ausdrueckliches `true`
+startet einen zusaetzlichen Schritt mit `xUnit.Explicit=only` und Filter auf
+die beiden Methoden. Der Deadline-Fall laeuft dabei einmal je unterstuetzter
+Architektur, nicht fuenfmal. Testfristen und alle Sicherheitsassertionen
+bleiben unveraendert. Test- und beide Confinement-Anleitungen wurden angepasst.
+
+**Validierung (Belegt):** Solution-Build ohne Warnungen/Fehler und
+Formatverifikation bestehen. Ein lokaler Lauf beider Theories ohne
+RunSettings ueberspringt beide `false`-Zeilen und laesst beide `true`-Zeilen
+ausfuehren. Ein zweiter Lauf mit `-- xUnit.Explicit=only` fuehrt genau die
+beiden `false`-Zeilen aus und ueberspringt beide `true`-Zeilen. Linux-
+Deadline- und Cancellation-Verhalten sind dabei nativ erfolgreich; der
+Windows-Plattformzweig kehrt auf Linux weiterhin frueh zurueck und ist
+kein nativer Windows-Nachweis. Die Solution-Gesamtregression besteht mit
+16.918 ausgefuehrten Tests, davon 1.339 Browser-Tests; beide expliziten
+Deadline-Zeilen werden sichtbar uebersprungen. `git diff --check` besteht.
+
+**Status:** Implementiert, fokussiert und per Gesamtregression validiert.
+Nicht committed/gepusht; neue native Windows- und Workflow-Dispatch-
+Validierung ist noch nicht erfolgt.

@@ -119,6 +119,22 @@ Test, 30 Sekunden Windows-Standard) plus Worker-Start/Erholung erklaeren den
 gezielten Warteanteil; das ist keine Messung reiner Rechenleistung. Siehe KP-410
 und KP-411.
 
+**CPU-Deadline-Tests nur auf ausdruecklichen Wunsch (2026-11-15):** Der Nutzer
+moechte die teuren CPU-Deadline-Faelle auf allen Plattformen aus normalen
+Testlaeufen herausnehmen. Nur die beiden `cancel: false`-Zeilen in
+`ProcessTests` sind jetzt xUnit-v3-Explicit-Tests; Cancellation, Queue-Abbruch,
+Tab-Schliessen, Speicher- und Task-Limits bleiben im Standardlauf. Lokaler
+Namensfilter ohne Opt-in ueberspringt genau die Deadline-Zeilen, waehrend
+`-- xUnit.Explicit=only` nur diese ausfuehrt (auf Linux nativ verifiziert;
+Windows-Zweig lokal nicht ausgefuehrt). Beide Workflows bieten das manuelle
+Boolean-Eingabefeld `run_cpu_deadline_tests` mit Default `false`; bei `true`
+kommt je Architektur ein Deadline-only-Schritt hinzu. Die fuenf normalen
+Windows-Wiederholungen bleiben Cancellation-only. Build ohne Warnungen/Fehler
+und Formatpruefung bestehen; Gesamtregression besteht mit 16.918 ausgefuehrten
+Tests (Browser: 1.339), die beiden expliziten Zeilen werden uebersprungen.
+Nicht committed/gepusht; neue native Windows- und CI-Dispatch-Pruefung offen.
+Siehe [Testanleitung](../tests/README.md#opt-in-cpu-deadline-tests) und KP-412.
+
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;

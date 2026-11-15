@@ -4,6 +4,11 @@ on:
   pull_request:
   push:
   workflow_dispatch:
+    inputs:
+      run_cpu_deadline_tests:
+        description: Run the opt-in CPU deadline tests
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,11 +37,11 @@ jobs:
           dotnet test VisualWeb.slnx --configuration Release --no-build
           --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
           --logger "console;verbosity=normal"
-      - name: Repeat CPU-pressure renderer recovery
+      - name: Repeat CPU-pressure cancellation recovery
         shell: pwsh
         run: |
           for ($attempt = 1; $attempt -le 5; $attempt++) {
-            Write-Host "CPU-pressure recovery attempt $attempt/5 (${{ matrix.architecture }})"
+            Write-Host "CPU-pressure cancellation recovery attempt $attempt/5 (${{ matrix.architecture }})"
             dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer" --logger "console;verbosity=normal"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -49,5 +54,11 @@ jobs:
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - name: Run slow browser tests
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+      - name: Run CPU deadline tests (opt-in)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_cpu_deadline_tests }}
+        run: >-
+          dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
+          --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer|FullyQualifiedName~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs"
+          --logger "console;verbosity=normal" -- xUnit.Explicit=only
       - name: Run slow scripting tests
         run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"

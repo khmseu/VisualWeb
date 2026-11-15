@@ -272,6 +272,12 @@ Measured behaviors include:
 - Closing a tab during CPU pressure terminates its scope without publishing a
   stale frame/failure or changing the other tab's renderer and history.
 
+The CPU deadline theory row (`cancel: false`) is explicit and skipped by normal
+local and automatic CI runs; CPU cancellation and tab-close cases remain active.
+Request the unchanged deadline scenario with the manual workflow input
+`run_cpu_deadline_tests` or the VSTest explicit-test command in the
+[test guide](../tests/README.md#opt-in-cpu-deadline-tests).
+
 Supervisor references are detached before disposal so a failed cleanup cannot
 leave a disposed connection available to later polling or renderer diagnostics.
 Cleanup errors still surface; this is not a retry or weaker launch fallback.

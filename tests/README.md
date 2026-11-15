@@ -331,7 +331,36 @@ and runner-reported duration, including successful resource-exhaustion tests.
 Durations cover the complete test case, not just its pressure phase, and are
 rounded by the console logger. Platform-guarded tests that return early still
 appear as passed; their timings do not measure the unsupported-platform scenario.
-The Windows CPU-pressure recovery step retains its five additional repetitions.
+The Windows CPU-pressure recovery step retains five additional repetitions of
+the cancellation case; its deadline case is opt-in as described below.
+
+### Opt-in CPU deadline tests
+
+Only the `cancel: false` rows of
+`WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer` and
+`CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs` are
+marked `Explicit = true`. Normal local test runs and push/PR CI skip these
+deliberate deadline waits. Cancellation, queued cancellation, CPU-pressure
+tab-close, memory and task-exhaustion tests still run normally; production and
+test deadlines are unchanged.
+
+Request the deadline cases locally with the existing VSTest runner:
+
+```sh
+dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer|FullyQualifiedName~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs" --logger "console;verbosity=normal" -- xUnit.Explicit=only
+```
+
+`xUnit.Explicit=only` runs just the explicit rows; `xUnit.Explicit=on` includes
+them alongside normally selected tests. A name filter alone does not opt in.
+These are VSTest RunSettings arguments after `--`, not MTP switches.
+Native confinement prerequisites still apply, and opposite-platform cases
+still return early rather than exercise their scenario.
+
+For CI, manually dispatch either **Linux development** or **Windows confinement**
+with `run_cpu_deadline_tests` checked (`true`). This adds one deadline-only
+step on each architecture in that workflow; automatic runs and manual runs
+with the default `false` do not execute it. The five repeated Windows runs
+remain cancellation-only even when the separate deadline step is requested.
 
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy

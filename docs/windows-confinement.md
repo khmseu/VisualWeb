@@ -97,9 +97,14 @@ pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
 on Windows, including a private stdin roundtrip to distinct stdout/stderr pipes
 and checks that the parent endpoints are non-inheritable. Platform tests verify
 the 64-bit native startup structure sizes and standard-handle offsets used on
-x64 and arm64. The native Windows x64/arm64 workflow runs the full solution test
-suite and repeats both CPU-pressure recovery cases five times without retrying
-failures. Process integration tests use a nonparallel xUnit collection so unrelated
+x64 and arm64. The native Windows x64/arm64 workflow runs the normal solution test
+suite and repeats CPU-pressure cancellation recovery five times without retrying
+failures. Only the CPU deadline theory row is explicit: ordinary local and
+push/PR runs skip it. Request it through the manual workflow input
+`run_cpu_deadline_tests`, or the VSTest explicit-test command in the
+[test guide](../tests/README.md#opt-in-cpu-deadline-tests). The manual workflow
+runs the deadline row once per architecture, not in the five-repeat step.
+Process integration tests use a nonparallel xUnit collection so unrelated
 browser tests cannot compete with their cold worker staging/startup. CPU-pressure
 recovery uses the production 30-second startup/render deadline, not a five-second
 test override that can expire during ordinary cold ARM64 staging or replacement
