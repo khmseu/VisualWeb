@@ -10862,4 +10862,22 @@ Der betroffene Test bestand isoliert auf dem aktuellen Stand und auf dem
 Pass-6-Baseline-Commit `3b788b1`; ein anschliessender vollstaendiger
 Solution-Lauf ohne gleichzeitige Formatverifikation bestand.
 
-**Status / naechster Schritt:** Commit, Push und CI fuer Pass 7 stehen aus.
+**Status / naechster Schritt:** Commit `eff5b13` ist auf `main` gepusht;
+CI laeuft.
+
+### KP-397 - Pass 7 CI-gruen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Commit `eff5b13`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43731659375),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43731659579)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43731659121).
+- Bezug: schliesst Pass 7 aus KP-395/KP-396 ab.
+
+**Ergebnis (belegt):** `eff5b13` steht auf `main`. Linux development,
+Windows confinement (x64 und arm64) sowie Push-on-main/CodeQL endeten
+erfolgreich. Die lokale Vollvalidierung ist in KP-396 dokumentiert.
+
+**Naechster Schritt:** Fuer Pass 8 WHATWG-only Prioritaeten und offene,
+konkrete Teilbereiche anhand des aktuellen Trackers und Supportinventars
+erneut bewerten.
