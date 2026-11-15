@@ -40,9 +40,9 @@ behavior does not add nested browsing contexts or sandbox flags; other
 inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
-WHATWG string initializer, `append()`, `delete(name)` and
-`delete(name, value)`, ordered `size`, `get()` and `getAll()`, plus `has()`
-with name-only and name/value matching.
+WHATWG string initializer, `append()`, `delete(name)`,
+`delete(name, value)` and `set(name, value)`, ordered `size`, `get()` and
+`getAll()`, plus `has()` with name-only and name/value matching.
 It decodes `application/x-www-form-urlencoded` tuples, preserving duplicates.
 This standalone Core API does not provide other mutation methods,
 stringification, URL-object linkage, iterable/record initialization or Web IDL

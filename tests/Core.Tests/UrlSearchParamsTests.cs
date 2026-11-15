@@ -132,4 +132,34 @@ public sealed class UrlSearchParamsTests
         parameters.Delete("a", "missing");
         Assert.Equal(3, parameters.Size);
     }
+
+    [Fact]
+    public void SetReplacesFirstMatchingTupleAndRemovesLaterDuplicates()
+    {
+        var parameters = new UrlSearchParams("a=first&b=middle&a=last&a=third&c=end");
+
+        parameters.Set("a", "replacement");
+
+        Assert.Equal(3, parameters.Size);
+        Assert.Equal(new[] { "replacement" }, parameters.GetAll("a"));
+        Assert.Equal("middle", parameters.Get("b"));
+        Assert.Equal("end", parameters.Get("c"));
+    }
+
+    [Fact]
+    public void SetAppendsMissingNameAndNormalizesScalarValueStrings()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+        var parameters = new UrlSearchParams("a=1&b=2");
+
+        parameters.Set(unpairedSurrogate, unpairedSurrogate);
+
+        Assert.Equal(3, parameters.Size);
+        Assert.Equal(new[] { "\uFFFD" }, parameters.GetAll("\uFFFD"));
+
+        parameters.Set("new", "appended");
+
+        Assert.Equal(4, parameters.Size);
+        Assert.Equal("appended", parameters.Get("new"));
+    }
 }

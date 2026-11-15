@@ -2433,6 +2433,18 @@ are complete: commit `d637bb7` is pushed to `main`; Linux development, Windows
 confinement, and CodeQL runs `43739620711`, `43739621051`, and `43739619909`
 all pass. Pass 9 is complete; one of the ten requested increments remains.
 
+### Pass 10: URLSearchParams set(name, value)
+
+WHATWG URL and Encoding remain tied at ~30%; this final requested pass adds
+`URLSearchParams.set(name, value)`. It replaces the value in the first
+same-name tuple and removes later duplicates, or appends a tuple if the name
+is absent. Inputs use scalar-value normalization. URL-object linkage, other
+mutations, stringification, and Web IDL remain unsupported. The URL Standard
+cache is fresh (`checkedAt: 2026-11-07`); no refresh was needed. Eleven
+focused URLSearchParams tests, all 4,012 Core tests, and all 16,920 solution
+tests pass. The solution build has zero warnings/errors and formatting
+verification passes. Local validation is complete; commit, push, and CI remain.
+
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
 priorities below; the choice of protocol and its scope remain open. See the

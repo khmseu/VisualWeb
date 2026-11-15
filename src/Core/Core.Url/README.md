@@ -12,9 +12,9 @@ with `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"n
 `about:blank` URL snapshots are opaque; the browser's separate, bounded
 page-initiated document-origin inheritance is selected by `LoadedPage`, not by
 the URL facade. `UrlSearchParams` provides string initialization, ordered
-`Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`, and
-`Delete(name)`/`Delete(name, value)`. Other mutations, stringification and URL
-linkage are not implemented.
+`Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`,
+`Delete(name)`/`Delete(name, value)`, and `Set(name, value)`. Other mutations,
+stringification and URL linkage are not implemented.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
 
 Official source: <https://url.spec.whatwg.org/> (manifest ID `url`, local

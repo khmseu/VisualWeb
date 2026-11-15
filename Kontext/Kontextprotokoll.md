@@ -11048,3 +11048,49 @@ Pass 9 abgeschlossen; ein angefordertes Inkrement bleibt.
 
 **Naechster Schritt:** Pass 10 anhand der WHATWG-Prioritaetsregel und des
 aktualisierten Missing-Trackers neu auswaehlen.
+
+### KP-406 - Pass 10 URLSearchParams.set(name, value) ausgewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: WHATWG-Rangfolge neu geprueft; Auswahl ist eine begruendete
+  Ableitung, keine gesonderte Nutzerwahl.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [Support inventory](../docs/standards.md#support-status),
+  [Core URL guide](../docs/core.md#url),
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs) und lokale
+  [URL Standard set algorithm](../specs/cache/url.html#dom-urlsearchparams-set).
+  Das Manifest meldet fuer `url` `checkedAt: 2026-11-07`.
+- Bezug: folgt auf den in KP-405 abgeschlossenen Pass 9 und DEC-033.
+
+**Auswahl (Ableitung):** URL und Encoding bleiben bei ~30% gleichauf. Aus dem
+noch offenen URLSearchParams-Bereich ist `set(name, value)` ein klar
+begrenzter Algorithmus: erstes passendes Tupel aktualisieren, weitere
+gleichnamige entfernen, bei fehlendem Namen anhaengen. Er ist mit der
+bestehenden geordneten Tupelliste testbar; die breiteren Decoder- und
+Streaming-Oberflaechen von Encoding wurden fuer diesen finalen Pass nicht
+gewaehlt. Der grobe URL-Abdeckungswert bleibt ~30%.
+
+**Status:** Ausgewaehlt; test-first Implementierung und Validierung laufen.
+
+### KP-407 - Pass 10 lokal implementiert und validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quellen: `UrlSearchParams.Set` in
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs), die
+  [URLSearchParams tests](../tests/Core.Tests/UrlSearchParamsTests.cs),
+  [Core guide](../docs/core.md#url), [standards inventory](../docs/standards.md#support-status),
+  [Core.Url README](../src/Core/Core.Url/README.md) und der aktualisierte
+  [Missing tracker](../plans/Missing.md).
+- Bezug: implementiert die in KP-406 ausgewaehlte Operation.
+
+**Umsetzung und Ergebnis (Belegt):** Vor Implementierung scheiterte der
+fokussierte Test wegen der fehlenden `Set`-Methode. Die neue Methode
+scalar-value-normalisiert beide Argumente, aktualisiert das erste passende
+Tupel und entfernt weitere gleichnamige Tupel, oder haengt den Wert an, wenn
+der Name fehlt. Elf fokussierte Tests, alle 4.012 Core-Tests und alle 16.920
+Solution-Tests bestehen. Der Solution-Build meldet null Warnungen/Fehler; die
+Formatverifikation besteht.
+
+**Status:** Lokal validiert; eigener Commit, Push und CI stehen aus.

@@ -55,6 +55,32 @@ public sealed class UrlSearchParams
         _entries.RemoveAll(entry => entry.Name == scalarName && entry.Value == scalarValue);
     }
 
+    /// <summary>Sets the scalar-value name's first value, removing later duplicates, or appends it.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-set">URLSearchParams.set()</see>.
+    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    public void Set(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+        var scalarName = ToScalarValueString(name);
+        var scalarValue = ToScalarValueString(value);
+        var firstIndex = _entries.FindIndex(entry => entry.Name == scalarName);
+        if (firstIndex < 0)
+        {
+            _entries.Add((scalarName, scalarValue));
+            return;
+        }
+
+        _entries[firstIndex] = (scalarName, scalarValue);
+        for (var index = _entries.Count - 1; index > firstIndex; index--)
+        {
+            if (_entries[index].Name == scalarName)
+            {
+                _entries.RemoveAt(index);
+            }
+        }
+    }
+
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
     public string? Get(string name)
