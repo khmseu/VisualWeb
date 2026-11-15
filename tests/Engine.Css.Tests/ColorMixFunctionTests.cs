@@ -65,6 +65,20 @@ public sealed class ColorMixFunctionTests
         Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
     }
 
+    [Theory]
+    [InlineData("color-mix(in xyz-d65, white, black)", 188, 188, 188, 255)]
+    [InlineData("color-mix(in xyz, red, blue)", 188, 0, 188, 255)]
+    [InlineData("color-mix(in xyz-d65, red 20%, blue 60%)", 137, 0, 225, 204)]
+    [InlineData("color-mix(in xyz, rgba(255, 0, 0, 0), blue)", 0, 0, 255, 128)]
+    [InlineData("color-mix(in xyz-d65, red 0%, blue 0%)", 188, 0, 188, 0)]
+    public void ExplicitXyzD65AndAliasMixesConvertThroughSrgb(
+        string input, byte red, byte green, byte blue, byte alpha)
+    {
+        var (result, style) = Compute("color:" + input);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
+    }
+
     [Fact]
     public void NestedRgbCommasAreNotTreatedAsMixSeparators()
     {
@@ -80,6 +94,7 @@ public sealed class ColorMixFunctionTests
     [InlineData("color-mix(red, white)")]
     [InlineData("color-mix(in oklab, red, white)")]
     [InlineData("color-mix(in display-p3, red, blue)")]
+    [InlineData("color-mix(in xyz-d50, red, blue)")]
     [InlineData("color-mix(in srgb, none, blue)")]
     [InlineData("color-mix(in srgb, red, currentColor)")]
     [InlineData("color-mix(in srgb, color-mix(in srgb, red, blue), green)")]
@@ -95,7 +110,7 @@ public sealed class ColorMixFunctionTests
     {
         var (result, style) = Compute(
             "color:color-mix(in srgb, red, blue);" +
-            "background:none color-mix(in srgb-linear, white 50%, black);" +
+            "background:none color-mix(in xyz-d65, white 50%, black);" +
             "border:1px solid color-mix(in lab, white, black)");
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssColor(128, 0, 128), style["color"]);

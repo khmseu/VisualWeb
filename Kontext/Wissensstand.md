@@ -108,15 +108,20 @@ verbleiben. Pass 9 ergaenzt explizites `in xyz-d65` und den CSS-Color-4-Alias
 `in xyz` fuer zwei statische Farben. Die linearen sRGB-Eingaben werden nach
 XYZ D65 konvertiert, mit bestehenden Gewichten und premultipliziertem Alpha
 gemischt und ueber die bestehende Gamutdiagnose zur 8-bit-sRGB-Ausgabe
-zurueckgewandelt; Gamut-Mapping bleibt unsupported. CSS Color 4
-(`checkedAt` 2026-11-07) und CSS Color 5 (`checkedAt` 2026-11-15) sind frisch.
-Pass 9 ist ausgewaehlt, aber noch nicht implementiert; zwei Inkremente bleiben.
+zurueckgewandelt; Gamut-Mapping bleibt unsupported. `xyz-d50` bleibt in
+`color-mix()` unsupported. CSS Color 4 (`checkedAt` 2026-11-07) und CSS Color 5
+(`checkedAt` 2026-11-15) sind frisch. Die fuenf fokussierten XYZ-Faelle,
+alle 41 color-mix-Faelle und 1.624 CSS-Tests bestehen; Debug-/Release-
+Solution-Builds haben null Warnungen/Fehler; beide Volltests bestehen 16.890
+Tests; Formatverifikation und Whitespacepruefung bestehen. Featurecommit,
+Push und Remote-CI stehen aus; danach bleibt ein angefordertes Inkrement.
 Siehe
 [KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
 sowie [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt),
 [KP-371](./Kontextprotokoll.md#kp-371---lab-color-mix-implementiert-und-lokal-validiert),
 [KP-372](./Kontextprotokoll.md#kp-372---lab-color-mix-ci-bestaetigt) und
-[KP-373](./Kontextprotokoll.md#kp-373---xyz-d65-color-mix-als-pass-9-gewaehlt)
+[KP-373](./Kontextprotokoll.md#kp-373---xyz-d65-color-mix-als-pass-9-gewaehlt),
+[KP-374](./Kontextprotokoll.md#kp-374---xyz-d65-color-mix-implementiert-und-lokal-validiert)
 sowie [Missing](../plans/Missing.md).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**

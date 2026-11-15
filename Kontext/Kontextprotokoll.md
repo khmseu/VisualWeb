@@ -10254,3 +10254,39 @@ bleiben diagnostiziert; kein Gamut-Mapping und keine weiteren Farbquellen oder
 Interpolationsraeume werden damit zugesagt. Beide lokalen Quellen sind laut
 Manifest frisch. Umsetzung und Tests stehen aus; zwei angeforderte
 Inkremente verbleiben.
+
+### KP-374 - XYZ-D65 color-mix implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs),
+  [ColorMixFunctionTests.cs](../tests/Engine.Css.Tests/ColorMixFunctionTests.cs),
+  [CSS guide](../docs/css.md), [Engine.Css README](../src/Engine/Engine.Css/README.md),
+  [standards inventory](../docs/standards.md), CSS test project, Debug/Release
+  solution builds and full test suites, format verification and
+  `git diff --check`.
+- Bezug: KP-373; Pass 9 von zehn angeforderten Missing-Prioritaetsinkrementen.
+
+**Belegt:** `color-mix(in xyz-d65, ...)` und der Alias
+`color-mix(in xyz, ...)` akzeptieren genau zwei bereits unterstuetzte statische
+Farben. Eingaben aus der bestehenden 8-bit-sRGB-Darstellung werden per
+Transferfunktion nach linear und dann mit derselben CSS-Color-4-Matrix wie der
+Lab-Pfad nach XYZ D65 konvertiert. XYZ-Koordinaten werden unter Verwendung
+der bestehenden Gewichte und premultiplizierten Alpha-Behandlung gemischt;
+die Ausgabe erfolgt ueber die vorhandene XYZ-D65-zu-sRGB-Gamutpruefung und
+gerundete 8-bit-SRGB-Kanaele. Der bisherige Lab-Eingangspfad nutzt nun den
+extrahierten gemeinsamen XYZ-D65-Konverter. `xyz-d50`, weitere Farbquellen und
+Gamut-Mapping bleiben unsupported.
+
+Fuenf fokussierte XYZ-Faelle decken beide Namen, neutrale und chromatische
+Mixe, Gewichte, Alpha und Null-Gesamtgewicht ab; ein weiterer Fall prueft,
+dass `xyz-d50` nicht versehentlich freigegeben wird. Die vier anfangs
+hinzugefuegten gueltigen Faelle scheiterten vor Implementierung mit der
+erwarteten Unsupported-Diagnose. Danach bestehen alle 41 fokussierten
+ColorMix-Faelle und 1.624 CSS-Tests. Debug-/Release-Solution-Builds haben null
+Warnungen/Fehler; beide Volltests bestehen 16.890 Tests. Formatverifikation
+und `git diff --check` bestehen.
+
+**Status / naechster Schritt:** Pass 9 ist lokal implementiert und validiert;
+Featurecommit, Push und Remote-CI stehen aus. Nach erfolgreicher CI bleibt ein
+angefordertes Inkrement.

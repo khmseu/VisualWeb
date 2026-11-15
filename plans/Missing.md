@@ -2236,6 +2236,21 @@ fresh. See the [CSS Color 4 interpolation space](../specs/cache/css-color.html#c
 [XYZ space grammar](../specs/cache/css-color.html#typedef-xyz-space), and
 [CSS Color 5 color-mix space](../specs/cache/css-color-5.html#color-mix-space).
 
+**Pass 9 implementation (locally validated):** `in xyz-d65` and its `in xyz`
+alias convert the two existing 8-bit sRGB inputs to linear-light XYZ D65,
+apply the established percentage normalization and premultiplied-alpha mix,
+and convert back through the XYZ-D65-to-sRGB gamut check and 8-bit output.
+The existing Lab input conversion now shares the same sRGB-to-XYZ-D65 helper.
+Five focused XYZ cases cover both spellings, neutral/chromatic output, weights,
+transparency and zero-total weights; another focused case keeps `xyz-d50`
+unsupported. The new valid XYZ cases failed before implementation with the
+expected unsupported-value diagnostic. All 41 focused color-mix cases and
+1,624 CSS tests pass. Debug and Release solution builds have zero
+warnings/errors; both complete solution test suites pass 16,890 tests.
+Format verification and `git diff --check` pass. Feature commit, push and
+remote CI remain pending; after Pass 9, one further requested increment
+remains.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and
