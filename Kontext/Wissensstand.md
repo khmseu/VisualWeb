@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; lokal validiert, Commit/Push/CI ausstehend):**
+**Aktueller Standards-Pass (2026-11-15; Pass 4 lokal validiert, Commit/Push/CI ausstehend):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -26,13 +26,20 @@ CSS-Color-4-`oklab()`. CSS Color (~55%) bleibt die hoechste actionable
 Teilspezifikation nach dem ausserhalb Phase 11w blockierten ECMAScript (~90%),
 vor CSS Syntax (~35%). 18 fokussierte Faelle, alle 1.563 CSS-Tests,
 Debug-/Release-Builds ohne Warnungen/Fehler und beide Volltests mit je 16.829
-Tests bestehen. Formatverifikation und `git diff --check` bestehen. Commit,
-Push und CI sind ausstehend; nach Pass 3 bleiben sieben der zehn gewuenschten
-Passes. Den naechsten Schritt nach dem Push erneut gegen den Tracker
-priorisieren. Siehe
+Tests bestehen. Formatverifikation und `git diff --check` bestehen. Commit
+`bc1cf94` ist gepusht. Linux development (Run 43655547872), Windows
+confinement (Run 43655547863) und Push on main/CodeQL (Run 43655547850) sind
+gruen, einschliesslich x64/arm64-Pruefungen. Pass 4 implementiert bounded CSS-Color-4-`oklch()`; CSS Color (~60%) bleibt
+vor CSS Syntax (~35%) die hoechste actionable Teilspezifikation, waehrend
+ECMAScript (~90%) ausserhalb Phase 11w bleibt. 20 fokussierte Faelle, alle
+1.583 CSS-Tests, Debug-/Release-Builds ohne Warnungen/Fehler und beide
+Volltests mit je 16.849 Tests bestehen; Formatverifikation und
+`git diff --check` bestehen. Commit, Push und CI stehen aus. Nach Pass 4
+bleiben sechs der zehn gewuenschten Passes. Siehe
 [KP-356](./Kontextprotokoll.md#kp-356---css-color-lab-function),
 [KP-357](./Kontextprotokoll.md#kp-357---css-color-lch-selection) und
-[KP-358](./Kontextprotokoll.md#kp-358---css-color-oklab-selection).
+[KP-358](./Kontextprotokoll.md#kp-358---css-color-oklab-selection) sowie
+[KP-359](./Kontextprotokoll.md#kp-359---pass-3-ci-and-oklch-selection).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

@@ -9864,3 +9864,43 @@ Color-, Background- und Border-Shorthands wenden gueltige Werte atomar an.
 bestehen. Debug-/Release-Solution-Builds: null Warnungen/Fehler. Beide
 Volltestlaeufe bestehen mit je 16.829 Tests. Formatverifikation und
 `git diff --check` bestehen. Commit, Push und CI stehen noch aus.
+
+### KP-359 - Pass 3 CI and Oklch selection
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quelle: GitHub Actions nach Push von `bc1cf94`; anschliessende
+  Prioritaetspruefung im aktuellen Task.
+- Bezug: Fortsetzung nach KP-358; [Missing](../plans/Missing.md),
+  [Standardsstatus](../docs/standards.md#support-status),
+  [CSS-Leitfaden](../docs/css.md), lokaler
+  [CSS-Color-Cache](../specs/cache/css-color.html#funcdef-oklch) und
+  [Manifest](../specs/manifest.json).
+
+**Belegt:** Commit `bc1cf94` ist auf `main` gepusht. Linux development
+(Run 43655547872), Windows confinement (Run 43655547863) und Push on main
+(Run 43655547850) sind erfolgreich; Linux und Windows x64/arm64 Jobs sind
+gruen. Die Parser-/CSS-Test-Suche findet kein `oklch()`. Das CSS-Color-
+Manifestdatum bleibt `checkedAt` 2026-11-07 und damit innerhalb der
+30-Tage-Frist.
+
+**Auswahl als Ableitung:** CSS Color (~55%) bleibt nach den ~90% ECMAScript-
+Punkten ausserhalb Phase 11w die hoechste actionable Teilspezifikation vor
+CSS Syntax (~35%). `oklch()` ist der naechste bounded Schritt, da Hue/Chroma
+polar in Oklab-Koordinaten ueberfuehrt und durch den gerade implementierten
+Oklab-Konverter verarbeitet werden kann. Die Spezifikation setzt 100% C auf
+0.4 und erklaert Hue bei C <= 0.000004 powerless; negative C wird geklemmt.
+Gamut-Mapping und Interpolation bleiben ausgeschlossen. Pass-4-Code und
+Tests haben noch nicht begonnen.
+
+**Umsetzung:** `oklch()` akzeptiert numerische/prozentuale Lightness und
+Chroma, Hue-Winkel, `none` und Slash-Alpha. Prozent-Chroma wird mit 0.004
+skaliert, negatives Chroma auf null geklemmt und Hue bei Chroma <= 0.000004
+powerless behandelt. Die polaren Komponenten werden in Oklab a/b umgerechnet
+und dem bestehenden D65-/sRGB-Konverter uebergeben; Nicht-Endpunkt-Ergebnisse
+ausserhalb sRGB bleiben Diagnosen.
+
+**Lokale Validierung:** 20 fokussierte Oklch-Faelle und alle 1.583 CSS-Tests
+bestehen. Debug-/Release-Solution-Builds: null Warnungen/Fehler. Beide
+Volltestlaeufe bestehen mit je 16.849 Tests. Formatverifikation und
+`git diff --check` bestehen. Commit, Push und CI stehen noch aus.

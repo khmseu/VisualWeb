@@ -538,6 +538,15 @@ black/white. Other colors convert through Oklab D65 and XYZ D65 to sRGB; results
 outside the sRGB gamut remain diagnostics rather than receiving general gamut
 mapping. Interpolation, missing-component preservation and higher-precision
 color management remain unsupported.
+[`oklch()`](https://www.w3.org/TR/css-color-4/#funcdef-oklch) (`css-color`)
+accepts numeric or percentage lightness/chroma, hue angles, `none` and optional
+slash alpha. Lightness percentages map 0..100% to 0..1; chroma percentages map
+100% to 0.4 and negative chroma clamps to zero. Hue is powerless when chroma is
+<= 0.000004. Polar components convert through Oklab D65 and XYZ D65 to sRGB;
+endpoint lightness maps to black/white. Other out-of-sRGB results remain
+diagnostics rather than receiving general gamut mapping. Interpolation,
+missing-component preservation and higher-precision color management remain
+unsupported.
 [`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
 (`css-color`) accepts in-gamut numeric or percentage channels, with `none`
 mapped to zero and optional slash alpha. Out-of-gamut channels and other color

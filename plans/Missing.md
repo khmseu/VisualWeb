@@ -2086,7 +2086,31 @@ non-endpoint out-of-gamut results. `oklch()` remains a separate gap.
 atomic color shorthands. Eighteen focused cases and all 1,563 CSS tests pass.
 Debug/Release solution builds have zero warnings/errors; both full solution
 test runs pass all 16,829 tests. Formatting verification and `git diff --check`
-pass. Commit and CI status are pending.
+pass. Commit `bc1cf94` is pushed. Linux development
+([run 43655547872](https://github.com/khmseu/VisualWeb/actions/runs/43655547872)),
+Windows confinement
+([run 43655547863](https://github.com/khmseu/VisualWeb/actions/runs/43655547863))
+and Push on main/CodeQL
+([run 43655547850](https://github.com/khmseu/VisualWeb/actions/runs/43655547850))
+pass, including Linux and Windows x64/arm64 checks. No CSS-specific native
+smoke applies.
+
+**Pass 4 standards selection (2026-11-15):** CSS Color (~55%) remains the
+highest actionable partial standard after ECMAScript (~90%)'s phase-11w
+boundary, ahead of CSS Syntax (~35%). `oklch()` remains absent from the CSS
+parser and tests. The local CSS Color 4 cache is fresh
+(`checkedAt` 2026-11-07); it specifies L mapping to 0..1, C percentages mapping
+100% to 0.4, negative C clamping to zero, hue angles, and powerless hue when
+C <= 0.000004. This bounded increment will convert polar values through the
+new Oklab D65-to-sRGB path, retain explicit non-endpoint gamut diagnostics,
+and exclude gamut mapping/interpolation.
+
+**Pass 4 implementation and local validation:** The parser accepts bounded
+`oklch()` values and converts polar chroma/hue to Oklab a/b before using the
+existing D65-to-sRGB and gamut checks. Twenty focused cases and all 1,583 CSS
+tests pass. Debug/Release solution builds have zero warnings/errors; both full
+solution test runs pass all 16,849 tests. Formatting verification and
+`git diff --check` pass. Commit and CI status are pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

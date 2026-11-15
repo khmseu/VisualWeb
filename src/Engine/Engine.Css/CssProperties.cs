@@ -479,7 +479,7 @@ internal static class CssProperties
         if (tokens[0].Kind != CssTokenKind.Function || tokens[^1].Kind != CssTokenKind.CloseParen) { return null; }
         var function = CssText.Lower(tokens[0].Value);
         if (function == "color") { return ColorFunction(tokens.Skip(1).Take(tokens.Count - 2).ToList()); }
-        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab")) { return null; }
+        if (function is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch")) { return null; }
         var args = tokens.Skip(1).Take(tokens.Count - 2).ToList();
         var legacy = args.Any(t => t.Kind == CssTokenKind.Comma);
         var values = ColorFunctionComponents(args, legacy);
@@ -489,6 +489,7 @@ internal static class CssProperties
         if (function == "lab") { return legacy ? null : LabColor(values); }
         if (function == "lch") { return legacy ? null : LchColor(values); }
         if (function == "oklab") { return legacy ? null : OklabColor(values); }
+        if (function == "oklch") { return legacy ? null : OklchColor(values); }
         if (legacy)
         {
             if (values.Take(3).Any(t => t.Kind is not (CssTokenKind.Number or CssTokenKind.Percentage))
@@ -803,6 +804,28 @@ internal static class CssProperties
             ? alpha.Value / 100 : alpha.Value;
 
         return OklabToSrgb(lightness, a, b, alphaValue);
+    }
+
+    private static CssColor? OklchColor(IReadOnlyList<CssToken> values)
+    {
+        if (values[0].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(values[0])
+            || values[1].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(values[1])
+            || values[2].Kind is not (CssTokenKind.Number or CssTokenKind.Dimension) && !IsNone(values[2])
+            || values.Count == 4
+                && values[3].Kind is not (CssTokenKind.Number or CssTokenKind.Percentage) && !IsNone(values[3])
+            || ColorComponent(values[0], allowNone: true) is not { } lightness
+            || ColorComponent(values[1], allowNone: true) is not { } chroma
+            || Hue(values[2], allowNone: true) is not { } hue) { return null; }
+
+        if (values[0].Kind == CssTokenKind.Percentage) { lightness /= 100; }
+        if (values[1].Kind == CssTokenKind.Percentage) { chroma *= 0.004; }
+        chroma = Math.Max(0, chroma);
+        var alpha = values.Count == 4 ? ColorComponent(values[3], allowNone: true) : 1;
+        if (alpha is null) { return null; }
+        var alphaValue = values.Count == 4 && values[3].Kind == CssTokenKind.Percentage
+            ? alpha.Value / 100 : alpha.Value;
+        var radians = (chroma <= 0.000004 ? 0 : hue) * Math.PI / 180;
+        return OklabToSrgb(lightness, chroma * Math.Cos(radians), chroma * Math.Sin(radians), alphaValue);
     }
 
     private static CssColor? OklabToSrgb(double lightness, double a, double b, double alphaValue)
