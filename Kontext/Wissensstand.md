@@ -85,7 +85,9 @@ anhaengen. URL und Encoding sind weiterhin bei ~30% gleichauf; die Wahl
 beruht auf diesem klar abgegrenzten, lokal testbaren URL-Algorithmus.
 Elf fokussierte URLSearchParams-, 4.012 Core- und 16.920 Solution-Tests
 bestehen; Build und Formatverifikation bestehen. Commit/Push und CI fuer Pass
-10 stehen noch aus.
+10 sind abgeschlossen: Commit `878dd06` ist auf `main`; Linux development
+(Run `43742818336`), Windows confinement (Run `43742818364`) und CodeQL
+(Run `43742818324`) bestehen. Der angeforderte Zehnerlauf ist abgeschlossen.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
