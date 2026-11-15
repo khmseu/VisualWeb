@@ -2164,6 +2164,22 @@ because its configured `check uploads` / `check all` mode is no longer
 supported. Pass 6's code-validation jobs are green; the Linux workflow as a
 whole is not.
 
+**Pass 7 standards selection (2026-11-15):** Extend the bounded two-color
+`color-mix()` subset to explicit `in srgb-linear`. CSS Color 4 includes
+linear-light sRGB in the rectangular interpolation-space grammar and specifies
+its transfer-decoding/encoding; CSS Color 5 uses the same interpolation
+framework for `color-mix()`. Preserve the existing static-color, alpha,
+percentage-normalization and 8-bit sRGB boundaries. Other interpolation spaces,
+nesting, missing components and gamut mapping remain unsupported.
+
+**Pass 7 implementation and local validation:** `color-mix(in srgb-linear, ...)`
+now transfer-decodes the existing sRGB channels, mixes in linear light with
+premultiplied alpha, and re-encodes to the existing 8-bit sRGB result. Thirty
+focused color-mix cases and all 1,613 CSS tests pass. Debug/Release solution
+builds have zero warnings/errors; both full solution suites pass all 16,879
+tests. Formatting and `git diff --check` pass. Commit, push and CI remain
+pending.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

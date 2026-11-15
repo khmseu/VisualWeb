@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; Pass 6 committed/gepusht, Linux-Trunk-Check fehlgeschlagen):**
+**Aktueller Standards-Pass (2026-11-15; Pass 7 lokal validiert, Commit/Push/CI ausstehend):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -52,8 +52,7 @@ bleiben Diagnosen. CSS Color 5/Values 5 wurden neu in das Manifest aufgenommen
 und am 2026-11-15 geladen. 20 fokussierte und alle 1.603 CSS-Tests bestehen;
 Debug-/Release-Builds sind warnungs-/fehlerfrei und beide Volltests bestehen
 16.869 Tests; Format und `git diff --check` bestehen. Commit `c03d6bb` ist auf
-`main` gepusht. Linux development (Run 43663310025), Windows confinement (Run
-43663310066) und CodeQL (Run 43663309766) sind erfolgreich. Nach Pass 5
+`main` gepusht. Linux development (Run 43663310025), Windows confinement (Run 43663310066) und CodeQL (Run 43663309766) sind erfolgreich. Nach Pass 5
 verbleiben fuenf der zehn gewuenschten Passes. Siehe
 [KP-361](./Kontextprotokoll.md#kp-361---bounded-color-mix-selection) und
 [KP-362](./Kontextprotokoll.md#kp-362---color-mix-lokale-validierung) sowie
@@ -77,6 +76,16 @@ ist wegen des separaten Trunk-Checks fehlgeschlagen, dessen `check uploads` /
 verbleiben. Siehe [KP-364](./Kontextprotokoll.md#kp-364---oklab-color-mix-selection),
 [KP-365](./Kontextprotokoll.md#kp-365---oklab-color-mix-lokale-validierung)
 und [KP-366](./Kontextprotokoll.md#kp-366---oklab-color-mix-commit-push-und-ci).
+Pass 7 unterstuetzt zusaetzlich explizites `in srgb-linear` fuer zwei statische
+Farben: transfer-dekodierte sRGB-Kanaele werden mit den bestehenden
+normalisierten Gewichten und premultipliziertem Alpha linear gemischt und per
+CSS-Transferfunktion in die 8-bit-sRGB-Ausgabe umgewandelt. 30 fokussierte
+ColorMix-Faelle, alle 1.613 CSS-Tests, Debug-/Release-Builds ohne Warnungen/
+Fehler und beide Volltests mit je 16.879 Tests bestehen; Formatverifikation
+und `git diff --check` bestehen. Commit/Push/CI fuer Pass 7 stehen aus; danach
+verbleiben drei angeforderte Inkremente. Siehe
+[KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
+und [KP-368](./Kontextprotokoll.md#kp-368---linear-srgb-color-mix-implementiert-und-lokal-validiert).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

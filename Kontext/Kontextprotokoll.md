@@ -10063,3 +10063,56 @@ Trunk-checks-Modus, nicht in den Linux-Entwicklungsjobs.
 CodeQL sind erfolgreich; Linux-Codejobs sind erfolgreich, aber das
 Gesamtworkflow-Ergebnis bleibt wegen des Trunk-checks-Fehlers rot. Vier
 angeforderte Inkremente verbleiben.
+
+### KP-367 - Linear-sRGB color-mix als Pass 7 gewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  [CSS Color 4 local cache](../specs/cache/css-color.html#interpolation-space)
+  (`checkedAt` 2026-11-07), [CSS Color 5 local cache](../specs/cache/css-color-5.html#color-mix-space)
+  and [CSS Values 5 local cache](../specs/cache/css-values-5.html#normalize-mix-percentages)
+  (`checkedAt` 2026-11-15); manifest entries and existing
+  [ColorMixFunctionTests](../tests/Engine.Css.Tests/ColorMixFunctionTests.cs).
+- Bezug: Fortsetzung nach KP-366; Pass 7 von zehn angeforderten
+  Missing-Prioritaetsinkrementen.
+
+**Auswahl als Ableitung:** Die bestehende color-mix()-Implementierung
+diagnostizierte `in srgb-linear` ausdruecklich als unsupported. CSS Color 4
+definiert linear-light sRGB und fuehrt es als rechteckigen Interpolationsraum;
+CSS Color 5 wendet die Interpolationsregeln auf `color-mix()` an. Dieser
+einzelne weitere Interpolationsraum ist ein sichtbarer, testbarer Ausbau des
+bereits gewaehlten statischen Verbrauchers, ohne eine neue Farbdarstellung
+oder einen weiteren Parser einzufuehren. Umfang: exakt zwei vorhandene
+statische Farben, linearisierte sRGB-Kanaele, vorhandene normalisierte
+Prozentgewichte und premultiplizierter Alpha; Ausgabe bleibt 8-bit sRGB.
+Andere Interpolationsraeume, Gamut-Mapping, `none`, verschachtelte Mixe und
+`currentColor` bleiben ausserhalb des Umfangs. Dies ist eine technische
+Ableitung, keine separate Nutzerwahl; die frischen lokalen Standardsquellen
+wurden gelesen.
+
+### KP-368 - Linear-sRGB color-mix implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs),
+  [ColorMixFunctionTests.cs](../tests/Engine.Css.Tests/ColorMixFunctionTests.cs),
+  CSS-Testprojekt, Debug-/Release-Solution-Builds und -Volltests,
+  Formatverifikation sowie `git diff --check`.
+- Bezug: KP-367; Pass 7 des Zehn-Inkrement-Auftrags.
+
+**Belegt:** `color-mix(in srgb-linear, ...)` akzeptiert nun exakt die
+vorhandene bounded Zwei-Farben-Form. sRGB-Kanaele werden gemaess der CSS-
+Transferfunktion linearisiert, mit Prozentgewichten und premultipliziertem
+Alpha gemischt und fuer die bestehende 8-bit-sRGB-Farbform erneut kodiert.
+Tests decken den von sRGB unterscheidbaren Rot/Blau-Mittelwert, ungleiche
+Gewichte und reduzierte Ergebnisalpha, transparente Eingaben, Nullgewichte
+sowie die Verwendung in der atomaren `background`-Kurzform ab. Andere
+Interpolationsraeume bleiben explizit unsupported.
+
+**Validierung:** Alle 30 fokussierten ColorMix-Faelle und 1.613 CSS-Tests
+bestehen. Debug- und Release-Solution-Builds bestehen jeweils mit null
+Warnungen und Fehlern; beide Volltestlaeufe bestehen mit je 16.879 Tests.
+Formatverifikation und `git diff --check` bestehen. Die fokussierten
+Regressionen schlugen vor der Implementierung wie erwartet fehl. Commit, Push
+und Remote-CI stehen aus.

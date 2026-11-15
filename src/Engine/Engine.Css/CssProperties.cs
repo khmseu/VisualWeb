@@ -544,7 +544,7 @@ internal static class CssProperties
             }
 
             colorSpace = CssText.Lower(groups[0][1].Value);
-            if (colorSpace is not ("srgb" or "oklab")) { return null; }
+            if (colorSpace is not ("srgb" or "srgb-linear" or "oklab")) { return null; }
             colorGroups = groups.Skip(1).ToList();
         }
 
@@ -612,6 +612,25 @@ internal static class CssProperties
                 MixComponent(first.A, second.A),
                 MixComponent(first.B, second.B),
                 mixedAlpha * alphaMultiplier);
+        }
+
+        if (colorSpace == "srgb-linear")
+        {
+            byte MixLinearChannel(byte first, byte second)
+            {
+                var firstLinear = LinearizeSrgbChannel(first / 255d);
+                var secondLinear = LinearizeSrgbChannel(second / 255d);
+                var premultiplied = firstLinear * firstAlpha * (1 - progress)
+                    + secondLinear * secondAlpha * progress;
+                var mixed = mixedAlpha == 0 ? premultiplied : premultiplied / mixedAlpha;
+                return SrgbChannel(EncodeSrgbChannel(mixed));
+            }
+
+            return new CssColor(
+                MixLinearChannel(colors[0].Red, colors[1].Red),
+                MixLinearChannel(colors[0].Green, colors[1].Green),
+                MixLinearChannel(colors[0].Blue, colors[1].Blue),
+                SrgbChannel(mixedAlpha * alphaMultiplier));
         }
 
         byte MixChannel(byte first, byte second)
