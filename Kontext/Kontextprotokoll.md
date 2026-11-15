@@ -11168,3 +11168,62 @@ Es wurden nur Workflow-Argumente und Dokumentation geaendert, keine
 Anwendungs- oder Testbinaerdateien.
 
 **Status:** Lokal validiert; Commit/Push und vierfacher CI-Nachweis stehen aus.
+
+### KP-411 - Einzeltest-Zeiten nach Push in vier CI-Konfigurationen ausgewertet
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Commit `36f48fa63b59c44b17e06537ba6745ebcb469f59`;
+  [Linux x64](https://github.com/khmseu/VisualWeb/actions/runs/43754186972/job/132934555604),
+  [Linux arm64](https://github.com/khmseu/VisualWeb/actions/runs/43754186972/job/132934555808),
+  [Windows x64](https://github.com/khmseu/VisualWeb/actions/runs/43754186901/job/132934555817),
+  [Windows arm64](https://github.com/khmseu/VisualWeb/actions/runs/43754186901/job/132934555649),
+  [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/43754186829).
+- Bezug: schliesst KP-410 ab und ersetzt die fehlenden Einzelmessungen aus KP-409.
+
+**Ergebnis (Belegt):** Alle drei Workflows einschliesslich vier nativer
+Testkonfigurationen sind erfolgreich. Die folgende Tabelle enthaelt die
+gerundeten Einzelzeiten aus der regulaeren Browser-Suite, nicht aus den
+zusaetzlichen Wiederholungen. N/A bedeutet: Plattformzweig nicht ausgefuehrt,
+auch wenn der Runner den fruehen Return als bestanden ausgibt.
+Alle Browser-Methoden stehen in [ProcessTests.cs](../tests/VisualWeb.Browser.Tests/ProcessTests.cs).
+
+| Testmethode / Theory-Fall                                                           | Linux x64 | Linux arm64 | Windows x64 | Windows arm64 |
+| ----------------------------------------------------------------------------------- | --------- | ----------- | ----------- | ------------- |
+| `WindowsJobMemoryPressureRecoversWithoutAffectingAnotherRenderer`                   | N/A       | N/A         | 2 s         | 2 s           |
+| `WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(false)`       | N/A       | N/A         | 34 s        | 33 s          |
+| `WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(true)`        | N/A       | N/A         | 4 s         | 3 s           |
+| `WindowsClosingCpuPressuredTabDoesNotPublishFailureOrStopAnotherRenderer`           | N/A       | N/A         | 1 s         | 1 s           |
+| `NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer`          | 1 s       | 1 s         | N/A         | N/A           |
+| `TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel`                       | 283 ms    | 261 ms      | N/A         | N/A           |
+| `CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(false)`       | 13 s      | 12 s        | N/A         | N/A           |
+| `CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(true)`        | 1 s       | 917 ms      | N/A         | N/A           |
+| `ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers`        | 973 ms    | 817 ms      | N/A         | N/A           |
+| `ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure`          | 551 ms    | 484 ms      | N/A         | N/A           |
+| `HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs`                    | 787 ms    | 714 ms      | N/A         | N/A           |
+| `WindowsRendererLimitsAreExplicit` (Policy, kein Drucktest)                         | 11 ms     | 9 ms        | 5 ms        | 4 ms          |
+| `HardResourcePolicyRequiresExactKernelLimitsAndNeverRunsOutsideOwnedScope` (Policy) | 53 ms     | 19 ms       | 9 ms*       | 22 ms*        |
+| `SharedTextAndCallbackExhaustionRejectWithoutMutatingAttributes` (Scriptbudget)     | 23 ms     | 59 ms       | 28 ms       | 43 ms         |
+
+`*` Auf Windows prueft der Linux-Policy-Test nur die explizite
+Nichtunterstuetzung, nicht Linux-Kernel-Limits.
+
+**Zusaetzliche Windows-Wiederholungen (Belegt):** Der separate Schritt laeuft
+weiterhin fuenfmal mit beiden Theory-Faellen. Die Deadline-Dauern sind x64
+35/32/33/36/33 Sekunden und arm64 38/33/33/33/34 Sekunden, Cancellation x64
+3/3/3/5/3 Sekunden und arm64 5/4/4/4/3 Sekunden. Schritt-Wandzeiten laut
+Jobs-API sind 203 Sekunden (x64) und 214 Sekunden (arm64); enthalten sind
+Testprozessstarts, Discovery und Abschluss. Zusammen mit der regulaeren
+Suite wird die Theory somit sechsmal je Windows-Konfiguration ausgefuehrt.
+
+**Einordnung (Ableitung mit Codebezug):** Hauptkostentreiber sind die absichtlich
+abgewarteten Fristen: der Linux-Test setzt 12 Sekunden, Windows verwendet den
+30-Sekunden-Standard aus
+[ProcessPageRenderer.cs](../src/Apps/VisualWeb.Browser/ProcessPageRenderer.cs).
+Komplette Testzeiten enthalten ausserdem Worker-Start, einen zweiten gesunden
+Renderer und Erholung. Die Daten belegen keine reine CPU-Performance-Differenz
+und keine Ursache fuer sonstige Suite-Laufzeiten. Es wurden weder Fristen
+verkuerzt noch Wiederholungen oder Sicherheitspruefungen entfernt.
+
+**Status:** Instrumentierung committed/gepusht, CI erfolgreich, Vergleich
+dokumentiert. Trunk meldete nur bestehende Tool-/Runner-Migrationshinweise.

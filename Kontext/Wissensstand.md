@@ -89,7 +89,7 @@ bestehen; Build und Formatverifikation bestehen. Commit/Push und CI fuer Pass
 (Run `43742818336`), Windows confinement (Run `43742818364`) und CodeQL
 (Run `43742818324`) bestehen. Der angeforderte Zehnerlauf ist abgeschlossen.
 
-**Ressourcen-Testzeiten aus dem letzten CI-Lauf (2026-11-15):** In den vier
+**Ressourcen-Testzeiten vor Einzeltest-Instrumentierung (2026-11-15):** In den vier
 Konfigurationen Linux x64, Linux arm64, Windows x64 und Windows arm64 wurden
 die gesamten Browser-Testprojekte in 1:17, 1:25, 2:19 und 2:11 ausgefuehrt;
 die Script-Testprojekte in 8, 10, 10 und 10 Sekunden. Das sind Suite-Zeiten,
@@ -101,14 +101,23 @@ dauerte insgesamt 3:24 (x64) bzw. 3:20 (arm64). Fuer die uebrigen
 Ressourcenfaelle liefern diese Logs keine individuellen Dauern; sie sind nur
 im Browser-Suite-Gesamtwert enthalten. Siehe KP-409.
 
-**Einzeltest-Timing beauftragt (2026-11-15):** Der Nutzer hat die Ausgabe der
+**Einzeltest-Timing implementiert und CI-gruen (2026-11-15):** Der Nutzer hat die Ausgabe der
 Laufzeiten aller zuvor genannten Ressourcen-Tests, Push und anschliessende
 Analyse der vier CI-Konfigurationen beauftragt. Die beiden Workflows verwenden
 nun fuer schnelle, Browser- und Scripting-Tests den vorhandenen VSTest-
 Konsolenlogger mit `verbosity=normal`; Testcode, Fristen, Auswahl und Wiederholungen
 bleiben unveraendert. Elf ausgewaehlte Release-Browser-Testfaelle bestehen lokal
 und geben Einzelzeiten aus; Windows-Faelle kehren auf Linux frueh zurueck und
-zaehlen nicht als Windows-Nachweis. Push und CI-Auswertung stehen aus. Siehe KP-410.
+zaehlen nicht als Windows-Nachweis. Commit `36f48fa` ist auf `main` gepusht;
+Linux development `43754186972`, Windows confinement `43754186901` und CodeQL
+`43754186829` bestehen. Alle 16.920 lokalen Solution-Tests und Formatverifikation
+bestehen. Die vollstaendige Vergleichstabelle steht in KP-411: Linux-Deadline-
+Faelle dauern 13/12 Sekunden (x64/arm64), Windows-Deadline-Faelle 34/33 Sekunden;
+Cancellation 1 Sekunde/917 ms bzw. 4/3 Sekunden. Die fuenf zusaetzlichen Windows-
+Wiederholungen kosten insgesamt 3:23/3:34 Wandzeit. Fristen (12 Sekunden Linux-
+Test, 30 Sekunden Windows-Standard) plus Worker-Start/Erholung erklaeren den
+gezielten Warteanteil; das ist keine Messung reiner Rechenleistung. Siehe KP-410
+und KP-411.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
