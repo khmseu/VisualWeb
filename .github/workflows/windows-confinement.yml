@@ -49,11 +49,5 @@ jobs:
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - name: Run slow browser tests
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
-      - name: Run CPU deadline tests (opt-in)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: >-
-          dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
-          --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer|FullyQualifiedName~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs"
-          --logger "console;verbosity=normal" -- xUnit.Explicit=only
       - name: Run slow scripting tests
         run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"

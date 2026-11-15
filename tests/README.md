@@ -356,10 +356,10 @@ These are VSTest RunSettings arguments after `--`, not MTP switches.
 Native confinement prerequisites still apply, and opposite-platform cases
 still return early rather than exercise their scenario.
 
-For CI, manually dispatch either **Linux development** or **Windows confinement**
-to run the deadline-only step on each architecture in that workflow. Automatic
-push/PR runs do not execute it. The five repeated Windows runs remain
-cancellation-only; only the additional manual-dispatch step runs deadline cases.
+For CI, manually dispatch **CPU deadline tests** to run these cases on all
+supported Linux and Windows architectures. The regular Linux development and
+Windows confinement workflows do not run the deadline cases. The five repeated
+Windows runs remain cancellation-only.
 
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy
