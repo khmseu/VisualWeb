@@ -334,7 +334,7 @@ appear as passed; their timings do not measure the unsupported-platform scenario
 The Windows CPU-pressure recovery step retains five additional repetitions of
 the cancellation case; its deadline case is opt-in as described below.
 
-### Opt-in CPU deadline tests
+## Opt-in CPU deadline tests
 
 Only the `cancel: false` rows of
 `WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer` and
@@ -357,10 +357,9 @@ Native confinement prerequisites still apply, and opposite-platform cases
 still return early rather than exercise their scenario.
 
 For CI, manually dispatch either **Linux development** or **Windows confinement**
-with `run_cpu_deadline_tests` checked (`true`). This adds one deadline-only
-step on each architecture in that workflow; automatic runs and manual runs
-with the default `false` do not execute it. The five repeated Windows runs
-remain cancellation-only even when the separate deadline step is requested.
+to run the deadline-only step on each architecture in that workflow. Automatic
+push/PR runs do not execute it. The five repeated Windows runs remain
+cancellation-only; only the additional manual-dispatch step runs deadline cases.
 
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy

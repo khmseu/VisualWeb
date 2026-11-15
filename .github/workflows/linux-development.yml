@@ -4,11 +4,6 @@ on:
   pull_request:
   push:
   workflow_dispatch:
-    inputs:
-      run_cpu_deadline_tests:
-        description: Run the opt-in CPU deadline tests
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -125,7 +120,7 @@ jobs:
       - name: Run slow browser tests
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
       - name: Run CPU deadline tests (opt-in)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_cpu_deadline_tests }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: >-
           dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
           --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer|FullyQualifiedName~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs"
