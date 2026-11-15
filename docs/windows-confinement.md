@@ -92,6 +92,22 @@ dotnet run --project src/Apps/VisualWeb.Browser -- \
   --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
 ```
 
+For native browser smoke timing, `windows.start` nests `windows.profile-storage`
+(profile creation, storage and write restriction), `windows.acl`,
+`windows.copy-app`, `windows.copy-runtime` (hostfxr, runtime and host),
+`windows.copy-fonts`, `windows.temp-acl`, `windows.job` and
+`windows.process` (pipes, process attributes, creation and resume). Failed
+launches also emit `windows.start-cleanup` if cleanup is entered;
+`windows.dispose` covers worker shutdown and profile/staging cleanup.
+These host-side records use the same renderer lifetime ID as the browser's
+`renderer.start`/`renderer.dispose`. They are wall clocks and overlap their
+enclosing phases. The optional `HostTimingBuffer` passed to sandbox startup
+is sealed, bounded and data-only; no caller callback or writer runs during
+launch, successful ownership transfer or worker disposal. A full buffer latches
+an export error without interrupting native cleanup or changing launch policy.
+See the [schema](browser-shell.md#validation). Native Windows
+CI is required to observe and validate these stages.
+
 The browser suite exercises confined worker launch, native Job Object memory
 pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
 on Windows, including a private stdin roundtrip to distinct stdout/stderr pipes

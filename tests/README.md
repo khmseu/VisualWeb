@@ -1,5 +1,13 @@
 # Tests
 
+`SmokeTimingTests` checks opt-in/default-off CLI behavior, invariant timing
+shape and worker/request correlation, and diagnostics during renderer failure
+and cleanup. It also checks the render-only boundary, throwing export writers
+without semaphore/ownership interference, and native Windows launch/disposal
+with a full diagnostic buffer. `HostTimingBufferTests` exercises concurrent
+recording, snapshot independence and deferred explicit overflow reporting.
+Native Windows staging timings require Windows CI, not Linux test early returns.
+
 Search-element regressions cover CSS cascade and fixed matching budgets,
 parser/layout geometry, native offline and local/process browser rendering,
 retained resize and existing GET form submission tests.

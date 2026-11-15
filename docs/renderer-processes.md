@@ -334,6 +334,29 @@ Official .NET process/pipes and exact-stream
 references are in the independently refreshed [standards cache](standards.md);
 tests never fetch them.
 
+CLI smoke timing additionally records `renderer.start`, `renderer.hello`,
+`renderer.render-request`, `renderer.exchange` and `renderer.dispose` for
+export on browser stderr. Renderer IDs
+identify each attempted worker lifetime, including replacements after failures
+and opaque-origin rotations; request IDs are the existing per-renderer-object
+IPC IDs and may restart with a new object. Correlate by the pair, not by request
+alone. Zero request denotes worker-wide work; an exchange canceled before a
+worker is assigned can have renderer zero. Exchange excludes time queued before
+its request ID is assigned, and includes startup, Hello and failure cleanup
+when applicable. Worker stdout remains exclusively IPC. Optional `SmokeTimings`
+injected by a library caller enables the same host diagnostics; the default is
+disabled, and the caller explicitly exports after cleanup with `WriteTo`.
+`renderer.render-request` is restricted to IPC `render` requests (including
+retained-document repaints), not focus/click exchanges. It starts immediately
+before the channel write, after successful startup/Hello, and ends after the
+response is read, brokered script exchanges finish, reply identity and viewport
+are validated, frame pixels are copied into the browser result, and the final
+cancellation check completes. It also records exceptions from these steps, but
+excludes subsequent worker-stop cleanup in the exchange's catch handlers.
+Pre-write startup/Hello failures have no render-request record.
+The [smoke schema and overlap limits](browser-shell.md#validation)
+apply to all backends.
+
 ### Phase-10a validation outcome
 
 Validated on Linux x64: all **39 projects** build and all **11,653 tests** pass

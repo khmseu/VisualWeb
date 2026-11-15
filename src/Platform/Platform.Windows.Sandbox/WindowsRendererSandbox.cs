@@ -2,8 +2,18 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Platform.Windows.Sandbox;
+
+internal readonly struct Timing(HostTimingBuffer? buffer, string phase, long renderer) : IDisposable
+{
+    private readonly long start = buffer is null ? 0 : Stopwatch.GetTimestamp();
+    public void Dispose()
+    {
+        buffer?.Record(new(phase, renderer, 0, Stopwatch.GetElapsedTime(start)));
+    }
+}
 
 /// <summary>Starts a renderer in a capability-free AppContainer and bounded Job Object.</summary>
 /// <remarks>References: <c>windows-appcontainer</c> and <c>windows-job-objects</c>.
@@ -156,8 +166,10 @@ public static class WindowsRendererSandbox
     public static WindowsRendererWorker Start(string applicationDirectory, string fontPath,
         string runtimeDirectory, string workerAssembly = "VisualWeb.Renderer.dll",
         IReadOnlyList<string>? workerArguments = null,
-        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null,
+        HostTimingBuffer? timing = null, long timingRenderer = 0)
     {
+        using var totalTiming = new Timing(timing, "windows.start", timingRenderer);
         RequireSupport();
         ArgumentException.ThrowIfNullOrWhiteSpace(applicationDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
@@ -195,48 +207,67 @@ public static class WindowsRendererSandbox
         SafeFileHandle? job = null;
         try
         {
-            var result = Native.CreateAppContainerProfile(profileName, "VisualWeb renderer",
-                "Per-tab static renderer", IntPtr.Zero, 0, out appContainerSid);
-            if (result != 0)
+            string profileStorage;
+            using (new Timing(timing, "windows.profile-storage", timingRenderer))
             {
-                throw new Win32Exception(result, "Cannot create a unique renderer AppContainer profile.");
+                var result = Native.CreateAppContainerProfile(profileName, "VisualWeb renderer",
+                    "Per-tab static renderer", IntPtr.Zero, 0, out appContainerSid);
+                if (result != 0)
+                {
+                    throw new Win32Exception(result, "Cannot create a unique renderer AppContainer profile.");
+                }
+                profileStorage = GetAppContainerFolderPath(appContainerSid);
+                Directory.CreateDirectory(profileStorage);
+                RestrictAppContainerWrites(profileStorage, appContainerSid);
             }
-
-            var profileStorage = GetAppContainerFolderPath(appContainerSid);
-            Directory.CreateDirectory(profileStorage);
-            RestrictAppContainerWrites(profileStorage, appContainerSid);
 
             var stagedRoot = Path.Combine(staging, "worker");
             var stagedApp = Path.Combine(stagedRoot, "app");
             var stagedRuntime = Path.Combine(stagedRoot, "runtime");
             var stagedFont = Path.Combine(stagedRoot, "font", "font");
             var stagedTemp = Path.Combine(stagedRoot, "tmp");
-            Directory.CreateDirectory(stagedRoot);
-            SetAppContainerAccess(stagedRoot, appContainerSid, writable: false);
-
-            CopyTree(appSource, stagedApp);
-            CopyTree(hostFxrSource, Path.Combine(stagedRuntime, "host", "fxr"));
-            CopyTree(runtimeSource, Path.Combine(stagedRuntime, "shared", "Microsoft.NETCore.App", runtimeVersion));
-            File.Copy(hostSource, Path.Combine(stagedRuntime, "dotnet.exe"));
-            Directory.CreateDirectory(Path.GetDirectoryName(stagedFont)!);
-            File.Copy(fontSource, stagedFont);
-            var arguments = new List<string>();
-            foreach (var (source, name) in additionalFonts)
+            using (new Timing(timing, "windows.acl", timingRenderer))
             {
-                var target = Path.Combine(stagedRoot, "font", name);
-                File.Copy(source, target);
-                arguments.AddRange(["--font-" + name, target]);
+                Directory.CreateDirectory(stagedRoot);
+                SetAppContainerAccess(stagedRoot, appContainerSid, writable: false);
+            }
+
+            using (new Timing(timing, "windows.copy-app", timingRenderer)) { CopyTree(appSource, stagedApp); }
+            using (new Timing(timing, "windows.copy-runtime", timingRenderer))
+            {
+                CopyTree(hostFxrSource, Path.Combine(stagedRuntime, "host", "fxr"));
+                CopyTree(runtimeSource, Path.Combine(stagedRuntime, "shared", "Microsoft.NETCore.App", runtimeVersion));
+                File.Copy(hostSource, Path.Combine(stagedRuntime, "dotnet.exe"));
+            }
+            var arguments = new List<string>();
+            using (new Timing(timing, "windows.copy-fonts", timingRenderer))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(stagedFont)!);
+                File.Copy(fontSource, stagedFont);
+                foreach (var (source, name) in additionalFonts)
+                {
+                    var target = Path.Combine(stagedRoot, "font", name);
+                    File.Copy(source, target);
+                    arguments.AddRange(["--font-" + name, target]);
+                }
             }
             if (workerArguments is not null) { arguments.AddRange(workerArguments); }
-            Directory.CreateDirectory(stagedTemp);
-            SetAppContainerAccess(stagedTemp, appContainerSid, writable: false);
+            using (new Timing(timing, "windows.temp-acl", timingRenderer))
+            {
+                Directory.CreateDirectory(stagedTemp);
+                SetAppContainerAccess(stagedTemp, appContainerSid, writable: false);
+            }
 
-            job = CreateJob();
-            return CreateWorker(profileName, appContainerSid, job, staging, profileStorage, stagedApp,
-                stagedRuntime, stagedFont, stagedTemp, workerAssembly, arguments);
+            using (new Timing(timing, "windows.job", timingRenderer)) { job = CreateJob(); }
+            using (new Timing(timing, "windows.process", timingRenderer))
+            {
+                return CreateWorker(profileName, appContainerSid, job, staging, profileStorage, stagedApp,
+                    stagedRuntime, stagedFont, stagedTemp, workerAssembly, arguments, timing, timingRenderer);
+            }
         }
         catch
         {
+            using var cleanupTiming = new Timing(timing, "windows.start-cleanup", timingRenderer);
             job?.Dispose();
             if (appContainerSid != IntPtr.Zero) { _ = Native.FreeSid(appContainerSid); }
             _ = Native.DeleteAppContainerProfile(profileName);
@@ -249,7 +280,7 @@ public static class WindowsRendererSandbox
 
     private static WindowsRendererWorker CreateWorker(string profileName, IntPtr sid, SafeFileHandle job,
         string staging, string profileStorage, string app, string runtime, string font, string temp,
-        string workerAssembly, IReadOnlyList<string>? workerArguments)
+        string workerAssembly, IReadOnlyList<string>? workerArguments, HostTimingBuffer? timing, long timingRenderer)
     {
         CreatePipePair(childReads: true, out var childInput, out var parentInput);
         CreatePipePair(childReads: false, out var childOutput, out var parentOutput);
@@ -336,7 +367,8 @@ public static class WindowsRendererSandbox
                     var input = new FileStream(parentInput, FileAccess.Write, 4096, isAsync: false);
                     var output = new FileStream(parentOutput, FileAccess.Read, 4096, isAsync: false);
                     var error = new FileStream(parentError, FileAccess.Read, 4096, isAsync: false);
-                    var worker = new WindowsRendererWorker(process, job, staging, profileStorage, profileName, sid, input, output, error);
+                    var worker = new WindowsRendererWorker(process, job, staging, profileStorage, profileName, sid, input, output, error,
+                        timing, timingRenderer);
                     streamsOwnHandles = true;
                     return worker;
                 }
@@ -692,6 +724,8 @@ public sealed class WindowsRendererWorker : IDisposable
     private readonly string profile;
     private IntPtr sid;
     private SafeFileHandle job;
+    private readonly HostTimingBuffer? timing;
+    private readonly long timingRenderer;
     private bool disposed;
     public Process Process { get; }
     public Stream Input { get; }
@@ -703,8 +737,10 @@ public sealed class WindowsRendererWorker : IDisposable
     }
 
     internal WindowsRendererWorker(Process process, SafeFileHandle job, string staging, string profileStorage, string profile,
-        IntPtr sid, Stream input, Stream output, Stream error)
+        IntPtr sid, Stream input, Stream output, Stream error, HostTimingBuffer? timing, long timingRenderer)
     {
+        this.timing = timing;
+        this.timingRenderer = timingRenderer;
         Process = process; this.job = job; this.staging = staging; ProfileStoragePath = profileStorage;
         this.profile = profile; this.sid = sid;
         Input = input; Output = output; Error = error;
@@ -713,6 +749,7 @@ public sealed class WindowsRendererWorker : IDisposable
     public void Dispose()
     {
         if (disposed) { return; }
+        using var disposeTiming = new Timing(timing, "windows.dispose", timingRenderer);
         disposed = true;
         Input.Dispose(); Output.Dispose(); Error.Dispose();
         Terminate();

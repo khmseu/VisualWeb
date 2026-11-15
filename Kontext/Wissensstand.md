@@ -132,8 +132,58 @@ kommt je Architektur ein Deadline-only-Schritt hinzu. Die fuenf normalen
 Windows-Wiederholungen bleiben Cancellation-only. Build ohne Warnungen/Fehler
 und Formatpruefung bestehen; Gesamtregression besteht mit 16.918 ausgefuehrten
 Tests (Browser: 1.339), die beiden expliziten Zeilen werden uebersprungen.
-Nicht committed/gepusht; neue native Windows- und CI-Dispatch-Pruefung offen.
+Als `b33f944` committed. Aktuelle Push-CI auf `50c16b2` besteht auf allen vier
+nativen Konfigurationen (Linux `43766088094`, Windows `43766088085`).
+Die Deadline-Zeilen werden in regulaerer Suite und Windows-Wiederholungen
+uebersprungen. Manueller Opt-in-Dispatch weiterhin nicht nachgewiesen.
 Siehe [Testanleitung](../tests/README.md#opt-in-cpu-deadline-tests) und KP-412.
+
+**Aktuelle Ressourcen-Testzeiten (2026-11-15):** Auf Nutzerwunsch wurde die
+Vergleichstabelle aus den neuesten abgeschlossenen CI-Logs neu erstellt,
+ohne alte Deadline-Messungen einzumischen. KP-413 enthaelt die vollstaendige
+Tabelle und Job-Quellen auf `50c16b2`. CPU-Cancellation dauert Linux x64/arm64
+1 Sekunde/937 ms, Windows x64/arm64 3/4 Sekunden. Beide Deadline-Faelle sind
+Opt-in und wurden nicht ausgefuehrt; Skipped-Meldungen sind keine Messzeiten.
+Die regulaeren Browser-Suiten dauern laut Runner insgesamt 1.3091/1.1296
+Minuten auf Linux und 1.7635/1.7389 Minuten auf Windows (je x64/arm64).
+
+**Windows-CI-Zeitanteile (2026-11-15):** Auf Nachfrage wurden dieselben
+Job-Logs und Steps nach Wandzeit verglichen (KP-414). Gesamt Linux x64/arm64
+3:56/3:20, Windows 5:55/7:13. Windows allein wiederholt Cancellation fuenfmal
+(33/38 Sekunden). Zwei Multiprocess-CLI-Smokes brauchen Windows 34/84 Sekunden
+gegen Linux 5/7 Sekunden; die Pfade sind nicht gleichwertig (Windows nativ
+und confined, Linux dummy und explizit unsandboxed). SDK-Setup 27/42 gegen
+12/7 Sekunden, Build 75/89 gegen 82/51 Sekunden. Browser-Suite-Step
+107/106 gegen 80/69 Sekunden; kein einzelner Browser-Fall dauert in diesen
+Logs mehr als sechs Sekunden. Der ARM64-Zusatz liegt vor allem ausserhalb
+der Browser-Suite. Interne Ursachen wie Start/Staging, AppContainer,
+Grafik oder Dateipruefung sind aus diesen Logs nicht isolierbar.
+
+**Naechster Auftrag: Smoke-Phasen messen (2026-11-15):** Der Nutzer hat
+Instrumentierung, Push und erneute CI-Auswertung beauftragt. Die Einstiege
+sind `Program.cs` (`BrowserSmoke.Run` samt Wait-Schleifen),
+`ProcessPageRenderer` (Start/Handshake/Exchange) und
+`WindowsRendererSandbox.Start` (Profil, Deployment-/Runtime-Kopie, ACLs,
+Job/Prozess) samt Worker-Disposal. Vorgesehen sind smoke-only aktivierte,
+korrelierbare Host-Diagnosen auf stderr, ohne IPC-/Worker-stdout-, Deadline-,
+Confinement- oder Render-Verhaltensaenderungen. Der konkrete Drei-Phasen-Plan
+wurde am 2026-11-15 um 23:16 Europe/Berlin mit "yes" freigegeben.
+Implementiert und nach Review-Korrektur freigegeben: Smoke-Phasen,
+Renderer-Start/Hello/separate Render-Requests/Exchange/Disposal sowie Windows-
+Profil, Kopier-, ACL-, Job-/Prozess- und Cleanup-Phasen. Ein versiegelter
+`HostTimingBuffer` zeichnet maximal 4.096 Metadaten-Records ohne I/O oder
+Callbacks auf; Export auf stderr erfolgt nach Cleanup, Ueberlauf und Writer-
+Fehler sind explizite Exportfehler. Native Ownership und Semaphore-Freigaben
+koennen daher nicht durch Writer-Callbacks unterbrochen werden.
+Fokussiert 15 Browser-/9 Platform-Faelle sowie Solution-Build ohne
+Warnungen/Fehler bestehen. Lokaler unsandboxed gescripteter Multiprocess-
+Dummy-Smoke besteht mit korrelierten Zeiten; keine native Windows-Evidenz.
+Gesamtregression besteht mit 16.931 Tests (1.351 Browser, 41 Platform),
+beide expliziten CPU-Deadline-Zeilen bleiben ausgeschlossen. Formatpruefung
+und Diff-Check bestehen. Review APPROVED; Commit/Push und native CI-Auswertung
+stehen als naechster Schritt an. Bereits
+vorliegende lokale Kontext-Aenderungen aus KP-413/KP-414 bleiben erhalten.
+Siehe KP-415 und KP-416.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale

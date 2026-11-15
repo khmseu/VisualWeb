@@ -1049,6 +1049,37 @@ an explicit exclusion for compositors lacking text-input support, not a
 claim that keyboard/IME works. `--url` is disallowed in smoke mode to preserve
 offline deterministic input.
 
+Every CLI `--smoke` backend buffers host wall-clock timing records and writes
+them to stderr after operation handling and shell/window-system cleanup;
+ordinary CLI and library callers do not enable them by default. For example:
+`smoke-timing phase=smoke.new-tab renderer=0 request=0 ms=123.456`.
+Each record has exactly the named phase, numeric renderer and request IDs, and
+invariant-culture milliseconds with three decimal places. Zero means not
+applicable. IDs are local to one diagnostic sink, not OS process IDs; a new
+worker lifetime gets a new renderer ID. Only timing metadata is recorded, never
+page paths, HTML, URLs or secrets. Other existing diagnostics may still appear.
+
+Phases include `cli.parse-preflight`, `cli.total`, `shell.window-system`,
+`shell.construct`, `smoke.open-window`, `smoke.run`, `smoke.initial-page`,
+`smoke.new-tab`, `smoke.navigate`, `smoke.presentation`, `smoke.back`,
+`smoke.forward`, `smoke.window-tab-lifecycle`, `shell.dispose` and
+`shell.window-system-dispose`. Presentation work occurs in shell ticks during
+the preceding waits; `smoke.presentation` times the subsequent pixel checks.
+Scopes emit on failure where entered, including cleanup; they do not imply
+success. Measurements are elapsed wall time, not CPU time. Nested scopes and
+asynchronous work overlap, so their durations cannot be summed.
+Recording uses a sealed, thread-safe data-only buffer with 4,096 preallocated
+record slots and no I/O or callbacks. Overflow is latched during recording and
+reported as an explicit error on export, not silently truncated. Export takes a
+snapshot of completed records; still-running operations are not awaited solely
+for diagnostics. `SmokeTimings.WriteTo` formats invariantly regardless of the
+writer's culture, and propagates writer/capacity errors. It retains no writer;
+library callers must export outside resource-ownership and exception-unwinding
+paths and serialize exports to their writer. CLI export runs after handled
+failures, but is bypassed for an unexpected escaping exception to avoid masking
+that exception. A killed/hung browser cannot export its buffered diagnostics.
+See [renderer timings](renderer-processes.md) for worker and Windows stages.
+
 The [browser suite](../tests/VisualWeb.Browser.Tests/) exercises exact history/
 limits, failed and stale navigation, close/move lifecycle, MIME/encoding and
 stylesheets, actual native CPU frames, physical density composition and

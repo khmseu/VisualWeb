@@ -11272,3 +11272,209 @@ Deadline-Zeilen werden sichtbar uebersprungen. `git diff --check` besteht.
 **Status:** Implementiert, fokussiert und per Gesamtregression validiert.
 Nicht committed/gepusht; neue native Windows- und Workflow-Dispatch-
 Validierung ist noch nicht erfolgt.
+
+### KP-413 - Ressourcen-Testzeiten aus den neuesten CI-Laeufen neu erstellt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Nutzeranfrage dieser Sitzung um 22:56 Europe/Berlin;
+  CI-Commit `50c16b2f54e1c9b8ee9c35e4a358ad7e9db82adc`;
+  [Linux x64](https://github.com/khmseu/VisualWeb/actions/runs/43766088094/job/132971379872),
+  [Linux arm64](https://github.com/khmseu/VisualWeb/actions/runs/43766088094/job/132971380045),
+  [Windows x64](https://github.com/khmseu/VisualWeb/actions/runs/43766088085/job/132971379818),
+  [Windows arm64](https://github.com/khmseu/VisualWeb/actions/runs/43766088085/job/132971379955).
+- Bezug: neue Messung nach KP-411 und Opt-in-Aenderung aus KP-412;
+  deren Umsetzung wurde als `b33f944` committed.
+
+**Auftrag (Nutzerangabe):** Die Tabelle "Measured resource-test durations"
+anhand der neuesten CI-Laeufe erneut erstellen.
+
+**Ergebnis (Belegt):** Linux war bereits erfolgreich; der zum Anfragezeitpunkt
+noch laufende Windows-Workflow wurde bis zum erfolgreichen Abschluss beider
+Architekturen beobachtet. Alle folgenden Zeiten stammen aus diesen vier
+Jobs auf demselben Commit. Browser-Zeiten gehoeren zur regulaeren Suite,
+nicht zu den separaten fuenf Windows-Wiederholungen. N/A bezeichnet einen
+nicht ausgefuehrten Plattformzweig. Opt-in bedeutet explizit uebersprungen,
+nicht gemessene Ausfuehrung in der angezeigten Skip-Zeit.
+
+| Testmethode / Theory-Fall                                                           | Linux x64 | Linux arm64 | Windows x64 | Windows arm64 |
+| ----------------------------------------------------------------------------------- | --------- | ----------- | ----------- | ------------- |
+| `WindowsJobMemoryPressureRecoversWithoutAffectingAnotherRenderer`                   | N/A       | N/A         | 1 s         | 2 s           |
+| `WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(false)`       | N/A       | N/A         | Opt-in      | Opt-in        |
+| `WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer(true)`        | N/A       | N/A         | 3 s         | 4 s           |
+| `WindowsClosingCpuPressuredTabDoesNotPublishFailureOrStopAnotherRenderer`           | N/A       | N/A         | 1 s         | 1 s           |
+| `NativeOomInvalidatesExchangeCollectsScopeAndRestartsOnlyAffectedRenderer`          | 1 s       | 1 s         | N/A         | N/A           |
+| `TaskExhaustionReleasesThreadsAndPreservesTheConfinedChannel`                       | 245 ms    | 270 ms      | N/A         | N/A           |
+| `CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(false)`       | Opt-in    | Opt-in      | N/A         | N/A           |
+| `CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs(true)`        | 1 s       | 937 ms      | N/A         | N/A           |
+| `ControllerPreservesCommittedFrameAndHistoryAfterNativeOomAndReloadRecovers`        | 814 ms    | 838 ms      | N/A         | N/A           |
+| `ClosingTabDuringCpuPressureCollectsItsScopeWithoutPublishingStaleFailure`          | 433 ms    | 439 ms      | N/A         | N/A           |
+| `HardResourceScopesArePerTabAndCleanupDoesNotTerminateOtherTabs`                    | 674 ms    | 725 ms      | N/A         | N/A           |
+| `WindowsRendererLimitsAreExplicit` (Policy, kein Drucktest)                         | 9 ms      | 5 ms        | 7 ms        | 6 ms          |
+| `HardResourcePolicyRequiresExactKernelLimitsAndNeverRunsOutsideOwnedScope` (Policy) | 55 ms     | 27 ms       | 27 ms*      | 18 ms*        |
+| `SharedTextAndCallbackExhaustionRejectWithoutMutatingAttributes` (Scriptbudget)     | 34 ms     | 49 ms       | 51 ms       | 41 ms         |
+
+`*` Windows prueft hier nur die explizite Nichtunterstuetzung von Linux-
+Confinement, nicht Linux-Kernel-Limits. Alle Zeiten sind gerundete
+Runner-Ausgaben fuer komplette Testfaelle, keine isolierten Druckphasen.
+
+**Weitere Beobachtungen (Belegt):** Die regulaeren Browser-Suiten melden
+1.3091/1.1296 Minuten auf Linux x64/arm64 und 1.7635/1.7389 Minuten auf
+Windows x64/arm64. Die fuenf separaten Windows-Cancellation-Wiederholungen
+melden x64 4/3/3/3/3 Sekunden, arm64 4/3/4/3/3 Sekunden. In jedem Durchlauf
+wird die Deadline-Zeile uebersprungen. Der manuelle Deadline-Opt-in-Dispatch
+wurde durch diese Push-Laeufe nicht getestet.
+
+**Status:** Tabelle aus abgeschlossenen aktuellen Logs rekonstruiert;
+keine Tests, Workflows oder Fristen veraendert. KP-412s damaliger offener
+nativer Windows-Standardlauf ist nun belegt, der manuelle Dispatch bleibt offen.
+
+### KP-414 - Windows-CI-Verzoegerung nach Zeitanteilen eingegrenzt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Nutzerfrage dieser Sitzung um 23:02 Europe/Berlin; dieselben
+  vier Job-Logs und Run-IDs wie KP-413, ergaenzt um Jobs-API-Step-Zeitstempel;
+  [Linux-Workflow](../.github/workflows/linux-development.yml) und
+  [Windows-Workflow](../.github/workflows/windows-confinement.yml).
+
+**Frage (Nutzerangabe):** Was verlangsamt Windows laut denselben CI-Logs?
+
+**Gemessene Wandzeit (Belegt, Sekundenaufloesung der Jobs-API):**
+
+| Abschnitt                                      | Linux x64       | Linux arm64     | Windows x64 | Windows arm64 |
+| ---------------------------------------------- | --------------- | --------------- | ----------- | ------------- |
+| Gesamter Job                                   | 3:56            | 3:20            | 5:55        | 7:13          |
+| SDK-Setup                                      | 12 s            | 7 s             | 27 s        | 42 s          |
+| Solution-Build                                 | 82 s            | 51 s            | 75 s        | 89 s          |
+| Fast-Test-Step                                 | 31 s            | 24 s            | 42 s        | 28 s          |
+| Fuenf zusaetzliche Cancellation-Wiederholungen | nicht vorhanden | nicht vorhanden | 33 s        | 38 s          |
+| Zwei Multiprocess-CLI-Smokes zusammen          | 5 s             | 7 s             | 34 s        | 84 s          |
+| Browser-Suite-Step                             | 80 s            | 69 s            | 107 s       | 106 s         |
+| Scripting-Suite-Step                           | 12 s            | 12 s            | 15 s        | 14 s          |
+
+Die Tabelle zeigt ausgewaehlte Schritte, nicht alle Job-Anteile. Windows
+braucht insgesamt 119 Sekunden mehr auf x64 und 233 Sekunden mehr auf arm64.
+Die beiden Windows-Prozess-Smokes teilen sich in 18/16 Sekunden auf x64
+und 46/38 Sekunden auf arm64. Ihre Ausgabe liegt weitgehend zwischen der
+fruehen Betriebsmodus-Warnung und dem abschliessenden PASS nach 15 Frames;
+die Logs enthalten keine feineren Zeitmessungen fuer diese Strecke.
+
+**Vergleichsgrenzen (Belegt):** Linux verwendet bei diesen CLI-Smokes den
+dummy-Backend und explizit unsandboxed Renderer; Windows verwendet den
+nativen Windows-Backend und verpflichtende Confinement-Pfade. Das ist kein
+isolierter Betriebssystem- oder AppContainer-Performancevergleich. Die
+fuenf Cancellation-Wiederholungen existieren nur im Windows-Workflow.
+CPU-Deadline-Zeilen sind in allen vier regulaeren Suiten uebersprungen.
+
+**Browser-Einzelfaelle (Belegt):** Alle 1.339 erfolgreichen Faelle je Job
+wurden anhand ihrer gerundeten Runner-Dauern gesichtet. Kein Fall dauert
+mehr als sechs Sekunden. Der Prozess-Originwechsel-Test dauert Windows
+6/6 Sekunden, Linux 1/2 Sekunden; der confined Inline-Scripting-Recovery-
+Test Windows 4/4 Sekunden, Linux 2/2 Sekunden (je x64/arm64).
+Einzeltest-Dauern sind wegen Parallelitaet nicht zum Suite-Wandzeitbudget
+addierbar.
+
+**Einordnung (Ableitung):** Der Rueckstand besteht aus zusaetzlicher
+Windows-Abdeckung, langsameren nativen Multiprocess-Smokes und SDK-/Build-
+Kosten, plus einem moderaten Browser-Suite-Unterschied. Der Build ist auf
+Windows x64 sogar sieben Sekunden schneller als auf Linux x64. Der
+ARM64-Zusatz gegenueber Windows x64 liegt fast vollstaendig ausserhalb
+der Browser-Suite (106 gegen 107 Sekunden). Exakte Ursachen innerhalb der
+Smokes und Prozess-Tests sind nicht belegt; Startup/Staging, Confinement,
+Grafik, Dateipruefung oder Runner-Hardware erfordern getrennte Messpunkte.
+
+**Status:** Diagnose nach vorhandenen Zeitstempeln gesichert; keine
+Tests, Sicherheitsgrenzen oder Workflows veraendert.
+
+### KP-415 - Smoke-Instrumentierung mit Push und erneuter Auswertung beauftragt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Nutzerturn dieser Sitzung um 23:11 Europe/Berlin;
+  [Program.cs](../src/Apps/VisualWeb.Browser/Program.cs),
+  [ProcessPageRenderer.cs](../src/Apps/VisualWeb.Browser/ProcessPageRenderer.cs),
+  [DevelopmentShell.cs](../src/Apps/VisualWeb.Browser/DevelopmentShell.cs) und
+  [WindowsRendererSandbox.cs](../src/Platform/Platform.Windows.Sandbox/WindowsRendererSandbox.cs).
+- Bezug: Folgemessung zur Diagnose aus KP-414.
+
+**Auftrag (Nutzerangabe, beschlossen):** Die vorgeschlagenen Phasenmessungen
+im Windows-Multiprocess-Smoke umsetzen, pushen und danach die CI-Logs neu
+auswerten. Nicht als Auftrag zur Aenderung von Sicherheitsgrenzen,
+Timeouts, Testabdeckung oder zum spekulativen Performance-Fix verstanden.
+
+**Befund (Belegt):** `Program.cs` umfasst CLI-Preflight, Window-System,
+Shell-Aufbau und Smoke; `BrowserSmoke.Run` wartet auf initiale Seite,
+neuen Tab, Navigation sowie Back/Forward und prueft Fenster-/Tab-Lifecycle.
+`WindowsRendererSandbox.Start` erstellt je Worker Profil/Storage, kopiert
+Deployment und Runtime, setzt ACLs und startet den Job/Prozess.
+`ProcessPageRenderer` wartet separat auf Hello und Render-Antworten.
+Bisher gibt es an diesen Stellen keine korrelierbaren Phasenzeiten.
+Bestehende lokale Aenderungen betreffen nur KP-413/KP-414 in beiden
+Kontext-Dateien; diese werden nicht verworfen.
+
+**Plan (Vorschlag, konkrete Freigabe offen):**
+
+1. Smoke-only Timing-Ausgabe und benannte Smoke-/Startup-/Lifecycle-Phasen
+   mit fokussierten Tests einfuehren.
+2. Hostseitig Renderer-Start, Windows-Profil/Staging/ACL/Prozess,
+   Handshake/Exchange und Disposal korrelierbar messen; Standardpfade
+   bleiben ohne Diagnosen, Worker-stdout bleibt ausschliesslich IPC.
+3. Build, betroffene Tests, Gesamtregression und Format pruefen, Diff
+   reviewen, autorisierten Commit/Push ausfuehren und die vier nativen
+   CI-Konfigurationen anhand der neuen Messpunkte erneut vergleichen.
+
+**Status:** Recherche und Plan erstellt; wartet auf konkrete Planfreigabe.
+Noch kein Instrumentierungscode geaendert und kein neuer Commit/Push.
+
+### KP-416 - Smoke-Timing-Plan freigegeben und Umsetzung begonnen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quelle: Nutzerantwort "yes" dieser Sitzung um 23:16 Europe/Berlin.
+- Bezug: bestaetigt den konkreten Plan aus KP-415.
+
+**Freigabe (Nutzerangabe, beschlossen):** Smoke-only Phasenzeiten einschliesslich
+Renderer-/Windows-Confinement-Aufbau implementieren, testen und reviewen,
+anschliessend committen/pushen und die neuen nativen CI-Logs auswerten.
+Scope und Nichtziele aus KP-415 bleiben unveraendert.
+
+**Status:** Implementierung und fokussierte Red/Green-Pruefung gestartet;
+noch kein neuer Commit/Push. Die vorhandenen Kontext-Aenderungen zu KP-413
+bis KP-415 bleiben erhalten und gehoeren zur Folgeanalyse.
+
+**Zwischenstand (Belegt):** Erste Instrumentierung und zehn fokussierte
+Tests bestehen, ebenso lokaler unsandboxed Dummy-Multiprocess-Smoke und
+Solution-Build ohne Warnungen/Fehler. Review verlangt separate Render-
+Zeitgrenze ohne Start/Hello sowie revisionssichere Diagnosefehler-Behandlung:
+Writer-/Callback-Fehler duerfen weder Worker-Ownership/Disposal noch
+Semaphore-Freigabe verhindern oder urspruengliche Fehler verdecken.
+Die gestartete Gesamtregression wurde fuer diese Revision gezielt gestoppt
+(kein festgestellter Testfehler); sie wird nach der Korrektur neu gestartet.
+Review-Korrektur ist beauftragt, noch kein Commit/Push.
+
+**Review-Korrektur (Belegt):** Freigegeben nach zweiter Pruefung.
+`renderer.render-request` misst Write bis Reply-/Viewport-Pruefung, Pixelkopie
+und finalem Cancellation-Check, ohne Start/Hello und ohne anschliessendes
+Fehler-Cleanup. Writer/Callback-Ausfuehrung wurde aus allen kritischen
+Scopes entfernt: Der versiegelte, thread-sichere `HostTimingBuffer` in
+Platform.Abstractions hat 4.096 vorallokierte Slots; Aufzeichnung ist nur
+Metadatenspeicherung. Ueberlauf wird fuer einen expliziten Exportfehler
+vermerkt. Die CLI exportiert nach Operation und Cleanup, nicht waehrend
+Exception-Unwinding. Exportfehler propagieren, kein stilles Verschlucken.
+Windows akzeptiert keinen frei ausfuehrbaren Timing-Callback mehr.
+Neue fokussierte Tests pruefen Writer-Fehler, Parallelitaet/Ueberlauf,
+Render-Grenzen und Windows-Ownership; 15 Browser- und 9 Platform-Faelle
+bestehen lokal, die Windows-Zweige sind noch kein nativer Nachweis.
+Der revidierte Solution-Build besteht ohne Warnungen/Fehler.
+Gescripteter unsandboxed Multiprocess-Smoke auf SDL dummy besteht mit
+15 Frames und den korrelierten Diagnosen, einschliesslich Disposal.
+Erneute Gesamtregression und Formatpruefung laufen.
+
+**Lokale Abschlusspruefung (Belegt, 2026-11-15):** Solution-Build ohne
+Warnungen/Fehler, alle 16.931 Default-Tests (1.351 Browser, 41 Platform),
+Formatverifikation und Diff-Check bestehen. Die beiden expliziten CPU-
+Deadline-Zeilen bleiben uebersprungen. Browser-Suite lokal 9:10; lokale
+Wandzeiten des gemeinsam genutzten Hosts sind kein nativer Windows-Vergleich.
+Review ist APPROVED. Commit/Push und anschliessende native CI-Messung
+stehen an; bestehende Sicherheitsgrenzen und Laufzeitbudgets unveraendert.

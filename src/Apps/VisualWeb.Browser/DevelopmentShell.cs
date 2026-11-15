@@ -95,7 +95,8 @@ public sealed class DevelopmentShell : IDisposable
     public DevelopmentShell(IWindowSystem system, string fontPath, BrowserOptions? options = null,
         bool hidden = false, bool textInput = true, string? rendererPath = null, bool requireSandbox = false,
         bool executeInlineScripts = false, Func<HttpMessageHandler>? pageTransportFactory = null,
-        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null,
+        SmokeTimings? timings = null)
     {
         this.system = system;
         this.hidden = hidden;
@@ -110,7 +111,8 @@ public sealed class DevelopmentShell : IDisposable
             ? new LocalPageRenderer(() => new StaticPageRenderer(fontPath, settings.MaxFramePixels, executeInlineScripts,
                 boldFontPath, italicFontPath, boldItalicFontPath), executeInlineScripts)
             : new ProcessPageRenderer(rendererPath, fontPath, requireSandbox: requireSandbox, executeInlineScripts: executeInlineScripts,
-                boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath), settings,
+                boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath,
+                timings: timings), settings,
             // Every multiprocess mode (confined or explicitly unsandboxed) rotates renderers per origin; there is no opt-out.
             isolateOrigins: multiprocess, pageNavigationAuthorizer: ConfirmPageNavigationAsync);
         Controller.Changed += id =>

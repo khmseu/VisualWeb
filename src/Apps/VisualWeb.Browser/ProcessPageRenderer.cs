@@ -21,8 +21,10 @@ public sealed class RendererProcessException(string message) : IOException(messa
 /// Canceled/failed exchanges kill only this owned worker; the next request launches a replacement.</remarks>
 public sealed class ProcessPageRenderer : IPageRenderer
 {
-    private sealed class Connection(Process process, LinuxRendererResources? resources, WindowsRendererWorker? windowsWorker) : IDisposable
+    private sealed class Connection(Process process, LinuxRendererResources? resources, WindowsRendererWorker? windowsWorker,
+        SmokeTimings? timings, long rendererId) : IDisposable
     {
+        internal long RendererId { get; } = rendererId;
         internal LinuxRendererResources? Resources { get; } = resources;
         internal Process Process { get; } = process;
         internal RendererChannel Channel { get; } = new(windowsWorker?.Output ?? process.StandardOutput.BaseStream,
@@ -38,6 +40,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
         internal void Abort() => windowsWorker?.Terminate();
         public void Dispose()
         {
+            using var timing = timings?.Measure("renderer.dispose", RendererId);
             try { Resources?.Stop(); }
             finally
             {
@@ -73,6 +76,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
     private long nextId;
     private readonly bool requireSandbox;
     private readonly bool executeInlineScripts;
+    private readonly SmokeTimings? timings;
     private Guid committedDocumentId;
     private readonly string? requiredSandboxProfile;
     public int? ProcessId { get { lock (sync) { return connection?.Process.Id; } } }
@@ -80,8 +84,10 @@ public sealed class ProcessPageRenderer : IPageRenderer
 
     public ProcessPageRenderer(string rendererPath, string fontPath, TimeSpan? timeout = null,
         bool requireSandbox = false, string? dotnetPath = null, bool executeInlineScripts = false,
-        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null)
+        string? boldFontPath = null, string? italicFontPath = null, string? boldItalicFontPath = null,
+        SmokeTimings? timings = null)
     {
+        this.timings = timings;
         this.executeInlineScripts = executeInlineScripts;
         if (requireSandbox)
         {
@@ -298,6 +304,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         request = request with { Id = checked(++nextId) };
         Connection? current = null;
+        var rendererId = 0L;
+        var exchangeStart = timings is null ? 0 : Stopwatch.GetTimestamp();
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -306,7 +314,8 @@ public sealed class ProcessPageRenderer : IPageRenderer
             {
                 ObjectDisposedException.ThrowIf(disposed, this);
                 started = connection is null;
-                current = connection ??= Start();
+                rendererId = connection?.RendererId ?? timings?.NextRenderer() ?? 0;
+                current = connection ??= Start(rendererId);
             }
             using var cancellationAbort = requireSandbox && OperatingSystem.IsWindows()
                 ? deadline.Token.Register(() => current?.Abort())
@@ -314,6 +323,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             if (request.Kind == "render") { lock (sync) { request = request with { CommittedDocumentId = committedDocumentId }; } }
             if (started)
             {
+                using var helloTiming = timings?.Measure("renderer.hello", rendererId, request.Id);
                 var hello = await Receive(current, deadline.Token).ConfigureAwait(false);
                 if (hello.Message.Kind != "hello") { throw new IpcProtocolException("Renderer handshake is missing."); }
                 if (requireSandbox && hello.Message.SandboxProfile != requiredSandboxProfile)
@@ -321,6 +331,11 @@ public sealed class ProcessPageRenderer : IPageRenderer
                     throw new IpcProtocolException("Renderer did not confirm the required platform confinement profile.");
                 }
             }
+            // Only render requests: excludes startup/Hello, includes write, broker round trips,
+            // identity/viewport validation, frame copy and the final cancellation check.
+            using var renderTiming = request.Kind == "render"
+                ? timings?.Measure("renderer.render-request", rendererId, request.Id)
+                : null;
             await current.Channel.WriteAsync(request, cancellationToken: deadline.Token).ConfigureAwait(false);
             var scriptRequestId = 0;
             var scriptCharacters = 0;
@@ -401,7 +416,14 @@ public sealed class ProcessPageRenderer : IPageRenderer
             throw new RendererProcessException("Renderer communication failed: " + exception.Message
                 + (diagnostics.Length == 0 ? "" : " " + diagnostics));
         }
-        finally { exchange.Release(); }
+        finally
+        {
+            try
+            {
+                if (timings is not null) { timings.Record("renderer.exchange", rendererId, request.Id, Stopwatch.GetElapsedTime(exchangeStart)); }
+            }
+            finally { exchange.Release(); }
+        }
     }
     private static string BoundText(string text) => text.Length <= RendererProtocol.MaxTextCharacters
         ? text : text[..(RendererProtocol.MaxTextCharacters - 3)] + "...";
@@ -414,8 +436,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
         if (owner.Diagnostics is { } diagnostics) { await diagnostics.WaitAsync(cancellationToken).ConfigureAwait(false); }
         throw new RendererProcessException($"Renderer exited ({owner.Process.ExitCode}) before completing its reply.");
     }
-    private Connection Start()
+    private Connection Start(long rendererId)
     {
+        using var timing = timings?.Measure("renderer.start", rendererId);
         if (requireSandbox && OperatingSystem.IsWindows())
         {
             if (!rendererPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
@@ -424,8 +447,9 @@ public sealed class ProcessPageRenderer : IPageRenderer
             }
             var worker = WindowsRendererSandbox.Start(Path.GetDirectoryName(rendererPath)!, fontPath,
                 RuntimeEnvironment.GetRuntimeDirectory(), Path.GetFileName(rendererPath),
-                boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath);
-            var connection = new Connection(worker.Process, null, worker);
+                boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath,
+                timing: timings?.Buffer, timingRenderer: rendererId);
+            var connection = new Connection(worker.Process, null, worker, timings, rendererId);
             connection.Diagnostics = DrainDiagnostics(connection, worker.Error);
             return connection;
         }
@@ -452,7 +476,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
         if (boldItalicFontPath is not null) { info.ArgumentList.Add("--font-bold-italic"); info.ArgumentList.Add(boldItalicFontPath); }
         var resources = requireSandbox ? new LinuxRendererResources() : null;
         var process = Process.Start(resources?.Wrap(info) ?? info) ?? throw new RendererProcessException("Renderer process did not start.");
-        var owner = new Connection(process, resources, null);
+        var owner = new Connection(process, resources, null, timings, rendererId);
         owner.Diagnostics = DrainDiagnostics(owner, process.StandardError.BaseStream);
         return owner;
     }
