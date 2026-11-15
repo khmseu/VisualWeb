@@ -111,4 +111,25 @@ public sealed class UrlSearchParamsTests
         parameters.Delete("missing");
         Assert.Equal(3, parameters.Size);
     }
+
+    [Fact]
+    public void DeleteWithValueRemovesOnlyMatchingTuplesAndNormalizesScalarValueStrings()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+        var parameters = new UrlSearchParams(
+            "a=first&b=middle&a=last&a=first&%EF%BF%BD=%EF%BF%BD&%EF%BF%BD=other");
+
+        parameters.Delete("a", "first");
+
+        Assert.Equal(4, parameters.Size);
+        Assert.Equal(new[] { "last" }, parameters.GetAll("a"));
+        Assert.Equal("middle", parameters.Get("b"));
+
+        parameters.Delete(unpairedSurrogate, unpairedSurrogate);
+
+        Assert.Equal(3, parameters.Size);
+        Assert.Equal(new[] { "other" }, parameters.GetAll("\uFFFD"));
+        parameters.Delete("a", "missing");
+        Assert.Equal(3, parameters.Size);
+    }
 }

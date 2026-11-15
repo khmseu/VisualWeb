@@ -10970,3 +10970,49 @@ bleibt als eigener Commit getrennt.
 
 **Naechster Schritt:** Pass 9 erneut nach der WHATWG-Prioritaetsregel und
 dem aktualisierten Missing-Tracker auswaehlen.
+
+### KP-402 - Pass 9 value-gefiltertes URLSearchParams.delete ausgewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: WHATWG-Rangfolge neu geprueft; Auswahl ist eine begruendete
+  Ableitung, keine gesonderte Nutzerwahl.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [Support inventory](../docs/standards.md#support-status),
+  [Core URL guide](../docs/core.md#url),
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs) und lokale
+  [URL Standard delete algorithm](../specs/cache/url.html#dom-urlsearchparams-delete).
+  Das Manifest meldet fuer `url` `checkedAt: 2026-11-07`.
+- Bezug: folgt auf den in KP-401 abgeschlossenen Pass 8 und DEC-033.
+
+**Auswahl (Ableitung):** URL und Encoding bleiben bei ~30% gleichauf. Der
+URL-Teilbereich hat bereits name-only `delete(name)`; der optionale
+Wertfilter aus demselben Algorithmus ist eine kleine, unabhaengig testbare
+Erweiterung mit exaktem Tuple-Matching. Die Alternative, an dieser Stelle zu
+Encoding zu wechseln, wurde nicht gewaehlt, weil deren offenen Decoder- und
+Streaming-Oberflaechen breiter sind; die Tie-Regel erlaubt eine Auswahl
+zwischen beiden Standards und verlangt erneute Bewertung je Pass. Der
+Abdeckungswert bleibt grob bei ~30%.
+
+**Status:** Ausgewaehlt; test-first Implementierung und Validierung laufen.
+
+### KP-403 - Pass 9 lokal implementiert und validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quellen: `UrlSearchParams.Delete(name, value)` in
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs), die
+  [URLSearchParams tests](../tests/Core.Tests/UrlSearchParamsTests.cs),
+  [Core guide](../docs/core.md#url), [standards inventory](../docs/standards.md#support-status),
+  [Core.Url README](../src/Core/Core.Url/README.md) und der aktualisierte
+  [Missing tracker](../plans/Missing.md).
+- Bezug: implementiert die in KP-402 ausgewaehlte Operation.
+
+**Umsetzung und Ergebnis (Belegt):** Der Test schlug vor der Implementierung
+fehl, weil keine zweiparametrige `Delete`-Ueberladung existierte. Die neue
+Ueberladung normalisiert Name und Wert als Scalar-Value-Strings und entfernt
+alle Tupel, in denen beide Felder uebereinstimmen. Neun fokussierte Tests, alle
+4.010 Core-Tests und alle 16.918 Solution-Tests bestehen. Der Solution-Build
+meldet null Warnungen/Fehler; die Formatverifikation besteht.
+
+**Status:** Lokal validiert; eigener Commit, Push und CI stehen aus.

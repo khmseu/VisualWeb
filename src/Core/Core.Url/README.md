@@ -13,8 +13,8 @@ with `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"n
 page-initiated document-origin inheritance is selected by `LoadedPage`, not by
 the URL facade. `UrlSearchParams` provides string initialization, ordered
 `Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`, and
-`Delete(name)`. Other mutations, stringification and URL linkage are not
-implemented.
+`Delete(name)`/`Delete(name, value)`. Other mutations, stringification and URL
+linkage are not implemented.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
 
 Official source: <https://url.spec.whatwg.org/> (manifest ID `url`, local

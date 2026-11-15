@@ -43,6 +43,18 @@ public sealed class UrlSearchParams
         _entries.RemoveAll(entry => entry.Name == scalarName);
     }
 
+    /// <summary>Removes all entries associated with the scalar-value name and value.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-delete">URLSearchParams.delete()</see>.
+    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    public void Delete(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+        var scalarName = ToScalarValueString(name);
+        var scalarValue = ToScalarValueString(value);
+        _entries.RemoveAll(entry => entry.Name == scalarName && entry.Value == scalarValue);
+    }
+
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
     public string? Get(string name)
