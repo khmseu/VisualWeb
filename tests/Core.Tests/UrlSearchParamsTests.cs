@@ -76,4 +76,17 @@ public sealed class UrlSearchParamsTests
         Assert.True(parameters.Has(unpairedSurrogate));
         Assert.False(parameters.Has("missing"));
     }
+
+    [Fact]
+    public void HasWithValueMatchesOneTupleAndNormalizesBothStrings()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+        var parameters = new UrlSearchParams(
+            "a=first&a=second&%EF%BF%BD=%EF%BF%BD&left=one&right=two");
+
+        Assert.True(parameters.Has("a", "second"));
+        Assert.True(parameters.Has(unpairedSurrogate, unpairedSurrogate));
+        Assert.False(parameters.Has("left", "two"));
+        Assert.False(parameters.Has("a", "missing"));
+    }
 }

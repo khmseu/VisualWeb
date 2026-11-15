@@ -58,8 +58,19 @@ public sealed class UrlSearchParams
 
     /// <summary>Determines whether an entry has the given scalar-value name.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-has">URLSearchParams.has()</see>.
-    /// This subset does not filter by value.</remarks>
+    /// This overload checks only the name.</remarks>
     public bool Has(string name) => Get(name) is not null;
+
+    /// <summary>Determines whether an entry has the given scalar-value name and value.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-has">URLSearchParams.has()</see>.</remarks>
+    public bool Has(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+        var scalarName = ToScalarValueString(name);
+        var scalarValue = ToScalarValueString(value);
+        return _entries.Any(entry => entry.Name == scalarName && entry.Value == scalarValue);
+    }
 
     private static List<(string Name, string Value)> Parse(string input)
     {

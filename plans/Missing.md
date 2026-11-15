@@ -2389,6 +2389,18 @@ verification passes. Commit `9c7fa7e` is pushed to `main`; Linux development,
 Windows confinement (x64 and arm64), and CodeQL CI pass. Pass 6 is complete;
 four of the ten requested increments remain.
 
+### Pass 7: URLSearchParams has(name, value)
+
+WHATWG URL and Encoding remain tied at ~30%; this pass adds the optional
+value-filtering form of `URLSearchParams.has`, matching both scalar-value
+name and value against one tuple. The existing name-only operation remains
+available. Other mutations, URL-object linkage, stringification, and Web IDL
+remain unsupported. The URL Standard cache is fresh
+(`checkedAt: 2026-11-07`); no refresh is needed. Seven focused
+URLSearchParams tests and all 4,008 Core tests pass. The solution build has
+zero warnings/errors, all 16,916 solution tests pass, and formatting
+verification passes. Commit, push, and CI remain pending.
+
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
 priorities below; the choice of protocol and its scope remain open. See the

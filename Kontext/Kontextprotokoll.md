@@ -10816,3 +10816,50 @@ erfolgreich. Die lokale Vollvalidierung ist in KP-393 dokumentiert.
 **Naechster Schritt:** Fuer Pass 7 WHATWG-only Prioritaeten und offene,
 konkrete Teilbereiche anhand des aktuellen Trackers und Supportinventars
 erneut bewerten.
+
+### KP-395 - Pass 7 URLSearchParams.has(name, value) ausgewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: WHATWG-Rangfolge neu geprueft; Auswahl ist eine begruendete
+  Ableitung, keine gesonderte Nutzerwahl.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [Support inventory](../docs/standards.md#support-status),
+  [Core URL guide](../docs/core.md#url),
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs) und die lokale
+  [URL Standard has algorithm](../specs/cache/url.html#dom-urlsearchparams-has).
+  Das Manifest meldet fuer `url` `checkedAt: 2026-11-07`.
+- Bezug: folgt auf den in KP-394 abgeschlossenen Pass 6 und DEC-033.
+
+**Auswahl (Ableitung):** WHATWG URL und Encoding stehen weiter gleichauf bei
+~30%; URLSearchParams hat inzwischen String-Initialisierung, Append,
+geordnete Leseoperationen und name-only `has()`. Der optionale
+`has(name, value)`-Filter ist ein separater, eng begrenzter Algorithmusschritt:
+beide normalisierten Strings muessen zum selben Tupel gehoeren. Andere
+Mutationen, URL-Query-Synchronisierung, Stringifizierung und Web IDL bleiben
+ausserhalb dieses Inkrements.
+
+**Status:** Lokal validiert (belegt): sieben fokussierte URLSearchParams-Tests
+und alle 4.008 Core-Tests bestehen. Der Solution-Build hat null
+Warnungen/Fehler, alle 16.916 Solution-Tests bestehen, und
+Formatverifikation besteht. Commit, Push und CI stehen aus.
+
+### KP-396 - Pass 7 lokal validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: lokale Befehlsausgabe fuer `dotnet test tests/Core.Tests/Core.Tests.csproj`,
+  `dotnet build VisualWeb.slnx`, `dotnet test VisualWeb.slnx --no-build` und
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`.
+- Bezug: schliesst die lokale Implementierung aus KP-395 ab.
+
+**Ergebnis (belegt):** Alle sieben fokussierten URLSearchParams-Tests und
+4.008 Core-Tests bestehen. Der Solution-Build hat null Warnungen/Fehler;
+16.916 Solution-Tests und die Formatverifikation bestehen. Ein erster
+Solution-Testlauf waehrend gleichzeitig laufender Formatverifikation hatte
+einen isolierten, nicht verwandten Deadline-Fehler in Engine.Scripting.
+Der betroffene Test bestand isoliert auf dem aktuellen Stand und auf dem
+Pass-6-Baseline-Commit `3b788b1`; ein anschliessender vollstaendiger
+Solution-Lauf ohne gleichzeitige Formatverifikation bestand.
+
+**Status / naechster Schritt:** Commit, Push und CI fuer Pass 7 stehen aus.
