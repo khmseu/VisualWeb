@@ -74,8 +74,10 @@ denen sowohl der normalisierte Name als auch der normalisierte Wert
 uebereinstimmen. `delete(name)` bleibt unveraendert. Die URL-Quelle ist frisch
 (`checkedAt: 2026-11-07`); andere URL-Mutationen und URL-Objekt-Verknuepfung
 bleiben offen. Neun fokussierte URLSearchParams-, 4.010 Core- und 16.918
-Solution-Tests bestehen; Build und Formatverifikation bestehen. Commit/Push
-und CI fuer Pass 9 stehen noch aus.
+Solution-Tests bestehen; Build und Formatverifikation bestehen. Commit
+`d637bb7` ist gepusht; Linux- (Run `43739620711`), Windows- (Run
+`43739621051`) und CodeQL-CI (Run `43739619909`) sind gruen. Pass 9 ist
+abgeschlossen; ein Inkrement bleibt.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale

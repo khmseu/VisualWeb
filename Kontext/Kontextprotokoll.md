@@ -11016,3 +11016,35 @@ alle Tupel, in denen beide Felder uebereinstimmen. Neun fokussierte Tests, alle
 meldet null Warnungen/Fehler; die Formatverifikation besteht.
 
 **Status:** Lokal validiert; eigener Commit, Push und CI stehen aus.
+
+### KP-404 - Pass 9 gepusht, CI laeuft
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Git-Commit `d637bb7`, Push-Ausgabe, sowie GitHub Actions fuer diesen
+  SHA (Runs `43739620711`, `43739621051` und `43739619909`).
+- Bezug: Fortschreibung von KP-403.
+
+**Belegt:** Pass 9 ist als `d637bb7` auf `main` committed und gepusht. Die
+Linux-development-, Windows-confinement- und CodeQL-Workflows laufen fuer
+diesen SHA; Ergebnisse stehen noch aus.
+
+**Status:** Auf CI-Ergebnisse warten; nach erfolgreichem Abschluss Pass 9
+abschliessen und den WHATWG-Prioritaetsvergleich fuer Pass 10 erneut
+durchfuehren.
+
+### KP-405 - Pass 9 CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: GitHub Actions Runs
+  [Linux development](https://github.com/khmseu/VisualWeb/actions/runs/43739620711),
+  [Windows confinement](https://github.com/khmseu/VisualWeb/actions/runs/43739621051)
+  und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/43739619909).
+- Bezug: schliesst Pass 9 aus KP-402 bis KP-404 ab.
+
+**Belegt:** Alle drei Workflows fuer `d637bb7` sind erfolgreich. Damit ist
+Pass 9 abgeschlossen; ein angefordertes Inkrement bleibt.
+
+**Naechster Schritt:** Pass 10 anhand der WHATWG-Prioritaetsregel und des
+aktualisierten Missing-Trackers neu auswaehlen.

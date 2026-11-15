@@ -2429,7 +2429,9 @@ and Web IDL remain unsupported. The URL Standard cache is fresh
 are complete locally. Nine focused URLSearchParams tests, all 4,010 Core tests,
 and all 16,918 solution tests pass. The solution build has zero
 warnings/errors, and formatting verification passes. Commit, push, and CI
-remain.
+are complete: commit `d637bb7` is pushed to `main`; Linux development, Windows
+confinement, and CodeQL runs `43739620711`, `43739621051`, and `43739619909`
+all pass. Pass 9 is complete; one of the ten requested increments remains.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
