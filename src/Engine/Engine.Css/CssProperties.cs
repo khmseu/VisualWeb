@@ -544,7 +544,8 @@ internal static class CssProperties
             }
 
             colorSpace = CssText.Lower(groups[0][1].Value);
-            if (colorSpace is not ("srgb" or "srgb-linear" or "lab" or "oklab" or "xyz" or "xyz-d65"))
+            if (colorSpace is not ("srgb" or "srgb-linear" or "lab" or "oklab"
+                or "xyz" or "xyz-d65" or "xyz-d50"))
             {
                 return null;
             }
@@ -605,19 +606,28 @@ internal static class CssProperties
             return mixedAlpha == 0 ? premultiplied : premultiplied / mixedAlpha;
         }
 
-        if (colorSpace is "xyz" or "xyz-d65")
+        if (colorSpace is "xyz" or "xyz-d65" or "xyz-d50")
         {
             var first = SrgbToXyzD65(colors[0]);
             var second = SrgbToXyzD65(colors[1]);
+            if (colorSpace == "xyz-d50")
+            {
+                first = XyzD65ToD50(first.X, first.Y, first.Z);
+                second = XyzD65ToD50(second.X, second.Y, second.Z);
+            }
+
             var x = MixPremultiplied(first.X, second.X);
             var y = MixPremultiplied(first.Y, second.Y);
             var z = MixPremultiplied(first.Z, second.Z);
-            if (XyzD65ToSrgb(x, y, z) is not { } converted) { return null; }
+            var converted = colorSpace == "xyz-d50"
+                ? XyzD50ToSrgb(x, y, z)
+                : XyzD65ToSrgb(x, y, z);
+            if (converted is not { } srgb) { return null; }
 
             return new CssColor(
-                SrgbChannel(converted.Red),
-                SrgbChannel(converted.Green),
-                SrgbChannel(converted.Blue),
+                SrgbChannel(srgb.Red),
+                SrgbChannel(srgb.Green),
+                SrgbChannel(srgb.Blue),
                 SrgbChannel(mixedAlpha * alphaMultiplier));
         }
 
@@ -688,14 +698,20 @@ internal static class CssProperties
     private static (double Lightness, double A, double B) SrgbToLab(CssColor color)
     {
         var (x, y, z) = SrgbToXyzD65(color);
-        // CSS Color 4 linear sRGB to XYZ D65 to Lab D50 conversion.
-        var d50X = 1.0479297925449969 * x + 0.022946870601609652 * y - 0.05019226628920524 * z;
-        var d50Y = 0.02962780877005599 * x + 0.9904344267538799 * y - 0.017073799063418826 * z;
-        var d50Z = -0.009243040646204504 * x + 0.015055191490298152 * y + 0.7518742814281371 * z;
+        var (d50X, d50Y, d50Z) = XyzD65ToD50(x, y, z);
         var fx = LabForward(d50X / 0.96422);
         var fy = LabForward(d50Y);
         var fz = LabForward(d50Z / 0.82521);
         return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz));
+    }
+
+    private static (double X, double Y, double Z) XyzD65ToD50(double x, double y, double z)
+    {
+        // CSS Color 4 Bradford chromatic adaptation from D65 to D50.
+        return (
+            1.0479297925449969 * x + 0.022946870601609652 * y - 0.05019226628920524 * z,
+            0.02962780877005599 * x + 0.9904344267538799 * y - 0.017073799063418826 * z,
+            -0.009243040646204504 * x + 0.015055191490298152 * y + 0.7518742814281371 * z);
     }
 
     private static (double X, double Y, double Z) SrgbToXyzD65(CssColor color)

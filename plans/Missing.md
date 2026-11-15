@@ -2268,7 +2268,16 @@ Color 4 (`checkedAt` 2026-11-07) and CSS Color 5 (`checkedAt` 2026-11-15)
 sources are fresh. See the [CSS Color 4 interpolation space](../specs/cache/css-color.html#color-interpolation-method),
 [XYZ space grammar](../specs/cache/css-color.html#typedef-xyz-space), and
 [CSS Color 5 color-mix space](../specs/cache/css-color-5.html#color-mix-space).
-Implementation and tests remain.
+**Pass 10 implementation (locally validated):** `in xyz-d50` converts the
+existing 8-bit sRGB colors through linear sRGB and Bradford-adapted XYZ D50,
+then applies the established percentage normalization and premultiplied-alpha
+mix before the existing D50-to-sRGB gamut check. Five focused regressions
+cover neutral/chromatic output, weights, transparency and zero-total weights;
+valid XYZ-D50 cases failed before implementation with the expected unsupported
+value diagnostic. All 45 focused `color-mix()` tests and 1,628 Engine.Css tests
+pass. Debug and Release solution builds have zero warnings/errors; both full
+solution test suites pass 16,894 tests. Format verification and `git diff
+--check` pass. The feature commit, push and remote CI remain.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

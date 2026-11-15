@@ -10337,3 +10337,35 @@ ueber die vorhandene D50-zu-sRGB-Gamutpruefung in die 8-bit-Ausgabe
 zurueckwandeln. Kein Gamut-Mapping, keine weiteren Farbquellen und keine
 weitere Praezision werden zugesagt. Beide lokalen Quellen sind gemaess Manifest
 frisch. Umsetzung und Tests stehen aus; dies ist der letzte angeforderte Pass.
+
+### KP-377 - XYZ-D50 color-mix lokal validiert
+
+- Dokumentiert am: Datum unbekannt; Fortsetzung nach KP-376.
+- Ereignisdatum: Datum unbekannt.
+- Erfassungsart: Implementierung und lokale Validierung; Featurecommit, Push und
+  Remote-CI stehen aus.
+- Quellen: `src/Engine/Engine.Css/CssProperties.cs`,
+  `tests/Engine.Css.Tests/ColorMixFunctionTests.cs`, CSS Guide,
+  Engine.Css README und CSS support inventory; lokale Test-/Build-/Format-
+  Ergebnisse dieser Fortsetzung.
+- Bezug: setzt KP-376 um und schliesst den letzten Pass des Zehn-Pass-Auftrags
+  lokal ab.
+
+**Umsetzung (belegt):** `color-mix(in xyz-d50, ...)` konvertiert bestehende
+8-bit-sRGB-Eingaben nach linear sRGB und XYZ D65, adaptiert nach Bradford zu
+XYZ D50 und mischt mit der bestehenden Prozentnormalisierung und dem
+premultiplizierten Alpha. Die Ausgabe verwendet die vorhandene D50-zu-sRGB-
+Gamutpruefung. Der D65-zu-D50-Helfer wird nun auch von der Lab-Eingabekonversion
+verwendet. Fuenf fokussierte XYZ-D50-Regressionen decken neutrale und
+chromatische Mischungen, Gewichte, Transparenz und Nullsummengewichte ab.
+Vor der Implementierung schlugen die gueltigen Faelle mit der erwarteten
+Unsupported-Diagnose fehl.
+
+**Validierung (belegt):** Alle 45 fokussierten ColorMix-Tests und 1.628
+Engine.Css-Tests bestehen. Debug- und Release-Solution-Builds enden mit null
+Warnungen/Fehlern; beide vollstaendigen Solution-Testlaeufe bestehen jeweils
+16.894 Tests. `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` und `git diff --check` bestehen.
+
+**Status:** Lokale Implementierung und Validierung abgeschlossen. Commit, Push
+und Remote-CI stehen aus.

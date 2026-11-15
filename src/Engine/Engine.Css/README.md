@@ -169,7 +169,7 @@ components, `none` and optional slash alpha. Lightness percentages map 0..100%
 to 0..1 and clamp to that range; a/b percentages map -100%..100% to -0.4..0.4.
 Endpoint lightness maps to black/white; other colors convert through Oklab D65
 and XYZ D65 to sRGB, with out-of-gamut results remaining unsupported.
-Interpolation outside the bounded Lab, Oklab, XYZ D65, linear-light sRGB and sRGB
+Interpolation outside the bounded Lab, Oklab, XYZ D50/D65, linear-light sRGB and sRGB
 color-mix methods below,
 missing-component preservation and higher-precision color management remain
 unsupported.
@@ -179,19 +179,20 @@ hue angles, `none` and optional slash alpha. Lightness percentages map
 to zero. Hue is powerless at chroma <= 0.000004. Polar values convert through
 Oklab D65 and XYZ D65 to sRGB, with endpoint lightness mapped to black/white.
 Other out-of-gamut results remain unsupported; interpolation outside the
-bounded Lab, Oklab, XYZ D65, linear-light sRGB and sRGB color-mix methods below,
+bounded Lab, Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods below,
 missing-component preservation
 and higher-precision color management remain unsupported.
 `color-mix()` supports exactly two existing static colors. Oklab is the default
-interpolation method; explicit `in oklab`, `in lab`, `in xyz-d65`, its `in xyz`
-alias, `in srgb-linear` and `in srgb` methods are supported. Lab mixes D50 Lab
-coordinates; XYZ D65 mixes D65 XYZ coordinates; `srgb-linear` mixes
+interpolation method; explicit `in oklab`, `in lab`, `in xyz-d50`, `in xyz-d65`,
+its `in xyz` alias, `in srgb-linear` and `in srgb` methods are supported. Lab
+mixes D50 Lab coordinates; XYZ methods mix coordinates in their named white
+point (`xyz` aliases `xyz-d65`); `srgb-linear` mixes
 transfer-decoded linear sRGB components and applies the CSS Color 4 sRGB
 transfer function for output.
 Optional weights may precede or follow each color and are bounded to 0..100%;
 CSS Values 5 percentage normalization and CSS Color 4 premultiplied alpha are
 used. The existing rounded 8-bit sRGB representation is retained, and Oklab,
-Lab and XYZ D65 results outside the sRGB gamut remain unsupported rather than
+Lab and XYZ D50/D65 results outside the sRGB gamut remain unsupported rather than
 being gamut-mapped.
 Other interpolation spaces, nested mixes, `currentColor`, `none` and other CSS
 Color 5 functions remain unsupported.

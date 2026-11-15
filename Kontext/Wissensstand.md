@@ -116,21 +116,25 @@ Solution-Builds haben null Warnungen/Fehler; beide Volltests bestehen 16.890
 Tests; Formatverifikation und Whitespacepruefung bestehen. Commit `ee1d18b`
 ist gepusht; Linux Run
 43681056081, Windows Run 43681056228 (x64/ARM64) und CodeQL Run 43681055444.
-Pass 9 ist abgeschlossen; ein angefordertes Inkrement verbleibt. Pass 10 ist
-als `in xyz-d50` fuer dieselbe begrenzte Zwei-Farbenform ausgewaehlt, aber
-noch nicht implementiert: sRGB-Eingaben ueber Bradford-adaptiertes XYZ D50
-zu mischen und via bestehender D50-zu-sRGB-Gamutpruefung auszugeben. CSS Color 4
-(`checkedAt` 2026-11-07) und CSS Color 5 (`checkedAt` 2026-11-15) sind frisch.
-Siehe
+Pass 10 (letztes angefordertes Inkrement) implementiert `in xyz-d50` fuer
+dieselbe begrenzte Zwei-Farbenform: sRGB-Eingaben werden ueber
+Bradford-adaptiertes XYZ D50 gemischt und via bestehender D50-zu-sRGB-
+Gamutpruefung ausgegeben. Fuenf fokussierte Regressionen, alle 45
+`color-mix()`-Tests und 1.628 Engine.Css-Tests bestehen; Debug-/Release-
+Solution-Builds haben null Warnungen/Fehler, beide Volltests bestehen 16.894
+Tests, Formatverifikation und `git diff --check` bestehen. Commit, Push und
+Remote-CI stehen aus. CSS Color 4 (`checkedAt` 2026-11-07) und CSS Color 5
+(`checkedAt` 2026-11-15) sind frisch. Siehe
 [KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
 sowie [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt),
 [KP-371](./Kontextprotokoll.md#kp-371---lab-color-mix-implementiert-und-lokal-validiert),
 [KP-372](./Kontextprotokoll.md#kp-372---lab-color-mix-ci-bestaetigt) und
 [KP-373](./Kontextprotokoll.md#kp-373---xyz-d65-color-mix-als-pass-9-gewaehlt),
 [KP-374](./Kontextprotokoll.md#kp-374---xyz-d65-color-mix-implementiert-und-lokal-validiert),
-[KP-375](./Kontextprotokoll.md#kp-375---xyz-d65-color-mix-ci-bestaetigt) und
+[KP-375](./Kontextprotokoll.md#kp-375---xyz-d65-color-mix-ci-bestaetigt),
 [KP-376](./Kontextprotokoll.md#kp-376---xyz-d50-color-mix-als-pass-10-gewaehlt)
-sowie [Missing](../plans/Missing.md).
+sowie [KP-377](./Kontextprotokoll.md#kp-377---xyz-d50-color-mix-lokal-validiert)
+und [Missing](../plans/Missing.md).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

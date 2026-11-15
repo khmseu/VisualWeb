@@ -506,7 +506,7 @@ lightness plus static `none` components; comma syntax requires percentage
 saturation/lightness and does not accept `none`. Negative saturation clamps to
 zero. Saturation above 100 and lightness outside 0..100 are diagnosed rather
 than approximating out-of-gamut color mapping; interpolation beyond the
-bounded Lab, Oklab, XYZ D65, linear-light sRGB and sRGB color-mix methods below
+bounded Lab, Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods below
 and higher-precision storage remain unsupported.
 [`hwb()`](https://www.w3.org/TR/css-color-4/#the-hwb-notation) (`css-color`)
 accepts hue angles, numeric/percentage/`none` whiteness and blackness, and
@@ -514,7 +514,7 @@ optional slash alpha. Values outside the nominal whiteness/blackness range
 remain valid; a sum of at least 100 produces gray at the white/(white+black)
 ratio. Comma syntax is invalid. HWB, like the other supported functions,
 converts to clamped, rounded 8-bit sRGB; interpolation beyond the bounded
-Lab, Oklab, XYZ D65, linear-light sRGB and sRGB color-mix methods below,
+Lab, Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods below,
 missing-component preservation and
 higher-precision color management remain unsupported.
 [`lab()`](https://www.w3.org/TR/css-color-4/#funcdef-lab) (`css-color`)
@@ -523,7 +523,7 @@ components, plus `none` and optional slash alpha. Lightness is clamped to
 0..100; a/b percentages map -100%..100% to -125..125. CIE Lab D50 values are
 adapted to D65 and converted to sRGB; the endpoint lightness values map to
 black/white. Other out-of-sRGB results remain diagnostics rather than receiving
-general gamut mapping. Interpolation beyond the bounded Lab, Oklab, XYZ D65,
+general gamut mapping. Interpolation beyond the bounded Lab, Oklab, XYZ D50/D65,
 linear-light sRGB and sRGB color-mix methods below, missing-component
 preservation and higher-precision
 color management remain unsupported.
@@ -534,7 +534,7 @@ negative chroma clamps to zero, and hue is powerless at chroma <= 0.0015.
 Polar chroma/hue converts to CIE Lab D50 before the existing D65/sRGB path.
 Lightness clamps to 0..100 and its endpoints map to black/white. Other
 out-of-sRGB results remain diagnostics rather than receiving general gamut
-mapping. Interpolation outside the bounded Lab, Oklab, XYZ D65, linear-light
+mapping. Interpolation outside the bounded Lab, Oklab, XYZ D50/D65, linear-light
 sRGB and sRGB color-mix methods below, missing-component preservation and higher-precision
 color management remain unsupported.
 [`oklab()`](https://www.w3.org/TR/css-color-4/#funcdef-oklab) (`css-color`)
@@ -543,7 +543,7 @@ slash alpha. Lightness percentages map 0..100% to 0..1 and clamp to that range;
 a/b percentages map -100%..100% to -0.4..0.4. Endpoint lightness maps to
 black/white. Other colors convert through Oklab D65 and XYZ D65 to sRGB; results
 outside the sRGB gamut remain diagnostics rather than receiving general gamut
-mapping. Interpolation outside the bounded Lab, Oklab, XYZ D65, linear-light
+mapping. Interpolation outside the bounded Lab, Oklab, XYZ D50/D65, linear-light
 sRGB and sRGB color-mix methods below, missing-component preservation and higher-precision
 color management remain unsupported.
 [`oklch()`](https://www.w3.org/TR/css-color-4/#funcdef-oklch) (`css-color`)
@@ -553,7 +553,7 @@ slash alpha. Lightness percentages map 0..100% to 0..1; chroma percentages map
 <= 0.000004. Polar components convert through Oklab D65 and XYZ D65 to sRGB;
 endpoint lightness maps to black/white. Other out-of-sRGB results remain
 diagnostics rather than receiving general gamut mapping. Interpolation outside
-the bounded Lab, Oklab, XYZ D65, linear-light sRGB and sRGB color-mix methods
+the bounded Lab, Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods
 below, missing-component preservation and higher-precision color management remain
 unsupported.
 [`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
@@ -576,14 +576,14 @@ colors also use rounded 8-bit sRGB output.
 uses the same primaries and D65 white point, and converts directly to linear
 sRGB before the sRGB transfer function. Out-of-gamut results are diagnosed,
 not gamut-mapped. Other color spaces, interpolation beyond the bounded Lab,
-Oklab, XYZ D65, linear-light sRGB and sRGB color-mix methods below and
+Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods below and
 higher-precision management remain unsupported.
 [`color(a98-rgb ...)`](https://www.w3.org/TR/css-color-4/#predefined-a98-rgb)
 (`css-color`) accepts the same bounded numeric/percentage channels, `none`
 components and optional slash alpha. It applies the A98 transfer exponent and
 D65 conversion matrices, then accepts only results inside the sRGB gamut;
 out-of-gamut results are diagnosed rather than gamut-mapped. Other color
-spaces, interpolation beyond the bounded Lab, Oklab, XYZ D65, linear-light
+spaces, interpolation beyond the bounded Lab, Oklab, XYZ D50/D65, linear-light
 sRGB and sRGB color-mix methods below and higher-precision management remain
 unsupported.
 [`color(rec2020 ...)`](https://www.w3.org/TR/css-color-4/#predefined-rec2020)
@@ -605,19 +605,21 @@ diagnoses results outside the sRGB gamut rather than gamut-mapping.
 its `color(xyz ...)` alias (`css-color`) accept finite numeric/percentage
 components without clamping their range, plus `none` and optional slash alpha.
 They convert D65 XYZ directly to linear sRGB and diagnose results outside the
-sRGB gamut. Interpolation beyond the bounded Lab, Oklab, XYZ D65, linear-light
+sRGB gamut. Interpolation beyond the bounded Lab, Oklab, XYZ D50/D65, linear-light
 sRGB and sRGB color-mix methods below and higher-precision management remain
 unsupported.
 [`color-mix()`](https://www.w3.org/TR/css-color-5/#funcdef-color-mix)
 (`css-color-5`) supports exactly two existing static colors. The default
-interpolation method is Oklab; explicit `in oklab`, `in lab`, `in xyz-d65`,
-its `in xyz` alias, `in srgb-linear` and `in srgb` methods are supported.
+interpolation method is Oklab; explicit `in oklab`, `in lab`, `in xyz-d50`,
+`in xyz-d65`, its `in xyz` alias, `in srgb-linear` and `in srgb` methods are
+supported.
 CSS Color 4 defines the
 [interpolation-space grammar](https://www.w3.org/TR/css-color-4/#color-interpolation-method)
 and [XYZ space grammar and aliases](https://www.w3.org/TR/css-color-4/#typedef-xyz-space)
-(`css-color`). `lab` interpolates D50 Lab coordinates; `xyz-d65` and its `xyz`
-alias interpolate D65 XYZ coordinates; and `srgb-linear` mixes transfer-decoded
-linear sRGB components. They convert to the existing sRGB output; CSS Color 4's
+(`css-color`). `lab` interpolates D50 Lab coordinates; `xyz-d50` and `xyz-d65`
+interpolate D50/D65 XYZ coordinates, respectively, and `xyz` aliases
+`xyz-d65`; `srgb-linear` mixes transfer-decoded linear sRGB components. All
+convert to the existing sRGB output; CSS Color 4's
 [sRGB transfer function](https://www.w3.org/TR/css-color-4/#predefined-sRGB-linear)
 is used for linear-sRGB output (local ID `css-color`).
 Optional weights may precede or follow their color and are percentages from
@@ -626,7 +628,7 @@ and totals below 100% reduce result alpha as specified by
 [CSS Values 5](https://drafts.csswg.org/css-values-5/#normalize-mix-percentages)
 (`css-values-5`). Colors use CSS Color 4's premultiplied-alpha interpolation
 ([`#interpolation-alpha`](https://www.w3.org/TR/css-color-4/#interpolation-alpha))
-and the existing rounded 8-bit sRGB representation. Lab, Oklab and XYZ D65
+and the existing rounded 8-bit sRGB representation. Lab, Oklab and XYZ D50/D65
 results outside the sRGB gamut are diagnosed rather than gamut-mapped. Other
 color spaces/hue methods,
 nested mixes, `currentColor`, `none`, relative colors and other CSS Color 5
