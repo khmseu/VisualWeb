@@ -10204,3 +10204,53 @@ Gamut-Mapping bleiben unsupported.
 Commit, Push und Remote-CI stehen aus. Nach erfolgreicher CI folgen noch zwei
 angeforderte Inkremente. Es ist kein CSS-spezifischer nativer Smoke-Test
 anwendbar.
+
+### KP-372 - Lab color-mix CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Featurecommit `ba54d25`; GitHub Actions runs
+  [43677500402](https://github.com/khmseu/VisualWeb/actions/runs/43677500402),
+  [43677500428](https://github.com/khmseu/VisualWeb/actions/runs/43677500428)
+  und [43677500007](https://github.com/khmseu/VisualWeb/actions/runs/43677500007).
+- Bezug: KP-370 und KP-371; Pass 8 von zehn angeforderten
+  Missing-Prioritaetsinkrementen.
+
+**Belegt:** Commit `ba54d25` ist gepusht. Linux development, Windows
+confinement (x64 und ARM64) und CodeQL sind erfolgreich. Damit ist Pass 8
+vollstaendig; zwei angeforderte Inkremente verbleiben. Der in KP-371
+dokumentierte lokale Stand ohne Commit/Push/CI ist durch diesen spaeteren
+Nachweis ersetzt.
+
+### KP-373 - XYZ-D65 color-mix als Pass 9 gewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Erfassungsart: technische Auswahlableitung aus Prioritaet, lokalem
+  Standardtext und Implementierungsstand; keine separate Nutzerwahl.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  CSS Color 4 local cache (`checkedAt` 2026-11-07),
+  [color-interpolation-method](../specs/cache/css-color.html#color-interpolation-method),
+  [xyz-space grammar](../specs/cache/css-color.html#typedef-xyz-space),
+  [predefined XYZ spaces](../specs/cache/css-color.html#predefined-xyz),
+  CSS Color 5 local cache (`checkedAt` 2026-11-15),
+  [color-mix space](../specs/cache/css-color-5.html#color-mix-space),
+  [CSS support inventory](../docs/standards.md#support-status) and
+  [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs).
+- Bezug: KP-372; Pass 9 von zehn angeforderten Missing-Prioritaetsinkrementen.
+
+**Auswahl als Ableitung:** CSS Color 4 (~60%) bleibt die hoechste actionable
+Teilspezifikation; innerhalb der freigegebenen Phase 11w hat die hoeher
+eingeschaetzte ECMAScript-Unterstuetzung weiterhin keinen passenden offenen
+Inkrementumfang. Die lokale CSS-Color-4-Grammatik definiert `<xyz-space>` als
+`xyz | xyz-d50 | xyz-d65`; `xyz` ist die D65-Variante. CSS Color 5 verwendet
+den Interpolationsraum fuer `color-mix()`. Daher wird als Pass 9 explizites
+`in xyz-d65` und sein Alias `in xyz` fuer genau zwei vorhandene statische
+Farben ausgewaehlt: sRGB-Eingaben nach linearem Licht und XYZ D65 konvertieren,
+die Koordinaten mit bestehender Prozentnormalisierung und premultipliziertem
+Alpha mischen und ueber die vorhandene XYZ-D65-zu-sRGB-Gamutpruefung in die
+8-bit-sRGB-Ausgabe zurueckwandeln. Ausserhalb des Gamuts liegende Resultate
+bleiben diagnostiziert; kein Gamut-Mapping und keine weiteren Farbquellen oder
+Interpolationsraeume werden damit zugesagt. Beide lokalen Quellen sind laut
+Manifest frisch. Umsetzung und Tests stehen aus; zwei angeforderte
+Inkremente verbleiben.

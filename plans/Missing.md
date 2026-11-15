@@ -2214,8 +2214,27 @@ shorthand expansion and out-of-gamut rejection. All 35 focused color-mix tests
 and 1,618 CSS tests pass. Debug/Release solution builds have zero
 warnings/errors; both full solution suites pass 16,884 tests. Format
 verification and `git diff --check` pass. The three valid Lab regressions
-failed before implementation as expected. Commit, push and remote CI remain
-pending; two further requested increments follow Pass 8.
+failed before implementation as expected.
+
+**Pass 8 commit, push and CI (2026-11-15):** Feature commit `ba54d25` is
+pushed. Linux development (run 43677500402), Windows confinement
+(run 43677500428) and CodeQL (run 43677500007) all pass, including Windows
+x64/ARM64. Pass 8 is complete; two requested increments remain.
+
+**Pass 9 selection (2026-11-15):** CSS Color Level 4 (~60%) remains the
+highest actionable partially implemented standard; ECMAScript's higher rough
+estimate still has no remaining increment within approved phase 11w. Add
+explicit `in xyz-d65` and the CSS Color 4 `xyz` alias to the bounded
+two-color `color-mix()` subset. Both names denote the D65 XYZ interpolation
+space. Convert the existing 8-bit sRGB inputs to linear-light XYZ D65, mix the
+three coordinates with the existing percentage normalization and
+premultiplied-alpha behavior, then convert through the existing XYZ-D65-to-sRGB
+gamut check. Keep exactly two static colors and 8-bit sRGB output; diagnose
+out-of-gamut results instead of gamut mapping. The local CSS Color 4
+(`checkedAt` 2026-11-07) and CSS Color 5 (`checkedAt` 2026-11-15) sources are
+fresh. See the [CSS Color 4 interpolation space](../specs/cache/css-color.html#color-interpolation-method),
+[XYZ space grammar](../specs/cache/css-color.html#typedef-xyz-space), and
+[CSS Color 5 color-mix space](../specs/cache/css-color-5.html#color-mix-space).
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

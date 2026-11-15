@@ -100,12 +100,23 @@ neutrale/chromatische Lab-Mixe, Gewichte, Alpha und sRGB-Gamutdiagnosen ab;
 die gueltigen Faelle schlugen vor Implementierung fehl. Alle 35 fokussierten
 ColorMix-Tests und 1.618 CSS-Tests bestehen. Debug-/Release-Solution-Builds
 haben null Warnungen/Fehler; beide Volltests bestehen 16.884 Tests;
-Formatverifikation und `git diff --check` bestehen. Pass 8 ist lokal
-implementiert und validiert, Commit/Push/CI stehen aus; danach verbleiben zwei
-angeforderte Inkremente. Siehe
+Formatverifikation und `git diff --check` bestehen. Commit `ba54d25` ist
+gepusht; Linux development (Run 43677500402), Windows confinement
+(Run 43677500428) und CodeQL (Run 43677500007) sind erfolgreich, einschliesslich
+Windows x64/ARM64. Pass 8 ist abgeschlossen; zwei angeforderte Inkremente
+verbleiben. Pass 9 ergaenzt explizites `in xyz-d65` und den CSS-Color-4-Alias
+`in xyz` fuer zwei statische Farben. Die linearen sRGB-Eingaben werden nach
+XYZ D65 konvertiert, mit bestehenden Gewichten und premultipliziertem Alpha
+gemischt und ueber die bestehende Gamutdiagnose zur 8-bit-sRGB-Ausgabe
+zurueckgewandelt; Gamut-Mapping bleibt unsupported. CSS Color 4
+(`checkedAt` 2026-11-07) und CSS Color 5 (`checkedAt` 2026-11-15) sind frisch.
+Pass 9 ist ausgewaehlt, aber noch nicht implementiert; zwei Inkremente bleiben.
+Siehe
 [KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
-bis [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt)
-und [KP-371](./Kontextprotokoll.md#kp-371---lab-color-mix-implementiert-und-lokal-validiert)
+sowie [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt),
+[KP-371](./Kontextprotokoll.md#kp-371---lab-color-mix-implementiert-und-lokal-validiert),
+[KP-372](./Kontextprotokoll.md#kp-372---lab-color-mix-ci-bestaetigt) und
+[KP-373](./Kontextprotokoll.md#kp-373---xyz-d65-color-mix-als-pass-9-gewaehlt)
 sowie [Missing](../plans/Missing.md).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
