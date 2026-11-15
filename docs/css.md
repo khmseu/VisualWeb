@@ -497,7 +497,7 @@ Modern [`rgb()`/`rgba()`](https://www.w3.org/TR/css-color-4/#rgb-functions)
 slash-separated alpha, and `none` components treated as zero for this static
 8-bit output. CSS token boundaries also permit adjacent components where they
 remain distinct tokens, including comment-separated components. Interpolation
-is limited to the bounded `color-mix(in srgb, ...)` subset described below;
+is limited to the bounded `color-mix()` methods described below;
 missing-component preservation remains unsupported.
 [`hsl()`/`hsla()`](https://www.w3.org/TR/css-color-4/#the-hsl-notation)
 (`css-color`) accepts a numeric hue in degrees or `deg`, `grad`, `rad` and
@@ -506,24 +506,25 @@ lightness plus static `none` components; comma syntax requires percentage
 saturation/lightness and does not accept `none`. Negative saturation clamps to
 zero. Saturation above 100 and lightness outside 0..100 are diagnosed rather
 than approximating out-of-gamut color mapping; interpolation beyond the
-bounded sRGB mix below and higher-precision storage remain unsupported.
+bounded Oklab and sRGB color-mix methods below and higher-precision storage
+remain unsupported.
 [`hwb()`](https://www.w3.org/TR/css-color-4/#the-hwb-notation) (`css-color`)
 accepts hue angles, numeric/percentage/`none` whiteness and blackness, and
 optional slash alpha. Values outside the nominal whiteness/blackness range
 remain valid; a sum of at least 100 produces gray at the white/(white+black)
 ratio. Comma syntax is invalid. HWB, like the other supported functions,
-converts to clamped, rounded 8-bit sRGB; interpolation beyond the bounded sRGB
-mix below, missing-component preservation and higher-precision color management
-remain unsupported.
+converts to clamped, rounded 8-bit sRGB; interpolation beyond the bounded
+Oklab and sRGB color-mix methods below, missing-component preservation and
+higher-precision color management remain unsupported.
 [`lab()`](https://www.w3.org/TR/css-color-4/#funcdef-lab) (`css-color`)
 accepts numeric or percentage lightness and signed numeric/percentage a/b
 components, plus `none` and optional slash alpha. Lightness is clamped to
 0..100; a/b percentages map -100%..100% to -125..125. CIE Lab D50 values are
 adapted to D65 and converted to sRGB; the endpoint lightness values map to
 black/white. Other out-of-sRGB results remain diagnostics rather than receiving
-general gamut mapping. Interpolation beyond the bounded sRGB mix below,
-missing-component preservation and higher-precision color management remain
-unsupported.
+general gamut mapping. Interpolation beyond the bounded Oklab and sRGB
+color-mix methods below, missing-component preservation and higher-precision
+color management remain unsupported.
 [`lch()`](https://www.w3.org/TR/css-color-4/#funcdef-lch) (`css-color`)
 accepts numeric or percentage lightness and chroma, hue angles, `none`
 components and optional slash alpha. Chroma percentages map 100% to 150;
@@ -531,16 +532,18 @@ negative chroma clamps to zero, and hue is powerless at chroma <= 0.0015.
 Polar chroma/hue converts to CIE Lab D50 before the existing D65/sRGB path.
 Lightness clamps to 0..100 and its endpoints map to black/white. Other
 out-of-sRGB results remain diagnostics rather than receiving general gamut
-mapping. Interpolation outside the bounded sRGB mix below, missing-component
-preservation and higher-precision color management remain unsupported.
+mapping. Interpolation outside the bounded Oklab and sRGB color-mix methods
+below, missing-component preservation and higher-precision color management
+remain unsupported.
 [`oklab()`](https://www.w3.org/TR/css-color-4/#funcdef-oklab) (`css-color`)
 accepts numeric or percentage lightness and a/b components, `none` and optional
 slash alpha. Lightness percentages map 0..100% to 0..1 and clamp to that range;
 a/b percentages map -100%..100% to -0.4..0.4. Endpoint lightness maps to
 black/white. Other colors convert through Oklab D65 and XYZ D65 to sRGB; results
 outside the sRGB gamut remain diagnostics rather than receiving general gamut
-mapping. Interpolation outside the bounded sRGB mix below, missing-component
-preservation and higher-precision color management remain unsupported.
+mapping. Interpolation outside the bounded Oklab and sRGB color-mix methods
+below, missing-component preservation and higher-precision color management
+remain unsupported.
 [`oklch()`](https://www.w3.org/TR/css-color-4/#funcdef-oklch) (`css-color`)
 accepts numeric or percentage lightness/chroma, hue angles, `none` and optional
 slash alpha. Lightness percentages map 0..100% to 0..1; chroma percentages map
@@ -548,8 +551,8 @@ slash alpha. Lightness percentages map 0..100% to 0..1; chroma percentages map
 <= 0.000004. Polar components convert through Oklab D65 and XYZ D65 to sRGB;
 endpoint lightness maps to black/white. Other out-of-sRGB results remain
 diagnostics rather than receiving general gamut mapping. Interpolation outside
-the bounded sRGB mix below, missing-component preservation and higher-precision
-color management remain unsupported.
+the bounded Oklab and sRGB color-mix methods below, missing-component
+preservation and higher-precision color management remain unsupported.
 [`color(srgb ...)`](https://www.w3.org/TR/css-color-4/#color-function)
 (`css-color`) accepts in-gamut numeric or percentage channels, with `none`
 mapped to zero and optional slash alpha. Out-of-gamut channels and other color
@@ -569,15 +572,16 @@ colors also use rounded 8-bit sRGB output.
 (`css-color`) accepts the same bounded channels in linear-light Display-P3,
 uses the same primaries and D65 white point, and converts directly to linear
 sRGB before the sRGB transfer function. Out-of-gamut results are diagnosed,
-not gamut-mapped. Other color spaces, interpolation beyond the bounded sRGB
-mix below and higher-precision management remain unsupported.
+not gamut-mapped. Other color spaces, interpolation beyond the bounded Oklab
+and sRGB color-mix methods below and higher-precision management remain
+unsupported.
 [`color(a98-rgb ...)`](https://www.w3.org/TR/css-color-4/#predefined-a98-rgb)
 (`css-color`) accepts the same bounded numeric/percentage channels, `none`
 components and optional slash alpha. It applies the A98 transfer exponent and
 D65 conversion matrices, then accepts only results inside the sRGB gamut;
 out-of-gamut results are diagnosed rather than gamut-mapped. Other color
-spaces, interpolation beyond the bounded sRGB mix below and higher-precision
-management remain unsupported.
+spaces, interpolation beyond the bounded Oklab and sRGB color-mix methods below
+and higher-precision management remain unsupported.
 [`color(rec2020 ...)`](https://www.w3.org/TR/css-color-4/#predefined-rec2020)
 (`css-color`) accepts the same bounded channels, `none` components and optional
 slash alpha. It applies the Rec. 2020 transfer curve and D65 conversion matrices,
@@ -597,20 +601,21 @@ diagnoses results outside the sRGB gamut rather than gamut-mapping.
 its `color(xyz ...)` alias (`css-color`) accept finite numeric/percentage
 components without clamping their range, plus `none` and optional slash alpha.
 They convert D65 XYZ directly to linear sRGB and diagnose results outside the
-sRGB gamut. Interpolation beyond the bounded sRGB mix below and higher-
-precision management remain unsupported.
+sRGB gamut. Interpolation beyond the bounded Oklab and sRGB color-mix methods
+below and higher-precision management remain unsupported.
 [`color-mix()`](https://www.w3.org/TR/css-color-5/#funcdef-color-mix)
-(`css-color-5`) supports exactly two existing static colors and requires an
-explicit `in srgb` interpolation method. Optional weights may precede or follow
-their color and are percentages from 0% to 100%; omitted weights are filled to
-100%, totals above 100% normalize, and totals below 100% reduce result alpha as
-specified by
+(`css-color-5`) supports exactly two existing static colors. The default
+interpolation method is Oklab; explicit `in oklab` and `in srgb` methods are
+supported. Optional weights may precede or follow their color and are
+percentages from 0% to 100%; omitted weights are filled to 100%, totals above
+100% normalize, and totals below 100% reduce result alpha as specified by
 [CSS Values 5](https://drafts.csswg.org/css-values-5/#normalize-mix-percentages)
 (`css-values-5`). Colors use CSS Color 4's premultiplied-alpha interpolation
 ([`#interpolation-alpha`](https://www.w3.org/TR/css-color-4/#interpolation-alpha))
-and the existing rounded 8-bit sRGB output. The default Oklab method, other
-color spaces/hue methods, nested mixes, `currentColor`, `none`, relative colors
-and other CSS Color 5 functions remain unsupported diagnostics.
+and the existing rounded 8-bit sRGB representation; Oklab results outside the
+sRGB gamut are diagnosed rather than gamut-mapped. Other color spaces/hue
+methods, nested mixes, `currentColor`, `none`, relative colors and other CSS
+Color 5 functions remain unsupported diagnostics.
 None/hidden borders have computed width zero.
 Device-pixel snapping of border widths is deferred to the layout/paint integration;
 this stage retains finite CSS-pixel lengths.

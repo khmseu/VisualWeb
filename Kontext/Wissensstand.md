@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; Pass 5 lokal validiert, Commit/Push/CI ausstehend):**
+**Aktueller Standards-Pass (2026-11-15; Pass 6 lokal validiert, Commit/Push/CI ausstehend):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -51,10 +51,27 @@ premultipliziertem Alpha gemischt; Standard-Oklab und andere Mischraeume
 bleiben Diagnosen. CSS Color 5/Values 5 wurden neu in das Manifest aufgenommen
 und am 2026-11-15 geladen. 20 fokussierte und alle 1.603 CSS-Tests bestehen;
 Debug-/Release-Builds sind warnungs-/fehlerfrei und beide Volltests bestehen
-16.869 Tests; Format und `git diff --check` bestehen. Commit/Push/CI stehen
-noch aus. Nach Pass 5 verbleiben fuenf der zehn gewuenschten Passes. Siehe
+16.869 Tests; Format und `git diff --check` bestehen. Commit `c03d6bb` ist auf
+`main` gepusht. Linux development (Run 43663310025), Windows confinement (Run
+43663310066) und CodeQL (Run 43663309766) sind erfolgreich. Nach Pass 5
+verbleiben fuenf der zehn gewuenschten Passes. Siehe
 [KP-361](./Kontextprotokoll.md#kp-361---bounded-color-mix-selection) und
-[KP-362](./Kontextprotokoll.md#kp-362---color-mix-lokale-validierung).
+[KP-362](./Kontextprotokoll.md#kp-362---color-mix-lokale-validierung) sowie
+[KP-363](./Kontextprotokoll.md#kp-363---color-mix-ci-bestaetigt).
+Pass 6 setzt die CSS-Color-5-Vorgabe um, dass ein fehlender
+`color-mix()`-Interpolationsraum Oklab bedeutet; `in oklab` wird ebenfalls
+unterstuetzt. Die CSS-Color-4-Konvertierung und alpha-premultiplizierte
+Interpolation arbeiten mit der bestehenden 8-bit-sRGB-Farbform. Ergebnisse
+ausserhalb des sRGB-Gamuts bleiben Diagnosen. CSS Color 4 (`checkedAt`
+2026-11-07), CSS Color 5 und CSS Values 5 (`checkedAt` 2026-11-15) sind
+frisch im lokalen Cache. 26 fokussierte ColorMix-Tests, alle 1.609 CSS-Tests
+sowie Debug-/Release-Solution-Builds ohne Warnungen/Fehler bestehen. Beide
+Debug-/Release-Volltests bestehen 16.875 Tests, ebenso die Formatverifikation
+und `git diff --check`. Ein erster Debug-Volltestlauf traf einen V8-Deadline-
+Timeout in einem isolierten Prozessrenderer-Test; der isolierte Test und der
+vollstaendige Debug-Wiederholungslauf bestanden. Commit/Push/CI fuer Pass 6
+stehen aus. Siehe [KP-364](./Kontextprotokoll.md#kp-364---oklab-color-mix-selection)
+und [KP-365](./Kontextprotokoll.md#kp-365---oklab-color-mix-lokale-validierung).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

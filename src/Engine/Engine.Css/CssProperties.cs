@@ -527,18 +527,32 @@ internal static class CssProperties
             else if (stack.TryPeek(out var close) && token.Kind == close) { stack.Pop(); }
         }
 
-        if (groups.Count != 3 || groups[0].Count != 2
-            || groups[0][0].Kind != CssTokenKind.Ident || CssText.Lower(groups[0][0].Value) != "in"
-            || groups[0][1].Kind != CssTokenKind.Ident || CssText.Lower(groups[0][1].Value) != "srgb")
+        if (groups.Count is < 2 or > 3)
         {
             return null;
+        }
+
+        var colorSpace = "oklab";
+        var colorGroups = groups;
+        if (groups.Count == 3)
+        {
+            if (groups[0].Count != 2
+                || groups[0][0].Kind != CssTokenKind.Ident || CssText.Lower(groups[0][0].Value) != "in"
+                || groups[0][1].Kind != CssTokenKind.Ident)
+            {
+                return null;
+            }
+
+            colorSpace = CssText.Lower(groups[0][1].Value);
+            if (colorSpace is not ("srgb" or "oklab")) { return null; }
+            colorGroups = groups.Skip(1).ToList();
         }
 
         var colors = new CssColor[2];
         var percentages = new double?[2];
         for (var index = 0; index < colors.Length; index++)
         {
-            var colorTokens = groups[index + 1].ToList();
+            var colorTokens = colorGroups[index].ToList();
             var percentageIndex = colorTokens.Count > 0 && colorTokens[0].Kind == CssTokenKind.Percentage
                 ? 0
                 : colorTokens.Count > 0 && colorTokens[^1].Kind == CssTokenKind.Percentage ? colorTokens.Count - 1 : -1;
@@ -581,6 +595,25 @@ internal static class CssProperties
         var secondAlpha = colors[1].Alpha / 255d;
         var mixedAlpha = firstAlpha * (1 - progress) + secondAlpha * progress;
 
+        if (colorSpace == "oklab")
+        {
+            var first = SrgbToOklab(colors[0]);
+            var second = SrgbToOklab(colors[1]);
+
+            double MixComponent(double firstComponent, double secondComponent)
+            {
+                var premultiplied = firstComponent * firstAlpha * (1 - progress)
+                    + secondComponent * secondAlpha * progress;
+                return mixedAlpha == 0 ? premultiplied : premultiplied / mixedAlpha;
+            }
+
+            return OklabToSrgb(
+                MixComponent(first.Lightness, second.Lightness),
+                MixComponent(first.A, second.A),
+                MixComponent(first.B, second.B),
+                mixedAlpha * alphaMultiplier);
+        }
+
         byte MixChannel(byte first, byte second)
         {
             var premultiplied = first / 255d * firstAlpha * (1 - progress)
@@ -593,6 +626,24 @@ internal static class CssProperties
             MixChannel(colors[0].Green, colors[1].Green),
             MixChannel(colors[0].Blue, colors[1].Blue),
             SrgbChannel(mixedAlpha * alphaMultiplier));
+    }
+
+    private static (double Lightness, double A, double B) SrgbToOklab(CssColor color)
+    {
+        var red = LinearizeSrgbChannel(color.Red / 255d);
+        var green = LinearizeSrgbChannel(color.Green / 255d);
+        var blue = LinearizeSrgbChannel(color.Blue / 255d);
+        // CSS Color 4 linear sRGB to XYZ D65 to Oklab matrices.
+        var x = 506752d / 1228815 * red + 87881d / 245763 * green + 12673d / 70218 * blue;
+        var y = 87098d / 409605 * red + 175762d / 245763 * green + 12673d / 175545 * blue;
+        var z = 7918d / 409605 * red + 87881d / 737289 * green + 1001167d / 1053270 * blue;
+        var l = Math.Cbrt(0.8190224379967030 * x + 0.3619062600528904 * y - 0.1288737815209879 * z);
+        var m = Math.Cbrt(0.0329836539323885 * x + 0.9292868615863434 * y + 0.0361446663506424 * z);
+        var s = Math.Cbrt(0.0481771893596242 * x + 0.2642395317527308 * y + 0.6335478284694309 * z);
+        return (
+            0.2104542683093140 * l + 0.7936177747023054 * m - 0.0040720430116193 * s,
+            1.9779985324311684 * l - 2.4285922420485799 * m + 0.4505937096174110 * s,
+            0.0259040424655478 * l + 0.7827717124575296 * m - 0.8086757549230774 * s);
     }
 
     private static List<CssToken>? ColorFunctionComponents(IReadOnlyList<CssToken> args, bool legacy)

@@ -155,8 +155,9 @@ signed numeric/percentage a/b components, `none` and optional slash alpha.
 Lightness clamps to 0..100; percentages on the a/b axes map -100%..100% to
 -125..125. CIE Lab D50 converts through Bradford adaptation to sRGB; endpoint
 lightness maps to black/white, while other out-of-gamut results remain
-unsupported. Interpolation, missing-component preservation and higher-
-precision color management remain unsupported.
+unsupported. Interpolation beyond the bounded color-mix methods below,
+missing-component preservation and higher-precision color management remain
+unsupported.
 The bounded `lch()` function accepts numeric/percentage lightness and chroma,
 hue angles, `none` components and slash alpha. Chroma percentages map 100% to
 150; negative chroma clamps to zero, and hue becomes powerless at chroma <=
@@ -168,21 +169,25 @@ components, `none` and optional slash alpha. Lightness percentages map 0..100%
 to 0..1 and clamp to that range; a/b percentages map -100%..100% to -0.4..0.4.
 Endpoint lightness maps to black/white; other colors convert through Oklab D65
 and XYZ D65 to sRGB, with out-of-gamut results remaining unsupported.
-Interpolation outside the bounded sRGB mix below, missing-component
-preservation and higher-precision color management remain unsupported.
+Interpolation outside the bounded Oklab and sRGB color-mix methods below,
+missing-component preservation and higher-precision color management remain
+unsupported.
 The bounded `oklch()` function accepts numeric/percentage lightness and chroma,
 hue angles, `none` and optional slash alpha. Lightness percentages map
 0..100% to 0..1; chroma percentages map 100% to 0.4 and negative chroma clamps
 to zero. Hue is powerless at chroma <= 0.000004. Polar values convert through
 Oklab D65 and XYZ D65 to sRGB, with endpoint lightness mapped to black/white.
 Other out-of-gamut results remain unsupported; interpolation outside the
-bounded sRGB mix below, missing-component preservation and higher-precision
-color management remain unsupported.
-`color-mix()` supports exactly two existing static colors with an explicit
-`in srgb` method, optional weights before or after each color, bounded 0..100%
-values, CSS Values 5 percentage normalization and premultiplied alpha. Default
-Oklab interpolation, other spaces, nested mixes, `currentColor`, `none` and
-other CSS Color 5 functions remain unsupported.
+bounded Oklab and sRGB color-mix methods below, missing-component preservation
+and higher-precision color management remain unsupported.
+`color-mix()` supports exactly two existing static colors. Oklab is the default
+interpolation method; explicit `in oklab` and `in srgb` methods are supported.
+Optional weights may precede or follow each color and are bounded to 0..100%;
+CSS Values 5 percentage normalization and CSS Color 4 premultiplied alpha are
+used. The existing rounded 8-bit sRGB representation is retained, and Oklab
+results outside its gamut remain unsupported rather than being gamut-mapped.
+Other interpolation spaces, nested mixes, `currentColor`, `none` and other CSS
+Color 5 functions remain unsupported.
 Saturation above 100 and lightness outside 0..100 remain explicit diagnostics.
 Supported lengths also include the CSS absolute units `in`, `cm`, `mm`, `Q`,
 `pt` and `pc`, converted to CSS pixels for all existing length-valued

@@ -9970,3 +9970,71 @@ Warnungen und Fehlern. Der Debug- und Release-Volltestlauf bestanden jeweils
 alle 16.869 Tests; darin bestanden alle 1.603 CSS-Tests. Formatverifikation
 und `git diff --check` bestanden. CSS-spezifische native Smokes gelten fuer
 diese parserseitige Aenderung nicht. Commit, Push und CI stehen noch aus.
+
+### KP-363 - Color-mix CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Commit `c03d6bb`; GitHub Actions
+  [Linux development 43663310025](https://github.com/khmseu/VisualWeb/actions/runs/43663310025),
+  [Windows confinement 43663310066](https://github.com/khmseu/VisualWeb/actions/runs/43663310066)
+  und [CodeQL 43663309766](https://github.com/khmseu/VisualWeb/actions/runs/43663309766).
+- Bezug: Fortsetzung von KP-362; [Missing](../plans/Missing.md) und
+  [Wissensstand](./Wissensstand.md).
+
+**Belegt:** Commit `c03d6bb` mit begrenztem CSS-Color-5-`color-mix()` wurde
+auf `main` gepusht. Linux development, Windows confinement und CodeQL sind
+fuer den Commit erfolgreich abgeschlossen.
+
+### KP-364 - Oklab color-mix selection
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  [CSS Color 5 local cache](../specs/cache/css-color-5.html#color-mix-space),
+  [CSS Color 4 local cache](../specs/cache/css-color.html#interpolation),
+  manifest entries `css-color` (`checkedAt` 2026-11-07), `css-color-5` and
+  `css-values-5` (`checkedAt` 2026-11-15), and the previous implementation in
+  [ColorMixFunction](../src/Engine/Engine.Css/CssProperties.cs).
+- Bezug: Fortsetzung nach KP-363 und Nutzerziel fuer zehn getrennte
+  Missing-Prioritaetsinkremente.
+
+**Auswahl als Ableitung:** Nach dem explizit-sRGB-Mix aus Pass 5 ist der
+CSS-Color-5-Standardweg fuer denselben statischen Verbraucher nun der naechste
+abgegrenzte Interpolationsbaustein: ohne Methode muss Oklab verwendet werden.
+Die bestehende Implementierung diagnostizierte sowohl diesen Default als auch
+`in oklab`; CSS Color 4 stellt bereits die Oklab-Ausgabeumwandlung bereit.
+Gewaehlt ist die Umsetzung fuer genau zwei bestehende statische Farben,
+einschliesslich premultiplizierter Alpha-Interpolation, bei Beibehaltung der
+gerundeten 8-bit-sRGB-Speicherung und Gamutdiagnostik. Andere Mischraeume,
+`none`-Komponenten, `currentColor` und Gamut-Mapping bleiben aus.
+
+**Belegt:** CSS Color 5 (`checkedAt` 2026-11-15) spezifiziert Oklab als
+Default; CSS Color 4 (`checkedAt` 2026-11-07) beschreibt Oklab- und
+Premultiplikationsalgorithmen. Beide Quellen sowie CSS Values 5 sind im
+Manifest vorhanden und nicht aelter als 30 Tage. Der neue fokussierte
+Regressionsfall scheiterte vor der Implementierung wie erwartet. Die
+ColorMix-Tests, CSS-Suite und beide Solution-Build-Konfigurationen bestehen;
+die vollstaendigen Debug-/Release-Solution-Tests laufen noch.
+
+### KP-365 - Oklab color-mix lokale Validierung
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: fokussierte und vollstaendige `Engine.Css.Tests`, Debug-/Release-
+  Solution-Builds und -Volltests sowie
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+  und `git diff --check`.
+- Bezug: KP-364; Implementierung in
+  [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs) und
+  [ColorMixFunctionTests.cs](../tests/Engine.Css.Tests/ColorMixFunctionTests.cs).
+
+**Belegt:** Alle 26 fokussierten ColorMix-Faelle, alle 1.609 CSS-Tests und
+beide Debug-/Release-Solution-Builds mit null Warnungen/Fehlern bestanden.
+Beide vollstaendigen Solution-Testlaeufe bestanden je 16.875 Tests.
+Formatverifikation und `git diff --check` bestanden. Ein erster Debug-
+Volltestlauf schlug in einem nicht CSS-bezogenen process-renderer-Test mit
+V8-Deadline fehl; dessen isolierter Lauf mit beiden Testvarianten und die
+vollstaendige Debug-Wiederholung bestanden. Auch der Release-Volltestlauf
+bestand. CSS-spezifische native Smokes gelten fuer diese parserseitige
+Aenderung nicht. Commit, Push und CI stehen noch aus.

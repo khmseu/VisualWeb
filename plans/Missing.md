@@ -2132,7 +2132,32 @@ distribution, forced percentage normalization, residual-alpha scaling and
 premultiplied interpolation. Twenty focused regressions and all 1,603 CSS
 tests pass. Debug/Release solution builds have zero warnings/errors; both full
 solution test runs pass all 16,869 tests; format verification and
-`git diff --check` pass. Commit, push and CI remain pending.
+`git diff --check` pass. Commit `c03d6bb` is pushed to `main`. Linux
+development (run 43663310025), Windows confinement (run 43663310066), and
+CodeQL (run 43663309766) passed.
+
+**Pass 6 standards selection (2026-11-15):** Extend the bounded `color-mix()`
+consumer to the CSS Color 5 default interpolation method, Oklab. The local
+CSS Color 5 source specifies Oklab when no method is given; CSS Color 4 defines
+the Oklab conversion and premultiplied-alpha interpolation. Before this
+increment, the parser diagnosed both omitted methods and explicit `in oklab`
+as unsupported. CSS Color 4 (`checkedAt` 2026-11-07), CSS Color 5 and CSS
+Values 5 (`checkedAt` 2026-11-15) are present and fresh in the local cache.
+The existing 8-bit sRGB representation remains the storage boundary; Oklab
+mixes that convert outside sRGB remain diagnostics rather than receiving
+gamut mapping. Other interpolation spaces and missing-component preservation
+remain unsupported.
+
+**Pass 6 implementation and local validation:** `color-mix()` now defaults to
+Oklab and accepts explicit `in oklab`, using CSS Color 4 conversion and
+premultiplied-alpha interpolation; out-of-sRGB results remain diagnosed. The
+26 focused color-mix cases and all 1,609 CSS tests pass. Debug/Release solution
+builds have zero warnings/errors; both full solution suites pass all 16,875
+tests. Formatting and `git diff --check` pass. An initial Debug full-suite run
+hit a V8 deadline in one unrelated process-renderer test; the isolated
+two-case test and complete Debug retry both passed. The Release full suite also
+passed. CSS-specific native smokes do not apply. Commit, push and CI remain
+pending.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

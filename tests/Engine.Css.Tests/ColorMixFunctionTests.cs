@@ -24,6 +24,21 @@ public sealed class ColorMixFunctionTests
         Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
     }
 
+    [Theory]
+    [InlineData("color-mix(white, black)", 99, 99, 99, 255)]
+    [InlineData("color-mix(in oklab, white, black)", 99, 99, 99, 255)]
+    [InlineData("color-mix(in oklab, red, blue)", 140, 83, 162, 255)]
+    [InlineData("color-mix(in oklab, red 25%, blue)", 81, 71, 210, 255)]
+    [InlineData("color-mix(in oklab, white 25%, black 25%)", 99, 99, 99, 128)]
+    [InlineData("color-mix(in oklab, rgba(255, 255, 255, 0), black)", 0, 0, 0, 128)]
+    public void DefaultAndExplicitOklabMixesConvertThroughSrgb(
+        string input, byte red, byte green, byte blue, byte alpha)
+    {
+        var (result, style) = Compute("color:" + input);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
+    }
+
     [Fact]
     public void NestedRgbCommasAreNotTreatedAsMixSeparators()
     {
@@ -33,12 +48,12 @@ public sealed class ColorMixFunctionTests
     }
 
     [Theory]
-    [InlineData("color-mix(red, blue)")]
-    [InlineData("color-mix(in oklab, red, blue)")]
     [InlineData("color-mix(in srgb-linear, red, blue)")]
     [InlineData("color-mix(in srgb, red -1%, blue)")]
     [InlineData("color-mix(in srgb, red 101%, blue)")]
     [InlineData("color-mix(in srgb, red, blue, green)")]
+    [InlineData("color-mix(red, white)")]
+    [InlineData("color-mix(in oklab, red, white)")]
     [InlineData("color-mix(in srgb, none, blue)")]
     [InlineData("color-mix(in srgb, red, currentColor)")]
     [InlineData("color-mix(in srgb, color-mix(in srgb, red, blue), green)")]
@@ -55,11 +70,11 @@ public sealed class ColorMixFunctionTests
         var (result, style) = Compute(
             "color:color-mix(in srgb, red, blue);" +
             "background:none color-mix(in srgb, white 50%, black);" +
-            "border:1px solid color-mix(in srgb, red 25%, blue)");
+            "border:1px solid color-mix(in oklab, red, blue)");
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssColor(128, 0, 128), style["color"]);
         Assert.Equal(new CssColor(128, 128, 128), style["background-color"]);
-        Assert.Equal(new CssColor(64, 0, 191), style["border-top-color"]);
+        Assert.Equal(new CssColor(140, 83, 162), style["border-top-color"]);
         Assert.Equal(new CssLength(1, "px"), style["border-top-width"]);
     }
 
@@ -67,7 +82,7 @@ public sealed class ColorMixFunctionTests
     public void UnsupportedMixCannotPartiallyApplyShorthands()
     {
         var (result, style) = Compute(
-            "border:3px solid red;border:1px solid color-mix(in oklab, red, blue);" +
+            "border:3px solid red;border:1px solid color-mix(in oklab, red, white);" +
             "background:blue;background:none color-mix(in srgb, red -1%, blue)");
         Assert.Equal(2, result.Diagnostics.Count);
         Assert.Equal(new CssLength(3, "px"), style["border-top-width"]);
