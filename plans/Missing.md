@@ -2343,8 +2343,22 @@ The .NET API writes only complete UTF-8 scalars that fit, reports UTF-16 code
 units read and bytes written, and replaces unpaired surrogates with U+FFFD.
 It is a core API, not a JavaScript binding. Four focused tests and all 4,001
 Core tests pass. The solution build has zero warnings/errors, all 16,909
-solution tests pass, and formatting verification passes. Commit, push and CI
-remain pending.
+solution tests pass, and formatting verification passes. Commit `957105e` is
+pushed to `main`; Linux, Windows confinement (x64 and arm64), and CodeQL
+workflows pass.
+
+### Pass 4: URLSearchParams string parsing and lookup
+
+WHATWG URL and Encoding remain tied at ~30%; the two previous increments
+covered bounded UTF-8 `TextEncoder` operations. This pass selects the
+URLSearchParams string-initialization path: parse the URL-encoded string and
+provide ordered-pair `size`, `get()` and `getAll()` read operations in a
+bounded Core API. Mutations, stringification, URL-object linkage, iterable or
+record initialization, and Web IDL remain unsupported. The local URL Standard
+cache has `checkedAt: 2026-11-07` and is fresh; no refresh is needed.
+Four focused tests and all 4,005 Core tests pass. The solution build has zero
+warnings/errors, all 16,913 solution tests pass, and formatting verification
+passes. Commit, push and CI remain pending.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the

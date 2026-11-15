@@ -10590,8 +10590,8 @@ keine Auswahl aus der Gleichstandslage von Pass 2 ungeprueft fortschreiben.
 
 - Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
 - Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
-- Erfassungsart: begruendete WHATWG-Teilbereichsauswahl, Implementierung und
-  lokale Vollvalidierung; Commit/Push/CI ausstehend.
+- Erfassungsart: begruendete WHATWG-Teilbereichsauswahl, Implementierung,
+  lokale Vollvalidierung und Push; CI laeuft.
 - Quellen: [Encoding Standard `TextEncoder.encodeInto()`](../specs/cache/encoding.html#dom-textencoder-encodeinto)
   (Manifest `checkedAt: 2026-11-07`); [WebTextEncoder.cs](../src/Core/Core.Encoding/WebTextEncoder.cs),
   [EncodingTests.cs](../tests/Core.Tests/EncodingTests.cs), Core guide,
@@ -10618,6 +10618,64 @@ VisualWeb.slnx` besteht mit null Warnungen/Fehlern,
 `dotnet test VisualWeb.slnx --no-build` mit 16.909 Tests und die
 Formatverifikation besteht.
 
-**Status / naechster Schritt:** Lokal vollvalidiert, noch nicht committed oder
-gepusht; CI steht aus. Diff abschliessend pruefen, Pass 3 separat committen,
-pushen und CI beobachten.
+**Status / naechster Schritt:** Lokal vollvalidiert; Commit `957105e` ist auf
+`main` gepusht. Linux, Windows und CodeQL-CI laufen. Nach erfolgreicher CI
+Pass 3 abschliessen und fuer Pass 4 die WHATWG-only-Prioritaet neu bewerten.
+
+### KP-386 - Pass 3 CI-gruen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Commit `957105e`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43718588033),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43718588014)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43718587662).
+- Bezug: schliesst Pass 3 aus KP-385 ab.
+
+**Ergebnis (belegt):** `957105e` steht auf `main`. Linux development,
+Windows confinement (x64 und arm64) sowie Push-on-main/CodeQL endeten
+erfolgreich. Die lokale Vollvalidierung ist in KP-385 dokumentiert.
+
+**Naechster Schritt:** Pass 3 ist abgeschlossen. Fuer Pass 4 WHATWG-only
+Prioritaeten und offene, konkrete Teilbereiche anhand des aktuellen Trackers
+und Supportinventars neu bewerten.
+
+### KP-387 - Pass 4 URLSearchParams-Teilmenge ausgewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: WHATWG-Rangfolge neu geprueft; Auswahl ist eine begruendete
+  Ableitung, keine gesonderte Nutzerwahl.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [Support inventory](../docs/standards.md#support-status),
+  [Core URL guide](../docs/core.md#url),
+  [Core.Url README](../src/Core/Core.Url/README.md),
+  [BrowserUrl.cs](../src/Core/Core.Url/BrowserUrl.cs) und die lokale
+  [URL Standard](../specs/cache/url.html#interface-urlsearchparams).
+  Das Manifest meldet fuer `url` `checkedAt: 2026-11-07`.
+- Bezug: folgt auf den in KP-386 abgeschlossenen Pass 3 des zehnteiligen
+  Missing-Prioritaetslaufs und die beschlossene WHATWG-only-Regel DEC-033.
+
+**Auswahl (Ableitung):** URL und Encoding stehen weiter gleichauf bei ~30%;
+HTML (~20%), DOM (~20%) und Fetch (~15%) liegen darunter. Encoding erhielt
+die zwei vorherigen Inkremente. Pass 4 nimmt daher eine konkrete WHATWG-URL-
+Luecke auf: den String-Initialisierungs-/Query-Parsing-Pfad von
+`URLSearchParams` mit `size`, `get()` und `getAll()` fuer geordnete Duplikate.
+Die Core-API bleibt ein begrenzter .NET-Snapshot; Mutationsmethoden,
+Stringifizierung, URL-Objekt-Verknuepfung und Web-IDL sind nicht Teil dieses
+Passes. `BrowserUrl` bleibt unveraendert und immutable.
+
+**Umsetzung und Evidenz (belegt):** `UrlSearchParams` unterstuetzt nur den
+String-Initializer sowie geordnete `Size`, `Get` und `GetAll`-Leseoperationen.
+Das Parsing entfernt hoechstens ein fuehrendes `?`, ignoriert leere
+`&`-Segmente, trennt am ersten `=`, wandelt `+` zu Leerzeichen um,
+percent-dekodiert gueltige Bytes und ersetzt ungueltige UTF-8-Folgen. Vier
+fokussierte Tests pruefen geordnete Duplikate, leere Werte, erste-`=`-Semantik,
+Plus-/Percent-Decoding, ungueltiges UTF-8 und USVString-Surrogatbehandlung.
+Keine URL-Mutation, URL-Verknuepfung oder JavaScript-Bindung wurde ergaenzt.
+
+Lokale Validierung: vier fokussierte Tests, 4.005 Core-Tests und 16.913
+Solution-Tests bestehen; `dotnet build VisualWeb.slnx` hat null
+Warnungen/Fehler, und Formatverifikation besteht. Die lokale URL-Quelle ist
+innerhalb des 30-Tage-Fensters; kein Cache-Refresh erforderlich.
+
+**Status / naechster Schritt:** Lokal validiert, Commit/Push/CI stehen aus.

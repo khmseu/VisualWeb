@@ -14,7 +14,7 @@ WHATWG-Standards nach den Schaetzungen im Support-Inventar gerankt; aktuell
 sind WHATWG URL und Encoding mit je ~30% gleichauf. Der bereits begonnene
 CSS-Color-Pass 1 bleibt davon unberuehrt. Siehe DEC-033 und KP-382.
 
-**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 3 in Arbeit):** Der
+**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 4 in Arbeit):** Der
 aktuelle Auftrag fordert zehn neue getrennte Inkremente. Pass 1, CSS-Color-4-
 Ray-Trace-Mapping fuer encoded und lineare Display-P3-Werte, wurde vor der
 Regelaenderung in KP-382 gewaehlt und davon nicht rueckwirkend geaendert;
@@ -28,8 +28,15 @@ Fuer Pass 3 wurde die WHATWG-Encoding-Luecke `TextEncoder.encodeInto()`
 ausgewaehlt: der .NET-Kern schreibt nur vollstaendige UTF-8-Skalare, zaehlt
 gelesene UTF-16-Code-Units und ersetzt ungepaarte Surrogate. Vier fokussierte,
 4.001 Core- und 16.909 Solution-Tests bestehen; Build ohne Warnungen/Fehler
-und Formatverifikation bestehen. Pass 3 ist noch nicht committed/gepusht; CI
-steht aus. Siehe Q-037 und KP-379 bis KP-385.
+und Formatverifikation bestehen. Commit `957105e` ist auf `main` gepusht;
+Linux, Windows x64/arm64 und CodeQL-CI sind gruen. Pass 3 ist abgeschlossen.
+Fuer Pass 4 wurde aus dem Gleichstand bei ~30% die WHATWG-URL-Luecke
+`URLSearchParams` gewaehlt: String-Initialisierung, `size`, `get()` und
+`getAll()` als bounded Core-Teilmenge ohne Mutationen, URL-Verknuepfung oder
+Web IDL. Vier fokussierte Tests, 4.005 Core-Tests und 16.913 Solution-Tests
+bestehen; Build ohne Warnungen/Fehler und Formatverifikation bestehen. Pass 4
+ist lokal validiert, Commit/Push/CI stehen aus. Siehe Q-037 und KP-379 bis
+KP-387.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
