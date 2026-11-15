@@ -50,7 +50,7 @@ moving to another priority.
    source relied upon. Keep tests offline.
 5. Implement the change, its focused tests, and directly related documentation.
    Update `plans/Missing.md` to describe exactly what changed and what remains;
-   update `docs/standards.md` if relevant,
+   update `docs/standards.md` if relevant (do not forget to check and, if necessary, update the percentages for all affected standards, ensuring they accurately reflect the current implementation coverage),
    and do not mark a broad priority complete when only an increment is done.
 6. Run the focused test project for the changed subsystem first; use the
    [test-project commands](../../../tests/README.md) to select it. Then follow
