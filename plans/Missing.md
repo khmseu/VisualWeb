@@ -1771,17 +1771,19 @@ Evidence: `platform validation`, `HTML conformance coverage`, `Linux CI`, `Windo
 
 ## Recommended priority
 
-**Standards-priority update (2026-11-12):** Before each next standards-driven
-feature selection, consult the approximate coverage estimates in
-[standards.md](../docs/standards.md#support-status). Select a bounded,
-testable, actionable gap for the partially implemented standard or standards
-whose estimate is currently highest (`>0%` and `<100%`); treat tied estimates
-equally and recalculate at the next feature selection. At this update,
-ECMAScript (`ecmascript`) is highest at ~85%. If the highest-ranked standard
-has no actionable Missing item, consider the next-highest partial estimate.
-These estimates are rough ordering heuristics, not conformance scores. Keep
-unsupported behavior explicit and do not mark a standard complete or claim
-full support without evidence covering its applicable requirements.
+**Standards-priority update (2026-11-15; revised from 2026-11-12):** Before
+each next standards-driven feature selection, consult the approximate coverage
+estimates in [standards.md](../docs/standards.md#support-status). Rank only
+partially implemented WHATWG standards and select a bounded, testable,
+actionable gap for the standard or standards with the highest current estimate
+between 0% and 100%; treat tied estimates equally and recalculate at the next
+feature selection. In the current inventory, WHATWG URL and WHATWG Encoding
+are tied highest at ~30%. If the highest-ranked WHATWG standard has no
+actionable Missing item, consider the next-highest partial WHATWG estimate.
+Other standards, including ECMAScript and CSS standards, are not candidates
+under this rule. These estimates are rough ordering heuristics, not conformance
+scores. Keep unsupported behavior explicit and do not mark a standard complete
+or claim full support without evidence covering its applicable requirements.
 Once no actionable standards-driven increment remains, continue with the
 existing recommended priorities below, in their current order.
 
@@ -2288,6 +2290,38 @@ pages: readable text, ordinary styling, images, working links, scrolling and
 basic forms. Choose small, testable increments that remove concrete blockers
 on representative pages; do not require completion of an entire subsystem
 before improving another.
+
+## New standards-priority run (2026-11-15)
+
+The previous ten-pass CSS Color sequence is complete. A new request asks for
+ten separately validated increments. Pass 1 was selected before the
+2026-11-15 priority-rule change described in [Standards-priority update](#recommended-priority);
+that decision explicitly leaves this already-started CSS Color pass unchanged.
+For Pass 1, CSS Color 4 (~60%) had been the highest actionable partial standard,
+and the user selected **Ray Trace** (option 3) to map valid colors that convert
+outside the bounded 8-bit sRGB output gamut. Simple component clipping is not
+substituted for that algorithm. The local CSS Color 4 cache has
+`checkedAt: 2026-11-07`, within the 30-day freshness window. See the
+[Ray Trace algorithm](../specs/cache/css-color.html#GMA-Raytrace) and
+[ray-casting algorithm](../specs/cache/css-color.html#cast-a-ray).
+
+### Pass 1: Ray Trace mapping for Display-P3 colors
+
+Apply the selected CSS Color 4 Ray Trace algorithm when bounded encoded or
+linear Display-P3 channels convert to values outside sRGB. Preserve unchanged
+results for in-gamut colors, the current 8-bit sRGB representation, and
+diagnostics for invalid source channels and out-of-gamut conversions from other
+color spaces. Do not claim general gamut mapping.
+
+Implementation extracts reusable linear-sRGB/Oklab transforms and adds the
+bounded four-iteration Ray Trace and RGB-cube ray intersection. Seven focused
+cases cover mapped red, green and blue Display-P3 primaries, alpha preservation
+and encoded/linear input forms; existing tests cover atomic shorthand
+application. The CSS project passes all 1,633 tests, the solution build has zero warnings/
+errors, formatting verification passes, and all 16,899 solution tests pass.
+Commit, push and CI remain pending. After this pass, choose the next increment
+using the WHATWG-only standards priority rule above; do not repeat this CSS
+Color item.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the

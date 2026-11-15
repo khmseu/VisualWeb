@@ -122,12 +122,11 @@ The bounded `color(srgb ...)` and `color(srgb-linear ...)` forms accept in-gamut
 numeric/percentage channels, `none` as zero, and slash alpha; linear-light sRGB
 uses the CSS transfer function before quantization.
 `color(display-p3 ...)` accepts in-range numeric/percentage channels, `none`
-and slash alpha, converts through linear light to sRGB, and rejects converted
-colors outside the sRGB gamut rather than gamut-mapping.
+and slash alpha, converts through linear light to sRGB, and uses the CSS Color 4
+Ray Trace algorithm for results outside the sRGB gamut.
 `color(display-p3-linear ...)` accepts the same bounded channels as linear-light
 Display-P3, converts directly to linear sRGB and then applies the sRGB transfer
-function. It also rejects results outside the sRGB gamut rather than
-gamut-mapping.
+function. It uses the same Ray Trace mapping for results outside sRGB.
 `color(a98-rgb ...)` accepts the same bounded channels, applies the A98 transfer
 exponent and D65 conversion matrices, and rejects converted colors outside the
 sRGB gamut. `color(rec2020 ...)` accepts the same bounded channels, applies its

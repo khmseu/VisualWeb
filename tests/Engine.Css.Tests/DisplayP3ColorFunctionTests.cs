@@ -11,8 +11,12 @@ public sealed class DisplayP3ColorFunctionTests
     [InlineData("color(display-p3 0.43313 0.50108 0.37950)", 106, 128, 93, 255)]
     [InlineData("color(display-p3 50% 50% 50% / 25%)", 128, 128, 128, 64)]
     [InlineData("color(display-p3 1 1 1)", 255, 255, 255, 255)]
+    [InlineData("color(display-p3 1 0 0)", 255, 52, 40, 255)]
+    [InlineData("color(display-p3 0 1 0)", 0, 247, 79, 255)]
+    [InlineData("color(display-p3 0 0 1)", 0, 35, 252, 255)]
+    [InlineData("color(display-p3 1 0 0 / 25%)", 255, 52, 40, 64)]
     [InlineData("COLOR(DISPLAY-P3 none none none / none)", 0, 0, 0, 0)]
-    public void InSrgbGamutDisplayP3ColorsConvertToStaticSrgbChannels(
+    public void DisplayP3ColorsConvertOrMapToStaticSrgbChannels(
         string input, byte red, byte green, byte blue, byte alpha)
     {
         var (result, style) = Compute("color:" + input);
@@ -21,7 +25,6 @@ public sealed class DisplayP3ColorFunctionTests
     }
 
     [Theory]
-    [InlineData("color(display-p3 1 0 0)")]
     [InlineData("color(display-p3 1.01 0 0)")]
     [InlineData("color(display-p3 0 -0.01 0)")]
     [InlineData("color(display-p3 1px 0 0)")]
@@ -50,15 +53,15 @@ public sealed class DisplayP3ColorFunctionTests
     }
 
     [Fact]
-    public void OutOfSrgbDisplayP3CannotPartiallyApplyShorthands()
+    public void OutOfSrgbDisplayP3MapsAndAppliesShorthands()
     {
         var (result, style) = Compute(
             "border:3px solid red;border:1px solid color(display-p3 1 0 0);" +
             "background:blue;background:none color(display-p3 1 0 0)");
-        Assert.Equal(2, result.Diagnostics.Count);
-        Assert.Equal(new CssLength(3, "px"), style["border-top-width"]);
-        Assert.Equal(new CssColor(255, 0, 0), style["border-top-color"]);
-        Assert.Equal(new CssColor(0, 0, 255), style["background-color"]);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssLength(1, "px"), style["border-top-width"]);
+        Assert.Equal(new CssColor(255, 52, 40), style["border-top-color"]);
+        Assert.Equal(new CssColor(255, 52, 40), style["background-color"]);
     }
 
     private static (CssStyleResult Result, CssComputedStyle Style) Compute(string declarations)

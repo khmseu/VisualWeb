@@ -682,6 +682,11 @@ internal static class CssProperties
         var red = LinearizeSrgbChannel(color.Red / 255d);
         var green = LinearizeSrgbChannel(color.Green / 255d);
         var blue = LinearizeSrgbChannel(color.Blue / 255d);
+        return LinearSrgbToOklab(red, green, blue);
+    }
+
+    private static (double Lightness, double A, double B) LinearSrgbToOklab(double red, double green, double blue)
+    {
         // CSS Color 4 linear sRGB to XYZ D65 to Oklab matrices.
         var x = 506752d / 1228815 * red + 87881d / 245763 * green + 12673d / 70218 * blue;
         var y = 87098d / 409605 * red + 175762d / 245763 * green + 12673d / 175545 * blue;
@@ -834,8 +839,113 @@ internal static class CssProperties
         var srgbGreen = -5617931d / 133579120 * linearRed + 139197051d / 133579120 * linearGreen;
         var srgbBlue = -1323971d / 67420360 * linearRed - 1514763d / 19262960 * linearGreen
             + 148092003d / 134840720 * linearBlue;
-        return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue);
+        return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue)
+            ?? RayTraceSrgbGamut(srgbRed, srgbGreen, srgbBlue);
     }
+
+    private static (double Red, double Green, double Blue)? RayTraceSrgbGamut(
+        double red, double green, double blue)
+    {
+        if (!double.IsFinite(red) || !double.IsFinite(green) || !double.IsFinite(blue)) { return null; }
+
+        var (lightness, a, b) = LinearSrgbToOklab(red, green, blue);
+        var chroma = Math.Sqrt(a * a + b * b);
+        var hue = Math.Atan2(b, a);
+        if (lightness >= 1) { return (1, 1, 1); }
+        if (lightness <= 0) { return (0, 0, 0); }
+
+        var anchor = OklabToLinearSrgb(lightness, 0, 0);
+        anchor = ClampLinearSrgb(anchor);
+        var origin = OklabToLinearSrgb(lightness, chroma * Math.Cos(hue), chroma * Math.Sin(hue));
+        var last = origin;
+
+        for (var iteration = 0; iteration < 4; iteration++)
+        {
+            if (iteration > 0)
+            {
+                var (_, currentA, currentB) = LinearSrgbToOklab(origin.Red, origin.Green, origin.Blue);
+                var currentChroma = Math.Sqrt(currentA * currentA + currentB * currentB);
+                origin = OklabToLinearSrgb(
+                    lightness,
+                    currentChroma * Math.Cos(hue),
+                    currentChroma * Math.Sin(hue));
+            }
+
+            var intersection = CastSrgbRay(anchor, origin);
+            if (intersection is not { } mapped)
+            {
+                origin = last;
+                break;
+            }
+
+            if (iteration > 0 && IsInteriorSrgbPoint(origin))
+            {
+                anchor = origin;
+            }
+
+            origin = mapped;
+            last = mapped;
+        }
+
+        return (
+            EncodeSrgbChannel(Math.Clamp(origin.Red, 0, 1)),
+            EncodeSrgbChannel(Math.Clamp(origin.Green, 0, 1)),
+            EncodeSrgbChannel(Math.Clamp(origin.Blue, 0, 1)));
+    }
+
+    private static (double Red, double Green, double Blue)? CastSrgbRay(
+        (double Red, double Green, double Blue) start,
+        (double Red, double Green, double Blue) end)
+    {
+        var redDirection = end.Red - start.Red;
+        var greenDirection = end.Green - start.Green;
+        var blueDirection = end.Blue - start.Blue;
+        var length = Math.Max(Math.Abs(redDirection), Math.Max(Math.Abs(greenDirection), Math.Abs(blueDirection)));
+        var magnitude = Math.Max(
+            Math.Max(Math.Abs(start.Red), Math.Abs(end.Red)),
+            Math.Max(Math.Max(Math.Abs(start.Green), Math.Abs(end.Green)),
+                Math.Max(Math.Abs(start.Blue), Math.Abs(end.Blue))));
+        var near = double.NegativeInfinity;
+        var far = double.PositiveInfinity;
+
+        if (!UpdateSrgbRayBounds(start.Red, redDirection, ref near, ref far)
+            || !UpdateSrgbRayBounds(start.Green, greenDirection, ref near, ref far)
+            || !UpdateSrgbRayBounds(start.Blue, blueDirection, ref near, ref far)
+            || length <= magnitude * 1e-12
+            || near > far
+            || far < 0)
+        {
+            return null;
+        }
+
+        if (near < 0) { near = far; }
+        if (!double.IsFinite(near)) { return null; }
+
+        return (
+            start.Red + redDirection * near,
+            start.Green + greenDirection * near,
+            start.Blue + blueDirection * near);
+    }
+
+    private static bool UpdateSrgbRayBounds(double start, double direction, ref double near, ref double far)
+    {
+        if (direction == 0) { return start is >= 0 and <= 1; }
+
+        var first = -start / direction;
+        var second = (1 - start) / direction;
+        near = Math.Max(Math.Min(first, second), near);
+        far = Math.Min(Math.Max(first, second), far);
+        return true;
+    }
+
+    private static bool IsInteriorSrgbPoint((double Red, double Green, double Blue) color) =>
+        color.Red is > 1e-12 and < (1 - 1e-12)
+        && color.Green is > 1e-12 and < (1 - 1e-12)
+        && color.Blue is > 1e-12 and < (1 - 1e-12);
+
+    private static (double Red, double Green, double Blue) ClampLinearSrgb(
+        (double Red, double Green, double Blue) color) =>
+        (Math.Clamp(color.Red, 0, 1), Math.Clamp(color.Green, 0, 1), Math.Clamp(color.Blue, 0, 1));
 
     private static (double Red, double Green, double Blue)? A98RgbToSrgb(double red, double green, double blue)
     {
@@ -886,11 +996,17 @@ internal static class CssProperties
 
     private static (double Red, double Green, double Blue)? XyzD65ToSrgb(double x, double y, double z)
     {
+        var linearSrgb = XyzD65ToLinearSrgb(x, y, z);
+        return EncodeSrgbIfInGamut(linearSrgb.Red, linearSrgb.Green, linearSrgb.Blue);
+    }
+
+    private static (double Red, double Green, double Blue) XyzD65ToLinearSrgb(double x, double y, double z)
+    {
         // CSS Color 4 XYZ D65 to linear sRGB matrix.
         var srgbRed = 12831d / 3959 * x - 329d / 214 * y - 1974d / 3959 * z;
         var srgbGreen = -851781d / 878810 * x + 1648619d / 878810 * y + 36519d / 878810 * z;
         var srgbBlue = 705d / 12673 * x - 2585d / 12673 * y + 705d / 667 * z;
-        return EncodeSrgbIfInGamut(srgbRed, srgbGreen, srgbBlue);
+        return (srgbRed, srgbGreen, srgbBlue);
     }
 
     private static (double Red, double Green, double Blue)? XyzD50ToSrgb(double x, double y, double z)
@@ -1058,6 +1174,21 @@ internal static class CssProperties
         if (lightness == 0) { return new CssColor(0, 0, 0, SrgbChannel(alphaValue)); }
         if (lightness == 1) { return new CssColor(255, 255, 255, SrgbChannel(alphaValue)); }
 
+        var linearSrgb = OklabToLinearSrgb(lightness, a, b);
+        if (EncodeSrgbIfInGamut(linearSrgb.Red, linearSrgb.Green, linearSrgb.Blue) is not { } converted)
+        {
+            return null;
+        }
+
+        return new CssColor(
+            SrgbChannel(converted.Red),
+            SrgbChannel(converted.Green),
+            SrgbChannel(converted.Blue),
+            SrgbChannel(alphaValue));
+    }
+
+    private static (double Red, double Green, double Blue) OklabToLinearSrgb(double lightness, double a, double b)
+    {
         // CSS Color 4 Oklab to XYZ D65 transform.
         var l = lightness + 0.3963377773761749 * a + 0.2158037573099136 * b;
         var m = lightness - 0.1055613458156586 * a - 0.0638541728258133 * b;
@@ -1069,10 +1200,7 @@ internal static class CssProperties
         var x = 1.2268798758459243 * l - 0.5578149944602171 * m + 0.2813910456659647 * s;
         var y = -0.0405757452148008 * l + 1.1122868032803170 * m - 0.0717110580655164 * s;
         var z = -0.0763729366746601 * l - 0.4214933324022432 * m + 1.5869240198367816 * s;
-        if (XyzD65ToSrgb(x, y, z) is not { } converted) { return null; }
-
-        return new CssColor(SrgbChannel(converted.Red), SrgbChannel(converted.Green), SrgbChannel(converted.Blue),
-            SrgbChannel(alphaValue));
+        return XyzD65ToLinearSrgb(x, y, z);
     }
 
     private static CssColor? LabToSrgb(double lightness, double a, double b, double alphaValue)

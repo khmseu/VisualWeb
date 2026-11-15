@@ -22,7 +22,7 @@ public sealed class SrgbColorFunctionTests
     }
 
     [Theory]
-    [InlineData("color(display-p3 1 0 0)")]
+    [InlineData("color(a98-rgb 1 0 0)")]
     [InlineData("color(srgb 1.01 0 0)")]
     [InlineData("color(srgb 0 -0.01 0)")]
     [InlineData("color(srgb 101% 0 0)")]
@@ -57,7 +57,7 @@ public sealed class SrgbColorFunctionTests
     {
         var (result, style) = Compute(
             "border:3px solid red;border:1px solid color(srgb 1.1 0 0);" +
-            "background:blue;background:none color(display-p3 1 0 0)");
+            "background:blue;background:none color(display-p3 1.01 0 0)");
         Assert.Equal(2, result.Diagnostics.Count);
         Assert.Equal(new CssLength(3, "px"), style["border-top-width"]);
         Assert.Equal(new CssColor(255, 0, 0), style["border-top-color"]);

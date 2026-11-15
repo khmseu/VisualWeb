@@ -10388,3 +10388,140 @@ und Remote-CI stehen aus.
 **Status:** Pass 10 ist lokal validiert, committed, gepusht und CI-gruen. Der
 angeforderte Zehn-Pass-Auftrag ist abgeschlossen; weitere Tracker-Prioritaeten
 bleiben offen.
+
+### KP-379 - CSS Color gamut-mapping algorithm selection open
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Erfassungsart: laufender neuer Missing-Prioritaetslauf; Pass 1 noch nicht
+  implementiert.
+- Nutzerangabe: Der aktuelle Aufruf fordert zehn getrennte
+  Missing-Prioritaetsinkremente.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  [standards inventory](../docs/standards.md#support-status),
+  [CSS guide](../docs/css.md), [Engine.Css README](../src/Engine/Engine.Css/README.md),
+  [CSS Color 4 local cache](../specs/cache/css-color.html#css-gamut-mapping),
+  [Clipping](../specs/cache/css-color.html#GM-clip),
+  [Binary Search with Local MINDE](../specs/cache/css-color.html#GMA-Binary-local-MINDE),
+  [EdgeSeeker](../specs/cache/css-color.html#GMA-EdgeSeeker) and
+  [Ray Trace](../specs/cache/css-color.html#GMA-Raytrace).
+- Bezug: neuer Zehn-Inkrement-Auftrag nach dem abgeschlossenen Pass 10 in
+  KP-378; offene Auswahl Q-037.
+
+**Auswahl und Klaerungsbedarf (belegt):** Der Tracker weist CSS Color 4 mit
+ungefaehr 60% als hoechste bearbeitbare Teilspezifikation aus. Die aktuelle
+CSS-Color-4-Abdeckung diagnostiziert mehrere gueltige Farben ausserhalb des
+8-bit-sRGB-Ausgabegamuts. Die lokale CSS-Color-4-Quelle erlaubt eine Wahl
+zwischen drei Gamut-Mapping-Algorithmen: Binary Search with Local MINDE
+bietet gute Resultate, kann aber rechenintensiv sein; EdgeSeeker verwendet
+eine Hue-Lookup-Tabelle und tauscht Speicherbedarf gegen Geschwindigkeit;
+Ray Trace zielt auf schnelle, zeitlich vorhersagbare Iteration mit Resultaten,
+die mit Binary Search bei niedrigem JND vergleichbar sind. Der einfuehrende
+Abschnitt zur einfachen Komponentenklemmung nennt diese Methode die
+am wenigsten akzeptable und fuehrt sie nicht als eine der drei wahlbaren
+Algorithmen auf. Daher waere ihre Umsetzung kein abgesicherter Ersatz fuer die
+fehlende Algorithmusentscheidung.
+
+**Zwischenzeitlicher Vorschlag (verworfen):** Display-P3-Interpolation fuer
+`color-mix()` wurde anfangs als bounded Inkrement begonnen. Die erneute
+Prioritaetspruefung ergab die hoehere offene CSS-Color-4-Gamut-Mapping-Luecke;
+die P3-Aenderungen wurden vollstaendig zurueckgenommen. `git status`,
+`git diff --stat` und `git diff --check` bestaetigten danach, dass keine
+Code-, Test- oder Produktdokumentationsaenderung uebrig war. Anschliessend
+wurden nur die aktuellen Kontextaufzeichnungen aktualisiert. Es gibt aus dem
+Versuch keine Implementierungs- oder Supportstatus-Aenderung.
+
+**Status / naechster Schritt:** Keine Implementierung begonnen. Vor der
+Auswahl des ersten Passes ist die Nutzerentscheidung zwischen Binary Search
+with Local MINDE, EdgeSeeker, Ray Trace oder dem ausdruecklichen Blockieren
+weiterer Aktionen erforderlich. Siehe Q-037 im Wissensstand.
+
+### KP-380 - Ray Trace gamut-mapping gewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15 12:21:02 +01:00.
+- Nutzerangabe/Entscheidung: Antwort „3“ auf Q-037; gewaehlt ist CSS Color 4
+  Ray Trace.
+- Quelle: aktuelle Unterhaltung; die Optionen und ihre Trade-offs sind in
+  KP-379 und im lokalen CSS-Color-4-Abschnitt `#GMA-Raytrace` dokumentiert.
+- Bezug: neuer Zehn-Inkrement-Auftrag nach KP-378; beantwortet Q-037.
+
+**Beschlossene Auswahl:** Pass 1 verwendet Ray Trace als CSS-Color-4-
+Gamut-Mapping-Algorithmus. Der eng begrenzte Einstieg ist die Umwandlung
+ausserhalb des sRGB-Gamuts liegender `color(display-p3 ...)`-Farbwerte in die
+vorhandene 8-bit-sRGB-Ausgabe. Andere Farbraeume und Farbverbraucher werden
+nicht gleichzeitig freigegeben; deren bisherige Diagnosen bleiben bestehen.
+Diese Begrenzung ist eine technische Ableitung zur schrittweisen Umsetzung,
+keine separate Nutzerwahl. CSS Color 4 lokalisiert Algorithmus und
+Ray-Cast-Verfahren unter `#GMA-Raytrace` / `#cast-a-ray`; Quelle laut Manifest
+am 2026-11-07 geprueft.
+
+**Status:** Die Implementierung und fokussierten Regressionstests folgen in
+KP-381; vor dieser Entscheidung wurde kein Produktcode geaendert.
+
+### KP-381 - Ray Trace fuer Display-P3 implementiert und lokal geprueft
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: Implementierung und lokale Vollvalidierung; Commit, Push und
+  Remote-CI stehen aus.
+- Quellen: [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs),
+  [DisplayP3ColorFunctionTests.cs](../tests/Engine.Css.Tests/DisplayP3ColorFunctionTests.cs),
+  [DisplayP3LinearColorFunctionTests.cs](../tests/Engine.Css.Tests/DisplayP3LinearColorFunctionTests.cs),
+  aktualisierte CSS-Guide-, README-, Supportinventar- und Missing-Eintraege;
+  CSS-Testprojekt, Solution-Build und Formatverifikation.
+- Bezug: setzt die Nutzerwahl in KP-380 / Q-037 fuer Pass 1 des neuen
+  Zehn-Inkrement-Laufs um.
+
+**Umsetzung (belegt):** `color(display-p3 ...)` und
+`color(display-p3-linear ...)` mappen konvertierte ausserhalb des sRGB-Gamuts
+liegende Werte nun mit dem CSS-Color-4-Ray-Trace-Algorithmus. Die Umsetzung
+verwendet die vorhandenen Oklab-Konversionen, eine begrenzte Vier-Iterationen-
+Suche und Schnittpunkte mit dem linearen sRGB-Wuerfel. In-Gamut-Ausgaben
+bleiben unveraendert; Eingabekanaele ausserhalb des bestehenden Quellbereichs
+und Ergebnisse anderer Farbraeume ausserhalb sRGB bleiben Diagnosen. Alpha und
+die gerundete 8-bit-sRGB-Ausgabe bleiben erhalten.
+
+Sieben neue Datenfaelle pruefen gemappte rote, gruene und blaue P3-Primaries,
+Alpha sowie encoded/linear Eingaben; geaenderte bestehende Faelle pruefen
+atomare Shorthands. Die gueltigen
+Out-of-gamut-Faelle schlugen vor Implementierung mit der bisherigen
+Unsupported-Diagnose fehl. Danach bestehen die fokussierten P3-Tests und alle
+1.633 CSS-Tests. `dotnet build VisualWeb.slnx` besteht mit null Warnungen und
+Fehlern; `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` besteht. `dotnet test VisualWeb.slnx --no-build`
+besteht mit 16.899 Tests; die 1.341 Browser-Tests dauerten 8 Minuten 23
+Sekunden. Ein erster Buildversuch scheiterte, weil `Math.Hypot` im Ziel-
+Framework nicht verfuegbar ist; die Norm des Oklab-Chromas verwendet nun
+`Math.Sqrt`, worauf Build und Tests bestehen.
+
+**Status / naechster Schritt:** Noch kein Commit, Push oder CI. Den
+Diff/Tracker/Kontext pruefen und den Pass separat committen, pushen und CI
+beobachten. Die WHATWG-only-Regel in KP-382 gilt ab der naechsten Auswahl,
+nicht rueckwirkend fuer diesen Pass.
+
+### KP-382 - WHATWG-Standardsrangfolge
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15 12:41:50 +01:00.
+- Nutzerangabe/Entscheidung: Die Empfehlung in `Missing.md` soll bei der
+  naechsten standardsgetriebenen Auswahl den hoechstrangigen WHATWG-Standard
+  auswaehlen.
+- Quellen: aktueller Nutzerturn; [Missing](../plans/Missing.md#recommended-priority),
+  [Support-Inventar](../docs/standards.md#support-status) und DEC-033 im
+  [Wissensstand](./Wissensstand.md#aktuelle-entscheidungen).
+- Bezug: schraenkt DEC-033 von der allgemeinen Rangfolge auf WHATWG-Standards
+  ein.
+
+**Beschlossene Regel (belegt):** Fuer zukunftige standardsgetriebene
+Feature-Auswahlen werden nur teilweise implementierte WHATWG-Standards anhand
+der groben Support-Schaetzungen gerankt. Die hoechste Schaetzung gewinnt;
+Gleichstaende werden gleich behandelt, und erst ohne konkrete Missing-Luecke
+folgt der naechsthoehere WHATWG-Standard. Im aktuell geprueften Inventar sind
+WHATWG URL und WHATWG Encoding mit je ~30% gleichauf. ECMAScript und CSS
+Standards nehmen an dieser WHATWG-Auswahl nicht teil.
+
+**Abgrenzung (Ableitung):** Der im Wissensstand dokumentierte CSS-Color-Pass 1
+war bereits begonnen. Die neue Regel aendert diesen laufenden Pass nicht
+rueckwirkend; sie gilt fuer die naechste Auswahl. An der Implementierung und
+den Support-Schaetzungen wurde fuer diese Prioritaetsaenderung nichts geaendert.

@@ -568,16 +568,18 @@ converts them with the CSS sRGB transfer function before 8-bit quantization.
 [`color(display-p3 ...)`](https://www.w3.org/TR/css-color-4/#predefined-display-p3)
 (`css-color`) accepts in-range numeric or percentage channels, with `none`
 mapped to zero and optional slash alpha. It converts the sRGB-transfer-encoded
-Display-P3 channels through linear light to sRGB, accepting only results inside
-the sRGB gamut; out-of-gamut results are diagnosed, not gamut-mapped. These
-colors also use rounded 8-bit sRGB output.
+Display-P3 channels through linear light to sRGB. Results outside the sRGB
+gamut use CSS Color 4's
+[Ray Trace gamut-mapping algorithm](https://www.w3.org/TR/css-color-4/#GMA-Raytrace)
+and [ray intersection](https://www.w3.org/TR/css-color-4/#cast-a-ray); output
+remains rounded 8-bit sRGB.
 [`color(display-p3-linear ...)`](https://www.w3.org/TR/css-color-4/#predefined-display-p3-linear)
 (`css-color`) accepts the same bounded channels in linear-light Display-P3,
 uses the same primaries and D65 white point, and converts directly to linear
-sRGB before the sRGB transfer function. Out-of-gamut results are diagnosed,
-not gamut-mapped. Other color spaces, interpolation beyond the bounded Lab,
-Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods below and
-higher-precision management remain unsupported.
+sRGB before the sRGB transfer function, applying the same Ray Trace mapping
+when the result is outside sRGB. Other color spaces, interpolation beyond the
+bounded Lab, Oklab, XYZ D50/D65, linear-light sRGB and sRGB color-mix methods
+below and higher-precision management remain unsupported.
 [`color(a98-rgb ...)`](https://www.w3.org/TR/css-color-4/#predefined-a98-rgb)
 (`css-color`) accepts the same bounded numeric/percentage channels, `none`
 components and optional slash alpha. It applies the A98 transfer exponent and
