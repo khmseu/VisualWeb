@@ -1,0 +1,109 @@
+name: CPU deadline tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux ${{ matrix.architecture }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: x64
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap libseccomp2
+          version=$(/usr/bin/bwrap --version | awk '{print $2}')
+          if ! dpkg --compare-versions "$version" ge 0.9.0; then
+            sudo apt-get install --yes --no-install-recommends \
+              build-essential libcap-dev meson ninja-build pkg-config
+            git clone --depth 1 --branch v0.9.0 \
+              https://github.com/containers/bubblewrap.git \
+              "$RUNNER_TEMP/bubblewrap"
+            meson setup "$RUNNER_TEMP/bubblewrap/build" \
+              --prefix=/usr --bindir=bin
+            sudo meson install -C "$RUNNER_TEMP/bubblewrap/build"
+          fi
+      - name: Verify bubblewrap prerequisite
+        run: |
+          test -x /usr/bin/bwrap
+          version=$(/usr/bin/bwrap --version | awk '{print $2}')
+          dpkg --compare-versions "$version" ge 0.9.0
+          printf 'Using bubblewrap %s\n' "$version"
+      - name: Allow bubblewrap user namespaces under AppArmor
+        run: |
+          if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true)" = 1 ]; then
+            sudo tee /etc/apparmor.d/visualweb-bwrap >/dev/null <<'EOF'
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile visualweb-bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          EOF
+            sudo apparmor_parser -r /etc/apparmor.d/visualweb-bwrap
+          fi
+      - name: Require native architecture and systemd cgroup prerequisites
+        run: |
+          case '${{ matrix.architecture }}' in
+            x64) test "$(uname -m)" = x86_64 ;;
+            arm64) test "$(uname -m)" = aarch64 ;;
+            *) exit 1 ;;
+          esac
+          test "$(ps -p 1 -o comm=)" = systemd
+          test -f /sys/fs/cgroup/cgroup.controllers
+          for controller in memory pids cpu; do
+            grep -qw "$controller" /sys/fs/cgroup/cgroup.controllers
+          done
+          # Disposable hosted VM only; the application never configures host services.
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user is-active default.target
+          printf 'XDG_RUNTIME_DIR=%s\n' "$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          printf 'DBUS_SESSION_BUS_ADDRESS=%s\n' "$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: 10.0.401
+          architecture: ${{ matrix.architecture }}
+      - run: dotnet build VisualWeb.slnx --configuration Release
+      - name: Run explicit CPU deadline tests
+        run: >-
+          dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
+          --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer|FullyQualifiedName~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs"
+          --logger "console;verbosity=normal" -- xUnit.Explicit=only
+
+  windows:
+    name: Windows ${{ matrix.architecture }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            architecture: x64
+          - runner: windows-11-arm
+            architecture: arm64
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: 10.0.401
+          architecture: ${{ matrix.architecture }}
+      - run: dotnet build VisualWeb.slnx --configuration Release
+      - name: Run explicit CPU deadline tests
+        run: >-
+          dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build
+          --filter "FullyQualifiedName~WindowsCpuPressureCancellationOrDeadlineRestartsOnlyAffectedRenderer|FullyQualifiedName~CpuThrottledExchangeCanBeCanceledOrTimedOutWithoutAffectingOtherTabs"
+          --logger "console;verbosity=normal" -- xUnit.Explicit=only
