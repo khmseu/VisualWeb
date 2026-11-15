@@ -10797,4 +10797,22 @@ Formatverifikation besteht. Commit, Push und CI stehen aus.
 4.007 Core-Tests bestehen. Der Solution-Build hat null Warnungen/Fehler;
 16.915 Solution-Tests und die Formatverifikation bestehen.
 
-**Status / naechster Schritt:** Commit, Push und CI fuer Pass 6 stehen aus.
+**Status / naechster Schritt:** Commit `9c7fa7e` ist auf `main` gepusht;
+CI laeuft.
+
+### KP-394 - Pass 6 CI-gruen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Commit `9c7fa7e`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43727750438),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43727750674)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43727750104).
+- Bezug: schliesst Pass 6 aus KP-392/KP-393 ab.
+
+**Ergebnis (belegt):** `9c7fa7e` steht auf `main`. Linux development,
+Windows confinement (x64 und arm64) sowie Push-on-main/CodeQL endeten
+erfolgreich. Die lokale Vollvalidierung ist in KP-393 dokumentiert.
+
+**Naechster Schritt:** Fuer Pass 7 WHATWG-only Prioritaeten und offene,
+konkrete Teilbereiche anhand des aktuellen Trackers und Supportinventars
+erneut bewerten.

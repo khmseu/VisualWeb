@@ -2385,7 +2385,9 @@ remain unsupported. The URL Standard cache is fresh
 (`checkedAt: 2026-11-07`); no refresh is needed. Six focused
 URLSearchParams tests and all 4,007 Core tests pass. The solution build has
 zero warnings/errors, all 16,915 solution tests pass, and formatting
-verification passes. Commit, push, and CI remain pending.
+verification passes. Commit `9c7fa7e` is pushed to `main`; Linux development,
+Windows confinement (x64 and arm64), and CodeQL CI pass. Pass 6 is complete;
+four of the ten requested increments remain.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
