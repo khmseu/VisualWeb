@@ -63,12 +63,13 @@ Abdeckungswert bleibt ~30%, da die verbleibenden URL- und SearchParams-Luecken
 deutlich breiter sind als dieser Methodeninkrement. Die Implementierung ist
 lokal validiert: acht fokussierte URLSearchParams-, 4.009 Core- und 16.917
 Solution-Tests bestehen; Build und Formatverifikation bestehen.
-Commit/Push und CI sind noch offen. Der lokale Branch enthaelt ausserdem den
-unabhaengigen, nicht von Pass 8 erstellten Commit `f16c6d7` und liegt damit
-einen Commit vor `origin/main`; ein Push des Branches wuerde auch diesen Commit
-veroeffentlichen.
+Commit `27702ca` ist gepusht; Linux- (Run `43736476256`), Windows- (Run
+`43736476224`) und CodeQL-CI (Run `43736475056`) sind gruen. Beim Push wurde
+auch der zuvor unabhaengig erstellte Dokumentationscommit `f16c6d7`
+mitveroeffentlicht. Pass 8 ist abgeschlossen; zwei der zehn Inkremente
+bleiben.
 
-**Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
+**Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und

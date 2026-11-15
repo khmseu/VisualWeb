@@ -2413,7 +2413,10 @@ stringification, and Web IDL remain unsupported. The URL Standard cache is
 fresh (`checkedAt: 2026-11-07`); no refresh was needed. Eight focused
 URLSearchParams tests, all 4,009 Core tests, and all 16,917 solution tests
 pass. The solution build has zero warnings/errors and formatting verification
-passes. Local validation is complete; commit, push, and CI remain.
+passes. Commit `27702ca` is pushed to `main`; Linux development, Windows
+confinement, and CodeQL CI pass (runs `43736476256`, `43736476224`, and
+`43736475056`, respectively). Pass 8 is complete; two of the ten requested
+increments remain.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the

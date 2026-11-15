@@ -10932,5 +10932,41 @@ null Warnungen/Fehler; die Formatverifikation besteht ebenfalls.
 Commit betrifft die Missing-Priority-Skill-Dokumentation und wurde nicht im
 Pass-8-Diff geaendert. Ein Push von `main` wuerde ihn mitveroeffentlichen.
 
-**Status:** Pass 8 lokal validiert; eigener Pass-8-Commit und Push/CI stehen
-noch aus.
+**Status:** Lokale Validierung abgeschlossen; Pass-8-Commit und Push waren
+zum Zeitpunkt dieses Eintrags noch ausstehend.
+
+### KP-400 - Pass 8 gepusht, CI laeuft
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Git-Commit `27702ca`, Push-Ausgabe, sowie GitHub Actions fuer diesen
+  SHA (Runs `43736476256`, `43736476224` und `43736475056`).
+- Bezug: Fortschreibung von KP-399.
+
+**Belegt:** Pass 8 ist als `27702ca` auf `main` committed und gepusht. Beim
+Push wurde auch der zuvor bereits auf lokalem `main` liegende, unabhaengige
+Commit `f16c6d7` veroeffentlicht; er aendert ausschliesslich
+`.github/skills/missing-priority-implementation/SKILL.md` und wurde nicht in
+den Pass-8-Commit aufgenommen. Die Linux-development-, Windows-confinement-
+und CodeQL-Workflows laufen fuer `27702ca`; deren Ergebnisse stehen aus.
+
+**Status:** Auf CI-Ergebnisse warten, dann Pass 8 abschliessen und den
+WHATWG-Prioritaetsvergleich fuer Pass 9 erneut durchfuehren.
+
+### KP-401 - Pass 8 CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: GitHub Actions Runs
+  [Linux development](https://github.com/khmseu/VisualWeb/actions/runs/43736476256),
+  [Windows confinement](https://github.com/khmseu/VisualWeb/actions/runs/43736476224)
+  und [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/43736475056).
+- Bezug: schliesst Pass 8 aus KP-398 bis KP-400 ab.
+
+**Belegt:** Alle drei Workflows fuer `27702ca` sind erfolgreich. Damit ist
+Pass 8 abgeschlossen; zwei der zehn angeforderten Inkremente bleiben. Die
+unabhaengige, mit dem Push ebenfalls veroeffentlichte Aenderung `f16c6d7`
+bleibt als eigener Commit getrennt.
+
+**Naechster Schritt:** Pass 9 erneut nach der WHATWG-Prioritaetsregel und
+dem aktualisierten Missing-Tracker auswaehlen.
