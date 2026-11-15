@@ -10167,3 +10167,40 @@ raeume, verschachtelte Mixe, fehlende Komponenten und Gamut-Mapping bleiben
 unsupported. Beide lokale Quellen sind gemaess Manifest frisch. Dies ist eine
 technische Auswahlableitung, keine separate Nutzerwahl; die Implementierung
 steht aus.
+
+### KP-371 - Lab color-mix implementiert und lokal validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [CssProperties.cs](../src/Engine/Engine.Css/CssProperties.cs),
+  [ColorMixFunctionTests.cs](../tests/Engine.Css.Tests/ColorMixFunctionTests.cs),
+  [CSS guide](../docs/css.md), [Engine.Css README](../src/Engine/Engine.Css/README.md),
+  [standards inventory](../docs/standards.md), CSS test project, Debug/Release
+  solution builds and full test suites, format verification and
+  `git diff --check`.
+- Bezug: KP-370; Pass 8 von zehn angeforderten Missing-Prioritaetsinkrementen.
+
+**Belegt:** `color-mix(in lab, ...)` unterstuetzt exakt zwei vorhandene
+statische Farben. Die Eingaben werden aus der bestehenden 8-bit-sRGB-
+Darstellung mit der CSS-Color-4-Matrix von linearem sRGB nach XYZ D65, der
+Bradford-Anpassung von D65 nach D50 und der Lab-Transformation konvertiert.
+Die drei Lab-Koordinaten nutzen die vorhandene Prozentnormalisierung und
+premultiplizierte Alpha-Behandlung; anschliessend erfolgt die Rueckwandlung
+ueber die vorhandene Lab-D50-zu-sRGB-Gamutpruefung und gerundete 8-bit-Ausgabe.
+Es kam kein Gamut-Mapping hinzu.
+
+Fuenf fokussierte Regressionen decken neutrale/chromatische Mixe, ungleiche
+Gewichte, transparente Eingaben, Kurzformexpansion und die Ablehnung von
+Ergebnissen ausserhalb des sRGB-Gamuts ab. Die drei gueltigen Lab-Faelle
+scheiterten vor der Implementierung erwartungsgemaess mit der Diagnose fuer
+unsupported Werte. Nach der Implementierung bestehen alle 35 fokussierten
+ColorMix-Faelle und alle 1.618 CSS-Tests. Debug- und Release-Solution-Builds
+haben null Warnungen oder Fehler; beide Volltestlaeufe bestehen 16.884 Tests.
+Formatverifikation und `git diff --check` bestehen. Andere
+Interpolationsraeume, verschachtelte Mixe, fehlende Komponenten und
+Gamut-Mapping bleiben unsupported.
+
+**Status / naechster Schritt:** Pass 8 ist lokal implementiert und validiert;
+Commit, Push und Remote-CI stehen aus. Nach erfolgreicher CI folgen noch zwei
+angeforderte Inkremente. Es ist kein CSS-spezifischer nativer Smoke-Test
+anwendbar.

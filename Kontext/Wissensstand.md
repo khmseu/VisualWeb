@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 ausgewaehlt):**
+**Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -95,10 +95,17 @@ vorhandene Prozentnormalisierung und premultiplizierter Alpha, Rueckwandlung
 mit der bestehenden sRGB-Gamutdiagnose. Andere Interpolationsraeume,
 verschachtelte Mixe, fehlende Komponenten und Gamut-Mapping bleiben
 unsupported. CSS Color 4 (`checkedAt` 2026-11-07) und CSS Color 5
-(`checkedAt` 2026-11-15) sind frisch. Pass 8 ist ausgewaehlt, aber noch nicht
-implementiert; drei angeforderte Inkremente verbleiben. Siehe
+(`checkedAt` 2026-11-15) sind frisch. Fuenf neue fokussierte Regressionen decken
+neutrale/chromatische Lab-Mixe, Gewichte, Alpha und sRGB-Gamutdiagnosen ab;
+die gueltigen Faelle schlugen vor Implementierung fehl. Alle 35 fokussierten
+ColorMix-Tests und 1.618 CSS-Tests bestehen. Debug-/Release-Solution-Builds
+haben null Warnungen/Fehler; beide Volltests bestehen 16.884 Tests;
+Formatverifikation und `git diff --check` bestehen. Pass 8 ist lokal
+implementiert und validiert, Commit/Push/CI stehen aus; danach verbleiben zwei
+angeforderte Inkremente. Siehe
 [KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
 bis [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt)
+und [KP-371](./Kontextprotokoll.md#kp-371---lab-color-mix-implementiert-und-lokal-validiert)
 sowie [Missing](../plans/Missing.md).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**

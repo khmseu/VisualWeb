@@ -2204,6 +2204,19 @@ local CSS Color 4 source (`checkedAt` 2026-11-07) and CSS Color 5 source
 definitions](../specs/cache/css-color.html#color-interpolation-method) and
 [CSS Color 5 color-mix space](../specs/cache/css-color-5.html#color-mix-space).
 
+**Pass 8 implementation and local validation:** Explicit `in lab` converts
+8-bit sRGB inputs through CSS Color 4's linear-sRGB to XYZ D65, Bradford
+D65-to-D50 and Lab transforms, then mixes the Lab coordinates with the existing
+weight normalization and premultiplied-alpha behavior. Lab D50 converts back
+through the existing sRGB gamut check and 8-bit output path. Five focused
+regressions cover neutral and chromatic mixes, weights, translucent input,
+shorthand expansion and out-of-gamut rejection. All 35 focused color-mix tests
+and 1,618 CSS tests pass. Debug/Release solution builds have zero
+warnings/errors; both full solution suites pass 16,884 tests. Format
+verification and `git diff --check` pass. The three valid Lab regressions
+failed before implementation as expected. Commit, push and remote CI remain
+pending; two further requested increments follow Pass 8.
+
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented
 pages: readable text, ordinary styling, images, working links, scrolling and

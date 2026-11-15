@@ -52,6 +52,19 @@ public sealed class ColorMixFunctionTests
         Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
     }
 
+    [Theory]
+    [InlineData("color-mix(in lab, white, black)", 119, 119, 119, 255)]
+    [InlineData("color-mix(in lab, white 25%, black)", 59, 59, 59, 255)]
+    [InlineData("color-mix(in lab, green, blue)", 83, 85, 141, 255)]
+    [InlineData("color-mix(in lab, rgba(255, 255, 255, 0.5), black)", 79, 79, 79, 192)]
+    public void ExplicitLabMixesConvertThroughSrgb(
+        string input, byte red, byte green, byte blue, byte alpha)
+    {
+        var (result, style) = Compute("color:" + input);
+        Assert.Empty(result.Diagnostics);
+        Assert.Equal(new CssColor(red, green, blue, alpha), style["color"]);
+    }
+
     [Fact]
     public void NestedRgbCommasAreNotTreatedAsMixSeparators()
     {
@@ -83,11 +96,11 @@ public sealed class ColorMixFunctionTests
         var (result, style) = Compute(
             "color:color-mix(in srgb, red, blue);" +
             "background:none color-mix(in srgb-linear, white 50%, black);" +
-            "border:1px solid color-mix(in oklab, red, blue)");
+            "border:1px solid color-mix(in lab, white, black)");
         Assert.Empty(result.Diagnostics);
         Assert.Equal(new CssColor(128, 0, 128), style["color"]);
         Assert.Equal(new CssColor(188, 188, 188), style["background-color"]);
-        Assert.Equal(new CssColor(140, 83, 162), style["border-top-color"]);
+        Assert.Equal(new CssColor(119, 119, 119), style["border-top-color"]);
         Assert.Equal(new CssLength(1, "px"), style["border-top-width"]);
     }
 
@@ -101,6 +114,14 @@ public sealed class ColorMixFunctionTests
         Assert.Equal(new CssLength(3, "px"), style["border-top-width"]);
         Assert.Equal(new CssColor(255, 0, 0), style["border-top-color"]);
         Assert.Equal(new CssColor(0, 0, 255), style["background-color"]);
+    }
+
+    [Fact]
+    public void OutOfGamutLabMixDoesNotOverrideEarlierColor()
+    {
+        var (result, style) = Compute("color:green;color:color-mix(in lab, red, blue)");
+        Assert.NotEmpty(result.Diagnostics);
+        Assert.Equal(new CssColor(0, 128, 0), style["color"]);
     }
 
     private static (CssStyleResult Result, CssComputedStyle Style) Compute(string declarations)
