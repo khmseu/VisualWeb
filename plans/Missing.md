@@ -2332,7 +2332,19 @@ and U+FFFD replacement for unpaired surrogates. It does not expose a JavaScript
 binding or implement `encodeInto()`, `TextEncoderStream`, or other encoders.
 All six focused tests and the Core suite (3,997 tests) pass. The solution
 build has zero warnings/errors, all 16,905 solution tests pass, and formatting
-verification passes. Commit, push and CI remain pending.
+verification passes. Commit `81d1d6d` is pushed; Linux development, Windows
+confinement (x64 and arm64), and CodeQL workflows all pass.
+
+### Pass 3: UTF-8 TextEncoder encodeInto()
+
+WHATWG URL and Encoding remain tied at ~30%; this pass continues the bounded
+Encoding gap by implementing `TextEncoder.encodeInto()` in `WebTextEncoder`.
+The .NET API writes only complete UTF-8 scalars that fit, reports UTF-16 code
+units read and bytes written, and replaces unpaired surrogates with U+FFFD.
+It is a core API, not a JavaScript binding. Four focused tests and all 4,001
+Core tests pass. The solution build has zero warnings/errors, all 16,909
+solution tests pass, and formatting verification passes. Commit, push and CI
+remain pending.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the

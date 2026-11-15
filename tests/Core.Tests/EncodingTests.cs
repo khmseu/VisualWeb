@@ -81,6 +81,48 @@ public sealed class EncodingTests
     public void TextEncoderEncodeDefaultsToEmptyInput() =>
         Assert.Empty(new WebTextEncoder().Encode());
 
+    [Fact]
+    public void TextEncoderEncodeIntoDoesNotWritePartialUtf8Scalars()
+    {
+        var destination = new byte[] { 0xAA, 0xBB };
+
+        var progress = new WebTextEncoder().EncodeInto("é", destination.AsSpan(0, 1));
+
+        Assert.Equal((0, 0), progress);
+        Assert.Equal(new byte[] { 0xAA, 0xBB }, destination);
+    }
+
+    [Fact]
+    public void TextEncoderEncodeIntoCountsUtf16UnitsAndPreservesUnusedBytes()
+    {
+        var destination = Enumerable.Repeat((byte)0xAA, 7).ToArray();
+
+        var progress = new WebTextEncoder().EncodeInto("A😀é", destination.AsSpan(0, 5));
+
+        Assert.Equal((3, 5), progress);
+        Assert.Equal(Convert.FromHexString("41F09F9880AAAA"), destination);
+    }
+
+    [Fact]
+    public void TextEncoderEncodeIntoReplacesUnpairedSurrogates()
+    {
+        var source = new string('\uD800', 1) + "A" + new string('\uDC00', 1);
+        var destination = new byte[7];
+
+        var progress = new WebTextEncoder().EncodeInto(source, destination);
+
+        Assert.Equal((3, 7), progress);
+        Assert.Equal(Convert.FromHexString("EFBFBD41EFBFBD"), destination);
+    }
+
+    [Fact]
+    public void TextEncoderEncodeIntoReturnsZeroProgressForEmptyInput()
+    {
+        var progress = new WebTextEncoder().EncodeInto(ReadOnlySpan<char>.Empty, Span<byte>.Empty);
+
+        Assert.Equal((0, 0), progress);
+    }
+
     [Theory]
     [InlineData("UTF-8", "F09F9880", "\U0001F600")]
     [InlineData("UTF-8", "E228A1", "\uFFFD(\uFFFD")]

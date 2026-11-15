@@ -10566,3 +10566,58 @@ an der fehlenden `WebTextEncoder`-Klasse fehl.
 nicht committed/gepusht; CI steht aus. Diff pruefen, Pass 2 separat committen
 und pushen, CI abwarten. Erst danach die naechste WHATWG-Prioritaet neu
 ermitteln.
+
+### KP-384 - Pass 2 gepusht und CI-gruen
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quelle: Commit `81d1d6d`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43715118615),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43715118691)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43715118156).
+- Bezug: schliesst Pass 2 aus KP-383 ab.
+
+**Ergebnis (belegt):** `81d1d6d` wurde auf `main` gepusht. Linux development,
+Windows confinement (x64 und arm64) sowie der aggregierte Push-on-main/
+CodeQL-Workflow beendeten erfolgreich. Lokale Validierung: 3.997 Core-Tests,
+16.905 Solution-Tests, Solution-Build ohne Warnungen/Fehler und erfolgreiche
+Formatverifikation.
+
+**Naechster Schritt:** Fuer Pass 3 die WHATWG-only-Prioritaet anhand der
+aktuellen Support-Schaetzungen und offenen Tracker-Luecken neu berechnen;
+keine Auswahl aus der Gleichstandslage von Pass 2 ungeprueft fortschreiben.
+
+### KP-385 - Pass 3 encodeInto() lokal validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: begruendete WHATWG-Teilbereichsauswahl, Implementierung und
+  lokale Vollvalidierung; Commit/Push/CI ausstehend.
+- Quellen: [Encoding Standard `TextEncoder.encodeInto()`](../specs/cache/encoding.html#dom-textencoder-encodeinto)
+  (Manifest `checkedAt: 2026-11-07`); [WebTextEncoder.cs](../src/Core/Core.Encoding/WebTextEncoder.cs),
+  [EncodingTests.cs](../tests/Core.Tests/EncodingTests.cs), Core guide,
+  Encoding README, project map und Supportinventar.
+- Bezug: folgt auf Pass 2 und die Neukalkulation nach KP-384; umgesetzt als
+  Pass 3 des zehnteiligen Missing-Prioritaetslaufs.
+
+**Arbeitsauswahl (Ableitung):** WHATWG URL und Encoding bleiben im aktuellen
+Supportinventar bei etwa 30% gleichauf. Nach Pass 2 waren `encodeInto()` und
+`URLSearchParams` als konkrete Luecken dokumentiert. Fuer diesen bounded Pass
+wurde die UTF-8-Encoder-Fortsetzung gewaehlt; es wird weder eine JavaScript-
+Bindung noch `TextEncoderStream` eingefuehrt.
+
+**Umsetzung und Evidenz (belegt):** `WebTextEncoder.EncodeInto` schreibt nur
+vollstaendige UTF-8-Skalare, wenn sie in den verbleibenden Zielspan passen.
+Der Rueckgabewert meldet die gelesenen UTF-16-Code-Units und geschriebenen
+Bytes; ein Supplementary Scalar zaehlt zwei Code-Units, ungepaarte Surrogate
+werden jeweils als U+FFFD ausgegeben. Vier fokussierte Tests pruefen
+skalare Atomizitaet, UTF-16-Zaehlen, unveraenderte Zielbytes ausserhalb der
+Schreibmenge, Ersatz und leere Eingabe.
+
+Die fokussierten und alle 4.001 Core-Tests bestehen. `dotnet build
+VisualWeb.slnx` besteht mit null Warnungen/Fehlern,
+`dotnet test VisualWeb.slnx --no-build` mit 16.909 Tests und die
+Formatverifikation besteht.
+
+**Status / naechster Schritt:** Lokal vollvalidiert, noch nicht committed oder
+gepusht; CI steht aus. Diff abschliessend pruefen, Pass 3 separat committen,
+pushen und CI beobachten.
