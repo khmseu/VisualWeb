@@ -10881,3 +10881,56 @@ erfolgreich. Die lokale Vollvalidierung ist in KP-396 dokumentiert.
 **Naechster Schritt:** Fuer Pass 8 WHATWG-only Prioritaeten und offene,
 konkrete Teilbereiche anhand des aktuellen Trackers und Supportinventars
 erneut bewerten.
+
+### KP-398 - Pass 8 URLSearchParams.delete(name) ausgewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: WHATWG-Rangfolge neu geprueft; Auswahl ist eine begruendete
+  Ableitung, keine gesonderte Nutzerwahl.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [Support inventory](../docs/standards.md#support-status),
+  [Core URL guide](../docs/core.md#url),
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs) und die lokale
+  [URL Standard delete algorithm](../specs/cache/url.html#dom-urlsearchparams-delete).
+  Das Manifest meldet fuer `url` `checkedAt: 2026-11-07`.
+- Bezug: folgt auf den in KP-397 abgeschlossenen Pass 7 und DEC-033.
+
+**Auswahl (Ableitung):** WHATWG URL und Encoding stehen weiter gleichauf bei
+~30%. Nach der bounded URLSearchParams-Initialisierung und den getrennten
+`append()`/`has()`-Schritten ist `delete(name)` der naechste klare
+Mutationsalgorithmus: alle Tupel mit dem normalisierten Namen entfernen und
+den Rest in Ordnung lassen. Nur der name-only Schritt gehoert in Pass 8;
+wertgefiltertes Loeschen, URL-Synchronisierung und weitere API-Oberflaechen
+bleiben offen. Die grobe URL-Schaetzung bleibt unveraendert, da der
+Gesamtstandard wesentlich mehr unimplementierte Bereiche enthaelt.
+
+**Status:** Ausgewaehlt; test-first Implementierung und Validierung laufen.
+
+### KP-399 - Pass 8 lokal implementiert und validiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Quellen: `UrlSearchParams.Delete` in
+  [UrlSearchParams.cs](../src/Core/Core.Url/UrlSearchParams.cs), der fokussierte
+  [UrlSearchParams tests](../tests/Core.Tests/UrlSearchParamsTests.cs),
+  [Core guide](../docs/core.md#url), [standards inventory](../docs/standards.md#support-status),
+  [project map](../docs/project-map.md) und der aktualisierte
+  [Missing tracker](../plans/Missing.md).
+- Bezug: implementiert die in KP-398 ausgewaehlte Operation.
+
+**Umsetzung und Ergebnis (Belegt):** Der Test schlug vor der Implementierung
+wegen der fehlenden `Delete`-Methode fehl. Die Methode normalisiert den Namen
+mit der bestehenden Scalar-Value-String-Hilfe und entfernt alle passenden
+Tupel; ungefiltertes value-Loeschen, URL-Synchronisierung und weitere
+Mutationen bleiben ausserhalb des Scopes. Acht fokussierte Tests, alle 4.009
+Core-Tests und alle 16.917 Solution-Tests bestehen. Der Solution-Build meldet
+null Warnungen/Fehler; die Formatverifikation besteht ebenfalls.
+
+**Repositorystatus (Belegt):** Waehren der Arbeit wurde `main` auf
+`f16c6d7` aktualisiert, einen Commit vor `origin/main`. Dieser unabhaengige
+Commit betrifft die Missing-Priority-Skill-Dokumentation und wurde nicht im
+Pass-8-Diff geaendert. Ein Push von `main` wuerde ihn mitveroeffentlichen.
+
+**Status:** Pass 8 lokal validiert; eigener Pass-8-Commit und Push/CI stehen
+noch aus.

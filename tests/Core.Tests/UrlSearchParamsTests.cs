@@ -89,4 +89,26 @@ public sealed class UrlSearchParamsTests
         Assert.False(parameters.Has("left", "two"));
         Assert.False(parameters.Has("a", "missing"));
     }
+
+    [Fact]
+    public void DeleteRemovesEveryMatchingNameAndNormalizesScalarValueStrings()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+        var parameters = new UrlSearchParams(
+            "a=first&b=middle&a=last&b=second&%EF%BF%BD=value&c=end");
+
+        parameters.Delete("a");
+
+        Assert.Equal(4, parameters.Size);
+        Assert.Empty(parameters.GetAll("a"));
+        Assert.Equal(new[] { "middle", "second" }, parameters.GetAll("b"));
+        Assert.Equal("end", parameters.Get("c"));
+
+        parameters.Delete(unpairedSurrogate);
+
+        Assert.Equal(3, parameters.Size);
+        Assert.Null(parameters.Get("\uFFFD"));
+        parameters.Delete("missing");
+        Assert.Equal(3, parameters.Size);
+    }
 }

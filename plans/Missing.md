@@ -2403,6 +2403,18 @@ verification passes. Commit `eff5b13` is pushed to `main`; Linux development,
 Windows confinement (x64 and arm64), and CodeQL CI pass. Pass 7 is complete;
 three of the ten requested increments remain.
 
+### Pass 8: URLSearchParams delete(name)
+
+WHATWG URL and Encoding remain tied at ~30%; this pass adds the
+`URLSearchParams.delete(name)` operation, removing all tuples with a
+scalar-value-normalized name while preserving unrelated entries and their
+order. Value-filtered deletion, URL-object linkage, other mutation methods,
+stringification, and Web IDL remain unsupported. The URL Standard cache is
+fresh (`checkedAt: 2026-11-07`); no refresh was needed. Eight focused
+URLSearchParams tests, all 4,009 Core tests, and all 16,917 solution tests
+pass. The solution build has zero warnings/errors and formatting verification
+passes. Local validation is complete; commit, push, and CI remain.
+
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
 priorities below; the choice of protocol and its scope remain open. See the

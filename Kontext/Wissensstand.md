@@ -14,7 +14,7 @@ WHATWG-Standards nach den Schaetzungen im Support-Inventar gerankt; aktuell
 sind WHATWG URL und Encoding mit je ~30% gleichauf. Der bereits begonnene
 CSS-Color-Pass 1 bleibt davon unberuehrt. Siehe DEC-033 und KP-382.
 
-**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 7 abgeschlossen):** Der
+**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 8 ausgewaehlt):** Der
 aktuelle Auftrag fordert zehn neue getrennte Inkremente. Pass 1, CSS-Color-4-
 Ray-Trace-Mapping fuer encoded und lineare Display-P3-Werte, wurde vor der
 Regelaenderung in KP-382 gewaehlt und davon nicht rueckwirkend geaendert;
@@ -56,6 +56,17 @@ Algorithmusschritt gewaehlt. Sieben fokussierte URLSearchParams-Tests,
 Formatverifikation bestehen. Commit `eff5b13` ist gepusht; Linux, Windows
 x64/arm64 und CodeQL-CI sind gruen. Pass 7 ist abgeschlossen; drei der zehn
 angeforderten Inkremente bleiben. Siehe Q-037 und KP-379 bis KP-397.
+Fuer Pass 8 wurde im weiterhin gleichrangigen WHATWG-URL-Standard
+`URLSearchParams.delete(name)` gewaehlt: alle Tupel mit diesem normalisierten
+Namen entfernen, andere geordnete Eintraege erhalten. Der grobe URL-
+Abdeckungswert bleibt ~30%, da die verbleibenden URL- und SearchParams-Luecken
+deutlich breiter sind als dieser Methodeninkrement. Die Implementierung ist
+lokal validiert: acht fokussierte URLSearchParams-, 4.009 Core- und 16.917
+Solution-Tests bestehen; Build und Formatverifikation bestehen.
+Commit/Push und CI sind noch offen. Der lokale Branch enthaelt ausserdem den
+unabhaengigen, nicht von Pass 8 erstellten Commit `f16c6d7` und liegt damit
+einen Commit vor `origin/main`; ein Push des Branches wuerde auch diesen Commit
+veroeffentlichen.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale

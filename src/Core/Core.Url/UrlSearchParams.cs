@@ -2,7 +2,7 @@ using System.Text;
 
 namespace VisualWeb.Core.Url;
 
-/// <summary>Provides a bounded string-initialization, lookup, and append subset of WHATWG <c>URLSearchParams</c>.</summary>
+/// <summary>Provides a bounded string-initialization, lookup, and mutation subset of WHATWG <c>URLSearchParams</c>.</summary>
 /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#interface-urlsearchparams">URLSearchParams</see> and
 /// <see href="https://url.spec.whatwg.org/#concept-urlencoded-string-parser">the URL-encoded string parser</see>.
 /// This .NET subset has no linked URL object and does not provide other mutations, stringification, or Web IDL.</remarks>
@@ -31,6 +31,16 @@ public sealed class UrlSearchParams
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
         _entries.Add((ToScalarValueString(name), ToScalarValueString(value)));
+    }
+
+    /// <summary>Removes all entries associated with the scalar-value name.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-delete">URLSearchParams.delete()</see>.
+    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    public void Delete(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        var scalarName = ToScalarValueString(name);
+        _entries.RemoveAll(entry => entry.Name == scalarName);
     }
 
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
