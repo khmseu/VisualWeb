@@ -2317,11 +2317,22 @@ Implementation extracts reusable linear-sRGB/Oklab transforms and adds the
 bounded four-iteration Ray Trace and RGB-cube ray intersection. Seven focused
 cases cover mapped red, green and blue Display-P3 primaries, alpha preservation
 and encoded/linear input forms; existing tests cover atomic shorthand
-application. The CSS project passes all 1,633 tests, the solution build has zero warnings/
-errors, formatting verification passes, and all 16,899 solution tests pass.
-Commit, push and CI remain pending. After this pass, choose the next increment
-using the WHATWG-only standards priority rule above; do not repeat this CSS
-Color item.
+application. The CSS project passes all 1,633 tests, the solution build has
+zero warnings/errors, formatting verification passes, and all 16,899 solution
+tests pass. Commit `f600fba` is pushed; Linux development, Windows confinement
+(x64 and arm64), and CodeQL workflows all pass. Do not repeat this CSS Color
+item.
+
+### Pass 2: UTF-8 TextEncoder encode()
+
+WHATWG URL and Encoding are tied at ~30%; this pass selects a bounded Encoding
+gap. `WebTextEncoder.Encode` implements the standard's UTF-8
+`TextEncoder.encode()` operation as a .NET byte array, with empty default input
+and U+FFFD replacement for unpaired surrogates. It does not expose a JavaScript
+binding or implement `encodeInto()`, `TextEncoderStream`, or other encoders.
+All six focused tests and the Core suite (3,997 tests) pass. The solution
+build has zero warnings/errors, all 16,905 solution tests pass, and formatting
+verification passes. Commit, push and CI remain pending.
 
 Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the

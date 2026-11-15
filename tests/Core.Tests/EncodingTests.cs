@@ -51,6 +51,37 @@ public sealed class EncodingTests
         Assert.Throws<ArgumentException>(() => WebEncoding.ForLabel(label));
 
     [Theory]
+    [InlineData("", "")]
+    [InlineData("VisualWeb", "56697375616C576562")]
+    [InlineData("é", "C3A9")]
+    [InlineData("😀", "F09F9880")]
+    public void TextEncoderEncodeProducesUtf8(string input, string expectedHex)
+    {
+        var encoder = new WebTextEncoder();
+
+        Assert.Equal(Convert.FromHexString(expectedHex), encoder.Encode(input));
+    }
+
+    [Fact]
+    public void TextEncoderReplacesUnpairedSurrogatesWithReplacementCharacters()
+    {
+        var encoder = new WebTextEncoder();
+        var high = new string('\uD800', 1);
+        var low = new string('\uDC00', 1);
+
+        Assert.Equal(Convert.FromHexString("EFBFBD"), encoder.Encode(high));
+        Assert.Equal(Convert.FromHexString("EFBFBD"), encoder.Encode(low));
+        Assert.Equal(Convert.FromHexString("EFBFBD41EFBFBD"), encoder.Encode(high + "A" + low));
+        Assert.Equal(Convert.FromHexString("EFBFBDEFBFBD"), encoder.Encode(high + high));
+        Assert.Equal(Convert.FromHexString("EFBFBDEFBFBD"), encoder.Encode(low + low));
+        Assert.Equal(Convert.FromHexString("F0908080"), encoder.Encode(high + low));
+    }
+
+    [Fact]
+    public void TextEncoderEncodeDefaultsToEmptyInput() =>
+        Assert.Empty(new WebTextEncoder().Encode());
+
+    [Theory]
     [InlineData("UTF-8", "F09F9880", "\U0001F600")]
     [InlineData("UTF-8", "E228A1", "\uFFFD(\uFFFD")]
     [InlineData("UTF-8", "E282", "\uFFFD")]

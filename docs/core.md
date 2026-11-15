@@ -59,6 +59,12 @@ precedence over a supplied fallback and strips exactly one BOM. It returns both
 the selected encoding and text. `TryForLabel` is the non-throwing "get an
 encoding" (ASCII-only case folding, so e.g. a Kelvin sign never matches `k`).
 
+[WebTextEncoder](../src/Core/Core.Encoding/WebTextEncoder.cs) implements the
+UTF-8 [`TextEncoder.encode()`](https://encoding.spec.whatwg.org/#dom-textencoder-encode)
+operation as a .NET byte array, using U+FFFD for unpaired surrogates. It is not
+a JavaScript/Web IDL binding. `encodeInto()`, `TextEncoderStream`, encoders for
+other labels and `TextDecoder` bindings remain deferred.
+
 ### HTML charset prescan and sniffing subset
 
 [HtmlEncodingPrescanner](../src/Core/Core.Encoding/HtmlEncodingPrescanner.cs)
@@ -84,8 +90,9 @@ remembered per-page encodings, frequency-analysis autodetection, locale defaults
 and the parser's "change the encoding" reparse. There are no pinned html5lib
 `encoding/` fixtures; tests are spec-derived cases.
 
-Incremental decoding, encoders and JavaScript TextDecoder bindings remain later
-work; callers must collect a complete buffer for these APIs.
+Incremental decoding, `TextEncoder.encodeInto()`, `TextEncoderStream` and
+JavaScript `TextDecoder` bindings remain later work; callers must collect a
+complete buffer for the decoding APIs.
 
 ## MIME
 

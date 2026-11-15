@@ -10525,3 +10525,44 @@ Standards nehmen an dieser WHATWG-Auswahl nicht teil.
 war bereits begonnen. Die neue Regel aendert diesen laufenden Pass nicht
 rueckwirkend; sie gilt fuer die naechste Auswahl. An der Implementierung und
 den Support-Schaetzungen wurde fuer diese Prioritaetsaenderung nichts geaendert.
+
+### KP-383 - Pass 1 CI-gruen; Pass 2 implementiert
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15; Uhrzeit unbekannt.
+- Erfassungsart: Commit/Push/CI-Ergebnis fuer Pass 1 und begruendete
+  Arbeitsauswahl, Implementierung und lokale Vollvalidierung fuer Pass 2.
+- Quellen: Commit `f600fba`; [Linux development CI](https://github.com/khmseu/VisualWeb/actions/runs/43710736712),
+  [Windows confinement CI](https://github.com/khmseu/VisualWeb/actions/runs/43710736594)
+  und [CodeQL CI](https://github.com/khmseu/VisualWeb/actions/runs/43710736392);
+  [WebTextEncoder.cs](../src/Core/Core.Encoding/WebTextEncoder.cs),
+  [EncodingTests.cs](../tests/Core.Tests/EncodingTests.cs), Core guide,
+  Encoding README, Supportinventar und Missing-Tracker.
+- Bezug: schliesst Pass 1 aus KP-381 ab und setzt den in KP-382 aktualisierten
+  WHATWG-only-Prioritaetsfilter fuer Pass 2 um.
+
+**Pass 1 (belegt):** `f600fba` wurde auf `main` gepusht. Linux development,
+Windows confinement (x64 und arm64) und der aggregierte Push-on-main/CodeQL-
+Workflow beendeten erfolgreich.
+
+**Pass 2 Arbeitsauswahl (Ableitung):** Nach erneuter Pruefung von
+`standards.md` sind WHATWG URL und Encoding mit je ungefaehr 30% gleichauf.
+Die Core-Encoding-Dokumentation markiert Encoder als offen; die lokale
+Encoding-Quelle war laut Manifest am 2026-11-07 geprueft und damit innerhalb
+der 30-Tage-Frist. Als begrenzter Einstieg wurde `TextEncoder.encode()` unter
+Encoding gewaehlt, nicht die groessere URL-API `URLSearchParams`.
+
+**Pass-2-Umsetzung und Evidenz (belegt):** `WebTextEncoder.Encode` liefert
+UTF-8 ohne BOM als .NET-Bytearray, verwendet den leeren Standardinput und
+ersetzt ungepaarte UTF-16-Surrogate durch U+FFFD. Sechs Regressionen pruefen
+leere/ASCII-/mehrbyte-/Supplementary-Ausgaben und ungepaarte Surrogate. Die
+fokussierten Tests bestanden; der Core-Volltest besteht mit 3.997 Tests,
+`dotnet build VisualWeb.slnx` mit null Warnungen/Fehlern,
+`dotnet test VisualWeb.slnx --no-build` mit 16.905 Tests und die
+Formatverifikation. Ein Testlauf vor Implementierung schlug erwartungsgemaess
+an der fehlenden `WebTextEncoder`-Klasse fehl.
+
+**Status / naechster Schritt:** Pass 2 ist lokal vollvalidiert, aber noch
+nicht committed/gepusht; CI steht aus. Diff pruefen, Pass 2 separat committen
+und pushen, CI abwarten. Erst danach die naechste WHATWG-Prioritaet neu
+ermitteln.

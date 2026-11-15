@@ -14,18 +14,19 @@ WHATWG-Standards nach den Schaetzungen im Support-Inventar gerankt; aktuell
 sind WHATWG URL und Encoding mit je ~30% gleichauf. Der bereits begonnene
 CSS-Color-Pass 1 bleibt davon unberuehrt. Siehe DEC-033 und KP-382.
 
-**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 1 lokal validiert):** Der
-zuvor dokumentierte Zehn-Pass-Standardslauf ist abgeschlossen; der aktuelle
-Auftrag fordert zehn neue getrennte Inkremente. Pass 1 wurde vor der
-Prioritaetsregel-Aenderung in KP-382 als CSS-Color-4-Gamut-Mapping gewaehlt;
-KP-382 bestimmt, dass dieser bereits begonnene Pass unveraendert bleibt.
-Nutzerwahl: Ray Trace. Der Algorithmus mappt aus-gamutige encoded und lineare
-Display-P3-Ergebnisse; andere Farbquellen bleiben diagnostiziert. Alle 1.633
-CSS-Tests und 16.899 Tests der gesamten Solution, der Build (0 Warnungen/
-Fehler) und Formatverifikation bestehen. Commit, Push und CI stehen aus. Nach
-diesem Pass muessen weitere standardsgetriebene Auswahlen die WHATWG-only-
-Rangfolge beachten (aktuell URL/Encoding ~30%). Siehe Q-037 und KP-379 bis
-KP-382.
+**Neuer Missing-Prioritaetslauf (2026-11-15; Pass 2 lokal validiert):** Der
+aktuelle Auftrag fordert zehn neue getrennte Inkremente. Pass 1, CSS-Color-4-
+Ray-Trace-Mapping fuer encoded und lineare Display-P3-Werte, wurde vor der
+Regelaenderung in KP-382 gewaehlt und davon nicht rueckwirkend geaendert.
+Commit `f600fba` ist gepusht; Linux, Windows x64/arm64 und CodeQL-CI sind
+gruen. Fuer Pass 2 sind nach der WHATWG-only-Regel WHATWG URL und Encoding mit
+je ~30% gleichauf; ausgewaehlt wurde die begrenzte Encoding-Luecke
+`TextEncoder.encode()`. Der .NET-Kern `WebTextEncoder.Encode` liefert UTF-8-
+Bytes und ersetzt ungepaarte Surrogate durch U+FFFD; JavaScript-Bindings,
+`encodeInto()` und Streams bleiben offen. Alle sechs fokussierten Tests, die
+3.997 Core-Tests und 16.905 Solution-Tests, der Build (0 Warnungen/Fehler)
+und Formatverifikation bestehen. Pass 2 ist noch nicht committed/gepusht und
+hat noch keine CI. Siehe Q-037, KP-379 bis KP-383.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 lokal validiert):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
