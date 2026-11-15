@@ -2277,7 +2277,10 @@ valid XYZ-D50 cases failed before implementation with the expected unsupported
 value diagnostic. All 45 focused `color-mix()` tests and 1,628 Engine.Css tests
 pass. Debug and Release solution builds have zero warnings/errors; both full
 solution test suites pass 16,894 tests. Format verification and `git diff
---check` pass. The feature commit, push and remote CI remain.
+--check` pass. Feature commit `fd495ec` is pushed. Linux development
+(run 43684336479), Windows confinement (run 43684336496, x64/ARM64) and
+Push on main/CodeQL (run 43684336395) all pass. Pass 10 and the requested
+ten-pass sequence are complete; other backlog priorities remain.
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

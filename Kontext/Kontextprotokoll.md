@@ -10369,3 +10369,22 @@ Warnungen/Fehlern; beide vollstaendigen Solution-Testlaeufe bestehen jeweils
 
 **Status:** Lokale Implementierung und Validierung abgeschlossen. Commit, Push
 und Remote-CI stehen aus.
+
+### KP-378 - XYZ-D50 color-mix CI bestaetigt
+
+- Dokumentiert am: Datum unbekannt; folgt auf KP-377.
+- Ereignisdatum: Datum unbekannt.
+- Erfassungsart: Push und Remote-CI abgeschlossen.
+- Quelle: Git-Commit `fd495ec`; GitHub Actions fuer denselben Commit.
+- Bezug: schliesst KP-377 und den angeforderten Zehn-Pass-Auftrag ab.
+- Belegt: Featurecommit `fd495ec` ist nach `main` gepusht. Linux development
+  ([43684336479](https://github.com/khmseu/VisualWeb/actions/runs/43684336479)),
+  Windows confinement einschliesslich x64/ARM64
+  ([43684336496](https://github.com/khmseu/VisualWeb/actions/runs/43684336496))
+  und Push on main/CodeQL
+  ([43684336395](https://github.com/khmseu/VisualWeb/actions/runs/43684336395))
+  sind erfolgreich.
+
+**Status:** Pass 10 ist lokal validiert, committed, gepusht und CI-gruen. Der
+angeforderte Zehn-Pass-Auftrag ist abgeschlossen; weitere Tracker-Prioritaeten
+bleiben offen.

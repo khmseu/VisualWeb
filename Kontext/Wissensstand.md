@@ -123,8 +123,11 @@ Gamutpruefung ausgegeben. Fuenf fokussierte Regressionen, alle 45
 `color-mix()`-Tests und 1.628 Engine.Css-Tests bestehen; Debug-/Release-
 Solution-Builds haben null Warnungen/Fehler, beide Volltests bestehen 16.894
 Tests, Formatverifikation und `git diff --check` bestehen. Commit, Push und
-Remote-CI stehen aus. CSS Color 4 (`checkedAt` 2026-11-07) und CSS Color 5
-(`checkedAt` 2026-11-15) sind frisch. Siehe
+Remote-CI sind abgeschlossen: Commit `fd495ec` ist gepusht; Linux-Run
+43684336479, Windows-Run 43684336496 (x64/ARM64) und CodeQL-Run 43684336395
+sind erfolgreich. Damit ist der angeforderte Zehn-Pass-Auftrag abgeschlossen.
+CSS Color 4 (`checkedAt` 2026-11-07) und CSS Color 5 (`checkedAt` 2026-11-15)
+sind frisch. Siehe
 [KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
 sowie [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt),
 [KP-371](./Kontextprotokoll.md#kp-371---lab-color-mix-implementiert-und-lokal-validiert),
@@ -133,7 +136,8 @@ sowie [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt)
 [KP-374](./Kontextprotokoll.md#kp-374---xyz-d65-color-mix-implementiert-und-lokal-validiert),
 [KP-375](./Kontextprotokoll.md#kp-375---xyz-d65-color-mix-ci-bestaetigt),
 [KP-376](./Kontextprotokoll.md#kp-376---xyz-d50-color-mix-als-pass-10-gewaehlt)
-sowie [KP-377](./Kontextprotokoll.md#kp-377---xyz-d50-color-mix-lokal-validiert)
+und [KP-377](./Kontextprotokoll.md#kp-377---xyz-d50-color-mix-lokal-validiert)
+sowie [KP-378](./Kontextprotokoll.md#kp-378---xyz-d50-color-mix-ci-bestaetigt)
 und [Missing](../plans/Missing.md).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
