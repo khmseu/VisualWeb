@@ -2178,7 +2178,31 @@ premultiplied alpha, and re-encodes to the existing 8-bit sRGB result. Thirty
 focused color-mix cases and all 1,613 CSS tests pass. Debug/Release solution
 builds have zero warnings/errors; both full solution suites pass all 16,879
 tests. Formatting and `git diff --check` pass. Commit, push and CI remain
-pending.
+pending at the time of the local validation record.
+
+**Pass 7 commit, push and CI (2026-11-15):** Feature commit `7abf658` is
+pushed. Linux development (run 43672624715), Windows confinement
+(run 43672624685) and CodeQL (run 43672624384) all pass. Windows x64's first
+attempt failed the existing slow
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` browser
+test; the failed-job rerun passed, as did Windows ARM64. No code changes were
+needed. Pass 7 is complete; three requested increments remain.
+
+**Pass 8 selection (2026-11-15):** CSS Color Level 4 (~60%) remains the
+highest actionable partially implemented standard; ECMAScript's higher rough
+estimate has no remaining increment within approved phase 11w. Add explicit
+`in lab` to the existing bounded two-color `color-mix()` subset. CSS Color 4
+defines Lab as a rectangular interpolation space and premultiplied-alpha
+handling; CSS Color 5 applies that method to `color-mix()`. Convert existing
+8-bit sRGB inputs through D50 Lab, mix the three coordinates using the current
+percentage normalization and alpha behavior, then convert back through the
+existing sRGB gamut check. Keep exactly two static colors, 8-bit sRGB output,
+and explicit diagnostics for out-of-gamut results; other interpolation spaces,
+nested mixes, missing components and gamut mapping remain unsupported. The
+local CSS Color 4 source (`checkedAt` 2026-11-07) and CSS Color 5 source
+(`checkedAt` 2026-11-15) are fresh. See the [CSS Color 4 interpolation
+definitions](../specs/cache/css-color.html#color-interpolation-method) and
+[CSS Color 5 color-mix space](../specs/cache/css-color-5.html#color-mix-space).
 
 Within the remaining priorities, favor handling simple websites end to end
 before advanced web applications. Start with mostly static, document-oriented

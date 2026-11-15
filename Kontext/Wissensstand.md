@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-15; Pass 7 lokal validiert, Commit/Push/CI ausstehend):**
+**Aktueller Standards-Pass (2026-11-15; Pass 7 abgeschlossen, Pass 8 ausgewaehlt):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale
 Lightness und Chroma, Hue-Winkel, `none` und Slash-Alpha werden geparst;
 Prozent-Chroma bildet 100% auf 150 ab, negatives Chroma wird geklemmt und
@@ -82,10 +82,24 @@ normalisierten Gewichten und premultipliziertem Alpha linear gemischt und per
 CSS-Transferfunktion in die 8-bit-sRGB-Ausgabe umgewandelt. 30 fokussierte
 ColorMix-Faelle, alle 1.613 CSS-Tests, Debug-/Release-Builds ohne Warnungen/
 Fehler und beide Volltests mit je 16.879 Tests bestehen; Formatverifikation
-und `git diff --check` bestehen. Commit/Push/CI fuer Pass 7 stehen aus; danach
-verbleiben drei angeforderte Inkremente. Siehe
+und `git diff --check` bestehen. Commit `7abf658` ist gepusht; Linux development
+(Run 43672624715), Windows confinement (Run 43672624685) und CodeQL
+(Run 43672624384) sind erfolgreich. Windows x64 bestand nach einem
+fehlgeschlagenen ersten Versuch des langsamen Browsertests
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport` im
+Fehljob-Rerun; Windows ARM64 bestand ebenfalls. Es waren keine Codeaenderungen
+noetig. Pass 7 ist abgeschlossen; drei angeforderte Inkremente verbleiben.
+Pass 8 ergaenzt explizites `in lab` fuer die bestehende bounded
+Zwei-Farben-`color-mix()`-Form: Umwandlung von 8-bit-sRGB ueber D50 Lab,
+vorhandene Prozentnormalisierung und premultiplizierter Alpha, Rueckwandlung
+mit der bestehenden sRGB-Gamutdiagnose. Andere Interpolationsraeume,
+verschachtelte Mixe, fehlende Komponenten und Gamut-Mapping bleiben
+unsupported. CSS Color 4 (`checkedAt` 2026-11-07) und CSS Color 5
+(`checkedAt` 2026-11-15) sind frisch. Pass 8 ist ausgewaehlt, aber noch nicht
+implementiert; drei angeforderte Inkremente verbleiben. Siehe
 [KP-367](./Kontextprotokoll.md#kp-367---linear-srgb-color-mix-als-pass-7-gewaehlt)
-und [KP-368](./Kontextprotokoll.md#kp-368---linear-srgb-color-mix-implementiert-und-lokal-validiert).
+bis [KP-370](./Kontextprotokoll.md#kp-370---lab-color-mix-als-pass-8-gewaehlt)
+sowie [Missing](../plans/Missing.md).
 
 **Vorheriger Standards-Pass (2026-11-14; lokal validiert, gepusht, CI-gruen):**
 Pass 10 ergaenzt bounded `color(prophoto-rgb ...)` mit der CSS-Color-

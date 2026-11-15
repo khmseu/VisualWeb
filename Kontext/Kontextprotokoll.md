@@ -10116,3 +10116,54 @@ Warnungen und Fehlern; beide Volltestlaeufe bestehen mit je 16.879 Tests.
 Formatverifikation und `git diff --check` bestehen. Die fokussierten
 Regressionen schlugen vor der Implementierung wie erwartet fehl. Commit, Push
 und Remote-CI stehen aus.
+
+### KP-369 - Pass 7 Commit, Push und CI bestaetigt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: Commit `7abf658`; GitHub Actions runs
+  [43672624715](https://github.com/khmseu/VisualWeb/actions/runs/43672624715),
+  [43672624685](https://github.com/khmseu/VisualWeb/actions/runs/43672624685)
+  und [43672624384](https://github.com/khmseu/VisualWeb/actions/runs/43672624384).
+- Bezug: KP-367 und KP-368; Pass 7 des Zehn-Inkrement-Auftrags.
+
+**Belegt:** Commit `7abf658` ist nach `origin/main` gepusht. Linux development,
+Windows confinement und CodeQL sind abschliessend erfolgreich. Windows ARM64
+bestand beim ersten Lauf; Windows x64 scheiterte zunaechst im bestehenden
+langsamen Navigationstest
+`UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`. Nach
+Rerun des fehlgeschlagenen Jobs bestand Windows x64; es waren keine
+Codeaenderungen erforderlich. Die gesamte Pass-7-CI-Matrix ist gruen.
+
+**Status:** Pass 7 ist abgeschlossen; drei angeforderte Inkremente verbleiben.
+Die fruehere Angabe in KP-368, Commit/Push/CI stuenden noch aus, ist durch
+diesen spaeteren Nachweis ersetzt.
+
+### KP-370 - Lab color-mix als Pass 8 gewaehlt
+
+- Dokumentiert am: 2026-11-15, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-15.
+- Quellen: [Missing](../plans/Missing.md#recommended-priority),
+  CSS Color 4 local cache (`checkedAt` 2026-11-07),
+  [color-interpolation-method](../specs/cache/css-color.html#color-interpolation-method)
+  and CSS Color 5 local cache (`checkedAt` 2026-11-15),
+  [color-mix-space](../specs/cache/css-color-5.html#color-mix-space);
+  current [CSS support inventory](../docs/standards.md#support-status).
+- Bezug: KP-369; Pass 8 von zehn angeforderten Missing-Prioritaetsinkrementen.
+
+**Auswahl als Ableitung:** CSS Color 4 (~60%) bleibt die hoechste actionable
+Teilspezifikation; ECMAScript (~90%) hat innerhalb der freigegebenen Phase 11w
+keinen passenden offenen Inkrementumfang. Der bestehende begrenzte
+`color-mix()`-Verbraucher unterstuetzt Default-/explizites Oklab,
+`srgb-linear` und `srgb`, diagnostiziert `in lab` aber noch als unsupported.
+CSS Color 4 definiert Lab als rechteckigen Interpolationsraum und die
+premultiplizierte Alpha-Behandlung; CSS Color 5 wendet die Interpolation auf
+`color-mix()` an. Der gewaehlte Umfang ist daher explizites `in lab` fuer genau
+zwei vorhandene statische Farben: Eingaben aus 8-bit sRGB ueber D50 Lab
+konvertieren, mit vorhandener Prozentnormalisierung und Alpha-Behandlung
+mischen, in die bestehende 8-bit-sRGB-Ausgabe zurueckwandeln und Ergebnisse
+ausserhalb des sRGB-Gamuts weiterhin diagnostizieren. Andere Interpolations-
+raeume, verschachtelte Mixe, fehlende Komponenten und Gamut-Mapping bleiben
+unsupported. Beide lokale Quellen sind gemaess Manifest frisch. Dies ist eine
+technische Auswahlableitung, keine separate Nutzerwahl; die Implementierung
+steht aus.
