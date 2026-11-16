@@ -482,7 +482,20 @@ alle 16.959 Default-Tests und Solution-Format bestanden. Konfigurierte
 Linter fuer die fuenf Implementierungs-/Guide-Dateien ohne Befund.
 Am 2026-11-16 um 11:11 Europe/Berlin genehmigt der Nutzer mit
 "yes" den Commit von Phase 2 und Fortsetzung mit Phase 3 (KP-447).
-Native Windows-Ausfuehrung bleibt ausstehend; kein Push beauftragt.
+Phase 2 ist als `b60e215` committed (Hook: sieben Dateien ohne
+Befund). Phase 3 ist lokal dokumentiert und direkt reviewed
+(APPROVED, KP-448): Portable/Balanced-Laeufe bleiben im vorhandenen
+manuellen Vergleich, CPU-Deadline-Zeilen im separaten manuellen
+Workflow. Keine neue Workflow-/Laufzeitaenderung in Phase 3.
+Strukturpruefung und konfigurierte Dokumentations-Linter bestehen;
+die 16.959 Tests sowie Build/Format wurden nach letzter Codeaenderung
+in Phase 2 erfolgreich ausgefuehrt und nicht fuer reine Docs wiederholt.
+Alle drei lokalen Rollout-Schritte sind damit umgesetzt. Am
+2026-11-16 um 11:39 Europe/Berlin genehmigt der Nutzer mit "yes"
+den Phase-3-Dokumentationscommit, Push aller drei Commits und
+CI-Validierung (KP-449). Neue native Windows-CI steht noch aus;
+alte Messungen aus KP-438 ersetzen diese neue Zielvalidierung nicht.
+Kein optionaler Vergleichs-/Deadline-Dispatch beauftragt.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von

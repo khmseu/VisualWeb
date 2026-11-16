@@ -349,6 +349,32 @@ any browser test invocation. This keeps all normal DLL-based process tests and
 the native apphost test on the same validated deployment. Local builds default
 to the portable renderer, and the independent `Peer/` fixture is unchanged.
 
+## Opt-in renderer deployment comparisons
+
+Normal Windows CI runs two RID-renderer multiprocess smokes, one static and
+one scripted, alongside the RID-backed browser tests. Portable smoke controls
+and balanced repetitions are retained in the manual-only
+[Windows startup comparison](../.github/workflows/windows-startup-comparison.yml)
+workflow, not duplicated in push/PR CI or ordinary Windows confinement
+manual runs.
+
+Request the longer comparison explicitly:
+
+```sh
+gh workflow run windows-startup-comparison.yml
+```
+
+This reuses the full Windows confinement workflow on native x64 and arm64,
+then adds eight CLI smokes per architecture: static and scripted, each in
+portable-to-RID and RID-to-portable order. Each architecture runs four portable
+and four RID invocations. Both variants retain required confinement and the
+same font; scripted coverage is not replaced by static coverage.
+See the [comparison timing schema and limits](../docs/windows-confinement.md#optional-native-wall-time-comparison).
+
+This comparison does not enable explicit CPU deadline rows. Request those
+separately as described below. Add `--ref <branch>` to either workflow dispatch
+command when testing a branch other than the repository's default branch.
+
 ## Opt-in CPU deadline tests
 
 Only the `cancel: false` rows of
@@ -375,6 +401,10 @@ For CI, manually dispatch **CPU deadline tests** to run these cases on all
 supported Linux and Windows architectures. The regular Linux development and
 Windows confinement workflows do not run the deadline cases. The five repeated
 Windows runs remain cancellation-only.
+
+```sh
+gh workflow run cpu-deadline-tests.yml
+```
 
 Building the solution is the all-project build smoke check, not a recursive
 unit test that starts another build. Empty source projects do not have dummy

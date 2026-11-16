@@ -171,6 +171,12 @@ comparisons. Explicitly opt in with:
 gh workflow run windows-startup-comparison.yml
 ```
 
+This is the retained portable-renderer control and repeated timing path;
+ordinary Windows CI uses RID for both smoke scenarios and its browser-test
+renderer fixture. The comparison does not enable explicit CPU deadline rows.
+Those remain a separate manual request in the
+[test guide](../tests/README.md#opt-in-cpu-deadline-tests).
+
 Add `--ref <branch>` when dispatching a branch other than the repository's
 default branch. For each native architecture the step runs exactly eight
 additional browser CLI invocations: static smoke portable then RID-specific,
@@ -196,7 +202,7 @@ Fields identify the native RID, static/scripted scenario, direction, renderer
 variant, CLI wall milliseconds, and exit status; start records use `na` until
 the invocation completes. `wall-ms` wraps the actual CLI invocation and is a
 separate wall-clock observation, not a sum or subtraction of nested
-`smoke-timing` phases. The preceding ordinary candidate smokes and any restored
+`smoke-timing` phases. The preceding ordinary RID smokes and any restored
 build/runtime caches are uncontrolled. The fixed order is not a cold-cache
 experiment, statistical sample, or causal estimate of deployment/startup
 benefit. These records support a bounded native comparison only; native Windows

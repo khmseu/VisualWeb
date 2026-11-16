@@ -13321,3 +13321,96 @@ Dateien und der Abschluss der Anleitung/Pruefung expliziter
 Langvergleiche freigegeben, kein Push.
 Portable Vergleiche und CPU-Deadline-Tests bleiben explizit;
 keine neue automatische Langtest-Abdeckung wird eingefuehrt.
+
+### KP-448 - Phase 3 explizite Langtests dokumentiert und geprueft
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin, nach Freigabe KP-447.
+**Belegt:** Phase 2 als `b60e215` committed; Pre-Commit-Hook
+prueft sieben Dateien ohne Befund. Beide Rollout-Code-Commits
+`a70af56` und `b60e215` bleiben lokal, kein Push.
+
+**Phase-3-Ergebnis:** Die bestehenden manuellen Workflows erfuellen
+bereits den gewuenschten Langtest-Pfad. Keine neue Workflow-Datei,
+keine Dispatch-Inputs oder zusaetzlichen Wiederholungen eingefuehrt.
+Stattdessen unterscheidet der Testguide jetzt ausdruecklich:
+
+- Normal Windows: zwei RID-Multiprocess-Smokes (static/scripted)
+  und validierte RID-Browser-Fixture einschliesslich Apphost.
+- Explizit `windows-startup-comparison.yml`: voller Windows-Lauf
+  plus acht weitere CLI-Aufrufe je Architektur, vier portable und
+  vier RID, beide Szenarien und beide Ausfuehrungsrichtungen.
+- Separat explizit `cpu-deadline-tests.yml`: nur markierte
+  Deadline-Zeilen auf den vier nativen OS-/Architekturkonfigurationen;
+  Vergleichsdispatch aktiviert diese nicht automatisch.
+
+Beide Dispatch-Kommandos und `--ref`-Hinweis sind im Testguide
+auffindbar; der Windows-Guide verlinkt den separaten Deadline-Pfad.
+Das Wiederverwenden vorhandener Workflows vermeidet duplizierte
+Matrix-/Confinement-Konfiguration.
+
+**Geaenderte Phase-3-Dateien:** `tests/README.md`,
+`docs/windows-confinement.md` und beide Kontextdateien.
+Keine Funktionen, Build-Targets, Laufzeit- oder Testfaelle geaendert.
+
+**Validierung und Review:**
+
+- Strukturpruefung bestaetigt False-Default und Dispatch-plus-True-
+  Gate, beide rein manuellen Wrapper, zwei normale RID-Smokes,
+  acht Vergleichsaufrufe pro Architektur und weiterhin explizite
+  Deadline-/normale Cancellation-Zeilen. Die gesamte Vergleichs-
+  Schrittdefinition ist identisch zum nativ validierten `4838b52`.
+- Ein erster temporaerer Python-Hilfscheck scheiterte ausschliesslich
+  an seiner falschen Annahme, die explizite InlineData-Zeile stehe
+  unmittelbar vor beiden Methoden. Der Linux-Test ordnet seine
+  normale InlineData-Zeile dazwischen an. Der korrigierte Check
+  prueft den gesamten zugeordneten Theory-Attributblock und besteht;
+  keine Code-/Testaenderung zur Umgehung dieses Harness-Fehlers.
+- Konfigurierte Trunk-Pruefung beider Guides: keine Befunde;
+  bestehende Prettier-Ausnahme fuer `tests/README.md` unveraendert.
+- `git diff --check`: erfolgreich. Direktes Review des vollstaendigen
+  Dokumentationsdiffs: APPROVED, keine blockierenden Befunde.
+- Phase 3 ist dokumentations-only. Build, alle 16.959 Default-Tests
+  und Solution-Format aus KP-446 decken den unveraenderten Code
+  nach letzter Implementierungsaenderung ab; nicht erneut ausgefuehrt.
+  Keine neue native Windows-Ausfuehrung behauptet.
+
+**Lokaler Rollout-Abschluss (3/3):** Phase 1 RID-Smoke-Default,
+Phase 2 RID-Browser-Fixture mit Apphost, Phase 3 explizite portable
+Vergleiche/Deadline-Anleitung umgesetzt und lokal validiert.
+Insgesamt betroffen: Windows-Confinement-Workflow,
+Browser-Testprojekt, Windows-Guide, Renderer-README, Testguide und
+beide Kontextdateien. Einziger geaenderter Build-Target ist
+`CopyRendererFixture`; keine Engine-Funktion oder Plattform-Policy
+veraendert. Keine neuen permanenten Tests; gezielte Harnesses und
+bestehende 16.959 Default-Tests sind in KP-443/KP-445/KP-446 belegt.
+
+**Offen/Naechster Schritt:** Phase-3-Dokumentation ist uncommitted.
+Vor Commit/Push und neuer CI-Auswertung erneut Freigabe einholen.
+Neue native x64/arm64-Validierung muss RID-Fixture und Apphost unter
+dem geaenderten Ablauf tatsaechlich ausfuehren; alte native Ergebnisse
+sind kein Ersatz. Keine Deadline- oder Vergleichsdispatches ohne
+entsprechenden expliziten Auftrag. Lokale Umsetzungsfertigstellung
+ist nicht gleichbedeutend mit bereits veroeffentlichtem Default.
+
+**Vorgesehene Commit-Nachricht:**
+
+```text
+docs: explain explicit Windows comparison runs
+
+Document RID-backed default smoke and browser-test coverage.
+Keep portable balanced comparisons and CPU deadline cases as separate
+explicit requests, with dispatch commands and branch guidance.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-449 - Rollout-Publikation und CI-Validierung freigegeben
+
+**Dokumentiert/Ereignis:** 2026-11-16, Nutzerturn 11:39 Europe/Berlin.
+**Nutzerangabe, beschlossen:** "yes" beantwortet die Frage
+"Commit documentation, push all three commits, and validate CI?".
+Damit sind der Phase-3-Dokumentationscommit, Push der drei
+Rollout-Commits und Auswertung der normalen CI freigegeben.
+Neue native Windows-x64/arm64-RID-Fixture-/Apphost-Evidenz bleibt
+abzuwarten; kein optionaler Vergleichs- oder CPU-Deadline-Dispatch
+wird aus dieser Freigabe abgeleitet.
