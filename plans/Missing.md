@@ -1787,6 +1787,26 @@ or claim full support without evidence covering its applicable requirements.
 Once no actionable standards-driven increment remains, continue with the
 existing recommended priorities below, in their current order.
 
+**URL and Encoding estimate review (2026-11-16):** Following a request to
+verify both estimates, [standards.md](../docs/standards.md#support-status) now
+gives WHATWG URL ~60% and WHATWG Encoding ~55% rather than ~30% each. The URL
+estimate credits the vendored parsing, host (IDNA/IPv4/IPv6/opaque),
+serialization and origin machinery, validated with no skips against the full
+pinned WPT `urltestdata.json` (896 vectors), `toascii.json` and
+`IdnaTestV2.json` fixtures; the chief missing surface is the mutable URL API
+with state-override parsing, `searchParams` linkage, `URLSearchParams`
+sort/iteration and sequence or record initialization, and the parser's legacy
+query encoding-override. The Encoding estimate credits the
+complete label table (228 labels to 40 encodings), the official index data,
+whole-buffer decoders for every encoding in the standard with the spec's
+state-machine rules, the decode/BOM-sniff hooks and the UTF-8
+`TextEncoder.encode()`/`encodeInto()` operations; all legacy encoders,
+incremental/streaming decoding and the `TextDecoder`/stream classes remain
+missing. These remain coarse ordering heuristics, not conformance audits.
+Under the standards-priority rule, WHATWG URL (~60%) is now the single highest
+partial WHATWG estimate for the next standards-driven selection, with WHATWG
+Encoding (~55%) next; the earlier ~30% tie statement is superseded.
+
 **Standards-selection update (2026-11-14):** ECMAScript remains highest at
 ~85%, but its remaining tracker gaps require module loaders/resources or
 persistent event-loop capabilities that are outside approved phase 11w. The
@@ -2451,6 +2471,31 @@ Support for WebDriver and/or WebDriver BiDi could be very helpful for debugging
 the browser. Consider it as a cross-cutting development aid alongside the
 priorities below; the choice of protocol and its scope remain open. See the
 [AI standards references](../docs/AI-standards.md) for related specifications.
+
+**Next standards selection (2026-11-16):** Following the estimate review above,
+WHATWG URL (~60%) is the highest partial WHATWG estimate, ahead of Encoding
+(~55%). This increment selects the bounded `URLSearchParams.toString()`
+stringification path and its UTF-8 `application/x-www-form-urlencoded`
+serializer. It is standalone: URL-object linkage, sorting, iteration, sequence
+or record initialization, mutable URL setters, and the legacy query
+encoding-override remain unsupported.
+
+**Pass 1 implementation:** `UrlSearchParams.ToString()` now serializes its
+ordered tuple list with the URL Standard's UTF-8 form percent-encoding rules,
+including spaces as `+`, an ASCII-safe set, uppercase escapes, duplicate
+preservation, and scalar-value replacement for unpaired surrogates. Focused
+tests cover the serializer's edge cases. The estimate remains ~60%; this
+bounded addition does not imply general URL conformance.
+
+**Pass 1 validation:** The Core suite passes all 4,014 tests. Debug and Release
+solution builds pass with outputs redirected to `/tmp`; the ordinary Debug
+build command initially failed because the shared `/workspaces` filesystem
+was full. Formatting verification passes. Debug and Release full-suite runs
+each report 16,945 passed and 16 failed: one Platform test and 15 Browser
+tests fail while stopping Linux renderer resource scopes because the system
+session bus is unavailable (`Failed to connect to bus: No medium found`).
+The Platform failure and a representative Browser failure reproduce on base
+commit `7a81fd5`. No native subsystem smoke applies to this Core URL change.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

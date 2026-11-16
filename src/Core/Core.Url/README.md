@@ -13,8 +13,9 @@ with `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"n
 page-initiated document-origin inheritance is selected by `LoadedPage`, not by
 the URL facade. `UrlSearchParams` provides string initialization, ordered
 `Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`,
-`Delete(name)`/`Delete(name, value)`, and `Set(name, value)`. Other mutations,
-stringification and URL linkage are not implemented.
+`Delete(name)`/`Delete(name, value)`, and `Set(name, value)`. Other mutations
+and URL linkage are not implemented. `ToString()` returns the UTF-8
+`application/x-www-form-urlencoded` serialization of the ordered tuples.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
 
 Official source: <https://url.spec.whatwg.org/> (manifest ID `url`, local

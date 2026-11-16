@@ -162,4 +162,28 @@ public sealed class UrlSearchParamsTests
         Assert.Equal(4, parameters.Size);
         Assert.Equal("appended", parameters.Get("new"));
     }
+
+    [Fact]
+    public void ToStringSerializesOrderedPairsWithFormUrlEncodedUtf8()
+    {
+        var parameters = new UrlSearchParams(
+            "?a=hello+world&a=%2B&flag&empty=&name=%E2%9C%93&symbols=%21%27%28%29~%2A&q=x%26y%3Dz&=x");
+
+        Assert.Equal(
+            "a=hello+world&a=%2B&flag=&empty=&name=%E2%9C%93&symbols=%21%27%28%29%7E*&q=x%26y%3Dz&=x",
+            parameters.ToString());
+    }
+
+    [Fact]
+    public void ToStringSerializesEmptyAndScalarValueNormalizedEntries()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+        var parameters = new UrlSearchParams();
+
+        Assert.Equal("", parameters.ToString());
+
+        parameters.Append(unpairedSurrogate, "a b");
+
+        Assert.Equal("%EF%BF%BD=a+b", parameters.ToString());
+    }
 }

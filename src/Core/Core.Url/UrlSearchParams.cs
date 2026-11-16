@@ -2,10 +2,11 @@ using System.Text;
 
 namespace VisualWeb.Core.Url;
 
-/// <summary>Provides a bounded string-initialization, lookup, and mutation subset of WHATWG <c>URLSearchParams</c>.</summary>
+/// <summary>Provides a bounded string-initialization, lookup, mutation, and serialization subset of WHATWG <c>URLSearchParams</c>.</summary>
 /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#interface-urlsearchparams">URLSearchParams</see> and
-/// <see href="https://url.spec.whatwg.org/#concept-urlencoded-string-parser">the URL-encoded string parser</see>.
-/// This .NET subset has no linked URL object and does not provide other mutations, stringification, or Web IDL.</remarks>
+/// <see href="https://url.spec.whatwg.org/#concept-urlencoded-string-parser">the URL-encoded string parser</see>,
+/// and <see href="https://url.spec.whatwg.org/#concept-urlencoded-serializer">the URL-encoded serializer</see>.
+/// This .NET subset has no linked URL object and does not provide other mutations or Web IDL.</remarks>
 public sealed class UrlSearchParams
 {
     private static readonly UTF8Encoding Utf8 = new(false, false);
@@ -118,6 +119,41 @@ public sealed class UrlSearchParams
         var scalarName = ToScalarValueString(name);
         var scalarValue = ToScalarValueString(value);
         return _entries.Any(entry => entry.Name == scalarName && entry.Value == scalarValue);
+    }
+
+    /// <summary>Serializes the ordered tuples as an <c>application/x-www-form-urlencoded</c> string.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#urlsearchparams-stringification-behavior">URLSearchParams stringification behavior</see>.
+    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    public override string ToString()
+    {
+        var output = new StringBuilder();
+        for (var index = 0; index < _entries.Count; index++)
+        {
+            if (index > 0) { output.Append('&'); }
+            var (name, value) = _entries[index];
+            AppendEncoded(output, name);
+            output.Append('=');
+            AppendEncoded(output, value);
+        }
+
+        return output.ToString();
+    }
+
+    private static void AppendEncoded(StringBuilder output, string text)
+    {
+        foreach (var value in Utf8.GetBytes(text))
+        {
+            if (value == 0x20) { output.Append('+'); }
+            else if (value is (>= (byte)'0' and <= (byte)'9') or (>= (byte)'A' and <= (byte)'Z')
+                or (>= (byte)'a' and <= (byte)'z') or (byte)'*' or (byte)'-' or (byte)'.' or (byte)'_')
+            {
+                output.Append((char)value);
+            }
+            else
+            {
+                output.Append('%').Append(value.ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
     }
 
     private static List<(string Name, string Value)> Parse(string input)
