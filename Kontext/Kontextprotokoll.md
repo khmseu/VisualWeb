@@ -12673,3 +12673,195 @@ keine RID-Default-Uebernahme und keine Aenderung von IPC,
 Confinement, Quoten oder Deadlines. Vorbereitung/Validierung der
 Messautomation ist kein neuer Windows-Messnachweis. Push und
 tatsaechliche native Ausfuehrung sind noch nicht erfolgt.
+
+### KP-433 - Pre-Hello committed, explizite Vergleichsautomation begonnen
+
+**Dokumentiert/Ereignis:** 2026-11-16; Fortsetzung der Freigabe
+aus KP-432.
+
+**Belegt:** Phase 2 ist als `9e34f7b` (`test: trace renderer startup
+before Hello`) committed. Der Hook prueft alle zwoelf Dateien ohne
+Befund. Vor Beginn der naechsten Implementierung ist der Worktree
+sauber. Kein Push; zusammen mit `5cede2c`, `2b3b8df` und `b2760ea`
+liegen vier lokale Commits nach dem zuletzt hier veroeffentlichten
+`2e3e7fe` vor.
+
+**Technische Konkretisierung der freigegebenen Phase 3:** Ein
+typisierter boolescher `workflow_dispatch`-Schalter mit Default
+false aktiviert ausschliesslich explizite native Windows-Vergleiche
+am Ende der bestehenden x64-/arm64-Jobs. Fuer static und scripted
+werden jeweils portable-RID und RID-portable ausgefuehrt: fest
+acht weitere CLI-Aufrufe je Architektur, ohne freien
+Wiederholungsparameter. Keine weiteren Laeufe auf Push/PR oder
+manuellem Dispatch ohne angeforderten Vergleich.
+
+Die CLI-Aufrufe sollen dieselbe Font-/Backend-/Confinement-Policy
+verwenden und sich innerhalb eines Szenarios nur im Renderer-DLL-
+Pfad unterscheiden. Feste versionierte Start-/Endmarker ordnen
+Architektur, Szenario, Reihenfolge und Variante zu; die aeussere
+CLI-Wandzeit bleibt von verschachtelten Smoke-Phasen getrennt.
+Nichtnull-Exitcodes und `smoke-diagnostic-error`-Zeilen sollen den
+Vergleich explizit fehlschlagen lassen. Ein eigener
+Schritt-Timeout begrenzt nur diese explizite Messserie, nicht die
+konfigurierten Renderer-Deadlines.
+
+**Grenzen/Offen:** Bestehende Tests, portable Kontrollen,
+Kandidaten-Publish, Symbolvalidierung und Standard-CI bleiben
+unveraendert. Keine Cache-Leerung oder Cold-Cache-/Statistik-/
+Kausalitaetsbehauptung: vorherige CI-Laeufe und Cache-Zustaende
+bleiben Stoerfaktoren. Umsetzung mit lokalen Mock-/Strukturtests,
+Review und Gesamtvalidierung steht noch aus. Danach erneute
+Commit-/Veroeffentlichungsrueckgabe; die nativen Messungen selbst
+sind noch nicht begonnen. Quellen: aktueller Git-Stand,
+Windows-Workflow und Guide sowie die genehmigte Folge KP-426/427/432.
+
+### KP-434 - Vergleichsschleife validiert, Dispatch-Policy korrigieren
+
+**Dokumentiert/Ereignis:** 2026-11-16; Zwischenstand nach lokalem
+Code-Review und Gesamtvalidierung der Messautomation.
+
+**Belegt:** Die feste Acht-Aufrufe-Schleife und Dokumentation sind
+implementiert. Direktes Review des vollstaendigen Zweidatei-Diffs
+findet keine Logikfehler bei Reihenfolge, Flags, Markerformat oder
+Fehlererkennung. Ein temporaerer PowerShell-Mock-Harness schlug
+zunaechst wegen des fehlenden Inputs fehl und besteht danach:
+Schedule, Pfade, static/scripted-Flags, kulturinvariante Marker,
+Exit-Fail-fast und Null-Exit-Diagnostikfehler.
+
+Zusaetzlich besteht die unveraenderte literale Schleife mit echten
+harmlosen nativen PowerShell-Kindprozessen unter
+`ErrorActionPreference=Stop` und nativer Error-Preference false:
+
+- Erfolg: acht Aufrufe, stdout sowie stderr-Timing-/Inventarzeilen
+  bleiben erhalten, alle Endmarker Exit 0.
+- stderr-`smoke-diagnostic-error` bei Exit 0 bleibt erhalten und
+  verwirft den Vergleich nach Aufruf 1.
+- Nativer Exit 23 wird im Endmarker erhalten, Fehler bleibt
+  sichtbar und Aufrufe 2 bis 8 werden nicht ausgefuehrt.
+
+Die temporaeren Harness-Artefakte sind entfernt. Das ist
+PowerShell-/Pipeline-Evidenz auf Linux, kein Windows-App-Nativlauf.
+Erneuter Solution-Build: null Warnungen/Fehler; alle 16.959
+Default-Tests in 14 Projekten bestanden (Browser 1.373, die beiden
+CPU-Deadline-Zeilen weiterhin explizit). Solution-Format besteht.
+
+**Fehlgeschlagener Befehl, offen:** Der anschliessende konfigurierte
+Vierdatei-Trunk-Check scheitert mit Exit 1 an CKV_GHA_7: Dispatch-
+Inputs muessen leer bleiben. Die zuvor separat ausgefuehrten
+YAML-/Action-/PowerShell-Linter deckten diese Policy nicht ab.
+Das ist kein bestaetigter ausnutzbarer Fehler der booleschen
+Messoption, aber eine echte nicht erfuellte Repository-Lintregel.
+
+**Technische Revision ohne Policy-Abschwaechung:** Statt den Check
+zu unterdruecken oder den gesamten Windows-Job zu duplizieren,
+soll ein kleiner eigener manueller Workflow ohne Inputs den
+bestehenden Workflow lokal wiederverwenden. Der typisierte
+false-default-Schalter wandert zu `workflow_call`; der neue manuelle
+Einstieg uebergibt konstant true. Der Vergleich bleibt zusaetzlich
+auf ein urspruengliches manuelles Dispatch-Ereignis begrenzt.
+Normaler Push/PR und bisheriger manueller Standardaufruf erhalten
+weiterhin keine zusaetzlichen Laeufe. Die bereits gepruefte
+PowerShell-Schleife bleibt unveraendert.
+
+**Offen/Naechster Schritt:** Wrapper/Callee und Anleitung fertig
+stellen, direkt reviewen und konfigurierten Check erneut ausfuehren.
+Keine C#-Aenderungen, kein Push und kein nativer Windows-Vergleich.
+Die Automation ist noch nicht zur Commit-Rueckgabe abgeschlossen.
+
+### KP-435 - Explizite Vergleichsautomation lokal bereit
+
+**Dokumentiert/Ereignis:** 2026-11-16, nach finaler struktureller
+Korrektur, direktem Review und konfigurierter Validierung.
+
+**Belegt, finaler Stand:** Die lokale
+[manuelle Einstiegspunkt-Datei](../.github/workflows/windows-startup-comparison.yml)
+hat nur `workflow_dispatch`, keine Dispatch-Inputs und lediglich
+`contents: read`. Sie ruft den
+[bestehenden Windows-Workflow](../.github/workflows/windows-confinement.yml)
+lokal mit `compare_renderer_variants: true` auf. Dieser boolesche
+Input ist ausschliesslich bei `workflow_call` definiert, Default
+false. Der letzte Schritt verlangt ausserdem das urspruengliche
+manuelle Dispatch-Ereignis. Jobs, Matrix, Build, Tests, portable
+Kontrollen, Kandidaten-Publish und Symbolvalidierung werden
+wiederverwendet, nicht dupliziert oder reduziert.
+
+Die bestehende PowerShell-Schleife bleibt unveraendert: acht
+zusaetzliche CLI-Aufrufe je Architektur fuer static/scripted und
+portable-RID/RID-portable; Windows-Backend, exakte Font,
+`--multiprocess --require-sandbox`, Script-Opt-in nur bei scripted.
+15 Minuten begrenzen den expliziten Vergleichsschritt, nicht die
+konfigurierten Renderer-Deadlines. `smoke-compare v=1` Start-/End-
+Zeilen kennzeichnen RID, Szenario, Reihenfolge und Renderer;
+Endzeilen enthalten kulturinvariante CLI-Wandmillisekunden und
+Exitcode. Bestehende Smoke-Timing-/Inventar-/Fehlerausgaben bleiben
+sichtbar. Nichtnull-Exit oder Diagnostikfehler verwirft den Lauf.
+
+**Review und Verifikation:** Finales direktes Review aller drei
+Code-/Guide-Dateien APPROVED, keine verbleibenden Befunde.
+Der Struktur-Regressionscheck schlug vor der Wrapper-Korrektur
+fehl und besteht danach; die zuvor gepruefte literale Messschleife
+ist dabei nicht veraendert. Mock-Schedule-/Flag-/Kulturtests und
+die drei echten nativen Subprozess-Stub-Faelle aus KP-434 bleiben
+gueltig. Die temporaeren Harness-Artefakte sind entfernt.
+
+Der zuvor fehlgeschlagene CKV_GHA_7-Check ist nun durch die
+inputfreie Dispatch-Struktur behoben, ohne Check-Skip oder globale
+Policy-Aenderung. Der konfigurierte abschliessende Trunk-Check
+aller fuenf betroffenen Dateien und `git diff --check` bestehen.
+Solution-Build (null Warnungen/Fehler), alle 16.959 Default-Faelle
+in 14 Projekten und Solution-Formatverifikation bestehen erneut;
+die Revision betrifft ausschliesslich YAML und Dokumentation,
+keine Anwendungsquellen oder Pakete.
+
+**Dateien:** Beide verlinkten Workflows,
+[Windows-Guide](../docs/windows-confinement.md) und beide
+Kontextdateien. Der Guide beschreibt den expliziten Aufruf
+`gh workflow run windows-startup-comparison.yml`, die feste
+Schedule, Marker und Grenzen. Normale Push-/PR-Laeufe sowie der
+bisherige manuelle Windows-Confinement-Aufruf fuegen keine
+Vergleiche hinzu. Die urspruengliche Dispatch-Input-Variante aus
+KP-433/434 ist ersetzt.
+
+**Status/Rueckgabe:** Vergleichsautomation lokal bereit, aber noch
+uncommitted. `9e34f7b` ist committed (Hook: zwoelf Dateien ohne
+Befund), zusammen mit drei frueheren Commits noch nicht gepusht.
+Kein nativer Windows-Lauf und keine neuen Performance-Ergebnisse
+in diesem Schritt. Phase 3 als Messung bleibt offen bis nach
+Commit-/Veroeffentlichungsfreigabe, Dispatch und Auswertung.
+Vorherige CI-Schritte und Cache-Zustaende bleiben unkontrolliert:
+keine Cold-Cache-, Statistik- oder Kausalitaetsbehauptung.
+
+**Vorgeschlagene Commit-Nachricht:**
+
+```text
+ci: add explicit balanced startup comparisons
+
+Reuse Windows confinement jobs from a dedicated manual workflow.
+Run portable and RID renderer smokes in both orders with bounded,
+invariant measurements and explicit exit/diagnostic error checks.
+
+Keep ordinary CI unchanged and preserve dispatch-input policy.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-436 - Commit, Push und native Vergleichsauswertung freigegeben
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 08:00 Europe/Berlin
+(`08:00:20.378+01:00` im aktuellen Chat).
+
+**Nutzerangabe/Beschlossen:** "commit and continue" beantwortet die
+unmittelbare Frage nach Commit der lokal validierten Automation,
+Push und anschliessendem Start und Auswerten der nativen Vergleiche.
+Die fuenf zusammengehoerigen Dateien werden committed; die vier
+bereits lokalen Commits sind Teil desselben Pushs.
+
+**Ausfuehrung und Grenzen:** Neue normale CI nach Push sowie
+expliziter Dispatch von `windows-startup-comparison.yml` auf
+dem veroeffentlichten Stand beobachten. Die nativen Windows-x64-/
+arm64-Ergebnisse nach Variante, Szenario und Reihenfolge anhand
+der Marker sowie Runtime-/Worker-/Host-Phasen auswerten.
+Keine neue Freigabe fuer RID-Default-Uebernahme, verlaengerte
+Deadlines oder abgeschwaechte Schutzregeln. Commit, Push und
+Ergebnisse sind hier noch als naechste Aktionen, nicht als
+bereits ausgefuehrte Messung dokumentiert.

@@ -137,6 +137,55 @@ records remain in the job logs for comparison. Cross-publishing and structural
 checks on Linux do not execute Windows code. Candidate execution and confinement
 still require native Windows x64 and arm64 CI evidence.
 
+### Optional native wall-time comparison
+
+The last workflow step is an opt-in comparison. The Windows confinement workflow
+exposes a typed boolean `compare_renderer_variants` input through `workflow_call`,
+defaulting to `false`; its ordinary `workflow_dispatch` has no inputs.
+The dedicated manual-only Windows startup comparison workflow calls that same
+workflow with the input set to `true`, reusing the complete existing
+jobs/matrix/build/tests/publish sequence without duplication. The comparison gate
+requires both the original caller event `workflow_dispatch` and the true boolean;
+the reusable workflow's event context follows its caller. Push, pull-request,
+and ordinary Windows confinement manual runs do not execute the additional
+comparisons. Explicitly opt in with:
+
+```sh
+gh workflow run windows-startup-comparison.yml
+```
+
+Add `--ref <branch>` when dispatching a branch other than the repository's
+default branch. For each native architecture the step runs exactly eight
+additional browser CLI invocations: static smoke portable then RID-specific,
+static smoke RID-specific then portable, scripted smoke portable then
+RID-specific, and scripted smoke RID-specific then portable. Every invocation
+uses the Windows backend, the registered Noto Sans font, `--multiprocess`,
+`--require-sandbox`, and the same smoke configuration; only the renderer DLL
+changes within a scenario/order pair. Scripted runs additionally use
+`--enable-inline-scripts`. The step has a 15-minute wall timeout and stops at
+the first nonzero CLI exit or any `smoke-diagnostic-error` row, including when
+the CLI itself returned zero. Full CLI smoke timing, inventory, and error output
+is retained in the logs.
+
+Each invocation is bracketed by invariant-culture records with the fixed
+`smoke-compare v=1` schema:
+
+```text
+smoke-compare v=1 event=start rid=win-x64 scenario=static order=portable-to-rid renderer=portable wall-ms=na exit=na
+smoke-compare v=1 event=end rid=win-x64 scenario=static order=portable-to-rid renderer=portable wall-ms=1234.567 exit=0
+```
+
+Fields identify the native RID, static/scripted scenario, direction, renderer
+variant, CLI wall milliseconds, and exit status; start records use `na` until
+the invocation completes. `wall-ms` wraps the actual CLI invocation and is a
+separate wall-clock observation, not a sum or subtraction of nested
+`smoke-timing` phases. The preceding ordinary candidate smokes and any restored
+build/runtime caches are uncontrolled. The fixed order is not a cold-cache
+experiment, statistical sample, or causal estimate of deployment/startup
+benefit. These records support a bounded native comparison only; native Windows
+x64 and arm64 runs are still required and Linux mocks or structural checks are
+not Windows evidence.
+
 ## Validation
 
 ```sh

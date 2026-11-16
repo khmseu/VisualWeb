@@ -370,9 +370,30 @@ zwoelfdateiger Scoped-Trunk-Check und Diff-Check bestehen.
 Keine neue native Windows-Messung: x64/arm64-Close-/Cancel-Assertions
 und Laufzeiten benoetigen weiter CI. Am 2026-11-16 um 06:33
 Europe/Berlin bestaetigt der Nutzer "commit and continue" (KP-432):
-Phase 2 wird committed, danach beginnt Phase 3 mit expliziten
-reihenfolgeausgeglichenen nativen Vergleichen. Die bisherigen drei
-lokalen Commits sind noch nicht gepusht.
+Phase 2 ist als `9e34f7b` committed (Hook: zwoelf Dateien ohne
+Befund), danach beginnt Phase 3 mit expliziten
+reihenfolgeausgeglichenen nativen Vergleichen (KP-433).
+Die vier lokalen Commits sind noch nicht gepusht.
+Die Vergleichsschleife ist implementiert: je nativer Architektur
+acht CLI-Laeufe, fuer static/scripted portable-RID und RID-portable,
+mit `smoke-compare v=1`-Markern und Abbruch bei Exit-/Diagnostikfehlern.
+Mocks und drei echte harmlose native Subprozess-Stub-Faelle bestehen;
+erneut bestehen Build, alle 16.959 Default-Tests und Solution-Format.
+Der erste konfigurierte Trunk-Check verwarf oeffentliche Dispatch-
+Inputs mit CKV_GHA_7 (KP-434). Das ist ohne Unterdrueckung behoben:
+Der neue rein manuelle `windows-startup-comparison.yml` ohne Inputs
+ruft den bestehenden Windows-Workflow mit internem false-default
+`workflow_call`-Schalter auf. Bestehende Push-/PR-/Default-Dispatch-
+Laeufe bleiben unveraendert. Strukturtest, finales direktes Review
+(APPROVED) und konfigurierter Fuenfdatei-Trunk-/Diff-Check bestehen
+(KP-435). Am 2026-11-16 um 08:00 Europe/Berlin bestaetigt
+"commit and continue" ausdruecklich die Frage nach Commit, Push
+und nativen Vergleichen samt Auswertung (KP-436).
+Die Automation wird committed und mit den vier lokalen Commits
+veroeffentlicht; danach folgt der explizite Dispatch von
+`windows-startup-comparison.yml`. Noch keine neuen nativen
+Ergebnisse. Kein Cold-Cache- oder Kausalitaetsnachweis aus den
+begrenzten Paaren.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von

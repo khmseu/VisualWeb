@@ -1,0 +1,13 @@
+name: Windows startup comparison
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    uses: ./.github/workflows/windows-confinement.yml
+    with:
+      compare_renderer_variants: true

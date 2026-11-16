@@ -4,6 +4,13 @@ on:
   pull_request:
   push:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      compare_renderer_variants:
+        description: Compare portable and RID renderer smoke wall times
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -65,3 +72,53 @@ jobs:
         run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
       - name: Candidate scripted multiprocess smoke (RID-specific renderer)
         run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
+      - name: Compare portable and RID Windows renderer smokes (manual opt-in only)
+        if: github.event_name == 'workflow_dispatch' && inputs.compare_renderer_variants
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          $rid = "win-${{ matrix.architecture }}"
+          $rendererPaths = @{
+            portable = "src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll"
+            rid = "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/$rid/VisualWeb.Renderer.dll"
+          }
+          $scenarios = @(
+            [pscustomobject]@{ Name = "static"; EnableInlineScripts = $false },
+            [pscustomobject]@{ Name = "scripted"; EnableInlineScripts = $true }
+          )
+          $orders = @(
+            [pscustomobject]@{ Name = "portable-to-rid"; Variants = @("portable", "rid") },
+            [pscustomobject]@{ Name = "rid-to-portable"; Variants = @("rid", "portable") }
+          )
+          foreach ($scenario in $scenarios) {
+            foreach ($order in $orders) {
+              foreach ($variant in $order.Variants) {
+                $cliArguments = @(
+                  "run", "--project", "src/Apps/VisualWeb.Browser", "--configuration", "Release", "--no-build", "--",
+                  "--multiprocess", "--require-sandbox",
+                  "--renderer", $rendererPaths[$variant],
+                  "--font", "tests/Engine.Text.Tests/Data/NotoSans.ttf",
+                  "--smoke", "--backend", "windows"
+                )
+                if ($scenario.EnableInlineScripts) {
+                  $cliArguments += "--enable-inline-scripts"
+                }
+
+                Write-Output "smoke-compare v=1 event=start rid=$rid scenario=$($scenario.Name) order=$($order.Name) renderer=$variant wall-ms=na exit=na"
+                $cliOutput = @()
+                $timer = [System.Diagnostics.Stopwatch]::StartNew()
+                & dotnet @cliArguments 2>&1 | Tee-Object -Variable cliOutput
+                $exitCode = $LASTEXITCODE
+                $timer.Stop()
+                $wallMilliseconds = $timer.Elapsed.TotalMilliseconds.ToString("F3", [System.Globalization.CultureInfo]::InvariantCulture)
+                Write-Output "smoke-compare v=1 event=end rid=$rid scenario=$($scenario.Name) order=$($order.Name) renderer=$variant wall-ms=$wallMilliseconds exit=$exitCode"
+
+                if ($exitCode -ne 0) {
+                  throw "Windows smoke comparison failed: scenario=$($scenario.Name) order=$($order.Name) renderer=$variant exit=$exitCode"
+                }
+                if (@($cliOutput | Where-Object { "$_" -match '^smoke-diagnostic-error(?:\s|$)' }).Count -gt 0) {
+                  throw "Windows smoke comparison emitted smoke-diagnostic-error: scenario=$($scenario.Name) order=$($order.Name) renderer=$variant"
+                }
+              }
+            }
+          }
