@@ -51,8 +51,6 @@ jobs:
       - run: dotnet run --project tools/PlatformSmoke --configuration Release --no-build -- windows
       # The single-process opt-out is only for trusted offline development smoke.
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-single-process --allow-unsandboxed-development --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
-      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
-      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/bin/Release/net10.0/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - run: dotnet run --project tools/WindowsSandboxSmoke --configuration Release --no-build -- --font tests/Engine.Text.Tests/Data/NotoSans.ttf
       - name: Run slow browser tests
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
@@ -68,10 +66,8 @@ jobs:
         shell: pwsh
         run: |
           ./scripts/Validate-WindowsRendererPublish.ps1 -RuntimeIdentifier win-${{ matrix.architecture }} -PublishDirectory src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }} -PortableDirectory src/Apps/VisualWeb.Renderer/bin/Release/net10.0 -RequireReduction
-      - name: Candidate static multiprocess smoke (RID-specific renderer)
-        run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
-      - name: Candidate scripted multiprocess smoke (RID-specific renderer)
-        run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
+      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
+      - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - name: Compare portable and RID Windows renderer smokes (manual opt-in only)
         if: github.event_name == 'workflow_dispatch' && inputs.compare_renderer_variants
         timeout-minutes: 15

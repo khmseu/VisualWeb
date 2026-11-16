@@ -43,4 +43,7 @@ See the [process guide](../../../docs/renderer-processes.md) and
 The Windows staging-size experiment's RID-specific publish candidate and native
 validation procedure are documented in the
 [Windows confinement guide](../../../docs/windows-confinement.md#rid-specific-staging-experiment);
-this does not change the default portable renderer launch contract.
+native Windows CI uses the RID candidate for its ordinary static and scripted
+multiprocess smokes while retaining the portable build as a comparison baseline.
+This does not change the application's general deployment or renderer-launch
+contract.

@@ -12865,3 +12865,340 @@ Keine neue Freigabe fuer RID-Default-Uebernahme, verlaengerte
 Deadlines oder abgeschwaechte Schutzregeln. Commit, Push und
 Ergebnisse sind hier noch als naechste Aktionen, nicht als
 bereits ausgefuehrte Messung dokumentiert.
+
+### KP-437 - Vergleichsautomation gepusht und native Jobs gestartet
+
+**Dokumentiert/Ereignis:** 2026-11-16; native Dispatch-Erstellung
+um 08:02 Europe/Berlin (`2026-11-16T07:02:18Z` laut GitHub).
+
+**Belegt:** Die fuenf freigegebenen Dateien sind als
+`4838b5242394c68d4eb754b9ba63021e473a6a4e`
+(`ci: add explicit balanced startup comparisons`) committed.
+Der Hook prueft alle fuenf Dateien ohne Befund. Push von
+`2e3e7fe` bis `4838b52` auf `origin/main` ist erfolgreich:
+`5cede2c`, `2b3b8df`, `b2760ea`, `9e34f7b` und `4838b52`
+sind nun veroeffentlicht.
+
+**Laufender nativer Nachweis:** Der explizite Dispatch von
+`windows-startup-comparison.yml` auf main ist angenommen und
+[Vergleichslauf 43820945522](https://github.com/khmseu/VisualWeb/actions/runs/43820945522)
+ist auf genau diesem Commit in_progress. Die erwarteten nativen
+Jobs laufen als `compare / Windows x64` (`133143633852`) und
+`compare / Windows arm64` (`133143634126`). Normale Push-CI:
+[Windows 43820934692](https://github.com/khmseu/VisualWeb/actions/runs/43820934692)
+und [Linux 43820934683](https://github.com/khmseu/VisualWeb/actions/runs/43820934683).
+Die zugehoerigen weiteren GitHub-Pruefungen sind ebenfalls gestartet.
+
+**Offen/Naechster Schritt:** Abschluss und unveraenderte
+Regressionspruefungen beobachten; abgeschlossene Joblogs lokal
+unter dem ignorierten Renderer-obj-Pfad auswerten. Nur tatsaechliche
+Start-/Endmarker und fehlerfreie vollstaendige Vergleichsbloecke
+als Messdaten verwenden. Reihenfolgen getrennt betrachten;
+Runtime-Kopier-/Metadatenanteile und Worker-/Host-Hello-Pfade
+aufteilen. Noch keine neuen Laufzeiten oder Ursachenfeststellung.
+Quellen: Git-Commit/Push-Ausgabe und GitHub-Run-/Job-Metadaten
+im aktuellen Chat.
+
+### KP-438 - Native reihenfolgeausgeglichene Vergleiche ausgewertet
+
+**Dokumentiert:** 2026-11-16, nach finalem CI-Statuscheck um 08:20
+Europe/Berlin. **Messereignis:** Vergleichslauf abgeschlossen am
+2026-11-16 um 08:14:16 Europe/Berlin laut letztem Job-Ende.
+
+**Belegt, veroeffentlichter Stand:** Alle Ergebnisse betreffen
+`4838b5242394c68d4eb754b9ba63021e473a6a4e`. Der in KP-437
+dokumentierte Push umfasst die fuenf freigegebenen Commits.
+Keine neue Anwendungs-/Workflow-Codeaenderung fuer die Auswertung.
+
+**CI-Ergebnis:**
+
+- [Manueller Vergleich 43820945522](https://github.com/khmseu/VisualWeb/actions/runs/43820945522):
+  erfolgreich; x64-Job `133143633852` (8 min 42 s) und
+  arm64-Job `133143634126` (11 min 55 s). Beide neuen
+  Vergleichsschritte sind success, nicht skipped.
+- [Normale Windows-CI 43820934692](https://github.com/khmseu/VisualWeb/actions/runs/43820934692):
+  x64 `133143592116` und arm64 `133143592433` erfolgreich.
+  Beide neuen Vergleichsschritte sind hier skipped:
+  keine unerwuenschten Zusatzlaeufe nach Push.
+- [Linux-CI 43820934683](https://github.com/khmseu/VisualWeb/actions/runs/43820934683):
+  x64 `133143592622`, arm64 `133143592633` und Trunk
+  `133143592496` erfolgreich, einschliesslich nativer
+  Confinement-/Resource-/V8-Smokes.
+- [CodeQL 43820934173](https://github.com/khmseu/VisualWeb/actions/runs/43820934173):
+  erfolgreich. Separater Codespaces-Prebuild `43820933714`
+  ist beim Statuscheck noch in_progress; kein Test-/Confinement-
+  oder Messergebnis aus diesem Lauf wird behauptet.
+
+Die Windows-Logs bestaetigen insbesondere
+`NativeWindowsEarlyStartupCloseOrCancelFinishesDrainAndCleanup`
+fuer beide Parameter auf beiden nativen Architekturen sowie
+die Staging-/Cleanup- und Vollbuffer-Lifetime-Tests.
+Die bis KP-435 offene native Regressionsevidenz fuer diese
+Faelle ist damit erbracht, nicht eine universelle Zeitgarantie
+fuer jede native Cleanup-Operation. CPU-Deadline-Zeilen bleiben
+explizit; normale Cancellation-Recovery ist weiterhin ausgefuehrt.
+
+**Pruefung der Messdaten:** Originale abgeschlossene Joblogs
+wurden ueber die GitHub-Job-Log-API geladen. Ein strikter lokaler
+Parser prueft feste Marker-/Timing-Schemata, beide exakten
+Acht-Aufrufe-Schedules, passende Start-/Enddaten, Exit 0 und
+keine Diagnostikfehler innerhalb der Vergleichsbloecke:
+16 CLI-Aufrufe, 96 eindeutige Renderer-Inventare, 864 Runtime-
+Komponentenrecords und 80 vollstaendige Vierfeld-Worker-Batches.
+Je CLI sind sechs Worker gestaged, aber nur fuenf erfolgreiche
+Startup-Batches vorhanden: der sechste wird absichtlich vor dem
+vollstaendigen Handshake geschlossen. Sein kurzer Hello-Scope
+ist kein normaler Startup-Baselinewert.
+
+**CLI-Wandzeit in Sekunden, direkt aus `smoke-compare v=1`:**
+Portable/RID-Spalten bleiben unabhaengig von der Ausfuehrungsrichtung
+gleich angeordnet. Reduktion = 1 - RID/Portable im jeweiligen Paar.
+
+| Architektur | Szenario | Reihenfolge  |  Portable |       RID | Reduktion |
+| ----------- | -------- | ------------ | --------: | --------: | --------: |
+| x64         | static   | Portable-RID | 17.524406 |  7.824494 |   55.351% |
+| x64         | static   | RID-Portable | 13.415511 |  8.130214 |   39.397% |
+| x64         | scripted | Portable-RID | 14.804277 |  9.122277 |   38.381% |
+| x64         | scripted | RID-Portable | 17.147976 |  9.020572 |   47.396% |
+| arm64       | static   | Portable-RID | 38.793250 | 10.433604 |   73.105% |
+| arm64       | static   | RID-Portable | 35.962127 | 12.195117 |   66.089% |
+| arm64       | scripted | Portable-RID | 34.960213 | 12.195589 |   65.116% |
+| arm64       | scripted | RID-Portable | 39.529425 | 12.360976 |   68.730% |
+
+Alle acht beobachteten Paare sind fuer RID schneller. Summe der
+zusaetzlichen CLI-Aufrufe: x64 96.989727 s, arm64 196.430301 s;
+das ist nicht die Dauer des gesamten Jobs oder der bestehenden
+Build-/Test-/Publish-Schritte.
+
+**Tatsaechliche Kopiermengen, je Worker:**
+
+| Architektur | Portable App (91 Dateien) | RID App (47 Dateien) |       Runtime (unveraendert) |
+| ----------- | ------------------------: | -------------------: | ---------------------------: |
+| x64         |           792975821 Bytes |      179011150 Bytes | 84285105 Bytes / 201 Dateien |
+| arm64       |           792953293 Bytes |      172016196 Bytes | 93801269 Bytes / 200 Dateien |
+
+Das sind 77.425396% / 78.306894% weniger App-Dateibytes.
+Je Sechs-Worker-CLI sinken logische App-plus-Runtime-Bytes
+von 4.902077 auf 1.471282 GiB (x64) bzw. 4.955127 auf
+1.485371 GiB (arm64). Keine Aussage ueber physische
+Datentraeger-I/O. Die bestehende native Publish-/PDB-Hash-
+Validierung besteht weiterhin; Zielsymbole wurden nicht entfernt.
+
+**Eingegrenzte Kosten, Phasensummen ueber sechs Lifetimes je CLI,
+nicht mit der CLI-Wandzeit addieren:**
+
+- ARM64 portable App-Staging: 15.131-24.834 s; RID:
+  0.652-1.592 s. Das ist der groesste wiederkehrende Unterschied.
+- x64 erster static Portable-Aufruf: Runtime gesamt 9.590807 s.
+  Davon File.Copy-Operationen 9.483358 s, benannte Metadaten
+  0.102838 s. Worker 4 allein: Shared-Runtime-File.Copy-Summe
+  8.488992 s, zugehoerige Metadaten 0.009578 s. Der Ausreisser
+  liegt hier in den Kopieroperationen, nicht in der Enumeration.
+- ARM64 letzter scripted Portable-Aufruf: Runtime 14.535 s,
+  File.Copy-Summe 12.274 s, Metadaten 2.256 s. Shared-Runtime-
+  Copy allein 12.228 s; hostfxr-Metadaten 2.162 s.
+  ARM64 erster static Portable-Aufruf hat ebenfalls
+  2.255 s hostfxr-Metadaten. Metadaten-Ausreisser existieren also,
+  sind nicht pauschal null oder durch Subtraktion geschaetzt.
+- x64 erster scripted Portable-Aufruf: Profilabbau 5.201291 s,
+  konkret Worker 5 mit 2.966228 s und Worker 6 mit 2.223403 s.
+  Zweiter scripted Portable-Aufruf: Staging-Loeschung
+  7.167559 s, davon Worker 3 mit 5.843386 s.
+  Die geprueften Quellbereiche messen direkt
+  `DeleteAppContainerProfile` bzw. `Directory.Delete(..., recursive: true)`.
+- Vollstaendige Worker-Batches zeigen nur 0.0156-0.0185 s
+  Confinement-Verifikation summiert ueber fuenf Worker, also
+  etwa 3-4 ms je Worker. Font-/Renderer-Konstruktion summiert:
+  x64 0.532-0.694 s, arm64 0.709-1.337 s.
+  Host-Hello summiert dagegen x64 2.023-2.570 s,
+  arm64 3.288-5.495 s. Unabhaengige Worker-/Host-Messintervalle
+  und ungemessener Pre-Managed-Startup erlauben daraus keine
+  praezise IPC-/Scheduling-Luecke durch Subtraktion.
+
+**Ableitung und Grenzen:** Wiederholtes Deployment-Staging sowie
+variable Runtime-/Cleanup-Aufrufe sind als Kostenstellen belegt.
+Reine Worker-Token-/Job-Verifikation ist keine sekundenlange
+Erklaerung. Die zugrunde liegende Storage-/Defender-/Scheduler-/
+GC-Ursache dieser Wandzeitspitzen ist nicht bewiesen.
+Die vorherigen normalen CI-Laeufe und Cache-Zustaende bleiben
+unkontrolliert, die Paare sind keine statistische oder
+Cold-Cache-Kausalitaetsstudie. Ein 38-73%-CLI-Unterschied ist
+keine Zusage fuer die gesamte CI-Laufzeit.
+
+**Status/Naechste Option:** Die drei genehmigten
+Instrumentierungs-/Messschritte sind abgeschlossen. RID-spezifisches
+Windows-Renderer-Deployment ist nun eine datenbasierte naechste
+Option; Standardbereitstellung oder Test-Fixtures werden hier
+nicht umgestellt. Alle Code-/Workflow-Aenderungen sind gepusht;
+dieser Ergebnisnachtrag bleibt lokal uncommitted. Kein neuer
+Code-Commit oder weiterer Push fuer die reine Ergebnisdokumentation
+ohne naechste Freigabe. Temporaere Auswerteskripte/Logs werden nach
+Verifikation entfernt; die Job-Links und Zahlen bleiben hier erhalten.
+
+### KP-439 - Anzahl wiederholter Staging-Vorgaenge klargestellt
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin.
+**Nutzerfrage:** Wie viele Wiederholungen mit wiederholtem Staging
+gemeint sind.
+
+**Belegt (KP-438):** Ein einzelner gemessener CLI-Smoke-Aufruf
+staged sechs Worker-Lifetimes separat, jeweils App und Runtime.
+Die genannten Staging-Phasensummen beziehen sich auf diese sechs
+Vorgaenge, nicht auf einen einzelnen Kopiervorgang.
+Acht explizite Vergleichsaufrufe pro Architektur ergeben 48
+Stagings pro Architektur und 96 ueber x64 und arm64 zusammen.
+Diese Zahl umfasst nur die expliziten Vergleichsbloecke, nicht
+alle Tests und normalen Smokes des gesamten CI-Jobs.
+Keine neue Implementierung oder Freigabe.
+
+### KP-440 - Static/RID als schnellste gemessene Kombination eingeordnet
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin.
+**Nutzerfrage:** Ob static/RID die schnellste Variante ist.
+
+**Belegt (KP-438):** Ja, in diesen Messungen liegen die static/RID-
+CLI-Zeiten auf beiden Architekturen am niedrigsten: x64
+7.824-8.130 s, arm64 10.434-12.195 s.
+**Einordnung:** Static fuehrt die optionalen Inline-Scripts nicht
+aus; scripted prueft einen zusaetzlichen Funktionspfad. Die Messung
+ist kein kontrollierter Nachweis der isolierten Script-Kosten und
+kein Grund, Script-Abdeckung zu entfernen.
+**Vorschlag, nicht neu beschlossen:** RID-Paketierung fuer beide
+Szenarien verwenden, statt scripted durch static zu ersetzen.
+Keine Implementierungsaenderung.
+
+### KP-441 - RID-Default beauftragt, konkreter Rollout vorgeschlagen
+
+**Dokumentiert/Ereignis:** 2026-11-16, Nutzerturn 08:36 Europe/Berlin.
+**Nutzerangabe, beschlossenes Ziel:** "let's make that the default",
+im Anschluss an die Empfehlung RID fuer static und scripted zu
+verwenden. Nuetzliche weitere Varianten duerfen in die explizit
+angeforderten laengeren Tests aufgenommen werden. Ersetzt den
+unentschiedenen RID-Vorschlag aus KP-438/KP-440; keine Freigabe zur
+Entfernung von Script-Abdeckung oder Abschwaechung von Confinement.
+
+**Belegte Ausgangslage:** Windows confinement startet bisher zwei
+portable und zwei RID-Kandidaten-Smokes automatisch. Das vorhandene
+manuelle Vergleichsworkflow fuegt acht reihenfolgeausgeglichene
+CLI-Aufrufe je Architektur hinzu. Browser-Test-Fixtures stammen laut
+`tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj` aus
+portablem Build-Output; `NativeAppHostAlsoReturnsTheExactPageFrame`
+in `ProcessTests.cs` benoetigt zusaetzlich den Apphost, waehrend das
+bisherige RID-Publish `UseAppHost=false` verwendet. Deshalb nicht
+einfach Dateien ueber die bestehende Fixture kopieren oder alle
+Deployments kommentarlos ersetzen.
+
+**Vorschlag, konkrete Phasen noch freizugeben:**
+
+1. Native RID-Publishes vor normale Windows static/scripted Smokes
+   ziehen und als Default verwenden; automatische portable Duplikate
+   entfernen. Vorab strukturelle Regression fuer Reihenfolge,
+   Renderer-Pfade und unveraenderte Modi schreiben.
+2. Auch Windows-CI-Browser-Test-Fixtures auf das validierte native
+   RID-Deployment umstellen; Apphost-Abdeckung separat erhalten,
+   stale Dateien und stille Fallbacks verhindern. Auswahl und
+   Fehlerfaelle gezielt validieren; Linux/lokale Vertraege erhalten.
+3. Portable static/scripted Kontrollen und balancierte Wiederholungen
+   nur im vorhandenen manuellen Vergleich erhalten; die separaten
+   expliziten CPU-Deadline-Tests nicht automatisch aktivieren.
+   Direkt betroffene Anleitungen aktualisieren und Build, betroffene
+   Tests, Gesamtsuite, Format und konfigurierte Linter pruefen.
+
+**Status:** Planung, keine Implementierung. Nur die bereits lokalen
+Kontextdateien sind geaendert. Naechster Schritt: konkreten Plan zur
+Freigabe vorlegen; kein neuer Commit oder Push in diesem Turn.
+
+### KP-442 - Dreiphasigen RID-Rollout genehmigt
+
+**Dokumentiert/Ereignis:** 2026-11-16, Nutzerturn 09:48 Europe/Berlin.
+**Nutzerangabe, beschlossen:** "yes" bestaetigt den vorgelegten
+Dreiphasenplan aus KP-441: normale Windows-Smokes zuerst, danach
+Windows-Browser-Test-Fixtures mit erhaltener Apphost-Abdeckung,
+zuletzt explizite portable Vergleiche und abschliessende Dokumentation.
+Linux, Scripts-Abdeckung, Symbole, Confinement und Limits bleiben
+erhalten; CPU-Deadline-Tests bleiben explizit.
+
+**Status:** Implementierung Phase 1 von 3 beginnt. Nach Tests und
+Review folgt die vereinbarte Commit-Rueckgabe mit Stopp, bevor
+Phase 2 begonnen wird. Keine neue Commit-/Push-Freigabe aus der
+reinen Planbestaetigung abgeleitet. Bestehende Ergebnisnachtraege
+in beiden Kontextdateien bleiben erhalten.
+
+### KP-443 - Phase 1 RID-Smoke-Default lokal abgeschlossen
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin; nach Freigabe KP-442.
+**Belegt, Implementierung:** Im Windows-Confinement-Workflow entfallen
+die beiden automatischen portablen Multiprocess-Smokes. Die bisher
+zusaetzlichen RID-Smokes sind nun die beiden normalen Smokes, nach
+dem unveraenderten isolierten Publish und dessen Validierung.
+Static behaelt `--multiprocess`; scripted behaelt die Legacy-
+Entwicklungsmodus-Abdeckung mit `--require-sandbox` und
+`--enable-inline-scripts`. Keine Aenderung an AppContainer/Job,
+Limits, Deadlines, Symbolen oder allgemeinen CLI-Vertraegen.
+
+**Geaenderte Implementierungs-/Guide-Dateien:**
+
+- `.github/workflows/windows-confinement.yml`
+- `docs/windows-confinement.md`
+- `src/Apps/VisualWeb.Renderer/README.md`
+
+Die beiden bestehenden Kontextdateien halten Freigabe und Ergebnis
+fest. Keine neuen Funktionen oder permanenten Testdateien.
+
+**Tests und Review:**
+
+- Temporaerer fokussierter Strukturtest laut Implementierungsbericht
+  zuerst gegen den alten Ablauf fehlgeschlagen, danach bestanden.
+- Zusaetzliche direkte semantische YAML-Pruefung gegen HEAD besteht:
+  ausser Entfernen der zwei portablen Smokes und der Candidate-
+  Schrittnamen bleibt das Workflow-Datenmodell exakt gleich.
+  Sie prueft zwei normale RID-Pfade, Publish/Validate-Reihenfolge,
+  statischen/scripted Modus und unveraendertes manuelles Gate.
+- Manuelle Vergleichsschleife mit acht Aufrufen, beiden Reihenfolgen,
+  15-Minuten-Timeout und explizitem Gate bleibt unveraendert.
+  CPU-Deadline-Workflow und Browser-Test-Fixtures bleiben unangetastet.
+- `dotnet build VisualWeb.slnx`: erfolgreich, null Warnungen/Fehler.
+- `dotnet test VisualWeb.slnx --no-build`: alle 16.959 Default-Tests
+  in 14 Projekten bestanden, darunter 1.373 Browser-Tests.
+  Beide CPU-Deadline-Zeilen bleiben explizit und wurden nicht ausgefuehrt.
+- `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`:
+  erfolgreich.
+- Konfiguriertes Trunk ueber Workflow und beide Guides:
+  drei Dateien, keine Befunde. Die zunaechst nicht im PATH verfuegbaren
+  YAML-/Action-Linter sind dadurch ueber die bestehende Konfiguration
+  abgedeckt, keine neue Installation/Unterdrueckung.
+- Direktes Review des vollstaendigen dreiteiligen Implementierungsdiffs:
+  APPROVED, keine blockierenden Befunde.
+
+**Grenzen/Naechster Schritt:** Keine neue native Windows-CI-Ausfuehrung
+behauptet; diese ist erst nach Commit/Push moeglich. Lokale Harnesses
+sind entfernt, die zusaetzliche direkte Pruefung lief ohne Datei.
+Phase 1 ist fertig zur Commit-Rueckgabe; noch kein Commit oder Push.
+Phase 2 stellt erst nach Bestaetigung die Windows-Browser-Fixtures um,
+mit erhaltener Apphost-Abdeckung und ohne portable Restdateien.
+Phase 3 belaesst nuetzliche portable Langvergleiche explizit und
+schliesst deren Anleitung/Validierung ab.
+
+**Vorgesehene Commit-Nachricht:**
+
+```text
+ci: default Windows renderer smokes to RID
+
+Use the validated native RID deployment for static and scripted Windows
+smokes to reduce repeated renderer staging without changing confinement.
+Remove duplicate automatic portable smokes while retaining portable
+coverage in the explicit balanced comparison and preserving symbol checks.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-444 - Commit von Phase 1 und Beginn von Phase 2 freigegeben
+
+**Dokumentiert/Ereignis:** 2026-11-16, Nutzerturn 10:13 Europe/Berlin.
+**Nutzerangabe, beschlossen:** "yes" beantwortet die Frage
+"Commit and continue to phase 2?" nach der erfolgreichen Phase-1-
+Validierung. Damit sind der Commit der fuenf zusammengehoerigen
+Dateien samt erhaltenen Messergebnissen und der Beginn der
+Windows-Browser-Fixture-Umstellung freigegeben, kein Push.
+Phase 2 muss Apphost-Abdeckung erhalten, portable Restdateien und
+stille Fallbacks verhindern und Linux/lokale Vertraege bewahren.

@@ -80,12 +80,13 @@ protection, site isolation, or production supply-chain policy.
 
 ## RID-specific staging experiment
 
-The Windows confinement workflow compares the existing portable renderer with a
-framework-dependent RID-specific publish candidate for the native runner's
-`win-x64` or `win-arm64` RID. This is a staging-size experiment only: normal CLI
-and library deployment choices are unchanged, and the launcher still receives
-the renderer DLL and copies its complete trusted deployment. Candidate outputs
-live under the ignored project-local
+The Windows confinement workflow builds the portable renderer as a comparison
+baseline and publishes a framework-dependent RID-specific candidate for the
+native runner's `win-x64` or `win-arm64` RID. The candidate is used by the
+ordinary native Windows static and scripted multiprocess smokes as well as the
+manual comparison; normal CLI and library deployment choices are unchanged,
+and the launcher still receives the renderer DLL and copies its complete
+trusted deployment. Candidate outputs live under the ignored project-local
 `src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/<rid>/` directory;
 RID build outputs are separately isolated under `obj/windows-rid-build/` so
 publishing cannot add native assets to the portable `bin/Release/net10.0`
@@ -129,13 +130,16 @@ restored Win32 native package symbols. Symbols are retained; trimming, AOT,
 self-contained deployment and native payload filtering are not used. File-size
 reduction is not a guarantee of staging or startup wall-clock savings.
 
-After the existing portable controls and native tests, CI runs the same static
-and inline-script multiprocess smokes against the RID candidate. The renderer
-DLL launch, font, Windows backend, AppContainer/Job Object policy, and script
-policy match their portable controls; `smoke-timing` and `smoke-inventory v=1`
-records remain in the job logs for comparison. Cross-publishing and structural
-checks on Linux do not execute Windows code. Candidate execution and confinement
-still require native Windows x64 and arm64 CI evidence.
+After the portable baseline has been built and the existing tests/tools have
+run, native CI publishes and validates the RID candidate before the two ordinary
+multiprocess smokes. Static smoke uses `--multiprocess`; scripted smoke retains
+the legacy `--development-multiprocess` assertion, `--require-sandbox`, and
+`--enable-inline-scripts`. Both use the native RID renderer DLL, registered
+font, Windows backend and existing AppContainer/Job Object policy. The portable
+renderer is not run as an automatic duplicate; `smoke-timing` and
+`smoke-inventory v=1` records remain in the job logs. Cross-publishing and
+structural checks on Linux do not execute Windows code. Candidate execution and
+confinement still require native Windows x64 and arm64 CI evidence.
 
 ### Optional native wall-time comparison
 

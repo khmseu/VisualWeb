@@ -347,8 +347,9 @@ Disabled-Vergleich, Teilfehler und Vollbuffer ab. Solution-Build
 (null Warnungen/Fehler), alle 16.938 Default-Tests (47 Platform,
 1.352 Browser) und Solution-Formatverifikation bestehen; beide
 expliziten CPU-Deadline-Zeilen bleiben aus. Direktes Review ohne
-blockierende Befunde. Die neuen Windows-nativen Assertions benoetigen
-noch x64/arm64-CI; die lokalen Linux-Tests sind kein solcher Nachweis.
+blockierende Befunde. Die neuen Windows-nativen Assertions sind
+inzwischen durch x64/arm64-CI belegt (KP-438); die damaligen lokalen
+Linux-Tests waren kein solcher Nachweis.
 Am 2026-11-16 um 03:44 Europe/Berlin bestaetigt der Nutzer mit
 "commit and continue" die Commit-Rueckgabe und den Beginn von Phase 2
 (KP-429). Die neun Phase-1-Dateien sind als `b2760ea` committed
@@ -367,13 +368,15 @@ Default-Tests in 14 Projekten bestanden, darunter 1.373 Browser
 und 47 Platform. 34 fokussierte SmokeTiming-Faelle bestehen;
 beide CPU-Deadline-Zeilen bleiben explizit. Solution-Format,
 zwoelfdateiger Scoped-Trunk-Check und Diff-Check bestehen.
-Keine neue native Windows-Messung: x64/arm64-Close-/Cancel-Assertions
-und Laufzeiten benoetigen weiter CI. Am 2026-11-16 um 06:33
+Native Windows-x64/arm64-Close-/Cancel-Assertions und die neuen
+Laufzeitrecords sind inzwischen durch CI belegt (KP-438).
+Am 2026-11-16 um 06:33
 Europe/Berlin bestaetigt der Nutzer "commit and continue" (KP-432):
 Phase 2 ist als `9e34f7b` committed (Hook: zwoelf Dateien ohne
 Befund), danach beginnt Phase 3 mit expliziten
 reihenfolgeausgeglichenen nativen Vergleichen (KP-433).
-Die vier lokalen Commits sind noch nicht gepusht.
+Die vier damaligen lokalen Commits sind inzwischen mit der
+Vergleichsautomation veroeffentlicht (KP-437).
 Die Vergleichsschleife ist implementiert: je nativer Architektur
 acht CLI-Laeufe, fuer static/scripted portable-RID und RID-portable,
 mit `smoke-compare v=1`-Markern und Abbruch bei Exit-/Diagnostikfehlern.
@@ -389,11 +392,84 @@ Laeufe bleiben unveraendert. Strukturtest, finales direktes Review
 (KP-435). Am 2026-11-16 um 08:00 Europe/Berlin bestaetigt
 "commit and continue" ausdruecklich die Frage nach Commit, Push
 und nativen Vergleichen samt Auswertung (KP-436).
-Die Automation wird committed und mit den vier lokalen Commits
-veroeffentlicht; danach folgt der explizite Dispatch von
-`windows-startup-comparison.yml`. Noch keine neuen nativen
-Ergebnisse. Kein Cold-Cache- oder Kausalitaetsnachweis aus den
-begrenzten Paaren.
+Die Automation ist als `4838b52` committed (Hook: fuenf Dateien
+ohne Befund) und zusammen mit den vier lokalen Commits auf main
+gepusht. Der explizite Vergleichslauf `43820945522` besteht auf
+diesem Stand: x64-Job `133143633852`, arm64-Job `133143634126`.
+Normale Windows-CI `43820934692`, Linux-CI `43820934683` und
+CodeQL `43820934173` bestehen ebenfalls (KP-438). Die normalen
+Windows-Jobs ueberspringen die neuen Vergleiche tatsaechlich;
+die manuellen Jobs fuehren sie erfolgreich aus.
+
+**Native Ergebnisse (KP-438, Sekunden aeussere CLI-Wandzeit):**
+Je Zelle Bereich aus den beiden Reihenfolgen, keine Statistik.
+
+| Windows | Szenario |      Portable |           RID |
+| ------- | -------- | ------------: | ------------: |
+| x64     | static   | 13.416-17.524 |   7.824-8.130 |
+| x64     | scripted | 14.804-17.148 |   9.021-9.122 |
+| arm64   | static   | 35.962-38.793 | 10.434-12.195 |
+| arm64   | scripted | 34.960-39.529 | 12.196-12.361 |
+
+Static/RID hat in diesen Messungen auf beiden Architekturen die
+niedrigsten CLI-Zeiten (KP-440). Static und scripted pruefen jedoch
+verschiedene Funktionspfade; daraus folgt keine Freigabe, Script-
+Abdeckung zu entfernen. RID-Paketierung ist fuer beide Pfade die
+vorgeschlagene Optimierung, kein Ersatz von scripted durch static.
+
+Alle acht gepaarten Vergleiche zeigen 38.4-73.1% geringere
+CLI-Wandzeit fuer RID; 16 fehlerfreie Aufrufe, 96 Inventare und
+80 vollstaendige Worker-Batches sind geprueft.
+Die Wiederholung bedeutet sechs separate Staging-Vorgaenge je
+CLI-Smoke-Aufruf, je einer pro Worker-Lifetime; acht explizite
+Vergleichsaufrufe je Architektur ergeben 48, beide Architekturen
+zusammen 96. Das ist nicht die Zahl aller Stagings im gesamten CI-Job
+(Klarstellung KP-439). Auf ARM64 liegt
+portable App-Staging bei 15.131-24.834 s je CLI, RID bei
+0.652-1.592 s. Runtime-Ausreisser sind nun eingegrenzt:
+x64 Worker 4 verbringt 8.489 s in Shared-Runtime-File.Copy-
+Aufrufen, nur 0.010 s in deren Metadatenoperationen.
+ARM64 hat zusaetzlich hostfxr-Metadaten-Ausreisser bis 2.255 s
+summiert. x64-Cleanup zeigt separat bis 5.843 s fuer ein
+Staging-Directory.Delete und 2.966 s fuer einen
+DeleteAppContainerProfile-Aufruf. Worker-Confinement-Verifikation
+bleibt etwa 3-4 ms je erfolgreichem Worker.
+
+Belegt sind wiederholtes Deployment-Staging und variable
+Cleanup-/Runtime-Operationen, keine Defender-/Storage-/Scheduling-
+Ursache. Host-Hello bleibt 2.0-5.5 s summiert je CLI; unabhaengige
+Worker-/Host-Uhren erlauben keine praezise Subtraktion zur
+IPC-Latenz. Der sechste Worker schliesst weiterhin vor vollem
+Handshake. Am 2026-11-16 um 08:36 Europe/Berlin gibt der Nutzer
+RID als Default frei und erlaubt nuetzliche weitere Varianten als
+explizite Langtests (KP-441). Das Ziel ersetzt den zuvor offenen
+RID-Vorschlag; der Nutzer genehmigt am 2026-11-16 um 09:48
+Europe/Berlin mit "yes" auch den konkreten Dreiphasenplan (KP-442).
+Static und scripted bleiben beide im normalen
+Umfang; keine Schutzabschwaechung ist beschlossen.
+Ein Codespaces-Prebuild laeuft beim letzten Check noch separat.
+Die drei Instrumentierungsschritte samt nativer Auswertung sind
+abgeschlossen; Ergebnisnachtrag bleibt lokal uncommitted.
+
+**Genehmigter Rollout (KP-441/KP-442):** Erst die normalen Windows-
+CLI-Smokes auf validierte native RID-Publishes umstellen, dann deren
+Browser-Test-Renderer-Fixtures konsistent umstellen, zuletzt portable
+Kontrollen und Wiederholungen ausschliesslich im vorhandenen manuellen
+Vergleich erhalten und Dokumentation/Validierung abschliessen.
+Die Fixtures kopieren bisher portables Build-Output; ein normaler Test
+startet auch den Apphost. Dessen Abdeckung muss bei DLL-only-Publish
+explizit erhalten bleiben. Linux und allgemeine lokale Build-/CLI-
+Vertraege sowie die bereits expliziten CPU-Deadline-Zeilen bleiben
+unveraendert. Phase 1 ist lokal umgesetzt und reviewed (APPROVED,
+KP-443): genau zwei automatische Multiprocess-Smokes verwenden das
+validierte RID-Deployment; portable Duplikate entfallen, der manuelle
+Acht-Aufrufe-Vergleich bleibt unveraendert. Solution-Build ohne
+Warnungen/Fehler, alle 16.959 Default-Tests und Solution-Format
+bestehen. Konfigurierte Linter fuer Workflow und beide Guides
+bestehen ebenfalls. Neue native Windows-Ausfuehrung erst nach
+Veroeffentlichung. Der Nutzer bestaetigt am 2026-11-16 um 10:13
+Europe/Berlin mit "yes" Commit von Phase 1 und Fortsetzung mit
+Phase 2 (KP-444); kein Push beauftragt. Phase 3 bleibt ausstehend.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von
