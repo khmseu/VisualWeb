@@ -343,6 +343,11 @@ rounded by the console logger. Platform-guarded tests that return early still
 appear as passed; their timings do not measure the unsupported-platform scenario.
 The Windows CPU-pressure recovery step retains five additional repetitions of
 the cancellation case; its deadline case is opt-in as described below.
+On native Windows CI, the validated `win-x64`/`win-arm64` framework-dependent
+renderer publish is copied as the browser suite's `Renderer/` fixture before
+any browser test invocation. This keeps all normal DLL-based process tests and
+the native apphost test on the same validated deployment. Local builds default
+to the portable renderer, and the independent `Peer/` fixture is unchanged.
 
 ## Opt-in CPU deadline tests
 

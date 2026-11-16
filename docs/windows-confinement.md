@@ -82,18 +82,23 @@ protection, site isolation, or production supply-chain policy.
 
 The Windows confinement workflow builds the portable renderer as a comparison
 baseline and publishes a framework-dependent RID-specific candidate for the
-native runner's `win-x64` or `win-arm64` RID. The candidate is used by the
-ordinary native Windows static and scripted multiprocess smokes as well as the
-manual comparison; normal CLI and library deployment choices are unchanged,
-and the launcher still receives the renderer DLL and copies its complete
-trusted deployment. Candidate outputs live under the ignored project-local
-`src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/<rid>/` directory;
+native runner's `win-x64` or `win-arm64` RID. After validation, that candidate
+is selected as the `Renderer` fixture for every Windows browser test, including
+the five CPU-cancellation repeats; the selection happens before the first
+browser-test invocation. The native publish includes its apphost, so the suite
+continues to exercise both DLL launches and its native apphost test. The
+candidate is also used by the ordinary native Windows static and scripted
+multiprocess smokes and manual comparison; normal CLI and library deployment
+choices are unchanged, and the launcher still receives the renderer DLL and
+copies its complete trusted deployment. Candidate outputs live under the
+ignored project-local `src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/<rid>/`
+directory.
 RID build outputs are separately isolated under `obj/windows-rid-build/` so
 publishing cannot add native assets to the portable `bin/Release/net10.0`
 deployment.
 
 The workflow uses the SDK's framework-dependent publish with `--runtime <rid>
---self-contained false -p:UseAppHost=false`. For a manual native comparison,
+--self-contained false -p:UseAppHost=true`. For a manual native comparison,
 set `$rid` to `win-x64` or `win-arm64`, then publish and validate with the same
 commands:
 
@@ -102,7 +107,7 @@ $rid = "win-x64" # Or win-arm64 on a native ARM64 Windows runner.
 $buildRoot = Join-Path $PWD "src/Apps/VisualWeb.Renderer/obj/windows-rid-build/"
 dotnet publish src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj `
   --configuration Release --runtime $rid --self-contained false `
-  -p:UseAppHost=false "-p:BaseOutputPath=$buildRoot" `
+  -p:UseAppHost=true "-p:BaseOutputPath=$buildRoot" `
   --output "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/$rid"
 pwsh -NoProfile -File scripts/Validate-WindowsRendererPublish.ps1 `
   -RuntimeIdentifier $rid `
@@ -130,8 +135,16 @@ restored Win32 native package symbols. Symbols are retained; trimming, AOT,
 self-contained deployment and native payload filtering are not used. File-size
 reduction is not a guarantee of staging or startup wall-clock savings.
 
-After the portable baseline has been built and the existing tests/tools have
-run, native CI publishes and validates the RID candidate before the two ordinary
+After the portable baseline and fast tests, native CI publishes and validates
+the RID candidate, then rebuilds the browser-test project with
+`RendererFixtureSource` set to the validated publish directory before any
+browser test runs. Fixture selection defaults to the portable renderer for
+ordinary local builds. Selection cleans only the test output's owned
+`Renderer/` directory before copying the exact selected deployment; it does not
+merge portable assets into the RID fixture or alter the separate `Peer/`
+fixture. A source missing the renderer assembly, or overlapping the fixture
+output, fails the build rather than falling back; CI validates the complete
+publish before selection. Native CI then runs the browser tests and the two ordinary
 multiprocess smokes. Static smoke uses `--multiprocess`; scripted smoke retains
 the legacy `--development-multiprocess` assertion, `--require-sandbox`, and
 `--enable-inline-scripts`. Both use the native RID renderer DLL, registered

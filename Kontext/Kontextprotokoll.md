@@ -13202,3 +13202,122 @@ Dateien samt erhaltenen Messergebnissen und der Beginn der
 Windows-Browser-Fixture-Umstellung freigegeben, kein Push.
 Phase 2 muss Apphost-Abdeckung erhalten, portable Restdateien und
 stille Fallbacks verhindern und Linux/lokale Vertraege bewahren.
+
+### KP-445 - Phase 1 committed, RID-Browser-Fixture implementiert
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin, nach Freigabe KP-444.
+**Belegt:** Phase 1 als `a70af56` committed; Pre-Commit-Hook
+prueft fuenf Dateien ohne Befund. Kein Push.
+
+**Phase-2-Umsetzung:** Das Windows-Workflow zieht isoliertes
+framework-dependent RID-Publish und bestehende vollstaendige
+Validierung vor die erste Browser-Test-Ausfuehrung, einschliesslich
+der fuenf CPU-Cancellation-Wiederholungen. Danach baut es das
+Browser-Testprojekt mit absolutem `RendererFixtureSource` neu.
+Dieser Parameter ist nur in Windows-CI gesetzt; lokale Builds
+verwenden weiterhin das portable Renderer-Build-Output.
+
+**Apphost-Entscheidung:** Statt eines zweiten portablen Fixture-
+Deployments verwendet der RID-Publish die SDK-Option `UseAppHost=true`.
+Die normale DLL-Launch-Policy bleibt bestehen; der vorhandene
+`NativeAppHostAlsoReturnsTheExactPageFrame`-Test findet damit seinen
+echten nativen Apphost im selben RID-Deployment. Confinement startet
+weiterhin die DLL; kein Apphost-only-Sandbox-Vertrag wird eingefuehrt.
+
+**Fixture-Vertrag:** `CopyRendererFixture` prueft absolutes TargetDir,
+Vorhandensein der Renderer-Assembly und lexikalisch getrennte
+Quell-/Zielbaeume, bevor nur das eigene `Renderer/`-Ausgabeverzeichnis
+ersetzt wird. Kein Merge portabler Restdateien, kein stiller Fallback;
+Peer bleibt separat. Die Vorpruefung behauptet nicht, selbst den
+gesamten Publish semantisch zu validieren: dies bleibt die bestehende
+CI-Publish-Validierung vor der Auswahl.
+
+**Bisherige Validierung:** Implementierungs-Harness zeigt zuerst die
+alten Defekte (Quellauswahl ignoriert, stale Dateien erhalten,
+fehlende Quelle akzeptiert), danach exakte Kopien und Stale-Cleanup.
+Fehlende Quelle/Assembly und ueberlappende Pfade scheitern, ohne die
+vorhandene Fixture zu entfernen. Release-Browser-Projekt: 1.373 Tests
+bestanden, CPU-Deadline-Zeilen weiterhin explizit. Release-
+Browser-Build bestaetigt die normale portable Default-Fixture.
+Ein win-x64-Cross-Publish mit Apphost besteht den unveraenderten
+Validator einschliesslich Symbol-Hashes und Reduktion; die ausgewaehlte
+Fixture entspricht allen 48 Publish-Dateien einschliesslich EXE.
+Das ist strukturelle Linux-Evidenz, keine Windows-Ausfuehrung.
+Temporaere Harness-/Publish-Artefakte sind entfernt.
+Zusaetzlicher Solution-Build: null Warnungen/Fehler.
+
+**Status:** Finale Gesamtsuite, Format und Linter folgen. Kein neuer
+Commit/Push; Phase 3 noch nicht begonnen.
+
+### KP-446 - Phase 2 validiert und zur Commit-Rueckgabe bereit
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin; Abschluss von KP-445.
+**Review:** APPROVED nach direktem Review des vollstaendigen
+fuenfteiligen Implementierungs-/Guide-Diffs; keine blockierenden
+Befunde. Die Quellenpruefung ist im Guide praezisiert: Assembly
+und Pfadueberlappung werden im Target geprueft, das vollstaendige
+Publish durch den vorausgehenden bestehenden CI-Validator.
+
+**Geaenderte Implementierungs-/Guide-Dateien:**
+
+- `tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj`
+- `.github/workflows/windows-confinement.yml`
+- `docs/windows-confinement.md`
+- `src/Apps/VisualWeb.Renderer/README.md`
+- `tests/README.md`
+
+Zusaetzlich aktualisieren beide Kontextdateien Status und Evidenz.
+**Geaenderter Target:** `CopyRendererFixture`, jetzt mit expliziter
+Quellauswahl und exaktem Ersatz des eigenen Renderer-Ausgabeordners.
+Keine Engine-/Browser-Laufzeitfunktionen oder Testfaelle entfernt.
+Die fokussierte Rot/Gruen- und Publish-Evidenz steht in KP-445;
+keine neue permanente Testdatei, Harnesses sind entfernt.
+
+**Abschliessende Validierung:**
+
+- `dotnet build VisualWeb.slnx`: erfolgreich, null Warnungen/Fehler.
+- `dotnet test VisualWeb.slnx --no-build`: alle 16.959 Default-Tests
+  in 14 Projekten bestanden, darunter 1.373 Browser-Tests.
+  Beide CPU-Deadline-Zeilen weiterhin explizit, nicht ausgefuehrt.
+- `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`:
+  erfolgreich.
+- Konfiguriertes Trunk ueber die fuenf Implementierungs-/Guide-Dateien:
+  keine Befunde. Die bestehende Prettier-Ausnahme fuer `tests/README.md`
+  wird als Hinweis gemeldet und bleibt unveraendert.
+- Zusaetzliche semantische Workflow-Pruefung besteht: Publish,
+  Validierung und Fixture-Auswahl liegen vor jeder Browser-Test-
+  Ausfuehrung einschliesslich CPU-Cancellation-Repeats. Validator,
+  Tests, Matrix, manuelle Vergleichsschleife und alle anderen
+  vorhandenen Schritte bleiben unveraendert.
+- `git diff --check`: erfolgreich.
+
+**Status/Naechster Schritt:** Phase 1 bleibt als `a70af56` lokal
+committed; Phase 2 ist uncommitted. Kein Push. Neue native Windows-
+x64/arm64-Ausfuehrung mit Apphost-Publish und RID-Fixture steht aus;
+Cross-Publish bleibt strukturelle Evidenz, keine Zielausfuehrung.
+Jetzt Commit-Rueckgabe und Stopp; nach Bestaetigung folgt Phase 3
+fuer explizite Langvergleiche und abschliessende Anleitung.
+
+**Vorgesehene Commit-Nachricht:**
+
+```text
+test: use RID renderer fixtures in Windows CI
+
+Select the validated native publish before all Windows browser tests.
+Retain apphost coverage and replace fixture contents without portable
+leftovers. Keep local builds portable and reject missing assemblies
+or overlapping fixture paths before removing the old fixture.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-447 - Commit von Phase 2 und Beginn von Phase 3 freigegeben
+
+**Dokumentiert/Ereignis:** 2026-11-16, Nutzerturn 11:11 Europe/Berlin.
+**Nutzerangabe, beschlossen:** "yes" beantwortet die Frage
+"Commit and continue to phase 3?" nach dem erfolgreichen
+Phase-2-Handoff. Damit sind der Commit der sieben zugehoerigen
+Dateien und der Abschluss der Anleitung/Pruefung expliziter
+Langvergleiche freigegeben, kein Push.
+Portable Vergleiche und CPU-Deadline-Tests bleiben explizit;
+keine neue automatische Langtest-Abdeckung wird eingefuehrt.

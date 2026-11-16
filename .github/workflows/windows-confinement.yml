@@ -39,6 +39,22 @@ jobs:
           dotnet test VisualWeb.slnx --configuration Release --no-build
           --filter "FullyQualifiedName!~VisualWeb.Browser.Tests&FullyQualifiedName!~VisualWeb.Engine.Scripting.Tests"
           --logger "console;verbosity=normal"
+      - name: Publish framework-dependent Windows renderer candidate
+        shell: pwsh
+        run: |
+          $buildRoot = Join-Path $env:GITHUB_WORKSPACE "src/Apps/VisualWeb.Renderer/obj/windows-rid-build/"
+          dotnet publish src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj --configuration Release --runtime win-${{ matrix.architecture }} --self-contained false -p:UseAppHost=true "-p:BaseOutputPath=$buildRoot" --output src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate Windows renderer publish candidate
+        shell: pwsh
+        run: |
+          ./scripts/Validate-WindowsRendererPublish.ps1 -RuntimeIdentifier win-${{ matrix.architecture }} -PublishDirectory src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }} -PortableDirectory src/Apps/VisualWeb.Renderer/bin/Release/net10.0 -RequireReduction
+      - name: Select validated RID renderer fixture for browser tests
+        shell: pwsh
+        run: |
+          $rendererFixture = Join-Path $env:GITHUB_WORKSPACE "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}"
+          dotnet build tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-restore "-p:RendererFixtureSource=$rendererFixture"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Repeat CPU-pressure cancellation recovery
         shell: pwsh
         run: |
@@ -56,16 +72,6 @@ jobs:
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
       - name: Run slow scripting tests
         run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
-      - name: Publish framework-dependent Windows renderer candidate
-        shell: pwsh
-        run: |
-          $buildRoot = Join-Path $env:GITHUB_WORKSPACE "src/Apps/VisualWeb.Renderer/obj/windows-rid-build/"
-          dotnet publish src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj --configuration Release --runtime win-${{ matrix.architecture }} --self-contained false -p:UseAppHost=false "-p:BaseOutputPath=$buildRoot" --output src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Validate Windows renderer publish candidate
-        shell: pwsh
-        run: |
-          ./scripts/Validate-WindowsRendererPublish.ps1 -RuntimeIdentifier win-${{ matrix.architecture }} -PublishDirectory src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }} -PortableDirectory src/Apps/VisualWeb.Renderer/bin/Release/net10.0 -RequireReduction
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
       - run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows
       - name: Compare portable and RID Windows renderer smokes (manual opt-in only)

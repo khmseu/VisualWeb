@@ -16,12 +16,31 @@
     <None Include="../Engine.Text.Tests/Data/NotoSans.ttf" Link="Data/NotoSans.ttf" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../Engine.Text.Tests/Data/NotoSans-*.ttf" Link="Data/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <PropertyGroup>
+    <RendererFixtureSource Condition="'$(RendererFixtureSource)' == ''">$(MSBuildThisFileDirectory)../../src/Apps/VisualWeb.Renderer/bin/$(Configuration)/$(TargetFramework)</RendererFixtureSource>
+    <_RendererFixtureSourceFullPath>$([System.IO.Path]::GetFullPath('$(RendererFixtureSource)', '$(MSBuildProjectDirectory)'))</_RendererFixtureSourceFullPath>
+    <_RendererFixtureSourceDirectory>$([System.IO.Path]::GetFullPath('$(_RendererFixtureSourceFullPath)/'))</_RendererFixtureSourceDirectory>
+    <_RendererFixtureSourceUpper>$([System.String]::Copy('$(_RendererFixtureSourceDirectory)').ToUpperInvariant())</_RendererFixtureSourceUpper>
+  </PropertyGroup>
   <Target Name="CopyRendererFixture" AfterTargets="Build">
+    <PropertyGroup>
+      <_RendererFixtureOutputFullPath>$([System.IO.Path]::GetFullPath('$(TargetDir)Renderer'))</_RendererFixtureOutputFullPath>
+      <_RendererFixtureOutputDirectory>$([System.IO.Path]::GetFullPath('$(_RendererFixtureOutputFullPath)/'))</_RendererFixtureOutputDirectory>
+      <_RendererFixtureOutputUpper>$([System.String]::Copy('$(_RendererFixtureOutputDirectory)').ToUpperInvariant())</_RendererFixtureOutputUpper>
+    </PropertyGroup>
+    <Error Condition="'$(TargetDir)' == '' Or !$([System.IO.Path]::IsPathRooted('$(TargetDir)'))"
+           Text="Browser test TargetDir must be an absolute output directory before copying the renderer fixture." />
+    <Error Condition="!Exists('$(_RendererFixtureSourceFullPath)/VisualWeb.Renderer.dll')"
+           Text="RendererFixtureSource must contain VisualWeb.Renderer.dll: $(_RendererFixtureSourceFullPath)" />
+    <Error Condition="'$(_RendererFixtureSourceUpper)' == '$(_RendererFixtureOutputUpper)' Or $(_RendererFixtureSourceUpper.StartsWith('$(_RendererFixtureOutputUpper)')) Or $(_RendererFixtureOutputUpper.StartsWith('$(_RendererFixtureSourceUpper)'))"
+           Text="RendererFixtureSource and the owned Renderer fixture output directory must not overlap." />
     <ItemGroup>
-      <RendererFixture Include="../../src/Apps/VisualWeb.Renderer/bin/$(Configuration)/$(TargetFramework)/**/*" />
+      <RendererFixture Include="$(_RendererFixtureSourceFullPath)/**/*" />
       <PeerFixture Include="../Renderer.TestPeer/bin/$(Configuration)/$(TargetFramework)/**/*" />
     </ItemGroup>
-    <Copy SourceFiles="@(RendererFixture)" DestinationFiles="@(RendererFixture->'$(OutDir)Renderer/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <RemoveDir Directories="$(_RendererFixtureOutputFullPath)" />
+    <MakeDir Directories="$(_RendererFixtureOutputFullPath)" />
+    <Copy SourceFiles="@(RendererFixture)" DestinationFiles="@(RendererFixture->'$(_RendererFixtureOutputFullPath)/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(PeerFixture)" DestinationFiles="@(PeerFixture->'$(OutDir)Peer/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 </Project>

@@ -469,7 +469,20 @@ bestehen. Konfigurierte Linter fuer Workflow und beide Guides
 bestehen ebenfalls. Neue native Windows-Ausfuehrung erst nach
 Veroeffentlichung. Der Nutzer bestaetigt am 2026-11-16 um 10:13
 Europe/Berlin mit "yes" Commit von Phase 1 und Fortsetzung mit
-Phase 2 (KP-444); kein Push beauftragt. Phase 3 bleibt ausstehend.
+Phase 2 (KP-444). Phase 1 ist als `a70af56` committed
+(Hook: fuenf Dateien ohne Befund), nicht gepusht.
+Phase 2 ist lokal abgeschlossen und direkt reviewed (APPROVED,
+KP-445/KP-446). `RendererFixtureSource` waehlt in Windows-CI das vorher
+validierte RID-Publish; normale lokale Builds bleiben portabel.
+Das SDK-Publish hat nun `UseAppHost=true`, sodass der unveraenderte
+Apphost-Test weiter ausfuehrbar bleibt. Die Renderer-Fixture wird
+nach Vorabpruefung exakt ersetzt; Peer bleibt separat. Release-
+Browser-Tests: 1.373 bestanden; Solution-Build ohne Warnungen/Fehler,
+alle 16.959 Default-Tests und Solution-Format bestanden. Konfigurierte
+Linter fuer die fuenf Implementierungs-/Guide-Dateien ohne Befund.
+Am 2026-11-16 um 11:11 Europe/Berlin genehmigt der Nutzer mit
+"yes" den Commit von Phase 2 und Fortsetzung mit Phase 3 (KP-447).
+Native Windows-Ausfuehrung bleibt ausstehend; kein Push beauftragt.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von
