@@ -1056,8 +1056,9 @@ ordinary CLI and library callers do not enable them by default. For example:
 Each record has exactly the named phase, numeric renderer and request IDs, and
 invariant-culture milliseconds with three decimal places. Zero means not
 applicable. IDs are local to one diagnostic sink, not OS process IDs; a new
-worker lifetime gets a new renderer ID. Only timing metadata is recorded, never
-page paths, HTML, URLs or secrets. Other existing diagnostics may still appear.
+worker lifetime gets a new renderer ID. Windows smoke additionally records
+aggregate staging counts/bytes, never page paths, HTML, URLs or secrets. Other
+existing diagnostics may still appear.
 
 Phases include `cli.parse-preflight`, `cli.total`, `shell.window-system`,
 `shell.construct`, `smoke.open-window`, `smoke.run`, `smoke.initial-page`,
@@ -1069,8 +1070,9 @@ Scopes emit on failure where entered, including cleanup; they do not imply
 success. Measurements are elapsed wall time, not CPU time. Nested scopes and
 asynchronous work overlap, so their durations cannot be summed.
 Recording uses a sealed, thread-safe data-only buffer with 4,096 preallocated
-record slots and no I/O or callbacks. Overflow is latched during recording and
-reported as an explicit error on export, not silently truncated. Export takes a
+timing slots and 4,096 aggregate inventory slots, and no caller callbacks or
+writers. Overflow in either record kind is latched during recording and reported
+as an explicit error on export, not silently truncated. Export takes a
 snapshot of completed records; still-running operations are not awaited solely
 for diagnostics. `SmokeTimings.WriteTo` formats invariantly regardless of the
 writer's culture, and propagates writer/capacity errors. It retains no writer;
@@ -1079,6 +1081,21 @@ paths and serialize exports to their writer. CLI export runs after handled
 failures, but is bypassed for an unexpected escaping exception to avoid masking
 that exception. A killed/hung browser cannot export its buffered diagnostics.
 See [renderer timings](renderer-processes.md) for worker and Windows stages.
+
+Windows smoke exports also include one aggregate per renderer lifetime, for
+example:
+`smoke-inventory v=1 renderer=1 units=files,bytes app-files=91 app-bytes=... app-non-rid-files=... app-non-rid-bytes=... app-active-rid-files=... app-active-rid-bytes=... app-other-rid-files=... app-other-rid-bytes=... app-symbol-files=... app-symbol-bytes=... runtime-files=... runtime-bytes=...`.
+File/byte pairs count files successfully staged from the app tree and runtime
+tree (host/fxr, selected shared runtime, and `dotnet.exe`). App partitions
+`non-rid`, `active-rid`, and `other-rid` are disjoint and sum to the app total.
+The `.pdb` symbol pair is an explicitly overlapping subset of those app
+partitions. Other RID assets are only classified by RID; they are not asserted
+to be unused fallback assets. Counts come from the existing copy traversal,
+which skips reparse points; there is no separate inventory walk. The optional
+inventory path reads file lengths during that traversal; when diagnostics are
+disabled there is no inventory metadata read. Inventory output contains no
+paths or file contents. The `units=files,bytes` schema is versioned separately
+from the unchanged `smoke-timing ... ms=...` format.
 
 The [browser suite](../tests/VisualWeb.Browser.Tests/) exercises exact history/
 limits, failed and stale navigation, close/move lifecycle, MIME/encoding and

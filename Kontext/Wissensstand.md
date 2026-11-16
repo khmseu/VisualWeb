@@ -159,7 +159,7 @@ Logs mehr als sechs Sekunden. Der ARM64-Zusatz liegt vor allem ausserhalb
 der Browser-Suite. Interne Ursachen wie Start/Staging, AppContainer,
 Grafik oder Dateipruefung sind aus diesen Logs nicht isolierbar.
 
-**Naechster Auftrag: Smoke-Phasen messen (2026-11-15):** Der Nutzer hat
+**Smoke-Phaseninstrumentierung abgeschlossen (2026-11-16):** Der Nutzer hat
 Instrumentierung, Push und erneute CI-Auswertung beauftragt. Die Einstiege
 sind `Program.cs` (`BrowserSmoke.Run` samt Wait-Schleifen),
 `ProcessPageRenderer` (Start/Handshake/Exchange) und
@@ -180,10 +180,69 @@ Warnungen/Fehler bestehen. Lokaler unsandboxed gescripteter Multiprocess-
 Dummy-Smoke besteht mit korrelierten Zeiten; keine native Windows-Evidenz.
 Gesamtregression besteht mit 16.931 Tests (1.351 Browser, 41 Platform),
 beide expliziten CPU-Deadline-Zeilen bleiben ausgeschlossen. Formatpruefung
-und Diff-Check bestehen. Review APPROVED; Commit/Push und native CI-Auswertung
-stehen als naechster Schritt an. Bereits
+und Diff-Check bestehen. Review APPROVED; als `bfce5aa` auf `main` committed
+und gepusht. Native CI besteht auf allen vier Konfigurationen: Windows
+`43771950858`, Linux `43771950888`; CodeQL `43771950625` besteht ebenfalls.
+Die beiden neuen Windows-Timing-/Ownership-Tests sind auf x64 und arm64
+nativ bestanden. Bereits
 vorliegende lokale Kontext-Aenderungen aus KP-413/KP-414 bleiben erhalten.
 Siehe KP-415 und KP-416.
+
+**Gemessene Windows-Ursache (2026-11-16):** KP-417 enthaelt die Phasentabelle
+auf `bfce5aa`. Jeder Multiprocess-Smoke startet sechs Worker und kopiert
+Deployment und Runtime fuer jeden erneut. Auf Windows arm64 liegen im
+statischen Smoke 26.48 von 26.93 aufsummierten Startup-Sekunden in diesen
+Kopien; im gescripteten Smoke 28.96 von 29.29 Sekunden. Die CLI braucht
+34.05/40.64 Sekunden, waehrend die aufsummierten Render-Requests nur
+1.16/4.50 Sekunden brauchen. Profil/Storage/ACL/Job sind vergleichsweise
+klein (zusammen deutlich unter einer Sekunde). Auf x64 gibt es zusaetzlich
+einzelne Cleanup-/Handshake-Ausreisser. Gemessen ist Zeit innerhalb der
+Dateikopien, keine isolierte Datentraeger-/Antivirus-Ursache. Naechster
+Performance-Untersuchungsbereich waere wiederholtes vertrauenswuerdiges
+Staging; keine Lockerung von Origin-Wechseln, ACLs oder Limits beschlossen.
+
+**Deployment-Inventar untersucht (2026-11-16):** Auf "continue investigation"
+wurde der Kopierpfad weiter verfolgt (KP-418). `CopyTree` kopiert rekursiv alle
+regulaeren Dateien ausser Reparse-Points; weder Architektur noch Symbole
+werden gefiltert. Das lokal vorhandene portable Release-Deployment des
+Renderers umfasst 91 Dateien, 756.130 MiB und 17 RID-Verzeichnisse,
+davon 341.139 MiB `.pdb`-Dateien. Auch Release deklariert sechs native
+HarfBuzz-/Skia-PDBs als `runtimeTargets` mit `assetType: native`; dies ist
+also kein reiner Debug-Build-Effekt. Eine rechnerische Dateiauswahl
+Root/sonstige Dateien plus nur `win-x64` bzw. `win-arm64` waere
+170.775/164.104 MiB gross (77.41/78.30% weniger); ohne PDBs
+56.842/52.875 MiB (92.48/93.01% weniger). Das sind lokale Linux-Build-
+Inventare und hypothetische Auswahlen, keine gemessenen Windows-CI-
+Deployments, getestete Publish-Profile oder Laufzeitverbesserungen.
+Die nativen Logs zeigen zudem starke Streuung auch spaeterer Worker:
+arm64 gescriptet etwa 0.370 bis 8.725 Sekunden fuer die App-Kopie.
+Ein reiner erster Kaltstart erklaert dies nicht; Antivirus, Storage und
+Host-Scheduling bleiben unbewiesen. Ein x64-Disposal von 4.269 Sekunden
+ist noch nicht nach Prozessende, Profilabbau und Dateiloeschung aufgeteilt.
+Naechster Vorschlag: natives Windows-Release-Inventar samt kopierten
+Dateien/Bytes und getrennten Cleanup-Zeiten messen, danach RID-spezifisches
+Packaging gegen dieselben Smokes pruefen. Symbolauslassung getrennt
+bewerten; keine brittle Dateifreigabeliste im Sicherheitslauncher und
+kein gemeinsam beschreibbares Staging als vorschnelle Optimierung.
+Bis KP-418 keine Code-/Policy-Aenderung und kein neuer Commit/Push/CI-Lauf.
+Am 2026-11-16 um 00:29 Europe/Berlin hat der Nutzer den vorgeschlagenen
+Dreischritt mit "yes" freigegeben (KP-419): zuerst native Kopierinventare
+und getrennte Cleanup-Zeiten, danach architekturspezifisches Packaging
+mit beibehaltenen Symbolen, zuletzt native CI und Vergleich. Phase 1 ist
+implementiert und im Review APPROVED (KP-420); Packaging und Confinement
+bleiben unveraendert. Solution-Build, 43 Platform-Tests und Formatpruefung
+bestehen. Der erste Browser-Projektlauf hatte einen V8-Deadline-Fehler
+in einem unveraenderten InlineScript-Prozesstest bei parallel laufender
+Formatpruefung (1.351 bestanden, 1 fehlgeschlagen). Beide Parameterzeilen
+dieses Tests bestehen isoliert danach; keine Deadlines angepasst.
+Die anschliessende volle Default-Solution besteht mit 16.934 Tests,
+darunter alle 1.352 Browser- und 43 Platform-Faelle; beide expliziten
+CPU-Deadline-Zeilen bleiben aus. Native Windows-Evidenz bleibt offen.
+Am 2026-11-16 um 01:13 Europe/Berlin bestaetigt der Nutzer mit
+"commit and continue" die Commit-/Fortsetzungsrueckgabe (KP-421).
+Die Messbaseline wird zuerst committed/veroeffentlicht; danach beginnt
+die RID-spezifische Packaging-Erprobung mit beibehaltenen Symbolen.
+Native Ergebnisse und Packaging-Validierung sind noch offen.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale

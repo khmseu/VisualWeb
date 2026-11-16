@@ -354,6 +354,9 @@ are validated, frame pixels are copied into the browser result, and the final
 cancellation check completes. It also records exceptions from these steps, but
 excludes subsequent worker-stop cleanup in the exchange's catch handlers.
 Pre-write startup/Hello failures have no render-request record.
+On Windows, the same smoke export can include per-worker copy inventories and
+the split process/streams, AppContainer-profile and staged-directory disposal
+timings described in the [confinement guide](windows-confinement.md).
 The [smoke schema and overlap limits](browser-shell.md#validation)
 apply to all backends.
 

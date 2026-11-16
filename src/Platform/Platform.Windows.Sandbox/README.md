@@ -11,6 +11,15 @@ renderer temp and profile storage are denied. The child receives only private
 stdin/stdout/stderr pipes and a minimal environment. Startup fails closed if
 required APIs or resource controls are unavailable.
 
+Optional smoke diagnostics time staging and disposal phases. With diagnostics
+enabled, the existing copy traversal aggregates successfully copied app/runtime
+file counts and bytes, partitions app files by non-RID/active-RID/other-RID,
+and reports `.pdb` files as an overlapping subset. Runtime totals include
+host/fxr, the selected shared runtime and `dotnet.exe`; other RID assets are
+not presumed unused. Reparse-point skips and copy inclusion remain unchanged.
+No extra length metadata is read when diagnostics are disabled. Exports contain
+only aggregate counts, never paths or file contents.
+
 Windows Job Objects have no thread-count or per-job swap limit; commit limits
 do not disable pagefile use. This profile does not claim quotas for unrelated
 Windows storage or a general filesystem sandbox.

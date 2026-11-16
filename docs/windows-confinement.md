@@ -98,13 +98,26 @@ For native browser smoke timing, `windows.start` nests `windows.profile-storage`
 `windows.copy-fonts`, `windows.temp-acl`, `windows.job` and
 `windows.process` (pipes, process attributes, creation and resume). Failed
 launches also emit `windows.start-cleanup` if cleanup is entered;
-`windows.dispose` covers worker shutdown and profile/staging cleanup.
+`windows.dispose` covers cleanup and contains
+`windows.dispose-process-streams` (stream closure, Job Object termination,
+process wait and process-handle disposal), `windows.dispose-profile` (AppContainer
+profile removal), and `windows.dispose-staging` (staged-directory deletion).
+The phases retain the existing order and are nested wall-clock measurements.
 These host-side records use the same renderer lifetime ID as the browser's
 `renderer.start`/`renderer.dispose`. They are wall clocks and overlap their
 enclosing phases. The optional `HostTimingBuffer` passed to sandbox startup
 is sealed, bounded and data-only; no caller callback or writer runs during
 launch, successful ownership transfer or worker disposal. A full buffer latches
 an export error without interrupting native cleanup or changing launch policy.
+When enabled, one versioned `smoke-inventory` aggregate reports successfully
+copied app and runtime file counts/bytes for each renderer. Runtime includes
+host/fxr, the selected shared runtime and `dotnet.exe`; app assets are split
+into non-RID, active Windows RID and other RID partitions, with `.pdb` files
+reported as an overlapping subset. Other RID assets are not assumed unused.
+The existing staging traversal supplies counts and skips reparse points; there
+is no second scan, no path/content output, and no length metadata read when
+diagnostics are disabled. The aggregate uses explicit `files,bytes` units and
+does not change the existing timing record schema.
 See the [schema](browser-shell.md#validation). Native Windows
 CI is required to observe and validate these stages.
 

@@ -11478,3 +11478,372 @@ Deadline-Zeilen bleiben uebersprungen. Browser-Suite lokal 9:10; lokale
 Wandzeiten des gemeinsam genutzten Hosts sind kein nativer Windows-Vergleich.
 Review ist APPROVED. Commit/Push und anschliessende native CI-Messung
 stehen an; bestehende Sicherheitsgrenzen und Laufzeitbudgets unveraendert.
+
+**Veroeffentlichung (Belegt, 2026-11-15):** Instrumentierung als
+`bfce5aa6f1ce412a17b37ec27bcd30c88fc9392d` committed und auf `main` gepusht.
+Commit-Hook formatierte diese Kontext-Datei und meldete fuer alle 15
+geaenderten Dateien keine Probleme. Push startet Windows confinement
+`43771950858`, Linux development `43771950888` und CodeQL `43771950625`;
+alle drei sind zur Erfassung dieses Zwischenstands noch in Arbeit.
+
+### KP-417 - Native Smoke-Phasen zeigen wiederholtes Windows-Staging als Hauptkostenblock
+
+- Dokumentiert am: 2026-11-16, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: CI-Start 2026-11-15, Abschluss/Auswertung 2026-11-16
+  (Europe/Berlin).
+- Quellen: Instrumentierungscommit `bfce5aa6f1ce412a17b37ec27bcd30c88fc9392d`;
+  [Linux x64](https://github.com/khmseu/VisualWeb/actions/runs/43771950888/job/132989587987),
+  [Linux arm64](https://github.com/khmseu/VisualWeb/actions/runs/43771950888/job/132989588032),
+  [Windows x64](https://github.com/khmseu/VisualWeb/actions/runs/43771950858/job/132989587838),
+  [Windows arm64](https://github.com/khmseu/VisualWeb/actions/runs/43771950858/job/132989588102),
+  [CodeQL](https://github.com/khmseu/VisualWeb/actions/runs/43771950625);
+  Diagnoseschema in [Browser-Smoke](../docs/browser-shell.md#validation),
+  [Renderer-Phasen](../docs/renderer-processes.md) und
+  [Windows-Staging](../docs/windows-confinement.md#validation).
+- Bezug: schliesst Auftrag und Freigabe aus KP-415/KP-416 ab und
+  konkretisiert die bisher offene interne Ursache aus KP-414.
+
+**Validierung (Belegt):** Alle drei Workflows einschliesslich vier nativer
+Konfigurationen bestehen. Beide Windows-Architekturen bestehen auch
+`NativeWindowsReportsStagingAndCleanup` und
+`NativeWindowsFullDiagnosticBufferCannotInterfereWithWorkerLifetime`.
+Alle Browser-Suiten enthalten 1.351 Default-Faelle; lokal bestehen
+Solution-Build, 16.931 Tests, Format und gescripteter Multiprocess-Dummy-
+Smoke. Vor dem erfolgreichen Lauf wurden die ersten Gesamt-Test-/Format-
+Laeufe fuer die Review-Korrektur bewusst gestoppt, nicht als Erfolg gewertet.
+Bestehende Trunk-/Runner-Migrationshinweise bleiben ohne neuen Befund.
+
+**Phasenmessungen (Belegt, Sekunden, auf zwei Dezimalstellen gerundet):**
+
+| Phase                                             | Windows x64 statisch | Windows arm64 statisch | Windows x64 gescriptet | Windows arm64 gescriptet |
+| ------------------------------------------------- | -------------------- | ---------------------- | ---------------------- | ------------------------ |
+| CLI gesamt (`cli.total`)                          | 17.24                | 34.05                  | 15.16                  | 40.64                    |
+| Alle sechs Worker-Starts (`windows.start`)        | 8.13                 | 26.93                  | 4.68                   | 29.29                    |
+| Deployment-Kopien (`windows.copy-app`)            | 6.38                 | 16.45                  | 2.13                   | 21.57                    |
+| Runtime-/Host-Kopien (`windows.copy-runtime`)     | 1.55                 | 10.04                  | 1.09                   | 7.39                     |
+| Profil/Storage (`windows.profile-storage`)        | 0.06                 | 0.10                   | 0.05                   | 0.09                     |
+| Prozessanlage (`windows.process`)                 | 0.10                 | 0.32                   | 1.38                   | 0.21                     |
+| Hello-Warten (`renderer.hello`)                   | 2.44                 | 4.17                   | 5.59                   | 5.04                     |
+| Fuenf Render-Requests (`renderer.render-request`) | 1.31                 | 1.16                   | 3.37                   | 4.50                     |
+| Sechs Worker-Disposals (`windows.dispose`)        | 4.97                 | 1.41                   | 1.13                   | 1.42                     |
+
+Alle Komponenten ausser CLI gesamt sind je Phase ueber die Worker/Requests
+eines Smokes aufsummiert, keine Einzelworker-Dauer. Enclosing-Scopes enthalten
+Unterphasen und asynchrone Arbeit kann ueberlappen; die Tabellenzeilen duerfen
+nicht addiert oder als exakte disjunkte CLI-Anteile ausgegeben werden.
+Profil-ACLs, Root-/Temp-ACL und Job-Anlage sind getrennt erfasst und bleiben
+zusammen deutlich unter einer Sekunde je Smoke.
+
+**Zuordnung (Belegt):** Jeder Smoke erzeugt sechs Renderer-Lifetimes,
+sechs Hello-/Disposal-Records und fuenf Render-Requests. Neue Tabs/Fenster
+und opaque-document/history-Wechsel verursachen wiederholte Worker-Starts;
+der letzte Fenster-Worker wird im Lifecycle geschlossen. Jeder Windows-
+Start kopiert eigenes Deployment und Runtime. Auf arm64 liegen statisch
+26.4817 von 26.9348 aufsummierten Startup-Sekunden (98.3 %) und gescriptet
+28.9637 von 29.2923 Sekunden (98.9 %) in den beiden Kopierphasen.
+Das sind Anteile innerhalb aufsummierter Startup-Zeit, keine Behauptung
+eines isolierten CPU- oder vollstaendigen CLI-Zeitanteils.
+
+Auf x64 enthaelt der statische Smoke einen einzelnen Disposal-Ausreisser
+von 4.2691 Sekunden; im gescripteten Smoke dauert ein Hello 3.55 Sekunden
+und eine Prozessanlage 1.2636 Sekunden. Diese Restkosten sind sichtbar,
+aber die Logs isolieren nicht deren interne OS-Ursachen.
+
+**Linux-Vergleich (Belegt, kein gleicher Confinement-Pfad):**
+
+| CLI gesamt                      | Linux x64 | Linux arm64 | Windows x64 | Windows arm64 |
+| ------------------------------- | --------- | ----------- | ----------- | ------------- |
+| Statischer Multiprocess-Smoke   | 1.5512 s  | 2.1778 s    | 17.2371 s   | 34.0476 s     |
+| Gescripteter Multiprocess-Smoke | 1.9995 s  | 2.6872 s    | 15.1649 s   | 40.6360 s     |
+
+Linux verwendet hier weiterhin dummy und explizit unsandboxed, Windows
+native Darstellung und AppContainer. Linux hat deshalb keine entsprechenden
+Windows-Staging-Kopien; dies ist keine allgemeine OS-/Confinement-Benchmark.
+Die Jobs-API misst auf Windows fuer die CLI-Schritte inklusive Launcher
+18/35 Sekunden statisch und 17/43 Sekunden gescriptet (x64/arm64), gegen
+18/46 bzw. 16/38 Sekunden im vorherigen Lauf. Daraus wird kein Speedup
+abgeleitet: Es wurde nur instrumentiert, Runner-/I/O-Streuung bleibt.
+
+**Schlussfolgerung (Ableitung mit direkter Messgrundlage):** Wiederholte
+Dateikopieroperationen beim vertrauenswuerdigen Worker-Staging sind der
+klare naechste Performance-Untersuchungsbereich, insbesondere auf arm64.
+Nicht die kleinen AppContainer-Profil-/ACL-/Job-Aufrufe oder absichtliche
+CPU-Deadline-Wartezeiten erklaeren diesen Hauptanteil. Ob hinter den
+Kopierzeiten Datentraeger, Dateiscans, Dateimenge oder andere Hosteffekte
+stehen, ist offen. Keine Optimierung, kein Staging-Sharing und keine
+Lockerung von Confinement, Origin-Rotation oder Ressourcenlimits umgesetzt.
+
+**Status:** Instrumentierung committed/gepusht, native CI gruen und
+Reanalyse anhand neuer Messpunkte abgeschlossen. Ergebnis ist in beiden
+Kontext-Sichten gespeichert.
+
+### KP-418 - Windows-Staging: Deployment-Volumen und Worker-Ausreisser
+
+**Dokumentiert/Ereignis:** 2026-11-16.
+
+**Nutzerangabe:** "continue investigation" setzt die Ursachenuntersuchung
+der langsamen Windows-CI fort. Es wurde keine neue konkrete Packaging-
+oder Confinement-Aenderung freigegeben.
+
+**Belegte Quellen:** `bfce5aa`,
+[WindowsRendererSandbox.cs](../src/Platform/Platform.Windows.Sandbox/WindowsRendererSandbox.cs)
+(`Start`, `CopyTree`, `WindowsRendererWorker.Dispose`),
+[Renderer-Projekt](../src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj),
+native PackageReferences in Engine.Scripting/Text/Paint; vorhandene lokale
+Debug-/Release-Ausgaben unter
+`src/Apps/VisualWeb.Renderer/bin/{Debug,Release}/net10.0` einschliesslich
+`VisualWeb.Renderer.deps.json`. Timing-Quelle bleibt Windows-Run
+`43771950858`, Jobs `132989587838` (x64) und `132989588102` (arm64),
+wie in KP-417. Keine neue CI gestartet.
+
+**Belegt - Kopierumfang:** Jeder Worker erhaelt weiterhin ein eigenes
+Staging. `CopyTree` erstellt Unterverzeichnisse und kopiert jede regulaere
+Datei, Reparse-Points werden ausgelassen. Es gibt keine RID-/Symbolauswahl.
+Neben dem ganzen App-Verzeichnis werden das gesamte `host/fxr`-Verzeichnis,
+die gewaehlte Shared-Runtime und `dotnet.exe` kopiert. Das lokale
+`host/fxr` enthaelt vier Versionen (8.0.12, 9.0.1, 9.0.10, 10.0.12);
+die Anzahl auf den Windows-Runnern ist nicht gemessen.
+
+**Belegt - lokales Inventar, keine Windows-CI-Byte-Messung:**
+
+| Dateiauswahl                                                 | Release MiB | Status                                  |
+| ------------------------------------------------------------ | ----------: | --------------------------------------- |
+| Gesamtes portables Renderer-Deployment, 91 Dateien           |     756.130 | Vorhandene lokale Ausgabe               |
+| Davon alle `.pdb`, 23 Dateien                                |     341.139 | Teilmenge, nicht addieren               |
+| Root/sonstige Dateien plus `win-x64`, 48 Dateien             |     170.775 | Rechnerische Auswahl, nicht ausgefuehrt |
+| Root/sonstige Dateien plus `win-arm64`, 48 Dateien           |     164.104 | Rechnerische Auswahl, nicht ausgefuehrt |
+| Root/sonstige Dateien plus `win-x64`, ohne PDB, 29 Dateien   |      56.842 | Rechnerische Auswahl, nicht ausgefuehrt |
+| Root/sonstige Dateien plus `win-arm64`, ohne PDB, 29 Dateien |      52.875 | Rechnerische Auswahl, nicht ausgefuehrt |
+
+Die gesamte Ausgabe hat 17 RID-Verzeichnisse; auch Linux-, macOS- und
+Windows-x86-Dateien liegen darin. Die Debug-Ausgabe ist mit 756.263 MiB
+nahezu gleich gross. Das Release-Deps-Target ist portabel
+`.NETCoreApp,Version=v10.0`, ohne RID. Sechs Windows-PDBs von
+HarfBuzzSharp.NativeAssets.Win32/14.2.1.301 und
+SkiaSharp.NativeAssets.Win32/4.153.1 sind ausdruecklich native
+`runtimeTargets`; Release allein entfernt sie daher in diesem vorhandenen
+Output nicht. Architektur-Auswahl allein reduziert rechnerisch um
+77.41/78.30%, zusaetzliche PDB-Auslassung um insgesamt 92.48/93.01%
+(x64/arm64). Diese Prozente betreffen Dateivolumen, nicht Laufzeit.
+Es wurden weder Dateien entfernt noch neue Publish-Profile gebaut.
+Die lokale aktive Linux-Runtime hat weitere 78.427 MiB in 189 Dateien;
+das ist ebenfalls kein Windows-Runtime-Inventar.
+
+**Belegt - Ausreisser innerhalb desselben CI-Laufs:** Im arm64-static-Smoke
+dauert die App-Kopie fuer Worker 1 nur 0.3925 Sekunden, fuer Worker 2
+6.8015 und Worker 4 4.2399 Sekunden. Arm64-scripted misst fuer Worker 3
+0.3699 Sekunden, fuer Worker 2 8.7251 und Worker 4 8.0919 Sekunden;
+Worker 6 braucht ausserdem 5.5812 Sekunden fuer die Runtime-Kopie.
+Auf x64-static liegt Worker 2 beim Disposal bei 4.2691 Sekunden, andere
+bei rund 0.13-0.16 Sekunden; Worker 4 braucht 4.5775 Sekunden fuer die
+App-Kopie. X64-scripted Worker 5 faellt gemeinsam bei nativer
+Prozesserstellung (1.2636 Sekunden) und Hello (3.5500 Sekunden) auf.
+Disposal umfasst weiterhin mehrere Operationen und trennt Prozessende,
+Profilabbau und rekursive Verzeichnisloeschung nicht.
+
+**Ableitung:** Uebergrosse portable Deployments sind ein konkreter
+Verstaerker der sechs wiederholten Kopien. Die Streuung spaeterer Worker
+widerspricht jedoch einer ausschliesslichen Erklaerung als erster
+Kaltstart. Antivirus/Datentraeger/Runner-Scheduling sind weiterhin
+Hypothesen und nicht aus den vorhandenen Daten unterscheidbar.
+Die lokale Inventargroesse wird nicht als gemessene Windows-CI-Groesse
+ausgegeben.
+
+**Begrenzte Performance-Pruefung - ausgefuehrte Rezepte vor Bewertung:**
+Scope ist nur die untersuchte Windows-Sandbox-Quelldatei; kein
+repositoryweiter 50-Muster-Audit. Fehlender Vergleich bei literalem
+`IndexOf`, `StartsWith`/`EndsWith` und `Contains`: jeweils 0 Treffer;
+`Substring`: 0; `new HttpClient`: 0; neue `JsonSerializerOptions`: 0;
+Sync-over-async-`Result`/`GetResult`/`Wait`: 0. Weitere Signale:
+`ValueTask`, `stackalloc`, `new byte[]`, Regex, `string.Format` und
+JsonSerializer-Aufrufe jeweils 0. Nichtstatische Klassen: 1 von 1
+versiegelt. Drei `FileStream`-Konstruktionen gehoeren zu synchronen
+IPC-Pipe-Handles, nicht zur App-Dateikopie; keine Umstellung vorgeschlagen.
+Vier `File.Copy`-Aufrufstellen; vier `CopyTree`-Aufrufstellen plus eine
+Deklaration. Keine Ketten aus Replace/Format/Konkatenation im Kopierpfad.
+Das Verzeichnis enthaelt keine zweite C#-Quelldatei fuer einen
+Sibling-Konsistenzvergleich.
+
+| Schwere  | Anzahl | Ergebnis im begrenzten Scope                                              |
+| -------- | -----: | ------------------------------------------------------------------------- |
+| Kritisch |      0 | Kein belegter kritischer API-Antipattern-Befund                           |
+| Moderat  |      1 | Ungefiltertes portables Staging als volumenbezogener Optimierungskandidat |
+| Info     |      0 | Keine Mikrooptimierungen empfohlen                                        |
+
+**Konkreter Vorschlag, nicht beschlossen:** Erst Windows-Release-Dateien/
+Bytes nach App, aktivem/fremdem RID, Symbolen und Runtime erfassen sowie
+Cleanup getrennt messen. Anschliessend ein RID-spezifisches Deployment
+gegen bestehende native Smokes pruefen; Symbolauslassung wegen Debug-
+Diagnostik und nativer Asset-Metadaten separat entscheiden. Nicht blind
+PDBs oder RID-Verzeichnisse aus beliebigen Deployments herausfiltern.
+Kein Staging-Sharing, kein Weglassen von Renderer-Rotationen und keine
+Lockerung von ACLs, AppContainer oder Ressourcenlimits.
+
+**Pruefgrenze:** KI-gestuetzte Analyse kann falsche Positive und
+Auslassungen enthalten. Volumenhypothesen sind vor Umsetzung durch
+native Inventare, Benchmarks und Review zu bestaetigen.
+
+**Status:** Untersuchung und beide Kontext-Sichten aktualisiert.
+Nur Dokumentation geaendert; keine neuen Build-/Testlaeufe erforderlich.
+Kein neuer Commit oder Push; naechste Implementierung benoetigt Freigabe.
+
+### KP-419 - Freigabe des Windows-Mess- und Packaging-Experiments
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzerfreigabe um 00:29
+Europe/Berlin (Chat-Zeitstempel 00:29:45 +01:00).
+
+**Nutzerangabe/Beschlossen:** "yes" bestaetigt die unmittelbar
+vorgeschlagenen naechsten Schritte aus KP-418:
+
+1. Tatsaechliche Windows-Kopiermengen in Dateien/Bytes erfassen und
+   Prozess-/Profil-/Verzeichnis-Cleanup zeitlich aufteilen.
+2. Architekturspezifisches Packaging pruefen, zunaechst mit Symbolen.
+3. Native CI erneut auswerten, bei unveraendertem Confinement und
+   vollstaendiger Lifecycle-Abdeckung.
+
+**Umsetzung begonnen:** Phase 1 wird isoliert implementiert. Die
+bestehende smoke-only Diagnose soll typisierte, begrenzte Inventar-
+Metadaten fuer App und Runtime aus dem vorhandenen Kopierdurchlauf
+aufzeichnen. App-Partitionen unterscheiden Nicht-RID, aktiven Windows-
+RID und andere RIDs; Symbole sind eine ueberlappende Teilmenge, keine
+vierte disjunkte Partition. Andere RIDs sind nicht pauschal als unnoetig
+einzustufen, weil generische Fallback-Assets moeglich sind. Cleanup-
+Messpunkte duerfen Reihenfolge, Ownership, Fehlerbehandlung und
+Ressourcenfreigabe nicht veraendern. Diagnostik bleibt standardmaessig
+aus; kein zusaetzlicher Inventarscan, keine Dateipfade oder Inhalte im
+Log, keine Writer-Callbacks bei nativer Ownership-Uebergabe.
+
+**Abgrenzung:** Keine Dateien filtern, keine Symbole entfernen, keine
+Staging-Verzeichnisse teilen und keine ACL-/AppContainer-/Limit-/
+Origin-Rotations-/Deadline-Aenderungen in Phase 1. Keine neue Web-
+Standardssemantik; deshalb kein SpecCache-Refresh fuer diese Instrumentierung.
+Bestehende uncommittete Kontext-Ergebnisse aus KP-417/KP-418 bleiben erhalten.
+
+**Validierungsplan:** Fokussierte Tests zuerst rot/gruen fuer exakte
+Kopierzaehler und Partitionen, Reparse-Point-Skips, Schema/Kultur/
+Pfadfreiheit und begrenzte Diagnose-/Cleanup-Lebensdauer. Danach
+Solution-Build, betroffene Testprojekte, volle Default-Solution und
+Formatpruefung sowie unabhaengiges Code-Review. Windows-Nachweise sind
+bis zur nativen CI offen, lokale Linux-Tests ersetzen sie nicht.
+
+**Fortsetzungsgate:** Nach Review von Phase 1 werden Ergebnis und
+Commit-Nachricht zuerst dem Nutzer uebergeben. Noch kein neuer Commit,
+Push, Packaging-Wechsel oder CI-Ergebnis; diese Freigabe ist kein
+Nachweis einer bereits umgesetzten Optimierung.
+
+### KP-420 - Windows-Kopierinventar implementiert und Review freigegeben
+
+**Dokumentiert/Ereignis:** 2026-11-16, Fortsetzung von KP-419.
+
+**Implementiert, noch uncommitted:** Die Instrumentierung zaehlt App-
+und Runtime-Dateien/Bytes im bestehenden Kopierdurchlauf, erst nach
+erfolgreichem `File.Copy`. Reparse-Points bleiben ausgeschlossen; bei
+deaktivierter Diagnostik entfallen neue Laengenabfragen und Inventar-
+Allokation. App-Zaehler zerfallen disjunkt in `non-rid`, `active-rid` und
+`other-rid`; `.pdb`-Dateien sind eine ueberlappende Symbol-Teilmenge.
+Runtime umfasst host/fxr, Shared-Runtime und `dotnet.exe`.
+Ein begrenzter typisierter Aggregateintrag pro Renderer wird erst ueber
+den bestehenden spaeten stderr-Export ausgegeben:
+`smoke-inventory v=1 renderer=... units=files,bytes app-files=... app-bytes=...`
+samt Partitionen, Symbolen und `runtime-files`/`runtime-bytes`.
+Das bestehende `smoke-timing`-Schema bleibt unveraendert.
+
+**Cleanup:** `windows.dispose` enthaelt nun getrennte
+`windows.dispose-process-streams`, `windows.dispose-profile` und
+`windows.dispose-staging`. Bestehende Reihenfolge, verschachtelte
+Fehler-/Ownership-Behandlung und volle Diagnosebuffer duerfen die
+Freigabe weiterhin nicht beeinflussen. Es wurden weder Packaging noch
+Kopierauswahl, Ressourcenlimits, IPC oder Confinement-Policy geaendert.
+
+**Code/Test-Dateien:**
+
+- [HostTimingBuffer.cs](../src/Platform/Platform.Abstractions/HostTimingBuffer.cs)
+- [WindowsRendererSandbox.cs](../src/Platform/Platform.Windows.Sandbox/WindowsRendererSandbox.cs)
+- Neuer interner [WindowsStagingCopy.cs](../src/Platform/Platform.Windows.Sandbox/WindowsStagingCopy.cs)
+  fuer den gemeinsam verwendeten, offline pruefbaren Produktionskopierpfad
+- Neue [AssemblyInfo.cs](../src/Platform/Platform.Windows.Sandbox/AssemblyInfo.cs)
+  fuer Zugriff des Platform-Testprojekts auf diesen internen Pfad
+- [SmokeTimings.cs](../src/Apps/VisualWeb.Browser/SmokeTimings.cs)
+- [HostTimingBufferTests.cs](../tests/Platform.Tests/HostTimingBufferTests.cs)
+- [SmokeTimingTests.cs](../tests/VisualWeb.Browser.Tests/SmokeTimingTests.cs)
+
+Bestehende Browser-/Renderer-/Windows-Guides, Platform.Abstractions-/
+Windows.Sandbox-READMEs und der Testguide dokumentieren Schema,
+Teilmenge/Partitionen und Messgrenzen.
+
+**TDD-Nachweis des Implementers:** Der erste fokussierte Platform-Lauf
+kompilierte erwartungsgemaess wegen noch fehlender API/Copy-Helfer nicht.
+Danach bestehen `HostTimingBufferTests` (3), `SmokeTimingTests` (13)
+und `WindowsSandboxTests` (8), jeweils mit `--no-restore --filter`.
+Native Windows-Assertions sind auf Linux bedingt ausgeschlossen; diese
+Zahlen belegen keine native Windows-Ausfuehrung.
+
+**Unabhaengiges Review:** Code-Review-subagent, Agent
+`be27e801-cee9-4bf5-a9c9-0dfc7371d321`, meldet APPROVED ohne
+hochkonfidente Korrektheits-/Ownership-Befunde. Exakte Partitionen,
+Laengenabfragen nur bei aktivierter Diagnostik, Vollbuffer-Verhalten
+und native Cleanup-Reihenfolge wurden geprueft. Optional empfohlen
+wurde ein zusaetzlicher Failed-Copy-Zaehler-Test; keine Pflichtrevision.
+
+**Elternvalidierung, abgeschlossen:**
+
+- `dotnet build VisualWeb.slnx --no-restore`: bestanden, null Warnungen/Fehler.
+- `dotnet test tests/Platform.Tests/Platform.Tests.csproj --no-build`:
+  alle 43 bestanden.
+- `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`:
+  bestanden.
+- Erster Browser-Projektlauf: 1.351 bestanden, 1 fehlgeschlagen, Laufzeit
+  10:23. Der unveraenderte Fall
+  `InlineScriptTests.TextNormalizationFeedsLifecycleStyleAndTitleWithTransactionalResize(process: True)`
+  scheiterte mit `V8 execution deadline exceeded; isolate invalidated.`
+  Die Formatpruefung lief waehrenddessen parallel. Geteilte Hostlast ist
+  eine plausible, nicht bewiesene Ursache; keine Deadline gelockert.
+- Isolierte Wiederholung dieses Methodenselektors nach Ende der
+  Formatpruefung: beide Prozess-/Inprozess-Zeilen bestanden (2/2).
+- `dotnet test VisualWeb.slnx --no-build` besteht anschliessend vollstaendig
+  mit 16.934 Tests, darunter 1.352 Browser- und 43 Platform-Faelle. Der
+  Browser-Anteil dauert in diesem Lauf 7:09. Beide expliziten CPU-Deadline-
+  Zeilen bleiben ausgeschlossen. Der erste fehlgeschlagene Projektlauf
+  wird dadurch nicht verschwiegen; die Last-Ursache ist nicht bewiesen.
+- Abschliessender `git diff --check`: bestanden. Kein Staging erfolgt.
+
+**Phase-1-Abschluss:** Implementierung, Review APPROVED und lokale
+Gesamtvalidierung abgeschlossen. Kein neuer Commit/Push, keine native CI
+und noch kein architekturspezifisches Packaging. Die bisherigen
+uncommitteten Kontext-Ergebnisse bleiben erhalten. Naechste Aktion ist
+die Commit-/Fortsetzungsrueckgabe; die nativen Windows-Inventare werden
+erst nach Veroeffentlichung dieser Instrumentierung beobachtbar.
+
+**Vorgeschlagene Commit-Nachricht:**
+
+```text
+test: measure Windows staging payloads
+
+Report bounded per-renderer file and byte inventories to explain repeated
+Windows staging costs before trying architecture-specific deployments.
+
+Split process, profile and staged-directory cleanup timings. Preserve
+copied contents, deferred diagnostic export and confinement policy.
+Cover RID partitions, symbols, reparse skips and bounded inventory export.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-421 - Messbaseline committen und Packaging-Erprobung fortsetzen
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 01:13 Europe/Berlin
+(Chat-Zeitstempel 01:13:17 +01:00).
+
+**Nutzerangabe/Beschlossen:** "commit and continue" beantwortet die
+Rueckfrage "Commit/push this measurement baseline and continue to
+packaging?". Die in KP-420 gepruefte Messbaseline soll committed und
+veroeffentlicht werden; Phase 2 darf danach beginnen. Es ist keine
+Freigabe fuer Symbolentfernung, Staging-Sharing oder Confinement-
+Lockerungen.
+
+**Naechste Aktionen:** Den unveraenderten validierten Code samt
+zugehoeriger Dokumentation committen, native Baseline-CI ausloesen und
+parallel den RID-spezifischen Framework-dependent-Deployment-Versuch
+mit Symbolen umsetzen. Vor Phase-2-Commit erneut Tests, Review und
+Rueckgabe. Commit-SHA und native Ergebnisse werden nach Beobachtung
+ergaenzt, nicht vorweggenommen.

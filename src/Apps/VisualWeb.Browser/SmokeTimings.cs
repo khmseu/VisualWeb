@@ -24,10 +24,23 @@ public sealed class SmokeTimings
     /// Concurrent recording is supported; callers serialize exports to their own writer.</remarks>
     public void WriteTo(TextWriter output)
     {
-        foreach (var record in Buffer.Snapshot())
+        var records = Buffer.Snapshot();
+        var inventories = Buffer.InventorySnapshot();
+        foreach (var record in records)
         {
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"smoke-timing phase={record.Phase} renderer={record.Renderer} request={record.Request} ms={record.Elapsed.TotalMilliseconds:F3}"));
+        }
+        foreach (var inventory in inventories)
+        {
+            output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                $"smoke-inventory v=1 renderer={inventory.Renderer} units=files,bytes " +
+                $"app-files={inventory.App.Files} app-bytes={inventory.App.Bytes} " +
+                $"app-non-rid-files={inventory.AppNonRid.Files} app-non-rid-bytes={inventory.AppNonRid.Bytes} " +
+                $"app-active-rid-files={inventory.AppActiveRid.Files} app-active-rid-bytes={inventory.AppActiveRid.Bytes} " +
+                $"app-other-rid-files={inventory.AppOtherRid.Files} app-other-rid-bytes={inventory.AppOtherRid.Bytes} " +
+                $"app-symbol-files={inventory.AppSymbols.Files} app-symbol-bytes={inventory.AppSymbols.Bytes} " +
+                $"runtime-files={inventory.Runtime.Files} runtime-bytes={inventory.Runtime.Bytes}"));
         }
     }
 

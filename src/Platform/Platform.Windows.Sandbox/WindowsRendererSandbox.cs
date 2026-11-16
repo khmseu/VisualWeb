@@ -202,9 +202,11 @@ public static class WindowsRendererSandbox
         var runtimeVersion = Path.GetFileName(Path.TrimEndingDirectorySeparator(runtimeSource));
         var profileName = "VisualWeb.Renderer-" + Guid.NewGuid().ToString("N");
         var staging = Path.Combine(Path.GetTempPath(), "VisualWeb", Guid.NewGuid().ToString("N"));
+        var inventory = timing is null ? null : new WindowsStagingInventoryBuilder(ActiveWindowsRid());
         Directory.CreateDirectory(staging);
         IntPtr appContainerSid = IntPtr.Zero;
         SafeFileHandle? job = null;
+        var inventoryRecorded = false;
         try
         {
             string profileStorage;
@@ -232,12 +234,22 @@ public static class WindowsRendererSandbox
                 SetAppContainerAccess(stagedRoot, appContainerSid, writable: false);
             }
 
-            using (new Timing(timing, "windows.copy-app", timingRenderer)) { CopyTree(appSource, stagedApp); }
+            using (new Timing(timing, "windows.copy-app", timingRenderer))
+            {
+                WindowsStagingCopy.CopyTree(appSource, stagedApp, inventory, appAssets: true);
+            }
             using (new Timing(timing, "windows.copy-runtime", timingRenderer))
             {
-                CopyTree(hostFxrSource, Path.Combine(stagedRuntime, "host", "fxr"));
-                CopyTree(runtimeSource, Path.Combine(stagedRuntime, "shared", "Microsoft.NETCore.App", runtimeVersion));
-                File.Copy(hostSource, Path.Combine(stagedRuntime, "dotnet.exe"));
+                WindowsStagingCopy.CopyTree(hostFxrSource, Path.Combine(stagedRuntime, "host", "fxr"),
+                    inventory, appAssets: false);
+                WindowsStagingCopy.CopyTree(runtimeSource, Path.Combine(stagedRuntime, "shared", "Microsoft.NETCore.App", runtimeVersion),
+                    inventory, appAssets: false);
+                WindowsStagingCopy.CopyFile(hostSource, Path.Combine(stagedRuntime, "dotnet.exe"), inventory);
+            }
+            if (inventory is not null)
+            {
+                timing!.RecordInventory(inventory.Snapshot(timingRenderer));
+                inventoryRecorded = true;
             }
             var arguments = new List<string>();
             using (new Timing(timing, "windows.copy-fonts", timingRenderer))
@@ -267,6 +279,10 @@ public static class WindowsRendererSandbox
         }
         catch
         {
+            if (inventory is not null && !inventoryRecorded)
+            {
+                timing!.RecordInventory(inventory.Snapshot(timingRenderer));
+            }
             using var cleanupTiming = new Timing(timing, "windows.start-cleanup", timingRenderer);
             job?.Dispose();
             if (appContainerSid != IntPtr.Zero) { _ = Native.FreeSid(appContainerSid); }
@@ -470,19 +486,6 @@ public static class WindowsRendererSandbox
         }
     }
 
-    private static void CopyTree(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var entry in Directory.EnumerateFileSystemEntries(source))
-        {
-            var attributes = File.GetAttributes(entry);
-            if ((attributes & FileAttributes.ReparsePoint) != 0) { continue; }
-            var target = Path.Combine(destination, Path.GetFileName(entry));
-            if ((attributes & FileAttributes.Directory) != 0) { CopyTree(entry, target); }
-            else { File.Copy(entry, target); }
-        }
-    }
-
     private static string Existing(string path, bool directory)
     {
         var full = Path.GetFullPath(path);
@@ -492,6 +495,13 @@ public static class WindowsRendererSandbox
         }
         return full;
     }
+
+    private static string ActiveWindowsRid() => RuntimeInformation.ProcessArchitecture switch
+    {
+        Architecture.X64 => "win-x64",
+        Architecture.Arm64 => "win-arm64",
+        _ => throw new PlatformNotSupportedException("Windows staging inventory requires an x64 or arm64 process architecture.")
+    };
 
     private static string QuoteArgument(string value)
     {
@@ -751,15 +761,25 @@ public sealed class WindowsRendererWorker : IDisposable
         if (disposed) { return; }
         using var disposeTiming = new Timing(timing, "windows.dispose", timingRenderer);
         disposed = true;
-        Input.Dispose(); Output.Dispose(); Error.Dispose();
-        Terminate();
-        Process.WaitForExit();
-        Process.Dispose();
+        using (new Timing(timing, "windows.dispose-process-streams", timingRenderer))
+        {
+            Input.Dispose(); Output.Dispose(); Error.Dispose();
+            Terminate();
+            Process.WaitForExit();
+            Process.Dispose();
+        }
         if (sid != IntPtr.Zero) { _ = FreeSid(sid); sid = IntPtr.Zero; }
-        var result = WindowsRendererSandbox.RemoveAppContainerProfile(profile);
-        try { Directory.Delete(staging, recursive: true); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        int result;
+        using (new Timing(timing, "windows.dispose-profile", timingRenderer))
+        {
+            result = WindowsRendererSandbox.RemoveAppContainerProfile(profile);
+        }
+        using (new Timing(timing, "windows.dispose-staging", timingRenderer))
+        {
+            try { Directory.Delete(staging, recursive: true); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
         if (result != 0) { throw new Win32Exception(result, "Cannot remove renderer AppContainer profile."); }
     }
 

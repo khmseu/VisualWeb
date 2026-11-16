@@ -191,6 +191,29 @@ public sealed class SmokeTimingTests
     }
 
     [Fact]
+    public void StagingInventoryExportUsesInvariantTypedUnitsWithoutPaths()
+    {
+        var timings = new SmokeTimings();
+        timings.Buffer.RecordInventory(new HostStagingInventory(3,
+            new(6, 41), new(4, 17), new(1, 11), new(1, 13), new(2, 9), new(3, 19)));
+        using var output = new StringWriter(CultureInfo.GetCultureInfo("fr-FR"));
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+            timings.WriteTo(output);
+        }
+        finally { CultureInfo.CurrentCulture = previous; }
+
+        Assert.Equal(
+            "smoke-inventory v=1 renderer=3 units=files,bytes app-files=6 app-bytes=41 app-non-rid-files=4 app-non-rid-bytes=17 app-active-rid-files=1 app-active-rid-bytes=11 app-other-rid-files=1 app-other-rid-bytes=13 app-symbol-files=2 app-symbol-bytes=9 runtime-files=3 runtime-bytes=19",
+            output.ToString().Trim());
+        Assert.DoesNotContain(Path.GetTempPath(), output.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("data:", output.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(',', output.ToString()[output.ToString().IndexOf("app-bytes=", StringComparison.Ordinal)..]);
+    }
+
+    [Fact]
     public async Task RestartGetsNewLifetimeIdForSameRendererObject()
     {
         using var output = new StringWriter();
@@ -222,10 +245,16 @@ public sealed class SmokeTimingTests
             await renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken);
         }
         timings.WriteTo(output);
-        foreach (var phase in new[] { "profile-storage", "acl", "copy-app", "copy-runtime", "copy-fonts", "temp-acl", "job", "process", "dispose" })
+        foreach (var phase in new[] { "profile-storage", "acl", "copy-app", "copy-runtime", "copy-fonts", "temp-acl", "job", "process",
+            "dispose-process-streams", "dispose-profile", "dispose-staging", "dispose" })
         {
             Assert.Contains($"phase=windows.{phase} renderer=1 request=0 ", output.ToString(), StringComparison.Ordinal);
         }
+        var inventory = Assert.Single(output.ToString().Split('\n'),
+            line => line.StartsWith("smoke-inventory v=1 renderer=1 ", StringComparison.Ordinal));
+        Assert.Matches(@"app-files=[1-9][0-9]* app-bytes=[1-9][0-9]*", inventory);
+        Assert.Matches(@"runtime-files=[1-9][0-9]* runtime-bytes=[1-9][0-9]*", inventory);
+        Assert.DoesNotContain(Path.GetTempPath(), inventory, StringComparison.Ordinal);
     }
 
     [Fact]
