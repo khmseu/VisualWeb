@@ -316,19 +316,44 @@ Hello; das V8-Dokument und Script-Ausfuehrung beginnen erst nach der
 ersten Render-Anforderung. Hello misst somit nicht reine IPC-Zeit.
 Der Host liest stdout/stderr asynchron ueber synchron angelegte
 Windows-Pipes; Pool-/Scheduling-Wartezeit ist eine offene Hypothese,
-keine nachgewiesene Starvation. Runtime-Timing trennt bisher weder
+keine nachgewiesene Starvation. Das damalige Runtime-Timing trennte weder
 hostfxr/shared-runtime/dotnet.exe noch Kopieren von Enumeration/Metadaten.
 Naechster Vorschlag: diese Kopieranteile und den Worker-vor-Hello-Pfad
 diagnostisch aufteilen, danach begrenzt und reihenfolgeausgeglichen
 nativ vergleichen. Keine Code-/Policy-Aenderung oder neue CI aus
 dieser lesenden Fortsetzung. Am 2026-11-16 um 03:11 Europe/Berlin
 bestaetigt "commit and continue" die Frage nach dieser Instrumentierung
-(KP-427). Zuerst werden die vorliegenden Erkenntnisse committed,
-danach Phase 1 (Runtime-Komponenten und Kopier-/Metadatenanteile)
-implementiert und getestet. Worker-vor-Hello-Diagnostik und explizite
+(KP-427). Die Erkenntnisse samt Freigabe sind als `2b3b8df` committed,
+ebenso wie `5cede2c` noch nicht gepusht. Phase 1 (Runtime-Komponenten
+und Kopier-/Metadatenanteile) ist inzwischen lokal implementiert,
+getestet und direkt reviewed (KP-428). Worker-vor-Hello-Diagnostik und explizite
 reihenfolgeausgeglichene native Vergleiche folgen als getrennte
 Phasen mit Review-/Commit-Rueckgabe. Keine Freigabe fuer geaenderte
 Deployment-Defaults, abgeschwaechte Schutzregeln oder laengere Deadlines.
+
+**Phase 1 lokal abgeschlossen (2026-11-16, KP-428):** Unter dem
+bestehenden Smoke-Opt-in bleiben `windows.copy-runtime` und Inventar v1
+erhalten. Zusaetzlich gibt es pro `hostfxr`, `shared-runtime` und `dotnet`
+drei feste Records unter `windows.copy-runtime.<Komponente>`:
+Komponenten-Wandzeit, `.copy` fuer File.Copy und `.metadata` fuer
+direkt gemessene benannte Dateisystem-Metadaten-/Enumerationsoperationen.
+Keine Metadaten-Schaetzung durch Subtraktion; Pfad-/Buchhaltungs- und
+sonstiger Traversierungs-/Instrumentierungsaufwand bleiben Restanteile.
+Keine per-Datei-Records, Pfade oder neue Messarbeit bei ausgeschalteter
+Diagnostik. Kopierreihenfolge, Reparse-Skips, Inventare, Fehlersignale
+und verzogerte Vollbuffer-Fehlermeldung bleiben erhalten.
+Vier neue Plattform-Tests decken echte synthetische Laufzeitbaeume,
+Disabled-Vergleich, Teilfehler und Vollbuffer ab. Solution-Build
+(null Warnungen/Fehler), alle 16.938 Default-Tests (47 Platform,
+1.352 Browser) und Solution-Formatverifikation bestehen; beide
+expliziten CPU-Deadline-Zeilen bleiben aus. Direktes Review ohne
+blockierende Befunde. Die neuen Windows-nativen Assertions benoetigen
+noch x64/arm64-CI; die lokalen Linux-Tests sind kein solcher Nachweis.
+Am 2026-11-16 um 03:44 Europe/Berlin bestaetigt der Nutzer mit
+"commit and continue" die Commit-Rueckgabe und den Beginn von Phase 2
+(KP-429). Die neun Phase-1-Dateien werden committed; danach folgt
+begrenzte, opt-in Worker-vor-Hello-/Host-Empfangsdiagnostik bei
+unveraendertem IPC-Protokoll, Deployment und Confinement.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von

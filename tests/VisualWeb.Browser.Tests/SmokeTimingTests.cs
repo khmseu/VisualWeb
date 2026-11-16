@@ -245,7 +245,11 @@ public sealed class SmokeTimingTests
             await renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken);
         }
         timings.WriteTo(output);
-        foreach (var phase in new[] { "profile-storage", "acl", "copy-app", "copy-runtime", "copy-fonts", "temp-acl", "job", "process",
+        foreach (var phase in new[] { "profile-storage", "acl", "copy-app", "copy-runtime",
+            "copy-runtime.hostfxr", "copy-runtime.hostfxr.copy", "copy-runtime.hostfxr.metadata",
+            "copy-runtime.shared-runtime", "copy-runtime.shared-runtime.copy", "copy-runtime.shared-runtime.metadata",
+            "copy-runtime.dotnet", "copy-runtime.dotnet.copy", "copy-runtime.dotnet.metadata",
+            "copy-fonts", "temp-acl", "job", "process",
             "dispose-process-streams", "dispose-profile", "dispose-staging", "dispose" })
         {
             Assert.Contains($"phase=windows.{phase} renderer=1 request=0 ", output.ToString(), StringComparison.Ordinal);

@@ -12339,3 +12339,129 @@ Formatpruefung und Review mit anschliessender Commit-Rueckgabe.
 Keine Aenderung von Deployment-Defaults, Pipe-/Handle-Semantik,
 Confinement, Quoten oder Deadlines. Keine neuen dauerhaft langsamen
 Default-Tests und kein behaupteter Nachweis der offenen Ursachen.
+
+### KP-428 - Phase 1 Runtime-Kopierdiagnostik lokal abgeschlossen
+
+**Dokumentiert/Ereignis:** 2026-11-16; Umsetzung der ersten in KP-427
+freigegebenen Instrumentierungsphase.
+
+**Commit des vorliegenden Wissensstands belegt:** `2b3b8df`
+(`docs: record Windows startup investigation`) enthaelt KP-426,
+die Freigabe KP-427 und den entsprechenden aktuellen Wissensstand.
+Der Hook pruefte zwei Dateien ohne Befund. Wie der vorige
+Ergebnis-Commit `5cede2c` noch nicht gepusht; keine neue CI.
+
+**Implementierung belegt:** Der interne Produktionspfad
+`WindowsStagingCopy.CopyRuntime` fuehrt unveraendert hostfxr-Baum,
+ausgewaehlten Shared-Runtime-Baum und dotnet.exe in dieser Reihenfolge
+aus. Unter optionalem `HostTimingBuffer` zeichnet er pro Komponente
+genau drei Aggregate auf:
+
+- `windows.copy-runtime.hostfxr`, `.hostfxr.copy`, `.hostfxr.metadata`;
+- `windows.copy-runtime.shared-runtime`, `.shared-runtime.copy`,
+  `.shared-runtime.metadata`;
+- `windows.copy-runtime.dotnet`, `.dotnet.copy`, `.dotnet.metadata`.
+
+Die hier abgekuerzten Suffixe tragen jeweils denselben vollstaendigen
+`windows.copy-runtime`-Praefix. Alle verwenden dieselbe Renderer-ID
+und Request 0. Der bisherige umschliessende Runtime-Record bleibt
+erhalten, ebenso die Inventar-v1-Felder. Komponenten-Wandzeiten
+ueberlappen den aeusseren Record; `.copy` und `.metadata` sind direkt
+gemessene, disjunkte Summen benannter Operationen, keine Differenz
+aus zwei Gesamtsummen. Metadaten umfassen Directory.CreateDirectory,
+Erzeugen/Fortschalten der Enumeration, File.GetAttributes und die
+optionale Laengenabfrage. Pfadbildung, Inventarbuchhaltung und
+sonstiger Traversierungs-/Instrumentierungsaufwand sind nicht damit
+gleichzusetzen. Keine physische I/O-/Durchsatzbehauptung.
+
+**Bewahrte Grenzen:** Keine per-Datei-Records oder Ausgabe von Pfaden/
+Inhalten, keine zusaetzlichen Zeitstempel, Laengenabfragen oder
+Diagnostikobjekte bei ausgeschalteter Diagnose, kein zweiter Scan.
+Reparse-Points werden weiter uebersprungen; Inventare zaehlen nur
+erfolgreiche Kopien. Fehlgeschlagene Komponenten melden versuchte
+Intervalle und lassen spaetere Komponenten aus. Ein voller Puffer
+unterbricht Kopien oder native Ownership/Disposal weiterhin nicht;
+der Fehler bleibt bis zum Export gelatcht. Keine Packaging-, ACL-,
+Quota-, Pipe-, Worker-, V8- oder Deadline-Aenderung.
+
+**Geaenderte Dateien/Funktionen:**
+
+- [WindowsStagingCopy.cs](../src/Platform/Platform.Windows.Sandbox/WindowsStagingCopy.cs):
+  interner Runtime-Einstieg und begrenzte direkt gemessene Operationen.
+- [WindowsRendererSandbox.cs](../src/Platform/Platform.Windows.Sandbox/WindowsRendererSandbox.cs):
+  Aufruf dieses Runtime-Pfads im bestehenden Timing-/Ownership-Scope.
+- [HostTimingBufferTests.cs](../tests/Platform.Tests/HostTimingBufferTests.cs):
+  vier neue fokussierte Tests.
+- [SmokeTimingTests.cs](../tests/VisualWeb.Browser.Tests/SmokeTimingTests.cs):
+  native Windows-Pruefung erwartet zusaetzlich die neun Komponenten-Records.
+- [Windows-Guide](../docs/windows-confinement.md),
+  [Smoke-Schema](../docs/browser-shell.md) und
+  [Sandbox-README](../src/Platform/Platform.Windows.Sandbox/README.md):
+  genaue Grenzen und Ueberlappungs-/Restzeitsemantik.
+
+**Tests/Red-Green:** Implementierer meldet zuerst einen fehlgeschlagenen
+fokussierten Compile-Lauf ohne den neuen Runtime-Einstieg, danach
+7 fokussierte und alle 47 Platform-Tests sowie 13 SmokeTiming-Tests gruen.
+Neue Verhaltenstests:
+`RuntimeCopyMeasuresFixedComponentAndOperationAggregates`,
+`RuntimeCopyDisabledDiagnosticsPreserveOutputAndDoNotRecord`,
+`RuntimeCopyFailureRetainsSuccessfulInventoryAndDoesNotCopyLaterComponents`,
+`FullRuntimeDiagnosticBufferCannotInterruptCopy`.
+Sie nutzen echte synthetische Dateien und pruefen Produktionskopie,
+Inventar, Reparse-Skip, feste Records/Identitaet, Disabled-Gleichheit,
+fehlende spaetere Kopie nach Fehler und Vollbuffer-Verhalten.
+Keine Geschwindigkeits-Schwellenwerte auf dem geteilten Host.
+
+**Abschliessend selbst verifiziert:** .NET SDK 10.0.401, xUnit v3
+unter VSTest bestaetigt. `dotnet build VisualWeb.slnx` besteht mit
+null Warnungen/Fehlern. `dotnet test VisualWeb.slnx --no-build`
+besteht mit 16.938 Tests, darunter 47 Platform- und 1.352 Browser-
+Faelle; Browser-Lauf 6 min 52 s. Die beiden expliziten CPU-Deadline-
+Zeilen bleiben ausgeschlossen. Anschliessend
+`dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`
+erfolgreich. Teure Test-/Formatlaeufe nicht parallel gestartet.
+
+**Review: APPROVED (direkt).** Vollstaendiger begrenzter Diff und
+zugehoeriger bestehender Kopier-/Pufferkontext gelesen; keine
+blockierenden Korrektheitsbefunde. Neue native Windows-Assertions
+und reale Windows-Zeiten stehen noch aus; die plattformneutralen
+synthetischen Tests auf Linux ersetzen keine x64/arm64-CI.
+
+**Rueckgabe:** Phase 1 von 3 lokal fertig, Implementierung und dieser
+Abschluss bleiben uncommitted. Vor Phase 2 (Worker-vor-Hello und
+Host-Empfang) folgt die Commit-/Fortsetzungsbestaetigung. Keine
+zusaetzlichen Plan-/Abschlussdateien angelegt.
+
+**Vorgeschlagene Commit-Nachricht:**
+
+```text
+test: split Windows runtime staging timings
+
+Measure hostfxr, shared runtime and host staging separately, with bounded
+aggregates for actual file-copy and named metadata operations.
+
+Preserve disabled behavior, copy policy, inventory and cleanup semantics.
+Cover synthetic copies, partial failures and full diagnostic buffers.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-429 - Runtime-Messphase committen und Pre-Hello fortsetzen
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 03:44 Europe/Berlin
+(`03:44:23.812+01:00` im aktuellen Chat).
+
+**Nutzerangabe/Beschlossen:** "commit and continue" bestaetigt die
+unmittelbare Frage nach Commit der in KP-428 lokal validierten
+neun Dateien und Fortsetzung mit Pre-Hello-Diagnostik.
+Phase 1 wird committed, danach beginnt Phase 2 der bereits in
+KP-427 freigegebenen Messfolge. Kein Push oder neues natives Ergebnis
+wird damit behauptet.
+
+**Phase-2-Grenzen:** Begrenzte Opt-in-Diagnostik vor Hello und beim
+Host-Empfang, keine zusaetzliche Ausgabe auf Protokoll-stdout,
+keine Protokoll-/IPC-Vertragsaenderung, keine geaenderte
+Pipe-/Handle-Semantik, Thread-Affinitaet, Deployment-Defaults,
+Confinement, Quoten oder Deadlines. Fehler und unvollstaendige
+Diagnostik muessen explizit bleiben; native x64/arm64-Messung
+und reihenfolgeausgeglichene Wiederholungen bleiben Phase 3.

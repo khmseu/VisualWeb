@@ -168,6 +168,16 @@ enclosing phases. The optional `HostTimingBuffer` passed to sandbox startup
 is sealed, bounded and data-only; no caller callback or writer runs during
 launch, successful ownership transfer or worker disposal. A full buffer latches
 an export error without interrupting native cleanup or changing launch policy.
+The enclosing `windows.copy-runtime` interval is preserved and contains three
+fixed component aggregates (`hostfxr`, `shared-runtime`, `dotnet`), each with
+component, `.copy`, and `.metadata` records. `.copy` sums actual `File.Copy`
+calls. `.metadata` sums the named directory creation, enumeration, attribute,
+and optional file-length operations. Those operation sums are disjoint, but
+exclude path construction, inventory bookkeeping and other traversal or
+instrumentation overhead; component total minus copy time is therefore not
+metadata time. The component records also overlap their enclosing runtime-copy
+record. A failed component reports attempted work and preserves the existing
+copy order; later components are not attempted.
 When enabled, one versioned `smoke-inventory` aggregate reports successfully
 copied app and runtime file counts/bytes for each renderer. Runtime includes
 host/fxr, the selected shared runtime and `dotnet.exe`; app assets are split

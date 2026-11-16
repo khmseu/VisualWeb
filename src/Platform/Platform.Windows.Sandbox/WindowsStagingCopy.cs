@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using VisualWeb.Platform.Abstractions;
 
 namespace VisualWeb.Platform.Windows.Sandbox;
@@ -77,38 +78,146 @@ internal static class WindowsStagingCopy
 
     internal static void CopyFile(string source, string destination, WindowsStagingInventoryBuilder? inventory)
     {
-        var bytes = inventory?.FileLength(source) ?? 0;
-        File.Copy(source, destination);
+        CopyFile(source, destination, inventory, measurement: null);
+    }
+
+    internal static void CopyRuntime(string hostFxrSource, string hostFxrDestination,
+        string runtimeSource, string runtimeDestination, string hostSource, string hostDestination,
+        WindowsStagingInventoryBuilder? inventory, HostTimingBuffer? timing, long renderer)
+    {
+        var hostFxrMeasurement = timing is null ? null : new RuntimeCopyMeasurement(timing, renderer, "hostfxr");
+        try { CopyTree(hostFxrSource, hostFxrDestination, inventory, false, string.Empty, hostFxrMeasurement); }
+        finally { hostFxrMeasurement?.Record(); }
+
+        var runtimeMeasurement = timing is null ? null : new RuntimeCopyMeasurement(timing, renderer, "shared-runtime");
+        try { CopyTree(runtimeSource, runtimeDestination, inventory, false, string.Empty, runtimeMeasurement); }
+        finally { runtimeMeasurement?.Record(); }
+
+        var hostMeasurement = timing is null ? null : new RuntimeCopyMeasurement(timing, renderer, "dotnet");
+        try { CopyFile(hostSource, hostDestination, inventory, hostMeasurement); }
+        finally { hostMeasurement?.Record(); }
+    }
+
+    private static void CopyFile(string source, string destination, WindowsStagingInventoryBuilder? inventory,
+        RuntimeCopyMeasurement? measurement)
+    {
+        var bytes = inventory is null ? 0
+            : measurement is null ? inventory.FileLength(source)
+            : measurement.FileLength(inventory, source);
+        if (measurement is null) { File.Copy(source, destination); }
+        else { measurement.CopyFile(source, destination); }
         inventory?.RecordRuntimeFile(bytes);
     }
 
     private static void CopyTree(string source, string destination, WindowsStagingInventoryBuilder? inventory,
-        bool appAssets, string relativeDirectory)
+        bool appAssets, string relativeDirectory, RuntimeCopyMeasurement? measurement = null)
     {
-        Directory.CreateDirectory(destination);
-        foreach (var entry in Directory.EnumerateFileSystemEntries(source))
+        if (measurement is null) { Directory.CreateDirectory(destination); }
+        else { measurement.CreateDirectory(destination); }
+
+        var entries = measurement is null
+            ? Directory.EnumerateFileSystemEntries(source)
+            : measurement.Enumerate(source);
+        var enumerator = measurement is null
+            ? entries.GetEnumerator()
+            : measurement.GetEnumerator(entries);
+        using (enumerator)
         {
-            var attributes = File.GetAttributes(entry);
-            if ((attributes & FileAttributes.ReparsePoint) != 0) { continue; }
-            var name = Path.GetFileName(entry);
-            var target = Path.Combine(destination, name);
-            var relativePath = inventory is not null && appAssets
-                ? Path.Combine(relativeDirectory, name)
-                : string.Empty;
-            if ((attributes & FileAttributes.Directory) != 0)
+            while (measurement is null ? enumerator.MoveNext() : measurement.MoveNext(enumerator))
             {
-                CopyTree(entry, target, inventory, appAssets, relativePath);
-            }
-            else
-            {
-                var bytes = inventory?.FileLength(entry) ?? 0;
-                File.Copy(entry, target);
-                if (inventory is not null)
+                var entry = enumerator.Current;
+                var attributes = measurement is null
+                    ? File.GetAttributes(entry)
+                    : measurement.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0) { continue; }
+                var name = Path.GetFileName(entry);
+                var target = Path.Combine(destination, name);
+                var relativePath = inventory is not null && appAssets
+                    ? Path.Combine(relativeDirectory, name)
+                    : string.Empty;
+                if ((attributes & FileAttributes.Directory) != 0)
                 {
-                    if (appAssets) { inventory.RecordAppFile(relativePath, bytes); }
-                    else { inventory.RecordRuntimeFile(bytes); }
+                    CopyTree(entry, target, inventory, appAssets, relativePath, measurement);
+                }
+                else
+                {
+                    var bytes = inventory is null ? 0
+                        : measurement is null ? inventory.FileLength(entry)
+                        : measurement.FileLength(inventory, entry);
+                    if (measurement is null) { File.Copy(entry, target); }
+                    else { measurement.CopyFile(entry, target); }
+                    if (inventory is not null)
+                    {
+                        if (appAssets) { inventory.RecordAppFile(relativePath, bytes); }
+                        else { inventory.RecordRuntimeFile(bytes); }
+                    }
                 }
             }
         }
+    }
+
+    private sealed class RuntimeCopyMeasurement(HostTimingBuffer buffer, long renderer, string component)
+    {
+        private readonly long totalStart = Stopwatch.GetTimestamp();
+        private TimeSpan copyElapsed;
+        private TimeSpan metadataElapsed;
+
+        internal void CreateDirectory(string path)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { Directory.CreateDirectory(path); }
+            finally { metadataElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal IEnumerable<string> Enumerate(string path)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { return Directory.EnumerateFileSystemEntries(path); }
+            finally { metadataElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal IEnumerator<string> GetEnumerator(IEnumerable<string> entries)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { return entries.GetEnumerator(); }
+            finally { metadataElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal bool MoveNext(IEnumerator<string> entries)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { return entries.MoveNext(); }
+            finally { metadataElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal FileAttributes GetAttributes(string path)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { return File.GetAttributes(path); }
+            finally { metadataElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal long FileLength(WindowsStagingInventoryBuilder inventory, string path)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { return inventory.FileLength(path); }
+            finally { metadataElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal void CopyFile(string source, string destination)
+        {
+            var start = Stopwatch.GetTimestamp();
+            try { File.Copy(source, destination); }
+            finally { copyElapsed += Stopwatch.GetElapsedTime(start); }
+        }
+
+        internal void Record()
+        {
+            var prefix = "windows.copy-runtime." + component;
+            buffer.Record(new(prefix, renderer, 0, Stopwatch.GetElapsedTime(totalStart)));
+            buffer.Record(new(prefix + ".copy", renderer, 0, copyElapsed));
+            buffer.Record(new(prefix + ".metadata", renderer, 0, metadataElapsed));
+        }
+
     }
 }

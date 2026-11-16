@@ -1082,6 +1082,22 @@ failures, but is bypassed for an unexpected escaping exception to avoid masking
 that exception. A killed/hung browser cannot export its buffered diagnostics.
 See [renderer timings](renderer-processes.md) for worker and Windows stages.
 
+When Windows smoke diagnostics are enabled, the existing enclosing
+`windows.copy-runtime` record is preserved and is accompanied by three fixed
+aggregate phases for each component: `windows.copy-runtime.hostfxr`,
+`windows.copy-runtime.shared-runtime`, and `windows.copy-runtime.dotnet`, each
+with `.copy` and `.metadata` records. The component aggregate is its complete
+wall-clock interval; `.copy` sums only the actual `File.Copy` calls, while
+`.metadata` sums the named directory creation, enumeration, attribute and
+optional file-length operations performed while staging that component. These
+named-operation sums are disjoint, but do not account for path construction,
+inventory bookkeeping or other traversal/instrumentation overhead. Therefore
+neither subtracting copy time from a total nor adding the component records is
+a measure of metadata or of the enclosing phase. Component records share the
+renderer ID with the enclosing Windows stages. A failed component still
+reports its attempted intervals; later components are not attempted. With
+diagnostics disabled there are no new timestamps, length reads or traversal.
+
 Windows smoke exports also include one aggregate per renderer lifetime, for
 example:
 `smoke-inventory v=1 renderer=1 units=files,bytes app-files=91 app-bytes=... app-non-rid-files=... app-non-rid-bytes=... app-active-rid-files=... app-active-rid-bytes=... app-other-rid-files=... app-other-rid-bytes=... app-symbol-files=... app-symbol-bytes=... runtime-files=... runtime-bytes=...`.

@@ -20,6 +20,14 @@ not presumed unused. Reparse-point skips and copy inclusion remain unchanged.
 No extra length metadata is read when diagnostics are disabled. Exports contain
 only aggregate counts, never paths or file contents.
 
+Runtime-copy smoke timings preserve the enclosing `windows.copy-runtime` record
+and add fixed component/copy/metadata aggregates for `hostfxr`,
+`shared-runtime`, and `dotnet.exe`. Copy aggregates time only `File.Copy`;
+metadata aggregates time directory creation, enumeration, attribute and
+optional file-length operations. Both are measured directly, not inferred by
+subtracting one total from another. The component wall time also contains path,
+inventory and instrumentation overhead, and overlaps the enclosing phase.
+
 Windows Job Objects have no thread-count or per-job swap limit; commit limits
 do not disable pagefile use. This profile does not claim quotas for unrelated
 Windows storage or a general filesystem sandbox.

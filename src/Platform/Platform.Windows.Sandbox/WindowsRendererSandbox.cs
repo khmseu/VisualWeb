@@ -240,11 +240,9 @@ public static class WindowsRendererSandbox
             }
             using (new Timing(timing, "windows.copy-runtime", timingRenderer))
             {
-                WindowsStagingCopy.CopyTree(hostFxrSource, Path.Combine(stagedRuntime, "host", "fxr"),
-                    inventory, appAssets: false);
-                WindowsStagingCopy.CopyTree(runtimeSource, Path.Combine(stagedRuntime, "shared", "Microsoft.NETCore.App", runtimeVersion),
-                    inventory, appAssets: false);
-                WindowsStagingCopy.CopyFile(hostSource, Path.Combine(stagedRuntime, "dotnet.exe"), inventory);
+                WindowsStagingCopy.CopyRuntime(hostFxrSource, Path.Combine(stagedRuntime, "host", "fxr"),
+                    runtimeSource, Path.Combine(stagedRuntime, "shared", "Microsoft.NETCore.App", runtimeVersion),
+                    hostSource, Path.Combine(stagedRuntime, "dotnet.exe"), inventory, timing, timingRenderer);
             }
             if (inventory is not null)
             {
