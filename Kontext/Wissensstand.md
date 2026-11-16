@@ -4,7 +4,7 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-15, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-16, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
@@ -245,9 +245,10 @@ Die Messbaseline ist als `3ae5140acbfd18da528153f84e656518b567bc27`
 committed und auf `origin/main` gepusht. Der Hook formatierte das
 chronologische Protokoll und bestand alle 15 Dateien. Baseline-CI:
 Linux `43779251649` (x64/arm64 samt Trunk), CodeQL `43779250921` und
-Windows `43779251698` (x64/arm64) bestanden. Phase 2 ist implementiert
-und nach direktem Review/Korrektur lokal validiert (KP-423), aber noch
-nicht committed. Der Workflow behaelt portable Kontroll-Smokes/Tests bei
+Windows `43779251698` (x64/arm64) bestanden. Phase 2 ist implementiert,
+nach direktem Review/Korrektur lokal validiert (KP-423) und inzwischen
+als `2e3e7feade939e4a72cbdd135221b1fe6c62ee75` committed und auf
+`origin/main` gepusht (KP-425). Der Workflow behaelt portable Kontroll-Smokes/Tests bei
 und fuegt RID-spezifische statische/gescriptete Kandidaten-Smokes hinzu.
 SDK-Publish ist Framework-dependent, ohne Apphost, Trimming oder
 Symbolentfernung; isolierte Build-/Publish-Ausgaben liegen unter Renderer-
@@ -262,8 +263,44 @@ Solution-Build (null Warnungen/Fehler), Format, Workflow-Lint und erneut
 alle 16.934 Default-Tests bestehen. Am 2026-11-16 um 02:16
 Europe/Berlin bestaetigt der Nutzer mit "commit and continue" die
 Veroeffentlichung des Versuchs und native CI-Auswertung (KP-424).
-Commit/Push und Phase 3 folgen; native Kandidaten-Ergebnisse werden
-nicht vorweggenommen.
+Phase 3 ist abgeschlossen: Linux `43785419766`, CodeQL `43785419328`
+und Windows `43785419848` sind erfolgreich. Windows arm64 bestand erst
+im unveraenderten Job-Rerun; der erste Versuch hatte vor dem Publish
+einen V8-Deadline-Fehler im bestehenden Test
+`ExternalClassicScriptsPauseParsingAndUseTheEffectiveBase(process: True)`.
+Keine Deadline/Test-/Confinement-Aenderung; Ursache bleibt offen.
+
+**Nativer RID-Vergleich (2026-11-16, KP-425):** Auf x64 sinkt das
+App-Deployment von 756.234 auf 170.712 MiB (-77.426%), auf arm64 von
+756.213 auf 164.041 MiB (-78.308%). Je Kandidat 47 statt 91 Dateien;
+die architekturpassenden nativen PDBs sind SHA-256-identisch mit den
+Paketdateien. Runtime bleibt pro Worker 80.381/89.456 MiB.
+Sechs App-plus-Runtime-Kopien je Smoke sinken von 4.9020 auf
+1.4712 GiB (x64) bzw. 4.9551 auf 1.4853 GiB (arm64).
+Das sind logische Dateilaengen, keine gemessenen physischen I/O.
+
+| CLI-Wandzeit, Sekunden | Portable Kontrolle | RID-Kandidat | Beobachtete Aenderung |
+| ---------------------- | -----------------: | -----------: | --------------------: |
+| x64 statisch           |             18.254 |        8.744 |               -52.10% |
+| x64 gescriptet         |             14.753 |       23.476 |               +59.12% |
+| arm64 statisch         |             35.125 |       10.568 |               -69.91% |
+| arm64 gescriptet       |             34.704 |       10.260 |               -70.44% |
+
+Je Vergleich stammen Kontrolle und Kandidat aus demselben Job:
+x64 Versuch 1, arm64 Versuch 2. Die App-Kopierzeiten sinken in allen
+vier Faellen, aber x64 gescriptet wird insgesamt langsamer:
+Runtime-Kopien 1.234 -> 5.512 Sekunden, Hello 2.955 -> 7.313.
+Arm64-static hat trotz kleinerem Deployment 3.498 statt 1.346 Sekunden
+Staging-Loeschung. Phasen sind Summen ueber Worker/Requests, CLI ist
+Wandzeit; verschachtelte Phasen nicht addieren. Reihenfolge/Cache und
+Host-Streuung verhindern einen garantierten Packaging-Speedup; keine
+Antivirus-/Storage-Ursache bewiesen. Publish/Validierung kosten zusaetzlich
+5/1 Sekunden (x64) bzw. 6/1 (arm64); inklusive beider zusaetzlicher
+Kandidaten-Smokes ist das Experiment 41/31 Sekunden Schrittzeit.
+Nur CI-Kandidat, keine Umstellung der Standardbereitstellung oder
+Entfernung portabler Kontrollen beschlossen. Naechste Optionen:
+RID-Publish gezielt uebernehmen oder verbleibende Runtime-/Hello-
+Streuung untersuchen; beides benoetigt einen neuen Auftrag.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von

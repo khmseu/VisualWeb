@@ -12100,3 +12100,134 @@ vergleichen. Kopierbytes und Zeitbeobachtungen getrennt behandeln;
 unveraenderte Runtime-Kopien, Cache-/Reihenfolgeeffekte und verbleibende
 Handshake-/Cleanup-Streuung benennen. Ergebnis, Commit-SHA und
 Quell-Run-/Job-IDs erst nach Beobachtung ergaenzen.
+
+### KP-425 - RID-Kandidat nativ vermessen, ARM64 nach Job-Rerun gruen
+
+**Dokumentiert/Ereignis:** 2026-11-16; Fortsetzung der Freigabe aus
+KP-424. Kein neuer Implementierungsauftrag.
+
+**Veroeffentlichung belegt:** Commit
+`2e3e7feade939e4a72cbdd135221b1fe6c62ee75`
+(`ci: trial RID-specific Windows renderers`) wurde auf `origin/main`
+gepusht. Der Commit-Hook pruefte alle sechs Dateien ohne Befund.
+HEAD und entfernter Main-Ref stimmen bei der abschliessenden Kontrolle
+ueberein. Nachfolgende Ergebnisdokumentation bleibt lokal/uncommitted.
+
+**CI-Quellen und Ergebnisse:** Alle Runs beziehen sich auf diesen SHA.
+
+- Windows [Run 43785419848](https://github.com/khmseu/VisualWeb/actions/runs/43785419848):
+  insgesamt nach Versuch 2 erfolgreich. X64 bestand schon in Versuch 1,
+  [Job 133031845360](https://github.com/khmseu/VisualWeb/actions/runs/43785419848/job/133031845360).
+  Arm64 Versuch 1
+  [133031844970](https://github.com/khmseu/VisualWeb/actions/runs/43785419848/job/133031844970)
+  scheiterte vor Publish/Validierung/Kandidaten an einem Browser-Test;
+  ausschliesslich dieser Job wurde ohne Codeaenderung neu angefordert.
+  Arm64 Versuch 2
+  [133034502164](https://github.com/khmseu/VisualWeb/actions/runs/43785419848/job/133034502164)
+  besteht einschliesslich aller Tests, Publish-Pruefung und Kandidaten-Smokes.
+- Linux [43785419766](https://github.com/khmseu/VisualWeb/actions/runs/43785419766)
+  erfolgreich: x64 `133031845145`, arm64 `133031845445`,
+  Trunk `133031845878`.
+- CodeQL [43785419328](https://github.com/khmseu/VisualWeb/actions/runs/43785419328)
+  erfolgreich.
+
+**Fehler nicht verschwiegen:** Im ersten arm64-Browser-Lauf bestanden
+1.351 von 1.352 Tests. Der bestehende Test
+`InlineScriptTests.ExternalClassicScriptsPauseParsingAndUseTheEffectiveBase(process: True)`
+warf `PageNavigationException: V8 execution deadline exceeded; isolate invalidated`
+bei `InlineScriptTests.cs:940`. Test und `ProcessPageRenderer` wurden
+durch den Packaging-Commit nicht veraendert; der Kandidaten-Publish
+waere erst nach diesem Testschritt ausgefuehrt worden und wurde dort
+uebersprungen. Derselbe Test bestand auf der vorherigen arm64-Baseline
+`3ae5140` und nun im unveraenderten Job-Rerun (je ~1 s). Die Ursache
+dieses nicht reproduzierten Deadline-Fehlers bleibt offen; keine
+Tests/Deadlines/Schutzmechanismen abgeschwaecht. Der Rerun ist keine
+Behauptung, der erste Lauf sei fehlerfrei gewesen.
+
+**Gepaarter Vergleich:** X64 aus Versuch 1, arm64 aus Versuch 2.
+Je Architektur stammen portable Kontrolle und Kandidat aus demselben
+Job und behalten statischen bzw. gescripteten Modus bei.
+Pro Smoke sind sechs Inventare (Renderer 1-6) mit `v=1`,
+`units=files,bytes` und korrekten disjunkten App-Partitionssummen
+geprueft. Mengen sind innerhalb jedes Smokes identisch; Runtime-Mengen
+stimmen zwischen Kontrolle und Kandidat ueberein. Jeweils sechs
+Start-/Hello-/Cleanup- und fuenf Render-Request-Zeiten geprueft.
+
+**Native Inventare pro Worker, Bytes:**
+
+| Groesse                            |   x64 portable |        x64 RID | arm64 portable |      arm64 RID |
+| ---------------------------------- | -------------: | -------------: | -------------: | -------------: |
+| App-Dateien                        |             91 |             47 |             91 |             47 |
+| App-Bytes                          |      792969249 |      179004578 |      792946721 |      172009628 |
+| Nicht-RID-Dateien/Bytes            |  43 / 15306125 | 47 / 179004578 |  43 / 15283597 | 47 / 172009628 |
+| Aktiver RID, Dateien/Bytes         |  5 / 163874080 |          0 / 0 |  5 / 156879096 |          0 / 0 |
+| Andere RIDs, Dateien/Bytes         | 43 / 613789044 |          0 / 0 | 43 / 620784028 |          0 / 0 |
+| Symbole, Dateien/Bytes (Teilmenge) | 23 / 357713960 | 19 / 119470128 | 23 / 357713960 | 19 / 116635704 |
+| Runtime-Dateien                    |            201 |            201 |            200 |            200 |
+| Runtime-Bytes                      |       84285105 |       84285105 |       93801269 |       93801269 |
+
+Der SDK-Publish flacht native Assets ins Root ab; null aktive
+RID-Unterverzeichnis-Dateien bedeuten nicht fehlende native Bibliotheken.
+Beide nativen Validatoren melden korrekte Framework-/RID-/Dateistruktur
+und SHA-256-identische Zielarchitektur-PDBs fuer HarfBuzz/Skia. Weniger
+Symbol-Dateien heisst hier Wegfall fremder Architektur-Assets, nicht
+Entfernung der passenden nativen Symbole. Die Symbolmenge ueberlappt
+App-Partitionen und wird nicht erneut addiert.
+
+App: 756.234 -> 170.712 MiB (x64, -77.426%) bzw.
+756.213 -> 164.041 MiB (arm64, -78.308%). App-plus-Runtime
+ueber sechs Worker: 4.9020 -> 1.4712 GiB (x64, -69.987%)
+und 4.9551 -> 1.4853 GiB (arm64, -70.024%).
+Separat kopierte Fonts sind nicht enthalten. Logische Dateilaengen
+belegen keine physische I/O oder Datentraegerbandbreite.
+
+**Phasenzeiten in Sekunden, portable -> RID:** CLI ist Wandzeit;
+andere Zeilen sind Summen ueber sechs Worker bzw. fuenf Requests.
+Die Zeilen sind verschachtelt/ueberlappend und duerfen nicht zu einer
+neuen Gesamtwandzeit addiert werden.
+
+| Phase                           |      x64 statisch |     x64 gescriptet |     arm64 statisch |   arm64 gescriptet |
+| ------------------------------- | ----------------: | -----------------: | -----------------: | -----------------: |
+| CLI total                       | 18.2539 -> 8.7442 | 14.7533 -> 23.4762 | 35.1253 -> 10.5681 | 34.7042 -> 10.2597 |
+| windows.start                   | 12.6108 -> 3.5148 |  6.7547 -> 10.2505 |  23.9102 -> 2.0383 |  27.3101 -> 2.0580 |
+| windows.copy-app                |  4.9332 -> 0.4920 |   5.3690 -> 3.3337 |  16.5503 -> 0.5900 |  15.8564 -> 0.6019 |
+| windows.copy-runtime            |  7.1966 -> 2.7281 |   1.2335 -> 5.5117 |   6.9591 -> 1.1399 |  11.1140 -> 1.1615 |
+| renderer.hello                  |  3.2913 -> 3.0540 |   2.9547 -> 7.3132 |   7.8006 -> 3.4829 |   2.8336 -> 3.0146 |
+| renderer.render-request         |  1.1314 -> 1.0754 |   4.0750 -> 4.1461 |   1.6388 -> 1.1257 |   2.8203 -> 3.9900 |
+| windows.dispose                 |  0.9149 -> 0.7233 |   0.6624 -> 1.4174 |   1.4478 -> 3.5910 |   1.4085 -> 0.8647 |
+| windows.dispose-process-streams |  0.0448 -> 0.0488 |   0.0788 -> 0.0789 |   0.0759 -> 0.0702 |   0.1250 -> 0.1152 |
+| windows.dispose-profile         |  0.0145 -> 0.0166 |   0.0153 -> 0.0157 |   0.0261 -> 0.0229 |   0.0249 -> 0.0235 |
+| windows.dispose-staging         |  0.8556 -> 0.6578 |   0.5683 -> 1.3228 |   1.3457 -> 3.4979 |   1.2585 -> 0.7259 |
+
+CLI-Aenderung: -52.10% x64 statisch, +59.12% x64 gescriptet,
+-69.91% arm64 statisch, -70.44% arm64 gescriptet. Der erste,
+fehlgeschlagene arm64-Versuch hatte portable CLI-Zeiten von
+36.3031/43.3835 Sekunden, aber keine Kandidaten; er wird nicht
+mit dem Kandidaten aus dem Rerun zu einem Vergleich vermischt.
+
+**Belegte Grenzen des Zeitgewinns:** App-Kopieren ist in allen vier
+Vergleichen schneller. X64-scripted ist insgesamt dennoch langsamer:
+unveraenderte Runtime-Kopien und Hello steigen stark. Kandidat Worker 2
+hat 7.4936 s Start, darunter 4.0081 s Runtime- und 2.4572 s App-Kopie,
+danach 3.4295 s Hello. Auch arm64-static bleibt Cleanup-streuend:
+Worker 2 loescht Staging 1.9918 s, Worker 3 1.0324 s; insgesamt
+3.4979 s statt 1.3457 s bei der Kontrolle. Profilabbau bleibt klein.
+Kein gleichfoermiger oder ausschliesslich byteproportionaler Speedup.
+Cache/Reihenfolge (Kandidaten laufen spaeter), Host-/AV-/Storage-
+Einfluesse bleiben unkontrolliert; keine dieser Ursachen isoliert bewiesen.
+
+**Zusaetzlicher CI-Aufwand:** API-Schrittzeiten (Sekundenaufloesung)
+fuer Publish/Validierung sind 5/1 s x64, 6/1 s arm64; die beiden
+zusaetzlichen Kandidaten-Schritte brauchen 10/25 s bzw. 12/12 s.
+Zusammen fuegt der Versuch 41/31 s hinzu, da portable Kontrollen und
+alle bisherigen Tests weiterlaufen. Dies sind nicht die CLI-internen
+Wandzeiten und kein Beleg fuer kuerzere Gesamtjobs.
+
+**Abschluss/Offen:** Alle drei freigegebenen Untersuchungsschritte
+abgeschlossen, native Ergebnisse gespeichert. Der RID-Kandidat
+reduziert die reale Staging-Menge deutlich und besteht die nativen
+Smokes, garantiert aber keine einheitliche Laufzeitverbesserung.
+Standardbereitstellung, portable Kontrollen, passende Symbole,
+Isolation/ACLs/Quoten/Deadlines bleiben unveraendert. Eine Uebernahme
+des RID-Publish oder weitere Untersuchung der Runtime-/Hello-Streuung
+sind naechste Optionen, nicht bereits freigegebene Implementierung.
