@@ -13414,3 +13414,138 @@ Rollout-Commits und Auswertung der normalen CI freigegeben.
 Neue native Windows-x64/arm64-RID-Fixture-/Apphost-Evidenz bleibt
 abzuwarten; kein optionaler Vergleichs- oder CPU-Deadline-Dispatch
 wird aus dieser Freigabe abgeleitet.
+
+### KP-450 - RID-Default veroeffentlicht, neue CI gestartet
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin, nach Freigabe KP-449.
+**Belegt:** Phase-3-Dokumentation als
+`c6d2af41edceeb2deb930fe484d8e5a0ed9205cc` committed;
+Pre-Commit-Hook: vier Dateien ohne Befund. Push von
+`4838b52..c6d2af4` auf origin/main erfolgreich, einschliesslich
+`a70af56` (RID-Smokes) und `b60e215` (RID-Browser-Fixture).
+
+**Neue CI fuer exakt diesen SHA:**
+
+- Windows confinement
+  [43851000660](https://github.com/khmseu/VisualWeb/actions/runs/43851000660):
+  x64-Job `133243201535`, arm64-Job `133243201906`, beide laufend.
+- Linux development
+  [43851000841](https://github.com/khmseu/VisualWeb/actions/runs/43851000841):
+  x64 `133243201284`, arm64 `133243201837` laufend;
+  Trunk `133243201808` bereits erfolgreich.
+- CodeQL
+  [43850999990](https://github.com/khmseu/VisualWeb/actions/runs/43850999990):
+  laufend; API-Pfad `dynamic/github-code-scanning/codeql` verifiziert.
+- Separater Codespaces-Prebuild `43850999830` beim Erstcheck laufend;
+  kein Test-/Confinement-Ergebnis daraus abgeleitet.
+
+**Status:** Normale CI abwarten, dann tatsaechliche native
+RID-Fixture-/Apphost-Ausfuehrung und ausgelassene manuelle Vergleiche
+pruefen. Keine optionalen Workflow-Dispatches gestartet.
+
+### KP-451 - Erste native Ergebnisse, x64-Shell-Test erneut ausfuehren
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin; laufende CI-Auswertung.
+**Belegt:** Linux `43851000841` mit beiden Architekturen und Trunk
+sowie CodeQL `43850999990` erfolgreich.
+Windows arm64 `133243201906` erfolgreich in 6 min 37 s:
+RID-Publish, unveraenderte vollstaendige Publish-Validierung,
+Fixture-Auswahl vor Browser-Tests, Apphost-Test und beide
+RID-Smokes bestehen. Manueller Vergleich ist skipped.
+Apphost-Test: 372 ms; Smoke-Inventare enthalten je Worker 48
+App-Dateien und 172156424 App-Bytes, kein anderer RID-Anteil.
+Das zusaetzliche Apphost-File erklaert die neue Dateizahl gegenueber
+den historischen 47-Dateien-Messungen aus KP-438.
+
+**Erster x64-Job `133243201535`:** Publish, Validator und
+Fixture-Auswahl erfolgreich. Apphost-Test besteht in 394 ms,
+Windows-Confined-Pixels-Test ebenfalls erfolgreich. Der Browser-
+Gesamtlauf scheitert jedoch in
+`ShellTests.UpgradeInsecureRequestsUpgradesPageLinkAndRedirectBeforeTransport`
+an der Request-Liste: erwartete drei Eintraege, tatsaechlich
+wiederholte First-/Redirect-Requests. Fehler an `ShellTests.cs:1013`,
+Testdauer 607 ms. Folge-Smokes wurden dadurch nicht ausgefuehrt.
+
+**Einordnung:** Gepruefter Test konstruiert `DevelopmentShell`
+ohne Rendererpfad; die gepruefte Constructor-Verzweigung verwendet
+damit lokalen StaticPageRenderer, nicht die geaenderte RID-Fixture.
+Test und Shell-Implementierung sind gegen `4838b52` unveraendert.
+Der lokale Approval-Helfer sendet wiederholt Return, bis der
+asynchrone Request-Zaehler den Zielwert erreicht. Das ist eine
+moegliche Timing-Erklaerung, noch kein kausaler Nachweis und kein
+Anlass, diesen anderen Test in den RID-Rollout hineinzuaendern.
+
+**Naechster Schritt:** Nur den fehlgeschlagenen x64-Job auf
+unveraendertem `c6d2af4` erneut angefordert. Versuch 2 laeuft,
+x64-Job `133247014158`; ARM64-Erfolg bleibt erhalten (aktuelle
+Versuch-2-Metadaten fuehren ihn als `133247015612`).
+Keine Code-/Timeout-/Confinement-Aenderung, keine Unterdrueckung,
+kein optionaler Test-Dispatch. Initialer Fehler bleibt dokumentiert.
+
+### KP-452 - Veroeffentlichten RID-Default nativ bestaetigt
+
+**Dokumentiert:** 2026-11-16, Europe/Berlin; Abschluss von KP-450/KP-451.
+**Belegt:** HEAD und origin/main sind weiterhin
+`c6d2af41edceeb2deb930fe484d8e5a0ed9205cc`. Kein weiterer
+Code-Commit, keine Deadline-/Policy-Aenderung fuer die CI.
+
+**Finale CI-Ergebnisse fuer genau diesen Stand:**
+
+- [Windows 43851000660](https://github.com/khmseu/VisualWeb/actions/runs/43851000660):
+  erfolgreich nach gezieltem unveraendertem x64-Rerun.
+  x64-Job `133247014158` besteht in 6 min 26 s.
+  ARM64 besteht bereits im Erstversuch in 6 min 37 s;
+  Originaljob `133243201906`, in aktuellen Versuch-2-Metadaten
+  als `133247015612` erhalten.
+- [Linux 43851000841](https://github.com/khmseu/VisualWeb/actions/runs/43851000841):
+  x64 `133243201284`, arm64 `133243201837` und Trunk
+  `133243201808` erfolgreich.
+- [CodeQL 43850999990](https://github.com/khmseu/VisualWeb/actions/runs/43850999990):
+  erfolgreich.
+- Separater Codespaces-Prebuild `43850999830` ist beim letzten
+  Statuscheck weiterhin in_progress; keine Behauptung, dass alle
+  GitHub-Laeufe beendet seien. Nicht als Test-/Confinement-
+  Validierung verwendet.
+
+**Erster x64-Fehler bleibt sichtbar:** Der unveraenderte lokale
+Shell-Test aus KP-451 besteht im Rerun. Keine Codeaenderung,
+Skip-Markierung oder Timeout-Erhoehung. Eine konkrete Ursache der
+initialen Request-Wiederholungen ist damit nicht bewiesen oder
+behoben; sie bleibt als separates Timing-Thema dokumentiert.
+
+**Direkte Pruefung der nativen Windows-Evidenz:** Aktuelle
+Workflow-Metadaten und originale Joblogs wurden zusammen geprueft.
+Auf beiden Architekturen bestehen Publish, unveraenderter Validator,
+Fixture-Auswahl, fuenf CPU-Cancellation-Repeats, Browser-Suite und
+statischer/scripted RID-Smoke. Publish/Validate/Auswahl liegen
+tatsaechlich vor jedem Browser-Test-Schritt. Native Apphost-Tests
+und der zuvor fehlgeschlagene Shell-Test sind jeweils erfolgreich.
+Die manuellen Vergleichsschritte sind auf beiden Architekturen
+skipped; keine `smoke-compare`- oder `smoke-diagnostic-error`-
+Ausgaben in den normalen erfolgreichen Smokes.
+
+Je Architektur sind zwoelf echte Inventarrecords vorhanden,
+Renderer-IDs 1..6 pro Smoke; insgesamt 24. Alle haben 48 App-Dateien,
+null andere-RID-Dateien/-Bytes und erhaltene Symbole. Die Records
+stimmen bytegenau mit der vorausgehenden Publish-Validierung ueberein:
+
+- x64: portable 792975761 Bytes, RID 179173906 Bytes.
+- ARM64: portable 792953233 Bytes, RID 172156424 Bytes.
+
+Beide nativen PDB-Hashes werden weiterhin gegen die Paketbaseline
+verifiziert. Pro Architektur sind sechs erfolgreiche Windows-CPU-
+Cancellation-Zeilen vorhanden (fuenf Repeats plus normale Suite),
+keine erfolgreich ausgefuehrte Deadline-Zeile. Die beobachteten
+Jobzeiten sind keine gepaarte Performance-Studie; insbesondere
+umfasst die x64-Zeit nur den erfolgreichen Rerun, nicht den Aufwand
+des fehlgeschlagenen Erstversuchs.
+
+**Abschluss:** Alle drei Rollout-Schritte sind auf main
+veroeffentlicht und die neuen Windows-RID-Fixture-/Apphost-Pfade
+auf beiden nativen Zielen belegt. Linux und CodeQL bleiben gruen.
+Keine optionalen Vergleichs-/Deadline-Workflows gestartet.
+Die acht erzeugten CI-Log-/Metadatendateien wurden nach Auswertung
+gezielt entfernt, ebenso ihr dann leeres eigenes Verzeichnis;
+keine lokalen Watch-Prozesse mehr aktiv. Nur beide Kontextdateien
+enthalten diesen lokalen uncommitted Ergebnisnachtrag, kein weiterer
+Commit/Push ohne naechste Freigabe.

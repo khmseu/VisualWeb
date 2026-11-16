@@ -493,23 +493,39 @@ in Phase 2 erfolgreich ausgefuehrt und nicht fuer reine Docs wiederholt.
 Alle drei lokalen Rollout-Schritte sind damit umgesetzt. Am
 2026-11-16 um 11:39 Europe/Berlin genehmigt der Nutzer mit "yes"
 den Phase-3-Dokumentationscommit, Push aller drei Commits und
-CI-Validierung (KP-449). Neue native Windows-CI steht noch aus;
-alte Messungen aus KP-438 ersetzen diese neue Zielvalidierung nicht.
+CI-Validierung (KP-449). Phase 3 ist als `c6d2af4` committed
+(Hook: vier Dateien ohne Befund), alle drei Rollout-Commits sind
+auf main gepusht (KP-450). Linux-CI `43851000841`, CodeQL
+`43850999990` und Windows-CI `43851000660` bestehen (KP-452).
+Windows x64 besteht nach einem unveraenderten gezielten Job-Rerun;
+der initiale Fehler im lokalen Singleprocess-Shell-Test bleibt in
+KP-451 dokumentiert und wurde nicht durch Code-/Timeoutaenderungen
+umgangen. Der Test besteht im Rerun ebenfalls.
+Neue native Logs belegen auf x64 und arm64 RID-Publish/Validierung,
+Fixture-Auswahl vor allen Browser-Tests, Apphost-Test und beide
+RID-Smokes; die manuellen Vergleiche sind skipped. 24 Smoke-Inventare
+belegen jeweils 48 App-Dateien ohne andere RID-Assets, mit erhaltenen
+Symbolen. Damit sind alle drei Rollout-Schritte veroeffentlicht und
+auf beiden Windows-Zielen validiert. Der separate Codespaces-Prebuild
+laeuft beim letzten Check noch; kein Test-/Confinement-Ergebnis daraus
+abgeleitet. Ergebnisnachtraege bleiben lokal uncommitted; temporaere
+CI-Artefakte sind entfernt. Keine weitere Implementierung ausstehend.
 Kein optionaler Vergleichs-/Deadline-Dispatch beauftragt.
 
-**Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
-pro Worker tatsaechlich ein 91-Dateien-App-Deployment von
-756.234 MiB (x64) bzw. 756.213 MiB (arm64) kopiert. Andere RIDs stellen
+**Historische portable Kopierbaseline (2026-11-16, KP-422):** Vor
+RID-Default wurde pro Worker ein 91-Dateien-App-Deployment von
+756.234 MiB (x64) bzw. 756.213 MiB (arm64) kopiert. Andere RIDs stellten
 585.355/592.026 MiB (77.404/78.288% der App); die ueberlappende
 Symbol-Teilmenge betraegt auf beiden 341.143 MiB. Runtime/hostfxr/Host
-kommen mit 80.381/89.456 MiB hinzu. Alle sechs Worker jedes statischen/
-gescripteten Smokes melden identische Mengen: 4.902/4.955 GiB logische
-App-plus-Runtime-Dateibytes pro Smoke, ohne separat kopierte Fonts.
+kommen mit 80.381/89.456 MiB hinzu. Die sechs Worker der damaligen
+portablen statischen/gescripteten Smokes meldeten identische Mengen:
+4.902/4.955 GiB logische App-plus-Runtime-Dateibytes pro portablem
+Smoke, ohne separat kopierte Fonts. Aktuelle RID-Zahlen siehe KP-452.
 Keine Aussage ueber physische Datentraeger-I/O oder Laufzeit-Speedup.
-Die neuen Cleanup-Phasen ordnen den x64-scripted-Ausreisser konkret
+Die damaligen Cleanup-Phasen ordneten den x64-scripted-Ausreisser konkret
 der Staging-Loeschung zu: Worker 4 dort 3.625 Sekunden, waehrend
 Profilabbau im ganzen Smoke nur 0.015 Sekunden summiert. Andererseits
-liegt x64-static nun bei 12.377 summierten Hello-Sekunden (Worker 3:
+lag x64-static dort bei 12.377 summierten Hello-Sekunden (Worker 3:
 6.952 Sekunden); Packaging allein ist keine bewiesene Loesung fuer
 Handshake-Streuung. Nativ bestanden auch Inventar-/Cleanup- und
 Vollbuffer-Ownership-Tests auf beiden Windows-Architekturen.
