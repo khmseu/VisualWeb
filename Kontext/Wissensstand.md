@@ -299,8 +299,36 @@ Antivirus-/Storage-Ursache bewiesen. Publish/Validierung kosten zusaetzlich
 Kandidaten-Smokes ist das Experiment 41/31 Sekunden Schrittzeit.
 Nur CI-Kandidat, keine Umstellung der Standardbereitstellung oder
 Entfernung portabler Kontrollen beschlossen. Naechste Optionen:
-RID-Publish gezielt uebernehmen oder verbleibende Runtime-/Hello-
-Streuung untersuchen; beides benoetigt einen neuen Auftrag.
+RID-Publish gezielt uebernehmen oder weitere gezielte Diagnostik.
+RID-Publish-Uebernahme bleibt offen. Der Nutzer hat inzwischen die
+vorgeschlagene zusaetzliche Instrumentierung freigegeben (KP-427).
+
+**Fortgesetzte Startup-Spur (2026-11-16, KP-426):** Auf "commit and
+continue" wurden die KP-425-Ergebnisse als `5cede2c` committed
+(zwei Dateien, Hook ohne Befund; bisher nicht gepusht) und der
+bestehende Startup-Pfad lesend weiter untersucht. Im langsameren
+x64-scripted-Kandidaten steigt nicht nur die Runtime-Kopie:
+Worker 2 braucht 0.982 s Profil/Storage (portable: 0.006 s),
+2.457 s App-Kopie (0.382), 4.008 s Runtime-Kopie (0.274)
+und 3.429 s Hello (0.431). Das ist kein isolierter V8-/Script-Befund.
+Der Worker bestaetigt Confinement und laedt HarfBuzz-/Skia-Fonts vor
+Hello; das V8-Dokument und Script-Ausfuehrung beginnen erst nach der
+ersten Render-Anforderung. Hello misst somit nicht reine IPC-Zeit.
+Der Host liest stdout/stderr asynchron ueber synchron angelegte
+Windows-Pipes; Pool-/Scheduling-Wartezeit ist eine offene Hypothese,
+keine nachgewiesene Starvation. Runtime-Timing trennt bisher weder
+hostfxr/shared-runtime/dotnet.exe noch Kopieren von Enumeration/Metadaten.
+Naechster Vorschlag: diese Kopieranteile und den Worker-vor-Hello-Pfad
+diagnostisch aufteilen, danach begrenzt und reihenfolgeausgeglichen
+nativ vergleichen. Keine Code-/Policy-Aenderung oder neue CI aus
+dieser lesenden Fortsetzung. Am 2026-11-16 um 03:11 Europe/Berlin
+bestaetigt "commit and continue" die Frage nach dieser Instrumentierung
+(KP-427). Zuerst werden die vorliegenden Erkenntnisse committed,
+danach Phase 1 (Runtime-Komponenten und Kopier-/Metadatenanteile)
+implementiert und getestet. Worker-vor-Hello-Diagnostik und explizite
+reihenfolgeausgeglichene native Vergleiche folgen als getrennte
+Phasen mit Review-/Commit-Rueckgabe. Keine Freigabe fuer geaenderte
+Deployment-Defaults, abgeschwaechte Schutzregeln oder laengere Deadlines.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von

@@ -12231,3 +12231,111 @@ Standardbereitstellung, portable Kontrollen, passende Symbole,
 Isolation/ACLs/Quoten/Deadlines bleiben unveraendert. Eine Uebernahme
 des RID-Publish oder weitere Untersuchung der Runtime-/Hello-Streuung
 sind naechste Optionen, nicht bereits freigegebene Implementierung.
+
+### KP-426 - Ergebnisse committed und verbleibenden Startup-Pfad verfolgt
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 03:02 Europe/Berlin
+(`03:02:53.775+01:00` im aktuellen Chat).
+
+**Nutzerangabe:** "commit and continue". Die beiden aus KP-425 lokal
+vorliegenden Ergebnisdateien wurden als `5cede2c`
+(`docs: record native Windows packaging results`) committed.
+Der Commit-Hook pruefte zwei Dateien ohne Befund. Der Commit wurde
+bisher nicht gepusht; keine neue CI behauptet.
+
+**Fortsetzung/Auslegung:** Lesende Untersuchung der verbleibenden
+Runtime-/Hello-Streuung, nicht stillschweigende Uebernahme des
+RID-Kandidaten oder Aenderung von Confinement/Deadlines.
+
+**Neue belegte Aufteilung:** Windows-Run `43785419848`, x64 Versuch 1,
+Job `133031845360`, jeweils die gescripteten Kontroll-/Kandidaten-
+Schritte. Alle Werte sind Sekunden fuer Worker 2, nicht ganze Smokes.
+
+| Phase                    | Portable | RID-Kandidat |
+| ------------------------ | -------: | -----------: |
+| Profil/Storage           |   0.0060 |       0.9817 |
+| App-Kopie                |   0.3819 |       2.4572 |
+| Runtime-Kopie            |   0.2743 |       4.0081 |
+| Prozess-Erzeugung/Resume |   0.0104 |       0.0200 |
+| Hello                    |   0.4311 |       3.4295 |
+
+Der Prozess-Erzeugungsschritt ist in diesem Worker nicht der
+mehrsekundige Ausreisser. Gleichzeitig verlangsamte Phasen reichen
+von Profil/Storage ueber zwei getrennte Kopien bis Hello.
+Das spricht gegen eine alleinige Erklaerung durch Script-Ausfuehrung;
+gemeinsame Host-/Filesystem-/Scheduling-Einfluesse sind weiterhin
+Hypothesen, keine isoliert belegte Ursache.
+
+**Hello-Pfad im Code belegt:**
+[Renderer Program](../src/Apps/VisualWeb.Renderer/Program.cs)
+prueft den Windows-Worker, oeffnet die privaten Streams, konstruiert
+einen statischen Renderer samt Fonts und schreibt erst danach Hello.
+[StaticPageRenderer](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs)
+registriert im Konstruktor die exakten Fonts mit
+[HarfBuzz](../src/Engine/Engine.Text/TextShaping.cs) und
+[Skia](../src/Engine/Engine.Paint/CpuRasterizer.cs).
+Der Script-Renderer wird erst nach Empfang einer Render-Anforderung
+angelegt; ein V8-Dokument entsteht erst in
+[ParseAndExecute](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs).
+Hello umfasst daher Wartezeit auf Runtime-/verwalteten Startup,
+Confinement-Pruefung, Fontinitialisierung und Transport/Host-Fortsetzung,
+nicht nur reine IPC-Latenz oder V8-Ausfuehrung. Die gemessene Wartezeit
+beginnt hostseitig erst nach Rueckkehr des Launchers; bereits waehrend
+dessen Rueckkehr laufende Worker-Arbeit ist kein separat gemessener Anteil.
+
+**Weitere nachgewiesene Messluecken:**
+
+- [WindowsRendererSandbox](../src/Platform/Platform.Windows.Sandbox/WindowsRendererSandbox.cs)
+  fasst hostfxr-Baum, ausgewaehlten Shared-Runtime-Baum und dotnet.exe
+  in einer Phase zusammen.
+  [WindowsStagingCopy](../src/Platform/Platform.Windows.Sandbox/WindowsStagingCopy.cs)
+  umfasst Verzeichnisanlage, Enumeration, Attribut-/Laengenabfragen
+  und File.Copy; nur deren Gesamtzeit ist bekannt.
+- Der Windows-Launcher erzeugt anonyme Pipes und umhuellt die
+  Parent-Endpunkte mit `FileStream(..., isAsync: false)`.
+  [ProcessPageRenderer](../src/Apps/VisualWeb.Browser/ProcessPageRenderer.cs)
+  drainiert stderr asynchron und liest Hello ueber
+  [RendererChannel](../src/Ipc/Ipc.Transport/RendererChannel.cs).
+  Pool-/Scheduling-Wartezeit ist deshalb eine zu messende Hypothese,
+  nicht der Beweis fuer ThreadPool-Starvation. Keine Umstellung der
+  Handle-/Pipe- oder Sicherheitssemantik auf Verdacht.
+- Sechs Hello-Zeilen bedeuten sechs gemessene Scopes, nicht zwingend
+  sechs abgeschlossene Handshakes: der letzte neue Fenster-Worker wird
+  im Smoke vor seinem ersten Render geschlossen. Seine kurzen
+  ~0.04 s werden nicht als normale erfolgreiche Startup-Baseline benutzt.
+
+**Vorschlag, noch nicht beschlossen:** Drei schmale Schritte:
+(1) smoke-only Runtime-Kopie nach Komponenten und Kopier-/Metadatenarbeit
+aufteilen, mit Disabled-/Budget-/Schema-Tests;
+(2) begrenzte Worker-vor-Hello- und Host-Empfangsdiagnostik, ohne
+Protokoll-stdout, Thread-Affinitaet oder Confinement zu veraendern,
+mit Tests fuer Opt-in, Grenzen und unveraenderte Fehlerbehandlung;
+(3) native x64/arm64-Paare in beiden Reihenfolgen mit begrenzten,
+explizit angeforderten Wiederholungen messen. Keine neuen dauerhaften
+langsamen Default-Tests. Daten zuerst, danach erst einen Fix waehlen.
+
+**Status:** Lesende Fortsetzung abgeschlossen, keine Codeaenderung;
+Build/Test-Wiederholung fuer Ergebnisdokumentation nicht erforderlich.
+Diese Fortsetzung wird lokal gespeichert. Naechste Implementierung
+wartet auf Nutzerfreigabe; Deployment-Defaults, Quoten und Deadlines
+bleiben unveraendert.
+
+### KP-427 - Startup-Instrumentierung freigegeben
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 03:11 Europe/Berlin
+(`03:11:33.835+01:00` im aktuellen Chat).
+
+**Nutzerangabe/Beschlossen:** "commit and continue" beantwortet die
+unmittelbare Frage nach Implementierung der drei in KP-426
+vorgeschlagenen Messschritte. Die vorliegenden Erkenntnisse werden
+committed; anschliessend beginnt die erste Implementierungsphase.
+
+**Abgrenzung:** Phase 1 trennt Runtime-Komponenten und Kopier-/
+Metadatenanteile unter dem bestehenden Smoke-Opt-in. Phase 2 betrifft
+begrenzte Worker-vor-Hello-/Host-Empfangsdiagnostik. Phase 3 misst
+begrenzte, explizit angeforderte native Paare in beiden Reihenfolgen.
+Jede Implementierungsphase erhaelt fokussierte Tests, Regression/
+Formatpruefung und Review mit anschliessender Commit-Rueckgabe.
+Keine Aenderung von Deployment-Defaults, Pipe-/Handle-Semantik,
+Confinement, Quoten oder Deadlines. Keine neuen dauerhaft langsamen
+Default-Tests und kein behaupteter Nachweis der offenen Ursachen.
