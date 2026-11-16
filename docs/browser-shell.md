@@ -1071,16 +1071,69 @@ success. Measurements are elapsed wall time, not CPU time. Nested scopes and
 asynchronous work overlap, so their durations cannot be summed.
 Recording uses a sealed, thread-safe data-only buffer with 4,096 preallocated
 timing slots and 4,096 aggregate inventory slots, and no caller callbacks or
-writers. Overflow in either record kind is latched during recording and reported
+writers. A separate 4,096-slot store holds fixed-code startup diagnostic errors.
+Overflow in any record kind is latched during recording and reported
 as an explicit error on export, not silently truncated. Export takes a
-snapshot of completed records; still-running operations are not awaited solely
-for diagnostics. `SmokeTimings.WriteTo` formats invariantly regardless of the
+snapshot of completed records rather than awaiting still-running scopes.
+`SmokeTimings.WriteTo` formats invariantly regardless of the
 writer's culture, and propagates writer/capacity errors. It retains no writer;
 library callers must export outside resource-ownership and exception-unwinding
 paths and serialize exports to their writer. CLI export runs after handled
 failures, but is bypassed for an unexpected escaping exception to avoid masking
 that exception. A killed/hung browser cannot export its buffered diagnostics.
 See [renderer timings](renderer-processes.md) for worker and Windows stages.
+
+For Windows confined and explicitly unsandboxed worker launches, the same
+opt-in enables the private `--smoke-startup-timings` worker argument.
+Required Linux sandbox bootstrap launches do not receive this argument;
+host Hello measurements still apply there. The argument is not a browser CLI
+option, script policy, or a confinement opt-out. Ordinary no-timings launches
+do not request or parse worker startup batches.
+
+The worker writes two invariant-culture stderr lines after writing its normal
+Hello message:
+
+```text
+smoke-worker-startup v=1 managed-ms=... confinement-ms=... renderer-ms=... hello-ms=...
+smoke-worker-startup-end v=1
+```
+
+The fixed, ordered fields measure managed argument preflight, confinement
+verification, static renderer/font construction,
+and the Hello write. They contain no paths, page content, URLs, environment
+values or OS process IDs. The host exports validated durations as the existing
+`smoke-timing` schema with phases `worker.managed-preflight`,
+`worker.confinement-verification`, `worker.renderer-construction`, and
+`worker.hello-write`, using the owning renderer ID and request zero.
+`renderer.hello-receive` and `renderer.hello-validation` subdivide the existing
+host `renderer.hello` measurement. Scopes are not proof of a successful
+handshake; an intentionally closed startup need not complete its batch.
+After a successful Hello, collection waits for a terminal batch/error/EOF
+outcome under the existing exchange deadline. A missing or unterminated partial
+batch at that deadline is explicitly reported; intentional startup cancellation
+does not report an incomplete batch as an error.
+
+Parsing retains at most 256 characters of a line, accepts only the versioned
+fixed batch and finite durations from zero through 86,400,000 milliseconds,
+and continues draining stderr
+after invalid or overlong input. Ordinary diagnostics retain the existing
+8192-character tail. Invalid startup input is reported without echoing it as
+`smoke-diagnostic-error renderer=... code=...`, with a fixed
+`worker-batch-malformed`, `worker-batch-duplicate`, `worker-batch-overlong`,
+`worker-batch-partial`, or `worker-batch-missing` code, at most once per worker.
+Connection disposal makes the parser terminal, cancels its read and retains
+synchronous native cleanup outside the renderer lock. The optional subsequent
+stderr-drain join has a separate one-second bound, not a new startup/render
+deadline. Exceeding it reports `worker-drain-timeout` rather than waiting
+indefinitely; late reads cannot publish more startup records. This does not
+claim that every native Windows synchronous read is interruptible. Diagnostic
+error rows mean the collection is invalid or incomplete, even if the page
+operation itself succeeded.
+Worker durations and host wait durations use independent measurements;
+subtracting them does not establish a precise IPC, scheduling, or runtime-host
+gap. The first worker timestamp follows the initial flag scan; pre-managed
+startup is not measured. Stdout framing/messages, native
+resource ownership, confinement and configured deadlines are unchanged.
 
 When Windows smoke diagnostics are enabled, the existing enclosing
 `windows.copy-runtime` record is preserved and is accompanied by three fixed

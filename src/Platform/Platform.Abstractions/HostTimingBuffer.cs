@@ -3,6 +3,19 @@ namespace VisualWeb.Platform.Abstractions;
 /// <summary>One host wall-clock measurement; no process or page payload is included.</summary>
 public readonly record struct HostTiming(string Phase, long Renderer, long Request, TimeSpan Elapsed);
 
+/// <summary>One fixed-code error from optional bounded diagnostics.</summary>
+public enum HostTimingDiagnosticErrorCode
+{
+    WorkerBatchMalformed,
+    WorkerBatchDuplicate,
+    WorkerBatchOverlong,
+    WorkerBatchPartial,
+    WorkerBatchMissing,
+    WorkerDrainTimeout
+}
+
+public readonly record struct HostTimingDiagnosticError(long Renderer, HostTimingDiagnosticErrorCode Code);
+
 /// <summary>Successful staged file count and copied bytes.</summary>
 public readonly record struct HostCopyCounts(long Files, long Bytes);
 
@@ -25,8 +38,10 @@ public sealed class HostTimingBuffer
     private readonly object sync = new();
     private readonly HostTiming[] records = new HostTiming[Capacity];
     private readonly HostStagingInventory[] inventories = new HostStagingInventory[Capacity];
+    private readonly HostTimingDiagnosticError[] errors = new HostTimingDiagnosticError[Capacity];
     private int count;
     private int inventoryCount;
+    private int errorCount;
     private bool overflowed;
 
     public void Record(HostTiming timing)
@@ -43,6 +58,15 @@ public sealed class HostTimingBuffer
         lock (sync)
         {
             if (inventoryCount < inventories.Length) { inventories[inventoryCount++] = inventory; }
+            else { overflowed = true; }
+        }
+    }
+
+    public void RecordDiagnosticError(HostTimingDiagnosticError error)
+    {
+        lock (sync)
+        {
+            if (errorCount < errors.Length) { errors[errorCount++] = error; }
             else { overflowed = true; }
         }
     }
@@ -64,6 +88,16 @@ public sealed class HostTimingBuffer
         {
             if (overflowed) { throw new InvalidOperationException("Host diagnostic buffer capacity exceeded; diagnostics are incomplete."); }
             return inventories[..inventoryCount];
+        }
+    }
+
+    /// <summary>Copies fixed-code diagnostic errors, or explicitly reports any diagnostic overflow.</summary>
+    public HostTimingDiagnosticError[] DiagnosticErrorSnapshot()
+    {
+        lock (sync)
+        {
+            if (overflowed) { throw new InvalidOperationException("Host diagnostic buffer capacity exceeded; diagnostics are incomplete."); }
+            return errors[..errorCount];
         }
     }
 }

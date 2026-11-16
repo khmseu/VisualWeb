@@ -120,12 +120,14 @@ if (args is ["--linux-sandbox-worker", "--font", _])
     return 0;
 }
 // Private test peer: the font argument selects deterministic protocol faults, not a font file.
-if (args is not [var mode, "--font", var scenario]
-    || mode is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap"))
+if (args.Length < 3 || args[1] != "--font"
+    || args[0] is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap"))
 {
     return 2;
 }
-scenario = Path.GetFileName(scenario);
+var scenario = Path.GetFileName(args[2]);
+var startupTimings = args.Skip(3).SequenceEqual(["--smoke-startup-timings"], StringComparer.Ordinal);
+if (args.Length > 3 && !startupTimings) { return 2; }
 using var input = Console.OpenStandardInput();
 using var output = Console.OpenStandardOutput();
 var channel = new RendererChannel(input, output);
@@ -141,6 +143,70 @@ if (scenario == "startup-hang")
     return 0;
 }
 await channel.WriteAsync(new() { Kind = "hello" });
+if (scenario == "startup-exit-after-hello") { return 7; }
+if (scenario is "startup-hang-after-hello" or "startup-missing-hang-after-hello")
+{
+    Thread.Sleep(Timeout.Infinite);
+    return 0;
+}
+if (scenario == "startup-partial-hang-after-hello")
+{
+    Console.Error.Write("smoke-worker-startup v=1 managed-ms=0.001");
+    Thread.Sleep(Timeout.Infinite);
+    return 0;
+}
+Task? delayedStartupBatch = null;
+if (startupTimings)
+{
+    if (scenario == "startup-delayed-valid")
+    {
+        delayedStartupBatch = Task.Run(async () =>
+        {
+            await Task.Delay(1200);
+            Console.Error.WriteLine("smoke-worker-startup v=1 managed-ms=0.001 confinement-ms=0.002 renderer-ms=0.003 hello-ms=0.004");
+            Console.Error.WriteLine("smoke-worker-startup-end v=1");
+        });
+    }
+    else
+    {
+        if (scenario == "startup-noisy") { Console.Error.WriteLine(new string('x', 64 * 1024) + " ordinary-diagnostic"); }
+        if (scenario == "startup-partial")
+        {
+            Console.Error.Write("smoke-worker-startup v=1 managed-ms=0.001");
+            return 7;
+        }
+        if (scenario == "startup-overlong")
+        {
+            Console.Error.WriteLine("smoke-worker-startup " + new string('x', 300));
+        }
+
+        var startupLine = scenario switch
+        {
+            "startup-malformed" => "smoke-worker-startup v=1 managed-ms=NaN confinement-ms=0.001 renderer-ms=0.001 hello-ms=0.001",
+            "startup-negative" => "smoke-worker-startup v=1 managed-ms=-0.001 confinement-ms=0.001 renderer-ms=0.001 hello-ms=0.001",
+            "startup-extra" => "smoke-worker-startup v=1 managed-ms=0.001 confinement-ms=0.001 renderer-ms=0.001 hello-ms=0.001 extra=1",
+            _ => "smoke-worker-startup v=1 managed-ms=0.001 confinement-ms=0.002 renderer-ms=0.003 hello-ms=0.004"
+        };
+        if (scenario == "startup-unknown") { Console.Error.WriteLine("smoke-worker-unknown v=1"); }
+        if (scenario == "startup-chunked")
+        {
+            foreach (var character in startupLine + Environment.NewLine + "smoke-worker-startup-end v=1" + Environment.NewLine)
+            {
+                Console.Error.Write(character);
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine(startupLine);
+            Console.Error.WriteLine("smoke-worker-startup-end v=1");
+            if (scenario == "startup-duplicate")
+            {
+                Console.Error.WriteLine(startupLine);
+                Console.Error.WriteLine("smoke-worker-startup-end v=1");
+            }
+        }
+    }
+}
 var request = (await channel.ReadAsync())!.Message;
 if (scenario == "render-hang")
 {
@@ -190,6 +256,7 @@ if (scenario == "wrong-link-bounds")
     await output.FlushAsync();
 }
 else { await channel.WriteAsync(reply, pixels); }
+if (delayedStartupBatch is not null) { await delayedStartupBatch; }
 await channel.ReadAsync();
 return 0;
 

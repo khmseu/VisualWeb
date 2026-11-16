@@ -190,6 +190,17 @@ does not change the existing timing record schema.
 See the [schema](browser-shell.md#validation). Native Windows
 CI is required to observe and validate these stages.
 
+The smoke opt-in also requests bounded worker startup durations over stderr.
+The worker verifies its AppContainer/Job profile and constructs its owned
+HarfBuzz/Skia font resources before Hello; page-script execution occurs later.
+Separate host Hello receive/validation and worker preflight/verification/
+renderer-construction/Hello-write phases help locate delays without calling
+all Hello wait time IPC latency. Pre-managed runtime startup is not measured,
+and durations from the worker and host cannot be subtracted as a precise gap.
+This does not change standard-stream handles, IPC framing, process creation,
+confinement verification or resource limits. See the
+[startup diagnostic schema](browser-shell.md#validation).
+
 The browser suite exercises confined worker launch, native Job Object memory
 pressure recovery, CPU-pressure cancellation/deadlines and unaffected renderers
 on Windows, including a private stdin roundtrip to distinct stdout/stderr pipes

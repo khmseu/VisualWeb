@@ -7,6 +7,15 @@ configure the same exact page faces as local rendering. Linux bootstrap remaps
 these individual files into read-only mounts; Windows receives staged paths.
 All faces are loaded before the handshake and owned by the worker's main thread.
 
+The private smoke-only `--smoke-startup-timings` argument emits a bounded
+fixed-schema startup batch to stderr after the normal Hello write. It times
+managed preflight, confinement verification, static renderer/font construction
+and Hello writing, not pre-managed runtime startup or later page scripts.
+Required Linux sandbox bootstrap rejects this argument; the browser does not
+pass it in that mode. This is diagnostic opt-in, not a confinement bypass,
+and does not change stdout/IPC. See the
+[schema and limits](../../../docs/browser-shell.md#validation).
+
 Owns native fonts and HTML/CSS/layout/paint through VisualWeb.PageRendering
 and Engine.Content. No networking/window/chrome dependency; stdout is protocol
 only and diagnostics go to stderr. Native work stays on its creating main thread.

@@ -18,6 +18,17 @@ public sealed class SmokeTimings
     internal void Record(string phase, long renderer, long request, TimeSpan elapsed) =>
         Buffer.Record(new(phase, renderer, request, elapsed));
 
+    // Independent of the configured startup/render deadline. Native ownership cleanup has already
+    // finished synchronously and the parser is terminal before this optional managed drain join.
+    internal void JoinDiagnosticDrain(Task drain, long renderer, TimeSpan? bound = null)
+    {
+        try { drain.WaitAsync(bound ?? TimeSpan.FromSeconds(1)).GetAwaiter().GetResult(); }
+        catch (TimeoutException)
+        {
+            Buffer.RecordDiagnosticError(new(renderer, HostTimingDiagnosticErrorCode.WorkerDrainTimeout));
+        }
+    }
+
     /// <summary>Exports a snapshot in invariant culture. Writer and capacity failures propagate explicitly.</summary>
     /// <remarks>No writer is retained or invoked by instrumentation scopes. Call after owned resources are
     /// cleaned up, not from an exception-unwinding finally; export must not replace an operation failure.
@@ -26,6 +37,7 @@ public sealed class SmokeTimings
     {
         var records = Buffer.Snapshot();
         var inventories = Buffer.InventorySnapshot();
+        var errors = Buffer.DiagnosticErrorSnapshot();
         foreach (var record in records)
         {
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
@@ -42,7 +54,23 @@ public sealed class SmokeTimings
                 $"app-symbol-files={inventory.AppSymbols.Files} app-symbol-bytes={inventory.AppSymbols.Bytes} " +
                 $"runtime-files={inventory.Runtime.Files} runtime-bytes={inventory.Runtime.Bytes}"));
         }
+        foreach (var error in errors)
+        {
+            output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                $"smoke-diagnostic-error renderer={error.Renderer} code={ErrorCode(error.Code)}"));
+        }
     }
+
+    private static string ErrorCode(HostTimingDiagnosticErrorCode code) => code switch
+    {
+        HostTimingDiagnosticErrorCode.WorkerBatchMalformed => "worker-batch-malformed",
+        HostTimingDiagnosticErrorCode.WorkerBatchDuplicate => "worker-batch-duplicate",
+        HostTimingDiagnosticErrorCode.WorkerBatchOverlong => "worker-batch-overlong",
+        HostTimingDiagnosticErrorCode.WorkerBatchPartial => "worker-batch-partial",
+        HostTimingDiagnosticErrorCode.WorkerBatchMissing => "worker-batch-missing",
+        HostTimingDiagnosticErrorCode.WorkerDrainTimeout => "worker-drain-timeout",
+        _ => throw new InvalidOperationException("Unknown diagnostic error code.")
+    };
 
     internal readonly struct Scope(SmokeTimings? owner, string phase, long renderer, long request) : IDisposable
     {

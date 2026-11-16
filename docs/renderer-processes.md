@@ -92,6 +92,19 @@ The client uses portable BCL process/pipe APIs because the existing platform
 process contract does not expose redirected streams; OS-specific confinement
 still belongs in platform backends.
 
+Optional smoke startup diagnostics use only a bounded fixed-schema stderr
+batch, not extra IPC fields or stdout messages. Windows confined and
+explicitly unsandboxed worker launches can report managed preflight,
+confinement verification, native font/renderer construction and Hello-write
+durations; required Linux sandbox bootstrap does not enable worker reporting.
+Host-side Hello receive/validation timings remain available. Worker and host
+measurements do not share an interval, and pre-managed startup is unmeasured.
+Required startup collection uses the existing exchange deadline; optional
+post-cleanup drain joining is independently bounded to one second and reports
+an explicit diagnostic error on timeout, without moving native disposal into
+background work.
+See the [smoke schema and bounds](browser-shell.md#validation).
+
 Messages start with twelve bytes: ASCII `VWR1`, little-endian signed int32
 metadata byte count, then little-endian signed int32 pixel byte count.
 UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.

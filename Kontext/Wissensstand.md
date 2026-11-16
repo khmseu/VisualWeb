@@ -351,9 +351,28 @@ blockierende Befunde. Die neuen Windows-nativen Assertions benoetigen
 noch x64/arm64-CI; die lokalen Linux-Tests sind kein solcher Nachweis.
 Am 2026-11-16 um 03:44 Europe/Berlin bestaetigt der Nutzer mit
 "commit and continue" die Commit-Rueckgabe und den Beginn von Phase 2
-(KP-429). Die neun Phase-1-Dateien werden committed; danach folgt
-begrenzte, opt-in Worker-vor-Hello-/Host-Empfangsdiagnostik bei
-unveraendertem IPC-Protokoll, Deployment und Confinement.
+(KP-429). Die neun Phase-1-Dateien sind als `b2760ea` committed
+(Hook: neun Dateien ohne Befund), bisher nicht gepusht. Phase 2
+ist nun lokal implementiert, vollstaendig validiert und reviewed
+(APPROVED, KP-431; verworfene Zwischenloesungen in KP-430).
+Begrenzte Worker-Startup-Batches ueber stderr ergaenzen Host-Hello-
+Empfang/Validierung ohne geaendertes stdout-IPC. Erfolgreicher Hello
+wartet unter der bestehenden Exchange-Deadline auf einen terminalen
+Erfassungszustand. Cleanup erfolgt ausserhalb des Renderer-Locks;
+der optionale Diagnose-Drain-Join ist separat auf eine Sekunde
+begrenzt und meldet `worker-drain-timeout`. Native Bereinigung bleibt
+synchron und erhaelt dadurch keine neue globale Zeitgarantie.
+Finaler Solution-Build: null Warnungen/Fehler; alle 16.959
+Default-Tests in 14 Projekten bestanden, darunter 1.373 Browser
+und 47 Platform. 34 fokussierte SmokeTiming-Faelle bestehen;
+beide CPU-Deadline-Zeilen bleiben explizit. Solution-Format,
+zwoelfdateiger Scoped-Trunk-Check und Diff-Check bestehen.
+Keine neue native Windows-Messung: x64/arm64-Close-/Cancel-Assertions
+und Laufzeiten benoetigen weiter CI. Am 2026-11-16 um 06:33
+Europe/Berlin bestaetigt der Nutzer "commit and continue" (KP-432):
+Phase 2 wird committed, danach beginnt Phase 3 mit expliziten
+reihenfolgeausgeglichenen nativen Vergleichen. Die bisherigen drei
+lokalen Commits sind noch nicht gepusht.
 
 **Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
 pro Worker tatsaechlich ein 91-Dateien-App-Deployment von

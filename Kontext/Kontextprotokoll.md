@@ -12465,3 +12465,211 @@ Pipe-/Handle-Semantik, Thread-Affinitaet, Deployment-Defaults,
 Confinement, Quoten oder Deadlines. Fehler und unvollstaendige
 Diagnostik muessen explizit bleiben; native x64/arm64-Messung
 und reihenfolgeausgeglichene Wiederholungen bleiben Phase 3.
+
+### KP-430 - Phase-1-Commit und Pre-Hello-Review-Zwischenstand
+
+**Dokumentiert/Ereignis:** 2026-11-16, Zwischenstand um 04:15
+Europe/Berlin; Fortsetzung der Freigabe aus KP-429.
+
+**Belegt:** Phase 1 ist als `b2760ea` (`test: split Windows runtime
+staging timings`) committed. Der Hook pruefte neun Dateien ohne
+Befund. Dieser Commit sowie `5cede2c` und `2b3b8df` sind bisher
+nicht gepusht.
+
+**Implementierter, noch nicht abgenommener Stand:** Phase 2 fuegt
+einen privaten Smoke-Startup-Schalter und feste stderr-Batches fuer
+Managed-Preflight, Confinement-Pruefung, Font-/Renderer-Konstruktion
+und Hello-Schreiben hinzu. Der Host ergaenzt Hello-Empfang und
+Validierung sowie einen begrenzten Parser mit festen Fehlercodes.
+Protokoll-stdout bleibt unveraendert. Required-Linux-Bootstrap
+erhaelt den Schalter nicht. Die zugehoerigen Guides sind ergaenzt;
+sie stellen noch keinen nativen Messnachweis dar.
+
+**Belegt, begrenzte Validierung:** Solution-Build ohne Warnungen
+oder Fehler; vollstaendige Platform-Suite: 47 bestanden.
+Der Implementierungsagent meldet ausserdem 26 SmokeTiming- und
+sieben HostTimingBuffer-Faelle bestanden. Das sind keine
+vollstaendige Loesungsvalidierung und kein Windows-Nativnachweis.
+
+**Review, Status NEEDS_REVISION:** Das unabhaengige Lifecycle-Review
+findet zwei wesentliche Fehler:
+
+- `StartupDiagnosticParser.Require()` vervollstaendigt den Task
+  unbedingt. Ein erfolgreicher Hello kann daher vor dem Batch
+  weiterlaufen; `Dispose().Cancel()` kann spaeter fehlende oder
+  partielle Diagnostik unterdruecken.
+- `Connection.Dispose()` wartet synchron und unbegrenzt auf den
+  stderr-Drain und wird unter dem aeusseren Renderer-Lock aufgerufen.
+  Ein nativer Windows-Haenger ist damit nicht bewiesen, die neue
+  Wartegarantie aber auch nicht.
+
+**Laufende Korrektur, kein neuer Scope:** Nur diese Befunde werden
+behoben: abgeschlossene erforderliche Batches oder explizite
+Fehler unter der bestehenden Exchange-Deadline, absichtliche
+Startup-Abbrueche gesondert behandeln, Connection unter Lock
+abtrennen und Cleanup/Drain ausserhalb begrenzen. Neue Tests muessen
+auch nach erfolgreichem Hello verzoegerte, fehlende und partielle
+Batches ohne EOF sowie Close/Cancel abdecken. Keine Aenderung von
+IPC, Pipe-/Handle-Policy, nativer Thread-Affinitaet, Confinement,
+Quoten, Deployment-Defaults oder konfigurierten Deadlines.
+
+**Offen/Naechster Schritt:** Korrektur, erneutes Review und finale
+Solution-/Format-/Diff-Validierung; danach Rueckgabe zur
+Commit-Freigabe. Phase 2 bleibt uncommitted, Phase 3 noch nicht
+begonnen. Native Windows-x64/arm64-Close-/Drain-Garantien benoetigen
+weiterhin passende CI. Quellen: aktueller Git-Stand, lokale
+Validierung und Review des laufenden Chats; Implementierungs- und
+Review-Zusammenfassungen sind keine zusaetzlichen nativen Belege.
+
+**Nachtrag nach zweitem Review, gleicher Tag:** Der Completion-Fehler
+und die Lock-/Ownership-Trennung sind korrigiert. Das erneute
+Review akzeptiert diese Punkte und die neuen erfolgreichen-Hello-
+Faelle mit verzoegerten, fehlenden und partiellen Batches.
+Ein vollstaendiger Browser-Lauf dieses Zwischenstands besteht mit
+1.369 Faellen in 6 min 56 s; beide expliziten CPU-Deadline-Zeilen
+bleiben ausgeschlossen. Solution-Build: null Warnungen/Fehler.
+Noch kein finaler Gesamtnachweis.
+
+Das Review beanstandet weiterhin den unbegrenzten Drain-Join:
+Cancellation allein belegt bei Windows-Synchronpipes nicht die
+Unterbrechung eines bereits laufenden Reads. Die zunaechst
+implementierte Cancellation-plus-Join-Loesung wird deshalb als
+ausreichende Begrenzung verworfen. Die vorbereitete enge Korrektur
+setzt eine separate Ein-Sekunden-Grenze nur fuer das optionale
+Diagnose-Join und den festen Fehlercode `worker-drain-timeout`.
+Der Parser wird vorher terminal, spaete Reads duerfen keine
+Startup-Records mehr schreiben. Native Ownership-Bereinigung
+bleibt synchron; keine Hintergrund-Cleanup-Tasks oder geaenderten
+Startup-/Render-Deadlines. Fokussierte Timeout-/Terminal-Tests und
+Windows-Close-/Cancel-Assertions sind hinzugefuegt, ihre finale
+Validierung und erneutes Review laufen noch. Dieser Nachtrag ist
+ein gespeicherter Zwischenstand, keine Phase-2-Abnahme.
+
+**Finales Code-Review, gleicher Tag:** Der Ein-Sekunden-Join mit
+explizitem Timeout-Record und vorheriger Parser-Terminalisierung
+ist APPROVED, ohne weitere Befunde im geprueften Scope. Der Join
+ist begrenzt, auch wenn ein nativer Synchron-Read nicht auf
+Cancellation reagiert. Native Bereinigung bleibt vorher synchron
+und ist durch diesen Timer nicht insgesamt zeitlich begrenzt.
+Fokussierte finale Tests und Gesamtvalidierung stehen noch aus;
+Windows-Nativnachweis bleibt offen.
+
+### KP-431 - Pre-Hello-Diagnostik lokal abgeschlossen und reviewed
+
+**Dokumentiert/Ereignis:** 2026-11-16, nach Korrektur und finaler
+Validierung der in KP-429 freigegebenen Phase 2. Die Chronologie
+der beiden Review-Befunde und verworfenen Zwischenloesungen bleibt
+in KP-430 erhalten.
+
+**Belegt, implementierter Stand:** Der bestehende Smoke-Opt-in
+fordert bei Windows-konfinierten und explizit unsandboxed gestarteten
+Workern den privaten Schalter `--smoke-startup-timings` an.
+Required-Linux-Bootstrap erhaelt ihn nicht und weist ihn zurueck.
+Nach dem normalen Hello schreibt der Worker einen festen
+versionierten stderr-Batch fuer Managed-Preflight,
+Confinement-Verifikation, Renderer-/Font-Konstruktion und
+Hello-Schreiben. Der Host exportiert vier `worker.*`-Phasen und
+zusaetzlich `renderer.hello-receive`/`renderer.hello-validation`.
+Keine Aenderung von stdout, IPC-Version oder Framing.
+
+Der Parser begrenzt seine Zeile auf 256 Zeichen, prueft feste
+Feldreihenfolge/Version und endliche nichtnegative Zeitwerte,
+meldet feste Fehlercodes ohne Echo ungueltiger Daten und schreibt
+nur in begrenzte Datenpuffer. Nach erfolgreichem Hello wartet die
+Erfassung auf Endmarker, Fehler, EOF oder absichtlichen Abbruch.
+Fehlende/partielle Batches werden unter der bestehenden
+Exchange-Deadline sichtbar, nicht durch vorzeitiges Completion
+oder Cleanup unterdrueckt.
+
+Ownership wird unter Lock abgetrennt und ausserhalb bereinigt.
+Der Parser wird vor dem abschliessenden optionalen Drain-Join
+terminal, sodass spaete Reads keine Startup-Records nachliefern.
+Dieser Join ist separat auf eine Sekunde begrenzt und meldet
+`worker-drain-timeout`. Native Sandbox-Bereinigung bleibt
+synchron; keine Hintergrundaufgabe uebernimmt ihre Ownership.
+Ohne Timing-Opt-in gibt es keinen neuen Diagnose-Join.
+Deployment-Defaults, Pipe-/Handle-Policy, Quoten, Confinement und
+konfigurierte Startup-/Render-Deadlines sind unveraendert.
+
+**Review:** Final APPROVED, keine verbleibenden Befunde im
+geprueften Scope. Der Timer begrenzt den neuen Join, nicht
+die vorherige native Bereinigung insgesamt. Native
+Windows-Synchronpipe-Unterbrechbarkeit wird nicht behauptet.
+
+**Belegt, finale lokale Validierung:**
+
+- `dotnet build VisualWeb.slnx`: bestanden, null Warnungen/Fehler.
+- `dotnet test VisualWeb.slnx --no-build`: alle **16.959**
+  Default-Faelle in 14 Projekten bestanden, darunter Browser
+  **1.373** und Platform **47**. Beide expliziten
+  CPU-Deadline-Zeilen bleiben ausgeschlossen.
+- Fokussierte finale Agentenlaeufe: **34 SmokeTimingTests** und
+  **35 ProcessTests** bestanden; die beiden expliziten
+  CPU-Deadline-Zeilen sind keine ausgefuehrten Faelle.
+- `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`:
+  bestanden.
+- Scoped-Trunk-Check aller zwoelf betroffenen Dateien und
+  `git diff --check`: bestanden.
+
+Die 21 zusaetzlichen Browser-Faelle gegenueber Phase 1 decken den
+Opt-in, Schema-/Fehlerfaelle, verzoegerte und fehlende/partielle
+Batches nach erfolgreichem Hello, Cancellation/Close sowie den
+begrenzten Join und terminale spaete Reads ab. Windows-spezifische
+Close-/Cancel-Assertions sind enthalten, lokal aber nicht nativ
+ausgefuehrt. Keine neue Windows-Laufzeit, kein nativer
+Confinement-Nachweis und keine Kausalerklaerung des bisherigen
+x64-Ausreissers aus diesen Linux-Laeufen ableiten.
+
+**Quellen und geaenderte Dateien:** Host-Lifecycle in
+[ProcessPageRenderer](../src/Apps/VisualWeb.Browser/ProcessPageRenderer.cs),
+Export/Join in [SmokeTimings](../src/Apps/VisualWeb.Browser/SmokeTimings.cs),
+[Worker](../src/Apps/VisualWeb.Renderer/Program.cs),
+[HostTimingBuffer](../src/Platform/Platform.Abstractions/HostTimingBuffer.cs),
+[Test-Peer](../tests/Renderer.TestPeer/Program.cs) und
+[SmokeTimingTests](../tests/VisualWeb.Browser.Tests/SmokeTimingTests.cs).
+Schema/Grenzen in [Browser-Guide](../docs/browser-shell.md),
+[Prozess-Guide](../docs/renderer-processes.md),
+[Windows-Guide](../docs/windows-confinement.md) und
+[Renderer-README](../src/Apps/VisualWeb.Renderer/README.md).
+Dazu beide Kontextdateien; insgesamt zwoelf Dateien.
+Lokale Kommandolaeufe und finales Review des aktuellen Chats
+belegen die Ergebnisse, nicht eine neue CI.
+
+**Commit-/Fortsetzungsrueckgabe:** Phase 2 ist noch uncommitted.
+`5cede2c`, `2b3b8df` und `b2760ea` sind weiterhin nicht gepusht;
+letzter veroeffentlichter Stand bleibt `2e3e7fe`.
+Phase 3 ist nicht begonnen. Nach expliziter Commit-/Fortsetzungs-
+freigabe folgen die bereits beschlossenen begrenzten nativen
+Vergleiche in beiden Reihenfolgen, keine neuen permanent langsamen
+Default-Tests und keine stillschweigende RID-Default-Uebernahme.
+
+**Vorgeschlagene Commit-Nachricht:**
+
+```text
+test: trace renderer startup before Hello
+
+Record bounded worker startup and host Hello timings through stderr
+without changing IPC, deployment defaults or confinement policy.
+
+Require terminal startup diagnostics, bound the cleanup drain join,
+and cover malformed, delayed and canceled diagnostic lifecycles.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-432 - Pre-Hello-Phase committen und native Vergleiche vorbereiten
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 06:33 Europe/Berlin
+(`06:33:24.598+01:00` im aktuellen Chat).
+
+**Nutzerangabe/Beschlossen:** "commit and continue" bestaetigt die
+unmittelbare Commit-/Fortsetzungsfrage zu KP-431: die zwoelf
+reviewten und validierten Phase-2-Dateien committen, danach mit
+Phase 3 der freigegebenen Messfolge fortsetzen.
+
+**Grenzen:** Begrenzte explizite native Vergleiche in beiden
+Reihenfolgen; keine weiteren permanent langsamen Standardlaeufe,
+keine RID-Default-Uebernahme und keine Aenderung von IPC,
+Confinement, Quoten oder Deadlines. Vorbereitung/Validierung der
+Messautomation ist kein neuer Windows-Messnachweis. Push und
+tatsaechliche native Ausfuehrung sind noch nicht erfolgt.

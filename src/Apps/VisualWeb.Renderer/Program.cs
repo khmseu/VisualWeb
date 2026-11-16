@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using VisualWeb.Core.Url;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
@@ -5,6 +7,8 @@ using VisualWeb.PageRendering;
 using VisualWeb.Platform.Linux.Sandbox;
 using VisualWeb.Platform.Windows.Sandbox;
 
+var startupTimingRequested = Array.IndexOf(args, "--smoke-startup-timings") >= 0;
+var managedEntry = startupTimingRequested ? Stopwatch.GetTimestamp() : 0L;
 if (args.Length < 3 || args[1] != "--font"
     || args[0] is not ("--development-unsandboxed" or "--linux-sandbox-bootstrap" or "--linux-sandbox-worker" or "--windows-sandbox-worker"))
 {
@@ -18,9 +22,17 @@ try
     ArgumentException.ThrowIfNullOrWhiteSpace(fontPath);
     string? bold = null, italic = null, boldItalic = null;
     var seen = new HashSet<string>(StringComparer.Ordinal);
-    for (var index = 3; index < args.Length; index += 2)
+    var startupTimingEnabled = false;
+    for (var index = 3; index < args.Length;)
     {
         var option = args[index];
+        if (option == "--smoke-startup-timings")
+        {
+            if (startupTimingEnabled) { throw new ArgumentException("Duplicate renderer startup timing option."); }
+            startupTimingEnabled = true;
+            index++;
+            continue;
+        }
         if (index + 1 >= args.Length || !seen.Add(option)) { throw new ArgumentException("Missing or duplicate renderer font option: " + option); }
         var path = args[index + 1];
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -32,7 +44,12 @@ try
             case "--font-bold-italic": boldItalic = path; break;
             default: throw new ArgumentException("Unknown renderer font option: " + option);
         }
+        index += 2;
     }
+    if (startupTimingEnabled && mode == "--linux-sandbox-bootstrap")
+    { throw new ArgumentException("Startup timing is not supported by the Linux sandbox bootstrap."); }
+    var managedPreflightMs = startupTimingEnabled
+        ? Stopwatch.GetElapsedTime(managedEntry).TotalMilliseconds : 0;
     if (mode == "--linux-sandbox-bootstrap")
     {
         LinuxRendererSandbox.Enter(AppContext.BaseDirectory, fontPath,
@@ -41,21 +58,36 @@ try
     }
     var confined = mode == "--linux-sandbox-worker";
     var windowsConfined = mode == "--windows-sandbox-worker";
+    var confinementStart = startupTimingEnabled ? Stopwatch.GetTimestamp() : 0L;
     if (confined) { LinuxRendererSandbox.VerifyWorker(); }
     if (windowsConfined) { WindowsRendererSandbox.VerifyWorker(); }
+    var confinementMs = startupTimingEnabled && (confined || windowsConfined)
+        ? Stopwatch.GetElapsedTime(confinementStart).TotalMilliseconds : 0;
     using var input = Console.OpenStandardInput();
     using var output = Console.OpenStandardOutput();
     var channel = new RendererChannel(input, output);
+    var rendererConstructionStart = startupTimingEnabled ? Stopwatch.GetTimestamp() : 0L;
     using var renderer = new StaticPageRenderer(fontPath, RendererProtocol.MaxPixels,
         boldFontPath: bold, italicFontPath: italic, boldItalicFontPath: boldItalic);
+    var rendererConstructionMs = startupTimingEnabled
+        ? Stopwatch.GetElapsedTime(rendererConstructionStart).TotalMilliseconds : 0;
     StaticPageRenderer? scriptedRenderer = null;
     bool? scriptPolicy = null;
+    var helloWriteStart = startupTimingEnabled ? Stopwatch.GetTimestamp() : 0L;
     channel.WriteAsync(new()
     {
         Kind = "hello",
         SandboxProfile = confined ? LinuxRendererSandbox.Profile
         : windowsConfined ? WindowsRendererSandbox.Profile : null
     }).GetAwaiter().GetResult();
+    var helloWriteMs = startupTimingEnabled ? Stopwatch.GetElapsedTime(helloWriteStart).TotalMilliseconds : 0;
+    if (startupTimingEnabled)
+    {
+        Console.Error.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"smoke-worker-startup v=1 managed-ms={managedPreflightMs:F3} confinement-ms={confinementMs:F3} " +
+            $"renderer-ms={rendererConstructionMs:F3} hello-ms={helloWriteMs:F3}"));
+        Console.Error.WriteLine("smoke-worker-startup-end v=1");
+    }
     long lastId = 0;
     try
     {

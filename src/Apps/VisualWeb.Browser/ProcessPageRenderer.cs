@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using VisualWeb.Core.Url;
 using VisualWeb.Engine.Paint;
@@ -7,6 +8,7 @@ using VisualWeb.Engine.Scripting;
 using VisualWeb.Ipc.Contracts;
 using VisualWeb.Ipc.Transport;
 using VisualWeb.PageRendering;
+using VisualWeb.Platform.Abstractions;
 using VisualWeb.Platform.Linux.Sandbox;
 using VisualWeb.Platform.Windows.Sandbox;
 
@@ -22,7 +24,7 @@ public sealed class RendererProcessException(string message) : IOException(messa
 public sealed class ProcessPageRenderer : IPageRenderer
 {
     private sealed class Connection(Process process, LinuxRendererResources? resources, WindowsRendererWorker? windowsWorker,
-        SmokeTimings? timings, long rendererId) : IDisposable
+        SmokeTimings? timings, long rendererId, bool collectWorkerStartup) : IDisposable
     {
         internal long RendererId { get; } = rendererId;
         internal LinuxRendererResources? Resources { get; } = resources;
@@ -30,35 +32,240 @@ public sealed class ProcessPageRenderer : IPageRenderer
         internal RendererChannel Channel { get; } = new(windowsWorker?.Output ?? process.StandardOutput.BaseStream,
             windowsWorker?.Input ?? process.StandardInput.BaseStream);
         internal Task? Diagnostics { get; set; }
+        private readonly CancellationTokenSource diagnosticsCancellation = new();
+        private readonly StartupDiagnosticParser? startup = collectWorkerStartup
+            ? new(timings!, rendererId) : null;
         private string tail = "";
         private readonly object sync = new();
+
         internal void Append(ReadOnlySpan<char> text)
         {
-            lock (sync) { tail = (tail + text.ToString()); if (tail.Length > 8192) { tail = tail[^8192..]; } }
+            lock (sync)
+            {
+                tail = (tail + text.ToString());
+                if (tail.Length > 8192) { tail = tail[^8192..]; }
+            }
+            startup?.Append(text);
         }
+
         internal string Tail { get { lock (sync) { return tail; } } }
+        internal Task? StartupDiagnostics => startup?.Completion;
+        internal CancellationToken DiagnosticsCancellation => diagnosticsCancellation.Token;
+        internal void RequireStartupDiagnostics() => startup?.Require();
+        internal void ReportMissingStartupDiagnostics() => startup?.ReportMissing();
+        internal void CompleteDiagnostics() => startup?.Complete();
         internal void Abort() => windowsWorker?.Terminate();
+
         public void Dispose()
         {
+            startup?.Cancel();
+            // Cancellation is best effort (notably for synchronous Windows pipes). Native cleanup
+            // remains synchronous; only the subsequent optional diagnostics join has its own bound.
+            diagnosticsCancellation.Cancel();
             using var timing = timings?.Measure("renderer.dispose", RendererId);
             try { Resources?.Stop(); }
             finally
             {
-                if (windowsWorker is not null)
+                try
                 {
-                    windowsWorker.Dispose();
-                }
-                else
-                {
-                    if (!Process.HasExited)
+                    if (windowsWorker is not null)
                     {
-                        try { Process.Kill(entireProcessTree: true); }
-                        catch (InvalidOperationException) when (Process.HasExited) { }
-                        catch (Win32Exception) when (Process.HasExited) { }
+                        windowsWorker.Dispose();
                     }
-                    Process.Dispose();
+                    else
+                    {
+                        if (!Process.HasExited)
+                        {
+                            try { Process.Kill(entireProcessTree: true); }
+                            catch (InvalidOperationException) when (Process.HasExited) { }
+                            catch (Win32Exception) when (Process.HasExited) { }
+                        }
+                        try { Process.StandardError.Close(); }
+                        finally { Process.Dispose(); }
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        if (Diagnostics is { } diagnostics) { timings?.JoinDiagnosticDrain(diagnostics, RendererId); }
+                    }
+                    finally { diagnosticsCancellation.Dispose(); }
                 }
             }
+        }
+    }
+
+    internal sealed class StartupDiagnosticParser(SmokeTimings timings, long renderer)
+    {
+        private const int MaxLineLength = 256;
+        private readonly object sync = new();
+        private readonly char[] line = new char[MaxLineLength];
+        private readonly TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int lineLength;
+        private bool overlong;
+        private bool required;
+        private bool batchSeen;
+        private bool batchEnded;
+        private bool errorRecorded;
+        private bool canceled;
+        private bool eof;
+        private double managedMs;
+        private double confinementMs;
+        private double rendererMs;
+        private double helloMs;
+        internal Task Completion => completion.Task;
+
+        internal void Require()
+        {
+            lock (sync)
+            {
+                required = true;
+                if (eof && !batchEnded && !errorRecorded && !canceled)
+                { RecordError(HostTimingDiagnosticErrorCode.WorkerBatchMissing); }
+                if (batchEnded || errorRecorded || eof || canceled) { completion.TrySetResult(); }
+            }
+        }
+
+        internal void Append(ReadOnlySpan<char> text)
+        {
+            lock (sync)
+            {
+                if (canceled) { return; }
+                var complete = false;
+                foreach (var character in text)
+                {
+                    if (character == '\n')
+                    {
+                        complete |= ProcessLine();
+                        lineLength = 0;
+                        overlong = false;
+                    }
+                    else if (lineLength < line.Length) { line[lineLength++] = character; }
+                    else { overlong = true; }
+                }
+                if (complete) { completion.TrySetResult(); }
+            }
+        }
+
+        internal void Complete()
+        {
+            lock (sync)
+            {
+                if (!canceled && lineLength > 0) { _ = ProcessLine(partial: true); }
+                if (required && !batchEnded && !errorRecorded && !canceled)
+                { RecordError(HostTimingDiagnosticErrorCode.WorkerBatchMissing); }
+                eof = true;
+                completion.TrySetResult();
+            }
+        }
+
+        internal void ReportMissing()
+        {
+            lock (sync)
+            {
+                if (required && !batchEnded && !errorRecorded && !canceled)
+                {
+                    if (lineLength > 0) { _ = ProcessLine(partial: true); }
+                    if (!errorRecorded) { RecordError(HostTimingDiagnosticErrorCode.WorkerBatchMissing); }
+                }
+                completion.TrySetResult();
+            }
+        }
+
+        internal void Cancel()
+        {
+            lock (sync)
+            {
+                canceled = true;
+                completion.TrySetResult();
+            }
+        }
+
+        private bool ProcessLine(bool partial = false)
+        {
+            var value = line.AsSpan(0, lineLength);
+            if (!partial && value.Length > 0 && value[^1] == '\r') { value = value[..^1]; }
+            if (!value.StartsWith("smoke-worker", StringComparison.Ordinal)) { return false; }
+            if (overlong)
+            {
+                RecordError(HostTimingDiagnosticErrorCode.WorkerBatchOverlong);
+                return true;
+            }
+            if (errorRecorded) { return true; }
+            if (partial)
+            {
+                RecordError(HostTimingDiagnosticErrorCode.WorkerBatchPartial);
+                return true;
+            }
+            if (value.StartsWith("smoke-worker-startup ", StringComparison.Ordinal))
+            {
+                if (batchSeen || batchEnded)
+                {
+                    RecordError(HostTimingDiagnosticErrorCode.WorkerBatchDuplicate);
+                    return true;
+                }
+                if (!TryParseBatch(value))
+                {
+                    RecordError(HostTimingDiagnosticErrorCode.WorkerBatchMalformed);
+                    return true;
+                }
+                batchSeen = true;
+                return false;
+            }
+            if (value.SequenceEqual("smoke-worker-startup-end v=1"))
+            {
+                if (!batchSeen || batchEnded)
+                {
+                    RecordError(batchEnded ? HostTimingDiagnosticErrorCode.WorkerBatchDuplicate
+                        : HostTimingDiagnosticErrorCode.WorkerBatchMalformed);
+                    return true;
+                }
+                batchEnded = true;
+                timings.Record("worker.managed-preflight", renderer, 0, TimeSpan.FromMilliseconds(managedMs));
+                timings.Record("worker.confinement-verification", renderer, 0, TimeSpan.FromMilliseconds(confinementMs));
+                timings.Record("worker.renderer-construction", renderer, 0, TimeSpan.FromMilliseconds(rendererMs));
+                timings.Record("worker.hello-write", renderer, 0, TimeSpan.FromMilliseconds(helloMs));
+                return true;
+            }
+            RecordError(batchEnded ? HostTimingDiagnosticErrorCode.WorkerBatchDuplicate
+                : HostTimingDiagnosticErrorCode.WorkerBatchMalformed);
+            return true;
+        }
+
+        private bool TryParseBatch(ReadOnlySpan<char> value)
+        {
+            var fields = value.ToString().Split(' ', StringSplitOptions.None);
+            return fields.Length == 6
+                && fields[0] == "smoke-worker-startup"
+                && fields[1] == "v=1"
+                && TryDuration(fields[2], "managed-ms=", out managedMs)
+                && TryDuration(fields[3], "confinement-ms=", out confinementMs)
+                && TryDuration(fields[4], "renderer-ms=", out rendererMs)
+                && TryDuration(fields[5], "hello-ms=", out helloMs);
+        }
+
+        private static bool TryDuration(string field, string prefix, out double milliseconds)
+        {
+            milliseconds = 0;
+            if (!field.StartsWith(prefix, StringComparison.Ordinal)) { return false; }
+            var value = field.AsSpan(prefix.Length);
+            var dot = false;
+            foreach (var character in value)
+            {
+                if (character == '.' && !dot) { dot = true; }
+                else if (character is < '0' or > '9') { return false; }
+            }
+            return value.Length > 0 && double.TryParse(value, NumberStyles.AllowDecimalPoint,
+                    CultureInfo.InvariantCulture, out milliseconds)
+                && double.IsFinite(milliseconds) && milliseconds is >= 0 and <= 86_400_000;
+        }
+
+        private void RecordError(HostTimingDiagnosticErrorCode code)
+        {
+            if (errorRecorded) { return; }
+            errorRecorded = true;
+            timings.Buffer.RecordDiagnosticError(new(renderer, code));
         }
     }
     private readonly string rendererPath;
@@ -324,12 +531,22 @@ public sealed class ProcessPageRenderer : IPageRenderer
             if (started)
             {
                 using var helloTiming = timings?.Measure("renderer.hello", rendererId, request.Id);
-                var hello = await Receive(current, deadline.Token).ConfigureAwait(false);
-                if (hello.Message.Kind != "hello") { throw new IpcProtocolException("Renderer handshake is missing."); }
-                if (requireSandbox && hello.Message.SandboxProfile != requiredSandboxProfile)
+                RendererPacket hello;
+                using (timings?.Measure("renderer.hello-receive", rendererId, request.Id))
                 {
-                    throw new IpcProtocolException("Renderer did not confirm the required platform confinement profile.");
+                    hello = await Receive(current, deadline.Token).ConfigureAwait(false);
                 }
+                using (timings?.Measure("renderer.hello-validation", rendererId, request.Id))
+                {
+                    if (hello.Message.Kind != "hello") { throw new IpcProtocolException("Renderer handshake is missing."); }
+                    if (requireSandbox && hello.Message.SandboxProfile != requiredSandboxProfile)
+                    {
+                        throw new IpcProtocolException("Renderer did not confirm the required platform confinement profile.");
+                    }
+                }
+                current.RequireStartupDiagnostics();
+                if (current.StartupDiagnostics is { } startupDiagnostics)
+                { await startupDiagnostics.WaitAsync(deadline.Token).ConfigureAwait(false); }
             }
             // Only render requests: excludes startup/Hello, includes write, broker round trips,
             // identity/viewport validation, frame copy and the final cancellation check.
@@ -396,12 +613,16 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         catch (OperationCanceledException)
         {
+            if (!cancellationToken.IsCancellationRequested && !lifetime.IsCancellationRequested)
+            { current?.ReportMissingStartupDiagnostics(); }
             if (deadline.IsCancellationRequested) { Stop(current); }
             if (cancellationToken.IsCancellationRequested || lifetime.IsCancellationRequested) { throw; }
             throw new RendererProcessException("Renderer startup/render deadline exceeded; worker terminated.");
         }
         catch (Exception) when (deadline.IsCancellationRequested)
         {
+            if (!cancellationToken.IsCancellationRequested && !lifetime.IsCancellationRequested)
+            { current?.ReportMissingStartupDiagnostics(); }
             Stop(current);
             if (cancellationToken.IsCancellationRequested || lifetime.IsCancellationRequested)
             {
@@ -447,9 +668,10 @@ public sealed class ProcessPageRenderer : IPageRenderer
             }
             var worker = WindowsRendererSandbox.Start(Path.GetDirectoryName(rendererPath)!, fontPath,
                 RuntimeEnvironment.GetRuntimeDirectory(), Path.GetFileName(rendererPath),
+                workerArguments: WorkerStartupTimingEnabled ? ["--smoke-startup-timings"] : null,
                 boldFontPath: boldFontPath, italicFontPath: italicFontPath, boldItalicFontPath: boldItalicFontPath,
                 timing: timings?.Buffer, timingRenderer: rendererId);
-            var connection = new Connection(worker.Process, null, worker, timings, rendererId);
+            var connection = new Connection(worker.Process, null, worker, timings, rendererId, WorkerStartupTimingEnabled);
             connection.Diagnostics = DrainDiagnostics(connection, worker.Error);
             return connection;
         }
@@ -474,9 +696,11 @@ public sealed class ProcessPageRenderer : IPageRenderer
         if (boldFontPath is not null) { info.ArgumentList.Add("--font-bold"); info.ArgumentList.Add(boldFontPath); }
         if (italicFontPath is not null) { info.ArgumentList.Add("--font-italic"); info.ArgumentList.Add(italicFontPath); }
         if (boldItalicFontPath is not null) { info.ArgumentList.Add("--font-bold-italic"); info.ArgumentList.Add(boldItalicFontPath); }
+        if (WorkerStartupTimingEnabled && !requireSandbox)
+        { info.ArgumentList.Add("--smoke-startup-timings"); }
         var resources = requireSandbox ? new LinuxRendererResources() : null;
         var process = Process.Start(resources?.Wrap(info) ?? info) ?? throw new RendererProcessException("Renderer process did not start.");
-        var owner = new Connection(process, resources, null, timings, rendererId);
+        var owner = new Connection(process, resources, null, timings, rendererId, WorkerStartupTimingEnabled && !requireSandbox);
         owner.Diagnostics = DrainDiagnostics(owner, process.StandardError.BaseStream);
         return owner;
     }
@@ -490,51 +714,68 @@ public sealed class ProcessPageRenderer : IPageRenderer
         }
         return host;
     }
+
+    private bool WorkerStartupTimingEnabled => timings is not null
+        && !(requireSandbox && OperatingSystem.IsLinux());
+
     private static async Task DrainDiagnostics(Connection owner, Stream error)
     {
-        using var reader = new StreamReader(error);
+        // The connection/native worker owns this stream and closes it synchronously. A late read
+        // completion after the optional join times out must not attempt a second stream disposal.
+        using var reader = new StreamReader(error, leaveOpen: true);
         var buffer = new char[1024];
+        var cancellation = owner.DiagnosticsCancellation;
         try
         {
-            while (await reader.ReadAsync(buffer).ConfigureAwait(false) is > 0 and var count) { owner.Append(buffer.AsSpan(0, count)); }
+            while (await reader.ReadAsync(buffer.AsMemory(), cancellation).ConfigureAwait(false) is > 0 and var count)
+            { owner.Append(buffer.AsSpan(0, count)); }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
         }
         catch (Exception exception) when (exception is IOException or ObjectDisposedException)
         {
             owner.Append((" [stderr stream closed: " + exception.Message + "]").AsSpan());
         }
+        finally { owner.CompleteDiagnostics(); }
     }
     public string? TakeFailure()
     {
+        Connection? exited;
+        string failure;
         lock (sync)
         {
             if (disposed || connection is null || !connection.Process.HasExited || exchange.CurrentCount == 0) { return null; }
-            var failure = $"Renderer process {connection.Process.Id} exited ({connection.Process.ExitCode}). {connection.Tail}";
-            var exited = connection;
+            failure = $"Renderer process {connection.Process.Id} exited ({connection.Process.ExitCode}). {connection.Tail}";
+            exited = connection;
             connection = null;
-            exited.Dispose();
-            return failure;
         }
+        exited.Dispose();
+        return failure;
     }
     private void Stop(Connection? owner)
     {
         if (owner is null) { return; }
+        var detached = false;
         lock (sync)
         {
             if (!ReferenceEquals(connection, owner)) { return; }
             connection = null;
-            owner.Dispose();
+            detached = true;
         }
+        if (detached) { owner.Dispose(); }
     }
     public void Dispose()
     {
+        Connection? owned;
         lock (sync)
         {
             if (disposed) { return; }
             disposed = true;
             lifetime.Cancel();
-            var owned = connection;
+            owned = connection;
             connection = null;
-            owned?.Dispose();
         }
+        owned?.Dispose();
     }
 }

@@ -49,6 +49,237 @@ public sealed class SmokeTimingTests
     }
 
     [Fact]
+    public async Task WorkerStartupDiagnosticsAreOptInAndCorrelateWithHostHelloBoundaries()
+    {
+        var timings = new SmokeTimings();
+        using (var renderer = new ProcessPageRenderer(Renderer, Font, timings: timings))
+        {
+            await renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken);
+        }
+
+        var records = timings.Buffer.Snapshot();
+        foreach (var phase in new[] { "worker.managed-preflight", "worker.confinement-verification",
+            "worker.renderer-construction", "worker.hello-write" })
+        {
+            Assert.Single(records, record => record.Phase == phase && record.Renderer == 1 && record.Request == 0);
+        }
+        Assert.Single(records, record => record.Phase == "renderer.hello-receive" && record.Renderer == 1 && record.Request == 1);
+        Assert.Single(records, record => record.Phase == "renderer.hello-validation" && record.Renderer == 1 && record.Request == 1);
+        var hello = Assert.Single(records, record => record.Phase == "renderer.hello");
+        var receive = Assert.Single(records, record => record.Phase == "renderer.hello-receive");
+        var validation = Assert.Single(records, record => record.Phase == "renderer.hello-validation");
+        Assert.True(hello.Elapsed >= receive.Elapsed + validation.Elapsed);
+    }
+
+    [Theory]
+    [InlineData("startup-chunked", null)]
+    [InlineData("startup-noisy", null)]
+    [InlineData("startup-malformed", "worker-batch-malformed")]
+    [InlineData("startup-duplicate", "worker-batch-duplicate")]
+    [InlineData("startup-overlong", "worker-batch-overlong")]
+    [InlineData("startup-negative", "worker-batch-malformed")]
+    [InlineData("startup-extra", "worker-batch-malformed")]
+    [InlineData("startup-unknown", "worker-batch-malformed")]
+    public async Task WorkerStartupBatchIsBoundedValidatedAndDrained(string scenario, string? errorCode)
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        using (var renderer = new ProcessPageRenderer(peer, scenario, timings: timings))
+        {
+            await renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken);
+        }
+
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        var text = output.ToString();
+        if (errorCode is null)
+        {
+            Assert.Contains("phase=worker.managed-preflight renderer=1 request=0 ", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("ordinary-diagnostic", text, StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.Contains($"smoke-diagnostic-error renderer=1 code={errorCode}", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task PartialWorkerStartupBatchIsReportedAfterPipeDrain()
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        using (var renderer = new ProcessPageRenderer(peer, "startup-partial", timings: timings))
+        {
+            await Assert.ThrowsAsync<RendererProcessException>(() =>
+                renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken));
+            Assert.Null(renderer.ProcessId);
+        }
+
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        Assert.Contains("smoke-diagnostic-error renderer=1 code=worker-batch-partial", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task IntentionalCancellationBeforeStartupBatchDoesNotReportMissingDiagnostics()
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        using var renderer = new ProcessPageRenderer(peer, "startup-hang-after-hello", timings: timings);
+        using var cancellation = new CancellationTokenSource();
+        var render = renderer.RenderAsync(Page, new(20, 10, 1), cancellation.Token);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => render);
+
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        Assert.DoesNotContain("smoke-diagnostic-error", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SuccessfulHelloWithoutStartupBatchIsReportedAsIncomplete()
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        using (var renderer = new ProcessPageRenderer(peer, "startup-exit-after-hello", timings: timings))
+        {
+            await Assert.ThrowsAsync<RendererProcessException>(() =>
+                renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken));
+        }
+
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        Assert.Contains("smoke-diagnostic-error renderer=1 code=worker-batch-missing", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DelayedStartupBatchAfterHelloIsCompleteBeforeExport()
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        using (var renderer = new ProcessPageRenderer(peer, "startup-delayed-valid", timings: timings,
+            timeout: TimeSpan.FromSeconds(3)))
+        {
+            await renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken);
+            Assert.Contains(timings.Buffer.Snapshot(), record => record.Phase == "worker.managed-preflight");
+        }
+
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        Assert.Contains("phase=worker.managed-preflight renderer=1 request=0 ", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("startup-missing-hang-after-hello", "worker-batch-missing")]
+    [InlineData("startup-partial-hang-after-hello", "worker-batch-partial")]
+    public async Task MissingOrPartialStartupBatchAfterHelloIsBoundedWithoutEof(string scenario, string errorCode)
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        using (var renderer = new ProcessPageRenderer(peer, scenario, timings: timings,
+            timeout: TimeSpan.FromSeconds(2)))
+        {
+            var elapsed = Stopwatch.StartNew();
+            await Assert.ThrowsAsync<RendererProcessException>(() =>
+                renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken));
+            Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(5));
+            Assert.Null(renderer.ProcessId);
+        }
+
+        Assert.Contains(timings.Buffer.Snapshot(), record => record.Phase == "renderer.hello-validation");
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        Assert.Contains($"smoke-diagnostic-error renderer=1 code={errorCode}", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task IntentionalCloseInterruptsDiagnosticDrainAndReapsOwnedWorker()
+    {
+        var timings = new SmokeTimings();
+        var peer = Path.Combine(AppContext.BaseDirectory, "Peer", "VisualWeb.Renderer.TestPeer.dll");
+        var renderer = new ProcessPageRenderer(peer, "startup-hang-after-hello", timings: timings);
+        using var cancellation = new CancellationTokenSource();
+        var render = renderer.RenderAsync(Page, new(20, 10, 1), cancellation.Token);
+        var workerIdDeadline = Stopwatch.StartNew();
+        while (renderer.ProcessId is null && workerIdDeadline.Elapsed < TimeSpan.FromSeconds(2))
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+        using var worker = Process.GetProcessById(renderer.ProcessId
+            ?? throw new InvalidOperationException("Renderer worker did not start."));
+
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            render.WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken));
+        await worker.WaitForExitAsync(TestContext.Current.CancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+        Assert.True(worker.HasExited);
+        renderer.Dispose();
+
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        Assert.DoesNotContain("smoke-diagnostic-error", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DiagnosticDrainJoinTimesOutWithFixedErrorAndTerminalParser()
+    {
+        var timings = new SmokeTimings();
+        var parser = new ProcessPageRenderer.StartupDiagnosticParser(timings, 7);
+        parser.Require();
+        parser.Cancel();
+        var stalledDrain = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var elapsed = Stopwatch.StartNew();
+
+        timings.JoinDiagnosticDrain(stalledDrain.Task, 7, TimeSpan.FromMilliseconds(20));
+
+        Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(2));
+        Assert.True(parser.Completion.IsCompletedSuccessfully);
+        using var before = new StringWriter();
+        timings.WriteTo(before);
+        Assert.Equal($"smoke-diagnostic-error renderer=7 code=worker-drain-timeout{Environment.NewLine}", before.ToString());
+        // A read already in flight may finish after the bounded join. It must not publish diagnostics.
+        parser.Append("smoke-worker-startup v=1 managed-ms=1 confinement-ms=2 renderer-ms=3 hello-ms=4\nsmoke-worker-startup-end v=1\n");
+        parser.Complete();
+        stalledDrain.SetResult();
+        using var after = new StringWriter();
+        timings.WriteTo(after);
+        Assert.Equal(before.ToString(), after.ToString());
+    }
+
+    [Fact]
+    public void CompletedDiagnosticDrainDoesNotReportTimeout()
+    {
+        var timings = new SmokeTimings();
+        timings.JoinDiagnosticDrain(Task.CompletedTask, 7, TimeSpan.FromMilliseconds(20));
+        Assert.Empty(timings.Buffer.DiagnosticErrorSnapshot());
+    }
+
+    [Fact]
+    public async Task FullDiagnosticBufferDoesNotInterruptWorkerOwnershipOrRender()
+    {
+        var timings = new SmokeTimings();
+        for (var index = 0; index < HostTimingBuffer.Capacity; index++)
+        {
+            timings.Buffer.Record(new("fixture", 0, 0, TimeSpan.Zero));
+        }
+
+        Process worker;
+        using (var renderer = new ProcessPageRenderer(Renderer, Font, timings: timings))
+        {
+            await renderer.RenderAsync(Page, new(20, 10, 1), TestContext.Current.CancellationToken);
+            worker = Process.GetProcessById(renderer.ProcessId!.Value);
+        }
+        using (worker)
+        {
+            await worker.WaitForExitAsync(TestContext.Current.CancellationToken);
+            Assert.True(worker.HasExited);
+        }
+        Assert.Throws<InvalidOperationException>(() => timings.WriteTo(new StringWriter()));
+    }
+
+    [Fact]
     public async Task RenderRequestExcludesFocusAndIncludesResponseValidationFailure()
     {
         var timings = new SmokeTimings();
@@ -259,6 +490,36 @@ public sealed class SmokeTimingTests
         Assert.Matches(@"app-files=[1-9][0-9]* app-bytes=[1-9][0-9]*", inventory);
         Assert.Matches(@"runtime-files=[1-9][0-9]* runtime-bytes=[1-9][0-9]*", inventory);
         Assert.DoesNotContain(Path.GetTempPath(), inventory, StringComparison.Ordinal);
+        Assert.DoesNotContain("smoke-diagnostic-error", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NativeWindowsEarlyStartupCloseOrCancelFinishesDrainAndCleanup(bool cancel)
+    {
+        if (!OperatingSystem.IsWindows()) { return; }
+        var timings = new SmokeTimings();
+        using var renderer = new ProcessPageRenderer(Renderer, Font, requireSandbox: true, timings: timings);
+        using var cancellation = new CancellationTokenSource();
+        var render = renderer.RenderAsync(Page, new(20, 10, 1), cancellation.Token);
+        // Launch/staging is synchronous before the first channel await; the worker is now owned.
+        using var worker = Process.GetProcessById(renderer.ProcessId!.Value);
+        if (cancel) { cancellation.Cancel(); }
+        else { renderer.Dispose(); }
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            render.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+        renderer.Dispose();
+        await worker.WaitForExitAsync(TestContext.Current.CancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+        Assert.True(worker.HasExited);
+        using var output = new StringWriter();
+        timings.WriteTo(output);
+        foreach (var phase in new[] { "dispose-process-streams", "dispose-profile", "dispose-staging", "dispose" })
+        {
+            Assert.Contains($"phase=windows.{phase} renderer=1 request=0 ", output.ToString(), StringComparison.Ordinal);
+        }
+        Assert.DoesNotContain("smoke-diagnostic-error", output.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
