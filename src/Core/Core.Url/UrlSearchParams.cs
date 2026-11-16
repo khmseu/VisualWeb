@@ -82,6 +82,16 @@ public sealed class UrlSearchParams
         }
     }
 
+    /// <summary>Sorts entries by name in ascending UTF-16 code-unit order, preserving equal-name order.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-sort">URLSearchParams.sort()</see>.
+    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    public void Sort()
+    {
+        var sorted = _entries.OrderBy(entry => entry.Name, StringComparer.Ordinal).ToArray();
+        _entries.Clear();
+        _entries.AddRange(sorted);
+    }
+
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
     public string? Get(string name)

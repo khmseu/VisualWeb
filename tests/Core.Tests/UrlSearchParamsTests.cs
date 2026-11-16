@@ -164,6 +164,32 @@ public sealed class UrlSearchParamsTests
     }
 
     [Fact]
+    public void SortOrdersNamesByUtf16CodeUnitsAndKeepsEqualNamesStable()
+    {
+        var parameters = new UrlSearchParams("z=last&b=first&a=one&b=second&%EE%80%80=bmp&%F0%90%80%80=supplementary");
+
+        parameters.Sort();
+
+        Assert.Equal("a=one&b=first&b=second&z=last&%F0%90%80%80=supplementary&%EE%80%80=bmp", parameters.ToString());
+    }
+
+    [Fact]
+    public void SortIsSafeForAnEmptyListAndCanBeRepeated()
+    {
+        var parameters = new UrlSearchParams();
+
+        parameters.Sort();
+        Assert.Equal("", parameters.ToString());
+
+        parameters.Append("b", "second");
+        parameters.Append("a", "first");
+        parameters.Sort();
+        parameters.Sort();
+
+        Assert.Equal("a=first&b=second", parameters.ToString());
+    }
+
+    [Fact]
     public void ToStringSerializesOrderedPairsWithFormUrlEncodedUtf8()
     {
         var parameters = new UrlSearchParams(

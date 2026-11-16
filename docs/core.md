@@ -41,8 +41,9 @@ inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
 WHATWG string initializer, `append()`, `delete(name)`,
-`delete(name, value)` and `set(name, value)`, ordered `size`, `get()` and
-`getAll()`, plus `has()` with name-only and name/value matching. It decodes
+`delete(name, value)`, `set(name, value)` and stable `sort()` by UTF-16
+code-unit name order, ordered `size`, `get()` and `getAll()`, plus `has()` with
+name-only and name/value matching. It decodes
 `application/x-www-form-urlencoded` tuples, preserving duplicates, and
 `toString()` serializes the ordered tuples with the standard's UTF-8 percent
 encoding rules. This standalone Core API does not provide other mutation

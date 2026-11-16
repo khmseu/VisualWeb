@@ -2497,6 +2497,30 @@ session bus is unavailable (`Failed to connect to bus: No medium found`).
 The Platform failure and a representative Browser failure reproduce on base
 commit `7a81fd5`. No native subsystem smoke applies to this Core URL change.
 
+### Pass 2: URLSearchParams sort()
+
+WHATWG URL remains the highest partial WHATWG estimate (~60%), ahead of
+Encoding (~55%). This increment adds standalone `URLSearchParams.sort()`,
+ordering names by UTF-16 code units and retaining the original order of equal
+names. URL-object linkage and the other unimplemented URLSearchParams
+operations remain deferred. The URL Standard manifest timestamp was fresh,
+but the local cache file was missing, so the SpecCache refresh was run
+successfully before implementation.
+
+`UrlSearchParams.Sort()` uses stable ordinal name ordering, which compares
+UTF-16 code units, and leaves the tuple list unchanged until sorting succeeds.
+Tests cover UTF-16 ordering across supplementary/BMP characters, stable
+duplicate order, empty input and repeated sorting. The Core suite passes all
+4,016 tests; the Debug solution build and formatting verification pass.
+
+The full Debug solution run passes Core and all other non-browser suites but
+fails one Platform test and 15 Browser tests while stopping confined renderer
+resource scopes (`Failed to connect to bus: No medium found`). The Platform
+failure and representative Browser failure both reproduce on base commit
+`32e70c9`. The Release solution build could not complete because the
+`/workspaces` filesystem ran out of space; no Release full-suite run was
+possible. No native subsystem smoke applies to this Core URL change.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on
