@@ -51,3 +51,17 @@ jobs:
         run: dotnet test tests/VisualWeb.Browser.Tests/VisualWeb.Browser.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
       - name: Run slow scripting tests
         run: dotnet test tests/Engine.Scripting.Tests/Engine.Scripting.Tests.csproj --configuration Release --no-build --logger "console;verbosity=normal"
+      - name: Publish framework-dependent Windows renderer candidate
+        shell: pwsh
+        run: |
+          $buildRoot = Join-Path $env:GITHUB_WORKSPACE "src/Apps/VisualWeb.Renderer/obj/windows-rid-build/"
+          dotnet publish src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj --configuration Release --runtime win-${{ matrix.architecture }} --self-contained false -p:UseAppHost=false "-p:BaseOutputPath=$buildRoot" --output src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate Windows renderer publish candidate
+        shell: pwsh
+        run: |
+          ./scripts/Validate-WindowsRendererPublish.ps1 -RuntimeIdentifier win-${{ matrix.architecture }} -PublishDirectory src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }} -PortableDirectory src/Apps/VisualWeb.Renderer/bin/Release/net10.0 -RequireReduction
+      - name: Candidate static multiprocess smoke (RID-specific renderer)
+        run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
+      - name: Candidate scripted multiprocess smoke (RID-specific renderer)
+        run: dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- --development-multiprocess --renderer src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/win-${{ matrix.architecture }}/VisualWeb.Renderer.dll --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox --enable-inline-scripts --smoke --backend windows

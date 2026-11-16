@@ -11847,3 +11847,256 @@ parallel den RID-spezifischen Framework-dependent-Deployment-Versuch
 mit Symbolen umsetzen. Vor Phase-2-Commit erneut Tests, Review und
 Rueckgabe. Commit-SHA und native Ergebnisse werden nach Beobachtung
 ergaenzt, nicht vorweggenommen.
+
+**Erfolgt:** Die 15 freigegebenen Dateien wurden explizit gestaged und
+als `3ae5140acbfd18da528153f84e656518b567bc27`
+(`test: measure Windows staging payloads`) committed. Der Commit-Hook
+formatierte `Kontext/Kontextprotokoll.md`, pruefte danach alle 15 Dateien
+und meldete "No issues". Kein Code wurde dabei geaendert. Push auf
+`origin/main` erfolgreich, direkt danach sauberer Worktree.
+
+**Native Baseline-CI, Zwischenstand:** Linux-Run `43779251649` besteht
+mit x64-Job `133012480812`, arm64 `133012480821` und Trunk-Checks
+`133012480487`. CodeQL `43779250921` besteht. Windows-Run `43779251698`
+hat x64 `133012481146` bestanden; arm64 `133012480760` laeuft noch.
+Alle Quellen beziehen sich auf den vollstaendigen SHA oben; die neuen
+Inventare werden erst nach Log-Auswertung als Messwerte eingetragen.
+Bestehende CI-Hinweise zur Trunk-Check-API und Runner-Image-Migration
+sind keine Testfehler und wurden nicht als sachfremde Arbeit behoben.
+
+**Phase 2 gestartet:** Standard-RID-Publishing soll den Kandidaten
+ausserhalb des Launchers erzeugen. Bestehende portable Kontroll-Smokes,
+alle Tests und Confinement-Probes bleiben erhalten; native statische
+und gescriptete Kandidaten-Smokes sollen daneben laufen. Symbole
+werden nicht entfernt. Tatsaechliche Publish-Ausgaben und relevante
+native Symbole sind zu pruefen, nicht nur YAML-Konstanten. SDK-Publish
+kann native Assets ins Root abflachen; ein leerer `active-rid`-Zaehler
+im publizierten Kandidaten allein belegt deshalb keine fehlenden
+nativen Bibliotheken. Noch keine Packaging-Veroeffentlichung.
+
+### KP-422 - Native Messbaseline: Kopiervolumen und Cleanup isoliert
+
+**Dokumentiert/Ereignis:** 2026-11-16, nach Abschluss der durch
+`3ae5140acbfd18da528153f84e656518b567bc27` ausgeloesten CI.
+
+**Belegte Quellen:** Windows-Run `43779251698`, x64-Job `133012481146`,
+arm64 `133012480760`; Linux `43779251649`, Jobs `133012480812`
+(x64) und `133012480821` (arm64); CodeQL `43779250921`. Alle
+abgeschlossen und erfolgreich. Native Windows-Logs melden auf beiden
+Architekturen auch
+`SmokeTimingTests.NativeWindowsReportsStagingAndCleanup` und
+`NativeWindowsFullDiagnosticBufferCannotInterfereWithWorkerLifetime`
+ausdruecklich als bestanden; keine Uebertragung der lokalen
+Linux-Guards auf einen behaupteten Windows-Nachweis.
+
+**Tatsaechliche Inventare pro Worker, Bytes (keine Hochrechnung aus Linux):**
+
+| Groesse                                          |    Windows x64 |  Windows arm64 |
+| ------------------------------------------------ | -------------: | -------------: |
+| App-Dateien                                      |             91 |             91 |
+| App-Bytes                                        |      792969293 |      792946765 |
+| Nicht-RID-Dateien/Bytes                          |  43 / 15306169 |  43 / 15283641 |
+| Aktiver RID, Dateien/Bytes                       |  5 / 163874080 |  5 / 156879096 |
+| Andere RIDs, Dateien/Bytes                       | 43 / 613789044 | 43 / 620784028 |
+| Symbole, Dateien/Bytes (ueberlappende Teilmenge) | 23 / 357714004 | 23 / 357714004 |
+| Runtime-Dateien inklusive hostfxr und Host       |            201 |            200 |
+| Runtime-Bytes                                    |       84285105 |       93801269 |
+
+Jeweils sechs `smoke-inventory v=1`-Datensaetze pro statischem und
+gescriptetem Smoke wurden geprueft, Renderer 1-6 mit identischen Mengen.
+`units=files,bytes` und die Summen der drei disjunkten App-Partitionen
+wurden beim Parsen verifiziert. Die Symbole werden nicht ein zweites Mal
+zur App-Summe addiert. Das App-Deployment umfasst 756.234/756.213 MiB,
+andere RIDs 585.355/592.026 MiB (77.404/78.288%). Runtime
+80.381/89.456 MiB. Sechs App-plus-Runtime-Kopien entsprechen
+4.902/4.955 GiB logischer Dateilaengen pro Smoke; separat bereitgestellte
+Fonts sind hier nicht enthalten. Physische I/O, Cache-/Copy-Offload-
+Effekte oder Datentraegerbandbreite werden damit nicht gemessen.
+
+**Phasenzeiten in Sekunden:** CLI ist eine Gesamtwandzeit; andere
+Zeilen sind ueber die sechs Worker bzw. fuenf Render-Requests summiert.
+Verschachtelung/Ueberlappung bleibt bestehen, daher keine Gesamtsumme
+ueber die Tabellenzeilen bilden.
+
+| Phase                           | x64 statisch | x64 gescriptet | arm64 statisch | arm64 gescriptet |
+| ------------------------------- | -----------: | -------------: | -------------: | ---------------: |
+| CLI total                       |      20.1610 |        12.4746 |        36.3641 |          33.5910 |
+| windows.start                   |       5.1105 |         2.7319 |        29.4691 |          22.7556 |
+| windows.copy-app                |       3.0054 |         1.5436 |        16.4281 |          12.3780 |
+| windows.copy-runtime            |       1.6282 |         0.8215 |        12.7022 |          10.0816 |
+| renderer.hello                  |      12.3771 |         2.4290 |         2.6048 |           4.8296 |
+| renderer.render-request         |       0.9768 |         2.7414 |         1.2026 |           4.3162 |
+| windows.dispose                 |       1.3719 |         4.2509 |         2.7287 |           1.3348 |
+| windows.dispose-process-streams |       0.0463 |         0.0771 |         0.0704 |           0.1284 |
+| windows.dispose-profile         |       0.0144 |         0.0146 |         0.0323 |           0.0337 |
+| windows.dispose-staging         |       1.3111 |         4.1590 |         2.6260 |           1.1726 |
+
+**Belegte Zuordnung:** X64-scripted Worker 4 braucht 3.6415 Sekunden
+Disposal, davon 3.6248 Sekunden Staging-Loeschung. Der Profilabbau aller
+sechs Worker zusammen dauert dort nur 0.0146 Sekunden. Arm64-static
+Worker 2 zeigt 1.4980 Sekunden Disposal, davon 1.4795 Sekunden
+Staging-Loeschung. In dieser Baseline sind also konkrete Cleanup-
+Ausreisser Dateibaum-Loeschungen, nicht AppContainer-Profilabbau oder
+Prozess-Wait. Der aeltere unsplitte 4.269-Sekunden-Ausreisser aus
+KP-418 wird dadurch nicht rueckwirkend eindeutig klassifiziert.
+
+**Verbleibende Streuung:** X64-static Worker 3 braucht 6.9524 Sekunden
+Hello; insgesamt summiert Hello dort auf 12.3771 Sekunden. Arm64
+bleibt beim Kopieren langsam (App plus Runtime 29.1303/22.4596
+Sekunden statisch/gescriptet). Das bestaetigt den konkreten Volumen-
+Ansatz, beweist aber weder Antivirus-/Storage-Ursache noch eine durch
+Packaging garantierte Laufzeitverbesserung. Die gepushte Aenderung
+instrumentiert nur; diese Messung ist kein Optimierungs-Speedup.
+
+**Status:** Messbaseline auf allen vier nativen Konfigurationen gruen,
+Inventare und Cleanup-Zuordnung gespeichert. Phase 2 arbeitet noch
+lokal am Kandidaten; dessen Windows-Ausfuehrung und Zeitvergleich
+stehen aus.
+
+### KP-423 - RID-Publish-Kandidat implementiert und lokal validiert
+
+**Dokumentiert/Ereignis:** 2026-11-16; freigegebene Phase 2 aus
+KP-419/KP-421, auf Basis von `3ae5140`.
+
+**Implementiert, nicht committed:**
+
+- [Windows-Workflow](../.github/workflows/windows-confinement.yml):
+  vorhandene Tests, CPU-Deadline-Opt-in-Regel, portable statische/
+  gescriptete Kontroll-Smokes und native Confinement-Probes bleiben
+  unveraendert. Danach kommen SDK-Publish, reale Output-Pruefung und
+  zwei beschriftete native Kandidaten-Smokes fuer den jeweiligen
+  `win-x64`-/`win-arm64`-Runner hinzu.
+- Neuer [PowerShell-Pruefer](../scripts/Validate-WindowsRendererPublish.ps1):
+  erforderliche DLL-/Deps-/Runtimeconfig-Dateien, aktiver RID,
+  Framework-Referenz, erwartete native Bibliotheken, Ausschluss
+  inkompatibler nativer RIDs und Byte-Reduktion gegen portable Ausgabe.
+  HarfBuzz-/Skia-PDBs werden per SHA-256 mit den passenden restaurierten
+  NuGet-Paketsymbolen verglichen; Symbole werden nicht entfernt.
+- [Windows-Guide](../docs/windows-confinement.md#rid-specific-staging-experiment)
+  beschreibt den Versuch und native Befehle mit bevorzugtem
+  `--multiprocess`; [Renderer-README](../src/Apps/VisualWeb.Renderer/README.md)
+  verweist darauf.
+
+**Design:** Framework-dependent-Publish mittels `--runtime <rid>
+--self-contained false -p:UseAppHost=false`. Native DLL/Dotnet-Launch-
+Vertraege und die vollstaendige private Worker-Staging-Kopie bleiben
+unveraendert. `BaseOutputPath` liegt isoliert unter Renderer-
+`obj/windows-rid-build/`, Publish unter `obj/windows-rid-publish/<rid>/`.
+Keine AOT-/Trimming-/Symbolfilter, keine neuen Launcher-Freigaben,
+keine geteilten Stagings und keine geaenderten Ressourcen-/Origin-/
+Deadline-/IPC-Regeln. Die zusaetzlichen CI-Schritte kosten waehrend
+dieses Vergleichs absichtlich weitere Zeit; portable Kontrollen sind
+noch nicht durch den unbewiesenen Kandidaten ersetzt.
+
+**TDD/Fehler transparent:** Vor Publish scheiterte die neue Pruefung
+explizit an der fehlenden Ausgabe; ein nicht unterstuetzter RID wurde
+ebenfalls abgelehnt. Erste `--no-restore`-Publishes scheiterten mit
+NETSDK1047 an fehlenden Windows-RID-Targets. Daraufhin wurde jeweils
+gezielt restauriert. `--no-build` war ohne RID-Buildausgaben ebenfalls
+nicht moeglich; die endgueltigen Publishes bauen deshalb mit isoliertem
+Ausgabepfad. Das sind keine verschwiegenen erfolgreichen Publishes.
+
+**Reale Cross-Publish-Ergebnisse, Linux-Host:**
+
+| Ausgabe                     |     Bytes |     MiB | Weniger als lokale portable App |
+| --------------------------- | --------: | ------: | ------------------------------: |
+| Portable Release-Kontrolle  | 792859287 | 756.130 |                               - |
+| win-x64, Symbole behalten   | 179000984 | 170.709 |                         77.423% |
+| win-arm64, Symbole behalten | 172006030 | 164.038 |                         78.306% |
+
+Der anfangs gemeldete abweichende lokale portable Wert 971860271
+wird nicht als Vergleichsbasis verwendet; eine damalige vollstaendige
+Dateiliste liegt fuer seine genaue Zuordnung nicht vor.
+Endgueltige Prueflaeufe beider RIDs messen die obige
+portable Ausgabe; ihre Differenzen sind 613858303 bzw. 620853257 Bytes.
+Native Runtime-Baeume in den portablen Debug-/Release-Ausgaben bleiben
+laut Implementer unveraendert (48 Dateien). Diese Werte sind echte
+publizierte Dateien, aber keine Windows-Ausfuehrung oder gemessene
+Windows-Laufzeitverbesserung. Native Byte-Vergleiche erfolgen im selben
+Windows-Job vor den Kandidaten-Smokes.
+
+**Direktes begrenztes Review und Korrekturen:** Der Elternagent hat den
+gesamten kleinen Script-/Workflow-/Doc-Diff direkt geprueft.
+Zuerst fehlte im Pruefer die Ablehnung von Linux-/macOS-RIDs.
+Ein ungueltiger Linux-Fixture wurde vor Korrektur tatsaechlich akzeptiert.
+Danach wurde auch ein beim Umbau verlorener Guard fuer abgeflachte
+`ClearScriptV8.<fremder-win-rid>.dll`-Dateien im Root entdeckt und
+mit eigenem Rot/Gruen-Fixture wiederhergestellt. Endzustand:
+inkompatible Manifest-/Runtime-Verzeichnis-RIDs sowie benannte
+fremde Windows-ClearScript-Dateien werden explizit abgelehnt;
+generische `win`-/`any`-Fallback-Fixtures bleiben gueltig.
+Dokumentations-Platzhalter sind nun konsistent. Keine PE-Analyse oder
+allgemeine Supply-Chain-Sicherheitsbehauptung hinzugefuegt.
+Review nach den Korrekturen: APPROVED.
+
+**Validierung:**
+
+- Beide echten Cross-Publishes wurden nach Korrekturen erneut geprueft;
+  jeweils bestanden, native PDB-Hashes identisch. Elternagent fuehrte
+  den neuen Pruefer ebenfalls fuer beide Ausgaben mit `-RequireReduction`
+  erfolgreich aus.
+- Fokussierte negative Fixtures fuer Linux x64/ARM64, macOS ARM64,
+  fremde Windows-Architektur und abgeflachte Root-Datei scheitern
+  erwartungsgemaess; generische Fallbacks bestehen. Temporaere Fixtures
+  laut Implementer vollstaendig entfernt.
+- `dotnet build VisualWeb.slnx --no-restore`: bestanden, null Warnungen/Fehler.
+- `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party`:
+  bestanden.
+- `dotnet test VisualWeb.slnx --no-build`: erneut alle 16.934 bestanden,
+  darunter 1.352 Browser und 43 Platform; Browser-Anteil 7:26. Keine
+  neue V8-Deadline-Verfehlung in diesem Lauf; CPU-Deadline-Zeilen
+  weiterhin explizit ausgeschlossen.
+- Bestehendes Trunk-Tool, begrenzt auf `actionlint,yamllint,git-diff-check`:
+  Workflow/Prueferscript ohne Befund; YAML-Parsing und Diff-Check bestehen.
+
+Abschliessend bestehen beide echten Publish-Pruefungen auch mit dem
+letzten Root-Datei-Guard. Trunk prueft alle sechs geaenderten Dateien
+ohne Befund; der Formatter passte nur dieses chronologische Protokoll an.
+Git-Diff-Check besteht und der Index bleibt leer.
+
+**Phase-2-Status:** Implementierung und lokale Validierung abgeschlossen,
+Commit-/Fortsetzungsrueckgabe ausstehend. Die Baseline `3ae5140` ist
+bereits auf allen vier Konfigurationen nativ gruen; diese neue
+Packaging-Aenderung wurde noch nicht gestaged, committed oder gepusht.
+Native Kandidaten-Smokes und Timingvergleich bilden weiterhin Phase 3.
+Die Kandidaten laufen nach Kontrollen/Tests; Cache-/Reihenfolgeeffekte
+sind beim Zeitvergleich zu benennen, keine kausale Benchmarkgarantie
+aus einem Lauf ableiten. Fuer Log-Auswertung sind die neuen
+Step-Namen `Candidate static multiprocess smoke (RID-specific renderer)`
+und `Candidate scripted multiprocess smoke (RID-specific renderer)`
+zu beachten: anders als bisherige automatisch benannte Steps enthalten
+sie die CLI-Argumente nicht im Namen.
+
+**Vorgeschlagene Commit-Nachricht:**
+
+```text
+ci: trial RID-specific Windows renderers
+
+Publish framework-dependent Windows renderer candidates alongside the
+portable CI controls, retaining native symbols and confinement policy.
+
+Validate deps/RID assets, native PDB hashes and payload reduction before
+running matching static and scripted candidate smokes. Isolate publish
+outputs so portable build and test fixtures remain unchanged.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+### KP-424 - Packaging-Versuch committen und native CI vergleichen
+
+**Dokumentiert/Ereignis:** 2026-11-16; Nutzer um 02:16 Europe/Berlin
+(Chat-Zeitstempel 02:16:05 +01:00).
+
+**Nutzerangabe/Beschlossen:** "commit and continue" bestaetigt die
+unmittelbare Frage nach Commit/Push des in KP-423 lokal validierten
+Versuchs und nativem CI-Vergleich. Die sechs zugehoerigen Dateien
+werden committed/veroeffentlicht. Keine weitere Packaging- oder
+Confinement-Aenderung ist damit behauptet.
+
+**Phase-3-Vorgehen:** Native Windows- und Linux-Matrizen sowie CodeQL
+nach Push beobachten; unter demselben SHA portable und RID-Kandidaten
+pro Architektur/Scriptmodus anhand realer Inventare und Phasenzeiten
+vergleichen. Kopierbytes und Zeitbeobachtungen getrennt behandeln;
+unveraenderte Runtime-Kopien, Cache-/Reihenfolgeeffekte und verbleibende
+Handshake-/Cleanup-Streuung benennen. Ergebnis, Commit-SHA und
+Quell-Run-/Job-IDs erst nach Beobachtung ergaenzen.

@@ -31,3 +31,7 @@ frames require stronger site isolation than these per-tab, per-origin workers.
 
 See the [process guide](../../../docs/renderer-processes.md) and
 [architecture](../../../docs/architecture/overview.md).
+The Windows staging-size experiment's RID-specific publish candidate and native
+validation procedure are documented in the
+[Windows confinement guide](../../../docs/windows-confinement.md#rid-specific-staging-experiment);
+this does not change the default portable renderer launch contract.

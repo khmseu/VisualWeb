@@ -237,12 +237,50 @@ Formatpruefung (1.351 bestanden, 1 fehlgeschlagen). Beide Parameterzeilen
 dieses Tests bestehen isoliert danach; keine Deadlines angepasst.
 Die anschliessende volle Default-Solution besteht mit 16.934 Tests,
 darunter alle 1.352 Browser- und 43 Platform-Faelle; beide expliziten
-CPU-Deadline-Zeilen bleiben aus. Native Windows-Evidenz bleibt offen.
+CPU-Deadline-Zeilen bleiben aus. Native Windows-Evidenz lag zum lokalen
+Phasenabschluss noch nicht vor; inzwischen siehe KP-422 unten.
 Am 2026-11-16 um 01:13 Europe/Berlin bestaetigt der Nutzer mit
 "commit and continue" die Commit-/Fortsetzungsrueckgabe (KP-421).
-Die Messbaseline wird zuerst committed/veroeffentlicht; danach beginnt
-die RID-spezifische Packaging-Erprobung mit beibehaltenen Symbolen.
-Native Ergebnisse und Packaging-Validierung sind noch offen.
+Die Messbaseline ist als `3ae5140acbfd18da528153f84e656518b567bc27`
+committed und auf `origin/main` gepusht. Der Hook formatierte das
+chronologische Protokoll und bestand alle 15 Dateien. Baseline-CI:
+Linux `43779251649` (x64/arm64 samt Trunk), CodeQL `43779250921` und
+Windows `43779251698` (x64/arm64) bestanden. Phase 2 ist implementiert
+und nach direktem Review/Korrektur lokal validiert (KP-423), aber noch
+nicht committed. Der Workflow behaelt portable Kontroll-Smokes/Tests bei
+und fuegt RID-spezifische statische/gescriptete Kandidaten-Smokes hinzu.
+SDK-Publish ist Framework-dependent, ohne Apphost, Trimming oder
+Symbolentfernung; isolierte Build-/Publish-Ausgaben liegen unter Renderer-
+`obj/`. Ein PowerShell-Pruefer kontrolliert reale Deps-/RID-/Framework-
+Metadaten, native Dateien, kompatible generische `win`/`any`-Fallbacks,
+PDB-SHA-256 und kleinere Dateimenge als die portable Kontrolle.
+Cross-publiziert und erneut geprueft: x64 179000984 Bytes
+(170.709 MiB), arm64 172006030 (164.038 MiB), Symbole behalten.
+Gegen die lokale portable Linux-Release-Ausgabe (792859287 Bytes)
+sind das 77.423/78.306% weniger App-Dateibytes, keine Windows-Zeiten.
+Solution-Build (null Warnungen/Fehler), Format, Workflow-Lint und erneut
+alle 16.934 Default-Tests bestehen. Am 2026-11-16 um 02:16
+Europe/Berlin bestaetigt der Nutzer mit "commit and continue" die
+Veroeffentlichung des Versuchs und native CI-Auswertung (KP-424).
+Commit/Push und Phase 3 folgen; native Kandidaten-Ergebnisse werden
+nicht vorweggenommen.
+
+**Native Kopiermengen belegt (2026-11-16, KP-422):** Auf Windows wird
+pro Worker tatsaechlich ein 91-Dateien-App-Deployment von
+756.234 MiB (x64) bzw. 756.213 MiB (arm64) kopiert. Andere RIDs stellen
+585.355/592.026 MiB (77.404/78.288% der App); die ueberlappende
+Symbol-Teilmenge betraegt auf beiden 341.143 MiB. Runtime/hostfxr/Host
+kommen mit 80.381/89.456 MiB hinzu. Alle sechs Worker jedes statischen/
+gescripteten Smokes melden identische Mengen: 4.902/4.955 GiB logische
+App-plus-Runtime-Dateibytes pro Smoke, ohne separat kopierte Fonts.
+Keine Aussage ueber physische Datentraeger-I/O oder Laufzeit-Speedup.
+Die neuen Cleanup-Phasen ordnen den x64-scripted-Ausreisser konkret
+der Staging-Loeschung zu: Worker 4 dort 3.625 Sekunden, waehrend
+Profilabbau im ganzen Smoke nur 0.015 Sekunden summiert. Andererseits
+liegt x64-static nun bei 12.377 summierten Hello-Sekunden (Worker 3:
+6.952 Sekunden); Packaging allein ist keine bewiesene Loesung fuer
+Handshake-Streuung. Nativ bestanden auch Inventar-/Cleanup- und
+Vollbuffer-Ownership-Tests auf beiden Windows-Architekturen.
 
 **Aktueller Standards-Pass (2026-11-15; Pass 8 abgeschlossen):**
 Pass 2 ergaenzt bounded CSS Color 4 `lch()`. Numerische/prozentuale

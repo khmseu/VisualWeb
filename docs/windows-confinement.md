@@ -78,6 +78,65 @@ filesystem and system-DLL behavior is not a native-code exploit boundary. This
 implementation does not claim a browser-wide resource quota, persistence
 protection, site isolation, or production supply-chain policy.
 
+## RID-specific staging experiment
+
+The Windows confinement workflow compares the existing portable renderer with a
+framework-dependent RID-specific publish candidate for the native runner's
+`win-x64` or `win-arm64` RID. This is a staging-size experiment only: normal CLI
+and library deployment choices are unchanged, and the launcher still receives
+the renderer DLL and copies its complete trusted deployment. Candidate outputs
+live under the ignored project-local
+`src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/<rid>/` directory;
+RID build outputs are separately isolated under `obj/windows-rid-build/` so
+publishing cannot add native assets to the portable `bin/Release/net10.0`
+deployment.
+
+The workflow uses the SDK's framework-dependent publish with `--runtime <rid>
+--self-contained false -p:UseAppHost=false`. For a manual native comparison,
+set `$rid` to `win-x64` or `win-arm64`, then publish and validate with the same
+commands:
+
+```powershell
+$rid = "win-x64" # Or win-arm64 on a native ARM64 Windows runner.
+$buildRoot = Join-Path $PWD "src/Apps/VisualWeb.Renderer/obj/windows-rid-build/"
+dotnet publish src/Apps/VisualWeb.Renderer/VisualWeb.Renderer.csproj `
+  --configuration Release --runtime $rid --self-contained false `
+  -p:UseAppHost=false "-p:BaseOutputPath=$buildRoot" `
+  --output "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/$rid"
+pwsh -NoProfile -File scripts/Validate-WindowsRendererPublish.ps1 `
+  -RuntimeIdentifier $rid `
+  -PublishDirectory "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/$rid" `
+  -PortableDirectory src/Apps/VisualWeb.Renderer/bin/Release/net10.0 `
+  -RequireReduction
+dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- `
+  --multiprocess `
+  --renderer "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/$rid/VisualWeb.Renderer.dll" `
+  --font tests/Engine.Text.Tests/Data/NotoSans.ttf --smoke --backend windows
+dotnet run --project src/Apps/VisualWeb.Browser --configuration Release --no-build -- `
+  --multiprocess `
+  --renderer "src/Apps/VisualWeb.Renderer/obj/windows-rid-publish/$rid/VisualWeb.Renderer.dll" `
+  --font tests/Engine.Text.Tests/Data/NotoSans.ttf --require-sandbox `
+  --enable-inline-scripts --smoke --backend windows
+```
+
+The validation checks the actual publish files and RID deps target, the
+framework-dependent runtime config, required Windows native payloads, absence
+of incompatible native assets (only the active RID or generic `win`/`any`
+fallbacks are allowed), and an observed total-file-byte
+reduction against the portable output (no fixed size threshold). It verifies
+the published HarfBuzz and Skia native PDBs by SHA-256 against the matching
+restored Win32 native package symbols. Symbols are retained; trimming, AOT,
+self-contained deployment and native payload filtering are not used. File-size
+reduction is not a guarantee of staging or startup wall-clock savings.
+
+After the existing portable controls and native tests, CI runs the same static
+and inline-script multiprocess smokes against the RID candidate. The renderer
+DLL launch, font, Windows backend, AppContainer/Job Object policy, and script
+policy match their portable controls; `smoke-timing` and `smoke-inventory v=1`
+records remain in the job logs for comparison. Cross-publishing and structural
+checks on Linux do not execute Windows code. Candidate execution and confinement
+still require native Windows x64 and arm64 CI evidence.
+
 ## Validation
 
 ```sh
