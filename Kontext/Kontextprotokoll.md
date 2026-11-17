@@ -13885,7 +13885,11 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Solution-Builds ohne Warnungen/Fehler; Debug- und Release-Volltests mit
   17.117 bestandenen Tests und zwei erwarteten Skips; Formatverifikation
   bestanden. Kein nativer Smoke ist anwendbar.
-- Status: lokal validiert; Commit, Push und Remote-CI stehen aus.
+- Status: lokal validiert, gepusht und alle Remote-CI-Workflows erfolgreich.
+- Commit `81ff4f7` ist auf `main` gepusht. Linux development
+  (`44164112835`), Windows confinement (`44164112725`), Push on main
+  (`44164112361`) und Dev Environment Prebuilds (`44164112614`) sind
+  erfolgreich.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#encoding);
   [Core.Encoding README](../src/Core/Core.Encoding/README.md);

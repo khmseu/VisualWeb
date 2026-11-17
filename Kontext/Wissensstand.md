@@ -77,7 +77,9 @@ gemeinsame UTF-16-Decoder und die LE/BE-Algorithmen wurden gelesen. Alle 25
 fokussierten Decoder- und 4.170 Core-Tests, Debug-/Release-Builds, beide
 Solution-Volltests mit 17.117 Tests plus zwei erwarteten Skips sowie
 Formatverifikation bestehen. Kein nativer Smoke ist fuer Core.Encoding
-anwendbar. Pass 8 ist lokal validiert; Commit, Push und CI stehen aus.
+anwendbar. Pass 8 ist committed und gepusht (`81ff4f7`); Linux development
+(`44164112835`), Windows confinement (`44164112725`), Push on main
+(`44164112361`) und Dev Environment Prebuilds (`44164112614`) bestehen.
 KP-454–461 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
