@@ -261,6 +261,30 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("http://example.org:443/a?q#h", "https:", "https://example.org/a?q#h")]
+    [InlineData("https://example.org/a", "HTTP:ignored", "http://example.org/a")]
+    [InlineData("foo://example.org/a", "bar:rest", "bar://example.org/a")]
+    [InlineData("data:text/plain,hello", "javascript:", "javascript:text/plain,hello")]
+    [InlineData("https://example.org/a", "1http:", "https://example.org/a")]
+    [InlineData("https://example.org/a", "http", "https://example.org/a")]
+    [InlineData("https://example.org/a", "foo:", "https://example.org/a")]
+    [InlineData("foo://example.org/a", "https:", "foo://example.org/a")]
+    [InlineData("file:///a", "http:", "file:///a")]
+    public void WithProtocolFollowsSchemeSetterRules(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        Assert.Equal(expected, original.WithProtocol(value).Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Fact]
+    public void WithProtocolRejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithProtocol(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

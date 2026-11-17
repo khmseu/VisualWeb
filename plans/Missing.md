@@ -2689,6 +2689,17 @@ only the 1 Platform and 15 Browser session-bus failures reproduced on the
 pre-change base. Release validation remains blocked by the space limitation
 documented in Pass 1.
 
+### Pass 4: URL protocol setter
+
+`BrowserUrl.WithProtocol(value)` handles valid scheme changes on the immutable
+facade, normalizes scheme casing, drops a target scheme's default port through
+the existing parser, and leaves the original unchanged. Invalid schemes and
+forbidden special/non-special or file-scheme transitions are no-ops. Nine
+theory cases and one null-input test cover these rules; all 4,084 Core tests
+pass. The Debug solution build and format verification pass; the full Debug
+suite has the same 1 Platform and 15 Browser session-bus failures reproduced
+before this run. Release validation remains blocked by disk exhaustion.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

@@ -130,6 +130,37 @@ public sealed class BrowserUrl
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-tojson">URL.toJSON()</see>.</remarks>
     public string ToJson() => Href;
 
+    /// <summary>Returns a new URL with its scheme changed as by the URL <c>protocol</c> setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-protocol">URL.protocol setter</see>.
+    /// Invalid scheme input and forbidden special/non-special transitions leave this immutable snapshot unchanged.
+    /// The setter value is consumed through its first colon; the existing serialized remainder is reparsed.</remarks>
+    public BrowserUrl WithProtocol(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var colon = value.IndexOf(':', StringComparison.Ordinal);
+        if (colon < 0) { return this; }
+
+        var scheme = value[..colon];
+        if (scheme.Length == 0 || !char.IsAsciiLetter(scheme[0])
+            || scheme.Skip(1).Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '+' and not '-' and not '.'))
+        {
+            return this;
+        }
+
+        scheme = scheme.ToLowerInvariant();
+        var currentScheme = Protocol[..^1];
+        var currentSpecial = IsSpecialScheme(currentScheme);
+        var newSpecial = IsSpecialScheme(scheme);
+        if (currentSpecial != newSpecial || currentScheme == "file" && scheme != "file"
+            || scheme == "file" && Hostname.Length == 0)
+        {
+            return this;
+        }
+
+        var colonInHref = Href.IndexOf(':', StringComparison.Ordinal);
+        return ParseResult(scheme + Href[colonInHref..]).Url ?? this;
+    }
+
     /// <summary>Returns a new URL whose fragment is set following the URL hash setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-hash">URL.hash setter</see>. An empty value
     /// removes the fragment (opaque-path trailing spaces follow the vendored parser's re-parse behavior); otherwise one
@@ -208,6 +239,9 @@ public sealed class BrowserUrl
 
     public BrowserUrl Resolve(string relative) => Parse(relative, this);
     public override string ToString() => Href;
+
+    private static bool IsSpecialScheme(string scheme) =>
+        scheme is "ftp" or "file" or "http" or "https" or "ws" or "wss";
 }
 
 public sealed record UrlParseResult(BrowserUrl? Url, string? Error)
