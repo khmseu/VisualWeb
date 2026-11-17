@@ -41,6 +41,8 @@ inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 `BrowserUrl.CanParse(input, base)` implements `URL.canParse()`: a non-null base
 is parsed first and any base failure (including `""`) returns false.
+`BrowserUrl.ParseOrNull(input, base)` implements `URL.parse()`, returning null
+for invalid input or base.
 `BrowserUrl.WithHash(value)` and `WithSearch(value)` implement the `hash` and
 `search` setters on the immutable facade by re-parsing an encoded component and
 returning a new snapshot (the original and its opaque-origin identity are unchanged).

@@ -105,6 +105,22 @@ public sealed class BrowserUrl
         return ParseResult(input, baseUrl).Success;
     }
 
+    /// <summary>Parses a URL, returning <see langword="null"/> instead of throwing when parsing fails.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-parse">URL.parse()</see>.
+    /// A non-null base string is parsed first. Invalid input or an invalid base returns <see langword="null"/>.</remarks>
+    public static BrowserUrl? ParseOrNull(string input, string? baseInput = null)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        BrowserUrl? baseUrl = null;
+        if (baseInput is not null)
+        {
+            baseUrl = ParseResult(baseInput).Url;
+            if (baseUrl is null) { return null; }
+        }
+
+        return ParseResult(input, baseUrl).Url;
+    }
+
     /// <summary>Returns a new URL by parsing an absolute URL string, following the URL <c>href</c> setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-href">URL.href setter</see>.
     /// The immutable base instance is unchanged. The value is parsed without a base URL, so relative references fail.</remarks>

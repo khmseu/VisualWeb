@@ -2678,6 +2678,17 @@ that reproduced before this run's changes. Release validation remains blocked
 by the shared filesystem space limitation recorded in Pass 1. The URL cache
 remains missing after the failed refresh documented above.
 
+### Pass 3: `URL.parse()`
+
+`BrowserUrl.ParseOrNull(input, base)` implements `URL.parse()`: it returns the
+parsed snapshot, or null when the input or non-null base string is invalid.
+Eight focused cases cover absolute and base-relative URLs, invalid input and
+base handling, and null input. The Core suite passes all 4,074 tests. The Debug
+solution build and format verification pass; the full Debug suite still has
+only the 1 Platform and 15 Browser session-bus failures reproduced on the
+pre-change base. Release validation remains blocked by the space limitation
+documented in Pass 1.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

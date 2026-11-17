@@ -204,6 +204,26 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://example.org/a", null, "https://example.org/a")]
+    [InlineData("../next?q#f", "https://example.org/a/b", "https://example.org/next?q#f")]
+    [InlineData("/next", "https://example.org/a", "https://example.org/next")]
+    [InlineData("https://[", null, null)]
+    [InlineData("/next", null, null)]
+    [InlineData("/next", "", null)]
+    [InlineData("/next", "invalid base", null)]
+    public void ParseOrNullParsesInputAndReturnsNullOnInputOrBaseFailure(
+        string input, string? baseInput, string? expected)
+    {
+        Assert.Equal(expected, BrowserUrl.ParseOrNull(input, baseInput)?.Href);
+    }
+
+    [Fact]
+    public void ParseOrNullRejectsNullInput()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.ParseOrNull(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/a?q#f", "https://other.example/b?x#y")]
     [InlineData("https://example.org/a", "data:text/plain,hello")]
     [InlineData("https://example.org/a", "file:///tmp/page")]
