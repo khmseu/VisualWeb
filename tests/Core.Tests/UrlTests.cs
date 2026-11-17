@@ -259,4 +259,32 @@ public sealed class UrlTests
         Assert.Equal("https://example.org/p?%EF%BF%BD", BrowserUrl.Parse("https://example.org/p").WithSearch(unpairedSurrogate).Href);
         Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithSearch(null!));
     }
+
+    [Fact]
+    public void CreateSearchParamsParsesTheQueryAsADetachedSnapshot()
+    {
+        var url = BrowserUrl.Parse("https://example.org/p?a=1&b=x+y&a=2#h");
+        var parameters = url.CreateSearchParams();
+
+        Assert.Equal(["1", "2"], parameters.GetAll("a"));
+        Assert.Equal("x y", parameters.Get("b"));
+
+        parameters.Append("c", "3");
+        Assert.Equal("https://example.org/p?a=1&b=x+y&a=2#h", url.Href);
+        Assert.Equal(0, BrowserUrl.Parse("https://example.org/p").CreateSearchParams().Size);
+        Assert.Equal(0, BrowserUrl.Parse("https://example.org/p?").CreateSearchParams().Size);
+    }
+
+    [Fact]
+    public void WithSearchParamsAppliesTheSerializationAndRetainsTheFragment()
+    {
+        var url = BrowserUrl.Parse("https://example.org/p?old#h");
+        var parameters = new UrlSearchParams("a=1&a=2");
+        parameters.Append("q r", "\u00E9#&'");
+
+        Assert.Equal("https://example.org/p?a=1&a=2&q+r=%C3%A9%23%26%27#h", url.WithSearchParams(parameters).Href);
+        Assert.Equal("https://example.org/p#h", url.WithSearchParams(new UrlSearchParams()).Href);
+        Assert.Equal("https://example.org/p?old#h", url.Href);
+        Assert.Throws<ArgumentNullException>(() => url.WithSearchParams(null!));
+    }
 }

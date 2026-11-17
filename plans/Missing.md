@@ -2627,6 +2627,20 @@ the parser. Ten theory cases and one fact cover these and the 4,055-test Core
 suite passes. `searchParams` linkage, other setters and Web IDL remain
 unsupported. The `url` cache is still unavailable offline (see Pass 1).
 
+### 2026-11-17 run, Pass 10: searchParams snapshot linkage
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. Because
+`BrowserUrl` is immutable, live `URL.searchParams` linkage cannot exist.
+This final pass adds the two directions explicitly: `CreateSearchParams()`
+returns a detached `UrlSearchParams` parsed from the query, and
+`WithSearchParams()` applies the URLSearchParams update steps (an empty
+serialization removes the query; the fragment is retained) through
+`WithSearch()`. Two focused tests and all 4,057 Core tests pass. Live linkage,
+the remaining URL setters (`href`, `protocol`, credentials, host, port,
+`pathname`; these need parser state overrides), the legacy query
+encoding override and Web IDL remain unsupported. The `url` cache is still
+unavailable offline (see Pass 1). This completes the requested ten passes.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

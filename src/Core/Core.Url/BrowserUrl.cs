@@ -167,6 +167,20 @@ public sealed class BrowserUrl
         return Parse(rebuilt.Append(fragment).ToString());
     }
 
+    /// <summary>Creates a detached <see cref="UrlSearchParams"/> parsed from this URL's query.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-searchparams">URL.searchParams</see>.
+    /// The result is a snapshot with no live link back to this immutable URL; use <see cref="WithSearchParams"/> to apply changes.</remarks>
+    public UrlSearchParams CreateSearchParams() => new(Search);
+
+    /// <summary>Returns a new URL whose query is the serialization of <paramref name="parameters"/>.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#concept-urlsearchparams-update">URLSearchParams update steps</see>.
+    /// An empty serialization removes the query. The fragment is retained.</remarks>
+    public BrowserUrl WithSearchParams(UrlSearchParams parameters)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        return WithSearch(parameters.ToString());
+    }
+
     public BrowserUrl Resolve(string relative) => Parse(relative, this);
     public override string ToString() => Href;
 }

@@ -43,6 +43,9 @@ inherited-origin selection, `document.domain` and enforcement remain deferred.
 is parsed first and any base failure (including `""`) returns false. `BrowserUrl.WithHash(value)` and `WithSearch(value)` implement the
 `hash` and `search` setters on the immutable facade by re-parsing a fragment-encoded string and
 returning a new snapshot (the original and its opaque-origin identity are unchanged).
+`CreateSearchParams()` returns a detached `UrlSearchParams` parsed from the query and
+`WithSearchParams()` writes its serialization back as a new snapshot; there is no live
+link between a URL and its parameters.
 
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
 WHATWG string, sequence-of-pairs and record initializers, `append()`, `delete(name)`,
