@@ -2521,6 +2521,11 @@ failure and representative Browser failure both reproduce on base commit
 `/workspaces` filesystem ran out of space; no Release full-suite run was
 possible. No native subsystem smoke applies to this Core URL change.
 
+The first Linux CI run passed x64/ARM64 builds, tests and native smokes but
+failed Trunk on Prettier/MD060 formatting for the standards inventory row.
+Prettier 3.10.1 was applied; its local check passes. CI rerun for this
+documentation-only correction is pending.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on
