@@ -353,6 +353,74 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://user:secret@old.example:8443/a?#", "new.example", "https://user:secret@new.example:8443/a?#")]
+    [InlineData("https://user:secret@old.example:8443/a?q#f", "EXAMPLE.COM:443", "https://user:secret@example.com/a?q#f")]
+    [InlineData("https://old.example:8443/a", "[2001:db8::1]", "https://[2001:db8::1]:8443/a")]
+    [InlineData("foo:/a?q#f", "new.example", "foo://new.example/a?q#f")]
+    [InlineData("foo://old.example/a", "", "foo:///a")]
+    [InlineData("file:///a", "server.example", "file://server.example/a")]
+    [InlineData("file:///a", "localhost", "file://localhost/a")]
+    public void WithHostFollowsTheHostSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithHost(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Fact]
+    public void WithHostStopsAtTheFirstHostStateDelimiter()
+    {
+        var original = BrowserUrl.Parse("https://old.example:8443/keep?old#keep");
+
+        Assert.Equal(
+            "https://new.example:8443/keep?old#keep",
+            original.WithHost("new.example/ignored?ignored#ignored").Href);
+        Assert.Equal(
+            "https://new.example:8443/keep?old#keep",
+            original.WithHost("new.example\\ignored").Href);
+    }
+
+    [Fact]
+    public void WithHostNoOpsForOpaquePathsAndInvalidValues()
+    {
+        var opaque = BrowserUrl.Parse("data:text/plain,hello");
+        Assert.Same(opaque, opaque.WithHost("example.org"));
+
+        var hierarchical = BrowserUrl.Parse("https://old.example:8443/path");
+        foreach (var value in new[] { "", ":80", "user@new.example" })
+        {
+            Assert.Same(hierarchical, hierarchical.WithHost(value));
+        }
+
+        var nonSpecialWithPort = BrowserUrl.Parse("foo://old.example:8443/path");
+        Assert.Same(nonSpecialWithPort, nonSpecialWithPort.WithHost(""));
+
+        var nonSpecialWithCredentials = BrowserUrl.Parse("foo://user@old.example/path");
+        Assert.Same(nonSpecialWithCredentials, nonSpecialWithCredentials.WithHost(""));
+    }
+
+    [Theory]
+    [InlineData("new.example:", "https://new.example:8443/path")]
+    [InlineData("new.example:bad", "https://new.example:8443/path")]
+    [InlineData("new.example:65536", "https://new.example:8443/path")]
+    [InlineData("new.example:\t8\n0", "https://new.example:80/path")]
+    public void WithHostRetainsTheExistingPortWhenTheSuppliedPortFails(string value, string expected)
+    {
+        var original = BrowserUrl.Parse("https://old.example:8443/path");
+
+        Assert.Equal(expected, original.WithHost(value).Href);
+    }
+
+    [Fact]
+    public void WithHostRejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithHost(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

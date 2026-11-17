@@ -2717,6 +2717,30 @@ All 4,096 Core tests pass; Debug and Release solution builds and full solution
 test suites pass, as does solution format verification. No native platform
 smoke applies to this Core-only change.
 
+## Third standards-priority run (2026-11-17)
+
+The user requested ten additional, separately validated increments. WHATWG URL
+remains the highest partial WHATWG estimate (~65%), ahead of Encoding (~55%).
+The local URL Standard is present and fresh (`checkedAt: 2026-11-16`); the
+host-setter and basic-parser state-override algorithms were read locally.
+
+### Pass 1: URL host setter
+
+`BrowserUrl.WithHost(value)` applies the host setter to an immutable snapshot:
+it parses and canonicalizes the supplied host, preserves the existing port
+unless a valid new port is supplied, retains credentials and the existing
+path/query/fragment, and leaves opaque-path URLs unchanged. Host parsing
+failures leave the snapshot unchanged; if host parsing succeeds but the
+supplied port is invalid, the changed host is retained with the original port,
+matching the parser's state-override mutation order. Focused tests cover these
+cases, special and non-special URLs, IPv6, default-port removal, delimiters,
+file URLs, immutability and null input. Validation and commit status are
+covered by 14 focused cases and all 4,110 Core tests. The Debug solution build
+passes with zero warnings/errors; all 17,057 solution tests pass with two
+expected skips, and solution format verification passes. No native platform
+smoke applies to this Core-only change. Commit, push and CI status are recorded
+after publication.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

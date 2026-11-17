@@ -54,6 +54,9 @@ special-scheme transition restrictions; invalid values leave the snapshot
 unchanged. `WithUsername(value)` and `WithPassword(value)` apply the URL
 credential setters with the standard's UTF-8 userinfo percent-encode set;
 URLs without a host and `file:` URLs remain unchanged.
+`WithHost(value)` applies the host state override to a new snapshot, retaining
+the current port when the input has no valid port and preserving the URL's
+credentials and path/query/fragment. Opaque-path URLs are unchanged.
 `CreateSearchParams()` returns a detached `UrlSearchParams` parsed from the query and
 `WithSearchParams()` writes its serialization back as a new snapshot; there is no live
 link between a URL and its parameters.
@@ -68,8 +71,8 @@ name-only and name/value matching, live `Entries()`, `Keys()` and
 `toString()` serializes the ordered tuples with the standard's UTF-8 percent
 encoding rules. This standalone Core API does not provide other mutation
 methods, URL-object linkage, ECMAScript iterator objects or Web IDL bindings.
-The host, port and pathname URL setters, legacy query encoding override, and
-other mutable DOM URL behavior remain deferred.
+The port and pathname URL setters, legacy query encoding override, and other
+mutable DOM URL behavior remain deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 
 ## Encoding

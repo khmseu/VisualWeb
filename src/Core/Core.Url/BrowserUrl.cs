@@ -185,6 +185,93 @@ public sealed class BrowserUrl
         return WithCredentials(Username, PercentEncodeUserInfo(value));
     }
 
+    /// <summary>Returns a new URL with its host set following the URL host setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-host">URL.host setter</see>.
+    /// The setter preserves the current port when the input omits a valid port and leaves this snapshot unchanged
+    /// when the host cannot be parsed.</remarks>
+    public BrowserUrl WithHost(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        value = RemoveAsciiTabsAndNewlines(value);
+        if (HasOpaquePath) { return this; }
+
+        var special = IsSpecialScheme(Protocol[..^1]);
+        var hostEnd = FindHostStateEnd(value, special, out var portSeparator);
+        var hostnameInput = portSeparator >= 0 && portSeparator < hostEnd
+            ? value[..portSeparator]
+            : value[..hostEnd];
+        if (hostnameInput.Contains('@')) { return this; }
+        if (hostnameInput.Length == 0 && (Port.Length > 0 || AuthorityIncludesCredentials)) { return this; }
+
+        var hostParsingProtocol = Protocol == "file:" ? "http:" : Protocol;
+        var hostCandidate = ParseResult($"{hostParsingProtocol}//{hostnameInput}/").Url;
+        if (hostCandidate is null) { return this; }
+
+        int? port = Port.Length == 0 ? null : int.Parse(Port, CultureInfo.InvariantCulture);
+        if (portSeparator >= 0 && portSeparator < hostEnd)
+        {
+            var portInput = value[(portSeparator + 1)..hostEnd];
+            if (ushort.TryParse(portInput, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+            {
+                var portCandidate = ParseResult($"{Protocol}//{hostnameInput}:{portInput}/").Url;
+                if (portCandidate is not null)
+                {
+                    port = portCandidate.Port.Length == 0
+                        ? null
+                        : int.Parse(portCandidate.Port, CultureInfo.InvariantCulture);
+                }
+            }
+        }
+
+        return new BrowserUrl(new DomUrl(Href).WithHost(hostCandidate.Hostname, port));
+    }
+
+    private bool HasOpaquePath =>
+        Host.Length == 0 && !Href.AsSpan(Protocol.Length).StartsWith("/", StringComparison.Ordinal);
+
+    private bool AuthorityIncludesCredentials
+    {
+        get
+        {
+            var prefix = Protocol + "//";
+            if (!Href.StartsWith(prefix, StringComparison.Ordinal)) { return false; }
+
+            var authorityStart = prefix.Length;
+            var authorityEnd = authorityStart
+                + FindHostStateEnd(Href[authorityStart..], IsSpecialScheme(Protocol[..^1]), out _);
+            return authorityEnd > authorityStart && Href.AsSpan(authorityStart, authorityEnd - authorityStart).Contains('@');
+        }
+    }
+
+    private static int FindHostStateEnd(string value, bool special, out int portSeparator)
+    {
+        var inBrackets = false;
+        portSeparator = -1;
+        for (var index = 0; index < value.Length; index++)
+        {
+            var character = value[index];
+            if (character is '/' or '?' or '#' || special && character == '\\') { return index; }
+            if (character == '[') { inBrackets = true; }
+            else if (character == ']') { inBrackets = false; }
+            else if (character == ':' && !inBrackets && portSeparator < 0) { portSeparator = index; }
+        }
+
+        return value.Length;
+    }
+
+    private static string RemoveAsciiTabsAndNewlines(string value)
+    {
+        if (value.IndexOfAny(['\t', '\n', '\r']) < 0) { return value; }
+
+        var result = new StringBuilder(value.Length);
+        foreach (var character in value)
+        {
+            if (character is not '\t' and not '\n' and not '\r') { result.Append(character); }
+        }
+
+        return result.ToString();
+    }
+
     private bool CannotHaveCredentials => Host.Length == 0 || Protocol == "file:";
 
     private BrowserUrl WithCredentials(string username, string password)

@@ -83,6 +83,14 @@ public class DomUrl : IEquatable<DomUrl>
         _internalUrl = parsed;
     }
 
+    internal DomUrl WithHost(string host, int? port)
+    {
+        var parsed = ParseUrl(Href);
+        parsed.Host = host;
+        parsed.Port = port;
+        return new DomUrl(parsed);
+    }
+
     /// <summary>
     /// Parses the <paramref name="input"/> and the <paramref name="baseUrl"/>,
     /// and initializes an instance of <see cref="DomUrl" />.

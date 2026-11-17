@@ -17,6 +17,10 @@ URL cases. Local algorithm corrections:
   `isOpaque: true`, matching the host-state spec step. Special-scheme hosts
   with explicit ports are domain/IPv4-parsed (lowercase, IDNA, percent
   decoding, forbidden code point rejection); non-special hosts stay opaque.
+- DomUrl.WithHost: an internal VisualWeb facade helper reparses the current
+  serialized URL, then updates its parsed host and port fields so the immutable
+  wrapper can retain the original path, query, fragment and credentials without
+  reserializing those components.
 - Ipv6Parser: reject leading zeros in decimal IPv4 pieces embedded in IPv6.
 - RuneDirection: honor Unicode 17 default bidi classes for unlisted code points
   rather than assigning every gap Arabic_Letter; guard table-end lookups.

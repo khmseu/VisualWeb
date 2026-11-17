@@ -13590,3 +13590,41 @@ Commit/Push ohne naechste Freigabe.
   `searchParams`-Verknuepfung, legacy query encoding override und allgemeine
   Web-IDL-Bindings. Diese Inkrementierung schliesst keinen breiten URL-
   Prioritaetsbereich ab.
+
+### KP-454 - Missing-Lauf mit zehn Inkrementen, Pass 1 host setter
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-17T13:20:16.179+01:00; Umsetzung und lokale
+  Validierung am selben Datum.
+- Erfassungsart: zeitnahe Zusammenfassung, keine nachtraegliche Rekonstruktion.
+- Nutzerangabe: Der Nutzer hat den Missing-Prioritaets-Skill mit zehn
+  Inkrementen aufgerufen.
+- Belegt: Der aktuelle WHATWG-Prioritaetsvergleich fuehrt URL (~65%) vor
+  Encoding (~55%); der vorherige Credential-Setter-Pass hatte den URL-host-
+  Setter als offene Luecke. Fuer Pass 1 wurde `WithHost` ausgewaehlt.
+- Standardsquelle: die lokale URL Standard Datei ist vorhanden; Manifest-ID
+  `url` hat `checkedAt: 2026-11-16`. Die host-setter- und host-state-
+  override-Algorithmen wurden lokal gelesen. Keine stale Quelle genutzt und
+  kein Refresh erforderlich.
+- Belegt: `BrowserUrl.WithHost` canonicalisiert den Host ueber den vorhandenen
+  vendorten Parser, behaelt den bisherigen Port, wenn kein gueltiger neuer
+  Port uebergeben wird, und liefert einen neuen unveraenderlichen Snapshot.
+  Host-Parserfehler lassen den Snapshot unveraendert; ein gueltiger Host mit
+  ungueltigem Port ersetzt den Host und behaelt den alten Port gemaess der
+  Parser-Mutationsreihenfolge. Der interne vendorte Helfer uebernimmt nur Host
+  und Port in einen neu geparsten Zustand, damit Pfad, Query, Fragment und
+  Credentials erhalten bleiben.
+- Validierung: 14 fokussierte Host-Setter-Faelle und 4.110 Core-Tests bestehen.
+  Der Debug-Solution-Build besteht ohne Warnungen/Fehler; die komplette
+  Solution-Suite besteht mit 17.057 Tests und zwei uebersprungenen Tests.
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
+- Status bei Dokumentation: Code, Tests, Tracker und Guides lokal aktualisiert;
+  Commit, Push und Remote-CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#url);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Core.Url README](../src/Core/Core.Url/README.md);
+  [vendored parser notes](../third_party/Dubzer.WhatwgUrl/README.md);
+  [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
+  [UrlTests](../tests/Core.Tests/UrlTests.cs).

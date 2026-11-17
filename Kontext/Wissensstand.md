@@ -8,7 +8,22 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Standards-Pass (2026-11-17; KP-453):** Der aktive
+**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454):**
+Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
+WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
+vor Encoding (~55%). Pass 1 implementiert `BrowserUrl.WithHost()` als
+unveraenderlichen Snapshot, einschliesslich Port-Erhalt/Port-Validierung,
+Host-State-Delimiter, opaque-path no-op, Credentials und URL-Komponenten.
+Die URL-Quelle ist lokal vorhanden und manifest-frisch (`checkedAt`
+2026-11-16); kein Refresh war erforderlich. 14 fokussierte Faelle, alle 4.110
+Core-Tests, der Debug-Solution-Build ohne Warnungen/Fehler, 17.057
+Solution-Tests (zwei uebersprungen) und Formatverifikation bestehen. Commit,
+Push und CI stehen noch aus. Naechster Schritt: Pass 1 committen/pushen, CI
+ueberwachen und anschliessend die naechste Luecke erneut gegen den Tracker
+pruefen. Details und Quellen: KP-454 sowie
+[Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
+
+**Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige
 Missing-Prioritaetslauf folgt der WHATWG-URL-Luecke, weil URL im aktuellen
 Support-Inventar (~65%) vor Encoding (~55%) liegt. Nach den dokumentierten
 Passes `href`, `toJSON`, `parse` und `protocol` wurden `username` und
