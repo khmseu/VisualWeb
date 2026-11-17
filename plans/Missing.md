@@ -2615,6 +2615,18 @@ verified against the offline-unavailable spec text. Other setters, `searchParams
 linkage and Web IDL remain unsupported. Nine theory cases, one fact and all 4,044 Core tests
 pass. The `url` cache is still unavailable offline (see Pass 1).
 
+### 2026-11-17 run, Pass 9: URL search setter
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. Like Pass 8 and
+without touching the vendored parser, `BrowserUrl.WithSearch(value)` returns a
+new snapshot: an empty value removes the query, otherwise one leading `?` is
+dropped and controls, space, `"`, `#`, `<`, `>` and DEL are encoded before
+re-parsing, so `#` stays query data, tabs/newlines are encoded rather than
+stripped, and the fragment is retained; special-scheme `'` encoding comes from
+the parser. Ten theory cases and one fact cover these and the 4,055-test Core
+suite passes. `searchParams` linkage, other setters and Web IDL remain
+unsupported. The `url` cache is still unavailable offline (see Pass 1).
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

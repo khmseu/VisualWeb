@@ -134,6 +134,39 @@ public sealed class BrowserUrl
         return Parse(encoded.ToString());
     }
 
+    /// <summary>Returns a new URL whose query is set following the URL search setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-search">URL.search setter</see>. An empty value
+    /// removes the query; otherwise one leading <c>?</c> is removed and the rest is UTF-8 percent-encoded with the query
+    /// (or special-query) set. With a state override, <c>#</c> is data and tabs/newlines are encoded rather than stripped.
+    /// The fragment is retained. This immutable facade returns a fresh snapshot, so an opaque origin gets a new identity
+    /// and there is no linked <see cref="UrlSearchParams"/> to update.</remarks>
+    public BrowserUrl WithSearch(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var fragmentStart = Href.IndexOf('#', StringComparison.Ordinal);
+        var fragment = fragmentStart < 0 ? "" : Href[fragmentStart..];
+        var withoutFragment = fragmentStart < 0 ? Href : Href[..fragmentStart];
+        var queryStart = withoutFragment.IndexOf('?', StringComparison.Ordinal);
+        var prefix = queryStart < 0 ? withoutFragment : withoutFragment[..queryStart];
+        if (value.Length == 0) { return Parse(prefix + fragment); }
+
+        var query = value[0] == '?' ? value[1..] : value;
+        var rebuilt = new System.Text.StringBuilder(prefix).Append('?');
+        foreach (var character in query)
+        {
+            if (character <= ' ' || character is '\u007F' or '"' or '#' or '<' or '>')
+            {
+                rebuilt.Append('%').Append(((int)character).ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                rebuilt.Append(character);
+            }
+        }
+
+        return Parse(rebuilt.Append(fragment).ToString());
+    }
+
     public BrowserUrl Resolve(string relative) => Parse(relative, this);
     public override string ToString() => Href;
 }

@@ -231,4 +231,32 @@ public sealed class UrlTests
         Assert.Equal("https://example.org/p#%EF%BF%BD", BrowserUrl.Parse("https://example.org/p").WithHash(unpairedSurrogate).Href);
         Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithHash(null!));
     }
+
+    [Theory]
+    [InlineData("https://example.org/p?q#h", "a=b", "https://example.org/p?a=b#h")]
+    [InlineData("https://example.org/p#h", "?x", "https://example.org/p?x#h")]
+    [InlineData("https://example.org/p?q#h", "", "https://example.org/p#h")]
+    [InlineData("https://example.org/p?q", "?", "https://example.org/p?")]
+    [InlineData("https://example.org/p?q", "??", "https://example.org/p??")]
+    [InlineData("https://example.org/p", "a b#c\td\ne\u007F\"<>", "https://example.org/p?a%20b%23c%09d%0Ae%7F%22%3C%3E")]
+    [InlineData("https://example.org/p", "it's", "https://example.org/p?it%27s")]
+    [InlineData("foo://example.org/p", "it's", "foo://example.org/p?it's")]
+    [InlineData("https://example.org/p", "\u00E9\uD83D\uDE00", "https://example.org/p?%C3%A9%F0%9F%98%80")]
+    [InlineData("data:text/plain,a?q#frag", "x y", "data:text/plain,a?x%20y#frag")]
+    public void WithSearchFollowsTheSearchSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        Assert.Equal(expected, original.WithSearch(value).Href);
+        Assert.Equal(BrowserUrl.Parse(input).Href, original.Href);
+    }
+
+    [Fact]
+    public void WithSearchReplacesUnpairedSurrogatesAndRejectsNull()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+
+        Assert.Equal("https://example.org/p?%EF%BF%BD", BrowserUrl.Parse("https://example.org/p").WithSearch(unpairedSurrogate).Href);
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithSearch(null!));
+    }
 }
