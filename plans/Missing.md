@@ -2581,6 +2581,15 @@ adds `UrlSearchParams.Values()`, a live enumerator of tuple values built on
 remain unsupported. One focused test and all 4,024 Core tests pass. The `url`
 cache is still unavailable offline (see Pass 1).
 
+### 2026-11-17 run, Pass 6: URLSearchParams forEach()
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. This increment
+adds `UrlSearchParams.ForEach(Action<string, string>)`, invoking the callback
+with `(value, name)` over the live entries. It completes the standalone
+`URLSearchParams` operations; URL-object linkage, ECMAScript iterator objects
+and Web IDL remain unsupported. One focused test and all 4,025 Core tests pass.
+The `url` cache is still unavailable offline (see Pass 1).
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

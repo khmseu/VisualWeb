@@ -164,6 +164,19 @@ public sealed class UrlSearchParams
     /// (<c>values()</c>). It has the same live semantics as <see cref="Entries"/>.</remarks>
     public IEnumerable<string> Values() => Entries().Select(entry => entry.Value);
 
+    /// <summary>Invokes <paramref name="callback"/> with each value and name in list order.</summary>
+    /// <remarks>Spec: url; <see href="https://webidl.spec.whatwg.org/#es-forEach">Web IDL iterable <c>forEach()</c></see>.
+    /// The callback receives <c>(value, name)</c>; appends made by the callback are visited and removals shift entries
+    /// as for <see cref="Entries"/>.</remarks>
+    public void ForEach(Action<string, string> callback)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+        foreach (var (name, value) in Entries())
+        {
+            callback(value, name);
+        }
+    }
+
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
     public string? Get(string name)

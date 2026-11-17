@@ -323,4 +323,21 @@ public sealed class UrlSearchParamsTests
 
         Assert.Equal(["1", "", "1", "\u2713", "9"], seen);
     }
+
+    [Fact]
+    public void ForEachPassesValueThenNameInOrderAndVisitsAppendedEntries()
+    {
+        var parameters = new UrlSearchParams("b=1&a=2");
+        var calls = new List<string>();
+
+        parameters.ForEach((value, name) =>
+        {
+            calls.Add($"{name}={value}");
+            if (calls.Count == 1) { parameters.Append("c", "3"); }
+        });
+
+        Assert.Equal(["b=1", "a=2", "c=3"], calls);
+        new UrlSearchParams().ForEach((_, _) => throw new InvalidOperationException());
+        Assert.Throws<ArgumentNullException>(() => parameters.ForEach(null!));
+    }
 }
