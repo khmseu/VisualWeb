@@ -105,6 +105,11 @@ public sealed class BrowserUrl
         return ParseResult(input, baseUrl).Success;
     }
 
+    /// <summary>Returns a new URL by parsing an absolute URL string, following the URL <c>href</c> setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-href">URL.href setter</see>.
+    /// The immutable base instance is unchanged. The value is parsed without a base URL, so relative references fail.</remarks>
+    public BrowserUrl WithHref(string value) => Parse(value);
+
     /// <summary>Returns a new URL whose fragment is set following the URL hash setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-hash">URL.hash setter</see>. An empty value
     /// removes the fragment (opaque-path trailing spaces follow the vendored parser's re-parse behavior); otherwise one

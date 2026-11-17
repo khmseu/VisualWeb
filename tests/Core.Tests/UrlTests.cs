@@ -204,6 +204,33 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://example.org/a?q#f", "https://other.example/b?x#y")]
+    [InlineData("https://example.org/a", "data:text/plain,hello")]
+    [InlineData("https://example.org/a", "file:///tmp/page")]
+    public void WithHrefParsesAnAbsoluteUrlWithoutMutatingTheOriginal(string originalInput, string newValue)
+    {
+        var original = BrowserUrl.Parse(originalInput);
+
+        Assert.Equal(BrowserUrl.Parse(newValue).Href, original.WithHref(newValue).Href);
+        Assert.Equal(BrowserUrl.Parse(originalInput).Href, original.Href);
+    }
+
+    [Theory]
+    [InlineData("/relative")]
+    [InlineData("")]
+    [InlineData("https://[")]
+    public void WithHrefRejectsInvalidOrRelativeValues(string value)
+    {
+        Assert.Throws<UrlParseException>(() => BrowserUrl.Parse("https://example.org/").WithHref(value));
+    }
+
+    [Fact]
+    public void WithHrefRejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithHref(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

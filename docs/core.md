@@ -40,9 +40,12 @@ behavior does not add nested browsing contexts or sandbox flags; other
 inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 `BrowserUrl.CanParse(input, base)` implements `URL.canParse()`: a non-null base
-is parsed first and any base failure (including `""`) returns false. `BrowserUrl.WithHash(value)` and `WithSearch(value)` implement the
-`hash` and `search` setters on the immutable facade by re-parsing a fragment-encoded string and
+is parsed first and any base failure (including `""`) returns false.
+`BrowserUrl.WithHash(value)` and `WithSearch(value)` implement the `hash` and
+`search` setters on the immutable facade by re-parsing an encoded component and
 returning a new snapshot (the original and its opaque-origin identity are unchanged).
+`WithHref(value)` parses a new absolute URL without a base, returning a snapshot
+and leaving the original unchanged.
 `CreateSearchParams()` returns a detached `UrlSearchParams` parsed from the query and
 `WithSearchParams()` writes its serialization back as a new snapshot; there is no live
 link between a URL and its parameters.

@@ -2641,6 +2641,33 @@ the remaining URL setters (`href`, `protocol`, credentials, host, port,
 encoding override and Web IDL remain unsupported. The `url` cache is still
 unavailable offline (see Pass 1). This completes the requested ten passes.
 
+## Second standards-priority run (2026-11-17)
+
+The previous ten-increment run is complete. WHATWG URL (~60%) remains the
+highest partial WHATWG estimate, ahead of Encoding (~55%). This requested
+ten-pass run continues with small URL API increments. The `url` manifest entry
+has a recent `checkedAt` timestamp, but the cached `url.html` document is
+missing. SpecCache was run before implementation and failed to fetch sources
+because network connections returned `Resource temporarily unavailable`;
+the URL Standard section for `URL.href` was therefore unavailable locally.
+No stale cached document was consulted.
+
+### Pass 1: `URL.href` setter on the immutable facade
+
+`BrowserUrl.WithHref(value)` parses an absolute URL string without a base and
+returns a new snapshot, leaving the original unchanged. Relative, empty and
+malformed values fail through the existing `UrlParseException` path. Focused
+tests cover valid special and opaque URLs, rejection, and immutability. The
+Core suite passes all 4,064 tests. The baseline full solution run before this
+change had 1 Platform and 15 Browser failures while stopping Linux renderer
+resource scopes because the system session bus is unavailable; this increment
+does not touch those subsystems. The Debug solution build and format
+verification pass. The post-change full-suite run could not start because the
+shared filesystem ran out of space; Release solution build likewise failed
+copying native runtime files with `No space left on device`, and subsequent
+test commands aborted while the filesystem was full. No Release test result is
+claimed.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on
