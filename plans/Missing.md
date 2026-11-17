@@ -2700,6 +2700,23 @@ pass. The Debug solution build and format verification pass; the full Debug
 suite has the same 1 Platform and 15 Browser session-bus failures reproduced
 before this run. Release validation remains blocked by disk exhaustion.
 
+### Pass 5: URL username and password setters
+
+The local URL Standard was refreshed/confirmed from the manifest and read at
+the `username`/`password` setter and userinfo percent-encode algorithms
+(`url.html#dom-url-username`, `url.html#dom-url-password`,
+`url.html#set-the-username`, and `url.html#set-the-password`). Immutable
+`BrowserUrl.WithUsername()` and `WithPassword()` now preserve the other
+credential and remaining URL components, apply the UTF-8 userinfo
+percent-encode set, and leave URLs with no host or the `file:` scheme unchanged.
+Focused tests cover preservation, empty values, forbidden setter characters,
+Unicode/replacement handling, ineligible URLs, and tuple-origin identity.
+Remaining URL API gaps include the host, port and pathname setters, live
+`searchParams` linkage, legacy query encoding override, and Web IDL bindings.
+All 4,096 Core tests pass; Debug and Release solution builds and full solution
+test suites pass, as does solution format verification. No native platform
+smoke applies to this Core-only change.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

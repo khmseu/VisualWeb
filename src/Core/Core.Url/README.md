@@ -11,7 +11,10 @@ a unique opaque origin (always for `file:`; no blob registry). Compare origins
 with `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"null"`.
 `about:blank` URL snapshots are opaque; the browser's separate, bounded
 page-initiated document-origin inheritance is selected by `LoadedPage`, not by
-the URL facade. `UrlSearchParams` provides string initialization, ordered
+the URL facade. The immutable facade provides snapshot `WithUsername` and
+`WithPassword` setters using URL-standard userinfo encoding; they are no-ops
+for URLs without a host and `file:` URLs. `UrlSearchParams` provides string
+initialization, ordered
 `Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`,
 `Delete(name)`/`Delete(name, value)`, `Set(name, value)`, and stable
 `Sort()` by UTF-16 code-unit name order. Other mutations and URL linkage are

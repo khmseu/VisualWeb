@@ -285,6 +285,74 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://old:secret@example.org:8080/a?q#f", "new user:@/?#[]|", "https://new%20user%3A%40%2F%3F%23%5B%5D%7C:secret@example.org:8080/a?q#f")]
+    [InlineData("https://old:secret@example.org/", "", "https://:secret@example.org/")]
+    [InlineData("https://old@example.org/", "é😀", "https://%C3%A9%F0%9F%98%80@example.org/")]
+    [InlineData("foo://old@example.org/path", "%not-escaped", "foo://%not-escaped@example.org/path")]
+    public void WithUsernameFollowsTheUsernameSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithUsername(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Fact]
+    public void WithUsernameReplacesUnpairedSurrogates()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+
+        Assert.Equal("https://%EF%BF%BD@example.org/", BrowserUrl.Parse("https://example.org/").WithUsername(unpairedSurrogate).Href);
+    }
+
+    [Theory]
+    [InlineData("https://old:secret@example.org:8080/a?q#f", "new:@/?#[]|", "https://old:new%3A%40%2F%3F%23%5B%5D%7C@example.org:8080/a?q#f")]
+    [InlineData("https://old:secret@example.org/", "", "https://old@example.org/")]
+    [InlineData("https://example.org/", "secret", "https://:secret@example.org/")]
+    [InlineData("https://old@example.org/", "é😀", "https://old:%C3%A9%F0%9F%98%80@example.org/")]
+    public void WithPasswordFollowsThePasswordSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithPassword(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Fact]
+    public void CredentialSettersPreserveTupleOrigin()
+    {
+        var original = BrowserUrl.Parse("https://old:secret@example.org/");
+
+        Assert.True(original.Origin.IsSameOrigin(original.WithUsername("new").Origin));
+        Assert.True(original.Origin.IsSameOrigin(original.WithPassword("new").Origin));
+    }
+
+    [Fact]
+    public void CredentialSettersDoNothingWhenUrlCannotHaveCredentials()
+    {
+        foreach (var input in new[] { "file:///tmp/page", "data:text/plain,hello", "mailto:user@example.org" })
+        {
+            var original = BrowserUrl.Parse(input);
+
+            Assert.Same(original, original.WithUsername("user"));
+            Assert.Same(original, original.WithPassword("password"));
+        }
+    }
+
+    [Fact]
+    public void CredentialSettersRejectNull()
+    {
+        var url = BrowserUrl.Parse("https://example.org/");
+
+        Assert.Throws<ArgumentNullException>(() => url.WithUsername(null!));
+        Assert.Throws<ArgumentNullException>(() => url.WithPassword(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

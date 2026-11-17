@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Dubzer.WhatwgUrl;
 
 namespace VisualWeb.Core.Url;
@@ -159,6 +161,84 @@ public sealed class BrowserUrl
 
         var colonInHref = Href.IndexOf(':', StringComparison.Ordinal);
         return ParseResult(scheme + Href[colonInHref..]).Url ?? this;
+    }
+
+    /// <summary>Returns a new URL with its username set following the URL username setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-username">URL.username setter</see>.
+    /// URLs without a host, or with the <c>file:</c> scheme, are unchanged.</remarks>
+    public BrowserUrl WithUsername(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (CannotHaveCredentials) { return this; }
+
+        return WithCredentials(PercentEncodeUserInfo(value), Password);
+    }
+
+    /// <summary>Returns a new URL with its password set following the URL password setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-password">URL.password setter</see>.
+    /// URLs without a host, or with the <c>file:</c> scheme, are unchanged.</remarks>
+    public BrowserUrl WithPassword(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (CannotHaveCredentials) { return this; }
+
+        return WithCredentials(Username, PercentEncodeUserInfo(value));
+    }
+
+    private bool CannotHaveCredentials => Host.Length == 0 || Protocol == "file:";
+
+    private BrowserUrl WithCredentials(string username, string password)
+    {
+        var authorityStart = Protocol.Length + 2;
+        var authorityEnd = Href.Length;
+        for (var index = authorityStart; index < Href.Length; index++)
+        {
+            if (Href[index] is '/' or '?' or '#')
+            {
+                authorityEnd = index;
+                break;
+            }
+        }
+
+        var atSign = Href.LastIndexOf('@', authorityEnd - 1, authorityEnd - authorityStart);
+        var hostStart = atSign < authorityStart ? authorityStart : atSign + 1;
+        var result = new StringBuilder(Href.Length + username.Length + password.Length);
+        result.Append(Href, 0, authorityStart);
+        if (username.Length > 0 || password.Length > 0)
+        {
+            result.Append(username);
+            if (password.Length > 0) { result.Append(':').Append(password); }
+            result.Append('@');
+        }
+
+        result.Append(Href, hostStart, Href.Length - hostStart);
+        return Parse(result.ToString());
+    }
+
+    private static string PercentEncodeUserInfo(string value)
+    {
+        var result = new StringBuilder(value.Length);
+        Span<byte> utf8Bytes = stackalloc byte[4];
+        foreach (var rune in value.EnumerateRunes())
+        {
+            var codePoint = rune.Value;
+            if (codePoint > 0x7E || codePoint <= 0x1F
+                || codePoint is 0x20 or 0x22 or 0x23 or 0x2F or 0x3A or 0x3B or 0x3D or 0x3F
+                    or 0x40 or 0x5B or 0x5C or 0x5D or 0x5E or 0x60 or 0x7B or 0x7D or 0x7C)
+            {
+                var byteCount = rune.EncodeToUtf8(utf8Bytes);
+                for (var index = 0; index < byteCount; index++)
+                {
+                    result.Append('%').Append(utf8Bytes[index].ToString("X2", CultureInfo.InvariantCulture));
+                }
+            }
+            else
+            {
+                result.Append(rune.ToString());
+            }
+        }
+
+        return result.ToString();
     }
 
     /// <summary>Returns a new URL whose fragment is set following the URL hash setter.</summary>

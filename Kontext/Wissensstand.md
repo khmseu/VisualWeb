@@ -4,15 +4,31 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-16, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-17, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
 
+**Aktueller Standards-Pass (2026-11-17; KP-453):** Der aktive
+Missing-Prioritaetslauf folgt der WHATWG-URL-Luecke, weil URL im aktuellen
+Support-Inventar (~65%) vor Encoding (~55%) liegt. Nach den dokumentierten
+Passes `href`, `toJSON`, `parse` und `protocol` wurden `username` und
+`password` als naechster bounded URL-API-Inkrement umgesetzt. `BrowserUrl`
+liefert dafuer unveraenderliche Snapshots; Userinfo wird nach dem UTF-8-
+Percent-Encoding-Set der URL Standard kodiert. URLs ohne Host und `file:`
+bleiben unveraendert. Das ist lokaler Code-/Teststand, keine Aussage zu
+Web-IDL oder Vollkonformitaet. Der lokale URL-Standard (`url.html`, Manifest-ID
+`url`, checkedAt 2026-11-16) wurde ueber SpecCache erfolgreich bestaetigt.
+Debug/Release Core- und Solution-Validierung sowie Formatverifikation bestehen.
+Commit/Push und CI werden nach dem lokalen Checkpoint ausgefuehrt.
+
 **Standards-Prioritaetsregel aktualisiert (2026-11-15):** Bei kuenftigen
 standardsgetriebenen Feature-Auswahlen werden nur teilweise implementierte
-WHATWG-Standards nach den Schaetzungen im Support-Inventar gerankt; aktuell
-sind WHATWG URL und Encoding mit je ~30% gleichauf. Der bereits begonnene
-CSS-Color-Pass 1 bleibt davon unberuehrt. Siehe DEC-033 und KP-382.
+WHATWG-Standards nach den Schaetzungen im Support-Inventar gerankt. Die damalige
+~30%-Gleichstandsschaetzung wurde durch die Inventarpruefung vom 2026-11-16
+ersetzt; die aktuellen Werte und Auswahl stehen oben sowie in
+[standards.md](../docs/standards.md#support-status). Der bereits begonnene
+CSS-Color-Pass 1 wurde durch die damalige Regel nicht rueckwirkend geaendert.
+Siehe DEC-033 und KP-382.
 
 **Neuer Missing-Prioritaetslauf (2026-11-15; Pass 10 ausgewaehlt):** Der
 aktuelle Auftrag fordert zehn neue getrennte Inkremente. Pass 1, CSS-Color-4-

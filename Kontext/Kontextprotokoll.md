@@ -70,6 +70,7 @@ unabhaengigen Bestaetigungen.
 | SRC-031 | [Scripting](../docs/scripting.md#retained-link-click-dispatch-pass-5), [PageRendering README](../src/Apps/VisualWeb.PageRendering/README.md), [StaticPageRenderer](../src/Apps/VisualWeb.PageRendering/StaticPageRenderer.cs)                                                                                                | HEAD                                            | Scripting Zeilen 186-227/gezielte Suche, PageRendering Anfang, Code Zeilen 20-45/gezielte Suche; keine volle Event-Auditierung                           |
 | SRC-032 | Git-Historie/`git show 21b8010`; [Missing](../plans/Missing.md); GitHub `main`/CI                                                                                                                                                                                                                                            | HEAD, Abfrage 2026-10-22                        | Fruehe Commitliste und Tracker-Commits, aktuelle Commitstatistik/-body; Tracker Anfang und Zeilen 285-404; CI-Run-/Jobstatus, keine gesamten Logs        |
 | SRC-033 | Aktuelle Unterhaltung, Session `ca8c03c7-0154-413c-b784-761a7040d2fc`                                                                                                                                                                                                                                                        | Nutzerauftrag 2026-10-22 (Zeitangabe UTC+02:00) | Auftrag: `/kontextprotokoll`, Argument `rebuild, including stuff from the Sessions dir and from github`; diese Dateien sind dauerhafte Zusammenfassung   |
+| SRC-034 | Aktuelle Unterhaltung, Session `cc50f537-c2bb-4727-87a8-80a88ce67306`                                                                                                                                                                                                                                                        | Nutzerauftrag 2026-11-17T03:09:18+01:00         | Explizite Ausfuehrung des Missing-Prioritaets-Skills; Auswahl, Umsetzung und Validierung des naechsten Inkrements; kein dauerhafter Chat-Export          |
 
 ## Eintraege
 
@@ -13549,3 +13550,41 @@ gezielt entfernt, ebenso ihr dann leeres eigenes Verzeichnis;
 keine lokalen Watch-Prozesse mehr aktiv. Nur beide Kontextdateien
 enthalten diesen lokalen uncommitted Ergebnisnachtrag, kein weiterer
 Commit/Push ohne naechste Freigabe.
+
+### KP-453 - URL username/password-Inkrement lokal validiert
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-17T03:09:18+01:00; Umsetzung und Tests
+  im selben Turn.
+- Erfassungsart: zeitnahe Zusammenfassung, keine nachtraegliche Rekonstruktion.
+- Quellen: SRC-034; [Missing](../plans/Missing.md#second-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#url); [URL Standard cache](../specs/cache/url.html);
+  [Manifest](../specs/manifest.json); Aenderungen in
+  [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs) und
+  [UrlTests](../tests/Core.Tests/UrlTests.cs).
+- Nutzerangabe: Der Nutzer hat den Skill zur Implementierung des naechsten
+  Missing-Prioritaets-Inkrements explizit aktiviert.
+- Belegt: Der Tracker zeigte den zweiten URL-Lauf bis einschliesslich
+  `protocol`-Setter; URL wurde im Support-Inventar mit ~60% hoeher als Encoding
+  (~55%) gefuehrt. Die Auswahl von `username`/`password` folgt der naechsten
+  aufgefuehrten URL-Setter-Luecke; sie ist eine aus Skill und Tracker abgeleitete
+  Auswahl, keine gesonderte Nutzerentscheidung.
+- Standardsquelle: `url` hatte `checkedAt` 2026-11-16. SpecCache lief in diesem
+  Turn erfolgreich; die Setter- und userinfo-Percent-Encoding-Algorithmen
+  wurden lokal unter `#dom-url-username`, `#dom-url-password`,
+  `#set-the-username`, `#set-the-password` gelesen. Keine stale Quelle genutzt.
+- Belegt: `WithUsername`/`WithPassword` liefern neue Snapshots, kodieren mit
+  dem URL-Userinfo-Set, erhalten jeweils den anderen Credential und die URL-
+  Komponenten und sind fuer URLs ohne Host oder `file:` no-op. Tests decken
+  Trennzeichen, Unicode/ungepaarte Surrogate, leere Werte, Null, nicht
+  berechtigte URL-Arten und Tuple-Origin-Identitaet ab.
+- Validierung: zuerst Core (4.096 Tests); danach Debug und Release
+  Solution-Builds, Debug und Release Volltest-Suiten (alle jeweiligen Projekte
+  bestanden) und `dotnet format ... --verify-no-changes` bestanden.
+  Linux-/Windows-Sandbox-Smokes sind fuer diese Core-Aenderung nicht anwendbar.
+- Status bei Dokumentation: Code und lokale Validierung abgeschlossen;
+  Commit, Push und Remote-CI stehen aus.
+- Offene URL-Luecken: host/port/pathname Setter, live
+  `searchParams`-Verknuepfung, legacy query encoding override und allgemeine
+  Web-IDL-Bindings. Diese Inkrementierung schliesst keinen breiten URL-
+  Prioritaetsbereich ab.
