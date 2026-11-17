@@ -97,7 +97,9 @@ Der lokale Standard ist laut Manifest frisch (`checkedAt: 2026-11-07`); die
 EUC-JP-Decoder-Algorithmen wurden gelesen. Alle fuenf fokussierten, 4.191 Core-
 und 17.138 Solution-Tests mit zwei erwarteten Skips bestehen; Debug-/Release-
 Builds und Formatverifikation bestehen ebenfalls. Kein nativer Smoke ist
-anwendbar. Commit, Push und CI stehen aus. KP-454–465 sowie
+anwendbar. Pass 10 ist mit `ea43ce9` committed und gepusht; Linux development
+(`44189271100`), Windows confinement (`44189271150`), CodeQL (`44189270313`)
+und Dev Environment Prebuilds (`44189269907`) bestehen. KP-454–466 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige

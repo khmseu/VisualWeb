@@ -14004,3 +14004,17 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   [Core guide](../docs/core.md#encoding);
   [Core.Encoding README](../src/Core/Core.Encoding/README.md);
   [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).
+
+### KP-466 - Pass 10 Commit und CI-Abschluss
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Belegt: Pass 10 ist als `ea43ce9` committed und nach `main` gepusht.
+  Linux development (`44189271100`), Windows confinement (`44189271150`),
+  CodeQL (`44189270313`) und Dev Environment Prebuilds (`44189269907`)
+  sind erfolgreich.
+- Status: Der angeforderte zehnteilige Missing-Lauf ist abgeschlossen.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  die vier genannten GitHub Actions Workflows fuer Commit `ea43ce9`.

@@ -2911,7 +2911,9 @@ solution suites pass with 17,138 tests and two expected skips, and solution
 format verification passes. No native platform smoke applies to this Core-only
 change. The Encoding estimate remains ~55%; GBK/gb18030 and ISO-2022-JP
 streaming, `TextDecoderStream` and JavaScript/Web IDL bindings remain deferred.
-Commit, push and CI remain pending.
+Commit `ea43ce9` is pushed to `main`; Linux development (`44189271100`),
+Windows confinement (`44189271150`), CodeQL (`44189270313`) and Dev Environment
+Prebuilds (`44189269907`) all pass.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
