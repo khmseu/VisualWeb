@@ -470,6 +470,42 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://user:secret@example.org:8443/a/old?q#f", "/a b/../c", "https://user:secret@example.org:8443/c?q#f")]
+    [InlineData("https://example.org/a?q#f", "", "https://example.org/?q#f")]
+    [InlineData("https://example.org/a?q#f", "/new?x#y", "https://example.org/new%3Fx%23y?q#f")]
+    [InlineData("https://example.org/a?q#f", "\\next", "https://example.org/next?q#f")]
+    [InlineData("https://example.org/a?#", "/new", "https://example.org/new?#")]
+    [InlineData("https://example.org/a?q#f", "/a\tb", "https://example.org/ab?q#f")]
+    [InlineData("https://example.org/a", "/new ", "https://example.org/new%20")]
+    [InlineData("https://example.org/a", "/new\u0001", "https://example.org/new%01")]
+    [InlineData("foo://example.org/a?q#f", "new", "foo://example.org/new?q#f")]
+    [InlineData("foo:/old?q#f", "new", "foo:/new?q#f")]
+    [InlineData("file:///C:/old", "D|/new", "file:///D:/new")]
+    public void WithPathnameFollowsThePathnameSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithPathname(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Fact]
+    public void WithPathnameDoesNothingForOpaquePaths()
+    {
+        var original = BrowserUrl.Parse("data:text/plain,hello");
+
+        Assert.Same(original, original.WithPathname("/new"));
+    }
+
+    [Fact]
+    public void WithPathnameRejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithPathname(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

@@ -60,6 +60,8 @@ credentials and path/query/fragment. Opaque-path URLs are unchanged.
 `WithPort(value)` applies the port setter to a new snapshot, clearing the port
 for an empty value and leaving invalid values and URLs that cannot have a port
 unchanged.
+`WithPathname(value)` applies the pathname setter to a new snapshot, preserving
+the query and fragment; opaque-path URLs are unchanged.
 `CreateSearchParams()` returns a detached `UrlSearchParams` parsed from the query and
 `WithSearchParams()` writes its serialization back as a new snapshot; there is no live
 link between a URL and its parameters.
@@ -74,8 +76,8 @@ name-only and name/value matching, live `Entries()`, `Keys()` and
 `toString()` serializes the ordered tuples with the standard's UTF-8 percent
 encoding rules. This standalone Core API does not provide other mutation
 methods, URL-object linkage, ECMAScript iterator objects or Web IDL bindings.
-The pathname URL setter, legacy query encoding override, and other mutable DOM
-URL behavior remain deferred.
+The legacy query encoding override and other mutable DOM URL behavior remain
+deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 
 ## Encoding

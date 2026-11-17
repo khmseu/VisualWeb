@@ -13652,8 +13652,47 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Solution-Build mit null Warnungen/Fehlern, 17.071 Solution-Tests mit zwei
   uebersprungenen Tests und Formatverifikation bestehen. Kein nativer Smoke
   ist fuer Core.Url anwendbar.
+- Status bei erster Dokumentation: Code, Tests, Tracker und Guides lokal
+  aktualisiert; Commit, Push und CI fuer Pass 2 standen aus. Danach wurde
+  Commit `ede73f5` auf `main` gepusht; Linux development (Run `44094692651`),
+  Windows confinement (Run `44094692720`), CodeQL (Run `44094690634`) und
+  Dev Environment Prebuilds (Run `44094690005`) bestanden.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#url);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Core.Url README](../src/Core/Core.Url/README.md);
+  [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
+  [UrlTests](../tests/Core.Tests/UrlTests.cs).
+
+### KP-456 - Missing-Lauf mit zehn Inkrementen, Pass 3 pathname setter
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-17T13:20:16.179+01:00; Pass-3-
+  Umsetzung und lokale Validierung am 2026-11-17.
+- Erfassungsart: zeitnahe Zusammenfassung, keine nachtraegliche Rekonstruktion.
+- Nutzerangabe: Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente
+  angefordert (Quellen und Auswahlregel siehe KP-454).
+- Belegt: Nach den host- und port-settern ist der pathname setter die naechste
+  offene URL-API-Luecke. Manifest-ID `url`, `checkedAt: 2026-11-16`; die
+  pathname-setter- und path-state-Algorithmen wurden lokal gelesen. Kein
+  Refresh war erforderlich.
+- Belegt: `BrowserUrl.WithPathname` ersetzt den Pfad im unveraenderlichen
+  Snapshot, behaelt den vorhandenen Query-/Fragment-Suffix einschliesslich
+  leerer Delimiter bei, normalisiert path state und laesst opaque-path URLs
+  unveraendert.
+- Umsetzung: Ein Sentinel-Fragment verhindert, dass der Voll-URL-Parser
+  abschliessende Pfad-Leerzeichen und C0-Steuerzeichen vor der pathname-setter-
+  Verarbeitung entfernt; gezielte Tests decken Leerzeichen und U+0001 ab.
+- Validierung: 13 fokussierte Pathname-Faelle, 4.137 Core-Tests,
+  Debug-Solution-Build mit null Warnungen/Fehlern und Formatverifikation
+  bestehen. Ein erster voller Solution-Testlauf hatte einen V8-Deadline-Timeout
+  in `FilteredNthQueriesAndStylesFeedTransactionalRetainedPaint`; beide
+  Varianten bestanden isoliert. Der wiederholte Volltest bestand mit 17.084
+  Tests und zwei uebersprungenen Tests. Der volle Lauf am Basis-Commit `ede73f5`
+  bestand mit 17.071 Tests und zwei uebersprungenen Tests. Kein nativer Smoke
+  ist fuer Core.Url anwendbar.
 - Status bei Dokumentation: Code, Tests, Tracker und Guides lokal aktualisiert;
-  Commit, Push und CI fuer Pass 2 stehen aus.
+  Commit, Push und CI fuer Pass 3 stehen aus.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#url);
   [standards inventory](../docs/standards.md#implemented-subsets);

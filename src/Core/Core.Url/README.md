@@ -12,10 +12,11 @@ with `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"n
 `about:blank` URL snapshots are opaque; the browser's separate, bounded
 page-initiated document-origin inheritance is selected by `LoadedPage`, not by
 the URL facade. The immutable facade provides snapshot `WithHost`, `WithPort`,
-`WithUsername` and `WithPassword` setters. `WithHost` preserves the current
-port if no valid new port is supplied; `WithPort` clears the port for empty
-input and ignores invalid values. Credential setters use URL-standard userinfo
-encoding and are no-ops for URLs without a host and `file:` URLs.
+`WithPathname`, `WithUsername` and `WithPassword` setters. `WithHost` preserves
+the current port if no valid new port is supplied; `WithPort` clears the port
+for empty input and ignores invalid values; `WithPathname` leaves opaque-path
+URLs unchanged. Credential setters use URL-standard userinfo encoding and are
+no-ops for URLs without a host and `file:` URLs.
 `UrlSearchParams` provides string
 initialization, ordered
 `Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`,

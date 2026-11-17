@@ -8,22 +8,29 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454/455):**
+**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–456):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
 WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
 vor Encoding (~55%). Pass 1 implementiert `BrowserUrl.WithHost()` als
 unveraenderlichen Snapshot. Commit `87e1402` ist auf `main`; Linux development,
 Windows confinement, CodeQL und Dev Environment Prebuilds bestehen. Pass 2
-implementiert `BrowserUrl.WithPort()` als unveraenderlichen Snapshot,
-einschliesslich Leerwert-Loeschung, gueltiger Port-Normalisierung,
-Default-Port-Entfernung und unveraenderter URL-Komponenten. Die URL-Quelle ist
+implementiert `BrowserUrl.WithPort()` und ist als `ede73f5` auf `main`;
+dieselben vier Workflows bestehen. Pass 3 implementiert `BrowserUrl.WithPathname()`
+als unveraenderlichen Snapshot, einschliesslich Pfad-Normalisierung, Beibehaltung
+auch leerer Query-/Fragment-Delimiter und opaque-path no-op. Die URL-Quelle ist
 lokal vorhanden und manifest-frisch (`checkedAt: 2026-11-16`); kein Refresh
-war erforderlich. Fuer Pass 2 bestehen 14 fokussierte Faelle, alle 4.124
-Core-Tests, der Debug-Solution-Build ohne Warnungen/Fehler, 17.071
-Solution-Tests (zwei uebersprungen) und Formatverifikation. Pass 2 ist noch
-nicht committed/gepusht; naechster Schritt ist der Commit und Push, danach
-remote CI ueberwachen und die naechste Luecke gegen den Tracker pruefen.
-Details und Quellen: KP-454/455 sowie
+war erforderlich. Ein Sentinel-Fragment erhaelt abschliessende Pfad-Leerzeichen
+und C0-Steuerzeichen bis zur pathname-setter-Verarbeitung. Fuer Pass 3 bestehen
+13 fokussierte Faelle, alle 4.137 Core-Tests, der Debug-Solution-Build ohne
+Warnungen/Fehler und Formatverifikation. Der erste volle Solution-Testlauf
+hatte einen Timeout im Browser-Prozess-Test
+`FilteredNthQueriesAndStylesFeedTransactionalRetainedPaint`; beide Varianten
+bestanden isoliert. Der wiederholte Volltest bestand mit 17.084 Tests und zwei
+erwarteten Skips; auch der vorherige volle Lauf auf Basis-Commit `ede73f5`
+bestand. Pass 3 ist noch nicht committed/gepusht; naechster Schritt ist Commit
+und Push sowie Remote-CI, danach die naechste Luecke gegen den Tracker pruefen.
+Details und Quellen:
+KP-454–456 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige

@@ -247,6 +247,49 @@ public sealed class BrowserUrl
         return new BrowserUrl(new DomUrl(Href).WithHost(Hostname, port));
     }
 
+    /// <summary>Returns a new URL with its pathname set following the URL pathname setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-pathname">URL.pathname setter</see>.
+    /// Opaque-path URLs are unchanged; the existing query and fragment are preserved.</remarks>
+    public BrowserUrl WithPathname(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (HasOpaquePath) { return this; }
+
+        var special = IsSpecialScheme(Protocol[..^1]);
+        var hasAuthority = Href.StartsWith(Protocol + "//", StringComparison.Ordinal);
+        var urlPrefix = Protocol;
+        if (hasAuthority)
+        {
+            var authorityStart = Protocol.Length + 2;
+            var authorityEnd = authorityStart
+                + FindHostStateEnd(Href[authorityStart..], special, out _);
+            urlPrefix = Href[..authorityEnd];
+        }
+
+        var pathname = RemoveAsciiTabsAndNewlines(value)
+            .Replace("?", "%3F", StringComparison.Ordinal)
+            .Replace("#", "%23", StringComparison.Ordinal);
+        if (pathname.Length == 0)
+        {
+            if (!hasAuthority) { pathname = "/"; }
+        }
+        else if (pathname[0] != '/' && !(special && pathname[0] == '\\'))
+        {
+            pathname = "/" + pathname;
+        }
+
+        var suffixStart = Href.IndexOfAny(['?', '#'], urlPrefix.Length);
+        var suffix = suffixStart < 0 ? "" : Href[suffixStart..];
+        var candidate = urlPrefix + pathname + suffix;
+        if (suffix.Length == 0)
+        {
+            candidate = Parse(candidate + "#").Href;
+            candidate = candidate[..^1];
+        }
+
+        return Parse(candidate);
+    }
+
     private bool HasOpaquePath =>
         Host.Length == 0 && !Href.AsSpan(Protocol.Length).StartsWith("/", StringComparison.Ordinal);
 
