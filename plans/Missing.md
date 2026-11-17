@@ -2524,7 +2524,10 @@ possible. No native subsystem smoke applies to this Core URL change.
 The first Linux CI run passed x64/ARM64 builds, tests and native smokes but
 failed Trunk on Prettier/MD060 formatting for the standards inventory row.
 Prettier 3.10.1 was applied; its local check passes. CI rerun for this
-documentation-only correction is pending.
+documentation-only correction passes: Linux development (run 43984637722),
+Windows confinement (run 43984637511) and CodeQL (run 43984637434) all
+succeeded. The separate Dev Environment Prebuilds workflow was still in
+progress and is not part of the validation matrix.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
