@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–457):**
+**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–458):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
 WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
 vor Encoding (~55%). Pass 1 implementiert `BrowserUrl.WithHost()` als
@@ -35,10 +35,21 @@ enthalten, ungueltige Hostnamen und opaque-path URLs bleiben unveraendert. Die
 URL-Quelle ist manifest-frisch (`checkedAt: 2026-11-16`). Acht fokussierte
 Faelle, alle 4.145 Core-Tests, Debug-Solution-Build ohne Warnungen/Fehler,
 17.092 Solution-Tests mit zwei erwarteten Skips und Formatverifikation
-bestehen. Pass 4 ist noch nicht committed/gepusht; naechster Schritt ist Commit
-und Push sowie Remote-CI, danach die naechste Luecke gegen den Tracker pruefen.
-Details und Quellen:
-KP-454–457 sowie
+bestehen. Commit `e347ab4` ist auf `main`; Linux development, Windows
+confinement, CodeQL und Dev Environment Prebuilds bestehen. Pass 4 ist
+abgeschlossen. Fuer Pass 5 wurde nach erneuter Pruefung der URL-Luecken die
+naechsthoehere WHATWG Encoding-Luecke gewaehlt: URL-`searchParams`-Live-Linkage
+ist nicht Teil der unveraenderlichen Facade, und die URL-Quelle spezifiziert
+keinen nicht-UTF-8-Override als konformes Verhalten. `WebTextDecoder` bietet
+nun den one-shot .NET-Kernteil mit Label, fatal-Modus und BOM-Option; Streaming
+und Web-IDL-Bindings bleiben aus. Die Encoding-Quelle ist manifest-frisch
+(`checkedAt: 2026-11-07`). Sieben fokussierte und alle 4.152 Core-Tests
+bestehen; Debug- und Release-Solution-Builds bestehen ohne Warnungen/Fehler.
+Debug- und Release-Volltests bestehen jeweils mit 17.099 Tests und zwei
+erwarteten Skips; Formatverifikation besteht. Kein nativer Smoke ist fuer
+Core.Encoding anwendbar. Pass 5 ist lokal validiert, aber noch nicht committed;
+Push und CI folgen nach Commit. Details und Quellen:
+KP-454–458 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige

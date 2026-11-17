@@ -13724,13 +13724,49 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Solution-Build ohne Warnungen/Fehler, 17.092 Solution-Tests mit zwei
   uebersprungenen Tests und Formatverifikation bestehen. Kein nativer Smoke
   ist fuer Core.Url anwendbar.
-- Status bei Dokumentation: Code, Tests, Guides und Tracker lokal aktualisiert;
-  Commit, Push und CI fuer Pass 4 stehen aus. Pass 3 Commit `89a0a0f` ist
-  gepusht; Linux, Windows, CodeQL und Dev Environment Prebuilds bestanden
-  (KP-456).
+- Status bei Dokumentation: Commit `e347ab4` wurde gepusht. Linux development
+  (`44114988240`), Windows confinement (`44114988339`), CodeQL (`44114987508`)
+  und Dev Environment Prebuilds (`44114987695`) bestanden. Commit und
+  CI-Status von Pass 3 sind in KP-456 dokumentiert.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#url);
   [standards inventory](../docs/standards.md#implemented-subsets);
   [URL Standard hostname setter](../specs/cache/url.html#dom-url-hostname);
   [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
   [UrlTests](../tests/Core.Tests/UrlTests.cs).
+
+### KP-458 - Missing-Lauf mit zehn Inkrementen, Pass 5 TextDecoder
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Nutzerangabe: Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente
+  angefordert (Quellen und Auswahlregel siehe KP-454).
+- Auswahl (Ableitung): URL (~65%) bleibt vor Encoding (~55%), hat fuer die
+  unveraenderliche Facade aber keinen kleinen aktiven API-Gap mehr. Die
+  verbleibende URLSearchParams-Live-Verknuepfung wuerde ein mutable URL-Modell
+  benoetigen. Die lokale URL-Standard-Notiz zu nicht-UTF-8-Formdaten beschreibt
+  nur nicht-konformes Legacy-Serververhalten und keinen normativen Override.
+  Daher wurde Encoding als naechste partiell implementierte WHATWG-Luecke
+  gewaehlt.
+- Belegt: Manifest-ID `encoding` hat `checkedAt: 2026-11-07` und ist frisch.
+  Der lokale Encoding-Standard zu TextDecoder-Konstruktor, Optionen, `decode`
+  und BOM-Serialisierung wurde gelesen; kein Refresh war erforderlich.
+- Umsetzung: `WebTextDecoder` implementiert einen one-shot .NET-Teil ueber die
+  bestehenden Ganzpuffer-Decoder: Labelauflosung, kleingeschriebener
+  Encodingname, fatal-Modus, `ignoreBOM` und volle Buffer-Decodierung. UTF-8/
+  UTF-16 entfernen ohne `ignoreBOM` genau ein initiales BOM. Streaming,
+  Zustand ueber Aufrufe, TextDecoderStream und JavaScript/Web-IDL-Bindings
+  bleiben aus. Die Encoding-Schaetzung bleibt grob bei ~55%.
+- Validierung bisher: 7 fokussierte Tests, alle 4.152 Core-Tests, Debug- und
+  Release-Solution-Build ohne Warnungen/Fehler und Formatverifikation bestehen.
+  Debug- und Release-Volltests bestehen jeweils mit 17.099 Tests und zwei
+  erwarteten Skips. Kein nativer Smoke ist fuer Core.Encoding anwendbar.
+- Status: Lokal validiert, noch nicht committed/gepusht; CI steht aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Encoding Standard TextDecoder](../specs/cache/encoding.html#interface-textdecoder);
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).

@@ -2786,7 +2786,32 @@ snapshot unchanged; file-host canonicalization follows the URL parser. Eight
 focused cases and all 4,145 Core tests pass. The Debug solution build passes
 with zero warnings/errors, all 17,092 solution tests pass with two expected
 skips, and solution format verification passes. No native platform smoke
-applies to this Core-only change. Commit, push and CI status are pending.
+applies to this Core-only change. Commit `e347ab4` is pushed to `main`; Linux
+development (`44114988240`), Windows confinement (`44114988339`), CodeQL
+(`44114987508`) and Dev Environment Prebuilds (`44114987695`) all passed.
+
+### Pass 5: one-shot TextDecoder subset
+
+URL remains the highest estimated partial standard (~65%), but the remaining
+`searchParams` live linkage does not fit the immutable URL facade, and the URL
+Standard describes non-UTF-8 form parsing only as non-conforming legacy server
+behavior rather than specifying an override algorithm. With no bounded,
+actionable URL gap for this facade, this pass selects the next-ranked WHATWG
+Encoding standard (~55%). Its manifest entry is fresh (`checkedAt:
+2026-11-07`); the cached TextDecoder constructor, options, decode and BOM
+serialization algorithms were read, so no refresh was needed.
+
+`WebTextDecoder` adds a one-shot .NET subset over the existing full-buffer
+decoders: label resolution, canonical lowercase encoding name, fatal mode,
+`ignoreBOM`, and complete-buffer decoding. Unsupported and replacement labels
+throw; UTF-8/UTF-16 strip one leading BOM unless `ignoreBOM` is true. It does
+not add stream state, `TextDecoderStream` or JavaScript/Web IDL bindings. Seven
+focused tests and all 4,152 Core tests pass. Debug and Release solution builds
+pass with zero warnings/errors; both full solution suites pass with 17,099 tests
+and two expected skips, and solution format verification passes. No native
+platform smoke applies to this Core-only change. The approximate Encoding
+estimate remains ~55% because this is a bounded .NET subset and streaming and
+bindings remain absent. Commit, push and CI status are pending.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

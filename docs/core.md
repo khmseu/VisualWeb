@@ -107,8 +107,14 @@ operations. `Encode` returns a .NET byte array; `EncodeInto` writes complete
 scalars into a caller-provided span and reports UTF-16 code units read and bytes
 written, bounded by .NET span lengths. Both replace unpaired surrogates with
 U+FFFD. These are core APIs, not JavaScript/Web IDL bindings.
-`TextEncoderStream`, encoders for other labels and `TextDecoder` bindings
-remain deferred.
+`TextEncoderStream`, encoders for other labels and JavaScript/Web IDL encoder
+and decoder bindings remain deferred.
+
+[WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs) provides a
+one-shot .NET subset of [`TextDecoder`](https://encoding.spec.whatwg.org/#interface-textdecoder):
+label resolution, canonical encoding name, fatal error mode and `ignoreBOM`.
+Each `Decode` call consumes a complete buffer and has no retained state;
+streaming, the `stream` option and JavaScript/Web IDL bindings remain deferred.
 
 ### HTML charset prescan and sniffing subset
 
@@ -135,8 +141,8 @@ remembered per-page encodings, frequency-analysis autodetection, locale defaults
 and the parser's "change the encoding" reparse. There are no pinned html5lib
 `encoding/` fixtures; tests are spec-derived cases.
 
-Incremental decoding, `TextEncoderStream` and JavaScript `TextDecoder` bindings
-remain later work; callers must collect a complete buffer for the decoding APIs.
+Incremental decoding, `TextEncoderStream` and JavaScript/Web IDL bindings remain
+later work; callers must collect a complete buffer for the decoding APIs.
 
 ## MIME
 
