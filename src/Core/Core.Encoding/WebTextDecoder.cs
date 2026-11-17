@@ -4,11 +4,13 @@ namespace VisualWeb.Core.Encoding;
 
 /// <summary>Provides bounded decoding with the label and options of WHATWG <c>TextDecoder</c>.</summary>
 /// <remarks>Spec: encoding; <see href="https://encoding.spec.whatwg.org/#interface-textdecoder">TextDecoder</see>.
-/// The stream option is supported for UTF-8 and stateless single-byte encodings; other encodings decode complete buffers. Web IDL bindings are not provided.</remarks>
+/// The stream option is supported for UTF-8, UTF-16LE/BE and stateless single-byte encodings; other encodings decode complete buffers. Web IDL bindings are not provided.</remarks>
 public sealed class WebTextDecoder
 {
     private readonly WebEncoding _encoding;
-    private Decoder? _utf8StreamDecoder;
+    private Decoder? _streamDecoder;
+    private byte? _utf16LeadByte;
+    private char? _utf16LeadSurrogate;
     private bool _streamActive;
     private bool _streamBomSeen;
 
@@ -53,11 +55,11 @@ public sealed class WebTextDecoder
     /// <param name="input">The next bytes to decode.</param>
     /// <param name="stream">Whether more bytes will follow in a later call.</param>
     /// <remarks>Spec: encoding; <see href="https://encoding.spec.whatwg.org/#dom-textdecoder-decode">TextDecoder.decode()</see>.
-    /// Streaming is supported for UTF-8 and stateless single-byte encodings. A call with <paramref name="stream"/> false flushes pending input and resets the stream.</remarks>
+    /// Streaming is supported for UTF-8, UTF-16LE/BE and stateless single-byte encodings. A call with <paramref name="stream"/> false flushes pending input and resets the stream.</remarks>
     /// <exception cref="NotSupportedException">Streaming is requested for an unsupported encoding.</exception>
     public string Decode(ReadOnlySpan<byte> input, bool stream)
     {
-        if (stream && _encoding.Name != "UTF-8" && !IsSingleByteEncoding())
+        if (stream && !IsStreamingEncoding())
         {
             throw new NotSupportedException($"Streaming is not supported for {_encoding.Name}.");
         }
@@ -86,10 +88,14 @@ public sealed class WebTextDecoder
             if (_encoding.Name == "UTF-8")
             {
                 var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: Fatal);
-                var decoder = _utf8StreamDecoder ??= encoding.GetDecoder();
+                var decoder = _streamDecoder ??= encoding.GetDecoder();
                 var output = new char[encoding.GetMaxCharCount(input.Length)];
                 var count = decoder.GetChars(input, output, flush: !stream);
                 text = new string(output, 0, count);
+            }
+            else if (_encoding.Name is "UTF-16LE" or "UTF-16BE")
+            {
+                text = DecodeUtf16Chunk(input, stream);
             }
             else
             {
@@ -126,6 +132,69 @@ public sealed class WebTextDecoder
         }
     }
 
+    private string DecodeUtf16Chunk(ReadOnlySpan<byte> input, bool stream)
+    {
+        var output = new StringBuilder();
+        var bigEndian = _encoding.Name == "UTF-16BE";
+        foreach (var value in input)
+        {
+            if (_utf16LeadByte is not { } leadByte)
+            {
+                _utf16LeadByte = value;
+                continue;
+            }
+
+            _utf16LeadByte = null;
+            var codeUnit = (char)(bigEndian ? leadByte << 8 | value : leadByte | value << 8);
+            if (_utf16LeadSurrogate is { } leadSurrogate)
+            {
+                _utf16LeadSurrogate = null;
+                if (char.IsLowSurrogate(codeUnit))
+                {
+                    output.Append(leadSurrogate).Append(codeUnit);
+                    continue;
+                }
+
+                AppendUtf16Error(output);
+            }
+
+            if (char.IsHighSurrogate(codeUnit))
+            {
+                _utf16LeadSurrogate = codeUnit;
+            }
+            else if (char.IsLowSurrogate(codeUnit))
+            {
+                AppendUtf16Error(output);
+            }
+            else
+            {
+                output.Append(codeUnit);
+            }
+        }
+
+        if (!stream && (_utf16LeadByte is not null || _utf16LeadSurrogate is not null))
+        {
+            _utf16LeadByte = null;
+            _utf16LeadSurrogate = null;
+            AppendUtf16Error(output);
+        }
+
+        return output.ToString();
+    }
+
+    private void AppendUtf16Error(StringBuilder output)
+    {
+        if (Fatal)
+        {
+            throw new WebDecodingException(_encoding.Name, "Invalid byte sequence.");
+        }
+
+        output.Append('\uFFFD');
+    }
+
+    private bool IsStreamingEncoding() =>
+        _encoding.Name is "UTF-8" or "UTF-16LE" or "UTF-16BE" || IsSingleByteEncoding();
+
     private bool IsSingleByteEncoding()
     {
         if (_encoding.Name == "x-user-defined")
@@ -139,7 +208,9 @@ public sealed class WebTextDecoder
 
     private void ResetStream()
     {
-        _utf8StreamDecoder = null;
+        _streamDecoder = null;
+        _utf16LeadByte = null;
+        _utf16LeadSurrogate = null;
         _streamActive = false;
         _streamBomSeen = false;
     }

@@ -2855,6 +2855,26 @@ and Dev Environment Prebuilds (`44147751887`) pass. The first Prebuild attempt
 failed during template upload with manifest generation failure; rerunning the
 workflow succeeded.
 
+### Pass 8: incremental UTF-16 TextDecoder
+
+The remaining `searchParams` linkage still does not fit the immutable URL
+facade, so this pass continues the actionable Encoding work. The Encoding
+Standard cache was manifest-checked on 2026-11-07 and is fresh; its shared
+UTF-16 decoder and UTF-16LE/BE decoder definitions were reviewed.
+`WebTextDecoder` now streams UTF-16LE and UTF-16BE, carrying incomplete byte
+and leading-surrogate state across chunks. Its final flush emits one error for
+combined pending UTF-16 state and reprocesses a non-low-surrogate code unit
+after an unmatched high surrogate. Streaming for other unsupported multibyte
+encodings still fails explicitly.
+
+All 25 focused decoder tests and 4,170 Core tests pass. Debug and Release
+solution builds pass with zero warnings/errors; both full solution suites pass
+with 17,117 tests and two expected skips; solution format verification passes.
+No native platform smoke applies to this Core-only change. The approximate
+Encoding estimate remains ~55%; other multibyte streaming, `TextDecoderStream`
+and JavaScript/Web IDL bindings remain deferred. Commit, push and CI status
+will be recorded after publication.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

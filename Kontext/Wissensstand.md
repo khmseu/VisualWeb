@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–460):**
+**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–461):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
 WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
 vor Encoding (~55%). Pass 1 implementiert `BrowserUrl.WithHost()` als
@@ -69,7 +69,16 @@ development (`44147752385`), Windows confinement (`44147752645`), CodeQL
 (`44147751479`) und Dev Environment Prebuilds (`44147751887`) bestehen. Der
 erste Prebuild-Lauf scheiterte bei der Template-Generierung/-Uebertragung mit
 einem Manifest-Generierungsfehler; der erneute Lauf war erfolgreich.
-KP-454–460 sowie
+Pass 8 erweitert `WebTextDecoder` um UTF-16LE/BE-Streaming mit gespeichertem
+Teilbyte-/Surrogatzustand, BOM-Verarbeitung, korrekter Reprozessierung und
+einmaligem EOF-Fehler fuer kombinierte Restzustaende. Die lokale
+Encoding-Quelle war laut Manifest frisch (`checkedAt: 2026-11-07`); der
+gemeinsame UTF-16-Decoder und die LE/BE-Algorithmen wurden gelesen. Alle 25
+fokussierten Decoder- und 4.170 Core-Tests, Debug-/Release-Builds, beide
+Solution-Volltests mit 17.117 Tests plus zwei erwarteten Skips sowie
+Formatverifikation bestehen. Kein nativer Smoke ist fuer Core.Encoding
+anwendbar. Pass 8 ist lokal validiert; Commit, Push und CI stehen aus.
+KP-454–461 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige

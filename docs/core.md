@@ -113,9 +113,9 @@ and decoder bindings remain deferred.
 [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs) provides a bounded
 .NET subset of [`TextDecoder`](https://encoding.spec.whatwg.org/#interface-textdecoder):
 label resolution, canonical encoding name, fatal error mode and `ignoreBOM`.
-Its `stream` option retains UTF-8 decoder and BOM state across chunks, and
-stateless single-byte encodings can also be decoded chunk by chunk. Other
-multi-byte encodings consume complete buffers. `TextDecoderStream` and
+Its `stream` option retains UTF-8 and UTF-16LE/BE decoder and BOM state across
+chunks, and stateless single-byte encodings can also be decoded chunk by chunk.
+Other multi-byte encodings consume complete buffers. `TextDecoderStream` and
 JavaScript/Web IDL bindings remain deferred.
 
 ### HTML charset prescan and sniffing subset
@@ -143,8 +143,9 @@ remembered per-page encodings, frequency-analysis autodetection, locale defaults
 and the parser's "change the encoding" reparse. There are no pinned html5lib
 `encoding/` fixtures; tests are spec-derived cases.
 
-Incremental decoding, `TextEncoderStream` and JavaScript/Web IDL bindings remain
-later work; callers must collect a complete buffer for the decoding APIs.
+Streaming for the remaining multi-byte encodings, `TextEncoderStream` and
+JavaScript/Web IDL bindings remain later work; callers must collect a complete
+buffer when using those one-shot decoding paths.
 
 ## MIME
 

@@ -13851,3 +13851,45 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   [Encoding Standard single-byte decoder](../specs/cache/encoding.html#single-byte-decoder);
   [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
   [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).
+
+### KP-461 - Missing-Lauf mit zehn Inkrementen, Pass 8 UTF-16-Streaming
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Nutzerangabe: Der Auftrag fuer zehn getrennte Missing-Prioritaets-Inkremente
+  wird fortgesetzt; Passes 1–7 sind in KP-454–460 dokumentiert.
+- Auswahl (Ableitung): Nach dem UTF-8- und Single-Byte-Streaming wurde
+  UTF-16LE/BE als naechster begrenzter Encoding-Schritt gewaehlt. Die
+  verbleibende URL-`searchParams`-Live-Linkage passt weiterhin nicht zur
+  unveraenderlichen URL-Facade; diese Einschränkung wurde bereits fuer Pass 5
+  dokumentiert.
+- Belegt: Die lokale Encoding-Quelle hat `checkedAt: 2026-11-07`; der gemeinsame
+  UTF-16-Decoder und die UTF-16LE/BE-Algorithmen
+  ([`#shared-utf-16-decoder`](../specs/cache/encoding.html#shared-utf-16-decoder),
+  [`#utf-16be-decoder`](../specs/cache/encoding.html#utf-16be-decoder),
+  [`#utf-16le-decoder`](../specs/cache/encoding.html#utf-16le-decoder)) wurden
+  gelesen. Kein Refresh war erforderlich.
+- Umsetzung: `WebTextDecoder` behaelt Teilbyte und fuehrendes Surrogat ueber
+  Chunks, strippt den initialen BOM gemaess `ignoreBOM`, gibt bei finalem
+  Flush fuer gleichzeitig offenes UTF-16-Restbyte und Surrogat genau einen
+  Ersatzwert aus und reprozessiert ein nicht-trailendes Codewort nach einem
+  unpassenden fuehrenden Surrogat. Die erste fokussierte Testausfuehrung
+  bestaetigte die bisherige explizite Unsupported-Ausnahme; Folgetests zeigten,
+  dass .NETs UTF-16-Decoder fuer kombinierten EOF-Rest zwei Ersatzzeichen statt
+  des normativen einzelnen Fehlers ausgibt. Deshalb verwendet dieser Pfad einen
+  kleinen expliziten Zustand statt den BCL-Decoder. Andere nicht-UTF-8-
+  Mehrbyte-Streams bleiben unsupported.
+- Validierung: 25 fokussierte Decoder- und 4.170 Core-Tests; Debug-/Release-
+  Solution-Builds ohne Warnungen/Fehler; Debug- und Release-Volltests mit
+  17.117 bestandenen Tests und zwei erwarteten Skips; Formatverifikation
+  bestanden. Kein nativer Smoke ist anwendbar.
+- Status: lokal validiert; Commit, Push und Remote-CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [Core.Encoding README](../src/Core/Core.Encoding/README.md);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Encoding Standard shared UTF-16 decoder](../specs/cache/encoding.html#shared-utf-16-decoder);
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).

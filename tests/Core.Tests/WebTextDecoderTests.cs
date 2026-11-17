@@ -134,4 +134,73 @@ public sealed class WebTextDecoderTests
         Assert.Throws<WebDecodingException>(() => decoder.Decode([0xA5], stream: true));
         Assert.Equal("A", decoder.Decode([0x41]));
     }
+
+    [Theory]
+    [InlineData("utf-16le", new byte[] { 0x3D, 0xD8, 0x00 }, new byte[] { 0xDE })]
+    [InlineData("utf-16be", new byte[] { 0xD8, 0x3D, 0xDE }, new byte[] { 0x00 })]
+    public void StreamingUtf16RetainsSplitCodeUnitsAndSurrogatePairs(string label, byte[] firstChunk, byte[] secondChunk)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode(firstChunk, stream: true));
+        Assert.Equal("\U0001F600", decoder.Decode(secondChunk));
+    }
+
+    [Theory]
+    [InlineData("utf-16le", new byte[] { 0xFF }, new byte[] { 0xFE, 0x41, 0x00 })]
+    [InlineData("utf-16be", new byte[] { 0xFE }, new byte[] { 0xFF, 0x00, 0x41 })]
+    public void StreamingUtf16StripsBomSplitAcrossChunksUnlessIgnored(string label, byte[] firstChunk, byte[] secondChunk)
+    {
+        var decoder = new WebTextDecoder(label);
+        var preserveBomDecoder = new WebTextDecoder(label, ignoreBom: true);
+
+        Assert.Equal("", decoder.Decode(firstChunk, stream: true));
+        Assert.Equal("A", decoder.Decode(secondChunk));
+        Assert.Equal("", preserveBomDecoder.Decode(firstChunk, stream: true));
+        Assert.Equal("\uFEFFA", preserveBomDecoder.Decode(secondChunk));
+    }
+
+    [Theory]
+    [InlineData("utf-16le", new byte[] { 0x00, 0xD8 })]
+    [InlineData("utf-16be", new byte[] { 0xD8, 0x00 })]
+    public void StreamingUtf16FlushesIncompleteSurrogateAndResets(string label, byte[] highSurrogate)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode(highSurrogate, stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode());
+        Assert.Equal("A", decoder.Decode(label == "utf-16le" ? [0x41, 0x00] : [0x00, 0x41]));
+    }
+
+    [Fact]
+    public void StreamingUtf16FatalFlushResetsDecoderState()
+    {
+        var decoder = new WebTextDecoder("utf-16le", fatal: true);
+
+        Assert.Equal("", decoder.Decode([0x00, 0xD8], stream: true));
+        Assert.Throws<WebDecodingException>(() => decoder.Decode());
+        Assert.Equal("A", decoder.Decode([0x41, 0x00]));
+    }
+
+    [Theory]
+    [InlineData("utf-16le", new byte[] { 0x00, 0xD8, 0x41, 0x00 })]
+    [InlineData("utf-16be", new byte[] { 0xD8, 0x00, 0x00, 0x41 })]
+    public void StreamingUtf16ReprocessesCodeUnitAfterUnmatchedHighSurrogate(string label, byte[] input)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("\uFFFDA", decoder.Decode(input, stream: true));
+        Assert.Equal("", decoder.Decode());
+    }
+
+    [Theory]
+    [InlineData("utf-16le", new byte[] { 0x00, 0xD8, 0x41 })]
+    [InlineData("utf-16be", new byte[] { 0xD8, 0x00, 0x00 })]
+    public void StreamingUtf16FlushesCombinedPendingSurrogateAndByteAsOneError(string label, byte[] input)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode(input, stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode());
+    }
 }

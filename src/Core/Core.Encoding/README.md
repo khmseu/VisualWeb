@@ -7,9 +7,9 @@ the caller's fallback; raw `Decode` preserves BOM characters.
 
 `WebTextDecoder` provides a bounded .NET subset of `TextDecoder`, including
 encoding labels, fatal errors and BOM handling. Its `stream` option retains
-incremental decoder and BOM state for UTF-8 and supports chunk-by-chunk
-decoding for stateless single-byte encodings. Other multi-byte encodings remain
-one-shot. JavaScript bindings are not provided.
+incremental decoder and BOM state for UTF-8 and UTF-16LE/BE and supports
+chunk-by-chunk decoding for stateless single-byte encodings. Other multi-byte
+encodings remain one-shot. JavaScript bindings are not provided.
 
 `WebTextEncoder.Encode` and `EncodeInto` implement the UTF-8
 `TextEncoder.encode()` and `encodeInto()` operations, including replacement of
