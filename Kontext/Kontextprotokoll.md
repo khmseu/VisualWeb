@@ -13583,7 +13583,9 @@ Commit/Push ohne naechste Freigabe.
   bestanden) und `dotnet format ... --verify-no-changes` bestanden.
   Linux-/Windows-Sandbox-Smokes sind fuer diese Core-Aenderung nicht anwendbar.
 - Status bei Dokumentation: Code und lokale Validierung abgeschlossen;
-  Commit, Push und Remote-CI stehen aus.
+  Commit `35ed9cd` ist auf `main` gepusht. Linux development
+  (Run `44006688357`, x64/arm64 und Trunk), Windows confinement
+  (Run `44006688164`, x64/arm64) und CodeQL (Run `44006687798`) bestehen.
 - Offene URL-Luecken: host/port/pathname Setter, live
   `searchParams`-Verknuepfung, legacy query encoding override und allgemeine
   Web-IDL-Bindings. Diese Inkrementierung schliesst keinen breiten URL-

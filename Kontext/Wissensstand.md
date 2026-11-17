@@ -12,14 +12,16 @@
 Missing-Prioritaetslauf folgt der WHATWG-URL-Luecke, weil URL im aktuellen
 Support-Inventar (~65%) vor Encoding (~55%) liegt. Nach den dokumentierten
 Passes `href`, `toJSON`, `parse` und `protocol` wurden `username` und
-`password` als naechster bounded URL-API-Inkrement umgesetzt. `BrowserUrl`
+`password` als naechstes begrenztes URL-API-Inkrement umgesetzt. `BrowserUrl`
 liefert dafuer unveraenderliche Snapshots; Userinfo wird nach dem UTF-8-
 Percent-Encoding-Set der URL Standard kodiert. URLs ohne Host und `file:`
 bleiben unveraendert. Das ist lokaler Code-/Teststand, keine Aussage zu
 Web-IDL oder Vollkonformitaet. Der lokale URL-Standard (`url.html`, Manifest-ID
 `url`, checkedAt 2026-11-16) wurde ueber SpecCache erfolgreich bestaetigt.
 Debug/Release Core- und Solution-Validierung sowie Formatverifikation bestehen.
-Commit/Push und CI werden nach dem lokalen Checkpoint ausgefuehrt.
+Commit `35ed9cd` ist auf `main` gepusht. Linux development
+(Run `44006688357`, x64/arm64 und Trunk), Windows confinement
+(Run `44006688164`, x64/arm64) und CodeQL (Run `44006687798`) bestehen.
 
 **Standards-Prioritaetsregel aktualisiert (2026-11-15):** Bei kuenftigen
 standardsgetriebenen Feature-Auswahlen werden nur teilweise implementierte
