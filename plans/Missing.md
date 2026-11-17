@@ -2891,8 +2891,10 @@ solution builds pass with zero warnings/errors; both full solution suites pass
 with 17,133 tests and two expected skips; solution format verification passes.
 No native platform smoke applies to this Core-only change. The Encoding
 estimate remains ~55%; GBK/gb18030, EUC-JP and ISO-2022-JP streaming,
-`TextDecoderStream` and JavaScript/Web IDL bindings remain deferred. Commit,
-push and CI status will be recorded after publication.
+`TextDecoderStream` and JavaScript/Web IDL bindings remain deferred. Commit
+`69a97e6` is pushed to `main`; Linux development (`44178691390`), Windows
+confinement (`44178691496`), CodeQL (`44178690822`) and Dev Environment
+Prebuilds (`44178691129`) all pass.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

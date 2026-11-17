@@ -87,8 +87,10 @@ encoding-spezifisch korrekt; auch Finalisierung und fataler Reset sind
 abgedeckt. Alle 41 fokussierten Decoder- und 4.186 Core-Tests sowie
 Debug-/Release-Builds, beide Solution-Volltests mit 17.133 Tests und zwei
 erwarteten Skips sowie Formatverifikation bestehen. Kein nativer Smoke ist fuer
-Core.Encoding anwendbar. Pass 9 ist lokal validiert; Commit, Push und CI stehen
-aus. KP-454–462 sowie
+Core.Encoding anwendbar. Pass 9 ist mit `69a97e6` committed und gepusht; Linux
+development (`44178691390`), Windows confinement (`44178691496`), CodeQL
+(`44178690822`) und Dev Environment Prebuilds (`44178691129`) bestehen.
+KP-454–463 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige
