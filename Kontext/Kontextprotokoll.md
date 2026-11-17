@@ -13837,7 +13837,13 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Warnungen/Fehler; Debug- und Release-Volltests mit 17.106 Tests und zwei
   erwarteten Skips; Formatverifikation bestehen. Kein nativer Smoke ist
   anwendbar.
-- Status: lokal validiert; Commit, Push und CI stehen aus.
+- Status: lokal validiert, gepusht und alle Remote-CI-Workflows erfolgreich.
+- Commit `c1b4bbd` ist auf `main` gepusht. Linux development
+  (`44147752385`), Windows confinement (`44147752645`), CodeQL
+  (`44147751479`) und Dev Environment Prebuilds (`44147751887`) sind
+  erfolgreich. Der erste Prebuild-Versuch scheiterte bei der
+  Template-Uebertragung mit einem Manifest-Generierungsfehler; der Retry
+  schloss erfolgreich ab.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#encoding);
   [Core.Encoding README](../src/Core/Core.Encoding/README.md);

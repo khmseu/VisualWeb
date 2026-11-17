@@ -2849,7 +2849,11 @@ with 17,106 tests and two expected skips, and solution format verification
 passes. No native platform smoke applies to this Core-only change. The
 approximate Encoding estimate remains ~55%; `TextDecoderStream`, streaming
 multi-byte encodings other than UTF-8 and JavaScript/Web IDL bindings remain
-deferred.
+deferred. Commit `c1b4bbd` is pushed to `main`; Linux development
+(`44147752385`), Windows confinement (`44147752645`), CodeQL (`44147751479`)
+and Dev Environment Prebuilds (`44147751887`) pass. The first Prebuild attempt
+failed during template upload with manifest generation failure; rerunning the
+workflow succeeded.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

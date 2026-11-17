@@ -64,7 +64,11 @@ Pass 7 erweitert `WebTextDecoder` um Chunk-Decodierung fuer stateless single-byt
 Encodings, zusaetzlich zum UTF-8-Streaming. Vierzehn fokussierte und alle 4.159
 Core-Tests bestehen; Debug-/Release-Builds, Volltests mit 17.106 Tests und zwei
 erwarteten Skips sowie Formatpruefung bestehen. Kein nativer Smoke ist fuer
-Core.Encoding anwendbar. Commit, Push und CI stehen aus.
+Core.Encoding anwendbar. Pass 7 ist committed und gepusht (`c1b4bbd`); Linux
+development (`44147752385`), Windows confinement (`44147752645`), CodeQL
+(`44147751479`) und Dev Environment Prebuilds (`44147751887`) bestehen. Der
+erste Prebuild-Lauf scheiterte bei der Template-Generierung/-Uebertragung mit
+einem Manifest-Generierungsfehler; der erneute Lauf war erfolgreich.
 KP-454–460 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
