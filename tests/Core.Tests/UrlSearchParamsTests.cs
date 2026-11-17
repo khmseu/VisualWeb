@@ -287,4 +287,22 @@ public sealed class UrlSearchParamsTests
         // Removing the current entry shifts "b" into the visited index, which the live iterator skips.
         Assert.Equal(["a", "c"], seen);
     }
+
+    [Fact]
+    public void KeysEnumeratesNamesInOrderIncludingDuplicatesAndObservesAppends()
+    {
+        var parameters = new UrlSearchParams("b=1&a=2&b=3");
+
+        Assert.Equal(["b", "a", "b"], parameters.Keys().ToArray());
+        Assert.Empty(new UrlSearchParams().Keys());
+
+        var seen = new List<string>();
+        foreach (var name in parameters.Keys())
+        {
+            seen.Add(name);
+            if (seen.Count == 1) { parameters.Append("z", "9"); }
+        }
+
+        Assert.Equal(["b", "a", "b", "z"], seen);
+    }
 }
