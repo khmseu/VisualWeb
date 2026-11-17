@@ -13800,10 +13800,48 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Volltests bestehen mit 17.104 Tests und zwei erwarteten Skips;
   Formatverifikation besteht. Kein nativer Smoke ist fuer Core.Encoding
   anwendbar.
-- Status: lokal validiert; Commit, Push und Remote-CI stehen aus.
+- Status: lokal validiert, gepusht und Remote-CI erfolgreich.
+- Commit `045a6b5` ist auf `main` gepusht. Linux development
+  (`44138002370`), Windows confinement (`44138002057`), CodeQL
+  (`44138001292`) und Dev Environment Prebuilds (`44138001342`) bestanden.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#encoding);
   [standards inventory](../docs/standards.md#implemented-subsets);
   [Encoding Standard TextDecoder](../specs/cache/encoding.html#dom-textdecoder-decode);
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).
+
+### KP-460 - Missing-Lauf mit zehn Inkrementen, Pass 7 Single-Byte-Streaming
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Nutzerangabe: Der Nutzer setzt den Auftrag fuer zehn getrennte
+  Missing-Prioritaets-Inkremente fort; bisherige Passes stehen in KP-454–459.
+- Auswahl (Ableitung): Nach dem CI-gruenen UTF-8-Streaming-Pass wurde die
+  normative single-byte decoder algorithm section als naechster begrenzter
+  Encoding-Schritt gewaehlt. Diese Decoders haben keinen per-byte Zustand und
+  koennen chunkweise ohne approximative Behandlung unvollstaendiger
+  Multibyte-Sequenzen arbeiten.
+- Belegt: Die lokale Encoding-Quelle hat `checkedAt: 2026-11-07`; die
+  Definition von single-byte encodings und der Algorithmus
+  [`#single-byte-decoder`](../specs/cache/encoding.html#single-byte-decoder)
+  wurden gelesen. Kein Refresh war erforderlich.
+- Umsetzung bisher: `WebTextDecoder` akzeptiert `stream: true` nun auch fuer
+  unterstuetzte stateless single-byte Encodings, verarbeitet Chunks
+  unabhaengig, erhaelt den initialen BOM-Status und setzt den Stream bei
+  `stream: false` zurueck. Multibyte-Streaming ausser UTF-8 bleibt explizit
+  nicht unterstuetzt. Vierzehn fokussierte Decoder-Tests bestehen.
+- Validierung: alle 4.159 Core-Tests; Debug-/Release-Solution-Builds ohne
+  Warnungen/Fehler; Debug- und Release-Volltests mit 17.106 Tests und zwei
+  erwarteten Skips; Formatverifikation bestehen. Kein nativer Smoke ist
+  anwendbar.
+- Status: lokal validiert; Commit, Push und CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [Core.Encoding README](../src/Core/Core.Encoding/README.md);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Encoding Standard single-byte decoder](../specs/cache/encoding.html#single-byte-decoder);
   [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
   [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).

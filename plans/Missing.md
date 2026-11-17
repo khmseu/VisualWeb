@@ -2829,7 +2829,27 @@ solution builds pass with zero warnings/errors; both full solution suites pass
 with 17,104 tests and two expected skips, and solution format verification
 passes. No native platform smoke applies to this Core-only change. Encoding
 remains approximately 55%; this does not implement `TextDecoderStream` or
-JavaScript/Web IDL bindings.
+JavaScript/Web IDL bindings. Commit `045a6b5` is pushed to `main`; Linux
+development (`44138002370`), Windows confinement (`44138002057`), CodeQL
+(`44138001292`) and Dev Environment Prebuilds (`44138001342`) all passed.
+
+### Pass 7: incremental single-byte TextDecoder
+
+URL remains the highest estimated partial standard (~65%), but its remaining
+`searchParams` linkage still conflicts with the immutable URL facade. This
+continues the next actionable Encoding gap: the Encoding Standard's single-byte
+decoders retain no per-byte state. `WebTextDecoder` now accepts streamed chunks
+for supported stateless single-byte encodings in addition to UTF-8, retaining
+the initial-BOM flag and resetting it on the final call. Unsupported multi-byte
+streaming still throws explicitly. Focused tests cover chunked windows-1252,
+fatal unmapped-byte behavior, reset and the unsupported Shift_JIS stream case.
+All 14 focused decoder tests and 4,159 Core tests pass. Debug and Release
+solution builds pass with zero warnings/errors; both full solution suites pass
+with 17,106 tests and two expected skips, and solution format verification
+passes. No native platform smoke applies to this Core-only change. The
+approximate Encoding estimate remains ~55%; `TextDecoderStream`, streaming
+multi-byte encodings other than UTF-8 and JavaScript/Web IDL bindings remain
+deferred.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

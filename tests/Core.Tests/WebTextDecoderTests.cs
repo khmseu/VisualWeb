@@ -106,12 +106,32 @@ public sealed class WebTextDecoderTests
     public void StreamingUtf8RejectsFatalErrorsAndUnsupportedEncodings()
     {
         var fatalDecoder = new WebTextDecoder(fatal: true);
-        var legacyDecoder = new WebTextDecoder("windows-1252");
+        var multiByteDecoder = new WebTextDecoder("shift_jis");
 
         Assert.Equal("", fatalDecoder.Decode([0xE2], stream: true));
         Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
         Assert.Equal("A", fatalDecoder.Decode([0x41]));
-        Assert.Throws<NotSupportedException>(() => legacyDecoder.Decode([0x41], stream: true));
-        Assert.Equal("A", legacyDecoder.Decode([0x41]));
+        Assert.Throws<NotSupportedException>(() => multiByteDecoder.Decode([0x41], stream: true));
+        Assert.Equal("A", multiByteDecoder.Decode([0x41]));
+    }
+
+    [Fact]
+    public void StreamingSingleByteEncodingDecodesChunksAndFlushes()
+    {
+        var decoder = new WebTextDecoder("windows-1252");
+
+        Assert.Equal("\u20AC", decoder.Decode([0x80], stream: true));
+        Assert.Equal("A", decoder.Decode([0x41], stream: true));
+        Assert.Equal("", decoder.Decode());
+        Assert.Equal("\u20AC", decoder.Decode([0x80]));
+    }
+
+    [Fact]
+    public void StreamingSingleByteFatalErrorsResetDecoderState()
+    {
+        var decoder = new WebTextDecoder("iso-8859-3", fatal: true);
+
+        Assert.Throws<WebDecodingException>(() => decoder.Decode([0xA5], stream: true));
+        Assert.Equal("A", decoder.Decode([0x41]));
     }
 }

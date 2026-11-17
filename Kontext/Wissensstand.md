@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–458):**
+**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–460):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
 WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
 vor Encoding (~55%). Pass 1 implementiert `BrowserUrl.WithHost()` als
@@ -56,9 +56,16 @@ und Reset; andere Encodings weisen Streaming explizit zurueck. Zwoelf
 fokussierte Decoder- und alle 4.157 Core-Tests bestehen. Debug-/Release-
 Solution-Builds bestehen ohne Warnungen/Fehler; beide Volltests bestehen mit
 17.104 Tests und zwei erwarteten Skips; Formatpruefung besteht. Kein nativer
-Smoke ist fuer Core.Encoding anwendbar. Pass 6 ist lokal validiert; Commit,
-Push und Remote-CI stehen aus. Details und Quellen:
-KP-454–459 sowie
+Smoke ist fuer Core.Encoding anwendbar. Pass 6 ist lokal validiert, committed
+und gepusht (`045a6b5`); Linux development (`44138002370`),
+Windows confinement (`44138002057`), CodeQL (`44138001292`) und Dev Environment
+Prebuilds (`44138001342`) bestehen. Pass 6 ist abgeschlossen. Details und Quellen:
+Pass 7 erweitert `WebTextDecoder` um Chunk-Decodierung fuer stateless single-byte
+Encodings, zusaetzlich zum UTF-8-Streaming. Vierzehn fokussierte und alle 4.159
+Core-Tests bestehen; Debug-/Release-Builds, Volltests mit 17.106 Tests und zwei
+erwarteten Skips sowie Formatpruefung bestehen. Kein nativer Smoke ist fuer
+Core.Encoding anwendbar. Commit, Push und CI stehen aus.
+KP-454–460 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige
