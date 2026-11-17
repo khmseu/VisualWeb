@@ -2662,11 +2662,21 @@ Core suite passes all 4,064 tests. The baseline full solution run before this
 change had 1 Platform and 15 Browser failures while stopping Linux renderer
 resource scopes because the system session bus is unavailable; this increment
 does not touch those subsystems. The Debug solution build and format
-verification pass. The post-change full-suite run could not start because the
-shared filesystem ran out of space; Release solution build likewise failed
-copying native runtime files with `No space left on device`, and subsequent
-test commands aborted while the filesystem was full. No Release test result is
+verification pass. After freeing build-output space, the post-change full
+suite completed with the same 1 Platform and 15 Browser failures, each due to
+the unavailable system session bus. The Release solution build failed copying
+native runtime files with `No space left on device`; no Release test result is
 claimed.
+
+### Pass 2: `URL.toJSON()`
+
+`BrowserUrl.ToJson()` returns the serialized URL (`Href`) as the standard's
+`toJSON()` operation does, including for opaque URLs. The Core suite passes all
+4,066 tests. The Debug solution build and format verification pass; the full
+Debug suite reports the same 1 Platform and 15 Browser session-bus failures
+that reproduced before this run's changes. Release validation remains blocked
+by the shared filesystem space limitation recorded in Pass 1. The URL cache
+remains missing after the failed refresh documented above.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

@@ -231,6 +231,16 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://example.org/a?q=x%20y#f")]
+    [InlineData("data:text/plain,hello")]
+    public void ToJsonReturnsTheSerializedHref(string input)
+    {
+        var url = BrowserUrl.Parse(input);
+
+        Assert.Equal(url.Href, url.ToJson());
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

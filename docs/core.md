@@ -46,6 +46,7 @@ is parsed first and any base failure (including `""`) returns false.
 returning a new snapshot (the original and its opaque-origin identity are unchanged).
 `WithHref(value)` parses a new absolute URL without a base, returning a snapshot
 and leaving the original unchanged.
+`ToJson()` returns the serialized URL string for the standard `toJSON()` method.
 `CreateSearchParams()` returns a detached `UrlSearchParams` parsed from the query and
 `WithSearchParams()` writes its serialization back as a new snapshot; there is no live
 link between a URL and its parameters.

@@ -110,6 +110,10 @@ public sealed class BrowserUrl
     /// The immutable base instance is unchanged. The value is parsed without a base URL, so relative references fail.</remarks>
     public BrowserUrl WithHref(string value) => Parse(value);
 
+    /// <summary>Returns the URL's serialized value for JSON serialization.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-tojson">URL.toJSON()</see>.</remarks>
+    public string ToJson() => Href;
+
     /// <summary>Returns a new URL whose fragment is set following the URL hash setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-hash">URL.hash setter</see>. An empty value
     /// removes the fragment (opaque-path trailing spaces follow the vendored parser's re-parse behavior); otherwise one
