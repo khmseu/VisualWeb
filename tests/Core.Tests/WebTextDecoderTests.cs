@@ -270,4 +270,42 @@ public sealed class WebTextDecoderTests
         Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
         Assert.Equal("A", fatalDecoder.Decode([0x41]));
     }
+
+    [Fact]
+    public void StreamingEucJpRetainsTwoAndThreeByteSequencesAcrossChunks()
+    {
+        var decoder = new WebTextDecoder("EUC-JP");
+
+        Assert.Equal("", decoder.Decode([0xA4], stream: true));
+        Assert.Equal("\u3042", decoder.Decode([0xA2], stream: true));
+        Assert.Equal("", decoder.Decode([0x8F], stream: true));
+        Assert.Equal("", decoder.Decode([0xA2], stream: true));
+        Assert.Equal("\u02D8", decoder.Decode([0xAF]));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x8E }, new byte[] { 0xA6 }, "\uFF66")]
+    [InlineData(new byte[] { 0xA4 }, new byte[] { 0x41 }, "\uFFFDA")]
+    [InlineData(new byte[] { 0xA4 }, new byte[] { 0xFF }, "\uFFFD")]
+    public void StreamingEucJpPreservesSpecialMappingsAndInvalidTrailRules(byte[] lead, byte[] trail, string expected)
+    {
+        var decoder = new WebTextDecoder("EUC-JP");
+
+        Assert.Equal("", decoder.Decode(lead, stream: true));
+        Assert.Equal(expected, decoder.Decode(trail));
+    }
+
+    [Fact]
+    public void StreamingEucJpFinalFlushResetsIncompleteJis0212State()
+    {
+        var decoder = new WebTextDecoder("EUC-JP");
+        var fatalDecoder = new WebTextDecoder("EUC-JP", fatal: true);
+
+        Assert.Equal("", decoder.Decode([0x8F, 0xA2], stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode());
+        Assert.Equal("A", decoder.Decode([0x41]));
+        Assert.Equal("", fatalDecoder.Decode([0x8F, 0xA2], stream: true));
+        Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
+        Assert.Equal("A", fatalDecoder.Decode([0x41]));
+    }
 }

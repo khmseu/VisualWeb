@@ -2896,6 +2896,23 @@ estimate remains ~55%; GBK/gb18030, EUC-JP and ISO-2022-JP streaming,
 confinement (`44178691496`), CodeQL (`44178690822`) and Dev Environment
 Prebuilds (`44178691129`) all pass.
 
+### Pass 10: incremental EUC-JP TextDecoder
+
+URL (~65%) remains above Encoding (~55%), but its remaining live
+`searchParams` linkage still conflicts with the immutable facade. The Encoding
+Standard cache is fresh (`checkedAt: 2026-11-07`); its EUC-JP decoder algorithm
+was reviewed. `WebTextDecoder` now streams EUC-JP while retaining its lead byte
+and JIS0212 state across chunks, including the three-byte JIS0212 path. It
+preserves half-width katakana, invalid-trail consumption, ASCII reprocessing
+and final-flush behavior. Focused tests cover these mappings, split state and
+fatal reset; all five focused decoder tests and all 4,191 Core tests pass.
+Debug and Release solution builds pass with zero warnings/errors; both full
+solution suites pass with 17,138 tests and two expected skips, and solution
+format verification passes. No native platform smoke applies to this Core-only
+change. The Encoding estimate remains ~55%; GBK/gb18030 and ISO-2022-JP
+streaming, `TextDecoderStream` and JavaScript/Web IDL bindings remain deferred.
+Commit, push and CI remain pending.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

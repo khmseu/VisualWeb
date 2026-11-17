@@ -29,6 +29,8 @@ internal static class LegacyDecoder
     internal static bool IsPairEncoding(string name) =>
         name is "Big5" or "Shift_JIS" or "EUC-KR";
 
+    internal static bool IsEucJpEncoding(string name) => name == "EUC-JP";
+
     internal static string DecodePairChunk(ReadOnlySpan<byte> bytes, string name, bool fatal, ref int lead, bool flush)
     {
         var kind = name switch
@@ -144,9 +146,14 @@ internal static class LegacyDecoder
 
     private static string DecodeEucJp(ReadOnlySpan<byte> bytes, bool fatal)
     {
-        var output = new StringBuilder();
         var lead = 0;
         var jis0212 = false;
+        return DecodeEucJpChunk(bytes, fatal, ref lead, ref jis0212, flush: true);
+    }
+
+    internal static string DecodeEucJpChunk(ReadOnlySpan<byte> bytes, bool fatal, ref int lead, ref bool jis0212, bool flush)
+    {
+        var output = new StringBuilder();
         foreach (var b in bytes)
         {
             if (lead == 0x8E && b is >= 0xA1 and <= 0xDF)
@@ -190,8 +197,10 @@ internal static class LegacyDecoder
             }
         }
 
-        if (lead != 0)
+        if (flush && lead != 0)
         {
+            lead = 0;
+            jis0212 = false;
             output.Append(WebEncoding.Error(fatal));
         }
 

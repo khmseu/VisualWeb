@@ -4,7 +4,9 @@ namespace VisualWeb.Core.Encoding;
 
 /// <summary>Provides bounded decoding with the label and options of WHATWG <c>TextDecoder</c>.</summary>
 /// <remarks>Spec: encoding; <see href="https://encoding.spec.whatwg.org/#interface-textdecoder">TextDecoder</see>.
-/// The stream option is supported for UTF-8, UTF-16LE/BE and stateless single-byte encodings; other encodings decode complete buffers. Web IDL bindings are not provided.</remarks>
+/// The stream option is supported for UTF-8, UTF-16LE/BE, EUC-JP, pair-based
+/// legacy encodings and stateless single-byte encodings; other encodings decode
+/// complete buffers. Web IDL bindings are not provided.</remarks>
 public sealed class WebTextDecoder
 {
     private readonly WebEncoding _encoding;
@@ -12,6 +14,8 @@ public sealed class WebTextDecoder
     private byte? _utf16LeadByte;
     private char? _utf16LeadSurrogate;
     private int _pairLead;
+    private int _eucJpLead;
+    private bool _eucJpJis0212;
     private bool _streamActive;
     private bool _streamBomSeen;
 
@@ -56,7 +60,9 @@ public sealed class WebTextDecoder
     /// <param name="input">The next bytes to decode.</param>
     /// <param name="stream">Whether more bytes will follow in a later call.</param>
     /// <remarks>Spec: encoding; <see href="https://encoding.spec.whatwg.org/#dom-textdecoder-decode">TextDecoder.decode()</see>.
-    /// Streaming is supported for UTF-8, UTF-16LE/BE and stateless single-byte encodings. A call with <paramref name="stream"/> false flushes pending input and resets the stream.</remarks>
+    /// Streaming is supported for UTF-8, UTF-16LE/BE, EUC-JP, pair-based legacy
+    /// encodings and stateless single-byte encodings. A call with
+    /// <paramref name="stream"/> false flushes pending input and resets the stream.</remarks>
     /// <exception cref="NotSupportedException">Streaming is requested for an unsupported encoding.</exception>
     public string Decode(ReadOnlySpan<byte> input, bool stream)
     {
@@ -101,6 +107,10 @@ public sealed class WebTextDecoder
             else if (LegacyDecoder.IsPairEncoding(_encoding.Name))
             {
                 text = LegacyDecoder.DecodePairChunk(input, _encoding.Name, Fatal, ref _pairLead, flush: !stream);
+            }
+            else if (LegacyDecoder.IsEucJpEncoding(_encoding.Name))
+            {
+                text = LegacyDecoder.DecodeEucJpChunk(input, Fatal, ref _eucJpLead, ref _eucJpJis0212, flush: !stream);
             }
             else
             {
@@ -200,6 +210,7 @@ public sealed class WebTextDecoder
     private bool IsStreamingEncoding() =>
         _encoding.Name is "UTF-8" or "UTF-16LE" or "UTF-16BE"
         || LegacyDecoder.IsPairEncoding(_encoding.Name)
+        || LegacyDecoder.IsEucJpEncoding(_encoding.Name)
         || IsSingleByteEncoding();
 
     private bool IsSingleByteEncoding()
@@ -219,6 +230,8 @@ public sealed class WebTextDecoder
         _utf16LeadByte = null;
         _utf16LeadSurrogate = null;
         _pairLead = 0;
+        _eucJpLead = 0;
+        _eucJpJis0212 = false;
         _streamActive = false;
         _streamBomSeen = false;
     }

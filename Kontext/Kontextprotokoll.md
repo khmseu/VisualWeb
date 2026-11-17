@@ -13958,3 +13958,49 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   aktualisiertem Tracker zur naechsten Prioritaet weiter.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   die vier genannten GitHub Actions Workflows fuer Commit `69a97e6`.
+
+### KP-464 - Missing-Lauf Pass 10, EUC-JP-Streaming
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Auswahl (Ableitung): URL (~65%) bleibt vor Encoding (~55%), aber die offene
+  URL-`searchParams`-Live-Linkage ist weiterhin nicht mit der unveraenderlichen
+  Facade vereinbar. Von den verbleibenden Streaming-Gaps ist der bestehende
+  EUC-JP-Decoder mit Lead- und JIS0212-Zustand ein begrenzter, testbarer Schritt;
+  GBK/gb18030 und ISO-2022-JP bleiben ausstehend.
+- Belegt: Der lokale Encoding-Standard hat `checkedAt: 2026-11-07`; der
+  EUC-JP-Decoderalgorithmus ([`#euc-jp-decoder`](../specs/cache/encoding.html#euc-jp-decoder))
+  wurde gelesen. Kein Refresh war erforderlich.
+- Umsetzung: `WebTextDecoder` behaelt Lead-Byte und JIS0212-Auswahl ueber
+  Chunkgrenzen, einschliesslich Drei-Byte-Sequenzen. Die bestehenden Mapping-
+  und Fehlerregeln bleiben wiederverwendet.
+- Testbeleg: Fuenf neue EUC-JP-Streaming-Tests scheiterten vor der Aenderung an
+  der ausdruecklichen Unsupported-Ausnahme und bestehen nun fuer Zwei-/Drei-
+  Byte-Mappings, Katakana, ungueltige Trails, Reprozessierung und fatalen
+  Final-Reset.
+- Validierung: Vollstaendige Core-/Solution-Validierung laeuft; Commit, Push
+  und CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [Core.Encoding README](../src/Core/Core.Encoding/README.md);
+  [LegacyDecoder](../src/Core/Core.Encoding/LegacyDecoder.cs);
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).
+
+### KP-465 - Pass 10 lokale Vollvalidierung
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Belegt: Alle fuenf fokussierten EUC-JP-Streaming-Tests und 4.191 Core-Tests
+  bestehen. Debug-/Release-Solution-Builds bestehen ohne Warnungen/Fehler;
+  beide Solution-Volltests bestehen mit 17.138 Tests und zwei erwarteten
+  Skips. Formatverifikation besteht. Kein nativer Smoke gilt fuer Core.Encoding.
+- Status: lokal validiert; Commit, Push und Remote-CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [Core.Encoding README](../src/Core/Core.Encoding/README.md);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).

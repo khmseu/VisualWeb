@@ -90,7 +90,14 @@ erwarteten Skips sowie Formatverifikation bestehen. Kein nativer Smoke ist fuer
 Core.Encoding anwendbar. Pass 9 ist mit `69a97e6` committed und gepusht; Linux
 development (`44178691390`), Windows confinement (`44178691496`), CodeQL
 (`44178690822`) und Dev Environment Prebuilds (`44178691129`) bestehen.
-KP-454–463 sowie
+Pass 10 erweitert das Streaming auf EUC-JP und behaelt Lead-Byte/JIS0212-
+Zustand chunkuebergreifend; der 3-Byte-Pfad, Katakana, Trailfehler, ASCII-
+Reprozessierung und Finalisierung sind durch fuenf fokussierte Tests belegt.
+Der lokale Standard ist laut Manifest frisch (`checkedAt: 2026-11-07`); die
+EUC-JP-Decoder-Algorithmen wurden gelesen. Alle fuenf fokussierten, 4.191 Core-
+und 17.138 Solution-Tests mit zwei erwarteten Skips bestehen; Debug-/Release-
+Builds und Formatverifikation bestehen ebenfalls. Kein nativer Smoke ist
+anwendbar. Commit, Push und CI stehen aus. KP-454–465 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige
