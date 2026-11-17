@@ -305,4 +305,22 @@ public sealed class UrlSearchParamsTests
 
         Assert.Equal(["b", "a", "b", "z"], seen);
     }
+
+    [Fact]
+    public void ValuesEnumeratesValuesInOrderIncludingDuplicatesAndEmptyValues()
+    {
+        var parameters = new UrlSearchParams("b=1&a&b=1&c=%E2%9C%93");
+
+        Assert.Equal(["1", "", "1", "\u2713"], parameters.Values().ToArray());
+        Assert.Empty(new UrlSearchParams().Values());
+
+        var seen = new List<string>();
+        foreach (var value in parameters.Values())
+        {
+            seen.Add(value);
+            if (seen.Count == 1) { parameters.Append("z", "9"); }
+        }
+
+        Assert.Equal(["1", "", "1", "\u2713", "9"], seen);
+    }
 }

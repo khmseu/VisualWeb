@@ -159,6 +159,11 @@ public sealed class UrlSearchParams
     /// (<c>keys()</c>). It has the same live semantics as <see cref="Entries"/>.</remarks>
     public IEnumerable<string> Keys() => Entries().Select(entry => entry.Key);
 
+    /// <summary>Enumerates tuple values in list order as a live iterator.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#interface-urlsearchparams">URLSearchParams iterable declaration</see>
+    /// (<c>values()</c>). It has the same live semantics as <see cref="Entries"/>.</remarks>
+    public IEnumerable<string> Values() => Entries().Select(entry => entry.Value);
+
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
     public string? Get(string name)

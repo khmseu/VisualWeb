@@ -43,11 +43,11 @@ inherited-origin selection, `document.domain` and enforcement remain deferred.
 WHATWG string, sequence-of-pairs and record initializers, `append()`, `delete(name)`,
 `delete(name, value)`, `set(name, value)` and stable `sort()` by UTF-16
 code-unit name order, ordered `size`, `get()` and `getAll()`, plus `has()` with
-name-only and name/value matching, and and live `Entries()` and `Keys()` enumerators. It decodes
+name-only and name/value matching, and and live `Entries()`, `Keys()` and `Values()` enumerators. It decodes
 `application/x-www-form-urlencoded` tuples, preserving duplicates, and
 `toString()` serializes the ordered tuples with the standard's UTF-8 percent
 encoding rules. This standalone Core API does not provide other mutation
-methods, URL-object linkage, values/forEach or Web IDL bindings.
+methods, URL-object linkage, `forEach()` or Web IDL bindings.
 Mutable DOM URL setters remain deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 
