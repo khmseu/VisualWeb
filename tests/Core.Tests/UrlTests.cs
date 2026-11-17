@@ -182,4 +182,24 @@ public sealed class UrlTests
 
         return string.Concat(output.ToString().EnumerateRunes().Select(rune => rune.ToString()));
     }
+
+    [Theory]
+    [InlineData("https://example.org/a", null, true)]
+    [InlineData("/a?b#c", "https://example.org/x/y", true)]
+    [InlineData("/a", null, false)]
+    [InlineData("/a", "", false)]
+    [InlineData("/a", "not a url", false)]
+    [InlineData("https://[", "https://example.org/", false)]
+    [InlineData("https://example.org/", "not a url", false)]
+    [InlineData("", "https://example.org/x?q#f", true)]
+    public void CanParseReportsParseSuccessAndRejectsInvalidBases(string input, string? baseInput, bool expected)
+    {
+        Assert.Equal(expected, BrowserUrl.CanParse(input, baseInput));
+    }
+
+    [Fact]
+    public void CanParseRejectsNullInput()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.CanParse(null!));
+    }
 }

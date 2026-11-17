@@ -39,6 +39,9 @@ Browser-UI `about:blank` loads receive fresh opaque origins. This bounded
 behavior does not add nested browsing contexts or sandbox flags; other
 inherited-origin selection, `document.domain` and enforcement remain deferred.
 
+`BrowserUrl.CanParse(input, base)` implements `URL.canParse()`: a non-null base
+is parsed first and any base failure (including `""`) returns false.
+
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
 WHATWG string, sequence-of-pairs and record initializers, `append()`, `delete(name)`,
 `delete(name, value)`, `set(name, value)` and stable `sort()` by UTF-16

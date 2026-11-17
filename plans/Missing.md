@@ -2590,6 +2590,17 @@ with `(value, name)` over the live entries. It completes the standalone
 and Web IDL remain unsupported. One focused test and all 4,025 Core tests pass.
 The `url` cache is still unavailable offline (see Pass 1).
 
+### 2026-11-17 run, Pass 7: URL.canParse()
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate; standalone
+`URLSearchParams` operations are now covered, so this pass targets the URL API.
+`BrowserUrl.CanParse(input, base)` reports whether input parses, parsing a
+non-null string base first and returning false for any base failure (including
+an empty base, unlike the vendored string-base overload). Mutable setters,
+`searchParams` linkage and Web IDL remain unsupported. Nine theory/fact cases and
+all 4,034 Core tests pass. The `url` cache is still unavailable offline (see
+Pass 1).
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

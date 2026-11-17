@@ -89,6 +89,22 @@ public sealed class BrowserUrl
         return result.Url ?? throw new UrlParseException(result.Error!);
     }
 
+    /// <summary>Determines whether <paramref name="input"/> parses, optionally against a string base URL.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-canparse">URL.canParse()</see>.
+    /// A non-null base is parsed first and any base failure, including an empty base string, returns <see langword="false"/>.</remarks>
+    public static bool CanParse(string input, string? baseInput = null)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        BrowserUrl? baseUrl = null;
+        if (baseInput is not null)
+        {
+            baseUrl = ParseResult(baseInput).Url;
+            if (baseUrl is null) { return false; }
+        }
+
+        return ParseResult(input, baseUrl).Success;
+    }
+
     public BrowserUrl Resolve(string relative) => Parse(relative, this);
     public override string ToString() => Href;
 }
