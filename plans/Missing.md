@@ -2772,8 +2772,21 @@ test timeout in `FilteredNthQueriesAndStylesFeedTransactionalRetainedPaint`;
 both process and in-process variants passed when rerun alone. The full solution
 suite then passed with 17,084 tests and two expected skips. The full suite on
 Pass 2's base commit `ede73f5` also passed with 17,071 tests and two expected
-skips. No native platform smoke applies to this Core-only change. Commit, push
-and CI status are pending.
+skips. No native platform smoke applies to this Core-only change. Commit
+`89a0a0f` is pushed to `main`; Linux development (`44105348865`), Windows
+confinement (`44105348933`), CodeQL (`44105347565`) and Dev Environment
+Prebuilds (`44105347717`) all passed.
+
+### Pass 4: URL hostname setter
+
+`BrowserUrl.WithHostname(value)` applies the hostname state override to an
+immutable snapshot, preserving the current port and all other URL components.
+Invalid hostnames, inputs that include a port and opaque-path URLs leave the
+snapshot unchanged; file-host canonicalization follows the URL parser. Eight
+focused cases and all 4,145 Core tests pass. The Debug solution build passes
+with zero warnings/errors, all 17,092 solution tests pass with two expected
+skips, and solution format verification passes. No native platform smoke
+applies to this Core-only change. Commit, push and CI status are pending.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

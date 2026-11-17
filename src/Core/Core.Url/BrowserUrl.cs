@@ -200,11 +200,8 @@ public sealed class BrowserUrl
         var hostnameInput = portSeparator >= 0 && portSeparator < hostEnd
             ? value[..portSeparator]
             : value[..hostEnd];
-        if (hostnameInput.Contains('@')) { return this; }
-        if (hostnameInput.Length == 0 && (Port.Length > 0 || AuthorityIncludesCredentials)) { return this; }
-
         var hostParsingProtocol = Protocol == "file:" ? "http:" : Protocol;
-        var hostCandidate = ParseResult($"{hostParsingProtocol}//{hostnameInput}/").Url;
+        var hostCandidate = ParseHostnameCandidate(hostnameInput, hostParsingProtocol);
         if (hostCandidate is null) { return this; }
 
         int? port = Port.Length == 0 ? null : int.Parse(Port, CultureInfo.InvariantCulture);
@@ -224,6 +221,26 @@ public sealed class BrowserUrl
         }
 
         return new BrowserUrl(new DomUrl(Href).WithHost(hostCandidate.Hostname, port));
+    }
+
+    /// <summary>Returns a new URL with its hostname set following the URL hostname setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-hostname">URL.hostname setter</see>.
+    /// The current port is preserved; opaque-path URLs are unchanged.</remarks>
+    public BrowserUrl WithHostname(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        value = RemoveAsciiTabsAndNewlines(value);
+        if (HasOpaquePath) { return this; }
+
+        var hostEnd = FindHostStateEnd(value, IsSpecialScheme(Protocol[..^1]), out var portSeparator);
+        if (portSeparator >= 0 && portSeparator < hostEnd) { return this; }
+
+        var hostCandidate = ParseHostnameCandidate(value[..hostEnd], Protocol);
+        if (hostCandidate is null) { return this; }
+
+        int? port = Port.Length == 0 ? null : int.Parse(Port, CultureInfo.InvariantCulture);
+        var updated = new BrowserUrl(new DomUrl(Href).WithHost(hostCandidate.Hostname, port));
+        return updated.Href == Href ? this : updated;
     }
 
     /// <summary>Returns a new URL with its port set following the URL port setter.</summary>
@@ -334,6 +351,14 @@ public sealed class BrowserUrl
         }
 
         return result.ToString();
+    }
+
+    private BrowserUrl? ParseHostnameCandidate(string hostname, string parsingProtocol)
+    {
+        if (hostname.Contains('@')) { return null; }
+        if (hostname.Length == 0 && (Port.Length > 0 || AuthorityIncludesCredentials)) { return null; }
+
+        return ParseResult($"{parsingProtocol}//{hostname}/").Url;
     }
 
     private bool CannotHaveUsernamePasswordOrPort => Host.Length == 0 || Protocol == "file:";

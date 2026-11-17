@@ -57,6 +57,9 @@ URLs without a host and `file:` URLs remain unchanged.
 `WithHost(value)` applies the host state override to a new snapshot, retaining
 the current port when the input has no valid port and preserving the URL's
 credentials and path/query/fragment. Opaque-path URLs are unchanged.
+`WithHostname(value)` applies the hostname state override, preserving the
+current port and other URL components; values containing a port are ignored.
+Opaque-path URLs are unchanged.
 `WithPort(value)` applies the port setter to a new snapshot, clearing the port
 for an empty value and leaving invalid values and URLs that cannot have a port
 unchanged.

@@ -370,6 +370,42 @@ public sealed class UrlTests
         Assert.Equal(input, original.Href);
     }
 
+    [Theory]
+    [InlineData("https://user:secret@example.org:8443/a?q#f", "EXAMPLE.COM", "https://user:secret@example.com:8443/a?q#f")]
+    [InlineData("https://example.org:8443/a", "[2001:db8::1]", "https://[2001:db8::1]:8443/a")]
+    [InlineData("foo:/old?q#f", "new.example", "foo://new.example/old?q#f")]
+    [InlineData("file:///C:/old", "server.example", "file://server.example/C:/old")]
+    [InlineData("file:///C:/old", "localhost", "file:///C:/old")]
+    [InlineData("https://example.org/a?q#f", "new.example/ignored?x#f", "https://new.example/a?q#f")]
+    public void WithHostnameFollowsTheHostnameSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithHostname(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Fact]
+    public void WithHostnameDoesNothingForOpaquePathsAndInvalidValues()
+    {
+        var opaque = BrowserUrl.Parse("data:text/plain,hello");
+        Assert.Same(opaque, opaque.WithHostname("example.org"));
+
+        var hierarchical = BrowserUrl.Parse("https://old.example:8443/path");
+        foreach (var value in new[] { "", "new.example:443", "[2001:db8::1]:443", "bad host" })
+        {
+            Assert.Same(hierarchical, hierarchical.WithHostname(value));
+        }
+    }
+
+    [Fact]
+    public void WithHostnameRejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithHostname(null!));
+    }
+
     [Fact]
     public void WithHostStopsAtTheFirstHostStateDelimiter()
     {

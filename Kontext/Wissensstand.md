@@ -8,7 +8,7 @@
 
 ## Aktueller Wissensstand
 
-**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–456):**
+**Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–457):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
 WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
 vor Encoding (~55%). Pass 1 implementiert `BrowserUrl.WithHost()` als
@@ -27,10 +27,18 @@ hatte einen Timeout im Browser-Prozess-Test
 `FilteredNthQueriesAndStylesFeedTransactionalRetainedPaint`; beide Varianten
 bestanden isoliert. Der wiederholte Volltest bestand mit 17.084 Tests und zwei
 erwarteten Skips; auch der vorherige volle Lauf auf Basis-Commit `ede73f5`
-bestand. Pass 3 ist noch nicht committed/gepusht; naechster Schritt ist Commit
+bestand. Commit `89a0a0f` ist auf `main`; Linux development, Windows
+confinement, CodeQL und Dev Environment Prebuilds bestehen. Pass 3 ist
+abgeschlossen. Pass 4 implementiert `BrowserUrl.WithHostname()` als
+unveraenderlichen Snapshot mit Erhalt des Ports; Eingaben, die einen Port
+enthalten, ungueltige Hostnamen und opaque-path URLs bleiben unveraendert. Die
+URL-Quelle ist manifest-frisch (`checkedAt: 2026-11-16`). Acht fokussierte
+Faelle, alle 4.145 Core-Tests, Debug-Solution-Build ohne Warnungen/Fehler,
+17.092 Solution-Tests mit zwei erwarteten Skips und Formatverifikation
+bestehen. Pass 4 ist noch nicht committed/gepusht; naechster Schritt ist Commit
 und Push sowie Remote-CI, danach die naechste Luecke gegen den Tracker pruefen.
 Details und Quellen:
-KP-454–456 sowie
+KP-454–457 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige

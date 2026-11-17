@@ -13691,11 +13691,46 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Tests und zwei uebersprungenen Tests. Der volle Lauf am Basis-Commit `ede73f5`
   bestand mit 17.071 Tests und zwei uebersprungenen Tests. Kein nativer Smoke
   ist fuer Core.Url anwendbar.
-- Status bei Dokumentation: Code, Tests, Tracker und Guides lokal aktualisiert;
-  Commit, Push und CI fuer Pass 3 stehen aus.
+- Status bei Dokumentation: Commit `89a0a0f` wurde gepusht. Linux development
+  (`44105348865`), Windows confinement (`44105348933`), CodeQL (`44105347565`)
+  und Dev Environment Prebuilds (`44105347717`) bestanden.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#url);
   [standards inventory](../docs/standards.md#implemented-subsets);
   [Core.Url README](../src/Core/Core.Url/README.md);
+  [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
+  [UrlTests](../tests/Core.Tests/UrlTests.cs).
+
+### KP-457 - Missing-Lauf mit zehn Inkrementen, Pass 4 hostname setter
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-17T13:20:16.179+01:00; Pass-4-
+  Umsetzung und lokale Validierung am 2026-11-17.
+- Erfassungsart: zeitnahe Zusammenfassung, keine nachtraegliche Rekonstruktion.
+- Nutzerangabe: Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente
+  angefordert (Quellen und Auswahlregel siehe KP-454).
+- Auswahl (Ableitung): WHATWG URL bleibt gemaess Support-Inventar (~65%) das
+  hoechstbewertete teilweise implementierte WHATWG-API. Nach host, port und
+  pathname bleibt der `hostname` Setter unbelegt. Die benachbarten Setter und
+  die priorisierte URL-Abdeckung stuetzen dieses kleine Folge-Inkrement.
+- Belegt: Die URL-Standard-Algorithmen fuer `hostname` und `hostname state`
+  wurden aus `specs/cache/url.html` gelesen; Manifest-ID `url`,
+  `checkedAt: 2026-11-16`, also frisch. Kein Refresh war erforderlich.
+- Umsetzung: `BrowserUrl.WithHostname` setzt nur den Host, erhaelt den Port,
+  weist Werte mit Portseparator zurueck und behaelt bei invaliden Eingaben oder
+  opaque-path URLs den Snapshot bei. Die Parser-Kanonisierung fuer `file:`
+  einschliesslich `localhost` bleibt erhalten.
+- Validierung: 8 fokussierte Faelle, alle 4.145 Core-Tests, Debug-
+  Solution-Build ohne Warnungen/Fehler, 17.092 Solution-Tests mit zwei
+  uebersprungenen Tests und Formatverifikation bestehen. Kein nativer Smoke
+  ist fuer Core.Url anwendbar.
+- Status bei Dokumentation: Code, Tests, Guides und Tracker lokal aktualisiert;
+  Commit, Push und CI fuer Pass 4 stehen aus. Pass 3 Commit `89a0a0f` ist
+  gepusht; Linux, Windows, CodeQL und Dev Environment Prebuilds bestanden
+  (KP-456).
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#url);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [URL Standard hostname setter](../specs/cache/url.html#dom-url-hostname);
   [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
   [UrlTests](../tests/Core.Tests/UrlTests.cs).
