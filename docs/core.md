@@ -114,9 +114,11 @@ and decoder bindings remain deferred.
 .NET subset of [`TextDecoder`](https://encoding.spec.whatwg.org/#interface-textdecoder):
 label resolution, canonical encoding name, fatal error mode and `ignoreBOM`.
 Its `stream` option retains UTF-8 and UTF-16LE/BE decoder and BOM state across
-chunks, and stateless single-byte encodings can also be decoded chunk by chunk.
-Other multi-byte encodings consume complete buffers. `TextDecoderStream` and
-JavaScript/Web IDL bindings remain deferred.
+chunks; stateless single-byte encodings and the pair-based Big5, Shift_JIS and
+EUC-KR decoders also accept chunked input, preserving invalid-trail consumption
+and ASCII trail reprocessing. GBK/gb18030, EUC-JP and ISO-2022-JP consume
+complete buffers. `TextDecoderStream` and JavaScript/Web IDL bindings remain
+deferred.
 
 ### HTML charset prescan and sniffing subset
 
@@ -143,7 +145,7 @@ remembered per-page encodings, frequency-analysis autodetection, locale defaults
 and the parser's "change the encoding" reparse. There are no pinned html5lib
 `encoding/` fixtures; tests are spec-derived cases.
 
-Streaming for the remaining multi-byte encodings, `TextEncoderStream` and
+Streaming for GBK/gb18030, EUC-JP and ISO-2022-JP, `TextEncoderStream` and
 JavaScript/Web IDL bindings remain later work; callers must collect a complete
 buffer when using those one-shot decoding paths.
 

@@ -7,9 +7,11 @@ the caller's fallback; raw `Decode` preserves BOM characters.
 
 `WebTextDecoder` provides a bounded .NET subset of `TextDecoder`, including
 encoding labels, fatal errors and BOM handling. Its `stream` option retains
-incremental decoder and BOM state for UTF-8 and UTF-16LE/BE and supports
-chunk-by-chunk decoding for stateless single-byte encodings. Other multi-byte
-encodings remain one-shot. JavaScript bindings are not provided.
+incremental decoder and BOM state for UTF-8 and UTF-16LE/BE; stateless
+single-byte encodings and the pair-based Big5, Shift_JIS and EUC-KR decoders
+also support chunk-by-chunk decoding, preserving invalid-trail consumption and
+ASCII trail reprocessing. GBK/gb18030, EUC-JP and ISO-2022-JP remain one-shot.
+JavaScript bindings are not provided.
 
 `WebTextEncoder.Encode` and `EncodeInto` implement the UTF-8
 `TextEncoder.encode()` and `encodeInto()` operations, including replacement of
@@ -25,7 +27,7 @@ supported transport charset, prescan, then the caller's default. Neither depends
 on Engine.Html.
 
 Tables are [pinned official data](Data/README.md). Streaming decoders for
-multi-byte encodings other than UTF-8, `TextEncoderStream`, JavaScript/Web IDL
+GBK/gb18030, EUC-JP and ISO-2022-JP, `TextEncoderStream`, JavaScript/Web IDL
 bindings, statistical/locale sniffing and parser-time encoding changes are not
 implemented.
 See the [core guide](../../../docs/core.md) for details and tests.

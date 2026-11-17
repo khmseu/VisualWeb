@@ -13897,3 +13897,49 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   [Encoding Standard shared UTF-16 decoder](../specs/cache/encoding.html#shared-utf-16-decoder);
   [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
   [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).
+
+### KP-462 - Missing-Lauf mit zehn Inkrementen, Pass 9 Paardecoder-Streaming
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Nutzerangabe: Der Nutzer setzt den Auftrag fuer zehn getrennte
+  Missing-Prioritaets-Inkremente fort; Passes 1–8 sind in KP-454–461
+  dokumentiert.
+- Auswahl (Ableitung): Nach UTF-8, Single-Byte und UTF-16 ist der gemeinsame
+  paarbasierte Decoder fuer Big5, Shift_JIS und EUC-KR ein abgegrenzter
+  Mehrbyte-Streaming-Schritt. Die URL-Snapshot-`searchParams`-Live-Linkage ist
+  weiterhin nicht mit der unveraenderlichen Facade vereinbar.
+- Belegt: Die lokale Encoding-Quelle hat `checkedAt: 2026-11-07`; Big5,
+  Shift_JIS und EUC-KR decoder algorithms
+  ([`#big5-decoder`](../specs/cache/encoding.html#big5-decoder),
+  [`#shift_jis-decoder`](../specs/cache/encoding.html#shift_jis-decoder),
+  [`#euc-kr-decoder`](../specs/cache/encoding.html#euc-kr-decoder)) wurden
+  gelesen. Kein Refresh war erforderlich.
+- Umsetzung: Der gemeinsame Legacy-Paardecoder akzeptiert nun zustandsbehaftete
+  Chunks und finalen Flush; `WebTextDecoder` speichert das Lead-Byte und setzt
+  es nach Fehler oder Finalisierung zurueck. Spezifische Big5-, Shift_JIS- und
+  EUC-KR-Mappings bleiben wiederverwendet; ungueltige ASCII-Trails werden
+  gemaess Algorithmus reprozessiert, ungueltige Nicht-ASCII-Trails verbraucht.
+  GBK/gb18030, EUC-JP und ISO-2022-JP bleiben explizit ohne Streaming.
+- Testbeleg: Die neuen fokussierten Tests scheiterten vor der Aenderung an der
+  expliziten Unsupported-Ausnahme; danach bestanden 41 fokussierte
+  Decoder-Tests. Diese decken gueltige und mehrteilige Big5-Mappings, geteilte
+  Paare, ASCII-Reprozessierung, Nicht-ASCII-Trailverbrauch, fatalen Reset,
+  Flush und weiterhin unsupported GBK ab.
+- Validierung: 4.186 Core-Tests; Debug-/Release-Solution-Builds ohne
+  Warnungen/Fehler; Debug- und Release-Volltests mit 17.133 bestandenen Tests
+  und zwei erwarteten Skips; Formatverifikation bestanden. Kein nativer Smoke
+  ist anwendbar.
+- Status: lokal validiert; Commit, Push und Remote-CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [Core.Encoding README](../src/Core/Core.Encoding/README.md);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Encoding Standard Big5 decoder](../specs/cache/encoding.html#big5-decoder);
+  [Shift_JIS decoder](../specs/cache/encoding.html#shift_jis-decoder);
+  [EUC-KR decoder](../specs/cache/encoding.html#euc-kr-decoder);
+  [LegacyDecoder](../src/Core/Core.Encoding/LegacyDecoder.cs);
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).

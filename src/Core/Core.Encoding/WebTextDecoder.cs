@@ -11,6 +11,7 @@ public sealed class WebTextDecoder
     private Decoder? _streamDecoder;
     private byte? _utf16LeadByte;
     private char? _utf16LeadSurrogate;
+    private int _pairLead;
     private bool _streamActive;
     private bool _streamBomSeen;
 
@@ -96,6 +97,10 @@ public sealed class WebTextDecoder
             else if (_encoding.Name is "UTF-16LE" or "UTF-16BE")
             {
                 text = DecodeUtf16Chunk(input, stream);
+            }
+            else if (LegacyDecoder.IsPairEncoding(_encoding.Name))
+            {
+                text = LegacyDecoder.DecodePairChunk(input, _encoding.Name, Fatal, ref _pairLead, flush: !stream);
             }
             else
             {
@@ -193,7 +198,9 @@ public sealed class WebTextDecoder
     }
 
     private bool IsStreamingEncoding() =>
-        _encoding.Name is "UTF-8" or "UTF-16LE" or "UTF-16BE" || IsSingleByteEncoding();
+        _encoding.Name is "UTF-8" or "UTF-16LE" or "UTF-16BE"
+        || LegacyDecoder.IsPairEncoding(_encoding.Name)
+        || IsSingleByteEncoding();
 
     private bool IsSingleByteEncoding()
     {
@@ -211,6 +218,7 @@ public sealed class WebTextDecoder
         _streamDecoder = null;
         _utf16LeadByte = null;
         _utf16LeadSurrogate = null;
+        _pairLead = 0;
         _streamActive = false;
         _streamBomSeen = false;
     }

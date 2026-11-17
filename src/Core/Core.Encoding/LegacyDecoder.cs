@@ -22,8 +22,28 @@ internal static class LegacyDecoder
 
     private static string DecodePairs(ReadOnlySpan<byte> bytes, PairEncoding kind, bool fatal)
     {
-        var output = new StringBuilder();
         var lead = 0;
+        return DecodePairChunk(bytes, kind, fatal, ref lead, flush: true);
+    }
+
+    internal static bool IsPairEncoding(string name) =>
+        name is "Big5" or "Shift_JIS" or "EUC-KR";
+
+    internal static string DecodePairChunk(ReadOnlySpan<byte> bytes, string name, bool fatal, ref int lead, bool flush)
+    {
+        var kind = name switch
+        {
+            "Big5" => PairEncoding.Big5,
+            "Shift_JIS" => PairEncoding.ShiftJis,
+            "EUC-KR" => PairEncoding.EucKr,
+            _ => throw new NotSupportedException($"No pair decoder implemented for {name}.")
+        };
+        return DecodePairChunk(bytes, kind, fatal, ref lead, flush);
+    }
+
+    private static string DecodePairChunk(ReadOnlySpan<byte> bytes, PairEncoding kind, bool fatal, ref int lead, bool flush)
+    {
+        var output = new StringBuilder();
         foreach (var b in bytes)
         {
             if (lead != 0)
@@ -66,8 +86,9 @@ internal static class LegacyDecoder
             }
         }
 
-        if (lead != 0)
+        if (flush && lead != 0)
         {
+            lead = 0;
             output.Append(WebEncoding.Error(fatal));
         }
 

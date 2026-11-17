@@ -106,7 +106,7 @@ public sealed class WebTextDecoderTests
     public void StreamingUtf8RejectsFatalErrorsAndUnsupportedEncodings()
     {
         var fatalDecoder = new WebTextDecoder(fatal: true);
-        var multiByteDecoder = new WebTextDecoder("shift_jis");
+        var multiByteDecoder = new WebTextDecoder("gbk");
 
         Assert.Equal("", fatalDecoder.Decode([0xE2], stream: true));
         Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
@@ -202,5 +202,72 @@ public sealed class WebTextDecoderTests
 
         Assert.Equal("", decoder.Decode(input, stream: true));
         Assert.Equal("\uFFFD", decoder.Decode());
+    }
+
+    [Theory]
+    [InlineData("Big5", new byte[] { 0xA4 }, new byte[] { 0x40 }, "\u4E00")]
+    [InlineData("Big5", new byte[] { 0x88 }, new byte[] { 0x62 }, "\u00CA\u0304")]
+    [InlineData("Shift_JIS", new byte[] { 0x82 }, new byte[] { 0xA0 }, "\u3042")]
+    [InlineData("EUC-KR", new byte[] { 0xB0 }, new byte[] { 0xA1 }, "\uAC00")]
+    public void StreamingLegacyPairEncodingsRetainLeadBytes(string label, byte[] lead, byte[] trail, string expected)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode(lead, stream: true));
+        Assert.Equal(expected, decoder.Decode(trail));
+    }
+
+    [Theory]
+    [InlineData("Big5", new byte[] { 0x81 }, new byte[] { 0x40 }, "\uFFFD@")]
+    [InlineData("Shift_JIS", new byte[] { 0x82 }, new byte[] { 0x20 }, "\uFFFD ")]
+    [InlineData("EUC-KR", new byte[] { 0x81 }, new byte[] { 0x20 }, "\uFFFD ")]
+    public void StreamingLegacyPairEncodingsReprocessInvalidAsciiTrail(string label, byte[] lead, byte[] trail, string expected)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode(lead, stream: true));
+        Assert.Equal(expected, decoder.Decode(trail));
+    }
+
+    [Theory]
+    [InlineData("Big5", new byte[] { 0x81 }, new byte[] { 0xFF })]
+    [InlineData("Shift_JIS", new byte[] { 0x82 }, new byte[] { 0xFD })]
+    [InlineData("EUC-KR", new byte[] { 0x81 }, new byte[] { 0xFF })]
+    public void StreamingLegacyPairEncodingsConsumeInvalidNonAsciiTrail(string label, byte[] lead, byte[] trail)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode(lead, stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode(trail));
+    }
+
+    [Theory]
+    [InlineData("Big5", new byte[] { 0x81 }, new byte[] { 0x40 })]
+    [InlineData("Shift_JIS", new byte[] { 0x82 }, new byte[] { 0x20 })]
+    [InlineData("EUC-KR", new byte[] { 0x81 }, new byte[] { 0x20 })]
+    public void StreamingLegacyPairFatalErrorsResetDecoderState(string label, byte[] lead, byte[] invalidTrail)
+    {
+        var decoder = new WebTextDecoder(label, fatal: true);
+
+        Assert.Equal("", decoder.Decode(lead, stream: true));
+        Assert.Throws<WebDecodingException>(() => decoder.Decode(invalidTrail));
+        Assert.Equal("A", decoder.Decode([0x41]));
+    }
+
+    [Theory]
+    [InlineData("Big5", new byte[] { 0x81 })]
+    [InlineData("Shift_JIS", new byte[] { 0x82 })]
+    [InlineData("EUC-KR", new byte[] { 0x81 })]
+    public void StreamingLegacyPairFinalFlushesIncompleteLeadAndResets(string label, byte[] lead)
+    {
+        var decoder = new WebTextDecoder(label);
+        var fatalDecoder = new WebTextDecoder(label, fatal: true);
+
+        Assert.Equal("", decoder.Decode(lead, stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode());
+        Assert.Equal("A", decoder.Decode([0x41]));
+        Assert.Equal("", fatalDecoder.Decode(lead, stream: true));
+        Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
+        Assert.Equal("A", fatalDecoder.Decode([0x41]));
     }
 }

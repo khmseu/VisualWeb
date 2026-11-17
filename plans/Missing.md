@@ -2877,6 +2877,23 @@ and JavaScript/Web IDL bindings remain deferred. Commit `81ff4f7` is pushed to
 (`44164112725`), Push on main (`44164112361`) and Dev Environment Prebuilds
 (`44164112614`) all pass.
 
+### Pass 9: incremental pair-based legacy TextDecoder
+
+The remaining URL `searchParams` linkage still does not fit the immutable URL
+facade, so this pass continues the actionable Encoding work. The Encoding
+Standard cache remains fresh (`checkedAt: 2026-11-07`); the Big5, Shift_JIS and
+EUC-KR decoder algorithms were reviewed. `WebTextDecoder` now retains
+lead-byte state for the existing shared pair decoder across chunks, preserving
+each encoding's mapping, invalid-trail consumption and ASCII reconsume
+behavior. Other legacy multibyte encodings remain explicit one-shot paths.
+All 41 focused decoder tests and 4,186 Core tests pass. Debug and Release
+solution builds pass with zero warnings/errors; both full solution suites pass
+with 17,133 tests and two expected skips; solution format verification passes.
+No native platform smoke applies to this Core-only change. The Encoding
+estimate remains ~55%; GBK/gb18030, EUC-JP and ISO-2022-JP streaming,
+`TextDecoderStream` and JavaScript/Web IDL bindings remain deferred. Commit,
+push and CI status will be recorded after publication.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on
