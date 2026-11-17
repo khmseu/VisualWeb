@@ -235,4 +235,25 @@ public sealed class UrlSearchParamsTests
         Assert.Throws<ArgumentException>(() => new UrlSearchParams(new IReadOnlyList<string>[] { null! }));
         Assert.Throws<ArgumentNullException>(() => new UrlSearchParams((IEnumerable<IReadOnlyList<string>>)null!));
     }
+
+    [Fact]
+    public void RecordInitializationKeepsOrderAndCollapsesKeysEqualAfterNormalization()
+    {
+        var parameters = new UrlSearchParams(new KeyValuePair<string, string>[]
+        {
+            new("b", "1"), new("\uD800", "old"), new("a", "x y"), new("\uDFFF", "new"),
+        });
+
+        Assert.Equal(3, parameters.Size);
+        Assert.Equal("b=1&%EF%BF%BD=new&a=x+y", parameters.ToString());
+    }
+
+    [Fact]
+    public void RecordInitializationAcceptsDictionariesAndRejectsNullStrings()
+    {
+        Assert.Equal("k=v", new UrlSearchParams(new Dictionary<string, string> { ["k"] = "v" }).ToString());
+        Assert.Equal(0, new UrlSearchParams(new Dictionary<string, string>()).Size);
+        Assert.Throws<ArgumentException>(() => new UrlSearchParams(new KeyValuePair<string, string>[] { new("k", null!) }));
+        Assert.Throws<ArgumentNullException>(() => new UrlSearchParams((IEnumerable<KeyValuePair<string, string>>)null!));
+    }
 }

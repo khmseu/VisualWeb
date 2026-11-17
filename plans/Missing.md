@@ -2544,6 +2544,17 @@ well-known constructor algorithm and no cached text was consulted. The
 sandbox's SDK 11 mismatched `global.json`, so SDK 10.0.401 was installed
 locally.
 
+### 2026-11-17 run, Pass 2: URLSearchParams record initialization
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. This increment
+adds `UrlSearchParams(IEnumerable<KeyValuePair<string, string>>)`, following the
+`record<USVString, USVString>` conversion: keys and values are scalar-value
+normalized, and a later key equal to an earlier one after normalization replaces
+that value in the earlier position. Null strings throw `ArgumentException`.
+Iteration, URL-object linkage and Web IDL remain unsupported. Two focused tests
+and all 4,020 Core tests pass. The `url` cache is still unavailable offline (see
+Pass 1).
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

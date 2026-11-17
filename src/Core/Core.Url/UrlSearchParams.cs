@@ -39,6 +39,36 @@ public sealed class UrlSearchParams
         }
     }
 
+    /// <summary>Initializes from a record of names to values.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams">URLSearchParams constructor</see>
+    /// record initialization with Web IDL <c>record&lt;USVString, USVString&gt;</c> conversion: keys are scalar-value normalized,
+    /// and a later entry whose normalized key repeats an earlier one replaces that entry's value in its original position.</remarks>
+    public UrlSearchParams(IEnumerable<KeyValuePair<string, string>> record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        _entries = [];
+        var positions = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var (key, value) in record)
+        {
+            if (key is null || value is null)
+            {
+                throw new ArgumentException("URLSearchParams record keys and values must be strings.", nameof(record));
+            }
+
+            var name = ToScalarValueString(key);
+            var scalarValue = ToScalarValueString(value);
+            if (positions.TryGetValue(name, out var index))
+            {
+                _entries[index] = (name, scalarValue);
+            }
+            else
+            {
+                positions[name] = _entries.Count;
+                _entries.Add((name, scalarValue));
+            }
+        }
+    }
+
     /// <summary>Gets the number of parsed name-value tuples.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-size">URLSearchParams.size</see>.</remarks>
     public int Size => _entries.Count;
