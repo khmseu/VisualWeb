@@ -105,6 +105,35 @@ public sealed class BrowserUrl
         return ParseResult(input, baseUrl).Success;
     }
 
+    /// <summary>Returns a new URL whose fragment is set following the URL hash setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-hash">URL.hash setter</see>. An empty value
+    /// removes the fragment (opaque-path trailing spaces follow the vendored parser's re-parse behavior); otherwise one
+    /// leading <c>#</c> is removed and the rest is UTF-8 percent-encoded with the fragment percent-encode set (tabs and
+    /// newlines are encoded, not stripped). This immutable facade returns a fresh snapshot, so an opaque origin gets a new identity.</remarks>
+    public BrowserUrl WithHash(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var fragmentStart = Href.IndexOf('#', StringComparison.Ordinal);
+        var withoutFragment = fragmentStart < 0 ? Href : Href[..fragmentStart];
+        if (value.Length == 0) { return Parse(withoutFragment); }
+
+        var fragment = value[0] == '#' ? value[1..] : value;
+        var encoded = new System.Text.StringBuilder(withoutFragment).Append('#');
+        foreach (var character in fragment)
+        {
+            if (character <= ' ' || character is '\u007F' or '"' or '<' or '>' or '`')
+            {
+                encoded.Append('%').Append(((int)character).ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                encoded.Append(character);
+            }
+        }
+
+        return Parse(encoded.ToString());
+    }
+
     public BrowserUrl Resolve(string relative) => Parse(relative, this);
     public override string ToString() => Href;
 }

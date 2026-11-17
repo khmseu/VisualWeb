@@ -2601,6 +2601,20 @@ an empty base, unlike the vendored string-base overload). Mutable setters,
 all 4,034 Core tests pass. The `url` cache is still unavailable offline (see
 Pass 1).
 
+### 2026-11-17 run, Pass 8: URL hash setter
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. The vendored
+parser has no state-override API, so this increment implements only the
+fragment setter without modifying it: `BrowserUrl.WithHash(value)` returns a new
+snapshot, removing the fragment for an empty value, otherwise dropping one
+leading `#` and percent-encoding controls, space, `"`, `<`, `>`, `` ` `` and
+DEL itself before re-parsing (tabs/newlines are encoded rather than stripped,
+as in the fragment state with an override). Opaque-path trailing-space handling
+relies on the vendored parser's re-parse behavior and is not independently
+verified against the offline-unavailable spec text. Other setters, `searchParams`
+linkage and Web IDL remain unsupported. Nine theory cases, one fact and all 4,044 Core tests
+pass. The `url` cache is still unavailable offline (see Pass 1).
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

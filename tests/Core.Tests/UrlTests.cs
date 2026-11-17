@@ -202,4 +202,33 @@ public sealed class UrlTests
     {
         Assert.Throws<ArgumentNullException>(() => BrowserUrl.CanParse(null!));
     }
+
+    [Theory]
+    [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
+    [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
+    [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]
+    [InlineData("https://example.org/p?q#old", "", "https://example.org/p?q")]
+    [InlineData("https://example.org/p", "#", "https://example.org/p#")]
+    [InlineData("https://example.org/p", "a b\t\nc\u007F\"<>`", "https://example.org/p#a%20b%09%0Ac%7F%22%3C%3E%60")]
+    [InlineData("https://example.org/p", "\u00E9\uD83D\uDE00", "https://example.org/p#%C3%A9%F0%9F%98%80")]
+    [InlineData("data:text/plain,a#frag", "", "data:text/plain,a")]
+    [InlineData("data:text/plain,a?q#frag", "x y", "data:text/plain,a?q#x%20y")]
+    public void WithHashFollowsTheHashSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithHash(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(BrowserUrl.Parse(input).Href, original.Href);
+    }
+
+    [Fact]
+    public void WithHashReplacesUnpairedSurrogates()
+    {
+        var unpairedSurrogate = new string('\uD800', 1);
+
+        Assert.Equal("https://example.org/p#%EF%BF%BD", BrowserUrl.Parse("https://example.org/p").WithHash(unpairedSurrogate).Href);
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithHash(null!));
+    }
 }

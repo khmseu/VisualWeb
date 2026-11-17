@@ -40,7 +40,9 @@ behavior does not add nested browsing contexts or sandbox flags; other
 inherited-origin selection, `document.domain` and enforcement remain deferred.
 
 `BrowserUrl.CanParse(input, base)` implements `URL.canParse()`: a non-null base
-is parsed first and any base failure (including `""`) returns false.
+is parsed first and any base failure (including `""`) returns false. `BrowserUrl.WithHash(value)` implements the
+`hash` setter on the immutable facade by re-parsing a fragment-encoded string and
+returning a new snapshot (the original and its opaque-origin identity are unchanged).
 
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
 WHATWG string, sequence-of-pairs and record initializers, `append()`, `delete(name)`,
@@ -52,7 +54,7 @@ name-only and name/value matching, live `Entries()`, `Keys()` and
 `toString()` serializes the ordered tuples with the standard's UTF-8 percent
 encoding rules. This standalone Core API does not provide other mutation
 methods, URL-object linkage, ECMAScript iterator objects or Web IDL bindings.
-Mutable DOM URL setters remain deferred.
+Other mutable DOM URL setters remain deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 
 ## Encoding
