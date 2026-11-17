@@ -2739,7 +2739,23 @@ covered by 14 focused cases and all 4,110 Core tests. The Debug solution build
 passes with zero warnings/errors; all 17,057 solution tests pass with two
 expected skips, and solution format verification passes. No native platform
 smoke applies to this Core-only change. Commit, push and CI status are recorded
-after publication.
+after publication. Commit `87e1402` was pushed to `main`; Linux development
+(`44088385733`), Windows confinement (`44088385542`), CodeQL (`44088384890`)
+and Dev Environment Prebuilds (`44088384750`) all passed.
+
+### Pass 2: URL port setter
+
+`BrowserUrl.WithPort(value)` applies the port setter to an immutable snapshot.
+An empty value clears the port; a valid decimal port is canonicalized, including
+removal of the scheme's default port; invalid values and URLs that cannot have
+a port remain unchanged. URL components and credentials are preserved. Focused
+tests cover empty, default, zero, custom-scheme, leading-zero and
+tab/newline-preprocessed values, invalid ranges and characters, ineligible
+URLs, immutability and null input. Fourteen focused cases and all 4,124 Core
+tests pass. The Debug solution build passes with zero warnings/errors; all
+17,071 solution tests pass with two expected skips, and solution format
+verification passes. No native platform smoke applies to this Core-only
+change. Commit, push and CI status are pending.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

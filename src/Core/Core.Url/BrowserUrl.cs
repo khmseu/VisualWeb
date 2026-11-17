@@ -169,7 +169,7 @@ public sealed class BrowserUrl
     public BrowserUrl WithUsername(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (CannotHaveCredentials) { return this; }
+        if (CannotHaveUsernamePasswordOrPort) { return this; }
 
         return WithCredentials(PercentEncodeUserInfo(value), Password);
     }
@@ -180,7 +180,7 @@ public sealed class BrowserUrl
     public BrowserUrl WithPassword(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (CannotHaveCredentials) { return this; }
+        if (CannotHaveUsernamePasswordOrPort) { return this; }
 
         return WithCredentials(Username, PercentEncodeUserInfo(value));
     }
@@ -224,6 +224,27 @@ public sealed class BrowserUrl
         }
 
         return new BrowserUrl(new DomUrl(Href).WithHost(hostCandidate.Hostname, port));
+    }
+
+    /// <summary>Returns a new URL with its port set following the URL port setter.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-port">URL.port setter</see>.
+    /// An empty value clears the port. Invalid values and URLs that cannot have a port leave this snapshot unchanged.</remarks>
+    public BrowserUrl WithPort(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (CannotHaveUsernamePasswordOrPort) { return this; }
+        if (value.Length == 0) { return new BrowserUrl(new DomUrl(Href).WithHost(Hostname, null)); }
+
+        value = RemoveAsciiTabsAndNewlines(value);
+        if (!ushort.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)) { return this; }
+
+        var portCandidate = ParseResult($"{Protocol}//{Hostname}:{value}/").Url;
+        if (portCandidate is null) { return this; }
+
+        int? port = portCandidate.Port.Length == 0
+            ? null
+            : int.Parse(portCandidate.Port, CultureInfo.InvariantCulture);
+        return new BrowserUrl(new DomUrl(Href).WithHost(Hostname, port));
     }
 
     private bool HasOpaquePath =>
@@ -272,7 +293,7 @@ public sealed class BrowserUrl
         return result.ToString();
     }
 
-    private bool CannotHaveCredentials => Host.Length == 0 || Protocol == "file:";
+    private bool CannotHaveUsernamePasswordOrPort => Host.Length == 0 || Protocol == "file:";
 
     private BrowserUrl WithCredentials(string username, string password)
     {

@@ -421,6 +421,55 @@ public sealed class UrlTests
     }
 
     [Theory]
+    [InlineData("https://user:secret@example.org:8080/a?q#f", "443", "https://user:secret@example.org/a?q#f")]
+    [InlineData("https://example.org/a", "0", "https://example.org:0/a")]
+    [InlineData("https://example.org:8080/a?q#f", "", "https://example.org/a?q#f")]
+    [InlineData("foo://example.org/a", "443", "foo://example.org:443/a")]
+    [InlineData("https://example.org/a", "8\t0", "https://example.org:80/a")]
+    [InlineData("https://example.org/a", "00080", "https://example.org:80/a")]
+    public void WithPortFollowsThePortSetter(string input, string value, string expected)
+    {
+        var original = BrowserUrl.Parse(input);
+
+        var updated = original.WithPort(value);
+
+        Assert.Equal(expected, updated.Href);
+        Assert.Equal(input, original.Href);
+    }
+
+    [Theory]
+    [InlineData("bad")]
+    [InlineData("65536")]
+    [InlineData("-1")]
+    [InlineData("80 ")]
+    [InlineData("\t")]
+    [InlineData("٨")]
+    public void WithPortNoOpsForInvalidValues(string value)
+    {
+        var original = BrowserUrl.Parse("https://example.org:8080/path");
+
+        Assert.Same(original, original.WithPort(value));
+    }
+
+    [Fact]
+    public void WithPortDoesNothingWhenTheUrlCannotHaveAPort()
+    {
+        foreach (var input in new[] { "file:///a", "file://server.example/a", "data:text/plain,hello", "mailto:user@example.org" })
+        {
+            var original = BrowserUrl.Parse(input);
+
+            Assert.Same(original, original.WithPort("80"));
+            Assert.Same(original, original.WithPort(""));
+        }
+    }
+
+    [Fact]
+    public void WithPortRejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithPort(null!));
+    }
+
+    [Theory]
     [InlineData("https://example.org/p?q#old", "new", "https://example.org/p?q#new")]
     [InlineData("https://example.org/p", "#new", "https://example.org/p#new")]
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]

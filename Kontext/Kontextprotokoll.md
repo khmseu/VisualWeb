@@ -13619,12 +13619,44 @@ Commit/Push ohne naechste Freigabe.
   Solution-Suite besteht mit 17.057 Tests und zwei uebersprungenen Tests.
   `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
 third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
-- Status bei Dokumentation: Code, Tests, Tracker und Guides lokal aktualisiert;
-  Commit, Push und Remote-CI stehen aus.
+- Status bei erster Dokumentation: Code, Tests, Tracker und Guides lokal
+  aktualisiert; Commit, Push und Remote-CI standen noch aus. Danach wurde
+  Commit `87e1402` auf `main` gepusht; Linux development
+  (Run `44088385733`), Windows confinement (Run `44088385542`), CodeQL
+  (Run `44088384890`) und Dev Environment Prebuilds (Run `44088384750`)
+  bestanden.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#url);
   [standards inventory](../docs/standards.md#implemented-subsets);
   [Core.Url README](../src/Core/Core.Url/README.md);
   [vendored parser notes](../third_party/Dubzer.WhatwgUrl/README.md);
+  [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
+  [UrlTests](../tests/Core.Tests/UrlTests.cs).
+
+### KP-455 - Missing-Lauf mit zehn Inkrementen, Pass 2 port setter
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-17T13:20:16.179+01:00; Pass-2-
+  Umsetzung und lokale Validierung am 2026-11-17.
+- Erfassungsart: zeitnahe Zusammenfassung, keine nachtraegliche Rekonstruktion.
+- Nutzerangabe: Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente
+  angefordert (Quellen und Auswahlregel siehe KP-454).
+- Belegt: Nach `WithHost` bleibt im WHATWG-URL-Support die Port-Setter-Luecke
+  vor dem pathname setter als naechstes kleines URL-API-Inkrement offen.
+  Manifest-ID `url`, `checkedAt: 2026-11-16`; die lokale Port-Setter- und
+  port-state-Spezifikation wurde gelesen. Kein Refresh war erforderlich.
+- Belegt: `BrowserUrl.WithPort` liefert einen Snapshot, loescht den Port bei
+  leerem Wert, entfernt Standardports und laesst ungueltige Werte sowie URLs
+  ohne Portfaehigkeit unveraendert. Andere URL-Komponenten bleiben erhalten.
+- Validierung: 14 fokussierte Port-Setter-Faelle, 4.124 Core-Tests, Debug-
+  Solution-Build mit null Warnungen/Fehlern, 17.071 Solution-Tests mit zwei
+  uebersprungenen Tests und Formatverifikation bestehen. Kein nativer Smoke
+  ist fuer Core.Url anwendbar.
+- Status bei Dokumentation: Code, Tests, Tracker und Guides lokal aktualisiert;
+  Commit, Push und CI fuer Pass 2 stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#url);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Core.Url README](../src/Core/Core.Url/README.md);
   [BrowserUrl](../src/Core/Core.Url/BrowserUrl.cs);
   [UrlTests](../tests/Core.Tests/UrlTests.cs).
