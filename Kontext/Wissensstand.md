@@ -47,9 +47,18 @@ und Web-IDL-Bindings bleiben aus. Die Encoding-Quelle ist manifest-frisch
 bestehen; Debug- und Release-Solution-Builds bestehen ohne Warnungen/Fehler.
 Debug- und Release-Volltests bestehen jeweils mit 17.099 Tests und zwei
 erwarteten Skips; Formatverifikation besteht. Kein nativer Smoke ist fuer
-Core.Encoding anwendbar. Pass 5 ist lokal validiert, aber noch nicht committed;
-Push und CI folgen nach Commit. Details und Quellen:
-KP-454–458 sowie
+Core.Encoding anwendbar. Pass 5 ist committed und gepusht (`a93cd3e`); Linux
+development (`44127068505`), Windows confinement (`44127068447`) und CodeQL
+(`44127068165`) sowie Dev Environment Prebuilds (`44127067713`) bestehen.
+Pass 5 ist abgeschlossen. Pass 6 erweitert `WebTextDecoder` um inkrementelles
+UTF-8-Decodieren mit `stream`-Option, Teilzeichen-/BOM-Zustand, finalem Flush
+und Reset; andere Encodings weisen Streaming explizit zurueck. Zwoelf
+fokussierte Decoder- und alle 4.157 Core-Tests bestehen. Debug-/Release-
+Solution-Builds bestehen ohne Warnungen/Fehler; beide Volltests bestehen mit
+17.104 Tests und zwei erwarteten Skips; Formatpruefung besteht. Kein nativer
+Smoke ist fuer Core.Encoding anwendbar. Pass 6 ist lokal validiert; Commit,
+Push und Remote-CI stehen aus. Details und Quellen:
+KP-454–459 sowie
 [Missing.md](../plans/Missing.md#third-standards-priority-run-2026-11-17).
 
 **Vorheriger Standards-Pass (2026-11-17; KP-453):** Der damalige

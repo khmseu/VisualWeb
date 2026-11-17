@@ -13763,10 +13763,47 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
   Release-Solution-Build ohne Warnungen/Fehler und Formatverifikation bestehen.
   Debug- und Release-Volltests bestehen jeweils mit 17.099 Tests und zwei
   erwarteten Skips. Kein nativer Smoke ist fuer Core.Encoding anwendbar.
-- Status: Lokal validiert, noch nicht committed/gepusht; CI steht aus.
+- Status: Commit `a93cd3e` ist auf `main`; Linux development
+  (`44127068505`), Windows confinement (`44127068447`) und CodeQL
+  (`44127068165`) sowie Dev Environment Prebuilds (`44127067713`) bestanden.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   [Core guide](../docs/core.md#encoding);
   [standards inventory](../docs/standards.md#implemented-subsets);
   [Encoding Standard TextDecoder](../specs/cache/encoding.html#interface-textdecoder);
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).
+
+### KP-459 - Missing-Lauf mit zehn Inkrementen, Pass 6 UTF-8-Streaming
+
+- Dokumentiert am: 2026-11-17, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: 2026-11-17; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung aus aktuellem Chat und geprueften
+  Repository-Artefakten.
+- Nutzerangabe: Der Nutzer setzt den Auftrag fuer zehn getrennte
+  Missing-Prioritaets-Inkremente fort; der bisherige Stand ist in KP-454–458
+  dokumentiert.
+- Auswahl (Ableitung): URL (~65%) liegt weiterhin vor Encoding (~55%), hat fuer
+  die unveraenderliche Facade jedoch keinen kleinen aktiven API-Gap. Als
+  naechstes testbares Encoding-Inkrement wurde UTF-8-Streaming fuer
+  `WebTextDecoder` gewaehlt. Der Umfang bleibt explizit auf UTF-8 begrenzt;
+  Streaming anderer Encodings wuerde deren eigenen Decoderzustand erfordern.
+- Belegt: Die lokale Encoding-Quelle hat `checkedAt: 2026-11-07`; die
+  `TextDecoder.decode()`-Streaming-Algorithmen und UTF-8-Decoderregeln wurden
+  gelesen. Die Quelle ist manifest-frisch; kein Refresh war erforderlich.
+- Umsetzung: `WebTextDecoder.Decode` behaelt bei `stream: true` UTF-8-
+  Decoderzustand und initialen BOM-Zustand ueber Chunks. Der finale Aufruf
+  flusht unvollstaendige Eingaben und setzt den Zustand zurueck. Andere
+  Encodings weisen `stream: true` mit `NotSupportedException` zurueck.
+  `TextDecoderStream` und JavaScript/Web-IDL-Bindings bleiben aus.
+- Validierung: 12 fokussierte Decoder-Tests und alle 4.157 Core-Tests bestehen.
+  Debug-/Release-Solution-Builds bestehen ohne Warnungen/Fehler; beide
+  Volltests bestehen mit 17.104 Tests und zwei erwarteten Skips;
+  Formatverifikation besteht. Kein nativer Smoke ist fuer Core.Encoding
+  anwendbar.
+- Status: lokal validiert; Commit, Push und Remote-CI stehen aus.
+- Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
+  [Core guide](../docs/core.md#encoding);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Encoding Standard TextDecoder](../specs/cache/encoding.html#dom-textdecoder-decode);
   [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs);
   [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs).

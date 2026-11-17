@@ -110,11 +110,12 @@ U+FFFD. These are core APIs, not JavaScript/Web IDL bindings.
 `TextEncoderStream`, encoders for other labels and JavaScript/Web IDL encoder
 and decoder bindings remain deferred.
 
-[WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs) provides a
-one-shot .NET subset of [`TextDecoder`](https://encoding.spec.whatwg.org/#interface-textdecoder):
+[WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs) provides a bounded
+.NET subset of [`TextDecoder`](https://encoding.spec.whatwg.org/#interface-textdecoder):
 label resolution, canonical encoding name, fatal error mode and `ignoreBOM`.
-Each `Decode` call consumes a complete buffer and has no retained state;
-streaming, the `stream` option and JavaScript/Web IDL bindings remain deferred.
+Its `stream` option retains incremental decoder and BOM state for UTF-8 only;
+other encodings consume complete buffers. `TextDecoderStream` and JavaScript/Web
+IDL bindings remain deferred.
 
 ### HTML charset prescan and sniffing subset
 

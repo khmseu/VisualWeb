@@ -2811,7 +2811,25 @@ pass with zero warnings/errors; both full solution suites pass with 17,099 tests
 and two expected skips, and solution format verification passes. No native
 platform smoke applies to this Core-only change. The approximate Encoding
 estimate remains ~55% because this is a bounded .NET subset and streaming and
-bindings remain absent. Commit, push and CI status are pending.
+bindings remain absent. Commit `a93cd3e` is pushed to `main`; Linux development
+(`44127068505`), Windows confinement (`44127068447`) and CodeQL
+(`44127068165`) and Dev Environment Prebuilds (`44127067713`) all passed.
+
+### Pass 6: incremental UTF-8 TextDecoder
+
+The next ranked actionable Encoding increment is bounded incremental UTF-8
+decoding. `WebTextDecoder` now accepts the `stream` option for UTF-8, retaining
+partial scalar and initial-BOM state across chunks, flushing pending input and
+resetting on the final call. Streaming requests for other supported encodings
+fail explicitly; their stateful decoder algorithms remain unimplemented.
+Focused tests cover split scalars, incomplete input at flush, malformed
+sequences, BOM split across chunks, fatal errors and unsupported encodings.
+The 12 focused decoder tests and all 4,157 Core tests pass. Debug and Release
+solution builds pass with zero warnings/errors; both full solution suites pass
+with 17,104 tests and two expected skips, and solution format verification
+passes. No native platform smoke applies to this Core-only change. Encoding
+remains approximately 55%; this does not implement `TextDecoderStream` or
+JavaScript/Web IDL bindings.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

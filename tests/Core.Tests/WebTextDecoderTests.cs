@@ -61,4 +61,57 @@ public sealed class WebTextDecoderTests
         Assert.Equal("A", new WebTextDecoder("utf-16").Decode(Convert.FromHexString("FFFE4100")));
         Assert.Equal("\uFEFFA", new WebTextDecoder("utf-16", ignoreBom: true).Decode(Convert.FromHexString("FFFE4100")));
     }
+
+    [Fact]
+    public void StreamingUtf8RetainsIncompleteScalarsUntilNextChunk()
+    {
+        var decoder = new WebTextDecoder();
+
+        Assert.Equal("", decoder.Decode([0xF0, 0x9F], stream: true));
+        Assert.Equal("\U0001F600", decoder.Decode([0x98, 0x80], stream: true));
+        Assert.Equal("", decoder.Decode());
+    }
+
+    [Fact]
+    public void StreamingUtf8FlushesIncompleteInputAndResetsForNextDecode()
+    {
+        var decoder = new WebTextDecoder();
+
+        Assert.Equal("", decoder.Decode([0xE2], stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode());
+        Assert.Equal("A", decoder.Decode([0x41]));
+    }
+
+    [Fact]
+    public void StreamingUtf8ReplacesMalformedSequencesAndReprocessesFollowingBytes()
+    {
+        var decoder = new WebTextDecoder();
+
+        Assert.Equal("\uFFFD(\uFFFD", decoder.Decode([0xE2, 0x28, 0xA1], stream: false));
+    }
+
+    [Fact]
+    public void StreamingUtf8PreservesBomHandlingAcrossChunks()
+    {
+        var decoder = new WebTextDecoder();
+        var preserveBomDecoder = new WebTextDecoder(ignoreBom: true);
+
+        Assert.Equal("", decoder.Decode([0xEF, 0xBB], stream: true));
+        Assert.Equal("A", decoder.Decode([0xBF, 0x41], stream: false));
+        Assert.Equal("", preserveBomDecoder.Decode([0xEF, 0xBB], stream: true));
+        Assert.Equal("\uFEFFA", preserveBomDecoder.Decode([0xBF, 0x41], stream: false));
+    }
+
+    [Fact]
+    public void StreamingUtf8RejectsFatalErrorsAndUnsupportedEncodings()
+    {
+        var fatalDecoder = new WebTextDecoder(fatal: true);
+        var legacyDecoder = new WebTextDecoder("windows-1252");
+
+        Assert.Equal("", fatalDecoder.Decode([0xE2], stream: true));
+        Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
+        Assert.Equal("A", fatalDecoder.Decode([0x41]));
+        Assert.Throws<NotSupportedException>(() => legacyDecoder.Decode([0x41], stream: true));
+        Assert.Equal("A", legacyDecoder.Decode([0x41]));
+    }
 }
