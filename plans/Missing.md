@@ -2555,6 +2555,16 @@ Iteration, URL-object linkage and Web IDL remain unsupported. Two focused tests
 and all 4,020 Core tests pass. The `url` cache is still unavailable offline (see
 Pass 1).
 
+### 2026-11-17 run, Pass 3: URLSearchParams entries iteration
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. This increment
+adds `UrlSearchParams.Entries()`, a .NET live index-based enumerator of
+name-value tuples matching the standard's iterable semantics: appends are seen
+and removals shift later entries past the current index. `keys()`, `values()`,
+`forEach()`, ECMAScript iterator objects, URL linkage and Web IDL remain
+unsupported. Two focused tests and all 4,022 Core tests pass. The `url` cache
+is still unavailable offline (see Pass 1).
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

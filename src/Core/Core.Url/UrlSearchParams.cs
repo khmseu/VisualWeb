@@ -141,6 +141,19 @@ public sealed class UrlSearchParams
         _entries.AddRange(sorted);
     }
 
+    /// <summary>Enumerates name-value tuples in list order as a live iterator.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#interface-urlsearchparams">URLSearchParams iterable declaration</see>
+    /// and <see href="https://webidl.spec.whatwg.org/#es-iterable">Web IDL iterable behavior</see>. Like the standard's
+    /// index-based iterator, it observes appends and removals made while enumerating; it is not an ECMAScript iterator object.</remarks>
+    public IEnumerable<KeyValuePair<string, string>> Entries()
+    {
+        for (var index = 0; index < _entries.Count; index++)
+        {
+            var (name, value) = _entries[index];
+            yield return new KeyValuePair<string, string>(name, value);
+        }
+    }
+
     /// <summary>Gets the first value associated with <paramref name="name"/>, or <see langword="null"/>.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-get">URLSearchParams.get()</see>.</remarks>
     public string? Get(string name)

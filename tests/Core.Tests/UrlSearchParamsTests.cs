@@ -256,4 +256,35 @@ public sealed class UrlSearchParamsTests
         Assert.Throws<ArgumentException>(() => new UrlSearchParams(new KeyValuePair<string, string>[] { new("k", null!) }));
         Assert.Throws<ArgumentNullException>(() => new UrlSearchParams((IEnumerable<KeyValuePair<string, string>>)null!));
     }
+
+    [Fact]
+    public void EntriesEnumeratesPairsInOrderIncludingDuplicates()
+    {
+        var parameters = new UrlSearchParams("b=1&a=2&b=3");
+
+        Assert.Equal(
+            [new("b", "1"), new("a", "2"), new("b", "3")],
+            parameters.Entries().ToArray());
+        Assert.Empty(new UrlSearchParams().Entries());
+    }
+
+    [Fact]
+    public void EntriesIteratorObservesMutationsMadeDuringEnumeration()
+    {
+        var parameters = new UrlSearchParams("a=1&b=2");
+        var seen = new List<string>();
+
+        foreach (var (name, _) in parameters.Entries())
+        {
+            seen.Add(name);
+            if (name == "a")
+            {
+                parameters.Delete("a");
+                parameters.Append("c", "3");
+            }
+        }
+
+        // Removing the current entry shifts "b" into the visited index, which the live iterator skips.
+        Assert.Equal(["a", "c"], seen);
+    }
 }
