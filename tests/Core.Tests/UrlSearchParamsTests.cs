@@ -212,4 +212,27 @@ public sealed class UrlSearchParamsTests
 
         Assert.Equal("%EF%BF%BD=a+b", parameters.ToString());
     }
+
+    [Fact]
+    public void SequenceInitializationPreservesOrderDuplicatesAndNormalizesScalarValues()
+    {
+        var parameters = new UrlSearchParams(new IReadOnlyList<string>[]
+        {
+            ["b", "1"], ["a", "x y"], ["b", "2"], ["\uD800", "\uDC00"],
+        });
+
+        Assert.Equal(4, parameters.Size);
+        Assert.Equal(["1", "2"], parameters.GetAll("b"));
+        Assert.Equal("b=1&a=x+y&b=2&%EF%BF%BD=%EF%BF%BD", parameters.ToString());
+    }
+
+    [Fact]
+    public void SequenceInitializationAcceptsEmptyInputAndRejectsMalformedPairs()
+    {
+        Assert.Equal(0, new UrlSearchParams(Array.Empty<IReadOnlyList<string>>()).Size);
+        Assert.Throws<ArgumentException>(() => new UrlSearchParams(new IReadOnlyList<string>[] { ["a"] }));
+        Assert.Throws<ArgumentException>(() => new UrlSearchParams(new IReadOnlyList<string>[] { ["a", "b", "c"] }));
+        Assert.Throws<ArgumentException>(() => new UrlSearchParams(new IReadOnlyList<string>[] { null! }));
+        Assert.Throws<ArgumentNullException>(() => new UrlSearchParams((IEnumerable<IReadOnlyList<string>>)null!));
+    }
 }

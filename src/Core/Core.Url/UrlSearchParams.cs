@@ -20,6 +20,25 @@ public sealed class UrlSearchParams
         _entries = Parse(init.StartsWith('?') ? init[1..] : init);
     }
 
+    /// <summary>Initializes from a sequence of name-value pairs.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams">URLSearchParams constructor</see>
+    /// sequence initialization. Each pair must contain exactly two strings, otherwise <see cref="ArgumentException"/>
+    /// is thrown (the standard's <c>TypeError</c>); strings are scalar-value normalized and duplicates are retained.</remarks>
+    public UrlSearchParams(IEnumerable<IReadOnlyList<string>> pairs)
+    {
+        ArgumentNullException.ThrowIfNull(pairs);
+        _entries = [];
+        foreach (var pair in pairs)
+        {
+            if (pair is null || pair.Count != 2 || pair[0] is null || pair[1] is null)
+            {
+                throw new ArgumentException("Each URLSearchParams pair must contain exactly two strings.", nameof(pairs));
+            }
+
+            _entries.Add((ToScalarValueString(pair[0]), ToScalarValueString(pair[1])));
+        }
+    }
+
     /// <summary>Gets the number of parsed name-value tuples.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-size">URLSearchParams.size</see>.</remarks>
     public int Size => _entries.Count;

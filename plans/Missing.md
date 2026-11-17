@@ -2529,6 +2529,21 @@ Windows confinement (run 43984637511) and CodeQL (run 43984637434) all
 succeeded. The separate Dev Environment Prebuilds workflow was still in
 progress and is not part of the validation matrix.
 
+### 2026-11-17 run, Pass 1: URLSearchParams sequence initialization
+
+WHATWG URL (~60%) remains the highest partial WHATWG estimate. This increment
+adds the constructor form that takes a sequence of name-value pairs:
+`UrlSearchParams(IEnumerable<IReadOnlyList<string>>)` scalar-value-normalizes
+each string, preserves order and duplicates, and throws `ArgumentException`
+(the standard's `TypeError`) unless every pair has exactly two strings. Record
+initialization, iteration, URL-object linkage and Web IDL remain unsupported.
+Two focused tests and all 4,018 Core tests pass. The `url` cache file was absent
+and the SpecCache refresh failed because the network was unavailable
+(`Resource temporarily unavailable`); the implementation follows the
+well-known constructor algorithm and no cached text was consulted. The
+sandbox's SDK 11 mismatched `global.json`, so SDK 10.0.401 was installed
+locally.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on
