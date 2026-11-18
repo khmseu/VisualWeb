@@ -14734,12 +14734,74 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
 third_party` bestand. `dotnet test VisualWeb.slnx --no-build` bestand
   ebenfalls (Exitcode 0).
 - Status: Code, Tests und Core-/Projekt-/Supportdokumentation sind im
-  Arbeitsbaum uncommitted. Der Aenderungssatz schliesst nur die beschriebene
-  mutable Core API-Luecke; er behauptet keine vollstaendige WHATWG-URL-
-  Konformitaet. Weitere dokumentierte URL-Standard- und Integrationsthemen
-  bleiben offen.
+  Commit `81f9ce1` (`feat(core-url): add mutable component setters`)
+  committed. Der Aenderungssatz schliesst nur die beschriebene mutable Core
+  API-Luecke; er behauptet keine vollstaendige WHATWG-URL-Konformitaet.
+  Weitere dokumentierte URL-Standard- und Integrationsthemen bleiben offen.
 - Quellen: Nutzervorgabe im aktuellen Turn; `docs/core.md`, `docs/standards.md`,
   `specs/cache/url.html` (`#dom-url-protocol` bis `#dom-url-hash`),
   `src/Core/Core.Url/MutableBrowserUrl.cs`,
   `tests/Core.Tests/MutableBrowserUrlTests.cs` und die genannten lokalen
   Validierungsausgaben.
+
+### KP-494 - Settercommit und Fortsetzung
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-18T21:10:08+01:00.
+- Erfassungsart: Nutzerangabe, Git-Commit-/Hook-Ausgabe sowie gepinnte
+  Fixture-Provenienz und Testharness.
+- Nutzerangabe/Beschlossen: „commit, then continue“.
+- Belegt: Die mutable Core URL-Setter wurden als `81f9ce1`
+  (`feat(core-url): add mutable component setters`) committed. Der Hook
+  formatierte drei Dokumentationsdateien, pruefte acht geaenderte Dateien
+  ohne Befund und erstellte den Commit erfolgreich. Danach zeigte Git `main`
+  einen Commit vor `origin/main`.
+- Belegt: Die gepinnte URL-Standard-WPT-Revision ist
+  `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`. Die Core-Suite verwendet fuer
+  URL-encoded parsing 35, Stringifier 12, Sequence-Konstruktion 1,
+  Sortierung 8 und URL-Setter 278 Faelle. Die Fixture-Provenienz nennt fuer
+  den Constructor-Test die Upstream-Datei
+  `url/urlsearchparams-constructor.any.js` mit Source-Blob
+  `d482911350ba0fabeb127d0fb78cbd1dd71d4d45`.
+- Ableitung/naechster Schritt: Die verhaeltnismaessig kleine
+  URLSearchParams-Constructor-Fixture ist ein konkreter Kandidat fuer
+  zusaetzliche offline gepinnte WPT-Abdeckung. Keine weitere Implementierung
+  wurde nach dem Commit begonnen; die gezielte Quellpruefung ist der naechste
+  Schritt.
+- Quellen: Nutzervorgabe oben; `git status`, `git show` und Commit-Hook-Ausgabe;
+  [Core-Testdaten-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Core URL-Tests](../tests/Core.Tests/UrlSearchParamsTests.cs) und lokale
+  Testdateien.
+
+### KP-495 - Gepinnte URLSearchParams-Updatefaelle
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-494; genaue Uhrzeit unbekannt.
+- Erfassungsart: gepinnte WPT-Quellen, lokale Regressionstests und
+  Validierungsausgaben.
+- Nutzerangabe: Die Fortsetzung folgt auf „commit, then continue“
+  (KP-494); es wurde kein neuer Umfang beschlossen.
+- Belegt: Aus WPT-Commit `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`
+  wurden die drei URL-verknuepften `delete()`-Updatefaelle aus
+  `url/urlsearchparams-delete.any.js` (Blob
+  `09a5dccb6487338bc69d6fb924472b1dc8b7899d`) als offline Fixture erfasst.
+  Script-Regressionen decken ausserdem ein zweites Fragezeichen als Query-Daten
+  aus `url/url-searchparams.any.js` (Blob
+  `9bba12e89cefd1aa3a79e6de601cd37120f2297a`) sowie die unabhaengige Kopie
+  einer `URLSearchParams`-Instanz aus `url/urlsearchparams-constructor.any.js`
+  (Blob `d482911350ba0fabeb127d0fb78cbd1dd71d4d45`) ab.
+- Belegt: Core.Tests (4.232) und Engine.Scripting.Tests (381) bestanden.
+  `dotnet build VisualWeb.slnx` und Formatverifikation bestanden. Der
+  Solution-Volltest `dotnet test VisualWeb.slnx --no-build` endete erfolgreich;
+  er lief vor dem letzten zusaetzlichen Scripting-Test, dessen vollstaendige
+  Projektsuite danach erneut bestand. `git diff --check` bestand. Die
+  gepinnten Faelle stimmten mit vorhandenem Verhalten ueberein; Produktionscode
+  wurde nicht geaendert.
+- Ableitung/naechster Schritt: Die Abdeckung dieses URLSearchParams-Ausschnitts
+  ist verbessert, aber weder diese Vektoren noch der fruehere Plan belegen
+  Vollkonformitaet. Weitere Aenderungen sollen erst auf konkrete Abweichungen
+  aus den gepinnten Standards-/WPT-Quellen reagieren.
+- Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Core-Regressionen](../tests/Core.Tests/MutableBrowserUrlTests.cs),
+  [Scripting-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
+  und lokale Testausgaben.

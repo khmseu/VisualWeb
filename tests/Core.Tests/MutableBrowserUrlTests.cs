@@ -1,3 +1,4 @@
+using System.Text.Json;
 using VisualWeb.Core.Url;
 using Xunit;
 
@@ -51,6 +52,24 @@ public sealed class MutableBrowserUrlTests
         Assert.Equal("/path", url.Snapshot.Pathname);
         Assert.Equal("#fragment", url.Snapshot.Hash);
         Assert.Equal("https://user:pass@example.org:8443/path?q=old#fragment", initialSnapshot.Href);
+    }
+
+    [Fact]
+    public void LinkedSearchParamsDeleteMatchesPinnedWptUpdateVectors()
+    {
+        using var fixture = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "urlsearchparams-delete-wpt.json")));
+        Assert.Equal(3, fixture.RootElement.GetArrayLength());
+
+        foreach (var vector in fixture.RootElement.EnumerateArray())
+        {
+            var url = new MutableBrowserUrl(BrowserUrl.Parse(vector.GetProperty("input").GetString()!));
+            url.SearchParams.Delete(vector.GetProperty("deleteName").GetString()!);
+
+            Assert.Equal(vector.GetProperty("expectedHref").GetString(), url.Href);
+            Assert.Equal(vector.GetProperty("expectedPathname").GetString(), url.Snapshot.Pathname);
+            Assert.Equal(vector.GetProperty("expectedSearch").GetString(), url.Snapshot.Search);
+        }
     }
 
     [Fact]

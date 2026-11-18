@@ -97,9 +97,20 @@ Live-Linkage-Semantik; die weiteren Setter bewahren die Identitaet und Tupel
 des `SearchParams`-Objekts. Neue Tests decken Setterketten und ungueltige
 No-ops ab. Fokussierte Tests (8), Core.Tests (4.231), Solution-Build (0
 Warnungen/Fehler), Solution-Volltest und Formatverifikation bestehen. Die
-Aenderungen sind uncommitted. Dies
-vervollstaendigt nicht den WHATWG-URL-Standard; die dokumentierten
-Vollkonformitaets- und Integrationsluecken bleiben offen.
+Aenderungen sind als `81f9ce1` committed; `main` liegt einen Commit vor
+`origin/main`. Dies vervollstaendigt nicht den WHATWG-URL-Standard; die
+dokumentierten Vollkonformitaets- und Integrationsluecken bleiben offen.
+In der Fortsetzung wurden gepinnte WPT-Faelle fuer das Entfernen von
+URLSearchParams aus verknuepften URLs, ein zweites Fragezeichen als Query-Daten
+und die unabhaengige Kopie eines URLSearchParams-Objekts ergaenzt.
+Core.Tests (4.232) und Engine.Scripting.Tests (381) bestehen; Solution-Build
+und Formatverifikation bestehen ebenfalls. Der Solution-Volltest bestand vor
+dem letzten zusaetzlichen Scripting-Test; die aktuelle Scripting-Suite wurde
+danach vollstaendig erneut ausgefuehrt. Alle geprueften Faelle stimmen mit dem
+vorhandenen Verhalten ueberein; es gab keine Produktionscodeaenderung und
+keinen bestaetigten neuen Implementierungsfehler. Naechster Schritt gemaess
+„commit, then continue“: weitere konkrete WHATWG-URL-Abweichungen in den
+gepinnten WPT-Quellen belegen, bevor Produktionscode geaendert wird.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

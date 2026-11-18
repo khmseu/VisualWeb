@@ -181,6 +181,22 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void SearchParamsPreserveLeadingQuestionMarkQueryData()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = new URL('http://example.org/file??a=b&c=d');
+                const initial = url.search === '??a=b&c=d'
+                    && url.searchParams.toString() === '%3Fa=b&c=d';
+                url.href = 'http://example.org/file??a=b';
+                return initial && url.search === '??a=b'
+                    && url.searchParams.toString() === '%3Fa=b';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlBindingsUseWebIdlStringConversionAndInterfaceSpecificErrors()
     {
         using var host = new V8ScriptHost();
@@ -361,6 +377,23 @@ public sealed class UrlBindingTests
                     sequence.size === 4 && sequence.getAll('b').join(',') === '2,3'].join(',');
             })()
             """, Cancellation).Text);
+    }
+
+    [Fact]
+    public void UrlSearchParamsConstructorCopiesAnotherInstance()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const seed = new URLSearchParams('a=b&c=d');
+                const copy = new URLSearchParams(seed);
+                const initial = copy.get('a') === 'b' && copy.get('c') === 'd' && !copy.has('e');
+                seed.append('e', 'f');
+                const seedChangeIsIndependent = !copy.has('e');
+                copy.append('g', 'h');
+                return initial && seedChangeIsIndependent && !seed.has('g');
+            })()
+            """, Cancellation).Boolean);
     }
 
     [Fact]

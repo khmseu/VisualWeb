@@ -1,0 +1,23 @@
+[
+  {
+    "input": "data:space    ?test",
+    "deleteName": "test",
+    "expectedHref": "data:space   %20",
+    "expectedPathname": "space   %20",
+    "expectedSearch": ""
+  },
+  {
+    "input": "data:space    ?test#test",
+    "deleteName": "test",
+    "expectedHref": "data:space   %20#test",
+    "expectedPathname": "space   %20",
+    "expectedSearch": ""
+  },
+  {
+    "input": "http://example.com/?",
+    "deleteName": "param1",
+    "expectedHref": "http://example.com/",
+    "expectedPathname": "/",
+    "expectedSearch": ""
+  }
+]
