@@ -616,6 +616,46 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlSearchParamsIterationMatchesPinnedWptMutationCases()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = new URL('http://a.b/c?a=1&b=2&c=3&d=4');
+                const replaced = [];
+                for (const pair of url.searchParams) {
+                    url.search = 'x=1&y=2&z=3';
+                    replaced.push(pair.join('='));
+                }
+                const deleteNext = new URLSearchParams('param0=0&param1=1&param2=2');
+                const afterNextDelete = [];
+                for (const pair of deleteNext) {
+                    if (pair[0] === 'param0') deleteNext.delete('param1');
+                    afterNextDelete.push(pair.join('='));
+                }
+                const deleteCurrent = new URLSearchParams('param0=0&param1=1&param2=2');
+                const afterCurrentDelete = [];
+                for (const pair of deleteCurrent) {
+                    if (pair[0] === 'param0') deleteCurrent.delete('param0');
+                    else afterCurrentDelete.push(pair.join('='));
+                }
+                const deleteEachSeen = new URLSearchParams('param0=0&param1=1&param2=2');
+                const seenBeforeDelete = [];
+                for (const pair of deleteEachSeen) {
+                    seenBeforeDelete.push(pair[0]);
+                    deleteEachSeen.delete(pair[0]);
+                }
+                const empty = [...new URLSearchParams()].length === 0;
+                return replaced.join(',') === 'a=1,y=2,z=3'
+                    && afterNextDelete.join(',') === 'param0=0,param2=2'
+                    && afterCurrentDelete.join(',') === 'param2=2'
+                    && seenBeforeDelete.join(',') === 'param0,param2'
+                    && deleteEachSeen.toString() === 'param1=1' && empty;
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void SearchParamsIteratorNextRejectsUnbrandedReceivers()
     {
         using var host = new V8ScriptHost();

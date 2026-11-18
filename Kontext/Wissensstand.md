@@ -107,15 +107,16 @@ Diese Abdeckungsgruppe ist als `6dd9534` (`test(core-url): pin URLSearchParams
 edge cases`) committed. Danach wurden weitere gepinnte WPT-Faelle fuer
 JavaScript-only USVString-Eingaben, `URL.parse()`/`URL.canParse()` und
 Setterverhalten bei fuenf C0-Steuerzeichen auf zwei Schemen geprueft und
-ergaenzt. Die Engine.Scripting-Suite (384), Solution-Build (0 Warnungen/Fehler)
-und Formatverifikation bestehen; Core.Tests (4.232) bestanden in der
-vorherigen Fortsetzung. Alle geprueften Faelle stimmen mit dem vorhandenen
-Verhalten ueberein; es gab keine Produktionscodeaenderung und keinen
-bestaetigten neuen Implementierungsfehler. Die neueren Test-/Provenienzaenderungen
-sind uncommitted; fuer sie wurde kein weiterer Solution-Volltest ausgefuehrt.
-Der Standard bleibt offen. Naechster Schritt gemaess „commit, then continue“:
-weitere WPT-Familien mit der lokalen Abdeckung vergleichen und nur belegte
-Verhaltensabweichungen als Produktionsfix umsetzen.
+ergaenzt. Die Aenderungen stehen in `479823a`
+(`test(scripting): cover URL WPT edge cases`). Danach kamen Regressionen fuer
+Mutation waehrend URLSearchParams-Iteration gemaess dem gepinnten
+`urlsearchparams-foreach.any.js` hinzu. Engine.Scripting.Tests (385),
+Core.Tests (4.232), Solution-Build (0 Warnungen/Fehler), Solution-Volltest,
+Formatverifikation und Diff-Check bestehen. Alle geprueften Faelle stimmen
+mit dem vorhandenen Verhalten ueberein; Produktionscode musste nicht geaendert
+werden. Die Iterationsregression und Provenienzaktualisierung sind noch
+uncommitted. Der Standard bleibt offen; weitere WPT-Familien sind noch gegen
+die vorhandene Abdeckung zu vergleichen.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

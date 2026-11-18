@@ -14839,3 +14839,33 @@ third_party` besteht. `git diff --check` besteht. Alle geprueften Faelle
 - Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
   [Scripting-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
   und lokale Build-/Test-/Format-Ausgaben.
+
+### KP-497 - URLSearchParams-Iteration unter Mutation
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-496; genaue Uhrzeit unbekannt.
+- Erfassungsart: gepinnte WPT-Quelle, Regressionstest und lokale
+  Validierungsausgaben.
+- Nutzerangabe: Nach Commit/Fortsetzung gemaess der wiederholten Vorgabe
+  „commit, then continue“; kein neuer Implementierungsumfang vereinbart.
+- Belegt: Die Arbeit aus KP-496 wurde in `479823a`
+  (`test(scripting): cover URL WPT edge cases`) committed. Danach wurde die
+  gepinnte WPT-Datei `url/urlsearchparams-foreach.any.js` (Revision
+  `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`, Blob
+  `ff19643ac220d123be45f01af45fedde8d2d05c1`) weiter verglichen. Ein neuer
+  Scripting-Test deckt URL-Query-Ersetzung, Loeschen des naechsten bzw.
+  aktuellen Tupels und Entfernen jedes besuchten Eintrags waehrend eines
+  Iterationslaufs ab. Die Testfaelle bestaetigen bestehendes indexbasiertes
+  Live-Verhalten; kein Produktionscode wurde geaendert.
+- Belegt: Engine.Scripting.Tests (385), Core.Tests (4.232), `dotnet build
+VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
+--no-build` (alle Tests bestanden; zwei vorgesehene CPU-Drucktests
+  uebersprungen), Formatverifikation und `git diff --check` bestanden.
+- Status: Iterationsregression und Erweiterung der Fixture-Provenienz sind
+  noch uncommitted. Kein neuer URL-Verhaltensfehler wurde nachgewiesen.
+- Ableitung/naechster Schritt: Die Abdeckung dieses Iterations-WPT-Ausschnitts
+  ist belegt; weitere Verhaltensfamilien bleiben gegen WPT und lokale Tests
+  zu pruefen. WHATWG-URL-Vollkonformitaet ist weiterhin nicht behauptet.
+- Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Scripting-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
+  sowie lokale Build-/Test-/Format-Ausgaben.

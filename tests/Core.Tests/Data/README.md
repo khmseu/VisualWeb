@@ -47,6 +47,8 @@ ports the static-method cases from `url/url-statics-parse.any.js` and
 `Engine.Scripting.Tests.UrlBindingTests.UrlComponentSettersMatchPinnedControlCharacterWptCases`
 ports the generated setter cases for C0 controls 0, 9, 10, 13, and 31 from
 `url/url-setters-stripping.any.js`.
+`Engine.Scripting.Tests.UrlBindingTests.UrlSearchParamsIterationMatchesPinnedWptMutationCases`
+ports mutation-during-iteration cases from `url/urlsearchparams-foreach.any.js`.
 
 The source blobs at that revision are:
 
@@ -61,6 +63,7 @@ The source blobs at that revision are:
 | url/url-statics-parse.any.js | `0822e9da07af6a69c2c5e5cc747d312891afbef2` |
 | url/url-statics-canparse.any.js | `9b352029d8569bf5f2bbc66ff8a1ad9d273b7c94` |
 | url/url-setters-stripping.any.js | `ac90cc17e0bfd5d26adb329ce1a506d14cbb3698` |
+| url/urlsearchparams-foreach.any.js | `ff19643ac220d123be45f01af45fedde8d2d05c1` |
 | url/urlsearchparams-sort.any.js | `4fd8cef69239d26eb6241df180453aedf00cc050` |
 | url/resources/setters_tests.json | `221e77a951bbca0779bab049642b1587985e1aad` |
 
