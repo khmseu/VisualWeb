@@ -151,6 +151,52 @@ public sealed class UrlTests
     {
         var url = BrowserUrl.Parse("data:text/plain,hello");
         Assert.Equal("null", url.SerializedOrigin);
+        Assert.Same(url.Origin, url.Origin);
+        Assert.False(url.Origin.IsSameOrigin(BrowserUrl.Parse("data:text/plain,hello").Origin));
+    }
+
+    [Fact]
+    public void TupleAndBlobOriginsUseNormalizedUrlOriginComponents()
+    {
+        var https = BrowserUrl.Parse("https://example.org:443/a");
+        var defaultPortHttps = BrowserUrl.Parse("https://example.org/b");
+        var ftp = BrowserUrl.Parse("ftp://example.org/a");
+        var blob = BrowserUrl.Parse("blob:https://example.org:443/id");
+
+        Assert.Equal("https://example.org", https.Origin.Serialize());
+        Assert.True(https.Origin.IsSameOrigin(defaultPortHttps.Origin));
+        Assert.Equal(21, ftp.Origin.Port);
+        Assert.True(https.Origin.IsSameOrigin(blob.Origin));
+        Assert.True(https.Origin.IsSameOrigin(https.WithPathname("/next").Origin));
+    }
+
+    [Fact]
+    public void BlobOriginsInheritOnlyHttpAndHttpsTupleOrigins()
+    {
+        var http = BrowserUrl.Parse("blob:http://example.org/id");
+        var https = BrowserUrl.Parse("blob:https://example.org:443/id");
+        var ftp = BrowserUrl.Parse("blob:ftp://example.org:21/id");
+        var ws = BrowserUrl.Parse("blob:ws://example.org:80/id");
+        var wss = BrowserUrl.Parse("blob:wss://example.org:443/id");
+
+        Assert.True(http.Origin.IsSameOrigin(BrowserUrl.Parse("http://example.org/").Origin));
+        Assert.True(https.Origin.IsSameOrigin(BrowserUrl.Parse("https://example.org/").Origin));
+        Assert.True(ftp.Origin.IsOpaque);
+        Assert.True(ws.Origin.IsOpaque);
+        Assert.True(wss.Origin.IsOpaque);
+    }
+
+    [Fact]
+    public void FileAndOpaqueBlobOriginsAreStableOnlyWithinOneSnapshot()
+    {
+        var file = BrowserUrl.Parse("file:///tmp/page");
+        var blobFile = BrowserUrl.Parse("blob:file:///tmp/id");
+
+        Assert.True(file.Origin.IsOpaque);
+        Assert.Same(file.Origin, file.Origin);
+        Assert.False(file.Origin.IsSameOrigin(BrowserUrl.Parse("file:///tmp/page").Origin));
+        Assert.True(blobFile.Origin.IsOpaque);
+        Assert.False(blobFile.Origin.IsSameOrigin(BrowserUrl.Parse("blob:file:///tmp/id").Origin));
     }
 
     [Fact]
@@ -278,7 +324,13 @@ public sealed class UrlTests
     [InlineData("foo://example.org/a", "bar:rest", "bar://example.org/a")]
     [InlineData("data:text/plain,hello", "javascript:", "javascript:text/plain,hello")]
     [InlineData("https://example.org/a", "1http:", "https://example.org/a")]
-    [InlineData("https://example.org/a", "http", "https://example.org/a")]
+    [InlineData("https://example.org/a", "http", "http://example.org/a")]
+    [InlineData("http://example.org/a", "h\nttps", "https://example.org/a")]
+    [InlineData("file://server.example/a", "https", "https://server.example/a")]
+    [InlineData("file:///a", "https", "file:///a")]
+    [InlineData("https://example.org/a", "file", "file://example.org/a")]
+    [InlineData("https://user:secret@example.org/a", "file", "https://user:secret@example.org/a")]
+    [InlineData("https://example.org:8080/a", "file", "https://example.org:8080/a")]
     [InlineData("https://example.org/a", "foo:", "https://example.org/a")]
     [InlineData("foo://example.org/a", "https:", "foo://example.org/a")]
     [InlineData("file:///a", "http:", "file:///a")]
@@ -371,7 +423,7 @@ public sealed class UrlTests
     [InlineData("foo:/a?q#f", "new.example", "foo://new.example/a?q#f")]
     [InlineData("foo://old.example/a", "", "foo:///a")]
     [InlineData("file:///a", "server.example", "file://server.example/a")]
-    [InlineData("file:///a", "localhost", "file://localhost/a")]
+    [InlineData("file:///a", "localhost", "file:///a")]
     public void WithHostFollowsTheHostSetter(string input, string value, string expected)
     {
         var original = BrowserUrl.Parse(input);
@@ -450,12 +502,28 @@ public sealed class UrlTests
         Assert.Same(nonSpecialWithCredentials, nonSpecialWithCredentials.WithHost(""));
     }
 
+    [Fact]
+    public void WithHostUsesFileHostStateForLocalhostAndPortValues()
+    {
+        var emptyHost = BrowserUrl.Parse("file:///a");
+        var nonEmptyHost = BrowserUrl.Parse("file://server.example/a");
+
+        Assert.Equal("file:///a", emptyHost.WithHost("localhost").Href);
+        Assert.Same(emptyHost, emptyHost.WithHost("server.example:80"));
+        Assert.Equal("file:///a", nonEmptyHost.WithHost("localhost").Href);
+        Assert.Same(nonEmptyHost, nonEmptyHost.WithHost("server.example:80"));
+        Assert.Same(nonEmptyHost, nonEmptyHost.WithHost("C:"));
+    }
+
     [Theory]
     [InlineData("new.example:", "https://new.example:8443/path")]
     [InlineData("new.example:bad", "https://new.example:8443/path")]
     [InlineData("new.example:65536", "https://new.example:8443/path")]
+    [InlineData("new.example:65536junk", "https://new.example:8443/path")]
+    [InlineData("new.example:80junk", "https://new.example:80/path")]
+    [InlineData("new.example:443junk", "https://new.example/path")]
     [InlineData("new.example:\t8\n0", "https://new.example:80/path")]
-    public void WithHostRetainsTheExistingPortWhenTheSuppliedPortFails(string value, string expected)
+    public void WithHostCommitsThePortPrefixAndRetainsItWhenPortParsingFails(string value, string expected)
     {
         var original = BrowserUrl.Parse("https://old.example:8443/path");
 
@@ -471,6 +539,9 @@ public sealed class UrlTests
     [Theory]
     [InlineData("https://user:secret@example.org:8080/a?q#f", "443", "https://user:secret@example.org/a?q#f")]
     [InlineData("https://example.org/a", "0", "https://example.org:0/a")]
+    [InlineData("https://example.org/a", "80junk", "https://example.org:80/a")]
+    [InlineData("https://example.org/a", "443junk", "https://example.org/a")]
+    [InlineData("https://example.org/a", "80 ", "https://example.org:80/a")]
     [InlineData("https://example.org:8080/a?q#f", "", "https://example.org/a?q#f")]
     [InlineData("foo://example.org/a", "443", "foo://example.org:443/a")]
     [InlineData("https://example.org/a", "8\t0", "https://example.org:80/a")]
@@ -488,8 +559,9 @@ public sealed class UrlTests
     [Theory]
     [InlineData("bad")]
     [InlineData("65536")]
+    [InlineData("65536junk")]
     [InlineData("-1")]
-    [InlineData("80 ")]
+    [InlineData(" 80")]
     [InlineData("\t")]
     [InlineData("٨")]
     public void WithPortNoOpsForInvalidValues(string value)
@@ -559,7 +631,7 @@ public sealed class UrlTests
     [InlineData("https://example.org/p", "##x", "https://example.org/p##x")]
     [InlineData("https://example.org/p?q#old", "", "https://example.org/p?q")]
     [InlineData("https://example.org/p", "#", "https://example.org/p#")]
-    [InlineData("https://example.org/p", "a b\t\nc\u007F\"<>`", "https://example.org/p#a%20b%09%0Ac%7F%22%3C%3E%60")]
+    [InlineData("https://example.org/p", "a b\t\nc\u007F\"<>`", "https://example.org/p#a%20bc%7F%22%3C%3E%60")]
     [InlineData("https://example.org/p", "\u00E9\uD83D\uDE00", "https://example.org/p#%C3%A9%F0%9F%98%80")]
     [InlineData("data:text/plain,a#frag", "", "data:text/plain,a")]
     [InlineData("data:text/plain,a?q#frag", "x y", "data:text/plain,a?q#x%20y")]
@@ -588,7 +660,7 @@ public sealed class UrlTests
     [InlineData("https://example.org/p?q#h", "", "https://example.org/p#h")]
     [InlineData("https://example.org/p?q", "?", "https://example.org/p?")]
     [InlineData("https://example.org/p?q", "??", "https://example.org/p??")]
-    [InlineData("https://example.org/p", "a b#c\td\ne\u007F\"<>", "https://example.org/p?a%20b%23c%09d%0Ae%7F%22%3C%3E")]
+    [InlineData("https://example.org/p", "a b#c\td\ne\u007F\"<>", "https://example.org/p?a%20b%23cde%7F%22%3C%3E")]
     [InlineData("https://example.org/p", "it's", "https://example.org/p?it%27s")]
     [InlineData("foo://example.org/p", "it's", "foo://example.org/p?it's")]
     [InlineData("https://example.org/p", "\u00E9\uD83D\uDE00", "https://example.org/p?%C3%A9%F0%9F%98%80")]
@@ -608,6 +680,35 @@ public sealed class UrlTests
 
         Assert.Equal("https://example.org/p?%EF%BF%BD", BrowserUrl.Parse("https://example.org/p").WithSearch(unpairedSurrogate).Href);
         Assert.Throws<ArgumentNullException>(() => BrowserUrl.Parse("https://example.org/").WithSearch(null!));
+    }
+
+    [Fact]
+    public void SearchAndHashStateOverridesRemoveAsciiTabsAndNewlines()
+    {
+        var original = BrowserUrl.Parse("https://example.org/p?old#old");
+
+        Assert.Equal("https://example.org/p?a%20bc#old", original.WithSearch("a b\t\nc").Href);
+        Assert.Equal("https://example.org/p?old#a%20bc", original.WithHash("a b\t\nc").Href);
+        Assert.Equal("https://example.org/p?old#old", original.Href);
+    }
+
+    [Fact]
+    public void SearchAndHashRemoveLeadingTabsBeforeStateOverrideParsing()
+    {
+        var url = BrowserUrl.Parse("https://example.org/p");
+
+        Assert.Equal("https://example.org/p??x", url.WithSearch("\t?x").Href);
+        Assert.Equal("https://example.org/p##x", url.WithHash("\t#x").Href);
+    }
+
+    [Fact]
+    public void EmptyQueryDelimiterIsSerializedButNotExposedBySearchGetter()
+    {
+        var url = BrowserUrl.Parse("https://example.org/p?");
+
+        Assert.Equal("https://example.org/p?", url.Href);
+        Assert.Equal("", url.Search);
+        Assert.Equal("https://example.org/p?", url.WithSearch("?").Href);
     }
 
     [Fact]

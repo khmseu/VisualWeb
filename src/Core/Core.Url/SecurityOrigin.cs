@@ -11,9 +11,9 @@ namespace VisualWeb.Core.Url;
 /// This models URL origins only. Tuple origins are compared by scheme, host and effective port (the domain
 /// component is always null). Opaque origins are equal only to the very same instance; their "null"
 /// serialization is never an identity. Document/sandbox/inherited origins and document.domain belong to
-/// later phases, as does any blob URL entry registry: a <c>blob:</c> URL yields a tuple origin only when its
-/// path parses as an http(s) URL, otherwise a fresh opaque origin. <c>file:</c> URLs always yield
-/// opaque origins, which the URL spec permits.</remarks>
+/// later phases, as does any blob URL entry registry: a <c>blob:</c> URL yields its parsed path URL's origin
+/// only when that URL's scheme is <c>http</c>, <c>https</c>, or <c>file</c>; otherwise it yields a fresh opaque
+/// origin. <c>file:</c> URLs always yield opaque origins in this implementation, which the URL spec permits.</remarks>
 public sealed class SecurityOrigin : IEquatable<SecurityOrigin>
 {
     private SecurityOrigin(string? scheme, string? host, int port)

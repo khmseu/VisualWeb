@@ -14215,3 +14215,67 @@ VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
 - Quellen: Implementierungs- und Reviewagentenberichte; lokale Validierungs-
   ausgaben; [Phase-2-Bericht](../plans/whatwg-url-completion-phase-2-complete.md),
   [genehmigter Plan](../plans/whatwg-url-completion-plan.md).
+
+### KP-475 - Phase-2-Commit und Fortsetzung mit Phase 3
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Commit und Fortsetzung am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: Git-Ausgabe und ausdruecklicher Nutzerauftrag.
+- Nutzerangabe: „commit, then continue“ authorisiert den Commit von Phase 2 und
+  das Fortsetzen der genehmigten Arbeit mit Phase 3.
+- Belegt: Commit `e161d26` (`fix(core-url): select parser from URL base`) wurde
+  erstellt. Der Commit-Hook formatierte den Kontext- und Phase-Completion-
+  Bericht und bestaetigte sechs geaenderte Dateien ohne Formatfehler. Der
+  Arbeitsbaum ist nach dem Commit sauber; `main` liegt zwei Commits vor
+  `origin/main`. Es wurde nicht gepusht.
+- Status: Phase 2 ist committed und abgeschlossen. Phase 3 wird fortgesetzt;
+  ihr Scope ist die Vervollstaendigung der Core URL Operationen gemaess dem
+  genehmigten Plan. Browserbindung und Live-SearchParams-Linkage bleiben
+  spaeteren Phasen vorbehalten.
+- Quellen: Commit `e161d26`; [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
+  insbesondere Phase 3; Nutzerangabe aus dem aktuellen Gesprächsturn.
+
+### KP-476 - Phase 3 korrigiert, abschliessend geprueft und validiert
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-3-Arbeit und Validierung am 2026-11-18; genaue Uhrzeit
+  unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung der Implementierungs-/Reviewagenten,
+  lokaler URL-Standard-Inspektion und Build-/Test-/Formatbefehle.
+- Belegt: Die Phase ergaenzt Komponenten-Setter und Origin-Regressionen in
+  `BrowserUrl`, `SecurityOrigin`-Vergleiche, Core-URL-Dokumentation und Tests.
+  `WithProtocol` erlaubt den Special-Scheme-Wechsel einer gehosteten `file:`
+  URL, behaelt aber die Standardbeschraenkungen fuer leere Hosts/Credentials/
+  Ports bei. `WithPort` und `WithHost` verarbeiten ASCII-Ziffernpraefixe wie
+  Port-State-Override; Defaultports werden normalisiert, ungueltige/
+  out-of-range-Praefixe nicht uebernommen. File-Host-Input `C:` veraendert den
+  Snapshot nicht. Such-/Fragment-Setter-Tests decken Tab-Bereinigung vor und
+  nach Delimitern ab. Blob-Origin-Vererbung ist gemaess lokalem Standard auf
+  Pfad-URL-Schemata HTTP, HTTPS und FILE beschraenkt; die bestehende Core-Policy
+  behandelt File-Origin weiterhin als opaque, FTP/WS/WSS-Blobpfade bleiben
+  opaque.
+- Korrekturverlauf: Eine fruehe Review-Freigabe der Vererbung fuer alle Core-
+  Tuple-Schemata erwies sich bei der vollstaendigen Diff-Pruefung als falsch.
+  Die lokale Spezifikation [Origin](../specs/cache/url.html#concept-url-origin)
+  erlaubt den Blob-Fallback nur fuer HTTP/HTTPS/FILE. Weiterhin wurden die
+  Scheme-, Port- und File-Host-State-Override-Regeln anhand der lokalen
+  Abschnitte [scheme start](../specs/cache/url.html#scheme-start-state),
+  [port](../specs/cache/url.html#port-state) und
+  [file host](../specs/cache/url.html#file-host-state) korrigiert. Der letzte
+  Review genehmigte den gesamten Scope ohne offene Befunde.
+- Validierung: Der Implementierungsagent meldet 3.886 fokussierte URL-,
+  SearchParams- und SecurityOrigin-Tests sowie 4.217 Core-Tests erfolgreich.
+  Im Parent-Turn bestehen `dotnet build VisualWeb.slnx` mit 0 Warnungen/Fehlern,
+  `dotnet test VisualWeb.slnx --no-build` mit 17.164 erfolgreichen Tests und
+  zwei uebersprungenen Browser-Prozesstests, Formatverifikation und
+  `git diff --check`.
+- Grenzen: Die Blob-URL-Registry ist nicht implementiert; File-Origin bleibt
+  in Core opaque. Das behauptet keine Vollkonformitaet und fuehrt keine Phase-
+  4-Live-Linkage oder Phase-5-JavaScript-Bindings ein.
+- Status: Phase 3 ist implementiert, review-approved und validiert, aber noch
+  nicht committed. Phase 4 hat nicht begonnen; der Commit-/Fortsetzungs-
+  checkpoint bleibt offen.
+- Quellen: Implementierungs- und finale Reviewberichte; lokale Ausgaben;
+  [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
+  [Phase-3-Bericht](../plans/whatwg-url-completion-phase-3-complete.md),
+  [Core guide](../docs/core.md#url).

@@ -25,10 +25,12 @@ is the immutable URL-level origin identity ([URL origin](https://url.spec.whatwg
 (IDNA/IPv4/IPv6 as serialized) and effective port; equality uses those three
 values. Everything else gives a unique opaque origin equal only to the same
 instance, so `"null"` is never an identity. `file:` is always opaque (the URL spec
-leaves it implementation-defined). `blob:` takes the origin of its path only when
-that parses as `http`/`https`; there is no blob URL entry registry. Origin is
-computed once per `BrowserUrl`, so re-parsing an opaque URL gives a different
-origin. The app-layer `LoadedPage` now associates each new document with the final
+leaves it implementation-defined). `blob:` takes the parsed path URL's origin
+only when its scheme is `http`, `https` or `file`; with this Core's file-origin
+policy, `blob:file:` remains opaque. Invalid or other inner URLs yield a fresh
+opaque origin, and there is no blob URL entry registry. Origin is computed once
+per `BrowserUrl`, so re-parsing an opaque URL gives a different origin.
+The app-layer `LoadedPage` now associates each new document with the final
 response URL's tuple origin or a fresh opaque identity, independent of opaque URL
 snapshot reuse. Retained repaint and metadata record copies preserve that
 document identity. The browser shell publishes it as the tab's read-only
@@ -51,18 +53,22 @@ and leaving the original unchanged.
 `ToJson()` returns the serialized URL string for the standard `toJSON()` method.
 `WithProtocol(value)` changes the scheme when it is valid and obeys the
 special-scheme transition restrictions; invalid values leave the snapshot
-unchanged. `WithUsername(value)` and `WithPassword(value)` apply the URL
-credential setters with the standard's UTF-8 userinfo percent-encode set;
-URLs without a host and `file:` URLs remain unchanged.
+unchanged. The value may omit its trailing colon, and ASCII tabs/newlines are
+removed as by the URL parser. `WithUsername(value)` and `WithPassword(value)`
+apply the URL credential setters with the standard's UTF-8 userinfo
+percent-encode set; URLs without a host and `file:` URLs remain unchanged.
 `WithHost(value)` applies the host state override to a new snapshot, retaining
 the current port when the input has no valid port and preserving the URL's
-credentials and path/query/fragment. Opaque-path URLs are unchanged.
+credentials and path/query/fragment. File URLs use file-host parsing, which
+normalizes `localhost` to an empty host and does not accept a port. Opaque-path
+URLs are unchanged.
 `WithHostname(value)` applies the hostname state override, preserving the
 current port and other URL components; values containing a port are ignored.
 Opaque-path URLs are unchanged.
 `WithPort(value)` applies the port setter to a new snapshot, clearing the port
-for an empty value and leaving invalid values and URLs that cannot have a port
-unchanged.
+for an empty value and leaving values without a leading ASCII digit or with an
+out-of-range numeric prefix, and URLs that cannot have a port, unchanged. Like
+the port state override, a leading digit run is committed before later input.
 `WithPathname(value)` applies the pathname setter to a new snapshot, preserving
 the query and fragment; opaque-path URLs are unchanged.
 `CreateSearchParams()` returns a detached `UrlSearchParams` parsed from the query and

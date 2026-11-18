@@ -51,24 +51,23 @@ public sealed class BrowserUrl
 
     private static SecurityOrigin ComputeOrigin(DomUrl url, bool allowBlob)
     {
-        switch (url.Protocol)
+        if (IsTupleOriginScheme(url.Protocol))
         {
-            case "http:" or "https:" or "ftp:" or "ws:" or "wss:":
-                return SecurityOrigin.FromTuple(url.Protocol[..^1], url.Hostname, url.Port);
-            case "blob:" when allowBlob:
-                try
-                {
-                    var inner = new DomUrl(url.Pathname);
-                    return inner.Protocol is "http:" or "https:"
-                        ? ComputeOrigin(inner, allowBlob: false)
-                        : SecurityOrigin.CreateOpaque();
-                }
-                catch (InvalidUrlException)
-                {
-                    return SecurityOrigin.CreateOpaque();
-                }
-            default:
-                return SecurityOrigin.CreateOpaque();
+            return SecurityOrigin.FromTuple(url.Protocol[..^1], url.Hostname, url.Port);
+        }
+
+        if (url.Protocol != "blob:" || !allowBlob) { return SecurityOrigin.CreateOpaque(); }
+
+        try
+        {
+            var inner = new DomUrl(url.Pathname);
+            return inner.Protocol is "http:" or "https:" or "file:"
+                ? ComputeOrigin(inner, allowBlob: false)
+                : SecurityOrigin.CreateOpaque();
+        }
+        catch (InvalidUrlException)
+        {
+            return SecurityOrigin.CreateOpaque();
         }
     }
 
@@ -135,14 +134,15 @@ public sealed class BrowserUrl
     /// <summary>Returns a new URL with its scheme changed as by the URL <c>protocol</c> setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-protocol">URL.protocol setter</see>.
     /// Invalid scheme input and forbidden special/non-special transitions leave this immutable snapshot unchanged.
-    /// The setter value is consumed through its first colon; the existing serialized remainder is reparsed.</remarks>
+    /// The setter value is parsed with an appended colon, so a colon is optional; ASCII tabs and newlines are removed
+    /// as by the basic URL parser. The existing serialized remainder is reparsed.</remarks>
     public BrowserUrl WithProtocol(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        value = RemoveAsciiTabsAndNewlines(value);
         var colon = value.IndexOf(':', StringComparison.Ordinal);
-        if (colon < 0) { return this; }
 
-        var scheme = value[..colon];
+        var scheme = colon < 0 ? value : value[..colon];
         if (scheme.Length == 0 || !char.IsAsciiLetter(scheme[0])
             || scheme.Skip(1).Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '+' and not '-' and not '.'))
         {
@@ -153,8 +153,10 @@ public sealed class BrowserUrl
         var currentScheme = Protocol[..^1];
         var currentSpecial = IsSpecialScheme(currentScheme);
         var newSpecial = IsSpecialScheme(scheme);
-        if (currentSpecial != newSpecial || currentScheme == "file" && scheme != "file"
-            || scheme == "file" && Hostname.Length == 0)
+        var includesCredentials = Username.Length > 0 || Password.Length > 0;
+        if (currentSpecial != newSpecial
+            || scheme == "file" && (includesCredentials || Port.Length > 0)
+            || currentScheme == "file" && Host.Length == 0)
         {
             return this;
         }
@@ -197,20 +199,21 @@ public sealed class BrowserUrl
 
         var special = IsSpecialScheme(Protocol[..^1]);
         var hostEnd = FindHostStateEnd(value, special, out var portSeparator);
-        var hostnameInput = portSeparator >= 0 && portSeparator < hostEnd
-            ? value[..portSeparator]
-            : value[..hostEnd];
-        var hostParsingProtocol = Protocol == "file:" ? "http:" : Protocol;
-        var hostCandidate = ParseHostnameCandidate(hostnameInput, hostParsingProtocol);
+        var isFile = Protocol == "file:";
+        if (isFile && portSeparator >= 0 && portSeparator < hostEnd) { return this; }
+
+        var hostnameInput = portSeparator >= 0 && portSeparator < hostEnd ? value[..portSeparator] : value[..hostEnd];
+        var hostCandidate = ParseHostnameCandidate(hostnameInput, Protocol);
         if (hostCandidate is null) { return this; }
 
         int? port = Port.Length == 0 ? null : int.Parse(Port, CultureInfo.InvariantCulture);
-        if (portSeparator >= 0 && portSeparator < hostEnd)
+        if (!isFile && portSeparator >= 0 && portSeparator < hostEnd)
         {
             var portInput = value[(portSeparator + 1)..hostEnd];
-            if (ushort.TryParse(portInput, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+            if (TryParsePortPrefix(portInput, out var portValue))
             {
-                var portCandidate = ParseResult($"{Protocol}//{hostnameInput}:{portInput}/").Url;
+                var portCandidate = ParseResult(
+                    $"{Protocol}//{hostnameInput}:{portValue.ToString(CultureInfo.InvariantCulture)}/").Url;
                 if (portCandidate is not null)
                 {
                     port = portCandidate.Port.Length == 0
@@ -220,7 +223,8 @@ public sealed class BrowserUrl
             }
         }
 
-        return new BrowserUrl(new DomUrl(Href).WithHost(hostCandidate.Hostname, port));
+        var updated = new BrowserUrl(new DomUrl(Href).WithHost(hostCandidate.Hostname, port));
+        return updated.Href == Href ? this : updated;
     }
 
     /// <summary>Returns a new URL with its hostname set following the URL hostname setter.</summary>
@@ -245,7 +249,8 @@ public sealed class BrowserUrl
 
     /// <summary>Returns a new URL with its port set following the URL port setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-port">URL.port setter</see>.
-    /// An empty value clears the port. Invalid values and URLs that cannot have a port leave this snapshot unchanged.</remarks>
+    /// An empty value clears the port. The leading ASCII digit run is parsed as the port; a missing digit run,
+    /// an out-of-range prefix, or a URL that cannot have a port leaves this snapshot unchanged.</remarks>
     public BrowserUrl WithPort(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -253,9 +258,10 @@ public sealed class BrowserUrl
         if (value.Length == 0) { return new BrowserUrl(new DomUrl(Href).WithHost(Hostname, null)); }
 
         value = RemoveAsciiTabsAndNewlines(value);
-        if (!ushort.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)) { return this; }
+        if (!TryParsePortPrefix(value, out var portValue)) { return this; }
 
-        var portCandidate = ParseResult($"{Protocol}//{Hostname}:{value}/").Url;
+        var portCandidate = ParseResult(
+            $"{Protocol}//{Hostname}:{portValue.ToString(CultureInfo.InvariantCulture)}/").Url;
         if (portCandidate is null) { return this; }
 
         int? port = portCandidate.Port.Length == 0
@@ -353,6 +359,19 @@ public sealed class BrowserUrl
         return result.ToString();
     }
 
+    private static bool TryParsePortPrefix(string value, out ushort port)
+    {
+        var digitCount = 0;
+        while (digitCount < value.Length && char.IsAsciiDigit(value[digitCount])) { digitCount++; }
+        if (digitCount == 0)
+        {
+            port = 0;
+            return false;
+        }
+
+        return ushort.TryParse(value[..digitCount], NumberStyles.None, CultureInfo.InvariantCulture, out port);
+    }
+
     private BrowserUrl? ParseHostnameCandidate(string hostname, string parsingProtocol)
     {
         if (hostname.Contains('@')) { return null; }
@@ -419,9 +438,9 @@ public sealed class BrowserUrl
 
     /// <summary>Returns a new URL whose fragment is set following the URL hash setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-hash">URL.hash setter</see>. An empty value
-    /// removes the fragment (opaque-path trailing spaces follow the vendored parser's re-parse behavior); otherwise one
-    /// leading <c>#</c> is removed and the rest is UTF-8 percent-encoded with the fragment percent-encode set (tabs and
-    /// newlines are encoded, not stripped). This immutable facade returns a fresh snapshot, so an opaque origin gets a new identity.</remarks>
+    /// removes the fragment; otherwise one leading <c>#</c> is removed and the rest is UTF-8 percent-encoded with the
+    /// fragment percent-encode set. ASCII tabs and newlines are removed by the basic URL parser. This immutable facade
+    /// returns a fresh snapshot, so an opaque origin gets a new identity.</remarks>
     public BrowserUrl WithHash(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -429,7 +448,7 @@ public sealed class BrowserUrl
         var withoutFragment = fragmentStart < 0 ? Href : Href[..fragmentStart];
         if (value.Length == 0) { return Parse(withoutFragment); }
 
-        var fragment = value[0] == '#' ? value[1..] : value;
+        var fragment = RemoveAsciiTabsAndNewlines(value[0] == '#' ? value[1..] : value);
         var encoded = new System.Text.StringBuilder(withoutFragment).Append('#');
         foreach (var character in fragment)
         {
@@ -449,7 +468,7 @@ public sealed class BrowserUrl
     /// <summary>Returns a new URL whose query is set following the URL search setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-search">URL.search setter</see>. An empty value
     /// removes the query; otherwise one leading <c>?</c> is removed and the rest is UTF-8 percent-encoded with the query
-    /// (or special-query) set. With a state override, <c>#</c> is data and tabs/newlines are encoded rather than stripped.
+    /// (or special-query) set. With a state override, <c>#</c> is data and ASCII tabs/newlines are removed by the basic URL parser.
     /// The fragment is retained. This immutable facade returns a fresh snapshot, so an opaque origin gets a new identity
     /// and there is no linked <see cref="UrlSearchParams"/> to update.</remarks>
     public BrowserUrl WithSearch(string value)
@@ -462,7 +481,7 @@ public sealed class BrowserUrl
         var prefix = queryStart < 0 ? withoutFragment : withoutFragment[..queryStart];
         if (value.Length == 0) { return Parse(prefix + fragment); }
 
-        var query = value[0] == '?' ? value[1..] : value;
+        var query = RemoveAsciiTabsAndNewlines(value[0] == '?' ? value[1..] : value);
         var rebuilt = new System.Text.StringBuilder(prefix).Append('?');
         foreach (var character in query)
         {
@@ -498,6 +517,9 @@ public sealed class BrowserUrl
 
     private static bool IsSpecialScheme(string scheme) =>
         scheme is "ftp" or "file" or "http" or "https" or "ws" or "wss";
+
+    private static bool IsTupleOriginScheme(string protocol) =>
+        protocol is "http:" or "https:" or "ftp:" or "ws:" or "wss:";
 }
 
 public sealed record UrlParseResult(BrowserUrl? Url, string? Error)

@@ -35,9 +35,16 @@ Nutzerwunsch wurde danach Phase 2 abgeschlossen (KP-470–474): Die vorhandenen
 gepinnten URL-/Domainfixturefamilien (896 URL-, 87 toascii- und 2.670 Unicode-17
 IDNA-Faelle) bestehen. Eine Regression bei relativen Referenzen mit Unicode-
 Basis wurde test-first behoben. Code-Review, Core-Tests, Solution-Build,
-Solution-Volltest und Formatverifikation bestehen. Phase 2 ist review-approved,
-aber noch nicht committed; der naechste Schritt ist der Commitcheckpoint. Phase
-3 hat noch nicht begonnen.
+Solution-Volltest und Formatverifikation bestehen. Phase 2 ist als
+`e161d26` (`fix(core-url): select parser from URL base`) lokal committed und
+review-approved. Phase 3 schloss belegte Core-Setter- und Origin-Luecken:
+Protocol-Uebergang von gehosteter `file:` URL, ASCII-Ziffernpraefixe im
+`WithPort`-/`WithHost`-State-Override, `file:`-Host-Parsing, blob-Origin-
+Allowlist und Such-/Fragment-Delimiterreihenfolge. Der abschliessende Review
+genehmigte die Aenderungen. Core-Tests, Solution-Build, Volltest und
+Formatverifikation bestehen (KP-476). Phase 3 ist review-approved, aber noch
+nicht committed. `main` liegt zwei Commits vor `origin/main`; der Arbeitsbaum
+enthaelt die Phase-3-Aenderungen, kein Push erfolgte. Phase 4 hat nicht begonnen.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

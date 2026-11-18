@@ -64,6 +64,8 @@ public sealed class SecurityOriginTests
     [InlineData("blob:file:///x")]
     [InlineData("blob:blob:https://example.com/x")]
     [InlineData("blob:ftp://example.com/x")]
+    [InlineData("blob:ws://example.com/x")]
+    [InlineData("blob:wss://example.com/x")]
     [InlineData("blob:/relative")]
     [InlineData("mailto:a@b.example")]
     public void NonTupleUrlsHaveOpaqueOrigins(string url)
@@ -108,7 +110,7 @@ public sealed class SecurityOriginTests
     }
 
     [Fact]
-    public void BlobUrlsInheritOnlyHttpOrigin()
+    public void BlobUrlsInheritHttpAndHttpsOrigins()
     {
         Assert.Equal(O("https://example.com"), O("blob:https://example.com/d0360e2f-caee-469f-9a2f-87d5b0456f6f?q#f"));
         Assert.Equal(O("http://example.com:81"), O("blob:http://example.com:81/id"));
