@@ -12,9 +12,9 @@
 WHATWG-URL-Implementierung (REQ-012). Der geklaerte Umfang umfasst Core-
 Algorithmen und browserseitige `URL`/`URLSearchParams`-Semantik einschliesslich
 interface-spezifischem Web IDL; allgemeine Web-IDL-Generierung bleibt
-ausgeschlossen (DEC-035, Q-038). Das Support-Inventar wurde nach Phase 4 auf
-ungefaehr 70% aktualisiert; diese Schaetzung beruecksichtigt die Phase-5-
-Bindings noch nicht und ist in Phase 6 anhand der Evidenz neu zu bewerten.
+ausgeschlossen (DEC-035, Q-038). Das Support-Inventar wurde in Phase 6 nach erneuter Offline-Evidenz
+naeherungsweise auf ~75% WHATWG URL und ~12% Web IDL aktualisiert; beide Werte
+sind grobe Umfangsschaetzungen und kein Konformitaetsgrad.
 Core bietet die unveraenderliche `BrowserUrl`-Fassade und das mutable Modell
 mit bidirektionaler Live-Linkage. Der genehmigte Sechs-Phasen-Plan steht in
 [whatwg-url-completion-plan.md](../plans/whatwg-url-completion-plan.md).
@@ -56,16 +56,19 @@ unveraendert. Phase 5 ergaenzt jetzt gebrandete JavaScript-`URL`- und
 Web-IDL-USVString-, Sequence- und Record-Konvertierung. Die private Bridge
 uebertraegt nur Strings/Handles; allgemeine Web IDL, Netzwerkzugriff,
 automatische Dokument-URL-Integration und Aktivierung von Page Scripts bleiben
-ausgeschlossen. Die abschliessende direkte Codepruefung ist abgeschlossen; 10
-gezielte URL-Tests, 372 Engine.Scripting-Tests, der Solution-Build ohne Warnungen/
-Fehler, der Solution-Volltest (mit zwei uebersprungenen Prozessdrucktests),
-Formatverifikation, Diff-Check und V8Smoke im dokumentierten Local-Modus
-bestanden (KP-481). Phase 5 ist im Arbeitsbaum review-approved, aber nicht
-committed. Phase 6 muss die abschliessende Offline-Evidenz sowie
-[standards.md](../docs/standards.md#implemented-subsets) und die betroffenen
-Subsystem-Dokumente anpassen; der Phase-5-Checkpoint wartet auf die
-Nutzerentscheidung zum Commit/Fortsetzen. `main` liegt fuenf Commits vor
-`origin/main`; es wurde nicht gepusht.
+ausgeschlossen. Phase 5 ist als `3de5e4d` (`feat(engine.scripting): add URL
+browser interfaces`) committed; der Hook formatierte Kontext-/Phasenbericht
+und meldete neun gepruefte Dateien ohne Probleme. Phase 6 bestaetigte offline
+896 URL-, 87 toascii-, 2.670 Unicode-17-IDNA-, 35 URL-encoded-Parser-, 12
+Stringifier- und 1 Sequence-Constructor-WPT-Vektoren. Die 4.223 Core- und 372
+Engine.Scripting-Tests bestanden; Solution-Build, Solution-Volltest,
+Formatverifikation und Diff-Check bestanden, mit zwei uebersprungenen
+Prozessdrucktests. `standards.md` nennt jetzt ungefaehr 75% WHATWG URL und 12%
+Web IDL; Core-, Scripting-, Architektur- und Projektkarten-Dokumentation
+beschreiben die Schnittstellengrenzen. Phase 6 ist validiert, aber ihre
+Dokumentationsaenderungen sind noch nicht committed; der Commit-Checkpoint
+wartet auf Nutzeranweisung. `main` liegt sechs Commits vor `origin/main`; es
+wurde nicht gepusht.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

@@ -32,8 +32,9 @@ Phase 11h adds one-shot finite document readiness, private lifecycle events and
 verified stage checkpoints under the initial batch deadline; no Window/load
 or persistent renderer event loop is implied.
 Phase 11i adds bounded query/matches/closest facades and static NodeList snapshots.
-Engine.Scripting now references Engine.Css to reuse its selector implementation;
-there is no platform/chrome/network dependency or duplicate selector parser.
+Engine.Scripting references Engine.Css for selector matching and Core.Url for
+the bounded URL facades; there is no platform/chrome/network dependency or
+duplicate selector parser.
 Phase 11j adds live bounded class token facades through the existing primitive
 attribute bridge, not a new host callback or mutable cross-tab collection.
 Phase 11k extends that bridge with bounded tree inspection and element-only
@@ -64,8 +65,10 @@ Phase 11w queues import-free inline modules during parsing, evaluates them after
 the interactive readiness transition and before DOMContentLoaded, and bounds
 top-level-await completion by the shared script deadline/cancellation. Modules
 have no loader, and unresolved/rejected evaluation fails navigation transactionally.
-Full DOM/Web IDL, HTML scheduling/event loops and WebAssembly integration remain deferred; see the
-[scripting guide](../scripting.md) for scope and target evidence.
+WHATWG URL completion adds bounded JavaScript `URL`/`URLSearchParams` facades
+over Core.Url without enabling page-script execution. Full DOM, general Web IDL,
+HTML scheduling/event loops and WebAssembly integration remain deferred; see
+the [scripting guide](../scripting.md) for scope and target evidence.
 
 ## Dependency direction
 
@@ -172,7 +175,7 @@ Start with static HTML/CSS rendering, documenting exact supported subsets.
 Keep URL, encoding, MIME, Fetch, HTML tokenization/tree construction, DOM,
 CSS cascade/layout, scripting, and painting separately testable.
 
-Later milestones add Web IDL bindings, the HTML event loop, V8, full Fetch/CORS,
+Later milestones add broader Web IDL bindings, the HTML event loop, full Fetch/CORS,
 CSP, workers/service workers, storage, broader CSS layout, accessibility,
 images/media, canvas, WebGL/WebGPU and WebAssembly. Official documents guide
 implementation; WPT provides separate conformance evidence. Neither a cached

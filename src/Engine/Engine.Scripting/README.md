@@ -103,7 +103,7 @@ WHATWG URL completion phase 5 adds branded native-JavaScript `URL` and
 linkage, URL static methods, USVString conversion, mutable component attributes
 and bounded iterable/forEach behavior. The private bridge carries only strings
 and integer handles. This is interface-specific behavior, not generated
-Web IDL; broader URL integration and full Web IDL remain deferred.
+Web IDL; broader URL/document integration and full Web IDL remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

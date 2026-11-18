@@ -84,3 +84,6 @@ Phase 11w queues import-free inline modules during parsing and evaluates them
 after the interactive transition and before DOMContentLoaded; top-level await
 shares the initial deadline/cancellation, with imports and module fetching
 unsupported.
+The separate WHATWG URL completion adds bounded JavaScript `URL` and
+`URLSearchParams` facades over Core URL, without enabling page scripts by default;
+see the [scripting guide](scripting.md#url-interfaces).

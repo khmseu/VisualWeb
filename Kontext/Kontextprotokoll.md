@@ -14426,3 +14426,40 @@ third_party`, `git diff --check` sowie
   [UrlBindingTests.cs](../tests/Engine.Scripting.Tests/UrlBindingTests.cs);
   lokale Web IDL- und URL-Spezifikationen oben; Validierungsausgaben im
   aktuellen Turn.
+
+### KP-482 - Phase 5 commit und Phase 6 Standardsabschluss
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag am 2026-11-18T06:01:25+01:00; Commit und
+  Phase-6-Validierung am 2026-11-18; genaue Commit-/Testuhrzeiten unbekannt.
+- Erfassungsart: Nutzerangabe, Git-Ausgabe, lokale Fixturezaehlung,
+  Spezifikationsmanifest und Build-/Test-/Format-Ausgaben.
+- Nutzerangabe: „commit, then continue“ nach der genehmigten Phase 5.
+- Belegt: Phase 5 wurde als `3de5e4d` (`feat(engine.scripting): add URL browser
+interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
+  und den Phase-5-Bericht und bestaetigte neun geaenderte Dateien ohne
+  Formatprobleme. Der Commit wurde nicht gepusht; `main` liegt sechs Commits
+  vor `origin/main`.
+- Belegt: Phase 6 fuehrte die bestehenden Offline-URL-Datensaetze erneut aus:
+  896 URL-Parserfaelle, 87 toascii-Faelle, 2.670 Unicode-17-IDNA-Faelle,
+  35 URL-encoded-Parser-, 12 Stringifier- und 1 Sequence-Constructor-Vektoren.
+  `Core.Tests` (4.223) und `Engine.Scripting.Tests` (372) bestanden. Der
+  Solution-Build hatte null Warnungen/Fehler; die Solution-Tests bestanden
+  mit zwei uebersprungenen Prozessdrucktests. Format- und Diff-Checks
+  bestanden. Die URL- und Web-IDL-Cachequellen waren laut Manifest am
+  2026-11-16 bzw. 2026-11-07 geprueft und innerhalb der 30-Tage-Frist.
+- Belegt: `docs/standards.md` aktualisiert die groben Umfangsschaetzungen auf
+  ~75% fuer WHATWG URL und ~12% fuer Web IDL und beschreibt die nun
+  implementierten URL-Facades sowie die weiterhin fehlende allgemeine
+  Web-IDL-Generierung. Core-, Scripting-, Architektur- und Projektkarten-
+  Dokumentation wurden entsprechend abgeglichen. Die Werte sind Schaetzungen,
+  keine Konformitaetsmessung.
+- Status: Phase 6 ist umgesetzt und validiert. Die Phase-6-Dokumentation und
+  dieser Kontextfortschritt sind noch nicht committed. Der Commit-Checkpoint
+  wartet auf Nutzeranweisung; ein Gesamtabschlussbericht folgt nach diesem
+  Commit-Schritt.
+- Quellen: Nutzerangabe mit Zeitstempel oben; Commit `3de5e4d`; [Phase-6-
+  Bericht](../plans/whatwg-url-completion-phase-6-complete.md);
+  [standards inventory](../docs/standards.md#implemented-subsets);
+  [Fixture provenance](../tests/Core.Tests/Data/README.md); manifest IDs
+  `url`/`webidl`; Validierungsausgaben im aktuellen Turn.

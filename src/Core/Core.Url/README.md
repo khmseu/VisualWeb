@@ -39,6 +39,10 @@ initialization, ordered
 detached. Other mutations are not implemented. `ToString()` returns the UTF-8
 `application/x-www-form-urlencoded` serialization of the ordered tuples.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
+The browser-facing JavaScript `URL` and `URLSearchParams` facades live in
+Engine.Scripting and use these Core APIs through a primitive-only bridge; see
+the [scripting guide](../../../docs/scripting.md#url-interfaces). This does not
+add JavaScript objects to Core.Url or claim full URL conformance.
 
 Official source: <https://url.spec.whatwg.org/> (manifest ID `url`, local
 `specs/cache/url.html`). See the [standards workflow](../../../docs/standards.md).

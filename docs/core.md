@@ -99,6 +99,10 @@ ECMAScript iterator objects or Web IDL bindings.
 The legacy query encoding override, other mutable URL component setters, and
 broader DOM URL behavior remain deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
+The browser-facing JavaScript `URL` and `URLSearchParams` facades are implemented
+in Engine.Scripting over these Core APIs; see the
+[scripting guide](scripting.md#url-interfaces). This does not add script execution
+to the static content pipeline.
 
 ## Encoding
 
