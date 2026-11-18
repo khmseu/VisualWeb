@@ -14528,3 +14528,82 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
 - Quellen: Nutzerangabe mit Zeitstempel oben; Git-Commit `cb58090`;
   `git status -sb`, `git log -2 --oneline --decorate` und Reflogpruefung im
   aktuellen Turn.
+
+### KP-486 - Frage nach verbleibender WHATWG-URL-Arbeit
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerfrage 2026-11-18T06:46:13+01:00.
+- Erfassungsart: Nutzerangabe und Abgleich mit den aktuellen Projektleitfaeden.
+- Nutzerangabe: „so what still needs to be done for whatwg url?“
+- Belegt: Der genehmigte Sechs-Phasen-Plan ist abgeschlossen; das
+  Support-Inventar schaetzt WHATWG URL auf ~75%, ausdruecklich nicht als
+  formalen Konformitaetsgrad. Es listet weitere mutable Core-Komponentensetter,
+  breitere URL-/Dokumentintegration und vollstaendige URL-Standardabdeckung als
+  nicht beansprucht. Der Core-Guide nennt ausserdem den legacy query encoding
+  override als offen. Die Scripting-/Web-IDL-Dokumentation nennt allgemeine
+  Bindungsgenerierung, breite Typkonvertierung, Overload-Aufloesung und volle
+  Konstruktor-/Prototypsemantik als deferred.
+- Belegt: Die Abschlussvalidierung fuehrte gepinnte URL-, toascii-, Unicode-
+  IDNA- und URLSearchParams-Vektoren sowie Core-/Scripting-Tests aus; sie weist
+  keine vollstaendige WHATWG-URL-WPT-Konformitaet nach.
+- Ableitung: Ein Folgeschritt braucht eine neue Priorisierung/Abnahme, weil die
+  bisherigen sechs genehmigten Phasen abgeschlossen sind und die genannten
+  Punkte bisher als ausserhalb des Umfangs dokumentiert waren.
+- Quellen: [Standards inventory](../docs/standards.md#implemented-subsets);
+  [Core URL guide](../docs/core.md#url);
+  [URL interfaces](../docs/scripting.md#url-interfaces);
+  [final report](../plans/whatwg-url-completion-complete.md);
+  [Phase 6 evidence](../plans/whatwg-url-completion-phase-6-complete.md).
+
+### KP-487 - Anfrage zur vollstaendigen WHATWG-URL-Implementierung
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-18T06:53:18+01:00.
+- Erfassungsart: Nutzerangabe und read-only Gap-Audit mit lokal gecachten
+  URL-/Web-IDL-Spezifikationen und Quellcode.
+- Nutzerangabe: „complete the implementation of WHATWG URL.“
+- Belegt: Der zuvor genehmigte Sechs-Phasen-Plan ist abgeschlossen und
+  dokumentiert nur einen begrenzten Umfang (~75% URL, ungefaehre Schaetzung).
+  Der aktuelle Auftrag erweitert diesen Umfang. Das Gap-Audit bestaetigte
+  Abweichungen bei URL-IDL-Deskriptoren, mehreren Function-`length`-Werten
+  sowie Web-IDL-Iteratorobjekten; es identifizierte zudem begrenzte
+  URLSearchParams-WPT-Vektoren und dokumentierte Luecken bei Blob-Origin-
+  Registry-/Dokumentintegration. Keine Dateien oder Tests wurden vom Audit-
+  Agenten geaendert oder ausgefuehrt.
+- Vorschlag, noch nicht beschlossen: URL-spezifische Web-IDL-Korrektheit,
+  Iteratorobjekte, vollstaendigere Offline-WPT-Abdeckung mit testgetriebenen
+  Fixes und erforderliche URL-Umgebungsintegration umsetzen; allgemeine
+  Web-IDL-Generierung nur bei ausdruecklicher Erweiterung einbeziehen.
+- Status: Erweiterter Umsetzungsplan wartet auf Nutzerfreigabe. Bis dahin
+  keine Codeaenderungen fuer diesen neuen Umfang.
+- Quellen: Nutzerangabe mit Zeitstempel oben; [Support inventory](../docs/standards.md#implemented-subsets);
+  [Core URL guide](../docs/core.md#url);
+  [URL interfaces](../docs/scripting.md#url-interfaces);
+  lokale `specs/cache/url.html` und `specs/cache/webidl.html`;
+  Gap-Audit im aktuellen Turn.
+
+### KP-488 - Genehmigung des erweiterten URL-Plans
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerfreigabe 2026-11-18T07:11:38+01:00.
+- Erfassungsart: Nutzerangabe und genehmigter Plan.
+- Nutzerangabe: „approved“ als Antwort auf den Vorschlag, WHATWG URL ueber den
+  frueheren begrenzten Sechs-Phasen-Umfang hinaus zu vervollstaendigen.
+- Beschluss: URL-spezifische Web-IDL-Korrektheit, Iteratorobjekte,
+  vollstaendigere Offline-WPT-Abdeckung, nachgewiesene Core-Abweichungen und
+  URL-erforderliche Umgebungs-/Darstellungsregeln werden in fuenf test-first
+  Phasen bearbeitet. Allgemeine Web-IDL, allgemeine HTML-Integration und eine
+  File-API-Implementierung bleiben ausgeschlossen.
+- Belegt: Der genehmigte Plan steht in
+  [whatwg-url-full-conformance-plan.md](../plans/whatwg-url-full-conformance-plan.md).
+- Belegt: Phase 1 korrigierte URL/Web-IDL-Deskriptoren, Function-`length`-Werte
+  und optionale Argumente. Der Reviewstatus ist APPROVED. Die 376
+  Engine.Scripting-Tests, der Solution-Build (0 Warnungen/Fehler), die
+  Solution-Tests (zwei uebersprungene Prozessdrucktests), Formatverifikation
+  und Diff-Check bestanden. Bericht:
+  [Phase 1](../plans/whatwg-url-full-conformance-phase-1-complete.md).
+- Status: Phase 1 ist abgeschlossen und uncommitted; der Nutzer-Commit-
+  Checkpoint steht aus. Phase 2 wurde noch nicht begonnen.
+- Quellen: Nutzerfreigabe mit Zeitstempel oben; genehmigter Plan;
+  lokale `specs/cache/url.html` und `specs/cache/webidl.html`;
+  Gap-Audit im vorherigen Turn.

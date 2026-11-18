@@ -328,14 +328,14 @@ internal sealed class UrlBindings
             const stringCharCodeAt = String.prototype.charCodeAt;
             const arrayPush = Array.prototype.push;
             const ownKeys = Reflect.ownKeys, getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-            const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
+            const create = Object.create, define = Object.defineProperty;
             const weakGet = WeakMap.prototype.get, weakSet = WeakMap.prototype.set;
             const TypeErrorCtor = TypeError, RangeErrorCtor = RangeError;
             const iterator = Symbol.iterator, toStringTag = Symbol.toStringTag;
             const urlBrands = new WeakMap(), paramsBrands = new WeakMap(), paramsCache = new WeakMap();
             const urlPrototype = create(Object.prototype), paramsPrototype = create(Object.prototype);
-            define(urlPrototype, toStringTag, {value:'URL'});
-            define(paramsPrototype, toStringTag, {value:'URLSearchParams'});
+            define(urlPrototype, toStringTag, {value:'URL', configurable:true});
+            define(paramsPrototype, toStringTag, {value:'URLSearchParams', configurable:true});
             const required = (count, minimum) => {
                 if (count < minimum) throw new TypeErrorCtor('Not enough arguments');
             };
@@ -380,11 +380,11 @@ internal sealed class UrlBindings
             const readUrl = (id, name) => parse(call('url-get', id, name));
             const writeUrl = (id, name, value) =>
                 call('url-set', id, json([name, usv(value)]));
-            function URL(url, base) {
+            function URL(url, base = undefined) {
                 if (!new.target) throw new TypeErrorCtor("URL constructor must be called with 'new'");
                 required(arguments.length, 1);
                 const input = usv(url);
-                const args = arguments.length > 1 ? [input, usv(base)] : [input];
+                const args = base !== undefined ? [input, usv(base)] : [input];
                 const id = +call('url-create', 0, json(args));
                 apply(weakSet, urlBrands, this, id);
             }
@@ -405,17 +405,17 @@ internal sealed class UrlBindings
                 }
                 return result;
             }});
-            define(urlPrototype, 'toString', {enumerable: true, value: function() {return readUrl(urlBrand(this), 'href');}});
-            define(urlPrototype, 'toJSON', {enumerable: true, value: function() {return readUrl(urlBrand(this), 'href');}});
-            define(URL, 'parse', {enumerable:true, configurable:true, writable:true, value: function(url, base) {
+            define(urlPrototype, 'toString', {enumerable: true, configurable: true, writable: true, value: function() {return readUrl(urlBrand(this), 'href');}});
+            define(urlPrototype, 'toJSON', {enumerable: true, configurable: true, writable: true, value: function() {return readUrl(urlBrand(this), 'href');}});
+            define(URL, 'parse', {enumerable:true, configurable:true, writable:true, value: function(url, base = undefined) {
                 required(arguments.length, 1);
-                const args = arguments.length > 1 ? [usv(url), usv(base)] : [usv(url)];
+                const args = base !== undefined ? [usv(url), usv(base)] : [usv(url)];
                 const result = call('url-parse', 0, json(args));
                 return result === 'null' ? null : makeUrl(+result);
             }});
-            define(URL, 'canParse', {enumerable:true, configurable:true, writable:true, value: function(url, base) {
+            define(URL, 'canParse', {enumerable:true, configurable:true, writable:true, value: function(url, base = undefined) {
                 required(arguments.length, 1);
-                const args = arguments.length > 1 ? [usv(url), usv(base)] : [usv(url)];
+                const args = base !== undefined ? [usv(url), usv(base)] : [usv(url)];
                 return call('url-can-parse', 0, json(args)) === 'true';
             }});
             function makeUrl(id) {
@@ -466,32 +466,32 @@ internal sealed class UrlBindings
             define(paramsPrototype, 'size', {enumerable:true, configurable:true, get() {
                 return +call('params-get', paramsBrand(this), 'size');
             }});
-            for (const method of ['append','set']) define(paramsPrototype, method, {enumerable:true, value:function(name, value) {
+            for (const method of ['append','set']) define(paramsPrototype, method, {enumerable:true, configurable:true, writable:true, value:function(name, value) {
                 const id = paramsBrand(this); required(arguments.length, 2);
                 const first = usv(name), second = usv(value);
                 call('params-set', id, json([method, first, second]));
             }});
-            define(paramsPrototype, 'delete', {enumerable:true, value:function(name, value) {
+            define(paramsPrototype, 'delete', {enumerable:true, configurable:true, writable:true, value:function(name, value = undefined) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 const first = usv(name);
-                if (arguments.length > 1) call('params-set', id, json(['delete', first, usv(value)]));
+                if (value !== undefined) call('params-set', id, json(['delete', first, usv(value)]));
                 else call('params-set', id, json(['delete', first]));
             }});
-            define(paramsPrototype, 'get', {enumerable:true, value:function(name) {
+            define(paramsPrototype, 'get', {enumerable:true, configurable:true, writable:true, value:function(name) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 return parse(call('params-get', id, json(['get', usv(name)])));
             }});
-            define(paramsPrototype, 'getAll', {enumerable:true, value:function(name) {
+            define(paramsPrototype, 'getAll', {enumerable:true, configurable:true, writable:true, value:function(name) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 return parse(call('params-get', id, json(['getAll', usv(name)])));
             }});
-            define(paramsPrototype, 'has', {enumerable:true, value:function(name, value) {
+            define(paramsPrototype, 'has', {enumerable:true, configurable:true, writable:true, value:function(name, value = undefined) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 const args = ['has', usv(name)];
-                if (arguments.length > 1) push(args, usv(value));
+                if (value !== undefined) push(args, usv(value));
                 return parse(call('params-get', id, json(args)));
             }});
-            define(paramsPrototype, 'sort', {enumerable:true, value:function() {
+            define(paramsPrototype, 'sort', {enumerable:true, configurable:true, writable:true, value:function() {
                 const id = paramsBrand(this);
                 call('params-set', id, json(['sort']));
             }});
@@ -510,11 +510,11 @@ internal sealed class UrlBindings
                 })();
             };
             const values = iterate('values'), entries = iterate('entries');
-            define(paramsPrototype, 'keys', {enumerable:true, value:iterate('keys')});
-            define(paramsPrototype, 'values', {enumerable:true, value:values});
-            define(paramsPrototype, 'entries', {enumerable:true, value:entries});
-            define(paramsPrototype, iterator, {value:entries});
-            define(paramsPrototype, 'forEach', {enumerable:true, value:function(callback, thisArg) {
+            define(paramsPrototype, 'keys', {enumerable:true, configurable:true, writable:true, value:iterate('keys')});
+            define(paramsPrototype, 'values', {enumerable:true, configurable:true, writable:true, value:values});
+            define(paramsPrototype, 'entries', {enumerable:true, configurable:true, writable:true, value:entries});
+            define(paramsPrototype, iterator, {configurable:true, writable:true, value:entries});
+            define(paramsPrototype, 'forEach', {enumerable:true, configurable:true, writable:true, value:function(callback, thisArg = undefined) {
                 const id = paramsBrand(this);
                 if (typeof callback !== 'function') throw new TypeErrorCtor('URLSearchParams forEach callback must be callable');
                 for (let index=0;;++index) {
@@ -523,10 +523,9 @@ internal sealed class UrlBindings
                     apply(callback, thisArg, pair[1], pair[0], this);
                 }
             }});
-            define(paramsPrototype, 'toString', {enumerable:true, value:function() {
+            define(paramsPrototype, 'toString', {enumerable:true, configurable:true, writable:true, value:function() {
                 return parse(call('params-get', paramsBrand(this), 'toString'));
             }});
-            freeze(urlPrototype); freeze(paramsPrototype);
             define(URL, 'prototype', {value:urlPrototype});
             define(URLSearchParams, 'prototype', {value:paramsPrototype});
             define(globalThis, 'URL', {value:URL, writable:true, configurable:true});

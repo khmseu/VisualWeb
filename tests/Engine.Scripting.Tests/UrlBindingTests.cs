@@ -8,6 +8,126 @@ public sealed class UrlBindingTests
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
+    public void UrlInterfaceOperationsAndAttributesHaveWebIdlDescriptors()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const operation = (owner, key, enumerable = true) => {
+                    const d = Object.getOwnPropertyDescriptor(owner, key);
+                    return d && typeof d.value === 'function' && d.writable === true
+                        && d.enumerable === enumerable && d.configurable === true;
+                };
+                const attribute = (owner, key, writable) => {
+                    const d = Object.getOwnPropertyDescriptor(owner, key);
+                    return d && typeof d.get === 'function'
+                        && (writable ? typeof d.set === 'function' : d.set === undefined)
+                        && d.enumerable === true && d.configurable === true;
+                };
+                const tag = (owner, value) => {
+                    const d = Object.getOwnPropertyDescriptor(owner, Symbol.toStringTag);
+                    return d && d.value === value && !d.writable && !d.enumerable && d.configurable;
+                };
+                const constructor = (prototype, value) => {
+                    const d = Object.getOwnPropertyDescriptor(prototype, 'constructor');
+                    return d && d.value === value && d.writable === true
+                        && d.enumerable === false && d.configurable === true;
+                };
+                const url = URL.prototype, params = URLSearchParams.prototype;
+                return Object.isExtensible(url) && Object.isExtensible(params)
+                    && tag(url, 'URL') && tag(params, 'URLSearchParams')
+                    && constructor(url, URL) && constructor(params, URLSearchParams)
+                    && ['toString', 'toJSON'].every(key => operation(url, key))
+                    && ['parse', 'canParse'].every(key => operation(URL, key))
+                    && ['append', 'delete', 'get', 'getAll', 'has', 'set', 'sort',
+                        'keys', 'values', 'entries', 'forEach', 'toString']
+                        .every(key => operation(params, key))
+                    && operation(params, Symbol.iterator, false)
+                    && params[Symbol.iterator] === params.entries
+                    && ['href', 'protocol', 'username', 'password', 'host', 'hostname',
+                        'port', 'pathname', 'search', 'hash'].every(key => attribute(url, key, true))
+                    && ['origin', 'searchParams'].every(key => attribute(url, key, false))
+                    && attribute(params, 'size', false);
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void UrlFunctionsExposeRequiredArgumentCounts()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const params = URLSearchParams.prototype;
+                const functions = [
+                    [URL, 1], [URL.parse, 1], [URL.canParse, 1], [URLSearchParams, 0],
+                    [URL.prototype.toString, 0], [URL.prototype.toJSON, 0],
+                    [params.append, 2], [params.delete, 1], [params.get, 1],
+                    [params.getAll, 1], [params.has, 1], [params.set, 2], [params.sort, 0],
+                    [params.keys, 0], [params.values, 0], [params.entries, 0],
+                    [params[Symbol.iterator], 0], [params.forEach, 1], [params.toString, 0]
+                ];
+                return functions.every(([fn, length]) => {
+                    const d = Object.getOwnPropertyDescriptor(fn, 'length');
+                    return d.value === length && !d.writable && !d.enumerable && d.configurable;
+                });
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void OptionalUndefinedArgumentsActAsMissingWithoutChangingOtherValues()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = 'https://example.test/';
+                const params = new URLSearchParams('a=1&a=2&b=undefined');
+                const has = params.has('a', undefined) && !params.has('a', 'undefined')
+                    && params.has('b', 'undefined');
+                params.delete('a', undefined);
+                return new URL(url, undefined).href === url
+                    && URL.parse(url, undefined).href === url && URL.canParse(url, undefined)
+                    && new URLSearchParams(undefined).toString() === ''
+                    && has && params.toString() === 'b=undefined';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void MutablePublicPrototypesKeepPrivateStateAndBrandsProtected()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = new URL('https://example.test/?a=1');
+                const params = url.searchParams;
+                const get = URLSearchParams.prototype.get;
+                const append = URLSearchParams.prototype.append;
+                const href = Object.getOwnPropertyDescriptor(URL.prototype, 'href');
+                let rejected = 0;
+                for (const action of [
+                    () => URL('https://example.test/'),
+                    () => URLSearchParams(),
+                    () => get.call(Object.create(URLSearchParams.prototype), 'a'),
+                    () => href.get.call(Object.create(URL.prototype))
+                ]) {
+                    try { action(); } catch (error) { if (error instanceof TypeError) ++rejected; }
+                }
+                URL.prototype.toString = () => 'replaced';
+                URLSearchParams.prototype.get = () => 'replaced';
+                Object.defineProperty(URL.prototype, 'href', {value: 'public', configurable: true});
+                delete URLSearchParams.prototype.append;
+                append.call(params, 'b', '2');
+                return rejected === 4 && !('__visualwebUrl' in globalThis)
+                    && get.call(params, 'a') === '1'
+                    && href.get.call(url) === 'https://example.test/?a=1&b=2'
+                    && url.toString() === 'replaced' && params.get('a') === 'replaced';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlConstructorAndStaticParseMethodsFollowBrowserContracts()
     {
         using var host = new V8ScriptHost();

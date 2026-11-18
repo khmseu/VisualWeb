@@ -77,6 +77,31 @@ Gesamtabschlussbericht und der zugehoerige Kontextnachtrag wurden danach lokal
 als `cb58090` committed. Bei der letzten Statuspruefung war `main` einen Commit
 vor `origin/main`; fuer diesen Abschlusscommit wurde nicht gepusht.
 
+**Abgrenzung des Abschlusses:** Der genehmigte Sechs-Phasen-Plan ist fertig,
+aber dies bedeutet keine vollstaendige WHATWG-URL-Konformitaet. Das
+Support-Inventar bewertet URL mit ~75% (Schaetzung). Dokumentierte Restluecken
+sind vollstaendige Standard-/WPT-Abdeckung, weitere mutable Core-Komponentensetter,
+der legacy query encoding override, breitere/automatische URL-Dokument-
+Integration sowie allgemeine Web-IDL-Generierung, vollstaendige
+Overload-Aufloesung und Konstruktor-/Prototypsemantik. Die vorhandenen
+URL-/IDNA-/URLSearchParams-Fixtures belegen Regressionen fuer die gepinnten
+Vektoren, nicht die gesamte Spezifikation. Die Aussage, es gebe noch keine
+Folgephase, galt vor der Nutzerfreigabe KP-488 und ist dadurch ersetzt.
+
+**Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
+URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen
+Sechs-Phasen-Umfang. Eine Read-only-Lueckenpruefung fand zusaetzlich konkrete
+URL-Web-IDL-Abweichungen (Prototyp-Deskriptoren/Funktionslaengen und
+Iteratorobjekte) sowie offene, umgebungsabhaengige Blob-Origin-/Dokument-
+Integration. Der Nutzer genehmigte am 2026-11-18 um 07:11 +01 den erweiterten
+Fuenf-Phasen-Plan [whatwg-url-full-conformance-plan.md](../plans/whatwg-url-full-conformance-plan.md).
+Phase 1 korrigiert URL/Web-IDL-Deskriptoren, Function-`length` und optionale
+Argumente bei gewahrtem Schutz des privaten Bridges. Sie ist review-approved;
+Engine.Scripting-Tests, Solution-Build, Solution-Volltests, Format und Diff-
+Check bestanden. Der Phasenbericht steht in
+[phase-1-complete](../plans/whatwg-url-full-conformance-phase-1-complete.md).
+Der Commit-Checkpoint wartet; Phase 2 hat noch nicht begonnen.
+
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
 WHATWG URL (~65%) bleibt gemaess der dokumentierten WHATWG-only-Prioritaetsregel
