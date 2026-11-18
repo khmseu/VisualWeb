@@ -33,8 +33,14 @@ public sealed class UrlBindingTests
                     return d && d.value === value && d.writable === true
                         && d.enumerable === false && d.configurable === true;
                 };
+                const interfacePrototype = constructor => {
+                    const d = Object.getOwnPropertyDescriptor(constructor, 'prototype');
+                    return d && d.value === constructor.prototype && !d.writable
+                        && !d.enumerable && !d.configurable;
+                };
                 const url = URL.prototype, params = URLSearchParams.prototype;
                 return Object.isExtensible(url) && Object.isExtensible(params)
+                    && interfacePrototype(URL) && interfacePrototype(URLSearchParams)
                     && tag(url, 'URL') && tag(params, 'URLSearchParams')
                     && constructor(url, URL) && constructor(params, URLSearchParams)
                     && ['toString', 'toJSON'].every(key => operation(url, key))

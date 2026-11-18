@@ -562,8 +562,8 @@ internal sealed class UrlBindings
             define(paramsPrototype, 'toString', {enumerable:true, configurable:true, writable:true, value:named(function() {
                 return parse(call('params-get', paramsBrand(this), 'toString'));
             }, 'toString')});
-            define(URL, 'prototype', {value:urlPrototype});
-            define(URLSearchParams, 'prototype', {value:paramsPrototype});
+            define(URL, 'prototype', {value:urlPrototype, writable:false});
+            define(URLSearchParams, 'prototype', {value:paramsPrototype, writable:false});
             define(globalThis, 'URL', {value:URL, writable:true, configurable:true});
             define(globalThis, 'URLSearchParams', {value:URLSearchParams, writable:true, configurable:true});
         })()
