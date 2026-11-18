@@ -96,11 +96,32 @@ Iteratorobjekte) sowie offene, umgebungsabhaengige Blob-Origin-/Dokument-
 Integration. Der Nutzer genehmigte am 2026-11-18 um 07:11 +01 den erweiterten
 Fuenf-Phasen-Plan [whatwg-url-full-conformance-plan.md](../plans/whatwg-url-full-conformance-plan.md).
 Phase 1 korrigiert URL/Web-IDL-Deskriptoren, Function-`length` und optionale
-Argumente bei gewahrtem Schutz des privaten Bridges. Sie ist review-approved;
-Engine.Scripting-Tests, Solution-Build, Solution-Volltests, Format und Diff-
-Check bestanden. Der Phasenbericht steht in
-[phase-1-complete](../plans/whatwg-url-full-conformance-phase-1-complete.md).
-Der Commit-Checkpoint wartet; Phase 2 hat noch nicht begonnen.
+Argumente bei gewahrtem Schutz des privaten Bridges; sie wurde als `e493157`
+committed und review-approved. Phase 2 ersetzt Generatoren durch gebrandete
+Web-IDL-Paar-Iteratoren mit gemeinsamem Iteratorprototyp, nativen
+Iteratorresultaten und indexbasierter Live-Mutationssemantik. Engine.Scripting-
+Tests (379), Solution-Build, Solution-Volltests (zwei erwartete Skips), V8Smoke,
+Format und Diff-Check bestanden. Phase 2 ist uncommitted. Phase 3 pinnt
+zusaetzlich 278 URL-Setter-WPT-Faelle und acht URLSearchParams-Sortiervektoren;
+WPT-getriebene Korrekturen betreffen den Host-Setter, nicht-autoritaere
+`//`-Pfadserialisierung und optionale Query-Encoding-Ueberschreibung. Phase 4
+ergaenzt injizierte Blob-Entry-Origins und eine konservative URL-Anzeigefassung
+mit Credential-Auslassung, Unicode-IDN und Bidi-Elision; Browser-Chrome
+verwendet diese Fassung, waehrend Historie kanonisch bleibt. Die
+Fixture-Provenienz steht in [Core-Testdaten](../tests/Core.Tests/Data/README.md).
+Phase 5 aktualisiert die nachgewiesenen Teilbereiche in
+[standards.md](../docs/standards.md): ungefaehr 80% URL, 30% Unicode-IDNA/Bidi
+und 15% Web IDL; diese Werte sind Schaetzungen, keine Konformitaetsmessung.
+Berichte: [Phase 1](../plans/whatwg-url-full-conformance-phase-1-complete.md),
+[Phase 2](../plans/whatwg-url-full-conformance-phase-2-complete.md) und
+[Gesamtabschluss](../plans/whatwg-url-full-conformance-complete.md). Der
+Solution-Build besteht mit null Warnungen/Fehlern; der finale Volltestlauf
+besteht mit 17.194 Tests und zwei uebersprungenen CPU-Drucktests. Core.Tests
+enthaelt 4.229, Engine.Scripting.Tests 379 und VisualWeb.Browser.Tests 1.374
+bestandene Tests. Formatverifikation und Diff-Check bestehen. Ein erster
+Volltestlauf fand einen Blob-Anzeige-Slash-Mismatch; die Anzeige wurde
+korrigiert und die komplette Validierung danach wiederholt. Die Erweiterung
+ist uncommitted. WHATWG-URL-Vollkonformitaet wird nicht behauptet.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

@@ -435,6 +435,11 @@ reuse Phase 4 Core URL behavior. The bindings implement the interface-specific
 Web IDL string/USVString conversions and receiver/missing-argument errors, not
 general generated Web IDL or general DOMException support.
 
+The URLSearchParams pair iterators use a shared Web IDL iterator prototype,
+branded iterator state and index-based live reads of the current tuple list.
+They expose native iterator result objects and observe list mutations between
+`next()` calls; no CLR enumerators cross the bridge.
+
 Handles are capped at 1,024; each execution permits 4,096 bridge calls and
 262,144 aggregate bridge input/output UTF-16 characters, with at most 65,536
 characters in one callback value, 1,024 URLSearchParams entries and 65,536

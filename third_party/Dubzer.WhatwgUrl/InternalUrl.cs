@@ -25,6 +25,13 @@ internal partial class InternalUrl
     protected bool IsSpecial;
 
     protected InternalUrl? BaseUrl;
+    protected Encoding? EncodingOverride;
+
+    protected bool UseQueryEncodingOverride =>
+        EncodingOverride is { } encoding
+        && encoding.CodePage != Encoding.UTF8.CodePage
+        && IsSpecial
+        && Scheme is not "ws" and not "wss";
 
     /// <summary>
     /// Pointer is inside an array (ipv6)
@@ -33,9 +40,13 @@ internal partial class InternalUrl
 
     private string? _opaquePath;
 
-    public virtual Result<InternalUrl> Parse(string input, InternalUrl? baseUrl = null)
+    public virtual Result<InternalUrl> Parse(
+        string input,
+        InternalUrl? baseUrl = null,
+        Encoding? encoding = null)
     {
         BaseUrl = baseUrl;
+        EncodingOverride = encoding;
 
         var formattedInput = InputUtils.Format(input);
 

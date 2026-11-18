@@ -956,7 +956,7 @@ public sealed class DevelopmentShell : IDisposable
                 Controller.NavigateWithShellConfirmation(tab.Id, address);
                 break;
             case SDL.Scancode.Escape:
-                Controller.SetAddress(tab.Id, tab.History.Current?.Href ?? "");
+                Controller.SetAddress(tab.Id, tab.History.Current?.ToDisplayString() ?? "");
                 Edit(view, window, false);
                 break;
             case SDL.Scancode.Backspace: Controller.SetAddress(tab.Id, view.Editor.Backspace()); break;

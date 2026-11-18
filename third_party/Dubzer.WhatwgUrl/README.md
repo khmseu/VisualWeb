@@ -27,6 +27,13 @@ URL cases. Local algorithm corrections:
 - DomUrl.TryCreate(string, string): select the parser for the base input, so
   supplementary Unicode in a base path is UTF-8-percent-encoded as one scalar
   when the relative input itself is ASCII.
+- URL parser encoding overrides apply to special-scheme queries except `ws:`
+  and `wss:`; the query is encoded as a whole before percent encoding so
+  stateful encoders are not invoked code-point by code-point.
+- Domain-to-Unicode display uses the pinned Unicode 17 UTS #46 tables and
+  validates through the existing URL domain-to-ASCII path. Display bidi
+  detection percent-decodes serialized text before consulting the pinned
+  Unicode 17 bidirectional classes.
 
 Unicode tables remain on the stable Unicode 17 baseline. The user approved
 pinning the IDNA fixture to its last Unicode 17 revision instead of adopting

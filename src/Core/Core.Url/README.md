@@ -2,14 +2,19 @@
 
 Immutable `BrowserUrl` provides WHATWG parsing, relative resolution,
 serialization and URL components. `ParseResult` reports errors; `Parse` throws.
+Both accept an optional `System.Text.Encoding` query override. It is used only
+for special schemes other than `ws:`/`wss:`; otherwise query input is encoded
+as UTF-8. The caller supplies the encoding; document-encoding discovery and
+HTML URL-attribute integration are not included.
 The managed [vendored MIT parser](../../../third_party/Dubzer.WhatwgUrl/README.md)
 is isolated behind this facade; do not substitute System.Uri.
 
 `BrowserUrl.Origin` is an immutable `SecurityOrigin`: a scheme/host/effective-port
-tuple for http, https, ftp, ws and wss. `blob:` inherits its parsed path URL's
-origin only for http, https or file; under this Core's file-origin policy,
-`blob:file:` remains opaque. Other schemes and invalid inner URLs yield opaque
-origins; no blob registry is implemented. Compare origins with
+tuple for http, https, ftp, ws and wss. A caller-supplied resolved blob-entry
+origin overrides `blob:` path-URL fallback; without one, `blob:` inherits its
+parsed path URL's origin only for http, https or file. Under this Core's
+file-origin policy, `blob:file:` remains opaque. Other schemes and invalid
+inner URLs yield opaque origins; no blob registry is implemented. Compare origins with
 `IsSameOrigin`/`Equals`, never `SerializedOrigin`, whose opaque form is `"null"`.
 `about:blank` URL snapshots are opaque; the browser's separate, bounded
 page-initiated document-origin inheritance is selected by `LoadedPage`, not by
@@ -30,6 +35,11 @@ An empty linked parameter serialization removes the query delimiter, while
 assigning `Search = "?"` preserves an empty query until a parameter update occurs.
 This is a focused Core state model, not the JavaScript `URL` binding or general
 mutable component setters.
+`ToDisplayString()` is a conservative browser-chrome form: it omits credentials,
+uses Unicode IDN display, and elides path/query/fragment when the URL contains
+bidirectional or invisible characters. It is not suitable for navigation,
+origin comparison, or copying a canonical URL; confusable detection is not
+implemented.
 
 `UrlSearchParams` provides string
 initialization, ordered

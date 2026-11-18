@@ -364,6 +364,95 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void SearchParamsIteratorsUseWebIdlIteratorPrototypeAndResultObjects()
+    {
+        using var host = new V8ScriptHost();
+        Assert.Equal("", host.Evaluate("""
+            (() => {
+                const params = new URLSearchParams('a=1&b=2');
+                const iterators = [
+                    params.entries(), params.keys(), params.values(), params[Symbol.iterator]()
+                ];
+                const prototype = Object.getPrototypeOf(iterators[0]);
+                const next = Object.getOwnPropertyDescriptor(prototype, 'next');
+                const tag = Object.getOwnPropertyDescriptor(prototype, Symbol.toStringTag);
+                const paramsPrototype = URLSearchParams.prototype;
+                const nativeIteratorPrototype =
+                    Object.getPrototypeOf(Object.getPrototypeOf([][Symbol.iterator]()));
+                const result = iterators[0].next();
+                const last = iterators[0].next();
+                const done = iterators[0].next();
+                const checks = {
+                    sharedPrototype: iterators.every(value => Object.getPrototypeOf(value) === prototype),
+                    nativeIteratorPrototype: Object.getPrototypeOf(prototype) === nativeIteratorPrototype,
+                    noOwnProperties: Object.keys(iterators[0]).length === 0,
+                    selfIterable: iterators[0][Symbol.iterator]() === iterators[0],
+                    classString: Object.prototype.toString.call(iterators[0]) === '[object URLSearchParams Iterator]',
+                    nextLength: next.value.length === 0,
+                    nextWritable: next.writable,
+                    nextEnumerable: next.enumerable,
+                    nextConfigurable: next.configurable,
+                    methodNames: paramsPrototype.keys.name === 'keys'
+                        && paramsPrototype.values.name === 'values'
+                        && paramsPrototype.entries.name === 'entries' && next.value.name === 'next',
+                    tag: tag.value === 'URLSearchParams Iterator' && !tag.writable && !tag.enumerable && tag.configurable,
+                    firstResult: result.value[0] === 'a' && result.value[1] === '1' && !result.done,
+                    secondResult: last.value[0] === 'b' && last.value[1] === '2' && !last.done,
+                    resultShape: Object.keys(result).join(',') === 'value,done'
+                        && Object.getOwnPropertyDescriptor(result, 'value').writable
+                        && Object.getOwnPropertyDescriptor(result, 'value').enumerable
+                        && Object.getOwnPropertyDescriptor(result, 'value').configurable,
+                    doneResult: done.value === undefined && done.done
+                };
+                return Object.entries(checks).filter(([, value]) => !value).map(([key]) => key).join(',');
+            })()
+            """, Cancellation).Text);
+    }
+
+    [Fact]
+    public void SearchParamsIteratorsUseIndexBasedLiveMutationSemantics()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const params = new URLSearchParams('a=1&b=2&c=3');
+                const entries = params.entries();
+                const first = entries.next();
+                params.delete('b');
+                const second = entries.next();
+                params.append('d', '4');
+                const third = entries.next();
+                const end = entries.next();
+                params.append('e', '5');
+                const resumed = entries.next();
+
+                const keys = params.keys();
+                const values = params.values();
+                return first.value.join('=') === 'a=1'
+                    && second.value.join('=') === 'c=3'
+                    && third.value.join('=') === 'd=4'
+                    && end.done && resumed.value.join('=') === 'e=5' && !resumed.done
+                    && keys.next().value === 'a' && values.next().value === '1'
+                    && [...params].map(pair => pair.join('=')).join(',') === 'a=1,c=3,d=4,e=5';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void SearchParamsIteratorNextRejectsUnbrandedReceivers()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const next = Object.getPrototypeOf(new URLSearchParams().entries()).next;
+                let rejected = false;
+                try { next.call({}); } catch (error) { rejected = error instanceof TypeError; }
+                return rejected;
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlInterfacesEnforceTheirPerExecutionAndSerializationBudgets()
     {
         using var host = new V8ScriptHost(TimeSpan.FromSeconds(10));

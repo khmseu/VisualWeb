@@ -51,6 +51,24 @@ internal static class Idna
         return string.Join(".", labels);
     }
 
+    internal static string ToUnicode(string input)
+    {
+        var ascii = ToAscii(input);
+        if (ascii is null) { return input; }
+
+        var labels = ascii.Split('.');
+        for (var index = 0; index < labels.Length; index++)
+        {
+            if (!labels[index].StartsWith("xn--", StringComparison.Ordinal)) { continue; }
+
+            var decoded = Punycode.Decode(labels[index].AsSpan(4));
+            if (decoded is null) { return input; }
+            labels[index] = decoded;
+        }
+
+        return string.Join(".", labels);
+    }
+
     // the separate method allows to use the stackalloc optimization
     private static string? EncodeLabel(string input)
     {

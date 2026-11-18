@@ -68,6 +68,32 @@ public sealed class UrlSearchParamsTests
     }
 
     [Fact]
+    public void SortMatchesPinnedWptVectorsForDetachedAndLinkedParameters()
+    {
+        using var fixture = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "urlsearchparams-sort-wpt.json")));
+        Assert.Equal(8, fixture.RootElement.GetArrayLength());
+
+        foreach (var vector in fixture.RootElement.EnumerateArray())
+        {
+            var input = vector.GetProperty("input").GetString()!;
+            var expected = vector.GetProperty("output").EnumerateArray()
+                .Select(pair => new KeyValuePair<string, string>(
+                    pair[0].GetString()!,
+                    pair[1].GetString()!))
+                .ToArray();
+            var parameters = new UrlSearchParams(input);
+            parameters.Sort();
+
+            Assert.Equal(expected, parameters.Entries().ToArray());
+
+            var url = new MutableBrowserUrl(BrowserUrl.Parse("https://example.org/?" + input));
+            url.SearchParams.Sort();
+            Assert.Equal(expected, url.SearchParams.Entries().ToArray());
+        }
+    }
+
+    [Fact]
     public void StringInitializerPreservesOrderedDuplicatePairs()
     {
         var parameters = new UrlSearchParams("?a=first&a=second&flag&empty=&=x&&b=x=y");

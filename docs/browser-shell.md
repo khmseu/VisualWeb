@@ -128,8 +128,15 @@ The native window title retains the same warning alongside the active page title
 | Ctrl+A with page focus outside editable controls                                                                                                          | Select all currently visible shaped text clusters                                                                                                                                                                                                                                                        |
 | Ctrl+C with page text selected                                                                                                                            | Copy selected cluster text to the system clipboard                                                                                                                                                                                                                                                       |
 | Ctrl+C while editing the address or a text field                                                                                                          | Copy the selected address or form-field range                                                                                                                                                                                                                                                            |
-| Escape with page text selected                                                                                                                            | Clear the browser-owned selection without changing the clipboard                                                                                                                                                                                                                                         |
-| Ctrl+V while editing the address or a text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea field                        | Paste clipboard text at the caret or over the current field selection                                                                                                                                                                                                                                    |
+
+Committed address-bar text uses `BrowserUrl.ToDisplayString()`: credentials are
+omitted, valid IDN hosts use the URL Standard's Unicode conversion, and URLs
+with bidi/invisible characters are reduced to their host/origin prefix. Canonical URLs
+remain in navigation/history state. The display helper is not a full spoofing
+defense: confusable detection and scheme-security indicators are not
+implemented.
+| Escape with page text selected | Clear the browser-owned selection without changing the clipboard |
+| Ctrl+V while editing the address or a text/search/email/tel/url/password/date/time/datetime-local/month/week/number/textarea field | Paste clipboard text at the caret or over the current field selection |
 
 The visible tab strip follows the active tab when tabs exceed available slots.
 Page text hit geometry is a bounded v9 data-only snapshot of visible shaped

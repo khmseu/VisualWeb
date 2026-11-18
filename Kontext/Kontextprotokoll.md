@@ -14607,3 +14607,87 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
 - Quellen: Nutzerfreigabe mit Zeitstempel oben; genehmigter Plan;
   lokale `specs/cache/url.html` und `specs/cache/webidl.html`;
   Gap-Audit im vorherigen Turn.
+
+### KP-489 - Fortsetzen nach Phase-1-Commit
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag „continue“ am 2026-11-18T18:57:48+01:00;
+  Zeitpunkte der Implementierung und Validierung unbekannt.
+- Erfassungsart: Nutzerangabe, Quellcode, lokale Spezifikationen und
+  Build-/Test-/Format-Ausgaben.
+- Nutzerangabe: „continue“ nach Phase-1-Commit `e493157`.
+- Belegt: Phase 2 ersetzte Generatoren durch gebrandete URLSearchParams
+  Web-IDL-Paar-Iteratoren, mit gemeinsamem Iteratorprototyp, nativen
+  Iteratorresultaten und indexbasierter Live-Lesung. Tests pruefen
+  Prototyp-/Tag-/Deskriptorform, method names, Werte, done result, receiver
+  brand und Mutationen einschliesslich append nach einem vorlaeufigen Ende.
+  379 Engine.Scripting-Tests, Solution-Build (0 Warnungen/Fehler), voller
+  Solution-Testlauf (zwei Prozessdrucktests uebersprungen), Format,
+  Diff-Check und `V8Smoke --local` bestanden.
+- Status: Phase 2 ist implementiert und validiert, aber uncommitted. Phase 3
+  (Offline-Conformance-Inventur fuer Core URL/URLSearchParams) ist der naechste
+  Schritt; sie hat noch nicht begonnen.
+- Quellen: genehmigter Plan
+  [whatwg-url-full-conformance-plan.md](../plans/whatwg-url-full-conformance-plan.md);
+  lokale Web IDL Abschnitt 3.7.9 und URL Abschnitt 6.2;
+  [Phase 2 report](../plans/whatwg-url-full-conformance-phase-2-complete.md);
+  Validierungsausgaben in diesem Turn.
+
+### KP-490 - Core-WPT-Luecken und URL-Umgebungsdarstellung
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag „continue“; genaue Uhrzeit unbekannt.
+- Erfassungsart: Nutzerangabe, lokaler Quellcode, gepinnte WPT-Daten,
+  lokale URL-Spezifikation und Validierungsausgaben.
+- Nutzerangabe: Fortsetzung der freigegebenen fuenfphasigen WHATWG-URL-Arbeit.
+- Belegt: Phase 3 ergaenzte 278 WPT-Setterfaelle aus
+  `url/resources/setters_tests.json` und acht Sortiervektoren aus dem
+  WPT-Test `urlsearchparams-sort.any.js` (Revision
+  `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`). Testgestuetzte Core-Korrekturen
+  betreffen den Host-Setter fuer leeren Host/Port, `//` im nicht-autoritaeren
+  Pfad und query-weite Kodierung bei optionaler Encoding-Ueberschreibung.
+- Belegt: Phase 4 fuehrt injizierte Blob-Entry-Origins ein, erhaelt sie bei
+  Query-/Fragment-Settern und ergaenzt eine display-only URL-Serialisierung:
+  Credentials entfallen, gueltige IDN-Domaenen werden Unicode dargestellt,
+  und bidi-/unsichtbare URL-Teile werden elidiert. Browser-Adress- und
+  Statusanzeige nutzt diese Fassung; Navigation und Historie behalten
+  kanonische URLs. Es gibt weiterhin kein Blob-URL-Registry.
+- Validierung: Der Solution-Build bestand nach der letzten Codekorrektur mit
+  null Warnungen/Fehlern. Ein erster Volltestlauf fand genau einen Assertion-
+  Mismatch (Blob-Anzeige mit abschliessendem `/`); der Code wurde angepasst.
+  Der finale Volltestlauf, die Formatverifikation und der abschliessende
+  Diff-Check sind zum Zeitpunkt dieses Eintrags noch ausstehend.
+- Status: Phase 3/4 implementiert; Phase 5 aktualisiert die URL-, Unicode-
+  IDNA/Bidi- und Web-IDL-Scopeangaben in `docs/standards.md` auf grobe
+  Schaetzungen von 80%, 30% und 15%. Keine dieser Zahlen behauptet
+  Spezifikationskonformitaet. Kein Commit in dieser Fortsetzung.
+- Quellen: genehmigter Plan
+  [whatwg-url-full-conformance-plan.md](../plans/whatwg-url-full-conformance-plan.md);
+  [Fixture-Provenienz](../tests/Core.Tests/Data/README.md);
+  lokale [URL-Spezifikation](../specs/cache/url.html);
+  [Implementierungsdiff](../src/Core/Core.Url/BrowserUrl.cs) und die
+  betreffenden Core-, Scripting- und Browsertests.
+
+### KP-491 - Finale URL-Validierung und Abschluss
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Abschlussvalidierung nach KP-490; genaue Uhrzeit unbekannt.
+- Erfassungsart: Build-, Test-, Format- und Git-Diff-Ausgaben sowie
+  Abschlussdokumentation.
+- Belegt: Nach Korrektur des abschliessenden Schraegstrichs in der
+  Blob-Anzeigefassung bestand `dotnet build VisualWeb.slnx` mit null
+  Warnungen/Fehlern. `dotnet test VisualWeb.slnx --no-build` bestand mit
+  17.194 Tests; zwei CPU-Drucktests wurden uebersprungen. Core.Tests meldete
+  4.229, Engine.Scripting.Tests 379 und VisualWeb.Browser.Tests 1.374
+  bestandene Tests. `dotnet format VisualWeb.slnx --verify-no-changes
+--no-restore --exclude third_party` und `git diff --check` bestanden.
+- Beschluss/Status: Der genehmigte Fuenf-Phasen-Erweiterungsplan ist
+  implementiert und dokumentiert. Das ist keine Behauptung vollstaendiger
+  WHATWG-URL-Konformitaet. Grobe Inventarschaetzungen sind ~80% URL, ~30%
+  Unicode-IDNA/Bidi und ~15% Web IDL. Die Erweiterung blieb uncommitted; in
+  dieser Fortsetzung wurde kein Commit erstellt.
+- Quelle: [Gesamtabschlussbericht](../plans/whatwg-url-full-conformance-complete.md),
+  [Support-Inventar](../docs/standards.md),
+  [Core-Testdaten-Provenienz](../tests/Core.Tests/Data/README.md) und
+  finale Kommandoausgaben in diesem Turn. KP-491 ergaenzt und aktualisiert
+  den in KP-490 festgehaltenen Zwischenstand.

@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text;
+using Dubzer.WhatwgUrl.Uts46;
 
 namespace Dubzer.WhatwgUrl;
 
@@ -69,6 +71,36 @@ public class DomUrl : IEquatable<DomUrl>
     /// <include file='DomUrl.Doc.xml' path='links/remarks[@name="Protocol"]'/>
     public string Protocol => $"{_internalUrl.Scheme}:";
 
+    /// <summary>Converts a valid URL domain to its Unicode form, returning the input on validation failure.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#concept-domain-to-unicode">domain to Unicode</see>
+    /// (local spec ID <c>url</c>).</remarks>
+    public static string DomainToUnicode(string domain)
+    {
+        ArgumentNullException.ThrowIfNull(domain);
+        return Idna.ToUnicode(domain);
+    }
+
+    /// <summary>Whether percent-decoding the input reveals bidirectional or invisible control characters.</summary>
+    /// <remarks>Used only for conservative URL display. Spec: url;
+    /// <see href="https://url.spec.whatwg.org/#url-rendering-i18n">URL rendering for internationalized and special characters</see>
+    /// (local spec ID <c>url</c>).</remarks>
+    public static bool ContainsBidirectionalText(string input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var decoded = PercentEncoding.PercentDecode(input);
+        foreach (var rune in decoded.EnumerateRunes())
+        {
+            if (rune.GetDirection() is Direction.Bn or Direction.R or Direction.Al or Direction.An
+                or Direction.Rlo or Direction.Lro or Direction.Pdf or Direction.Rle or Direction.Lre
+                or Direction.Rli or Direction.Fsi or Direction.Pdi or Direction.Lri)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Returns a serialized representation of this URL
     /// </summary>
@@ -100,7 +132,7 @@ public class DomUrl : IEquatable<DomUrl>
     /// <exception cref="InvalidUrlException">
     /// Thrown when <paramref name="input"/> or <paramref name="baseUrl"/> are invalid
     /// </exception>
-    public DomUrl(string input, string? baseUrl = null)
+    public DomUrl(string input, string? baseUrl = null, Encoding? encoding = null)
     {
         ArgumentNullException.ThrowIfNull(input);
 
@@ -110,12 +142,15 @@ public class DomUrl : IEquatable<DomUrl>
             parsedBaseUrl = ParseUrl(baseUrl);
         }
 
-        _internalUrl = ParseUrl(input, parsedBaseUrl);
+        _internalUrl = ParseUrl(input, parsedBaseUrl, encoding);
     }
 
-    private static InternalUrl ParseUrl(string input, InternalUrl? baseUrl = null)
+    private static InternalUrl ParseUrl(
+        string input,
+        InternalUrl? baseUrl = null,
+        Encoding? encoding = null)
     {
-        Result<InternalUrl> urlResult = InputUtils.GetParser(input).Parse(input, baseUrl);
+        Result<InternalUrl> urlResult = InputUtils.GetParser(input).Parse(input, baseUrl, encoding);
 
         if (!urlResult)
             throw new InvalidUrlException("The URL is invalid.", urlResult.Error!.Value);
@@ -130,12 +165,12 @@ public class DomUrl : IEquatable<DomUrl>
     /// <exception cref="InvalidUrlException">
     /// Thrown when <paramref name="input"/> is invalid
     /// </exception>
-    public DomUrl(string input, DomUrl baseUrl)
+    public DomUrl(string input, DomUrl baseUrl, Encoding? encoding = null)
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(baseUrl);
 
-        _internalUrl = ParseUrl(input, baseUrl._internalUrl);
+        _internalUrl = ParseUrl(input, baseUrl._internalUrl, encoding);
     }
 
     /// <summary>Gets a serialized representation of this URL.

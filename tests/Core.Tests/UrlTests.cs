@@ -91,6 +91,68 @@ public sealed class UrlTests
         }
     }
 
+    [Fact]
+    public void UrlSettersMatchPinnedWptVectors()
+    {
+        using var fixture = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "url-setters-wpt.json")));
+        var caseCount = 0;
+
+        foreach (var property in fixture.RootElement.EnumerateObject())
+        {
+            if (property.NameEquals("comment")) { continue; }
+
+            foreach (var entry in property.Value.EnumerateArray())
+            {
+                var href = ReadScalarString(entry.GetProperty("href"));
+                var value = ReadScalarString(entry.GetProperty("new_value"));
+                var url = BrowserUrl.Parse(href);
+                var updated = property.Name switch
+                {
+                    "protocol" => url.WithProtocol(value),
+                    "username" => url.WithUsername(value),
+                    "password" => url.WithPassword(value),
+                    "host" => url.WithHost(value),
+                    "hostname" => url.WithHostname(value),
+                    "port" => url.WithPort(value),
+                    "pathname" => url.WithPathname(value),
+                    "search" => url.WithSearch(value),
+                    "hash" => url.WithHash(value),
+                    "href" => url.WithHref(value),
+                    _ => throw new InvalidOperationException($"Unexpected URL setter fixture: {property.Name}")
+                };
+
+                foreach (var expected in entry.GetProperty("expected").EnumerateObject())
+                {
+                    var actual = expected.Name switch
+                    {
+                        "href" => updated.Href,
+                        "protocol" => updated.Protocol,
+                        "username" => updated.Username,
+                        "password" => updated.Password,
+                        "host" => updated.Host,
+                        "hostname" => updated.Hostname,
+                        "port" => updated.Port,
+                        "pathname" => updated.Pathname,
+                        "search" => updated.Search,
+                        "hash" => updated.Hash,
+                        "origin" => updated.SerializedOrigin,
+                        _ => throw new InvalidOperationException(
+                            $"Unexpected URL setter expectation: {expected.Name}")
+                    };
+                    Assert.True(
+                        string.Equals(expected.Value.GetString(), actual, StringComparison.Ordinal),
+                        $"{property.Name}: {href} with {value}; expected {expected.Name} "
+                            + $"{expected.Value.GetString()}, actual {actual}");
+                }
+
+                caseCount++;
+            }
+        }
+
+        Assert.Equal(278, caseCount);
+    }
+
     [Theory]
     [InlineData("http://EXAMPLE.COM:80/", "http://example.com/", "example.com")]
     [InlineData("https://EXAMPLE.com:443/", "https://example.com/", "example.com")]
@@ -140,6 +202,32 @@ public sealed class UrlTests
     }
 
     [Fact]
+    public void QueryEncodingOverrideAppliesOnlyToEligibleSpecialSchemes()
+    {
+        const string input = "https://example.org/?é'";
+
+        Assert.Equal("https://example.org/?%C3%A9%27", BrowserUrl.Parse(input).Href);
+        Assert.Equal(
+            "https://example.org/?%E9%27",
+            BrowserUrl.Parse(input, encoding: System.Text.Encoding.Latin1).Href);
+        Assert.Equal(
+            "https://example.org/?%E9%27#%C3%B6",
+            BrowserUrl.Parse("https://example.org/?é'#ö", encoding: System.Text.Encoding.Latin1).Href);
+        Assert.Equal(
+            "file:///example?%E9",
+            BrowserUrl.Parse("file:///example?é", encoding: System.Text.Encoding.Latin1).Href);
+        Assert.Equal(
+            "https://example.org/?a%00",
+            BrowserUrl.Parse("https://example.org/?a", encoding: System.Text.Encoding.Unicode).Href);
+        Assert.Equal(
+            "foo://example.org/?%C3%A9",
+            BrowserUrl.Parse("foo://example.org/?é", encoding: System.Text.Encoding.Latin1).Href);
+        Assert.Equal(
+            "ws://example.org/?%C3%A9",
+            BrowserUrl.Parse("ws://example.org/?é", encoding: System.Text.Encoding.Latin1).Href);
+    }
+
+    [Fact]
     public void InvalidInput_HasDiagnosticAndThrowingConvenience()
     {
         Assert.NotNull(BrowserUrl.ParseResult("https://[").Error);
@@ -184,6 +272,46 @@ public sealed class UrlTests
         Assert.True(ftp.Origin.IsOpaque);
         Assert.True(ws.Origin.IsOpaque);
         Assert.True(wss.Origin.IsOpaque);
+    }
+
+    [Fact]
+    public void BlobEntryOriginOverridesPathFallbackAndSurvivesQueryAndFragmentUpdates()
+    {
+        var entryOrigin = BrowserUrl.Parse("https://entry.example/").Origin;
+        var blob = BrowserUrl.Parse(
+            "blob:https://path.example/id",
+            blobUrlEntryOrigin: entryOrigin);
+
+        Assert.Same(entryOrigin, blob.Origin);
+        Assert.Same(entryOrigin, blob.WithSearch("?q=1").Origin);
+        Assert.Same(entryOrigin, blob.WithHash("#part").Origin);
+        Assert.True(BrowserUrl.Parse("blob:https://path.example/id").Origin.IsSameOrigin(
+            BrowserUrl.Parse("https://path.example/").Origin));
+
+        var opaqueEntry = SecurityOrigin.CreateOpaque();
+        var opaqueBlob = BrowserUrl.Parse(
+            "blob:https://path.example/id",
+            blobUrlEntryOrigin: opaqueEntry);
+        Assert.Same(opaqueEntry, opaqueBlob.Origin);
+    }
+
+    [Fact]
+    public void DisplaySerializationOmitsCredentialsAndRestrictsBidirectionalUrls()
+    {
+        Assert.Equal(
+            "https://bücher.example/path",
+            BrowserUrl.Parse("https://user:secret@xn--bcher-kva.example/path").ToDisplayString());
+        Assert.Equal(
+            "https://example.org",
+            BrowserUrl.Parse("https://example.org/%E2%80%AEevil?q=1#part").ToDisplayString());
+        Assert.Equal(
+            "https://مثال.example",
+            BrowserUrl.Parse("https://مثال.example/path").ToDisplayString());
+        Assert.Equal(
+            "blob:https://entry.example",
+            BrowserUrl.Parse(
+                "blob:https://path.example/id",
+                blobUrlEntryOrigin: BrowserUrl.Parse("https://entry.example/").Origin).ToDisplayString());
     }
 
     [Fact]
@@ -497,6 +625,8 @@ public sealed class UrlTests
 
         var nonSpecialWithPort = BrowserUrl.Parse("foo://old.example:8443/path");
         Assert.Same(nonSpecialWithPort, nonSpecialWithPort.WithHost(""));
+        var nonSpecialWithoutPort = BrowserUrl.Parse("foo://path/to");
+        Assert.Same(nonSpecialWithoutPort, nonSpecialWithoutPort.WithHost(":80"));
 
         var nonSpecialWithCredentials = BrowserUrl.Parse("foo://user@old.example/path");
         Assert.Same(nonSpecialWithCredentials, nonSpecialWithCredentials.WithHost(""));
@@ -600,6 +730,7 @@ public sealed class UrlTests
     [InlineData("https://example.org/a", "/new\u0001", "https://example.org/new%01")]
     [InlineData("foo://example.org/a?q#f", "new", "foo://example.org/new?q#f")]
     [InlineData("foo:/old?q#f", "new", "foo:/new?q#f")]
+    [InlineData("non-spec:/", "//p", "non-spec:/.//p")]
     [InlineData("file:///C:/old", "D|/new", "file:///D:/new")]
     public void WithPathnameFollowsThePathnameSetter(string input, string value, string expected)
     {

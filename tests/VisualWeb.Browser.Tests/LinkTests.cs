@@ -20,6 +20,36 @@ public sealed class LinkTests
     private static LoadedPage Document(string html = Html) =>
         new(BrowserUrl.Parse("https://example.com/final/index.html"), html, 200, []);
 
+    [Fact]
+    public void NavigationDisplaysSanitizedUrlButKeepsCanonicalHistory()
+    {
+        var source = new ControllerTests.Source();
+        using var controller = new BrowserController(
+            () => source,
+            () => new StaticPageRenderer(FontPath, 100000));
+        var tab = controller.CreateTab(controller.Session.CreateWindow().Id);
+        var viewport = new PageViewport(120, 100, 1);
+        var destination = BrowserUrl.Parse("https://user:secret@xn--bcher-kva.example/path");
+
+        controller.Navigate(tab.Id, destination.Href);
+        Assert.Equal("https://bücher.example/path", tab.AddressText);
+        Assert.DoesNotContain("secret", tab.Status, StringComparison.Ordinal);
+
+        source.Requests[0].Completion.SetResult(new(destination, Html, 200, []));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (tab.IsLoading && DateTime.UtcNow < deadline)
+        {
+            controller.Pump(_ => viewport);
+            Thread.Sleep(5);
+        }
+        controller.Pump(_ => viewport);
+
+        Assert.False(tab.IsLoading);
+        Assert.Null(tab.Error);
+        Assert.Equal(destination.Href, tab.History.Current!.Href);
+        Assert.Equal("https://bücher.example/path", tab.AddressText);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

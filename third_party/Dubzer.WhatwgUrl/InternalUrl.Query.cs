@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Dubzer.WhatwgUrl.BclInternal;
 using static Dubzer.WhatwgUrl.PercentEncoding.AppendEncodedSimpleResult;
 
@@ -9,9 +10,6 @@ internal partial class InternalUrl
     // https://url.spec.whatwg.org/#query-state
     protected virtual void QueryState(char c)
     {
-        // skipping this since we don't support other encodings
-        // 1. If encoding is not UTF-8 and one of the following is true: ...
-
         var query = Remainder;
 
         var end = query.IndexOf('#');
@@ -19,21 +17,30 @@ internal partial class InternalUrl
         if (endsWithFragment)
             query = query[..end];
 
-        var set = IsSpecial ? PercentEncoding.SpecialQueryEncodeSet : PercentEncoding.QueryEncodeSet;
-        var vsb = new ValueStringBuilder(Consts.MaxLengthOnStack.Char);
-        try
+        if (UseQueryEncodingOverride)
         {
-            var handled = PercentEncoding.AppendEncodedSimple(query, ref vsb, set);
-            Query = handled switch
-            {
-                Handled => new UrlComponent(vsb.ToString()),
-                NoProcessing => new UrlComponent(Pointer, query.Length),
-                _ => Query
-            };
+            var encoded = new StringBuilder(query.Length);
+            PercentEncoding.PercentEncodeAfterEncoding(query.ToString(), EncodingOverride!, IsSpecial, encoded);
+            Query = new UrlComponent(encoded.ToString());
         }
-        finally
+        else
         {
-            vsb.Dispose();
+            var set = IsSpecial ? PercentEncoding.SpecialQueryEncodeSet : PercentEncoding.QueryEncodeSet;
+            var vsb = new ValueStringBuilder(Consts.MaxLengthOnStack.Char);
+            try
+            {
+                var handled = PercentEncoding.AppendEncodedSimple(query, ref vsb, set);
+                Query = handled switch
+                {
+                    Handled => new UrlComponent(vsb.ToString()),
+                    NoProcessing => new UrlComponent(Pointer, query.Length),
+                    _ => Query
+                };
+            }
+            finally
+            {
+                vsb.Dispose();
+            }
         }
 
         Pointer += query.Length;

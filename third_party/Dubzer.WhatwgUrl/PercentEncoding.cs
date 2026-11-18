@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Dubzer.WhatwgUrl.BclInternal;
@@ -104,6 +105,28 @@ internal static partial class PercentEncoding
     public static bool InQueryEncodeSet(char c) => c > 0x7Eu || QueryEncodeSetLookup[(byte) c] != 0;
 
     public static bool InSpecialQueryEncodeSet(char c) => c > 0x7Eu || SpecialQueryEncodeSetLookup[(byte) c] != 0;
+
+    internal static void PercentEncodeAfterEncoding(
+        string input,
+        Encoding encoding,
+        bool special,
+        StringBuilder output)
+    {
+        foreach (var value in encoding.GetBytes(input))
+        {
+            if (value > 0x7E
+                || (special
+                    ? InSpecialQueryEncodeSet((char)value)
+                    : InQueryEncodeSet((char)value)))
+            {
+                output.Append('%').Append(value.ToString("X2", CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                output.Append((char)value);
+            }
+        }
+    }
 
     internal static void AppendEncodedInC0(Rune input, StringBuilder sb)
     {

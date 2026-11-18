@@ -329,11 +329,16 @@ internal sealed class UrlBindings
             const arrayPush = Array.prototype.push;
             const ownKeys = Reflect.ownKeys, getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
             const create = Object.create, define = Object.defineProperty;
+            const objectGetPrototypeOf = Object.getPrototypeOf, arrayValues = Array.prototype.values;
             const weakGet = WeakMap.prototype.get, weakSet = WeakMap.prototype.set;
             const TypeErrorCtor = TypeError, RangeErrorCtor = RangeError;
             const iterator = Symbol.iterator, toStringTag = Symbol.toStringTag;
+            const nativeIteratorPrototype =
+                objectGetPrototypeOf(objectGetPrototypeOf(apply(arrayValues, [], [])));
             const urlBrands = new WeakMap(), paramsBrands = new WeakMap(), paramsCache = new WeakMap();
+            const iteratorStates = new WeakMap();
             const urlPrototype = create(Object.prototype), paramsPrototype = create(Object.prototype);
+            const paramsIteratorPrototype = create(nativeIteratorPrototype);
             define(urlPrototype, toStringTag, {value:'URL', configurable:true});
             define(paramsPrototype, toStringTag, {value:'URLSearchParams', configurable:true});
             const required = (count, minimum) => {
@@ -499,18 +504,33 @@ internal sealed class UrlBindings
                 const result = call('params-entry', id, '' + index);
                 return parse(result);
             };
-            const iterate = kind => function() {
-                const id = paramsBrand(this);
-                return (function*() {
-                    for (let index=0;;++index) {
-                        const pair = entry(id, index);
-                        if (pair === null) return;
-                        yield kind === 'keys' ? pair[0] : kind === 'values' ? pair[1] : pair;
-                    }
-                })();
+            define(paramsIteratorPrototype, 'next', {enumerable:true, configurable:true, writable:true,
+                value:function next() {
+                    const state = apply(weakGet, iteratorStates, this);
+                    if (state === undefined) throw new TypeErrorCtor('Illegal URLSearchParams iterator receiver');
+                    if (state.index >= 1024) return {value:undefined, done:true};
+                    const pair = entry(state.id, state.index);
+                    if (pair === null) return {value:undefined, done:true};
+                    ++state.index;
+                    return {value:state.kind === 'keys' ? pair[0] : state.kind === 'values' ? pair[1] : pair, done:false};
+                }});
+            define(paramsIteratorPrototype, toStringTag, {value:'URLSearchParams Iterator', configurable:true});
+            const makeIterator = (id, kind) => {
+                const result = create(paramsIteratorPrototype);
+                apply(weakSet, iteratorStates, result, {id, kind, index:0});
+                return result;
             };
-            const values = iterate('values'), entries = iterate('entries');
-            define(paramsPrototype, 'keys', {enumerable:true, configurable:true, writable:true, value:iterate('keys')});
+            const iterate = (kind, name) => {
+                const method = function() {
+                    return makeIterator(paramsBrand(this), kind);
+                };
+                define(method, 'name', {value:name, configurable:true});
+                return method;
+            };
+            const keys = iterate('keys', 'keys');
+            const values = iterate('values', 'values');
+            const entries = iterate('entries', 'entries');
+            define(paramsPrototype, 'keys', {enumerable:true, configurable:true, writable:true, value:keys});
             define(paramsPrototype, 'values', {enumerable:true, configurable:true, writable:true, value:values});
             define(paramsPrototype, 'entries', {enumerable:true, configurable:true, writable:true, value:entries});
             define(paramsPrototype, iterator, {configurable:true, writable:true, value:entries});

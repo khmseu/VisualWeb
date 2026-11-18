@@ -13,9 +13,13 @@ internal sealed class InternalUrlRune : InternalUrl
     private Rune[] _inputRunes = [];
     private Rune _currentRune;
 
-    public override Result<InternalUrl> Parse(string input, InternalUrl? baseUrl = null)
+    public override Result<InternalUrl> Parse(
+        string input,
+        InternalUrl? baseUrl = null,
+        Encoding? encoding = null)
     {
         BaseUrl = baseUrl;
+        EncodingOverride = encoding;
 
         Input = InputUtils.Format(input);
         Buf = new StringBuilder(Input.Length);
@@ -172,9 +176,6 @@ internal sealed class InternalUrlRune : InternalUrl
     // https://url.spec.whatwg.org/#query-state
     protected override void QueryState(char c)
     {
-        // skipping this since we don't support other encodings
-        // 1. If encoding is not UTF-8 and one of the following is true: ...
-
         // 2. If one of the following is true:
         // state override is not given and c is U+0023 (#)
         // c is the EOF code point
@@ -183,7 +184,11 @@ internal sealed class InternalUrlRune : InternalUrl
             var inputToEncode = Buf.ToString();
             Buf.Clear();
 
-            if (IsSpecial)
+            if (UseQueryEncodingOverride)
+            {
+                PercentEncoding.PercentEncodeAfterEncoding(inputToEncode, EncodingOverride!, IsSpecial, Buf);
+            }
+            else if (IsSpecial)
                 PercentEncoding.PercentEncode(inputToEncode, PercentEncoding.InSpecialQueryEncodeSet, Buf);
             else
                 PercentEncoding.PercentEncode(inputToEncode, PercentEncoding.InQueryEncodeSet, Buf);

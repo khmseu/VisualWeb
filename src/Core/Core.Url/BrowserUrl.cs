@@ -15,6 +15,8 @@ namespace VisualWeb.Core.Url;
 /// sandboxed origin.</remarks>
 public sealed class BrowserUrl
 {
+    private readonly SecurityOrigin? _blobUrlEntryOrigin;
+
     public string Href { get; }
     public string Protocol { get; }
     public string Username { get; }
@@ -33,8 +35,9 @@ public sealed class BrowserUrl
     public bool IsAboutBlank => Protocol == "about:" && Pathname == "blank"
         && Username.Length == 0 && Password.Length == 0 && Host.Length == 0;
 
-    private BrowserUrl(DomUrl url)
+    private BrowserUrl(DomUrl url, SecurityOrigin? blobUrlEntryOrigin = null)
     {
+        _blobUrlEntryOrigin = url.Protocol == "blob:" ? blobUrlEntryOrigin : null;
         Href = url.Href;
         Protocol = url.Protocol;
         Username = url.Username;
@@ -46,23 +49,24 @@ public sealed class BrowserUrl
         Search = url.Search;
         Hash = url.Hash;
         SerializedOrigin = url.Origin;
-        Origin = ComputeOrigin(url, allowBlob: true);
+        Origin = ComputeOrigin(url, _blobUrlEntryOrigin);
     }
 
-    private static SecurityOrigin ComputeOrigin(DomUrl url, bool allowBlob)
+    private static SecurityOrigin ComputeOrigin(DomUrl url, SecurityOrigin? blobUrlEntryOrigin)
     {
         if (IsTupleOriginScheme(url.Protocol))
         {
             return SecurityOrigin.FromTuple(url.Protocol[..^1], url.Hostname, url.Port);
         }
 
-        if (url.Protocol != "blob:" || !allowBlob) { return SecurityOrigin.CreateOpaque(); }
+        if (url.Protocol != "blob:") { return SecurityOrigin.CreateOpaque(); }
+        if (blobUrlEntryOrigin is not null) { return blobUrlEntryOrigin; }
 
         try
         {
             var inner = new DomUrl(url.Pathname);
             return inner.Protocol is "http:" or "https:" or "file:"
-                ? ComputeOrigin(inner, allowBlob: false)
+                ? ComputeOrigin(inner, blobUrlEntryOrigin: null)
                 : SecurityOrigin.CreateOpaque();
         }
         catch (InvalidUrlException)
@@ -71,12 +75,27 @@ public sealed class BrowserUrl
         }
     }
 
-    public static UrlParseResult ParseResult(string input, BrowserUrl? baseUrl = null)
+    /// <summary>Parses a URL and returns a diagnostic result on failure.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#concept-url-parser">URL parser</see>,
+    /// <see href="https://url.spec.whatwg.org/#query-state">query state</see>, and
+    /// <see href="https://url.spec.whatwg.org/#concept-url-origin">URL origin</see> (local spec ID <c>url</c>).
+    /// The optional encoding override affects query encoding only for special schemes other than <c>ws</c> and
+    /// <c>wss</c>; otherwise UTF-8 is used. A supplied blob entry origin overrides path-URL origin fallback;
+    /// resolving blob entries remains the caller's responsibility.</remarks>
+    /// <param name="input">The URL input.</param>
+    /// <param name="baseUrl">The optional base URL.</param>
+    /// <param name="encoding">The optional query encoding override; defaults to UTF-8.</param>
+    /// <param name="blobUrlEntryOrigin">The origin resolved from a registered blob URL entry, if available.</param>
+    public static UrlParseResult ParseResult(
+        string input,
+        BrowserUrl? baseUrl = null,
+        System.Text.Encoding? encoding = null,
+        SecurityOrigin? blobUrlEntryOrigin = null)
     {
         ArgumentNullException.ThrowIfNull(input);
         try
         {
-            return new(new BrowserUrl(new DomUrl(input, baseUrl?.Href)), null);
+            return new(new BrowserUrl(new DomUrl(input, baseUrl?.Href, encoding), blobUrlEntryOrigin), null);
         }
         catch (InvalidUrlException exception)
         {
@@ -84,9 +103,24 @@ public sealed class BrowserUrl
         }
     }
 
-    public static BrowserUrl Parse(string input, BrowserUrl? baseUrl = null)
+    /// <summary>Parses a URL, throwing <see cref="UrlParseException"/> on failure.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#concept-url-parser">URL parser</see>,
+    /// <see href="https://url.spec.whatwg.org/#query-state">query state</see>, and
+    /// <see href="https://url.spec.whatwg.org/#concept-url-origin">URL origin</see> (local spec ID <c>url</c>).
+    /// The optional encoding override affects query encoding only for special schemes other than <c>ws</c> and
+    /// <c>wss</c>; otherwise UTF-8 is used. A supplied blob entry origin overrides path-URL origin fallback;
+    /// resolving blob entries remains the caller's responsibility.</remarks>
+    /// <param name="input">The URL input.</param>
+    /// <param name="baseUrl">The optional base URL.</param>
+    /// <param name="encoding">The optional query encoding override; defaults to UTF-8.</param>
+    /// <param name="blobUrlEntryOrigin">The origin resolved from a registered blob URL entry, if available.</param>
+    public static BrowserUrl Parse(
+        string input,
+        BrowserUrl? baseUrl = null,
+        System.Text.Encoding? encoding = null,
+        SecurityOrigin? blobUrlEntryOrigin = null)
     {
-        var result = ParseResult(input, baseUrl);
+        var result = ParseResult(input, baseUrl, encoding, blobUrlEntryOrigin);
         return result.Url ?? throw new UrlParseException(result.Error!);
     }
 
@@ -131,6 +165,42 @@ public sealed class BrowserUrl
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-tojson">URL.toJSON()</see>.</remarks>
     public string ToJson() => Href;
 
+    /// <summary>Returns a conservative display form that omits credentials and elides bidi-sensitive URL components.</summary>
+    /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#url-rendering">URL rendering</see>
+    /// (local spec ID <c>url</c>).
+    /// This is display-only, not a navigation or identity value. Domain names use the URL Standard's Unicode
+    /// conversion; bidi or invisible characters in the host or remaining URL cause path, query and fragment elision.
+    /// Confusable-character detection and browser-specific scheme indicators are not implemented.</remarks>
+    public string ToDisplayString()
+    {
+        if (Protocol == "blob:")
+        {
+            return Origin.IsOpaque
+                ? "blob:null"
+                : "blob:" + Parse(Origin.Serialize()).ToDisplayString().TrimEnd('/');
+        }
+
+        var authorityPrefix = Protocol + "//";
+        if (!Href.StartsWith(authorityPrefix, StringComparison.Ordinal))
+        {
+            return Dubzer.WhatwgUrl.DomUrl.ContainsBidirectionalText(Href) ? Protocol : Href;
+        }
+
+        var authorityStart = authorityPrefix.Length;
+        var authorityEnd = authorityStart
+            + FindHostStateEnd(Href[authorityStart..], IsSpecialScheme(Protocol[..^1]), out _);
+        var suffix = Href[authorityEnd..];
+        var displayHostname = Dubzer.WhatwgUrl.DomUrl.DomainToUnicode(Hostname);
+        var displayHost = displayHostname + (Port.Length == 0 ? "" : ":" + Port);
+        var displayOrigin = authorityPrefix + displayHost;
+        var displayRoot = displayHost.Length == 0 ? authorityPrefix + "/" : displayOrigin;
+
+        return Dubzer.WhatwgUrl.DomUrl.ContainsBidirectionalText(displayHostname)
+            || Dubzer.WhatwgUrl.DomUrl.ContainsBidirectionalText(suffix)
+            ? displayRoot
+            : displayOrigin + suffix;
+    }
+
     /// <summary>Returns a new URL with its scheme changed as by the URL <c>protocol</c> setter.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-url-protocol">URL.protocol setter</see>.
     /// Invalid scheme input and forbidden special/non-special transitions leave this immutable snapshot unchanged.
@@ -162,7 +232,7 @@ public sealed class BrowserUrl
         }
 
         var colonInHref = Href.IndexOf(':', StringComparison.Ordinal);
-        return ParseResult(scheme + Href[colonInHref..]).Url ?? this;
+        return ParseResult(scheme + Href[colonInHref..], blobUrlEntryOrigin: _blobUrlEntryOrigin).Url ?? this;
     }
 
     /// <summary>Returns a new URL with its username set following the URL username setter.</summary>
@@ -203,6 +273,8 @@ public sealed class BrowserUrl
         if (isFile && portSeparator >= 0 && portSeparator < hostEnd) { return this; }
 
         var hostnameInput = portSeparator >= 0 && portSeparator < hostEnd ? value[..portSeparator] : value[..hostEnd];
+        if (hostnameInput.Length == 0 && portSeparator == 0) { return this; }
+
         var hostCandidate = ParseHostnameCandidate(hostnameInput, Protocol);
         if (hostCandidate is null) { return this; }
 
@@ -299,6 +371,11 @@ public sealed class BrowserUrl
         else if (pathname[0] != '/' && !(special && pathname[0] == '\\'))
         {
             pathname = "/" + pathname;
+        }
+
+        if (!hasAuthority && pathname.StartsWith("//", StringComparison.Ordinal))
+        {
+            pathname = "/." + pathname;
         }
 
         var suffixStart = Href.IndexOfAny(['?', '#'], urlPrefix.Length);
@@ -446,7 +523,7 @@ public sealed class BrowserUrl
         ArgumentNullException.ThrowIfNull(value);
         var fragmentStart = Href.IndexOf('#', StringComparison.Ordinal);
         var withoutFragment = fragmentStart < 0 ? Href : Href[..fragmentStart];
-        if (value.Length == 0) { return Parse(withoutFragment); }
+        if (value.Length == 0) { return Parse(withoutFragment, blobUrlEntryOrigin: _blobUrlEntryOrigin); }
 
         var fragment = RemoveAsciiTabsAndNewlines(value[0] == '#' ? value[1..] : value);
         var encoded = new System.Text.StringBuilder(withoutFragment).Append('#');
@@ -462,7 +539,7 @@ public sealed class BrowserUrl
             }
         }
 
-        return Parse(encoded.ToString());
+        return Parse(encoded.ToString(), blobUrlEntryOrigin: _blobUrlEntryOrigin);
     }
 
     /// <summary>Returns a new URL whose query is set following the URL search setter.</summary>
@@ -479,7 +556,7 @@ public sealed class BrowserUrl
         var withoutFragment = fragmentStart < 0 ? Href : Href[..fragmentStart];
         var queryStart = withoutFragment.IndexOf('?', StringComparison.Ordinal);
         var prefix = queryStart < 0 ? withoutFragment : withoutFragment[..queryStart];
-        if (value.Length == 0) { return Parse(prefix + fragment); }
+        if (value.Length == 0) { return Parse(prefix + fragment, blobUrlEntryOrigin: _blobUrlEntryOrigin); }
 
         var query = RemoveAsciiTabsAndNewlines(value[0] == '?' ? value[1..] : value);
         var rebuilt = new System.Text.StringBuilder(prefix).Append('?');
@@ -495,7 +572,7 @@ public sealed class BrowserUrl
             }
         }
 
-        return Parse(rebuilt.Append(fragment).ToString());
+        return Parse(rebuilt.Append(fragment).ToString(), blobUrlEntryOrigin: _blobUrlEntryOrigin);
     }
 
     /// <summary>Creates a detached <see cref="UrlSearchParams"/> parsed from this URL's query.</summary>

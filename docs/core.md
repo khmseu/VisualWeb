@@ -11,6 +11,19 @@ serialized URL and origin. `ParseResult` returns a diagnostic on invalid URLs;
 `Parse` throws `UrlParseException`; `Resolve` creates a new URL without mutating
 the base. It handles special/non-special schemes, relative references,
 credentials, IPv4/IPv6 and Unicode domains through the vendored parser.
+`Parse` and `ParseResult` accept an optional `System.Text.Encoding` query
+override: special schemes other than `ws`/`wss` use it to encode query input
+before percent-encoding; the default and all other schemes use UTF-8. The
+caller supplies the encoding, so this does not add document-encoding discovery
+or HTML URL-attribute integration.
+`Parse` and `ParseResult` also accept a resolved `blobUrlEntryOrigin`; it
+overrides the blob path-URL origin fallback for `blob:` URLs. Callers must do
+the entry lookup themselves; Core does not implement a Blob URL registry.
+`ToDisplayString()` omits credentials, renders valid IDN domains with the
+Unicode 17 URL mapping, and truncates URLs containing bidi/invisible
+characters to the host/origin prefix. It is display-only, not a navigation or
+identity value; confusable-character detection and browser-specific scheme
+indicators remain out of scope.
 
 The user approved [Dubzer.WhatwgUrl](../third_party/Dubzer.WhatwgUrl/README.md)
 behind our immutable facade and subsequently approved MIT source vendoring
@@ -25,11 +38,12 @@ is the immutable URL-level origin identity ([URL origin](https://url.spec.whatwg
 (IDNA/IPv4/IPv6 as serialized) and effective port; equality uses those three
 values. Everything else gives a unique opaque origin equal only to the same
 instance, so `"null"` is never an identity. `file:` is always opaque (the URL spec
-leaves it implementation-defined). `blob:` takes the parsed path URL's origin
-only when its scheme is `http`, `https` or `file`; with this Core's file-origin
-policy, `blob:file:` remains opaque. Invalid or other inner URLs yield a fresh
-opaque origin, and there is no blob URL entry registry. Origin is computed once
-per `BrowserUrl`, so re-parsing an opaque URL gives a different origin.
+leaves it implementation-defined). `blob:` uses an injected entry origin when
+provided; otherwise it takes the parsed path URL's origin only when its scheme
+is `http`, `https` or `file`. With this Core's file-origin policy, `blob:file:`
+remains opaque. Invalid or other inner URLs yield a fresh opaque origin. There
+is no blob URL entry registry. Origin is computed once per `BrowserUrl`, so
+re-parsing an opaque URL gives a different origin.
 The app-layer `LoadedPage` now associates each new document with the final
 response URL's tuple origin or a fresh opaque identity, independent of opaque URL
 snapshot reuse. Retained repaint and metadata record copies preserve that
@@ -96,8 +110,8 @@ name-only and name/value matching, live `Entries()`, `Keys()` and
 encoding rules. Standalone instances remain detached; only an instance owned by
 `MutableBrowserUrl` is linked. The API does not provide other mutation methods,
 ECMAScript iterator objects or Web IDL bindings.
-The legacy query encoding override, other mutable URL component setters, and
-broader DOM URL behavior remain deferred.
+Other mutable Core URL component setters and broader DOM URL behavior remain
+deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 The browser-facing JavaScript `URL` and `URLSearchParams` facades are implemented
 in Engine.Scripting over these Core APIs; see the

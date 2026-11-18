@@ -1841,7 +1841,7 @@ public sealed class BrowserController : IDisposable
         }
         tab.History.SetCurrentScrollPosition(owner.ScrollY);
         tab.History.SetCurrentHorizontalScrollPosition(owner.ScrollX);
-        tab.AddressText = destination.Href;
+        tab.AddressText = destination.ToDisplayString();
         tab.Error = null;
         Changed?.Invoke(id);
         return true;
@@ -1855,7 +1855,7 @@ public sealed class BrowserController : IDisposable
 
         var destination = tab.History.Entries[index];
         tab.History.Commit(destination, traversalIndex: index);
-        tab.AddressText = destination.Href;
+        tab.AddressText = destination.ToDisplayString();
         tab.Error = null;
         ScrollToFragment(id, destination, page);
         ScrollBy(id, tab.History.HorizontalScrollPositionAt(index) - owner.ScrollX, 0);
@@ -2085,9 +2085,10 @@ public sealed class BrowserController : IDisposable
         catch { cancellation.Dispose(); throw; }
         operations.Add(new(tab.Id, checked(++tab.Generation), task, cancellation, traversal, replace,
             restoreScrollY: restoreScrollY, restoreScrollX: restoreScrollX));
-        if (!preserveAddressWhileLoading) { tab.AddressText = url.Href; }
+        if (!preserveAddressWhileLoading) { tab.AddressText = url.ToDisplayString(); }
         tab.Error = null; tab.IsLoading = true;
-        tab.Status = preserveAddressWhileLoading ? "Checking navigation authorization." : "Loading " + url.Href;
+        tab.Status = preserveAddressWhileLoading ? "Checking navigation authorization."
+            : "Loading " + url.ToDisplayString();
         Changed?.Invoke(tab.Id);
     }
     private async Task<LoadedPage> LoadShellAuthorizedNavigationAsync(TabId tabId, BrowserUrl url,
@@ -2410,7 +2411,7 @@ public sealed class BrowserController : IDisposable
             if (operation.Click is not null)
             {
                 // The click superseded any pending load; the committed document remains current.
-                tab.AddressText = document.Url.Href; tab.Title = rendered.Title; tab.Status = rendered.Status;
+                tab.AddressText = document.Url.ToDisplayString(); tab.Title = rendered.Title; tab.Status = rendered.Status;
                 tab.Error = null; tab.IsLoading = false;
                 if (clickAllowed) { follow = operation.ClickLink; }
             }
@@ -2421,7 +2422,7 @@ public sealed class BrowserController : IDisposable
             }
             else
             {
-                tab.AddressText = document.Url.Href; tab.Title = rendered.Title; tab.Status = rendered.Status;
+                tab.AddressText = document.Url.ToDisplayString(); tab.Title = rendered.Title; tab.Status = rendered.Status;
                 tab.Error = null; tab.IsLoading = false;
             }
             owner.ResizeFailed = false;
