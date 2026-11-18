@@ -91,13 +91,15 @@ link between a URL and its parameters.
 
 [`MutableBrowserUrl`](../src/Core/Core.Url/MutableBrowserUrl.cs) is the minimal
 mutable Core state for consumers that need live query linkage. Its `Snapshot`
-is always an immutable `BrowserUrl`; setting `Href` or `Search` replaces that
-snapshot and refreshes the same `SearchParams` object in place. Mutating
-`SearchParams` updates the current snapshot's query while retaining its other
-URL components. An empty parameter serialization removes the query delimiter;
-setting `Search` to `"?"` retains an empty query until a parameter update occurs.
-Failed `Href` parsing leaves the existing state unchanged. This API
-does not add other mutable URL component setters or JavaScript/Web IDL bindings.
+is always an immutable `BrowserUrl`; `Href`, `Protocol`, `Username`, `Password`,
+`Host`, `Hostname`, `Port`, `Pathname`, `Search`, and `Hash` setters replace
+that snapshot using the corresponding immutable setter. `Href` and `Search`
+refresh the same `SearchParams` object in place; other component setters retain
+its tuple list. Mutating `SearchParams` updates the current snapshot's query
+while retaining its other URL components. An empty parameter serialization
+removes the query delimiter; setting `Search` to `"?"` retains an empty query
+until a parameter update occurs. Failed `Href` parsing leaves the existing
+state unchanged. This is a Core state model, not JavaScript/Web IDL bindings.
 
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
 WHATWG string, sequence-of-pairs and record initializers, `append()`, `delete(name)`,
@@ -110,8 +112,6 @@ name-only and name/value matching, live `Entries()`, `Keys()` and
 encoding rules. Standalone instances remain detached; only an instance owned by
 `MutableBrowserUrl` is linked. The API does not provide other mutation methods,
 ECMAScript iterator objects or Web IDL bindings.
-Other mutable Core URL component setters and broader DOM URL behavior remain
-deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 The browser-facing JavaScript `URL` and `URLSearchParams` facades are implemented
 in Engine.Scripting over these Core APIs; see the

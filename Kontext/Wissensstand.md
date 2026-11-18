@@ -79,14 +79,27 @@ vor `origin/main`; fuer diesen Abschlusscommit wurde nicht gepusht.
 
 **Abgrenzung des Abschlusses:** Der genehmigte Sechs-Phasen-Plan ist fertig,
 aber dies bedeutet keine vollstaendige WHATWG-URL-Konformitaet. Das
-Support-Inventar bewertet URL mit ~75% (Schaetzung). Dokumentierte Restluecken
-sind vollstaendige Standard-/WPT-Abdeckung, weitere mutable Core-Komponentensetter,
-der legacy query encoding override, breitere/automatische URL-Dokument-
+Support-Inventar bewertet URL mit ~80% (Schaetzung). Dokumentierte Restluecken
+sind vollstaendige Standard-/WPT-Abdeckung, breitere/automatische URL-Dokument-
 Integration sowie allgemeine Web-IDL-Generierung, vollstaendige
-Overload-Aufloesung und Konstruktor-/Prototypsemantik. Die vorhandenen
+Overload-Aufloesung und Konstruktor-/Prototypsemantik. Die zuvor offene Core-
+Mutation weiterer URL-Komponenten wurde in KP-493 geschlossen. Die vorhandenen
 URL-/IDNA-/URLSearchParams-Fixtures belegen Regressionen fuer die gepinnten
 Vektoren, nicht die gesamte Spezifikation. Die Aussage, es gebe noch keine
 Folgephase, galt vor der Nutzerfreigabe KP-488 und ist dadurch ersetzt.
+
+**Fortsetzung (2026-11-18, ca. 20:45 +01; KP-493):** Auf den erneuerten
+Vollstaendigkeitsauftrag wurde eine dokumentierte Core-Luecke geschlossen:
+`MutableBrowserUrl` bietet jetzt auch mutable `Protocol`, `Username`,
+`Password`, `Host`, `Hostname`, `Port`, `Pathname` und `Hash` ueber die
+vorhandenen unveraenderlichen Setter. `Href`/`Search` behalten ihre bisherige
+Live-Linkage-Semantik; die weiteren Setter bewahren die Identitaet und Tupel
+des `SearchParams`-Objekts. Neue Tests decken Setterketten und ungueltige
+No-ops ab. Fokussierte Tests (8), Core.Tests (4.231), Solution-Build (0
+Warnungen/Fehler), Solution-Volltest und Formatverifikation bestehen. Die
+Aenderungen sind uncommitted. Dies
+vervollstaendigt nicht den WHATWG-URL-Standard; die dokumentierten
+Vollkonformitaets- und Integrationsluecken bleiben offen.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

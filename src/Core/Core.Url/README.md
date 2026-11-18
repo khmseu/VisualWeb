@@ -27,14 +27,15 @@ ASCII digit run, ignoring missing or out-of-range numeric prefixes;
 `WithPathname` leaves opaque-path URLs unchanged. Credential setters
 use URL-standard userinfo encoding and are no-ops for URLs without a host and
 `file:` URLs.
-`MutableBrowserUrl` supplies mutable `Href`/`Search` state and one stable
-`SearchParams` instance whose mutations update the current URL snapshot and
-whose contents are refreshed in place when the URL is replaced. Its `Snapshot`
-is still an immutable `BrowserUrl`; failed `Href` parsing leaves state unchanged.
-An empty linked parameter serialization removes the query delimiter, while
-assigning `Search = "?"` preserves an empty query until a parameter update occurs.
-This is a focused Core state model, not the JavaScript `URL` binding or general
-mutable component setters.
+`MutableBrowserUrl` supplies mutable URL component state and one stable
+`SearchParams` instance. `Href` and
+`Search` refresh that same parameter object in place, while other component
+setters retain its tuple list. Parameter mutations update the current URL
+snapshot. Its `Snapshot` is still an immutable `BrowserUrl`; failed `Href`
+parsing leaves state unchanged. An empty linked parameter serialization removes
+the query delimiter, while assigning `Search = "?"` preserves an empty query
+until a parameter update occurs. This is a focused Core state model, not the
+JavaScript `URL` binding.
 `ToDisplayString()` is a conservative browser-chrome form: it omits credentials,
 uses Unicode IDN display, and elides path/query/fragment when the URL contains
 bidirectional or invisible characters. It is not suitable for navigation,

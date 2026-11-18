@@ -54,6 +54,48 @@ public sealed class MutableBrowserUrlTests
     }
 
     [Fact]
+    public void ComponentSettersUpdateUrlAndPreserveSearchParamsIdentity()
+    {
+        var url = new MutableBrowserUrl(BrowserUrl.Parse("http://user:pass@example.org:8080/a?first=1#old"));
+        var searchParams = url.SearchParams;
+
+        url.Protocol = "https:";
+        url.Username = "a b";
+        url.Password = "c@d";
+        url.Host = "other.test:9443";
+        url.Hostname = "final.test";
+        url.Port = "9555";
+        url.Pathname = "/next path";
+        url.Hash = "new value";
+
+        Assert.Equal("https://a%20b:c%40d@final.test:9555/next%20path?first=1#new%20value", url.Href);
+        Assert.Same(searchParams, url.SearchParams);
+        Assert.Equal("1", searchParams.Get("first"));
+        Assert.Equal("https:", url.Snapshot.Protocol);
+        Assert.Equal("final.test:9555", url.Snapshot.Host);
+        Assert.Equal("/next%20path", url.Snapshot.Pathname);
+        Assert.Equal("#new%20value", url.Snapshot.Hash);
+    }
+
+    [Fact]
+    public void NoOpComponentSettersPreserveSnapshotAndLinkedParameters()
+    {
+        var url = new MutableBrowserUrl(BrowserUrl.Parse("https://example.org/path?a=1"));
+        var searchParams = url.SearchParams;
+        searchParams.Append("b", "2");
+        var snapshot = url.Snapshot;
+
+        url.Protocol = "1https";
+        url.Host = "[";
+        url.Port = "65536";
+
+        Assert.Same(snapshot, url.Snapshot);
+        Assert.Same(searchParams, url.SearchParams);
+        Assert.Equal("a=1&b=2", searchParams.ToString());
+        Assert.Equal("https://example.org/path?a=1&b=2", url.Href);
+    }
+
+    [Fact]
     public void EmptyQueryAndEmptySearchParamsFollowUrlQuerySemantics()
     {
         var url = new MutableBrowserUrl(BrowserUrl.Parse("https://example.org/path?"));

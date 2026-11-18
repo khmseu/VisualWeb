@@ -14709,3 +14709,37 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
   des aktuellen Wissensstands erfolgen nachtraeglich und sind noch nicht
   committed.
 - Quelle: Git-Commit- und Hook-Ausgabe dieses Turns.
+
+### KP-493 - Mutable Core URL-Komponentensetter ergaenzt
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag im aktuellen Turn gegen 20:45 +01; genaue
+  Endzeit unbekannt.
+- Erfassungsart: Nutzerangabe, lokale URL-Spezifikation, Quellcode,
+  gezielte Tests und Build-/Format-/Solution-Test-Ausgaben.
+- Nutzerangabe: „complete the implementation of WHATWG URL.“
+- Belegt: Die zuvor dokumentierte Core-Luecke war, dass `MutableBrowserUrl`
+  nur `Href` und `Search` mutieren konnte, obwohl `BrowserUrl` bereits die
+  Komponenten-Setter implementierte. `MutableBrowserUrl` bietet nun auch
+  `Protocol`, `Username`, `Password`, `Host`, `Hostname`, `Port`, `Pathname`
+  und `Hash`. Die neuen Properties delegieren an die jeweiligen `BrowserUrl`
+  Setter; `Href` und `Search` reinitialisieren weiterhin dasselbe
+  `UrlSearchParams`-Objekt, waehrend andere Komponenten dessen Tupel und
+  Identitaet erhalten.
+- Belegt: Neue Regressionen pruefen eine kombinierte Setterfolge,
+  `SearchParams`-Identitaet sowie Snapshot-/Query-Erhalt bei ungueltigen
+  No-ops. Die acht fokussierten Tests und alle 4.231 Core.Tests bestehen.
+  `dotnet build VisualWeb.slnx` bestand mit null Warnungen/Fehlern und
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` bestand. `dotnet test VisualWeb.slnx --no-build` bestand
+  ebenfalls (Exitcode 0).
+- Status: Code, Tests und Core-/Projekt-/Supportdokumentation sind im
+  Arbeitsbaum uncommitted. Der Aenderungssatz schliesst nur die beschriebene
+  mutable Core API-Luecke; er behauptet keine vollstaendige WHATWG-URL-
+  Konformitaet. Weitere dokumentierte URL-Standard- und Integrationsthemen
+  bleiben offen.
+- Quellen: Nutzervorgabe im aktuellen Turn; `docs/core.md`, `docs/standards.md`,
+  `specs/cache/url.html` (`#dom-url-protocol` bis `#dom-url-hash`),
+  `src/Core/Core.Url/MutableBrowserUrl.cs`,
+  `tests/Core.Tests/MutableBrowserUrlTests.cs` und die genannten lokalen
+  Validierungsausgaben.
