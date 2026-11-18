@@ -124,9 +124,14 @@ values`). Zusaetzlich wurde der gepinnte `URL.toJSON()`-JSON-Serializationstest
 ergaenzt und als `8ecc0c4` (`test(scripting): cover URL toJSON serialization`)
 committed; Engine.Scripting.Tests (387) besteht. Der aktuelle Durchlauf
 ergaenzt ausserdem den readonly-`searchParams`-Fall aus WPT und besteht mit 388
-Engine.Scripting-Tests. Diese neueste Provenienz-/Regressionsergaenzung ist
-noch uncommitted. Es wurde kein Produktionsfehler nachgewiesen; weitere
-WPT-Familien bleiben mit der lokalen Abdeckung zu vergleichen.
+Engine.Scripting-Tests. Die Aenderung steht als `fb6175a`
+(`test(scripting): verify URL searchParams readonly`). Ein WPT-Abgleich der
+Anchor/Area-Setterdatei bestaetigt, dass sie die schon gepinnten Settervektoren
+auf HTMLAnchorElement/HTMLAreaElement anwendet; diese HTML-Integration ist in
+der Supportbeschreibung ausdruecklich weiter ausgegrenzt. Es wurde kein
+Produktionsfehler nachgewiesen. Die eigenstaendige WHATWG-URL-WPT-Abdeckung
+dieses Durchlaufs ist fuer die lokal vorhandenen relevanten Testfamilien
+abgeglichen; vollstaendige Standardkonformitaet bleibt nicht belegt.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

@@ -14940,12 +14940,21 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   Der Setter wirft wie erwartet `TypeError` und veraendert den Getterzustand
   nicht; es gab keine Produktionscodeaenderung.
 - Belegt: Fokustest und Engine.Scripting.Tests (388) bestanden. Ein neuer
-  Solution-Build, Solution-Volltest oder Formatlauf nach diesem einzelnen Test
-  steht noch aus.
-- Status: Test und Provenienznotiz sind uncommitted.
+  Solution-Build und Formatverifikation bestehen; ein neuer
+  Solution-Volltest nach diesem einzelnen Test wurde nicht ausgefuehrt.
+- Status: Test und Provenienznotiz wurden als `fb6175a`
+  (`test(scripting): verify URL searchParams readonly`) committed; Hook ohne
+  Befund.
 - Ableitung/naechster Schritt: Der gepruefte Interface-Fall entspricht dem
-  vorhandenen Getter-only-Attribut. Weitere WPT-Luecken sind zu untersuchen;
-  Vollkonformitaet bleibt offen.
+  vorhandenen Getter-only-Attribut. Der WPT-Abgleich der noch nicht in den
+  Kern-URL-Testfallfamilien verarbeiteten `url-setters-a-area.window.js` zeigt,
+  dass sie vorhandene Settervektoren auf `<a>` und `<area>` anwendet. Das
+  erfordert HTMLAnchorElement-/HTMLAreaElement-Integration; docs/standards.md
+  grenzt breitere URL-/Dokumentintegration aus. Es wurde daher keine solche
+  Implementierung in diesen URL-Pass aufgenommen. Vollkonformitaet bleibt
+  offen.
 - Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
   [Scripting-Test](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
-  lokale Testausgaben.
+  [Support-Inventar](../docs/standards.md#implemented-subsets), gepinnte
+  WPT-Datei `url/url-setters-a-area.window.js` (Blob
+  `0012595cc469ee2290a3537733c619dfaa97204b`) und lokale Testausgaben.
