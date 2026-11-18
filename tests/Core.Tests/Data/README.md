@@ -14,11 +14,30 @@ The user selected stable Unicode 17 rather than updating the parser to Unicode
 | IdnaTestV2.json            | url/resources/IdnaTestV2.json                  |
 | mime-types.json            | mimesniff/mime-types/resources/mime-types.json |
 | iso-2022-jp-decoder.any.js | encoding/iso-2022-jp-decoder.any.js            |
+| urlencoded-parser-wpt.json | url/urlencoded-parser.any.js                    |
+| urlsearchparams-stringifier-wpt.json | url/urlsearchparams-stringifier.any.js |
+| urlsearchparams-constructor-wpt.json | url/urlsearchparams-constructor.any.js |
 
-Files are unmodified upstream downloads; [WPT-LICENSE.md](WPT-LICENSE.md)
-contains the upstream licensing terms. ISO-2022-JP tests parse only the literal
-decode vectors without executing JavaScript. Encoding labels and indexes are
-linked from the embedded [WHATWG source data](../../../src/Core/Core.Encoding/Data/).
+The first five fixture families are unmodified upstream downloads.
+`urlencoded-parser-wpt.json`, `urlsearchparams-stringifier-wpt.json`, and
+`urlsearchparams-constructor-wpt.json` are bounded offline subsets transcribed
+from the cited WPT test files at the pinned revision. Their selected input
+tuples and expected results are preserved; the JavaScript test harness is not
+included or executed. The upstream paths and revision were verified against
+WPT commit `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`. The WPT 3-Clause BSD terms in
+[WPT-LICENSE.md](WPT-LICENSE.md) apply to these derived fixture subsets as well.
+
+The source blobs at that revision are:
+
+| Upstream test file | Git blob SHA |
+| ------------------ | ------------ |
+| url/urlencoded-parser.any.js | `847465cb9214e1feac1babb6a1b86ecec9597028` |
+| url/urlsearchparams-stringifier.any.js | `6187db64b1747d294a18cf0d2182b2f045d29a7b` |
+| url/urlsearchparams-constructor.any.js | `d482911350ba0fabeb127d0fb78cbd1dd71d4d45` |
+
+ISO-2022-JP tests parse only the literal decode vectors without executing
+JavaScript. Encoding labels and indexes are linked from the embedded
+[WHATWG source data](../../../src/Core/Core.Encoding/Data/).
 
 Tests run offline and do not refresh these fixtures or the standards cache.
 Pin and review upstream revisions explicitly instead of downloading a moving

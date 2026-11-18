@@ -1,0 +1,7 @@
+[
+  {
+    "name": "sequence of sequences preserves tuple order",
+    "input": [["a", "b"], ["c", "d"]],
+    "output": [["a", "b"], ["c", "d"]]
+  }
+]

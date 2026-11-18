@@ -14018,3 +14018,145 @@ third_party` besteht. Kein nativer Smoke ist fuer Core.Url anwendbar.
 - Status: Der angeforderte zehnteilige Missing-Lauf ist abgeschlossen.
 - Quellen: [Missing](../plans/Missing.md#third-standards-priority-run-2026-11-17);
   die vier genannten GitHub Actions Workflows fuer Commit `ea43ce9`.
+
+### KP-467 - WHATWG URL Vollstaendigkeitsauftrag und offene Grenze
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag 2026-11-18T00:37:11.779+01:00.
+- Erfassungsart: zeitnahe Zusammenfassung des aktuellen Turns und gepruefter
+  Repository-Artefakte.
+- Nutzerangabe: „complete the implementation of WHATWG URL.“
+- Belegt: Das Inventar schaetzt WHATWG URL grob auf ~65% und warnt ausdruecklich
+  vor einem Vollkonformitaetsanspruch. `BrowserUrl` ist eine immutable
+  .NET-Fassade; `UrlSearchParams` bietet geordnete .NET-Operationen, aber keine
+  lebende URL-Verknuepfung oder Web-IDL-Bindings. Parsing, Form-URL-Encoding,
+  Origin, URL- und SearchParams-IDL sind getrennte Standardbereiche. Der lokale
+  URL-Standard liegt vor; Manifest-ID `url` hat `checkedAt: 2026-11-16`.
+- Ableitung/Offen: „Vollstaendig“ koennte Core-Algorithmen, eine vollstaendige
+  .NET-API oder zusaetzlich die browserseitige URL-/URLSearchParams-JS- und
+  Web-IDL-Oberflaeche meinen. Diese Grenzen haben unterschiedliche Architektur-
+  und Testumfaenge; keine davon wurde vom Nutzer hier genauer festgelegt.
+- Vorschlag: Zuerst eine algorithm-to-evidence-Lueckenkarte und bessere
+  offline Conformance-Nachweise erstellen; danach Core-Verhalten und, falls
+  bestaetigt, JavaScript/Web-IDL als getrennte Phasen abschliessen.
+- Status: Scope und Plan warten auf Nutzerbestaetigung. In diesem Turn wurden
+  keine Codeaenderungen oder Tests ausgefuehrt.
+- Quellen: aktueller Nutzerturn; [Core guide](../docs/core.md#url),
+  [Core.Url README](../src/Core/Core.Url/README.md),
+  [Standards inventory](../docs/standards.md#implemented-subsets),
+  [URL Standard cache](../specs/cache/url.html),
+  [URL manifest entry](../specs/manifest.json) und Exploration von
+  `BrowserUrl`, `UrlSearchParams`, dem vendored parser und Core.Tests.
+
+### KP-468 - URL Planumfang genehmigt
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerbestaetigung 2026-11-18T00:45:31.801+01:00.
+- Erfassungsart: zeitnahe Zusammenfassung des aktuellen Turns.
+- Nutzerentscheidung: Genehmigt wurde der vorgeschlagene Umfang fuer Core-
+  Algorithmen sowie browserseitiges `URL`/`URLSearchParams` einschliesslich
+  dieser Schnittstellen benoetigtem Web-IDL-Verhalten; allgemeine Web-IDL-
+  Generierung bleibt ausgeschlossen.
+- Belegt: Der Sechs-Phasen-Plan ist
+  [whatwg-url-completion-plan.md](../plans/whatwg-url-completion-plan.md).
+  Phase 1 ist URLSearchParams-Fixture-Abdeckung und gezielte Korrektur belegter
+  Core-Abweichungen. Die Spaeterphasen umfassen Parser, Core-Operationen,
+  mutable URL-/SearchParams-Linkage, Script-Bindings sowie Evidenz und Doku.
+- Status: Scope und Plan sind beschlossen. Codeimplementierung und Tests stehen
+  noch aus; die Arbeit beginnt mit Phase 1. Kein Commit oder Push ist erfolgt.
+- Bezug: bestaetigt und loest die Umfangsfrage aus [Q-038](./Wissensstand.md#q-038)
+  sowie die offene Grenze in [KP-467](#kp-467---whatwg-url-vollstaendigkeitsauftrag-und-offene-grenze).
+- Quelle: Nutzerantwort vom 2026-11-18T00:45:31.801+01:00.
+
+### KP-469 - Phase 1 Review verlangt gepinnte URLSearchParams-Fixtures
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-1-Implementierung und Review am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung der Agentenberichte.
+- Belegt: Der Implementierungsagent fand 24 bestehende handgeschriebene
+  `UrlSearchParamsTests` fuer Form-Parsing/Serialisierung, Konstruktoren,
+  UTF-8-Ersetzung und Tupelordnung. Er meldete 24/24 fokussierte Tests und
+  4.191/4.191 Core-Tests als bestanden, aenderte aber keine Dateien.
+- Review: NEEDS_REVISION. Der genehmigte Phase-1-Plan verlangt gepinnte Offline-
+  Konformitaetsfixtures samt WPT-Pfad, Revision und Lizenz/Provenienz; bestehende
+  handgeschriebene Tests ersetzen diesen Akzeptanzpunkt nicht.
+- Naechster Schritt: Phase 1 bleibt aktiv. Der Implementierungsagent soll eine
+  begrenzte, verifizierte WPT URLSearchParams-/Form-URL-Encoded-Fixture-Familie
+  pinnen, fixture-basierte Tests und Provenienz ergaenzen sowie nur belegte
+  Abweichungen korrigieren. Ohne verifizierbare Quelle muss er stoppen und den
+  Blocker berichten. Keine spaetere Phase oder Commit ist freigegeben.
+- Quellen: [genehmigter Plan](../plans/whatwg-url-completion-plan.md), Agent-
+  Ergebnisse fuer Phase-1-Implementierung und Review,
+  [Core test provenance](../tests/Core.Tests/Data/README.md).
+
+### KP-470 - Phase 1 Fixture-Revision lokal validiert
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-1-Revision am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung des Implementierungsagentenberichts;
+  finale Review-Entscheidung steht noch aus.
+- Umsetzung: Drei JSON-Fixture-Teilmengen wurden aus WHATWG/WPT bei Commit
+  `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231` aufgenommen:
+  `urlencoded-parser.any.js` (35 Vektoren),
+  `urlsearchparams-stringifier.any.js` (12) und
+  `urlsearchparams-constructor.any.js` (1). Blob-Hashes, Upstream-Pfade und
+  BSD-3-Clause-Provenienz sind laut Implementierungsbericht in
+  [Core-Testdaten](../tests/Core.Tests/Data/README.md) dokumentiert.
+- Geaendert laut Bericht: drei Dateien unter `tests/Core.Tests/Data/`, die
+  Fixture-Tests in `UrlSearchParamsTests.cs` und dessen Daten-README.
+  `UrlSearchParams.cs` blieb unveraendert, weil alle gewaehlten Vektoren
+  bestehendes Verhalten bestaetigten.
+- Validierung laut Implementierungsbericht: 27 fokussierte Tests und 4.194
+  Core-Tests bestanden; `dotnet format ... --verify-no-changes` sowie
+  `git diff --check` bestanden. Es gab keinen fehlschlagenden Test vor einer
+  Implementierung, da keine Produktionskorrektur durch die Vektoren gefordert
+  wurde.
+- Status: Code-Review genehmigte Phase 1 mit nicht-blockierenden Empfehlungen
+  zu erwarteten Vektorzahlen und Source-Blob-Hashes; deren Ergaenzung laeuft.
+  Keine spaetere Phase oder Commit freigegeben.
+- Quelle: Implementierungsbericht fuer Phase 1; [genehmigter Plan](../plans/whatwg-url-completion-plan.md);
+  [Core test provenance](../tests/Core.Tests/Data/README.md).
+
+### KP-471 - Phase 1 Review genehmigt mit Provenienzempfehlungen
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Review nach Phase-1-Revision am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung des Code-Review-Berichts.
+- Reviewstatus: APPROVED. Die drei Fixturefamilien und ihre erwarteten Werte
+  entsprechen den Form-URL-Encoded-Regeln; die Doku beschreibt den begrenzten
+  WPT-Subset und behauptet keine Vollkonformitaet.
+- Nicht-blockierende Empfehlungen: Fixture-Loops koennten bei entfernten
+  Vektoren leer erfolgreich sein. Erwartete Counts (35, 12, 1) sollen asserted
+  werden; ausserdem sollen die bereits ermittelten WPT-Source-Blob-Hashes in
+  der Provenienz-README stehen.
+- Status: Diese Empfehlungen wurden zur Umsetzung vor der Phasenabnahme
+  weitergegeben. Phase 2 bleibt aus; kein Commit erfolgt.
+- Quelle: Code-Review-Ergebnis fuer die Phase-1-Revision; [Plan](../plans/whatwg-url-completion-plan.md).
+
+### KP-472 - Phase 1 abgeschlossen und vollvalidiert
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-1-Abschluss am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung der Agenten- und Befehlsausgaben.
+- Belegt: Die drei WPT-abgeleiteten Fixturemengen umfassen 35 Parser-, 12
+  Stringifier- und 1 Sequence-Constructor-Vektor aus Revision
+  `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`. Der Implementierungsagent
+  ergaenzte erwartete Fixture-Counts und Source-Blob-Hashes; alle ausgewaehlten
+  Vektoren passen zum vorhandenen Verhalten, `UrlSearchParams.cs` blieb
+  unveraendert. Der Review genehmigte die Phase; seine beiden nicht-blockierenden
+  Empfehlungen wurden erledigt.
+- Validierung: Der Implementierungsagent meldet 27 fokussierte URLSearchParams-
+  und 4.194 Core-Tests erfolgreich. Im Parent-Turn bestehen
+  `dotnet build VisualWeb.slnx` mit 0 Warnungen/Fehlern und
+  `dotnet test VisualWeb.slnx --no-build` ohne Fehler; die Ausgabe markiert
+  zwei Browser-Prozesstests als uebersprungen. `dotnet format
+VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
+  `git diff --check` bestehen.
+- Dateien: drei WPT-abgeleitete JSON-Fixtures, Fixture-Tests und
+  Provenienz-README; zudem genehmigter Plan und Phase-Completion-Bericht.
+- Status: Phase 1 abgeschlossen und review-approved. Kein Commit/Push;
+  vor Phase 2 wartet die Arbeit auf Nutzer-Commit und Fortsetzungsbestaetigung.
+- Quellen: [Plan](../plans/whatwg-url-completion-plan.md),
+  [Phase 1 Bericht](../plans/whatwg-url-completion-phase-1-complete.md),
+  [Core test provenance](../tests/Core.Tests/Data/README.md), Code-Review-Bericht
+  und lokale Build/Test/Format-Ausgaben.

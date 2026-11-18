@@ -1,0 +1,14 @@
+[
+  { "name": "space", "entries": [["a", "b c"]], "output": "a=b+c" },
+  { "name": "empty value and duplicate", "entries": [["a", ""], ["a", ""], ["", "b"], ["", ""], ["", ""]], "output": "a=&a=&=b&=&=" },
+  { "name": "empty name", "entries": [["", "b"], ["", "b"]], "output": "=b&=b" },
+  { "name": "empty name and value", "entries": [["", ""], ["", ""]], "output": "=&=" },
+  { "name": "plus", "entries": [["a", "b+c"], ["a+b", "c"]], "output": "a=b%2Bc&a%2Bb=c" },
+  { "name": "equals", "entries": [["=", "a"], ["b", "="]], "output": "%3D=a&b=%3D" },
+  { "name": "ampersand", "entries": [["&", "a"], ["b", "&"]], "output": "%26=a&b=%26" },
+  { "name": "form-encode safe set", "entries": [["a", "*-._"], ["*-._", "c"]], "output": "a=*-._&*-._=c" },
+  { "name": "percent", "entries": [["a", "b%c"], ["a%b", "c"]], "output": "a=b%25c&a%25b=c" },
+  { "name": "NUL", "entries": [["a", "b\u0000c"], ["a\u0000b", "c"]], "output": "a=b%00c&a%00b=c" },
+  { "name": "supplementary Unicode", "entries": [["a", "b\uD83D\uDCA9c"], ["a\uD83D\uDCA9b", "c"]], "output": "a=b%F0%9F%92%A9c&a%F0%9F%92%A9b=c" },
+  { "name": "line breaks are not normalized", "entries": [["a\nb", "c\rd"], ["e\n\rf", "g\r\nh"]], "output": "a%0Ab=c%0Dd&e%0A%0Df=g%0D%0Ah" }
+]

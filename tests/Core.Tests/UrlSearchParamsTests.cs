@@ -1,3 +1,4 @@
+using System.Text.Json;
 using VisualWeb.Core.Url;
 using Xunit;
 
@@ -5,6 +6,67 @@ namespace VisualWeb.Core.Tests;
 
 public sealed class UrlSearchParamsTests
 {
+    [Fact]
+    public void FormUrlEncodedParserMatchesPinnedWptVectors()
+    {
+        using var fixture = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "urlencoded-parser-wpt.json")));
+        Assert.Equal(35, fixture.RootElement.GetArrayLength());
+
+        foreach (var vector in fixture.RootElement.EnumerateArray())
+        {
+            var parameters = new UrlSearchParams(vector.GetProperty("input").GetString()!);
+            var expected = vector.GetProperty("output").EnumerateArray()
+                .Select(pair => new KeyValuePair<string, string>(
+                    pair[0].GetString()!,
+                    pair[1].GetString()!))
+                .ToArray();
+
+            Assert.Equal(expected, parameters.Entries().ToArray());
+        }
+    }
+
+    [Fact]
+    public void FormUrlEncodedSerializerMatchesPinnedWptVectors()
+    {
+        using var fixture = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "urlsearchparams-stringifier-wpt.json")));
+        Assert.Equal(12, fixture.RootElement.GetArrayLength());
+
+        foreach (var vector in fixture.RootElement.EnumerateArray())
+        {
+            var entries = vector.GetProperty("entries").EnumerateArray()
+                .Select(pair => (IReadOnlyList<string>)[pair[0].GetString()!, pair[1].GetString()!])
+                .ToArray();
+            var parameters = new UrlSearchParams(entries);
+
+            Assert.Equal(vector.GetProperty("output").GetString(), parameters.ToString());
+        }
+    }
+
+    [Fact]
+    public void SequenceConstructorMatchesPinnedWptVectors()
+    {
+        using var fixture = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "urlsearchparams-constructor-wpt.json")));
+        Assert.Equal(1, fixture.RootElement.GetArrayLength());
+
+        foreach (var vector in fixture.RootElement.EnumerateArray())
+        {
+            var input = vector.GetProperty("input").EnumerateArray()
+                .Select(pair => (IReadOnlyList<string>)[pair[0].GetString()!, pair[1].GetString()!])
+                .ToArray();
+            var expected = vector.GetProperty("output").EnumerateArray()
+                .Select(pair => new KeyValuePair<string, string>(
+                    pair[0].GetString()!,
+                    pair[1].GetString()!))
+                .ToArray();
+            var parameters = new UrlSearchParams(input);
+
+            Assert.Equal(expected, parameters.Entries().ToArray());
+        }
+    }
+
     [Fact]
     public void StringInitializerPreservesOrderedDuplicatePairs()
     {
