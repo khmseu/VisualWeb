@@ -14504,6 +14504,27 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
   ueber den Remote-Vorgang ungesichert.
 - Status: Kein Versuch unternommen, den Remote-Tracking-Ref oder den
   entfernten Branch zurueckzusetzen. Der Gesamtabschlussbericht und dieser
-  Kontextnachtrag sind lokal noch uncommitted.
+  Kontextnachtrag waren zum Zeitpunkt dieses Eintrags lokal noch uncommitted;
+  ihr Commit ist in KP-485 dokumentiert.
 - Quellen: `git status -sb`, `git log -8 --oneline --decorate`,
   `git reflog show --date=iso refs/remotes/origin/main -n 8` im aktuellen Turn.
+
+### KP-485 - Abschlussbericht commit
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag am 2026-11-18T06:41:47+01:00; Commit am
+  2026-11-18, genaue Uhrzeit unbekannt.
+- Erfassungsart: Nutzerangabe und Git-Ausgabe.
+- Nutzerangabe: „commit, then continue“ nach Erstellung des Gesamtberichts.
+- Belegt: Gesamtabschlussbericht und aktualisierte Kontextdateien wurden als
+  `cb58090` (`docs: finalize WHATWG URL completion record`) committed. Der
+  Commit-Hook formatierte den Bericht, pruefte drei Dateien und meldete keine
+  Probleme. `git diff --check` bestand.
+- Belegt: Bei der letzten Statuspruefung war der Arbeitsbaum sauber; `main`
+  lag einen Commit vor `origin/main` (`origin/main` bei `5181b13`). In diesem
+  Turn wurde kein Push-Befehl ausgefuehrt. Die zuvor beobachtete Reflog-
+  Aktualisierung des Remote-Tracking-Refs bleibt ungeklärt (KP-484).
+- Status: Abschlussbericht committed; kein Push dieses Commits.
+- Quellen: Nutzerangabe mit Zeitstempel oben; Git-Commit `cb58090`;
+  `git status -sb`, `git log -2 --oneline --decorate` und Reflogpruefung im
+  aktuellen Turn.

@@ -73,7 +73,9 @@ Im aktuellen lokalen Status zeigen `main` und `origin/main` beide auf
 `5181b13`. Der Reflog markiert die Aktualisierung von `origin/main` um
 06:30:17+01 als „update by push“; in diesem Agent-Turn wurde kein Push-Befehl
 ausgefuehrt, die Ursache der Ref-Aktualisierung ist ungeklärt. Der
-Gesamtabschlussbericht und der aktuelle Kontextnachtrag sind noch uncommitted.
+Gesamtabschlussbericht und der zugehoerige Kontextnachtrag wurden danach lokal
+als `cb58090` committed. Bei der letzten Statuspruefung war `main` einen Commit
+vor `origin/main`; fuer diesen Abschlusscommit wurde nicht gepusht.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
