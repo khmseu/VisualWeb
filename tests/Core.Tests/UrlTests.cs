@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Dubzer.WhatwgUrl;
 using Dubzer.WhatwgUrl.Uts46;
 using VisualWeb.Core.Url;
 using Xunit;
@@ -125,6 +126,17 @@ public sealed class UrlTests
         var resolved = baseUrl.Resolve("../next");
         Assert.Equal("https://example.org/next", resolved.Href);
         Assert.Equal("https://example.org/a/b?c#d", baseUrl.Href);
+    }
+
+    [Fact]
+    public void TryCreateUsesUnicodeParserForUnicodeStringBase()
+    {
+        const string baseUrl = "https://example.org/a/😀/b";
+
+        Assert.True(DomUrl.TryCreate("", baseUrl, out var sameUrl));
+        Assert.Equal("https://example.org/a/%F0%9F%98%80/b", sameUrl!.Href);
+        Assert.True(DomUrl.TryCreate("child", baseUrl, out var childUrl));
+        Assert.Equal("https://example.org/a/%F0%9F%98%80/child", childUrl!.Href);
     }
 
     [Fact]

@@ -14160,3 +14160,58 @@ VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
   [Phase 1 Bericht](../plans/whatwg-url-completion-phase-1-complete.md),
   [Core test provenance](../tests/Core.Tests/Data/README.md), Code-Review-Bericht
   und lokale Build/Test/Format-Ausgaben.
+
+### KP-473 - Phase-1-Commit und Beginn von Phase 2
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Commit und Fortsetzung am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: Git-Ausgabe und ausdruecklicher Nutzerauftrag in der
+  Gespraechszusammenfassung.
+- Belegt: Commit `affb369` (`test(core-url): add pinned URLSearchParams
+vectors`) wurde erstellt. Der Commit-Hook formatierte Kontext-/Planberichte
+  und bestaetigte anschliessend neun geaenderte Dateien ohne Formatfehler. Der
+  lokale Branch `main` liegt danach einen Commit vor `origin/main`; es wurde
+  nicht gepusht.
+- Nutzerangabe: „commit, then continue“ autorisiert den Commit der abgeschlossenen
+  Phase 1 und die Fortsetzung mit Phase 2.
+- Status: Phase 1 ist committed und abgeschlossen. Phase 2 ist aktiv; geplant
+  sind gepinnte URL-/Domainvektoren zu pruefen, belegte Parserabweichungen
+  test-first zu korrigieren und die einschlaegigen Fixturefamilien sowie Core
+  Tests auszufuehren.
+- Quellen: Commit `affb369`; [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
+  insbesondere Phase 2; Nutzerauftrag in der Gespraechszusammenfassung.
+
+### KP-474 - Phase 2 implementiert, geprueft und validiert
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-2-Arbeit und Validierung am 2026-11-18; genaue Uhrzeit
+  unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung des Implementierungs- und
+  Reviewagenten sowie lokaler Build-/Test-/Formatbefehle.
+- Belegt: Eine Regression zeigte, dass `DomUrl.TryCreate(input, baseUrl)` den
+  Parser fuer den String-Base-URL anhand des relativen `input` auswaehlte. Bei
+  ASCII-Input und einem Supplementary-Unicode-Zeichen im Base-Pfad wurden
+  UTF-16-Surrogathaelften einzeln prozentkodiert. Der Parser wird nun anhand
+  des `baseUrl` ausgewaehlt; Regressionstests decken leere und `"child"`-
+  Referenzen ab. Geaendert wurden `DomUrl.cs`, die Vendordokumentation und
+  `UrlTests.cs`.
+- Belegte Fixtureabdeckung: Die vorhandenen anwendbaren gepinnten Tests
+  umfassen 896 URL-, 87 toascii- und 2.670 Unicode-17-IDNA-Faelle; es wurden
+  keine neuen Fixturedateien benoetigt. Diese endlichen Vektoren belegen keine
+  vollstaendige URL-Konformitaet.
+- Validierung: Der Implementierungsagent meldet den Regressionstest vor Fix
+  fehlschlagend, 3.794 URL-Tests und 4.195 Core-Tests erfolgreich.
+  Anschliessend bestehen im Parent-Turn `dotnet build VisualWeb.slnx` mit 0
+  Warnungen/Fehlern und `dotnet test VisualWeb.slnx --no-build` ohne Fehler;
+  zwei Browser-Prozesstests wurden uebersprungen. `dotnet format
+VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
+  `git diff --check` bestehen.
+- Review: Code-Review APPROVED; keine blockierenden Befunde. Als optionale
+  Ergaenzung wurde ein komplementaerer Testfall fuer Unicode-Input mit
+  ASCII-Base vorgeschlagen.
+- Status: Phase 2 ist abgeschlossen und review-approved, aber noch nicht
+  committed. Phase 3 ist nicht begonnen; der Commit-/Fortsetzungscheckpoint
+  bleibt offen.
+- Quellen: Implementierungs- und Reviewagentenberichte; lokale Validierungs-
+  ausgaben; [Phase-2-Bericht](../plans/whatwg-url-completion-phase-2-complete.md),
+  [genehmigter Plan](../plans/whatwg-url-completion-plan.md).

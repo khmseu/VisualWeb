@@ -29,8 +29,15 @@ Reviewempfehlung ergaenzt. Der Reviewer genehmigte die Phase; der
 Implementierungsagent meldet 27 fokussierte und 4.194 Core-Tests gruen. Die
 ausgewaehlten Vektoren stimmen mit bestehendem Verhalten ueberein, daher gab es
 keine Produktionscodeaenderung. Der Parent-Build, der Solution-Volltest und
-Formatverifikation bestehen; kein Commit ist erfolgt (KP-470–472). Naechster
-Schritt: Phase 1 committen und Nutzerbestaetigung fuer Phase 2 abwarten.
+Formatverifikation bestehen. Commit `affb369` (`test(core-url): add pinned
+URLSearchParams vectors`) ist lokal auf `main`; Push ist nicht erfolgt. Auf
+Nutzerwunsch wurde danach Phase 2 abgeschlossen (KP-470–474): Die vorhandenen
+gepinnten URL-/Domainfixturefamilien (896 URL-, 87 toascii- und 2.670 Unicode-17
+IDNA-Faelle) bestehen. Eine Regression bei relativen Referenzen mit Unicode-
+Basis wurde test-first behoben. Code-Review, Core-Tests, Solution-Build,
+Solution-Volltest und Formatverifikation bestehen. Phase 2 ist review-approved,
+aber noch nicht committed; der naechste Schritt ist der Commitcheckpoint. Phase
+3 hat noch nicht begonnen.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

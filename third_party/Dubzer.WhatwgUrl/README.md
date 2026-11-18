@@ -24,6 +24,9 @@ URL cases. Local algorithm corrections:
 - Ipv6Parser: reject leading zeros in decimal IPv4 pieces embedded in IPv6.
 - RuneDirection: honor Unicode 17 default bidi classes for unlisted code points
   rather than assigning every gap Arabic_Letter; guard table-end lookups.
+- DomUrl.TryCreate(string, string): select the parser for the base input, so
+  supplementary Unicode in a base path is UTF-8-percent-encoded as one scalar
+  when the relative input itself is ASCII.
 
 Unicode tables remain on the stable Unicode 17 baseline. The user approved
 pinning the IDNA fixture to its last Unicode 17 revision instead of adopting

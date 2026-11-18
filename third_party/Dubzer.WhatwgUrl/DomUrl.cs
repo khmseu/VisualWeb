@@ -209,7 +209,7 @@ public class DomUrl : IEquatable<DomUrl>
         InternalUrl? parsedBaseUrl = null;
         if (!string.IsNullOrEmpty(baseUrl))
         {
-            var baseResult = InputUtils.GetParser(input).Parse(baseUrl);
+            var baseResult = InputUtils.GetParser(baseUrl).Parse(baseUrl);
             if (!baseResult)
             {
                 result = null;
