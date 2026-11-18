@@ -146,6 +146,150 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlStaticsMatchPinnedWptParseAndCanParseCases()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const parseCases = [
+                    [undefined, undefined, false],
+                    ['aaa:b', undefined, true],
+                    [undefined, 'aaa:b', false],
+                    ['aaa:/b', undefined, true],
+                    [undefined, 'aaa:/b', true],
+                    ['https://test:test', undefined, false],
+                    ['a', 'https://b/', true]
+                ];
+                for (const [input, base, expected] of parseCases) {
+                    const parsed = URL.parse(input, base);
+                    if (expected) {
+                        if (parsed === null || parsed.href !== new URL(input, base).href) return false;
+                    } else if (parsed !== null) return false;
+                }
+                const canParseCases = [
+                    [undefined, undefined, false],
+                    ['aaa:b', undefined, true],
+                    [undefined, 'https://test:test/', false],
+                    ['aaa:/b', undefined, true],
+                    [undefined, 'aaa:/b', true],
+                    ['https://test:test', undefined, false],
+                    ['a', 'https://b/', true]
+                ];
+                for (const [input, base, expected] of canParseCases) {
+                    if (URL.canParse(input, base) !== expected) return false;
+                }
+                return URL.parse('https://example/') !== URL.parse('https://example/');
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void UrlConstructorSanitizesJavascriptOnlyWptInput()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = new URL(
+                    'http://example.com/\uD800\uD801\uDFFE\uDFFF\uFDD0\uFDCF\uFDEF\uFDF0\uFFFE\uFFFF?' +
+                    '\uD800\uD801\uDFFE\uDFFF\uFDD0\uFDCF\uFDEF\uFDF0\uFFFE\uFFFF');
+                return url.href === 'http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF'
+                    && url.origin === 'http://example.com'
+                    && url.pathname === '/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF'
+                    && url.search === '?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void UrlComponentSettersMatchPinnedControlCharacterWptCases()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                function urlString({
+                    scheme = 'https', username = 'username', password = 'password',
+                    host = 'host', port = '8000', pathname = 'path',
+                    search = 'query', hash = 'fragment'
+                }) {
+                    return `${scheme}://${username}:${password}@${host}:${port}/${pathname}?${search}#${hash}`;
+                }
+                function urlRecord(scheme) { return new URL(urlString({scheme})); }
+                function check(url, property, expected, href) {
+                    if (url[property] !== expected || url.href !== href) {
+                        throw new Error(`${property}: ${url[property]} / ${url.href}; expected ${expected} / ${href}`);
+                    }
+                }
+                const stripped = new Set([0x09, 0x0A, 0x0D]);
+                for (const scheme of ['https', 'wpt++']) {
+                    for (const point of [0x00, 0x09, 0x0A, 0x0D, 0x1F]) {
+                        const isStripped = stripped.has(point);
+                        const character = String.fromCodePoint(point);
+                        const targetScheme = scheme === 'https' ? 'http' : 'wpt--';
+                        const expectedScheme = scheme === 'https'
+                            ? (isStripped ? 'http' : 'https')
+                            : (isStripped ? 'wpt--' : 'wpt++');
+                        for (const input of [character + targetScheme, targetScheme + character]) {
+                            const url = urlRecord(scheme);
+                            url.protocol = input;
+                            check(url, 'protocol', expectedScheme + ':', urlString({scheme: expectedScheme}));
+                        }
+                        for (const property of ['username', 'password']) {
+                            for (const [part, input] of [
+                                [encodeURIComponent(character) + 'test', character + 'test'],
+                                ['te' + encodeURIComponent(character) + 'st', 'te' + character + 'st'],
+                                ['test' + encodeURIComponent(character), 'test' + character]
+                            ]) {
+                                const url = urlRecord(scheme);
+                                url[property] = input;
+                                check(url, property, part, urlString({scheme, [property]: part}));
+                            }
+                        }
+                        const encodedHostCharacter = scheme === 'https' ? character : encodeURIComponent(character);
+                        for (const [part, input] of [
+                            [encodedHostCharacter + 'test', character + 'test'],
+                            ['te' + encodedHostCharacter + 'st', 'te' + character + 'st'],
+                            ['test' + encodedHostCharacter, 'test' + character]
+                        ]) {
+                            const expected = point === 0 || (scheme === 'https' && point === 0x1F)
+                                ? 'host' : isStripped ? 'test' : part;
+                            const url = urlRecord(scheme);
+                            url.host = input;
+                            check(url, 'host', expected + ':8000', urlString({scheme, host: expected}));
+                            const hostnameUrl = urlRecord(scheme);
+                            hostnameUrl.hostname = input;
+                            check(hostnameUrl, 'hostname', expected, urlString({scheme, host: expected}));
+                        }
+                        for (const [input, expected] of [
+                            [character + '9000', isStripped ? '9000' : '8000'],
+                            ['90' + character + '00', isStripped ? '9000' : '90'],
+                            ['9000' + character, '9000']
+                        ]) {
+                            const url = urlRecord(scheme);
+                            url.port = input;
+                            check(url, 'port', expected, urlString({scheme, port: expected}));
+                        }
+                        for (const [property, separator] of [
+                            ['pathname', '/'], ['search', '?'], ['hash', '#']
+                        ]) {
+                            for (const [part, input] of [
+                                [encodeURIComponent(character) + 'test', character + 'test'],
+                                ['te' + encodeURIComponent(character) + 'st', 'te' + character + 'st'],
+                                ['test' + encodeURIComponent(character), 'test' + character]
+                            ]) {
+                                const expected = separator + (isStripped ? 'test' : part);
+                                const url = urlRecord(scheme);
+                                url[property] = input;
+                                check(url, property, expected, urlString({scheme, [property]: expected.slice(1)}));
+                            }
+                        }
+                    }
+                }
+                return true;
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlAttributesAreMutableAndSearchParamsRemainLinkedAndSameObject()
     {
         using var host = new V8ScriptHost();

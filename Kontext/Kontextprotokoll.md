@@ -14805,3 +14805,37 @@ third_party` bestand. `dotnet test VisualWeb.slnx --no-build` bestand
   [Core-Regressionen](../tests/Core.Tests/MutableBrowserUrlTests.cs),
   [Scripting-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
   und lokale Testausgaben.
+
+### KP-496 - Weitere gepinnte URL-WPT-Faelle
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-495 am 2026-11-18; genaue Uhrzeit
+  unbekannt.
+- Erfassungsart: gepinnte WPT-Quellen, lokale Regressionstests und
+  Validierungsausgaben.
+- Nutzerangabe: Die Arbeit wird nach dem Commit gemaess „commit, then continue“
+  fortgesetzt; kein weiterer Umfang wurde beschlossen.
+- Belegt: Gegen WPT-Commit `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`
+  wurden JavaScript-only URL-Eingaben mit ungepaarten Surrogaten und
+  Noncharacters (`url/resources/urltestdata-javascript-only.json`, Blob
+  `a3793c1f472f00b6be921d4d21f06529ff07e19a`), `URL.parse()`- und
+  `URL.canParse()`-Faelle (Blobs `0822e9da07af6a69c2c5e5cc747d312891afbef2`
+  und `9b352029d8569bf5f2bbc66ff8a1ad9d273b7c94`) sowie generierte
+  URL-Setterfaelle fuer C0-Steuerzeichen (Blob
+  `ac90cc17e0bfd5d26adb329ce1a506d14cbb3698`) geprueft und in
+  [UrlBindingTests](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
+  abgebildet.
+- Belegt: Die Engine.Scripting-Suite mit 384 Tests besteht;
+  `dotnet build VisualWeb.slnx` besteht mit null Warnungen und Fehlern;
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` besteht. `git diff --check` besteht. Alle geprueften Faelle
+  stimmen mit der Implementierung ueberein; Produktionscode wurde nicht
+  geaendert. Ein neuer Solution-Volltest wurde in dieser Fortsetzung nicht
+  ausgefuehrt.
+- Ableitung/naechster Schritt: Die Abdeckung wurde weiter erhoeht, aber kein
+  neuer Verhaltensfehler belegt. Der verbleibende WHATWG-URL-Arbeitsumfang ist
+  offen; weitere WPT-Familien sind anhand ihrer Algorithmen und vorhandenen
+  Regressionen zu vergleichen.
+- Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Scripting-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
+  und lokale Build-/Test-/Format-Ausgaben.

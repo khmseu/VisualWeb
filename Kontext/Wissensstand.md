@@ -103,14 +103,19 @@ dokumentierten Vollkonformitaets- und Integrationsluecken bleiben offen.
 In der Fortsetzung wurden gepinnte WPT-Faelle fuer das Entfernen von
 URLSearchParams aus verknuepften URLs, ein zweites Fragezeichen als Query-Daten
 und die unabhaengige Kopie eines URLSearchParams-Objekts ergaenzt.
-Core.Tests (4.232) und Engine.Scripting.Tests (381) bestehen; Solution-Build
-und Formatverifikation bestehen ebenfalls. Der Solution-Volltest bestand vor
-dem letzten zusaetzlichen Scripting-Test; die aktuelle Scripting-Suite wurde
-danach vollstaendig erneut ausgefuehrt. Alle geprueften Faelle stimmen mit dem
-vorhandenen Verhalten ueberein; es gab keine Produktionscodeaenderung und
-keinen bestaetigten neuen Implementierungsfehler. Naechster Schritt gemaess
-„commit, then continue“: weitere konkrete WHATWG-URL-Abweichungen in den
-gepinnten WPT-Quellen belegen, bevor Produktionscode geaendert wird.
+Diese Abdeckungsgruppe ist als `6dd9534` (`test(core-url): pin URLSearchParams
+edge cases`) committed. Danach wurden weitere gepinnte WPT-Faelle fuer
+JavaScript-only USVString-Eingaben, `URL.parse()`/`URL.canParse()` und
+Setterverhalten bei fuenf C0-Steuerzeichen auf zwei Schemen geprueft und
+ergaenzt. Die Engine.Scripting-Suite (384), Solution-Build (0 Warnungen/Fehler)
+und Formatverifikation bestehen; Core.Tests (4.232) bestanden in der
+vorherigen Fortsetzung. Alle geprueften Faelle stimmen mit dem vorhandenen
+Verhalten ueberein; es gab keine Produktionscodeaenderung und keinen
+bestaetigten neuen Implementierungsfehler. Die neueren Test-/Provenienzaenderungen
+sind uncommitted; fuer sie wurde kein weiterer Solution-Volltest ausgefuehrt.
+Der Standard bleibt offen. Naechster Schritt gemaess „commit, then continue“:
+weitere WPT-Familien mit der lokalen Abdeckung vergleichen und nur belegte
+Verhaltensabweichungen als Produktionsfix umsetzen.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

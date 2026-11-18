@@ -38,6 +38,15 @@ ports the copy/independence case titled â€œURLSearchParams constructor, object.â
 from `url/urlsearchparams-constructor.any.js`.
 `Engine.Scripting.Tests.UrlBindingTests.SearchParamsPreserveLeadingQuestionMarkQueryData`
 ports the linked-query cases from `url/url-searchparams.any.js` at that revision.
+`Engine.Scripting.Tests.UrlBindingTests.UrlConstructorSanitizesJavascriptOnlyWptInput`
+ports the JavaScript-only URL input vector from
+`url/resources/urltestdata-javascript-only.json`.
+`Engine.Scripting.Tests.UrlBindingTests.UrlStaticsMatchPinnedWptParseAndCanParseCases`
+ports the static-method cases from `url/url-statics-parse.any.js` and
+`url/url-statics-canparse.any.js`.
+`Engine.Scripting.Tests.UrlBindingTests.UrlComponentSettersMatchPinnedControlCharacterWptCases`
+ports the generated setter cases for C0 controls 0, 9, 10, 13, and 31 from
+`url/url-setters-stripping.any.js`.
 
 The source blobs at that revision are:
 
@@ -48,6 +57,10 @@ The source blobs at that revision are:
 | url/urlsearchparams-constructor.any.js | `d482911350ba0fabeb127d0fb78cbd1dd71d4d45` |
 | url/urlsearchparams-delete.any.js | `09a5dccb6487338bc69d6fb924472b1dc8b7899d` |
 | url/url-searchparams.any.js | `9bba12e89cefd1aa3a79e6de601cd37120f2297a` |
+| url/resources/urltestdata-javascript-only.json | `a3793c1f472f00b6be921d4d21f06529ff07e19a` |
+| url/url-statics-parse.any.js | `0822e9da07af6a69c2c5e5cc747d312891afbef2` |
+| url/url-statics-canparse.any.js | `9b352029d8569bf5f2bbc66ff8a1ad9d273b7c94` |
+| url/url-setters-stripping.any.js | `ac90cc17e0bfd5d26adb329ce1a506d14cbb3698` |
 | url/urlsearchparams-sort.any.js | `4fd8cef69239d26eb6241df180453aedf00cc050` |
 | url/resources/setters_tests.json | `221e77a951bbca0779bab049642b1587985e1aad` |
 
