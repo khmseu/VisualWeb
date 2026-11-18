@@ -129,9 +129,12 @@ Engine.Scripting-Tests. Die Aenderung steht als `fb6175a`
 Anchor/Area-Setterdatei bestaetigt, dass sie die schon gepinnten Settervektoren
 auf HTMLAnchorElement/HTMLAreaElement anwendet; diese HTML-Integration ist in
 der Supportbeschreibung ausdruecklich weiter ausgegrenzt. Es wurde kein
-Produktionsfehler nachgewiesen. Die eigenstaendige WHATWG-URL-WPT-Abdeckung
-dieses Durchlaufs ist fuer die lokal vorhandenen relevanten Testfamilien
-abgeglichen; vollstaendige Standardkonformitaet bleibt nicht belegt.
+Produktionsfehler nachgewiesen. Nach dem readonly-Test bestanden
+Solution-Volltest (alle Tests; zwei vorgesehene CPU-Drucktests uebersprungen),
+Solution-Build (0 Warnungen/Fehler), Formatverifikation und Diff-Check.
+Die eigenstaendige WHATWG-URL-WPT-Abdeckung dieses Durchlaufs ist fuer die
+lokal vorhandenen relevanten Testfamilien abgeglichen; vollstaendige
+Standardkonformitaet bleibt nicht belegt.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

@@ -14939,9 +14939,10 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   `9bba12e89cefd1aa3a79e6de601cd37120f2297a`) als Regression aufgenommen.
   Der Setter wirft wie erwartet `TypeError` und veraendert den Getterzustand
   nicht; es gab keine Produktionscodeaenderung.
-- Belegt: Fokustest und Engine.Scripting.Tests (388) bestanden. Ein neuer
-  Solution-Build und Formatverifikation bestehen; ein neuer
-  Solution-Volltest nach diesem einzelnen Test wurde nicht ausgefuehrt.
+- Belegt: Fokustest und Engine.Scripting.Tests (388) bestanden. Zunaechst
+  bestanden Solution-Build und Formatverifikation; der anschliessend
+  ausgefuehrte Solution-Volltest bestand mit allen Tests, zwei erwartete
+  CPU-Drucktests wurden uebersprungen.
 - Status: Test und Provenienznotiz wurden als `fb6175a`
   (`test(scripting): verify URL searchParams readonly`) committed; Hook ohne
   Befund.
