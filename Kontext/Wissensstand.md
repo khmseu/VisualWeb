@@ -49,8 +49,12 @@ mit stabiler, bidirektional synchronisierter `searchParams`-Identitaet, ohne
 den unveraenderlichen `BrowserUrl`-Vertrag zu lockern. Die Implementation und
 direkt bezogene Core-Dokumentation sind fertig und review-approved (KP-478);
 Core- und Solution-Tests, Build, Format und Diff-Check bestehen. Phase 4 ist
-noch nicht committed; Phase 5 hat nicht begonnen. `main` liegt drei Commits vor
-`origin/main`; es wurde nicht gepusht.
+als `9541c97` (`feat(core-url): add live searchParams linkage`) lokal
+committed. Auf Nutzerwunsch werden jetzt Umfang und Schaetzung der betroffenen
+Standards in [standards.md](../docs/standards.md#implemented-subsets)
+aktualisiert (KP-479). Betroffen ist WHATWG URL; Web IDL bleibt unveraendert,
+da Phase 4 keine JavaScript-Bindings eingefuehrt hat. Phase 5 hat nicht
+begonnen. `main` liegt vier Commits vor `origin/main`; es wurde nicht gepusht.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

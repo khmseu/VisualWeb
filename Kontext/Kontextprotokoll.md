@@ -14339,3 +14339,27 @@ VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
   [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
   [Phase-4-Bericht](../plans/whatwg-url-completion-phase-4-complete.md),
   [Core guide](../docs/core.md#url).
+
+### KP-479 - Phase-4-Commit und Aktualisierung des Standardsinventars
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Commit und Inventaraktualisierung am 2026-11-18; genaue Uhrzeit
+  unbekannt.
+- Erfassungsart: Git-Ausgabe und ausdruecklicher Nutzerauftrag.
+- Nutzerangabe: Nach dem Commit soll der Scope und Prozentsatz betroffener
+  Standards in `docs/standards.md` aktualisiert werden.
+- Belegt: Phase 4 wurde als `9541c97` (`feat(core-url): add live searchParams
+linkage`) committed. Der Commit-Hook formatierte den Kontext- und
+  Phase-Completion-Bericht und bestaetigte acht geaenderte Dateien ohne
+  Formatfehler. `main` liegt danach vier Commits vor `origin/main`; es wurde
+  nicht gepusht.
+- Ableitung: Die neue mutable Core-API und Live-Query-Linkage erweitern WHATWG
+  URL; die grobe Inventarschaetzung steigt daher von ~65% auf ~70%, ohne eine
+  formale Konformitaetsbewertung zu behaupten. Web IDL bleibt bei unveraendertem
+  Umfang, weil Phase 4 keine JavaScript-/Web-IDL-Bindings eingefuehrt hat.
+- Status: Der URL-Umfang und seine Schaetzung sind aktualisiert. Phase 4 ist
+  committed; Phase 5 hat nicht begonnen.
+- Quellen: Commit `9541c97`; Nutzervorgabe im aktuellen Turn;
+  [standards inventory](../docs/standards.md#implemented-subsets),
+  [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
+  [Phase-4-Bericht](../plans/whatwg-url-completion-phase-4-complete.md).
