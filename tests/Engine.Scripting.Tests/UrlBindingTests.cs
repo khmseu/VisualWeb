@@ -377,6 +377,22 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlSearchParamsIsReadonlyAsPinnedByWpt()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                'use strict';
+                const url = new URL('http://example.org/');
+                let threw = false;
+                try { url.searchParams = new URLSearchParams('a=b'); }
+                catch (error) { threw = error instanceof TypeError; }
+                return threw && url.searchParams.toString() === '';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlBindingsUseWebIdlStringConversionAndInterfaceSpecificErrors()
     {
         using var host = new V8ScriptHost();

@@ -38,6 +38,8 @@ ports the copy/independence case titled â€œURLSearchParams constructor, object.â
 from `url/urlsearchparams-constructor.any.js`.
 `Engine.Scripting.Tests.UrlBindingTests.SearchParamsPreserveLeadingQuestionMarkQueryData`
 ports the linked-query cases from `url/url-searchparams.any.js` at that revision.
+`Engine.Scripting.Tests.UrlBindingTests.UrlSearchParamsIsReadonlyAsPinnedByWpt`
+ports the strict-mode readonly assignment case from the same file.
 `Engine.Scripting.Tests.UrlBindingTests.UrlConstructorSanitizesJavascriptOnlyWptInput`
 ports the JavaScript-only URL input vector from
 `url/resources/urltestdata-javascript-only.json`.

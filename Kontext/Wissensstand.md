@@ -121,10 +121,12 @@ den gepinnten Faellen, einschliesslich explizitem `undefined`; die vollstaendige
 Scripting-Suite (386), Solution-Build und Formatverifikation bestehen; dieses
 Inkrement steht in `8682577` (`test(scripting): cover optional URLSearchParams
 values`). Zusaetzlich wurde der gepinnte `URL.toJSON()`-JSON-Serializationstest
-ergaenzt; der komplette Engine.Scripting-Lauf (387) besteht. Diese neueste
-Provenienz-/Regressionsergaenzung ist noch uncommitted. Es wurde kein
-Produktionsfehler nachgewiesen; weitere WPT-Familien bleiben mit der lokalen
-Abdeckung zu vergleichen.
+ergaenzt und als `8ecc0c4` (`test(scripting): cover URL toJSON serialization`)
+committed; Engine.Scripting.Tests (387) besteht. Der aktuelle Durchlauf
+ergaenzt ausserdem den readonly-`searchParams`-Fall aus WPT und besteht mit 388
+Engine.Scripting-Tests. Diese neueste Provenienz-/Regressionsergaenzung ist
+noch uncommitted. Es wurde kein Produktionsfehler nachgewiesen; weitere
+WPT-Familien bleiben mit der lokalen Abdeckung zu vergleichen.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

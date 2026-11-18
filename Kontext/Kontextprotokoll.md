@@ -14924,3 +14924,28 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
 - Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
   [Scripting-Test](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   lokale Testausgaben.
+
+### KP-500 - Readonly URL.searchParams
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-499; genaue Uhrzeit unbekannt.
+- Erfassungsart: gepinnte WPT-Quelle und Scripting-Regression.
+- Nutzerangabe: Fortsetzung gemaess „commit, then continue“; kein Umfangswechsel.
+- Belegt: KP-499 wurde als `8ecc0c4`
+  (`test(scripting): cover URL toJSON serialization`) committed; der Hook
+  meldete fuer vier gepruefte Dateien keine Probleme. Danach wurde der
+  Strict-Mode-Readonly-Zuweisungsfall fuer `URL.searchParams` aus
+  `url/url-searchparams.any.js` (WPT Blob
+  `9bba12e89cefd1aa3a79e6de601cd37120f2297a`) als Regression aufgenommen.
+  Der Setter wirft wie erwartet `TypeError` und veraendert den Getterzustand
+  nicht; es gab keine Produktionscodeaenderung.
+- Belegt: Fokustest und Engine.Scripting.Tests (388) bestanden. Ein neuer
+  Solution-Build, Solution-Volltest oder Formatlauf nach diesem einzelnen Test
+  steht noch aus.
+- Status: Test und Provenienznotiz sind uncommitted.
+- Ableitung/naechster Schritt: Der gepruefte Interface-Fall entspricht dem
+  vorhandenen Getter-only-Attribut. Weitere WPT-Luecken sind zu untersuchen;
+  Vollkonformitaet bleibt offen.
+- Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Scripting-Test](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  lokale Testausgaben.
