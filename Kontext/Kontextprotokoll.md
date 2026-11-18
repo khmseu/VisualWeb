@@ -14691,3 +14691,21 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
   [Core-Testdaten-Provenienz](../tests/Core.Tests/Data/README.md) und
   finale Kommandoausgaben in diesem Turn. KP-491 ergaenzt und aktualisiert
   den in KP-490 festgehaltenen Zwischenstand.
+
+### KP-492 - URL-Erweiterung committed
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag „commit staged files“; genaue Uhrzeit unbekannt.
+- Erfassungsart: Git-Commit- und Commit-Hook-Ausgabe.
+- Nutzerangabe/Beschlossen: Die bereits gestagten URL-Erweiterungsdateien
+  committen.
+- Belegt: Commit `8e06187` (`feat(url): extend bounded WHATWG URL support`)
+  wurde erfolgreich auf `main` erstellt. Der Hook formatierte
+  `Kontext/Kontextprotokoll.md`, `docs/browser-shell.md`, `docs/project-map.md`,
+  `docs/standards.md` und den Phase-2-Bericht, pruefte 29 geaenderte Dateien
+  ohne Befund und liess den Commit erfolgreich abschliessen.
+- Status: Code, Tests, Dokumentation, Fixture und Abschlussbericht des
+  URL-Umfangs sind in `8e06187` enthalten. Dieser Eintrag und die Aktualisierung
+  des aktuellen Wissensstands erfolgen nachtraeglich und sind noch nicht
+  committed.
+- Quelle: Git-Commit- und Hook-Ausgabe dieses Turns.

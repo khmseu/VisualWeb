@@ -121,7 +121,9 @@ enthaelt 4.229, Engine.Scripting.Tests 379 und VisualWeb.Browser.Tests 1.374
 bestandene Tests. Formatverifikation und Diff-Check bestehen. Ein erster
 Volltestlauf fand einen Blob-Anzeige-Slash-Mismatch; die Anzeige wurde
 korrigiert und die komplette Validierung danach wiederholt. Die Erweiterung
-ist uncommitted. WHATWG-URL-Vollkonformitaet wird nicht behauptet.
+wurde als `8e06187` (`feat(url): extend bounded WHATWG URL support`) committed.
+Der Commit-Hook formatierte fuenf Dokumentationsdateien und meldete fuer alle
+29 Dateien keine Probleme. WHATWG-URL-Vollkonformitaet wird nicht behauptet.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
