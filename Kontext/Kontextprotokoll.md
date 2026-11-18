@@ -14996,3 +14996,41 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   [Scripting-Dokumentation](../docs/scripting.md#url-interfaces) und lokale
   Validierungsausgaben.
+
+### KP-502 - URL Interface-Prototypen nicht beschreibbar
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-501; genaue Uhrzeit unbekannt.
+- Erfassungsart: gepinnter URL-WPT-Abgleich, Scripting-Regression,
+  Implementierung und lokale Build-/Test-/Format-Ausgaben.
+- Nutzerangabe: „continue“; keine Umfangsaenderung.
+- Belegt: Beim Abgleich der Web-IDL-Interfaceobjekte wurde festgestellt, dass
+  die facade constructors als normale JavaScript-Funktionen erstellt wurden.
+  Ihre vorhandene `prototype`-Property blieb daher beschreibbar, anders als
+  die URL-/URLSearchParams-Interfaceobjekte. Eine Regression prueft jetzt,
+  dass beide Constructor-Properties auf ihr jeweiliges Prototype-Objekt zeigen
+  und nicht beschreibbar, nicht enumerierbar und nicht konfigurierbar sind.
+  Vor dem Fix schlug sie fehl. `UrlBindings` setzt nun `writable: false`;
+  Property-Form und Interfaceprototyp-Verhalten bleiben sonst unveraendert.
+  Die Dokumentation benennt diese begrenzte Web-IDL-Abdeckung.
+- Belegt: Fokustest, Engine.Scripting.Tests (389), Solution-Build mit null
+  Warnungen/Fehlern, Solution-Volltest (alle Tests; zwei bedingte
+  CPU-Druck-Skips), Formatverifikation und Diff-Check bestehen. Ein frueherer
+  Volltestlauf parallel zur Formatverifikation hatte einen bestehenden
+  2-Sekunden-URL-Settertest am Deadline-Limit scheitern lassen; der
+  anschliessende alleinige Volltestlauf bestand.
+- Status: Code, Regression und Dokumentation wurden als `534e7c0`
+  (`fix(engine.scripting): lock URL interface prototypes`) committed; der Hook
+  meldete fuer drei Dateien keine Probleme. Kontextnachtrag ist noch
+  uncommitted. `main` liegt einen Commit vor `origin/main`; kein Push in diesem
+  Arbeitsschritt.
+- Ableitung/naechster Schritt: Die bestaetigte URL-spezifische
+  Constructor-Reflection-Luecke ist geschlossen. Der lokale Standalone-WPT-
+  IDL-Harness wurde nicht ausgefuehrt; diese Regression ist eine gezielte
+  Web-IDL-Deskriptorpruefung und kein allgemeiner Bindings- oder
+  Konformitaetsnachweis. Weitere URL-spezifische Luecken koennen fortgesetzt
+  werden.
+- Quellen: gepinnter URL WPT `idlharness.any.js`, [Scripting-Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  [Scripting-Dokumentation](../docs/scripting.md#url-interfaces) und lokale
+  Validierungsausgaben.

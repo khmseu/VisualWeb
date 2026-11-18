@@ -4,9 +4,20 @@
 
 - Projekt: VisualWeb, Repository `khmseu/VisualWeb`.
 - Bestaetigter Projektordner: `/bigdata/KAI/projects/VisualWeb`.
-- Dokumentationsdatum: 2026-11-18, Zeitzone Europe/Berlin (UTC+01:00).
+- Dokumentationsdatum: 2026-11-19, Zeitzone Europe/Berlin (UTC+01:00).
 
 ## Aktueller Wissensstand
+
+**Fortsetzung (2026-11-19; KP-502):** Beim weiteren URL-Web-IDL-Abgleich
+wurde festgestellt, dass `URL.prototype` und `URLSearchParams.prototype` an den
+interface constructor objects noch beschreibbar waren. Eine neue
+Deskriptorregression schlug zuerst fehl; beide Properties sind jetzt explizit
+nicht beschreibbar. Commit `534e7c0` (`fix(engine.scripting): lock URL
+interface prototypes`) ist lokal committed. Engine.Scripting.Tests (389),
+Solution-Build (0 Warnungen/Fehler), Solution-Volltest (zwei bedingte
+CPU-Druck-Skips) und Formatverifikation bestehen. `main` liegt einen Commit
+vor `origin/main`; kein Push in diesem Arbeitsschritt. Vollkonformitaet bleibt
+unbelegt.
 
 **Fortsetzung (2026-11-18; KP-501):** Eine weitere URL-spezifische Web-IDL-
 Reflexionsabweichung wurde test-first geschlossen: JavaScript hatte Namen von
