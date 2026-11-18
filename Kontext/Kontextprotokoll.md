@@ -14959,3 +14959,39 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Support-Inventar](../docs/standards.md#implemented-subsets), gepinnte
   WPT-Datei `url/url-setters-a-area.window.js` (Blob
   `0012595cc469ee2290a3537733c619dfaa97204b`) und lokale Testausgaben.
+
+### KP-501 - URL Web-IDL-Funktionsnamen
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-500; genaue Uhrzeit unbekannt.
+- Erfassungsart: Scripting-Regression, Implementierung, Dokumentation und
+  lokale Build-/Test-/Format-Ausgaben.
+- Nutzerangabe: „continue“; keine Umfangsaenderung.
+- Belegt: Eine neue Regression prueft die `.name`-Werte aller exportierten
+  `URL`-/`URLSearchParams`-Operationen sowie Attribut-Getter/-Setter. Vor der
+  Aenderung schlug sie fehl, weil anonyme Funktionen bei der Erzeugung ueber
+  Property-Descriptor-Objekte Namen wie `value`, `get` oder `set` erhalten.
+  `UrlBindings` weist diesen Funktionen jetzt explizit die Namen ihrer
+  Web-IDL-Member zu; die bestehende Descriptor-Konfiguration bleibt bestehen.
+  [Scripting-Dokumentation](../docs/scripting.md#url-interfaces) beschreibt
+  den reflektierten Namensumfang.
+- Belegt: Engine.Scripting.Tests bestehen mit 389 Tests; der Solution-Build
+  besteht mit null Warnungen/Fehlern. Ein Solution-Volltestlauf parallel zur
+  Formatverifikation ueberschritt das Zeitbudget eines bestehenden
+  URL-Settertests. Nach Ende der Formatverifikation bestand
+  `dotnet test VisualWeb.slnx --no-build` vollstaendig; zwei bedingte
+  CPU-Drucktests wurden uebersprungen. Formatverifikation und Diff-Check
+  bestehen.
+- Status: Code, Regression und direkt bezogene Dokumentation wurden als
+  `265e6b2` (`fix(engine.scripting): expose URL Web IDL function names`)
+  committed; der Hook meldete fuer drei Dateien keine Probleme. Der Kontext
+  dieses Inkrements ist separat nachgetragen. Der Branch liegt einen Commit
+  vor `origin/main`; kein Push in diesem Arbeitsschritt.
+- Ableitung/naechster Schritt: Die bestaetigte Reflexionsabweichung ist
+  behoben. Weitere URL-spezifische Algorithmus-/WPT-Luecken koennen weiter
+  auditiert werden; allgemeine HTML-Anchor-/Area-Integration bleibt ausserhalb
+  des bisherigen URL-Umfangs. Vollkonformitaet wird nicht behauptet.
+- Quellen: [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  [Scripting-Dokumentation](../docs/scripting.md#url-interfaces) und lokale
+  Validierungsausgaben.
