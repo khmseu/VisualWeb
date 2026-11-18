@@ -95,6 +95,29 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlSearchParamsHasAndDeleteMatchPinnedOptionalValueWptCases()
+    {
+        using var host = new V8ScriptHost();
+        Assert.Equal("true,true,true,c=&e=&first=null", host.Evaluate("""
+            (() => {
+                const params = new URLSearchParams('a=b&a=d&c&e&');
+                const hasExpectedValues = params.has('a', 'b')
+                    && !params.has('a', 'c')
+                    && params.has('a', 'd')
+                    && params.has('e', '');
+                params.append('first', null);
+                const convertsNullValue = !params.has('first', '')
+                    && params.has('first', 'null');
+                params.delete('a', 'b');
+                const valueDeleteKeepsOtherDuplicates = params.has('a', 'd');
+                params.delete('a', undefined);
+                return [hasExpectedValues, convertsNullValue, valueDeleteKeepsOtherDuplicates, params.toString()]
+                    .join(',');
+            })()
+            """, Cancellation).Text);
+    }
+
+    [Fact]
     public void MutablePublicPrototypesKeepPrivateStateAndBrandsProtected()
     {
         using var host = new V8ScriptHost();

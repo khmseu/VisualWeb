@@ -14869,3 +14869,33 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
 - Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
   [Scripting-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs)
   sowie lokale Build-/Test-/Format-Ausgaben.
+
+### KP-498 - Optionale URLSearchParams-Werte
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-497; genaue Uhrzeit unbekannt.
+- Erfassungsart: gepinnte WPT-Quellen, Scripting-Regression und
+  Validierungsausgaben.
+- Nutzerangabe: Der Nutzer setzt „commit, then continue“ fort; keine neue
+  Umfangsaenderung.
+- Belegt: Die Iterationsregression aus KP-497 wurde als `2b09fd6`
+  (`test(scripting): cover URL iterator mutations`) committed; der Hook
+  formatierte `Kontextprotokoll.md` und meldete fuer vier Dateien keine
+  Probleme. Danach wurde der optionale Wert von `URLSearchParams.has()` und
+  `delete()` anhand der gepinnten WPT-Dateien `urlsearchparams-has.any.js`
+  (Blob `2133a5da2f8b91cbb070436f74be9a2b84f32699`) und
+  `urlsearchparams-delete.any.js` (Blob
+  `09a5dccb6487338bc69d6fb924472b1dc8b7899d`) abgedeckt. Das lokale Modell
+  unterscheidet den passenden Wert, nicht passende Werte und explizites
+  `undefined`; die Faelle bestaetigen vorhandenes Verhalten.
+- Belegt: Fokustest und vollstaendige Engine.Scripting.Tests (386) bestanden.
+  `dotnet build VisualWeb.slnx` bestand mit null Warnungen/Fehlern;
+  Formatverifikation und `git diff --check` bestanden. Keine
+  Produktionscodeaenderung.
+- Status: Regression und Provenienzzeile sind uncommitted.
+- Ableitung/naechster Schritt: Kein neuer Verhaltensfehler gefunden.
+  URLSearchParams-WPT-Abdeckung ist weiter ergaenzt; verbleibende URL-
+  Konformitaet bleibt offen und ist mit weiteren konkreten Tests zu untersuchen.
+- Quellen: [WPT-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Scripting-Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  lokale Test-/Build-/Format-Ausgaben.
