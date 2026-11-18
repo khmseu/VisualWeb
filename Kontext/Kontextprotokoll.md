@@ -14454,12 +14454,56 @@ interfaces`) committed. Der Commit-Hook formatierte `Kontextprotokoll.md`
   Web-IDL-Generierung. Core-, Scripting-, Architektur- und Projektkarten-
   Dokumentation wurden entsprechend abgeglichen. Die Werte sind Schaetzungen,
   keine Konformitaetsmessung.
-- Status: Phase 6 ist umgesetzt und validiert. Die Phase-6-Dokumentation und
-  dieser Kontextfortschritt sind noch nicht committed. Der Commit-Checkpoint
-  wartet auf Nutzeranweisung; ein Gesamtabschlussbericht folgt nach diesem
-  Commit-Schritt.
+- Status: Zum Zeitpunkt dieses Eintrags war Phase 6 umgesetzt und validiert,
+  aber noch nicht committed. (Der spaetere Commit-Schritt ist in KP-483
+  festgehalten.)
 - Quellen: Nutzerangabe mit Zeitstempel oben; Commit `3de5e4d`; [Phase-6-
   Bericht](../plans/whatwg-url-completion-phase-6-complete.md);
   [standards inventory](../docs/standards.md#implemented-subsets);
   [Fixture provenance](../tests/Core.Tests/Data/README.md); manifest IDs
   `url`/`webidl`; Validierungsausgaben im aktuellen Turn.
+
+### KP-483 - Phase 6 commit und Abschluss des URL-Plans
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag am 2026-11-18T06:29:01+01:00; Commit am
+  2026-11-18, genaue Uhrzeit unbekannt.
+- Erfassungsart: Nutzerangabe, Git-Ausgabe und Abschlussbericht.
+- Nutzerangabe: „commit, then continue“ nach der validierten Phase 6.
+- Belegt: Die Phase-6-Dokumentation wurde als `5181b13`
+  (`docs(standards): record URL and Web IDL support`) committed. Der Commit-
+  Hook formatierte vier Kontext-/Dokumentationsdateien, pruefte zehn
+  geaenderte Dateien und meldete keine Probleme. Dieser Agent hat keinen
+  Push-Befehl ausgefuehrt.
+- Belegt: Danach wurde der Gesamtabschlussbericht
+  [whatwg-url-completion-complete.md](../plans/whatwg-url-completion-complete.md)
+  erstellt. Alle sechs genehmigten Phasen sind abgeschlossen; die implementierte
+  Abdeckung bleibt ein dokumentierter, begrenzter Umfang, keine vollstaendige
+  WHATWG-/Web-IDL-Konformitaet.
+- Status: Gesamtplan abgeschlossen. Phase-6-Commit `5181b13` und vorherige
+  Phasencommits liegen auf `main`; Details zum aktuellen Remote-Trackingstand
+  und ein spaeterer Reflog-Befund stehen in KP-484.
+- Quellen: Nutzerangabe mit Zeitstempel oben; Git-Commit `5181b13`;
+  [Gesamtabschlussbericht](../plans/whatwg-url-completion-complete.md);
+  [Phase-6-Bericht](../plans/whatwg-url-completion-phase-6-complete.md).
+
+### KP-484 - Beobachtete Aktualisierung des Remote-Tracking-Refs
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Reflog-Eintrag 2026-11-18 06:30:17+01; genaue Aktion/
+  verantwortliche Quelle unbekannt.
+- Erfassungsart: lokale Git-Status- und Reflog-Ausgabe.
+- Belegt: `git status -sb` zeigte `main...origin/main`, und beide Ref-Namen
+  zeigten auf `5181b13`. `git reflog show refs/remotes/origin/main` meldete
+  fuer diese Ref-Aktualisierung „update by push“. In diesem Agent-Turn wurde
+  kein Push-Befehl aufgerufen. Der Reflog allein belegt nicht, wer oder welcher
+  Prozess den Push ausgefuehrt hat; Herkunft bleibt offen.
+- Korrektur/Ergaenzung zu KP-483: Die dortige Feststellung, es sei kein Push
+  erfolgt, wird eingeschraenkt auf „dieser Agent hat keinen Push-Befehl
+  ausgefuehrt“. Der beobachtete Reflog-Eintrag macht eine weitergehende Aussage
+  ueber den Remote-Vorgang ungesichert.
+- Status: Kein Versuch unternommen, den Remote-Tracking-Ref oder den
+  entfernten Branch zurueckzusetzen. Der Gesamtabschlussbericht und dieser
+  Kontextnachtrag sind lokal noch uncommitted.
+- Quellen: `git status -sb`, `git log -8 --oneline --decorate`,
+  `git reflog show --date=iso refs/remotes/origin/main -n 8` im aktuellen Turn.

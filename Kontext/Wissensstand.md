@@ -65,10 +65,15 @@ Engine.Scripting-Tests bestanden; Solution-Build, Solution-Volltest,
 Formatverifikation und Diff-Check bestanden, mit zwei uebersprungenen
 Prozessdrucktests. `standards.md` nennt jetzt ungefaehr 75% WHATWG URL und 12%
 Web IDL; Core-, Scripting-, Architektur- und Projektkarten-Dokumentation
-beschreiben die Schnittstellengrenzen. Phase 6 ist validiert, aber ihre
-Dokumentationsaenderungen sind noch nicht committed; der Commit-Checkpoint
-wartet auf Nutzeranweisung. `main` liegt sechs Commits vor `origin/main`; es
-wurde nicht gepusht.
+beschreiben die Schnittstellengrenzen. Phase 6 wurde als `5181b13`
+(`docs(standards): record URL and Web IDL support`) committed. Der
+genehmigte Sechs-Phasen-Plan ist abgeschlossen; der Gesamtbericht steht in
+[whatwg-url-completion-complete.md](../plans/whatwg-url-completion-complete.md).
+Im aktuellen lokalen Status zeigen `main` und `origin/main` beide auf
+`5181b13`. Der Reflog markiert die Aktualisierung von `origin/main` um
+06:30:17+01 als „update by push“; in diesem Agent-Turn wurde kein Push-Befehl
+ausgefuehrt, die Ursache der Ref-Aktualisierung ist ungeklärt. Der
+Gesamtabschlussbericht und der aktuelle Kontextnachtrag sind noch uncommitted.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.
