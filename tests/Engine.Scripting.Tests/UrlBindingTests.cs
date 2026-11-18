@@ -169,6 +169,19 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlToJsonMatchesPinnedWptJsonSerialization()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = new URL('https://example.com/');
+                return JSON.stringify(url) === '"https://example.com/"'
+                    && url.toJSON() === 'https://example.com/';
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlStaticsMatchPinnedWptParseAndCanParseCases()
     {
         using var host = new V8ScriptHost();

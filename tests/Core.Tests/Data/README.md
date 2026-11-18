@@ -52,6 +52,8 @@ ports mutation-during-iteration cases from `url/urlsearchparams-foreach.any.js`.
 `Engine.Scripting.Tests.UrlBindingTests.UrlSearchParamsHasAndDeleteMatchPinnedOptionalValueWptCases`
 ports the optional-value cases from `url/urlsearchparams-has.any.js` and
 `url/urlsearchparams-delete.any.js`.
+`Engine.Scripting.Tests.UrlBindingTests.UrlToJsonMatchesPinnedWptJsonSerialization`
+ports the JSON serialization case from `url/url-tojson.any.js`.
 
 The source blobs at that revision are:
 
@@ -68,6 +70,7 @@ The source blobs at that revision are:
 | url/url-setters-stripping.any.js | `ac90cc17e0bfd5d26adb329ce1a506d14cbb3698` |
 | url/urlsearchparams-foreach.any.js | `ff19643ac220d123be45f01af45fedde8d2d05c1` |
 | url/urlsearchparams-has.any.js | `2133a5da2f8b91cbb070436f74be9a2b84f32699` |
+| url/url-tojson.any.js | `65165f96c572d9b01fe6a5e27339882c387260dd` |
 | url/urlsearchparams-sort.any.js | `4fd8cef69239d26eb6241df180453aedf00cc050` |
 | url/resources/setters_tests.json | `221e77a951bbca0779bab049642b1587985e1aad` |
 

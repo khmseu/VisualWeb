@@ -118,10 +118,13 @@ werden. Die Iterationsregression wurde als `2b09fd6`
 (`test(scripting): cover URL iterator mutations`) committed. Eine weitere
 Regression fuer `URLSearchParams.has()`/`delete()` mit optionalem Wert folgt
 den gepinnten Faellen, einschliesslich explizitem `undefined`; die vollstaendige
-Scripting-Suite (386), Solution-Build und Formatverifikation bestehen. Dieses
-letzte Testinkrement ist noch uncommitted. Es wurde kein Produktionsfehler
-nachgewiesen; weitere WPT-Familien bleiben mit der lokalen Abdeckung zu
-vergleichen.
+Scripting-Suite (386), Solution-Build und Formatverifikation bestehen; dieses
+Inkrement steht in `8682577` (`test(scripting): cover optional URLSearchParams
+values`). Zusaetzlich wurde der gepinnte `URL.toJSON()`-JSON-Serializationstest
+ergaenzt; der komplette Engine.Scripting-Lauf (387) besteht. Diese neueste
+Provenienz-/Regressionsergaenzung ist noch uncommitted. Es wurde kein
+Produktionsfehler nachgewiesen; weitere WPT-Familien bleiben mit der lokalen
+Abdeckung zu vergleichen.
 
 **Neue Nutzeranfrage (2026-11-18 06:53 +01):** Der Nutzer fordert nun, WHATWG
 URL vollstaendig zu implementieren; dies erweitert den abgeschlossenen

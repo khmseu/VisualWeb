@@ -14899,3 +14899,28 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
 - Quellen: [WPT-Provenienz](../tests/Core.Tests/Data/README.md),
   [Scripting-Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   lokale Test-/Build-/Format-Ausgaben.
+
+### KP-499 - URL.toJSON-WPT-Fall
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-498; genaue Uhrzeit unbekannt.
+- Erfassungsart: gepinnte WPT-Quelle und Scripting-Regression.
+- Nutzerangabe: Fortsetzung gemaess „commit, then continue“; kein Umfangswechsel.
+- Belegt: KP-498 wurde als `8682577`
+  (`test(scripting): cover optional URLSearchParams values`) committed.
+  Danach wurde der einzelne WPT-Test aus `url/url-tojson.any.js` (Revision
+  `8e9969fd5559dcff933a1cf4e62e9f5bc16b7231`, Blob
+  `65165f96c572d9b01fe6a5e27339882c387260dd`) als
+  `UrlToJsonMatchesPinnedWptJsonSerialization` abgebildet. `JSON.stringify(URL)`
+  und `URL.toJSON()` stimmen mit dem erwarteten serialisierten Href ueberein.
+- Belegt: Fokustest und vollstaendige Engine.Scripting.Tests (387) bestanden.
+  Der Test ist nach Solution-Build/Formatverifikation aus KP-498 hinzugekommen;
+  fuer diesen einen Regressionstest wurde noch kein neuer Solution-Build oder
+  Solution-Volltest ausgefuehrt.
+- Status: Test und Quellenprovenienz sind noch uncommitted; Produktionscode
+  wurde nicht geaendert.
+- Ableitung/naechster Schritt: Kein URL.toJSON-Verhaltensfehler gefunden.
+  Weitere noch nicht explizit abgedeckte WPT-Bereiche bleiben zu vergleichen.
+- Quellen: [WPT-Fixture-Provenienz](../tests/Core.Tests/Data/README.md),
+  [Scripting-Test](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  lokale Testausgaben.
