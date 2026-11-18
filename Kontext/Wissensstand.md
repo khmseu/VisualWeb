@@ -21,7 +21,7 @@ Solution-Build (0 Warnungen/Fehler), Solution-Volltest (zwei bedingte
 CPU-Druck-Skips) und Formatverifikation bestehen. Ein erster Volltestlauf
 parallel zur Formatverifikation ueberschritt das 2-s-V8-Limit eines bestehenden
 Settertests; der erneute Volltestlauf nach Ende der Formatverifikation bestand.
-`main` liegt einen Commit vor `origin/main`; kein Push in diesem Arbeitsschritt.
+Der Codecommit blieb lokal; in diesem Arbeitsschritt erfolgte kein Push.
 Die WHATWG-URL-Vollkonformitaet bleibt unbelegt.
 
 **Aktueller Auftrag (2026-11-18):** Der Nutzer bittet um die vollstaendige

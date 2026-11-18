@@ -14985,8 +14985,9 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
 - Status: Code, Regression und direkt bezogene Dokumentation wurden als
   `265e6b2` (`fix(engine.scripting): expose URL Web IDL function names`)
   committed; der Hook meldete fuer drei Dateien keine Probleme. Der Kontext
-  dieses Inkrements ist separat nachgetragen. Der Branch liegt einen Commit
-  vor `origin/main`; kein Push in diesem Arbeitsschritt.
+  dieses Inkrements ist separat als `dfdb113` nachgetragen. Unmittelbar nach
+  dem Codecommit lag `main` einen Commit vor `origin/main`; kein Push in diesem
+  Arbeitsschritt.
 - Ableitung/naechster Schritt: Die bestaetigte Reflexionsabweichung ist
   behoben. Weitere URL-spezifische Algorithmus-/WPT-Luecken koennen weiter
   auditiert werden; allgemeine HTML-Anchor-/Area-Integration bleibt ausserhalb
