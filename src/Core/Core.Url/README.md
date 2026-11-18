@@ -22,12 +22,21 @@ ASCII digit run, ignoring missing or out-of-range numeric prefixes;
 `WithPathname` leaves opaque-path URLs unchanged. Credential setters
 use URL-standard userinfo encoding and are no-ops for URLs without a host and
 `file:` URLs.
+`MutableBrowserUrl` supplies mutable `Href`/`Search` state and one stable
+`SearchParams` instance whose mutations update the current URL snapshot and
+whose contents are refreshed in place when the URL is replaced. Its `Snapshot`
+is still an immutable `BrowserUrl`; failed `Href` parsing leaves state unchanged.
+An empty linked parameter serialization removes the query delimiter, while
+assigning `Search = "?"` preserves an empty query until a parameter update occurs.
+This is a focused Core state model, not the JavaScript `URL` binding or general
+mutable component setters.
+
 `UrlSearchParams` provides string
 initialization, ordered
 `Size`, `Get`/`GetAll` reads, `Has` by name or name/value, `Append`,
 `Delete(name)`/`Delete(name, value)`, `Set(name, value)`, and stable
-`Sort()` by UTF-16 code-unit name order. Other mutations and URL linkage are
-not implemented. `ToString()` returns the UTF-8
+`Sort()` by UTF-16 code-unit name order. Instances created independently are
+detached. Other mutations are not implemented. `ToString()` returns the UTF-8
 `application/x-www-form-urlencoded` serialization of the ordered tuples.
 See the [core guide](../../../docs/core.md) for conformance evidence and scope.
 

@@ -14279,3 +14279,63 @@ VisualWeb.slnx --verify-no-changes --no-restore --exclude third_party` und
   [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
   [Phase-3-Bericht](../plans/whatwg-url-completion-phase-3-complete.md),
   [Core guide](../docs/core.md#url).
+
+### KP-477 - Phase-3-Commit und Fortsetzung mit Phase 4
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Commit und Fortsetzung am 2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: Git-Ausgabe und ausdruecklicher Nutzerauftrag.
+- Nutzerangabe: „commit, then continue“ autorisiert den Commit von Phase 3 und
+  das Fortsetzen der genehmigten Arbeit mit Phase 4.
+- Belegt: Commit `3b865d9` (`fix(core-url): align URL setter state overrides`)
+  wurde erstellt. Der Commit-Hook formatierte den Phase-3-Bericht und
+  bestaetigte neun geaenderte Dateien ohne Formatfehler. Der Arbeitsbaum war
+  direkt danach sauber; `main` liegt drei Commits vor `origin/main`. Es wurde
+  nicht gepusht.
+- Status: Phase 3 ist committed und abgeschlossen. Phase 4 wird gemaess
+  genehmigtem Plan fortgesetzt: mutierbarer Core-URL-Zustand mit stabiler,
+  bidirektional synchronisierter `searchParams`-Identitaet; der bestehende
+  unveraenderliche `BrowserUrl`-Vertrag bleibt erhalten. JavaScript-Bindings
+  bleiben Phase 5 vorbehalten.
+- Quellen: Commit `3b865d9`; [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
+  insbesondere Phase 4; Nutzerangabe aus dem aktuellen Gesprächsturn.
+
+### KP-478 - Phase 4 implementiert, geprueft und validiert
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-4-Arbeit und Validierung am 2026-11-18; genaue Uhrzeit
+  unbekannt.
+- Erfassungsart: zeitnahe Zusammenfassung des Implementierungs- und
+  Reviewagenten sowie lokaler Build-/Test-/Formatbefehle.
+- Belegt: Neue `MutableBrowserUrl`-API bewahrt eine stabile
+  `UrlSearchParams`-Instanz; Href-/Search-Ersatz aktualisiert deren Inhalt,
+  Params-Mutationen aktualisieren den unveraenderlichen URL-Snapshot in
+  Gegenrichtung und erhalten Nicht-Query-Komponenten. Fehlgeschlagene Href-
+  Parses lassen den Zustand unveraendert. `Search = "?"` behaelt eine leere
+  Query bis zu einer Parameteraktualisierung; auch `sort()` auf leeren oder
+  einzelnen Parametern aktualisiert die URL gemaess URL-Standard.
+- Korrektur des Reviews: Ein erster Reviewbefund behauptete, `sort()` muesse
+  bei null/einem Tupel ein No-op sein. Die lokale Spezifikation
+  [sort()](../specs/cache/url.html#dom-urlsearchparams-sort) fuehrt stets
+  anschliessend [Update](../specs/cache/url.html#concept-urlsearchparams-update)
+  aus; die Aktualisierung setzt leere Serialisierung auf null. Ein gezielter
+  Review bestaetigte, dass das Entfernen von `?` beim Sortieren leerer
+  verbundener Params korrekt ist. Dokumentation wurde auf „bis zur
+  Parameteraktualisierung“ praezisiert; ein Ein-Tupel-Test bestaetigt die
+  Serialisierung `?a` zu `?a=`.
+- Validierung: 4.223 Core-Tests erfolgreich; `dotnet build VisualWeb.slnx`
+  besteht mit 0 Warnungen/Fehlern. `dotnet test VisualWeb.slnx --no-build`
+  besteht mit 17.170 erfolgreichen Tests und zwei uebersprungenen Browser-
+  Prozesstests. `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` und `git diff --check` bestehen.
+- Grenzen: Nur mutable `Href`-/`Search`-Eigenschaften und Live-Query-Linkage
+  sind enthalten. `BrowserUrl` bleibt unveraenderlich; andere mutable URL-
+  Komponenten und JavaScript-/Web-IDL-Bindings bleiben spaeteren Phasen
+  vorbehalten.
+- Status: Phase 4 ist implementiert, review-approved und validiert, aber noch
+  nicht committed. Phase 5 hat nicht begonnen; Commit-/Fortsetzungscheckpoint
+  bleibt offen.
+- Quellen: Implementierungs- und Reviewberichte; lokale Ausgaben;
+  [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
+  [Phase-4-Bericht](../plans/whatwg-url-completion-phase-4-complete.md),
+  [Core guide](../docs/core.md#url).

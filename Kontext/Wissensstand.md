@@ -42,9 +42,15 @@ Protocol-Uebergang von gehosteter `file:` URL, ASCII-Ziffernpraefixe im
 `WithPort`-/`WithHost`-State-Override, `file:`-Host-Parsing, blob-Origin-
 Allowlist und Such-/Fragment-Delimiterreihenfolge. Der abschliessende Review
 genehmigte die Aenderungen. Core-Tests, Solution-Build, Volltest und
-Formatverifikation bestehen (KP-476). Phase 3 ist review-approved, aber noch
-nicht committed. `main` liegt zwei Commits vor `origin/main`; der Arbeitsbaum
-enthaelt die Phase-3-Aenderungen, kein Push erfolgte. Phase 4 hat nicht begonnen.
+Formatverifikation bestehen (KP-476). Phase 3 ist als `3b865d9`
+(`fix(core-url): align URL setter state overrides`) lokal committed. Auf
+Nutzervorgabe wurde Phase 4 begonnen (KP-477): ein mutierbares Core-URL-Modell
+mit stabiler, bidirektional synchronisierter `searchParams`-Identitaet, ohne
+den unveraenderlichen `BrowserUrl`-Vertrag zu lockern. Die Implementation und
+direkt bezogene Core-Dokumentation sind fertig und review-approved (KP-478);
+Core- und Solution-Tests, Build, Format und Diff-Check bestehen. Phase 4 ist
+noch nicht committed; Phase 5 hat nicht begonnen. `main` liegt drei Commits vor
+`origin/main`; es wurde nicht gepusht.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

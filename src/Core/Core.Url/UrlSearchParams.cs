@@ -6,11 +6,13 @@ namespace VisualWeb.Core.Url;
 /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#interface-urlsearchparams">URLSearchParams</see> and
 /// <see href="https://url.spec.whatwg.org/#concept-urlencoded-string-parser">the URL-encoded string parser</see>,
 /// and <see href="https://url.spec.whatwg.org/#concept-urlencoded-serializer">the URL-encoded serializer</see>.
-/// This .NET subset has no linked URL object and does not provide other mutations or Web IDL.</remarks>
+/// Mutations can notify an owning mutable URL; this .NET subset does not provide Web IDL.</remarks>
 public sealed class UrlSearchParams
 {
     private static readonly UTF8Encoding Utf8 = new(false, false);
     private readonly List<(string Name, string Value)> _entries;
+
+    internal event Action? Changed;
 
     /// <summary>Initializes from a URL-encoded string, removing one leading question mark if present.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-urlsearchparams">URLSearchParams constructor</see>.</remarks>
@@ -75,27 +77,29 @@ public sealed class UrlSearchParams
 
     /// <summary>Appends a scalar-value name and value pair to the end of the tuple list.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-append">URLSearchParams.append()</see>.
-    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    /// An owning mutable URL synchronizes its query after this mutation.</remarks>
     public void Append(string name, string value)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
         _entries.Add((ToScalarValueString(name), ToScalarValueString(value)));
+        Changed?.Invoke();
     }
 
     /// <summary>Removes all entries associated with the scalar-value name.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-delete">URLSearchParams.delete()</see>.
-    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    /// An owning mutable URL synchronizes its query after this mutation.</remarks>
     public void Delete(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
         var scalarName = ToScalarValueString(name);
         _entries.RemoveAll(entry => entry.Name == scalarName);
+        Changed?.Invoke();
     }
 
     /// <summary>Removes all entries associated with the scalar-value name and value.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-delete">URLSearchParams.delete()</see>.
-    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    /// An owning mutable URL synchronizes its query after this mutation.</remarks>
     public void Delete(string name, string value)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -103,11 +107,12 @@ public sealed class UrlSearchParams
         var scalarName = ToScalarValueString(name);
         var scalarValue = ToScalarValueString(value);
         _entries.RemoveAll(entry => entry.Name == scalarName && entry.Value == scalarValue);
+        Changed?.Invoke();
     }
 
     /// <summary>Sets the scalar-value name's first value, removing later duplicates, or appends it.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-set">URLSearchParams.set()</see>.
-    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    /// An owning mutable URL synchronizes its query after this mutation.</remarks>
     public void Set(string name, string value)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -118,6 +123,7 @@ public sealed class UrlSearchParams
         if (firstIndex < 0)
         {
             _entries.Add((scalarName, scalarValue));
+            Changed?.Invoke();
             return;
         }
 
@@ -129,16 +135,19 @@ public sealed class UrlSearchParams
                 _entries.RemoveAt(index);
             }
         }
+
+        Changed?.Invoke();
     }
 
     /// <summary>Sorts entries by name in ascending UTF-16 code-unit order, preserving equal-name order.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#dom-urlsearchparams-sort">URLSearchParams.sort()</see>.
-    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    /// An owning mutable URL synchronizes its query after this mutation.</remarks>
     public void Sort()
     {
         var sorted = _entries.OrderBy(entry => entry.Name, StringComparer.Ordinal).ToArray();
         _entries.Clear();
         _entries.AddRange(sorted);
+        Changed?.Invoke();
     }
 
     /// <summary>Enumerates name-value tuples in list order as a live iterator.</summary>
@@ -218,7 +227,7 @@ public sealed class UrlSearchParams
 
     /// <summary>Serializes the ordered tuples as an <c>application/x-www-form-urlencoded</c> string.</summary>
     /// <remarks>Spec: url; <see href="https://url.spec.whatwg.org/#urlsearchparams-stringification-behavior">URLSearchParams stringification behavior</see>.
-    /// This standalone Core object has no associated URL to synchronize.</remarks>
+    /// The same serialization is used to update the query of an owning mutable URL.</remarks>
     public override string ToString()
     {
         var output = new StringBuilder();
@@ -232,6 +241,16 @@ public sealed class UrlSearchParams
         }
 
         return output.ToString();
+    }
+
+    internal void ReplaceWith(UrlSearchParams parameters)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        if (ReferenceEquals(this, parameters)) { return; }
+
+        var replacement = parameters._entries.ToArray();
+        _entries.Clear();
+        _entries.AddRange(replacement);
     }
 
     private static void AppendEncoded(StringBuilder output, string text)

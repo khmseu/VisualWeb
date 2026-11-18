@@ -75,6 +75,16 @@ the query and fragment; opaque-path URLs are unchanged.
 `WithSearchParams()` writes its serialization back as a new snapshot; there is no live
 link between a URL and its parameters.
 
+[`MutableBrowserUrl`](../src/Core/Core.Url/MutableBrowserUrl.cs) is the minimal
+mutable Core state for consumers that need live query linkage. Its `Snapshot`
+is always an immutable `BrowserUrl`; setting `Href` or `Search` replaces that
+snapshot and refreshes the same `SearchParams` object in place. Mutating
+`SearchParams` updates the current snapshot's query while retaining its other
+URL components. An empty parameter serialization removes the query delimiter;
+setting `Search` to `"?"` retains an empty query until a parameter update occurs.
+Failed `Href` parsing leaves the existing state unchanged. This API
+does not add other mutable URL component setters or JavaScript/Web IDL bindings.
+
 [`UrlSearchParams`](../src/Core/Core.Url/UrlSearchParams.cs) implements the
 WHATWG string, sequence-of-pairs and record initializers, `append()`, `delete(name)`,
 `delete(name, value)`, `set(name, value)` and stable `sort()` by UTF-16
@@ -83,10 +93,11 @@ name-only and name/value matching, live `Entries()`, `Keys()` and
 `Values()` enumerators and `ForEach()`. It decodes
 `application/x-www-form-urlencoded` tuples, preserving duplicates, and
 `toString()` serializes the ordered tuples with the standard's UTF-8 percent
-encoding rules. This standalone Core API does not provide other mutation
-methods, URL-object linkage, ECMAScript iterator objects or Web IDL bindings.
-The legacy query encoding override and other mutable DOM URL behavior remain
-deferred.
+encoding rules. Standalone instances remain detached; only an instance owned by
+`MutableBrowserUrl` is linked. The API does not provide other mutation methods,
+ECMAScript iterator objects or Web IDL bindings.
+The legacy query encoding override, other mutable URL component setters, and
+broader DOM URL behavior remain deferred.
 `SerializedOrigin` remains display text only; do not use it as an authorization check.
 
 ## Encoding
