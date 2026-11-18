@@ -9,17 +9,14 @@
 ## Aktueller Wissensstand
 
 **Aktueller Auftrag (2026-11-18):** Der Nutzer bittet um die vollstaendige
-WHATWG-URL-Implementierung (REQ-012). Belegt: Das Support-Inventar schaetzt
-WHATWG URL grob auf ~65%; `Core.Url` bietet eine unveraenderliche .NET-Fassade,
-waehrend live `URL.searchParams`-Verknuepfung und JavaScript/Web-IDL-Bindings
-ausgeschlossen sind. Die vorhandenen URL- und SearchParams-Faehigkeiten sowie
-die lokale Spezifikation stehen in [Core](../docs/core.md#url),
-[standards.md](../docs/standards.md#implemented-subsets) und
-[Core.Url README](../src/Core/Core.Url/README.md). Der Begriff
-„vollstaendig“ wurde vom Nutzer fuer Core-Verhalten plus browserseitige
-`URL`/`URLSearchParams`-Semantik einschliesslich interface-spezifischem Web IDL
-geklaert; allgemeine Web-IDL-Generierung bleibt ausserhalb des Umfangs (DEC-035,
-Q-038). Der genehmigte Sechs-Phasen-Plan steht in
+WHATWG-URL-Implementierung (REQ-012). Der geklaerte Umfang umfasst Core-
+Algorithmen und browserseitige `URL`/`URLSearchParams`-Semantik einschliesslich
+interface-spezifischem Web IDL; allgemeine Web-IDL-Generierung bleibt
+ausgeschlossen (DEC-035, Q-038). Das Support-Inventar wurde nach Phase 4 auf
+ungefaehr 70% aktualisiert; diese Schaetzung beruecksichtigt die Phase-5-
+Bindings noch nicht und ist in Phase 6 anhand der Evidenz neu zu bewerten.
+Core bietet die unveraenderliche `BrowserUrl`-Fassade und das mutable Modell
+mit bidirektionaler Live-Linkage. Der genehmigte Sechs-Phasen-Plan steht in
 [whatwg-url-completion-plan.md](../plans/whatwg-url-completion-plan.md).
 Phase 1 ergaenzt jetzt drei gepinnte WPT-abgeleitete Datensaetze fuer
 URL-encoded parsing (35 Faelle), URLSearchParams-Stringifizierung (12) und
@@ -50,11 +47,25 @@ den unveraenderlichen `BrowserUrl`-Vertrag zu lockern. Die Implementation und
 direkt bezogene Core-Dokumentation sind fertig und review-approved (KP-478);
 Core- und Solution-Tests, Build, Format und Diff-Check bestehen. Phase 4 ist
 als `9541c97` (`feat(core-url): add live searchParams linkage`) lokal
-committed. Auf Nutzerwunsch werden jetzt Umfang und Schaetzung der betroffenen
-Standards in [standards.md](../docs/standards.md#implemented-subsets)
-aktualisiert (KP-479). Betroffen ist WHATWG URL; Web IDL bleibt unveraendert,
-da Phase 4 keine JavaScript-Bindings eingefuehrt hat. Phase 5 hat nicht
-begonnen. `main` liegt vier Commits vor `origin/main`; es wurde nicht gepusht.
+committed. Die URL-Scopebeschreibung und Schaetzung in
+[standards.md](../docs/standards.md#implemented-subsets) wurden danach als
+`c85bdcf` aktualisiert: WHATWG URL ~70%; Web IDL bleibt fuer Phase 4
+unveraendert. Phase 5 ergaenzt jetzt gebrandete JavaScript-`URL`- und
+`URLSearchParams`-Facades, mutable Attribute und stabile Live-Linkage, statische
+`parse()`/`canParse()`, begrenzte Iteration/Callbacks sowie interface-spezifische
+Web-IDL-USVString-, Sequence- und Record-Konvertierung. Die private Bridge
+uebertraegt nur Strings/Handles; allgemeine Web IDL, Netzwerkzugriff,
+automatische Dokument-URL-Integration und Aktivierung von Page Scripts bleiben
+ausgeschlossen. Die abschliessende direkte Codepruefung ist abgeschlossen; 10
+gezielte URL-Tests, 372 Engine.Scripting-Tests, der Solution-Build ohne Warnungen/
+Fehler, der Solution-Volltest (mit zwei uebersprungenen Prozessdrucktests),
+Formatverifikation, Diff-Check und V8Smoke im dokumentierten Local-Modus
+bestanden (KP-481). Phase 5 ist im Arbeitsbaum review-approved, aber nicht
+committed. Phase 6 muss die abschliessende Offline-Evidenz sowie
+[standards.md](../docs/standards.md#implemented-subsets) und die betroffenen
+Subsystem-Dokumente anpassen; der Phase-5-Checkpoint wartet auf die
+Nutzerentscheidung zum Commit/Fortsetzen. `main` liegt fuenf Commits vor
+`origin/main`; es wurde nicht gepusht.
 
 **Aktueller Missing-Lauf (2026-11-17; 10 Inkremente angefordert; KP-454–462):**
 Der Nutzer hat zehn getrennte Missing-Prioritaets-Inkremente angefordert.

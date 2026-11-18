@@ -98,13 +98,19 @@ Phase 11v adds shallow/deep cloneNode on branded non-Document wrappers.
 It preflights the copied tree, per-element attributes, shared primitive text,
 identity and cancellation before detached native cloning. Parent links and
 listeners do not copy; cloning Document facades is explicitly unsupported.
+WHATWG URL completion phase 5 adds branded native-JavaScript `URL` and
+`URLSearchParams` facades over the Core URL APIs, including live searchParams
+linkage, URL static methods, USVString conversion, mutable component attributes
+and bounded iterable/forEach behavior. The private bridge carries only strings
+and integer handles. This is interface-specific behavior, not generated
+Web IDL; broader URL integration and full Web IDL remain deferred.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 
 Official document IDs: `ecmascript`, `webidl`, and `html` for the event loop.
 Native API references: `clearscript-v8` and `clearscript-v8-constraints`.
 Binding sources: `dom` for lookup/textContent, attributes, factories and mutations,
-and `html`/`webidl` for title
-and string conversion. Full prototype/constructor bindings remain deferred.
+`url`/`webidl` for URL interfaces and string conversion, and `html`/`webidl`
+for title and DOM string conversion. Full generated Web IDL remains deferred.
 See the [standards workflow](../../../docs/standards.md) and
 [architecture](../../../docs/architecture/overview.md).

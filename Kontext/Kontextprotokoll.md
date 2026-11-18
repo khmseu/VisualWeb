@@ -14363,3 +14363,66 @@ linkage`) committed. Der Commit-Hook formatierte den Kontext- und
   [standards inventory](../docs/standards.md#implemented-subsets),
   [genehmigter Plan](../plans/whatwg-url-completion-plan.md),
   [Phase-4-Bericht](../plans/whatwg-url-completion-phase-4-complete.md).
+
+### KP-480 - Standards-Commit und Fortsetzung mit Phase 5
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Inventar-Commit und Fortsetzung am 2026-11-18; genaue Uhrzeit
+  unbekannt.
+- Erfassungsart: Git-Ausgabe und ausdruecklicher Nutzerauftrag.
+- Nutzerangabe: „commit, then continue“ nach der Inventaraktualisierung.
+- Belegt: `docs/standards.md` wurde zusammen mit dem Kontextstand als
+  `c85bdcf` (`docs(standards): reflect live URL linkage`) committed. Der
+  Commit-Hook formatierte `standards.md` und beide Kontextdateien; drei
+  geaenderte Dateien wurden ohne Formatfehler bestaetigt. `main` liegt fuenf
+  Commits vor `origin/main`; es wurde nicht gepusht.
+- Status: Der WHATWG-URL-Scope nennt nun Core-only mutable `Href`/`Search` mit
+  stabiler bidirektionaler Live-Query-Linkage und schaetzt den Umfang grob auf
+  ~70%. Web IDL bleibt unveraendert, da Phase 4 keine JavaScript-Bindings
+  enthaelt. Phase 5 wird gemaess genehmigtem Plan begonnen.
+- Quellen: Commit `c85bdcf`; [standards inventory](../docs/standards.md#implemented-subsets);
+  [genehmigter Plan](../plans/whatwg-url-completion-plan.md), Phase 5;
+  Nutzervorgabe im aktuellen Turn.
+
+### KP-481 - Phase 5 URL-Bindings review-approved
+
+- Dokumentiert am: 2026-11-18, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Phase-5-Implementierung, Review und Validierung am
+  2026-11-18; genaue Uhrzeit unbekannt.
+- Erfassungsart: Nutzerauftrag, Arbeitsbaum, lokale Spezifikationskopien,
+  Test-/Build-/Format-/Smoke-Ausgaben.
+- Nutzerangabe: WHATWG URL vollstaendig implementieren; der genehmigte Umfang
+  enthaelt Core und browserseitige `URL`-/`URLSearchParams`-Semantik samt
+  interface-spezifischem Web IDL, nicht allgemeine Web-IDL-Generierung.
+- Belegt: Phase 5 fuegt im Scripting-Host gebrandete URL-Facades, mutable
+  URL-Attribute und stabile Live-Linkage, `parse()`/`canParse()`,
+  URLSearchParams-Konstruktoren, Mutationen, Iteration und `forEach()` hinzu.
+  Der primitive-only Bridge-Vertrag, Ausfuehrungs-/Text-/Eintragslimits und
+  die bestehende Page-Script-Policy bleiben erhalten. Die spezifischen
+  Konvertierungsregressionen decken Web-IDL-ToString/USVString, Primitive und
+  null, einmaligen Iterator-Getterzugriff, nicht aufrufbare Iteratoren,
+  Prototype-Tampering sowie enumerable Symbol-Record-Keys und normalisierte
+  Schluesselduplikate ab. Die Grundlagen wurden lokal gegen
+  `specs/cache/webidl.html#js-DOMString`, `#js-USVString`, `#js-to-union`,
+  `#js-to-record` und `specs/cache/url.html#dom-urlsearchparams-urlsearchparams`
+  geprueft.
+- Review: Eine direkte Re-Review fand und liess zuerst String-/Union-
+  Konvertierung, danach Iterator-/Intrinsic-Verhalten und schliesslich
+  Record-Key-Konvertierung korrigieren. Die abschliessende Pruefung genehmigt
+  den Arbeitsstand.
+- Validierung: 10 URL-Binding-Tests und 372 Engine.Scripting-Tests bestanden;
+  `dotnet build VisualWeb.slnx` ohne Warnungen/Fehler; `dotnet test
+VisualWeb.slnx --no-build` bestanden, zwei Prozessdrucktests uebersprungen;
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party`, `git diff --check` sowie
+  `dotnet run --no-build --project tools/V8Smoke -- --local` bestanden.
+- Status: Phase 5 ist review-approved und validiert, aber nicht committed.
+  Der Standardsinventarstand (~70%) stammt noch aus Phase 4. Phase 6 bleibt
+  fuer Offline-Conformance-Evidenz und konsistente Standards-/Subsystem-
+  Dokumentation offen. Der Commit-Checkpoint wartet auf Nutzeranweisung.
+- Quellen: [genehmigter Plan](../plans/whatwg-url-completion-plan.md), Phase 5;
+  [Phase-5-Bericht](../plans/whatwg-url-completion-phase-5-complete.md);
+  [UrlBindings.cs](../src/Engine/Engine.Scripting/UrlBindings.cs);
+  [UrlBindingTests.cs](../tests/Engine.Scripting.Tests/UrlBindingTests.cs);
+  lokale Web IDL- und URL-Spezifikationen oben; Validierungsausgaben im
+  aktuellen Turn.

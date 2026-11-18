@@ -30,6 +30,7 @@ public sealed class V8ScriptHost : IDisposable
     private readonly V8ScriptEngine engine;
     private readonly ScriptObject evaluate;
     private readonly TimeSpan timeout;
+    private readonly UrlBindings urls;
     private readonly DomBindings? dom;
     private readonly ScriptObject? microtasks;
     private readonly ScriptObject? events;
@@ -46,6 +47,7 @@ public sealed class V8ScriptHost : IDisposable
         if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
         { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }
         documentLifecycle = enableDocumentLifecycle;
+        urls = new UrlBindings();
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
         if (this.timeout <= TimeSpan.Zero || this.timeout > TimeSpan.FromSeconds(30)) { throw new ArgumentOutOfRangeException(nameof(timeout)); }
         if (!(OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
@@ -70,6 +72,8 @@ public sealed class V8ScriptHost : IDisposable
             engine.MaxRuntimeStackUsage = new UIntPtr(128 * 1024);
             engine.EnableRuntimeInterruptPropagation = true;
             engine.Execute("delete globalThis.SharedArrayBuffer; delete globalThis.Atomics; delete globalThis.WebAssembly;");
+            engine.AddHostObject("__visualwebUrl", new Func<string, int, string, string>(urls.Invoke));
+            engine.Execute(UrlBindings.Bootstrap);
             // Capture pristine intrinsics before scripts can replace global functions.
             evaluate = (ScriptObject)engine.Evaluate("""
                 (() => {
@@ -102,7 +106,7 @@ public sealed class V8ScriptHost : IDisposable
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }
             if (enableDocumentLifecycle) { moduleCompletion = (ScriptObject)engine.Evaluate(ModuleEvaluationBindings.Bootstrap); }
         }
-        catch { moduleCompletion?.Dispose(); wrapNode?.Dispose(); dom?.Dispose(); engine.Dispose(); throw; }
+        catch { moduleCompletion?.Dispose(); wrapNode?.Dispose(); urls.Dispose(); dom?.Dispose(); engine.Dispose(); throw; }
     }
 
     public ScriptValue Evaluate(string source, CancellationToken cancellationToken = default)
@@ -383,6 +387,7 @@ public sealed class V8ScriptHost : IDisposable
         using var interrupt = deadline.Token.Register(engine.Interrupt);
         executionStarted = Stopwatch.GetTimestamp();
         deadline.CancelAfter(timeout);
+        urls.Begin(deadline.Token);
         dom?.Begin(deadline.Token);
         try
         {
@@ -534,7 +539,11 @@ public sealed class V8ScriptHost : IDisposable
         finally
         {
             try { engine.Dispose(); }
-            finally { dom?.Dispose(); }
+            finally
+            {
+                try { dom?.Dispose(); }
+                finally { urls.Dispose(); }
+            }
         }
     }
 }

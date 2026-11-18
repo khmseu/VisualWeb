@@ -415,6 +415,35 @@ These limits do not substitute for process quotas or constitute an exploit
 boundary. Phase 11d installs these bindings only for explicitly enabled inline
 page execution; this remains trusted-content development tooling.
 
+## URL interfaces (WHATWG URL completion, phase 5)
+
+Every `V8ScriptHost` installs native-JavaScript `URL` and `URLSearchParams`
+facades backed by the Core URL implementation. The private synchronous bridge
+transfers only operation names, integer handles and strings; CLR URL objects,
+DOM objects and CLR exceptions are never exposed. Constructor/instance brands
+are private to the isolate. URL objects use mutable Core URL state, and each
+`url.searchParams` getter returns the same branded object, live-linked in both
+directions when either URL query state or the parameter list changes.
+
+The bounded interfaces include `URL` construction, `URL.canParse()` and
+`URL.parse()`; URL's href/origin/protocol/username/password/host/hostname/port/
+pathname/search/hash attributes, `searchParams`, `toString()` and `toJSON()`;
+and `URLSearchParams` string, sequence and record initialization, size,
+append/delete/get/getAll/has/set/sort, keys/values/entries/default iteration,
+live `forEach()` and stringification. URL setters and query synchronization
+reuse Phase 4 Core URL behavior. The bindings implement the interface-specific
+Web IDL string/USVString conversions and receiver/missing-argument errors, not
+general generated Web IDL or general DOMException support.
+
+Handles are capped at 1,024; each execution permits 4,096 bridge calls and
+262,144 aggregate bridge input/output UTF-16 characters, with at most 65,536
+characters in one callback value, 1,024 URLSearchParams entries and 65,536
+serialized query characters. These counters reset per host execution.
+JavaScript conversion hooks run under the normal host deadline and cancellation.
+URL support does not enable page-script execution, add network access, or
+change the existing explicit inline-script policy. Broader URL/Web IDL coverage,
+automatic document URL integration and generated Web IDL remain deferred.
+
 ## DocumentType lookup and metadata (phase 11u)
 
 `document.doctype` returns the attached DocumentType wrapper or null, skipping
