@@ -333,6 +333,10 @@ internal sealed class UrlBindings
             const weakGet = WeakMap.prototype.get, weakSet = WeakMap.prototype.set;
             const TypeErrorCtor = TypeError, RangeErrorCtor = RangeError;
             const iterator = Symbol.iterator, toStringTag = Symbol.toStringTag;
+            const named = (fn, name) => {
+                define(fn, 'name', {value:name, configurable:true});
+                return fn;
+            };
             const nativeIteratorPrototype =
                 objectGetPrototypeOf(objectGetPrototypeOf(apply(arrayValues, [], [])));
             const urlBrands = new WeakMap(), paramsBrands = new WeakMap(), paramsCache = new WeakMap();
@@ -397,10 +401,12 @@ internal sealed class UrlBindings
             const urlAttributes = ['href','origin','protocol','username','password','host','hostname','port','pathname','search','hash'];
             for (const name of urlAttributes) define(urlPrototype, name, {
                 enumerable: true, configurable: true,
-                get() {return readUrl(urlBrand(this), name);},
-                ...(name === 'origin' ? {} : {set(value) {writeUrl(urlBrand(this), name, value);}})
+                get: named(function() {return readUrl(urlBrand(this), name);}, `get ${name}`),
+                ...(name === 'origin' ? {} : {
+                    set: named(function(value) {writeUrl(urlBrand(this), name, value);}, `set ${name}`)
+                })
             });
-            define(urlPrototype, 'searchParams', {enumerable: true, configurable: true, get() {
+            define(urlPrototype, 'searchParams', {enumerable: true, configurable: true, get: named(function() {
                 const id = urlBrand(this);
                 let result = apply(weakGet, paramsCache, this);
                 if (result === undefined) {
@@ -409,20 +415,26 @@ internal sealed class UrlBindings
                     apply(weakSet, paramsCache, this, result);
                 }
                 return result;
-            }});
-            define(urlPrototype, 'toString', {enumerable: true, configurable: true, writable: true, value: function() {return readUrl(urlBrand(this), 'href');}});
-            define(urlPrototype, 'toJSON', {enumerable: true, configurable: true, writable: true, value: function() {return readUrl(urlBrand(this), 'href');}});
-            define(URL, 'parse', {enumerable:true, configurable:true, writable:true, value: function(url, base = undefined) {
+            }, 'get searchParams')});
+            define(urlPrototype, 'toString', {
+                enumerable: true, configurable: true, writable: true,
+                value: named(function() {return readUrl(urlBrand(this), 'href');}, 'toString')
+            });
+            define(urlPrototype, 'toJSON', {
+                enumerable: true, configurable: true, writable: true,
+                value: named(function() {return readUrl(urlBrand(this), 'href');}, 'toJSON')
+            });
+            define(URL, 'parse', {enumerable:true, configurable:true, writable:true, value: named(function(url, base = undefined) {
                 required(arguments.length, 1);
                 const args = base !== undefined ? [usv(url), usv(base)] : [usv(url)];
                 const result = call('url-parse', 0, json(args));
                 return result === 'null' ? null : makeUrl(+result);
-            }});
-            define(URL, 'canParse', {enumerable:true, configurable:true, writable:true, value: function(url, base = undefined) {
+            }, 'parse')});
+            define(URL, 'canParse', {enumerable:true, configurable:true, writable:true, value: named(function(url, base = undefined) {
                 required(arguments.length, 1);
                 const args = base !== undefined ? [usv(url), usv(base)] : [usv(url)];
                 return call('url-can-parse', 0, json(args)) === 'true';
-            }});
+            }, 'canParse')});
             function makeUrl(id) {
                 const result = create(urlPrototype);
                 apply(weakSet, urlBrands, result, id);
@@ -468,38 +480,42 @@ internal sealed class UrlBindings
                 apply(weakSet, paramsBrands, this, id);
             }
             define(paramsPrototype, 'constructor', {value: URLSearchParams, writable: true, configurable: true});
-            define(paramsPrototype, 'size', {enumerable:true, configurable:true, get() {
-                return +call('params-get', paramsBrand(this), 'size');
-            }});
-            for (const method of ['append','set']) define(paramsPrototype, method, {enumerable:true, configurable:true, writable:true, value:function(name, value) {
-                const id = paramsBrand(this); required(arguments.length, 2);
-                const first = usv(name), second = usv(value);
-                call('params-set', id, json([method, first, second]));
-            }});
-            define(paramsPrototype, 'delete', {enumerable:true, configurable:true, writable:true, value:function(name, value = undefined) {
+            define(paramsPrototype, 'size', {
+                enumerable:true, configurable:true,
+                get: named(function() {return +call('params-get', paramsBrand(this), 'size');}, 'get size')
+            });
+            for (const method of ['append','set']) define(paramsPrototype, method, {
+                enumerable:true, configurable:true, writable:true,
+                value:named(function(name, value) {
+                    const id = paramsBrand(this); required(arguments.length, 2);
+                    const first = usv(name), second = usv(value);
+                    call('params-set', id, json([method, first, second]));
+                }, method)
+            });
+            define(paramsPrototype, 'delete', {enumerable:true, configurable:true, writable:true, value:named(function(name, value = undefined) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 const first = usv(name);
                 if (value !== undefined) call('params-set', id, json(['delete', first, usv(value)]));
                 else call('params-set', id, json(['delete', first]));
-            }});
-            define(paramsPrototype, 'get', {enumerable:true, configurable:true, writable:true, value:function(name) {
+            }, 'delete')});
+            define(paramsPrototype, 'get', {enumerable:true, configurable:true, writable:true, value:named(function(name) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 return parse(call('params-get', id, json(['get', usv(name)])));
-            }});
-            define(paramsPrototype, 'getAll', {enumerable:true, configurable:true, writable:true, value:function(name) {
+            }, 'get')});
+            define(paramsPrototype, 'getAll', {enumerable:true, configurable:true, writable:true, value:named(function(name) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 return parse(call('params-get', id, json(['getAll', usv(name)])));
-            }});
-            define(paramsPrototype, 'has', {enumerable:true, configurable:true, writable:true, value:function(name, value = undefined) {
+            }, 'getAll')});
+            define(paramsPrototype, 'has', {enumerable:true, configurable:true, writable:true, value:named(function(name, value = undefined) {
                 const id = paramsBrand(this); required(arguments.length, 1);
                 const args = ['has', usv(name)];
                 if (value !== undefined) push(args, usv(value));
                 return parse(call('params-get', id, json(args)));
-            }});
-            define(paramsPrototype, 'sort', {enumerable:true, configurable:true, writable:true, value:function() {
+            }, 'has')});
+            define(paramsPrototype, 'sort', {enumerable:true, configurable:true, writable:true, value:named(function() {
                 const id = paramsBrand(this);
                 call('params-set', id, json(['sort']));
-            }});
+            }, 'sort')});
             const entry = (id, index) => {
                 const result = call('params-entry', id, '' + index);
                 return parse(result);
@@ -534,7 +550,7 @@ internal sealed class UrlBindings
             define(paramsPrototype, 'values', {enumerable:true, configurable:true, writable:true, value:values});
             define(paramsPrototype, 'entries', {enumerable:true, configurable:true, writable:true, value:entries});
             define(paramsPrototype, iterator, {configurable:true, writable:true, value:entries});
-            define(paramsPrototype, 'forEach', {enumerable:true, configurable:true, writable:true, value:function(callback, thisArg = undefined) {
+            define(paramsPrototype, 'forEach', {enumerable:true, configurable:true, writable:true, value:named(function(callback, thisArg = undefined) {
                 const id = paramsBrand(this);
                 if (typeof callback !== 'function') throw new TypeErrorCtor('URLSearchParams forEach callback must be callable');
                 for (let index=0;;++index) {
@@ -542,10 +558,10 @@ internal sealed class UrlBindings
                     if (pair === null) return;
                     apply(callback, thisArg, pair[1], pair[0], this);
                 }
-            }});
-            define(paramsPrototype, 'toString', {enumerable:true, configurable:true, writable:true, value:function() {
+            }, 'forEach')});
+            define(paramsPrototype, 'toString', {enumerable:true, configurable:true, writable:true, value:named(function() {
                 return parse(call('params-get', paramsBrand(this), 'toString'));
-            }});
+            }, 'toString')});
             define(URL, 'prototype', {value:urlPrototype});
             define(URLSearchParams, 'prototype', {value:paramsPrototype});
             define(globalThis, 'URL', {value:URL, writable:true, configurable:true});

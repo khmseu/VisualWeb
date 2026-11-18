@@ -76,6 +76,39 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlFunctionsExposeWebIdlNames()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                const url = URL.prototype, params = URLSearchParams.prototype;
+                const functions = [
+                    [URL, 'URL'], [URL.parse, 'parse'], [URL.canParse, 'canParse'],
+                    [url.toString, 'toString'], [url.toJSON, 'toJSON'],
+                    [params.append, 'append'], [params.delete, 'delete'],
+                    [params.get, 'get'], [params.getAll, 'getAll'], [params.has, 'has'],
+                    [params.set, 'set'], [params.sort, 'sort'], [params.keys, 'keys'],
+                    [params.values, 'values'], [params.entries, 'entries'],
+                    [params.forEach, 'forEach'], [params.toString, 'toString'],
+                    [params[Symbol.iterator], 'entries']
+                ];
+                const attributes = [
+                    [url, 'href'], [url, 'origin'], [url, 'protocol'], [url, 'username'],
+                    [url, 'password'], [url, 'host'], [url, 'hostname'], [url, 'port'],
+                    [url, 'pathname'], [url, 'search'], [url, 'searchParams'], [url, 'hash'],
+                    [params, 'size']
+                ];
+                return functions.every(([fn, name]) => fn.name === name)
+                    && attributes.every(([prototype, name]) => {
+                        const descriptor = Object.getOwnPropertyDescriptor(prototype, name);
+                        return descriptor.get.name === `get ${name}`
+                            && (!descriptor.set || descriptor.set.name === `set ${name}`);
+                    });
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void OptionalUndefinedArgumentsActAsMissingWithoutChangingOtherValues()
     {
         using var host = new V8ScriptHost();

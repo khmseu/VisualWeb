@@ -432,7 +432,8 @@ and `URLSearchParams` string, sequence and record initialization, size,
 append/delete/get/getAll/has/set/sort, keys/values/entries/default iteration,
 live `forEach()` and stringification. URL setters and query synchronization
 reuse Phase 4 Core URL behavior. The bindings implement the interface-specific
-Web IDL string/USVString conversions and receiver/missing-argument errors, not
+Web IDL string/USVString conversions, receiver/missing-argument errors,
+operation/accessor names, property descriptors and function lengths, not
 general generated Web IDL or general DOMException support.
 
 The URLSearchParams pair iterators use a shared Web IDL iterator prototype,
