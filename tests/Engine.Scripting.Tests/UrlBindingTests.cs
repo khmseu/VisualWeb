@@ -516,11 +516,14 @@ public sealed class UrlBindingTests
         using var host = new V8ScriptHost();
         Assert.True(host.Evaluate("""
             (() => {
-                let converted = false, rejected = false;
+                let converted = false, rejected = false, primitivePairRejected = false;
                 const extra = {toString() { converted = true; return 'extra'; }};
                 try { new URLSearchParams([['name', 'value', 'third', extra]]); }
                 catch (error) { rejected = error instanceof TypeError; }
-                return converted && rejected;
+                try { new URLSearchParams(['ab']); }
+                catch (error) { primitivePairRejected = error instanceof TypeError; }
+                return converted && rejected && primitivePairRejected
+                    && new URLSearchParams([new String('ab')]).toString() === 'a=b';
             })()
             """, Cancellation).Boolean);
     }

@@ -452,7 +452,8 @@ internal sealed class UrlBindings
                         const pairs = [];
                         for (const pair of iterable) {
                             if (pairs.length >= 1024) throw new TypeErrorCtor('URLSearchParams entry limit exceeded');
-                            if (pair === null || pair === undefined) throw new TypeErrorCtor('Invalid URLSearchParams pair');
+                            if (pair === null || (typeof pair !== 'object' && typeof pair !== 'function'))
+                                throw new TypeErrorCtor('Invalid URLSearchParams pair');
                             const values = []; let pairLength = 0;
                             for (const value of pair) {
                                 if (pairLength >= 1024) throw new RangeErrorCtor('URLSearchParams pair limit exceeded');
