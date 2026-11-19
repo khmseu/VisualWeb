@@ -453,7 +453,11 @@ reset per host execution.
 JavaScript conversion hooks run under the normal host deadline and cancellation.
 URL support does not enable page-script execution, add network access, or
 change the existing explicit inline-script policy. Broader URL/Web IDL coverage,
-automatic document URL integration and generated Web IDL remain deferred.
+automatic document URL integration and generated Web IDL remain deferred. The
+URL IDL also declares the legacy `webkitURL` alias for the `Window` interface;
+this host does not expose `Window`, so it does not provide that alias
+([URL IDL](https://url.spec.whatwg.org/#url-class),
+[Web IDL `LegacyWindowAlias`](https://webidl.spec.whatwg.org/#LegacyWindowAlias)).
 
 ## DocumentType lookup and metadata (phase 11u)
 

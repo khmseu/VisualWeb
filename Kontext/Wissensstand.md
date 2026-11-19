@@ -8,6 +8,16 @@
 
 ## Aktueller Wissensstand
 
+**URL-IDL-Flaeche (2026-11-19; KP-508):** Der Abgleich des lokalen URL-IDL
+mit der Bindung fand als verbleibende globale Integrationsflaeche
+`[LegacyWindowAlias=webkitURL]`. Web IDL verlangt dafuer eine Eigenschaft auf
+dem `Window`-Interface; `V8ScriptHost` implementiert kein `Window` und
+exponiert nur `URL`/`URLSearchParams` auf `globalThis`. Der Alias wurde deshalb
+nicht losgeloest auf beliebigen Globals ergaenzt. Die URL- und Scripting-
+Leitfaeden benennen diese Grenze nun explizit. Eine Umsetzung gehoert zu einer
+separaten Window-Integration, nicht zum existierenden URL-Parser/Core-
+Verhalten. Allgemeine WHATWG-URL-Vollkonformitaet bleibt unbelegt.
+
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
 Produktionsabweichung: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen

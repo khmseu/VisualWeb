@@ -15200,3 +15200,32 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Standardsinventar](../docs/standards.md#support-status),
   [Core-Tests](../tests/Core.Tests/) und
   [Scripting-URL-Tests](../tests/Engine.Scripting.Tests/UrlBindingTests.cs).
+
+### KP-508 - URL-Legacy-Alias an fehlendes Window gebunden
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-507; genaue Uhrzeit unbekannt.
+- Erfassungsart: lokaler URL- und Web-IDL-Standard, statische Bindungs- und
+  Subsystemdokumentationspruefung.
+- Nutzerangabe: „continue“ zum URL-Abschlussauftrag; keine Umfangsaenderung.
+- Belegt: Die URL-IDL enthaelt `[LegacyWindowAlias=webkitURL]`
+  (`url.html#url-class`). Web IDL legt fest, dass ein solcher Alias als
+  Eigenschaft am `Window`-Interface erscheint
+  (`webidl.html#LegacyWindowAlias`). Der aktuelle `V8ScriptHost` installiert
+  `URL` und `URLSearchParams` auf `globalThis`, exponiert aber kein `Window`;
+  Engine.Scripting README und Scripting-Leitfaden bestaetigen, dass `Window`
+  ausserhalb des implementierten Hosts liegt. Deshalb ist das Fehlen von
+  `webkitURL` keine Abweichung im Core URL-Parser, aber eine nicht abgedeckte
+  Window-Integrationsflaeche.
+- Entscheidung/Ableitung: Den Alias nicht unqualifiziert auf beliebigen
+  Globals installieren, weil das die `Window`-Bedingung des Standards
+  ignorieren wuerde. Beide Standards-/Subsystemhinweise benennen die
+  Begrenzung nun ausdruecklich. Eine standardgetreue Umsetzung setzt eine
+  Window-Integration voraus und erweitert den bisherigen URL-Bindungsumfang.
+- Status: Dokumentationsaenderung; kein Produktionscode und keine neue
+  Laufzeitregression in diesem Inkrement. Kein Push.
+- Quellen: [URL IDL](../specs/cache/url.html#url-class),
+  [Web IDL LegacyWindowAlias](../specs/cache/webidl.html#LegacyWindowAlias),
+  [URL-Bindung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [Engine.Scripting README](../src/Engine/Engine.Scripting/README.md) und
+  [Scripting guide](../docs/scripting.md#url-interfaces).
