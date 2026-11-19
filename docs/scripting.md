@@ -459,6 +459,8 @@ page URL omit these attributes. Those page hosts also expose `Node.baseURI`,
 recomputed on access from the current first HTML `<base href>` in tree order
 and the browser-approved base URL. A changed `href` that does not match an
 approved base falls back to the final page URL.
+Invalid, `data:`, and `javascript:` base candidates also fall back to the final
+page URL, matching stylesheet base discovery.
 Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle,
 other link properties, broader URL/Web IDL coverage and generated Web IDL
 remain deferred. In opted-in loaded-page hosts, `<a>` and `<area>` expose the

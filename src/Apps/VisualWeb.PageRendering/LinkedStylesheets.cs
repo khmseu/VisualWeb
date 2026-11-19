@@ -59,13 +59,18 @@ internal static class LinkedStylesheets
                 || element.GetAttribute("href") is not { } href) { continue; }
             if (href.Length > RendererProtocol.MaxTextCharacters)
             { throw new PageNavigationException("HTML base URL limit exceeded."); }
-            var parsed = BrowserUrl.ParseResult(href, documentUrl).Url;
-            if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return null; }
-            if (parsed.Href.Length > RendererProtocol.MaxTextCharacters)
-            { throw new PageNavigationException("HTML base URL limit exceeded."); }
-            return parsed;
+            return ParseBaseHrefUrl(href, documentUrl);
         }
         return null;
+    }
+
+    internal static BrowserUrl? ParseBaseHrefUrl(string href, BrowserUrl documentUrl)
+    {
+        var parsed = BrowserUrl.ParseResult(href, documentUrl).Url;
+        if (parsed is null || parsed.Protocol is "data:" or "javascript:") { return null; }
+        if (parsed.Href.Length > RendererProtocol.MaxTextCharacters)
+        { throw new PageNavigationException("HTML base URL limit exceeded."); }
+        return parsed;
     }
 
     public static bool SupportsMedia(string? media) => ParseMediaList(media) is not null;

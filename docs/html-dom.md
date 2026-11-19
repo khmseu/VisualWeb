@@ -200,6 +200,8 @@ is recomputed from the current first HTML `<base href>` in tree order, resolved
 against the final page URL, with the browser-approved base URL policy applied.
 The current value is recomputed on each access; a changed `href` that does not
 match a browser-approved base falls back to the final page URL.
+Invalid base URLs and `data:`/`javascript:` bases also fall back to the final
+page URL, consistently with stylesheet discovery.
 Inherited `about:blank`/`srcdoc` base URLs and the full frozen-base lifecycle
 remain unsupported. In opted-in loaded-page script hosts, `<a>` and `<area>`
 facades expose the `href` stringifier and the bounded `HyperlinkElementUtils`

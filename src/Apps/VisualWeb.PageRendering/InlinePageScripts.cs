@@ -203,7 +203,7 @@ public static class InlinePageScripts
             if (href.Length > RendererProtocol.MaxTextCharacters)
             { throw new InvalidOperationException("Document base URL input limit exceeded."); }
             charge(href);
-            var parsed = BrowserUrl.ParseResult(href, pageUrl).Url;
+            var parsed = LinkedStylesheets.ParseBaseHrefUrl(href, pageUrl);
             if (approvedBaseUrl is null) { return parsed ?? pageUrl; }
             return parsed?.Href == approvedBaseUrl.Href ? approvedBaseUrl : pageUrl;
         }

@@ -15436,3 +15436,43 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
   [Scripting guide](../docs/scripting.md) und
   [Standards inventory](../docs/standards.md#implemented-subsets).
+
+### KP-516 - HTML-Base-URL-Aufloesung angleichen
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „continue“ nach Commit `7d53da1`; danach bestaetigte der Nutzer
+  am 2026-11-19 um 13:55 Europe/Berlin den vorgeschlagenen Umfang.
+  Arbeitsrichtung: HTML/DOM-bezogene WHATWG-URL-Arbeit fortsetzen.
+- Belegt: Die HTML-`base`-URL-Aufloesung wird in PageRendering sowohl fuer
+  Stylesheet-Sammlung als auch fuer scriptseitige `Node.baseURI`/
+  Hyperlink-Abfragen verwendet. Der HTML-Cache wurde am 2026-11-07 geprueft
+  und ist am Dokumentationsdatum juenger als 30 Tage.
+- Beschluss: Mit gezielten Tests die `<base href>`-Kandidatenauswahl und
+  URL-Aufloesung zwischen Stylesheet-Sammlung und scriptseitigem
+  `Node.baseURI`/Hyperlink-Verhalten abgleichen und nur bei belegter
+  Abweichung korrigieren. Browser-approved-base-Policy bleibt unveraendert.
+  Vollstaendiger frozen/inherited-base-Lifecycle und weitere URL-Properties
+  sind nicht Teil dieses Inkrements.
+- Belegte Abweichung: Scriptseitiges `Node.baseURI` lieferte fuer ein erstes
+  `<base href>` mit `data:` oder `javascript:` das geparste URL-Ergebnis;
+  Stylesheet-Basisermittlung verwarf diese Schemes und fiel auf die
+  Dokument-URL zurueck. Ein spaeteres gueltiges `<base>` blieb jeweils
+  ignoriert.
+- Umsetzung: Beide Pfade verwenden jetzt dieselbe Base-href-URL-Pruefung in
+  `LinkedStylesheets.ParseBaseHrefUrl`; erster Kandidat, Dokumentbasis und
+  CSP-approved-base Verhalten bleiben erhalten. Tests fuer beide Schemes
+  schlugen vor der Aenderung fehl und bestehen danach. Leitfaeden und
+  Standardsinventar dokumentieren den Fallback.
+- Verifikation: fokussierter Regressionstest (2 Faelle) und Solution-Build
+  bestanden; er schlug vor der Korrektur fuer beide Faelle fehl. Vollstaendige
+  Browser-Tests (1.383), alle Solution-Tests (17.222), Solution-Build mit
+  null Warnungen/Fehlern, Formatverifikation und `git diff --check` bestanden.
+  Zwei CPU-pressure-Varianten wurden als uebersprungen protokolliert.
+- Offene Restfrage: Keine fuer den genehmigten Umfang.
+- Quellen: Oracle-Recherche in dieser Sitzung; lokale
+  [HTML document base URLs](../specs/cache/html.html#document-base-urls),
+  [HTML base element](../specs/cache/html.html#the-base-element),
+  [LinkedStylesheets](../src/Apps/VisualWeb.PageRendering/LinkedStylesheets.cs),
+  [InlinePageScripts](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [HTML/DOM guide](../docs/html-dom.md) und
+  [standards inventory](../docs/standards.md#implemented-subsets).

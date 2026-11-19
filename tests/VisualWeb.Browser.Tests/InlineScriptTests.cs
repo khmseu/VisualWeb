@@ -1104,6 +1104,23 @@ public sealed class InlineScriptTests
         Assert.Equal("true", rendered.Title);
     }
 
+    [Theory]
+    [InlineData("data:text/html,ignored")]
+    [InlineData("javascript:alert(1)")]
+    public void ScriptBaseUriAndStylesheetDiscoveryRejectUnsupportedBaseSchemes(string href)
+    {
+        const string pageUrl = "https://example.test/dir/page";
+        var html = $"<!doctype html><head><base href=\"{href}\"><base href=\"/later/\"><script>" +
+            $"document.title=String(document.baseURI==='{pageUrl}')</script></head>";
+        using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse(pageUrl), html, 200, []);
+
+        var rendered = renderer.Render(page, Viewport, Cancellation);
+
+        Assert.Equal("true", rendered.Title);
+        Assert.Null(StaticPageRenderer.DiscoverBaseHrefUrl(html, page.Url, Cancellation));
+    }
+
     [Fact]
     public async Task ParserBlockingScriptResolvesAgainstTheBaseAvailableAtItsPosition()
     {

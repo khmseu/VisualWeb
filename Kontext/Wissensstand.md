@@ -87,6 +87,19 @@ bestand. Siehe [KP-515](./Kontextprotokoll.md#kp-515---begrenzte-hyperlink-url-a
 Quellen: lokale [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements),
 [Core URL](../docs/core.md#url) und [Standardsinventar](../docs/standards.md#implemented-subsets).
 
+**HTML-Base-URL-Fortsetzung (KP-516; beschlossen):** Mit gezielten Tests
+Kandidatenauswahl und URL-Aufloesung fuer `<base href>` zwischen Stylesheet-
+Sammlung und scriptseitigem `Node.baseURI`/Hyperlink-Verhalten angleichen.
+Die browserseitige Freigabepolicy bleibt unveraendert; vollstaendige
+frozen/inherited-base-Semantik und weitere URL-Properties sind ausgeschlossen.
+Die neue Regression belegte, dass scriptseitiges `Node.baseURI` zuvor
+`data:`-/`javascript:`-Basen akzeptierte, waehrend Stylesheet-Ermittlung diese
+verwarf; nun teilen beide Pfade dieselbe URL-Pruefung. Der fokussierte Test
+bestand nach zuvor fehlschlagenden Faellen. Build, Formatpruefung, alle 1.383
+Browser-Tests und 17.222 Solution-Tests bestanden; zwei CPU-pressure-Varianten
+wurden als uebersprungen protokolliert.
+Siehe [KP-516](./Kontextprotokoll.md#kp-516---html-base-url-aufloesung-angleichen).
+
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
 Produktionsabweichung: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen
