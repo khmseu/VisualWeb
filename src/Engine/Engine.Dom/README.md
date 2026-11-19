@@ -8,7 +8,12 @@ adopt entire subtrees; fragment insertion transfers its children.
 Native `template` elements expose a stable, separate `Content` fragment. The
 fragment and its descendants use the document's inert template-contents owner
 document; adoption and deep cloning include nested template contents. HTML
-parser construction of template markup remains deferred and unsupported.
+document parsing supports templates in head/body with ordinary supported
+in-body content and nested templates inserted into their separate `Content`
+fragments. Template content is inert. Template content using table or select
+insertion contexts, templates inside table/select contexts, foreign content,
+and fragment parsing remain unsupported; broader template algorithms are
+deferred.
 
 Child/attribute collections have read-only public views. Attribute names and
 HTML node names fold ASCII only. Text content, sibling links, connection status,

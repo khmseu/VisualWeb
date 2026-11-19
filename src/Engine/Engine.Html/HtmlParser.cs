@@ -19,7 +19,7 @@ namespace VisualWeb.Engine.Html;
 /// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
-/// other foster-parenting cases, nested tables in captions, templates, foreign content, frames, fragment parsing, scripting,
+/// other foster-parenting cases, nested tables in captions, table/select template content, foreign content, frames, fragment parsing, scripting,
 /// active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
@@ -37,13 +37,14 @@ public static class HtmlParser
     private enum Mode
     {
         Initial, BeforeHtml, BeforeHead, InHead, AfterHead, InBody, Text,
-        InTable, InTableText, InCaption, InColumnGroup, InTableBody, InRow, InCell, AfterBody, AfterAfterBody
+        InTable, InTableText, InCaption, InColumnGroup, InTableBody, InRow, InCell, InTemplate, AfterBody, AfterAfterBody
     }
 
     private sealed class Builder
     {
         private readonly DomDocument document;
         private readonly List<DomElement> open = [];
+        private readonly List<Mode> templateModes = [];
         private readonly List<HtmlParseError> errors = [];
         private readonly HtmlParserOptions options;
         private readonly HtmlTokenizer tokenizer;
@@ -116,9 +117,14 @@ public static class HtmlParser
         }
 
         private DomNode Current => open.Count == 0 ? document : open[^1];
+        private DomNode InsertionParent => Current is DomTemplateElement template ? template.Content : Current;
         private void CompleteScript()
         {
-            if (Current is DomElement { LocalName: "script" } script) { scriptCompleted?.Invoke(script); }
+            if (!open.Any(element => element.LocalName == "template")
+                && Current is DomElement { LocalName: "script" } script)
+            {
+                scriptCompleted?.Invoke(script);
+            }
         }
         private bool IsWhitespace(HtmlToken token) => token is HtmlCharacters text && text.Data.All(HtmlTokenizer.Whitespace);
 
@@ -130,6 +136,32 @@ public static class HtmlParser
                 if (token is HtmlTag tag && UnsupportedTags.Contains(tag.Name))
                 {
                     throw Unsupported($"Tree construction for <{tag.Name}> is not implemented.");
+                }
+
+                if (token is HtmlTag contextTag)
+                {
+                    if (contextTag.Name == "template" && IsTableMode(mode))
+                    {
+                        throw Unsupported("Template insertion in table contexts is not implemented.");
+                    }
+
+                    if (open.Any(element => element.LocalName == "template"))
+                    {
+                        if (TableTags.Contains(contextTag.Name))
+                        {
+                            throw Unsupported("Table insertion modes inside template content are not implemented.");
+                        }
+
+                        if (contextTag.Name == "select")
+                        {
+                            throw Unsupported("Select insertion modes inside template content are not implemented.");
+                        }
+                    }
+
+                    if (contextTag.Name == "template" && open.Any(element => element.LocalName == "select"))
+                    {
+                        throw Unsupported("Template insertion inside select content is not implemented.");
+                    }
                 }
 
                 if (token is HtmlTag tableTag && TableTags.Contains(tableTag.Name)
@@ -225,6 +257,7 @@ public static class HtmlParser
                                 case "title": StartText(headStart, HtmlTextMode.Rcdata); return;
                                 case "style" or "noframes": StartText(headStart, HtmlTextMode.Rawtext); return;
                                 case "script": StartText(headStart, HtmlTextMode.ScriptData); return;
+                                case "template": StartTemplate(headStart); return;
                                 case "head": Error("unexpected-head-start-tag"); return;
                             }
                         }
@@ -233,6 +266,12 @@ public static class HtmlParser
                         {
                             open.RemoveAt(open.Count - 1);
                             mode = Mode.AfterHead;
+                            return;
+                        }
+
+                        if (token is HtmlTag { IsEndTag: true, Name: "template" })
+                        {
+                            CloseTemplate();
                             return;
                         }
 
@@ -264,6 +303,10 @@ public static class HtmlParser
                                 {
                                     originalMode = Mode.AfterHead;
                                 }
+                                else if (mode == Mode.InTemplate)
+                                {
+                                    open.Remove(document.Head!);
+                                }
                                 else
                                 {
                                     open.Remove(document.Head!);
@@ -272,6 +315,14 @@ public static class HtmlParser
 
                                 return;
                             }
+                        }
+
+                        if (token is HtmlTag { IsEndTag: true, Name: "template" })
+                        {
+                            mode = Mode.InHead;
+                            Process(token);
+                            if (mode == Mode.InHead) { mode = Mode.AfterHead; }
+                            return;
                         }
 
                         if (token is HtmlTag { IsEndTag: true } afterHeadEnd && afterHeadEnd.Name is not ("body" or "html" or "br"))
@@ -326,7 +377,16 @@ public static class HtmlParser
                         mode = Mode.InBody;
                         continue;
                     case Mode.InBody:
+                        if (token is HtmlEndOfFile && open.Any(element => element.LocalName == "template"))
+                        {
+                            mode = Mode.InTemplate;
+                            continue;
+                        }
+
                         BodyToken(token);
+                        return;
+                    case Mode.InTemplate:
+                        if (TemplateToken(token)) { continue; }
                         return;
                     case Mode.InTable:
                         TableToken(token);
@@ -362,7 +422,7 @@ public static class HtmlParser
                 return;
             }
 
-            if (Miscellaneous(token, Current)) { return; }
+            if (Miscellaneous(token, InsertionParent)) { return; }
             if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
             if (token is HtmlEndOfFile)
             {
@@ -389,6 +449,7 @@ public static class HtmlParser
                     case "title": StartText(tag, HtmlTextMode.Rcdata); return;
                     case "style" or "noframes": StartText(tag, HtmlTextMode.Rawtext); return;
                     case "script": StartText(tag, HtmlTextMode.ScriptData); return;
+                    case "template": StartTemplate(tag); return;
                     case "textarea": StartTextarea(tag); return;
                     case "xmp":
                         CloseParagraph();
@@ -424,6 +485,12 @@ public static class HtmlParser
                     case "form":
                         // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody (start tag "form").
                         if (formPointer is not null) { Error("nested-form"); return; }
+                        if (open.Any(element => element.LocalName == "template"))
+                        {
+                            Insert(tag);
+                            return;
+                        }
+
                         CloseParagraph();
                         formPointer = Insert(tag);
                         return;
@@ -486,6 +553,9 @@ public static class HtmlParser
 
             switch (tag.Name)
             {
+                case "template":
+                    CloseTemplate();
+                    return;
                 case "body" or "html":
                     if (!InScope("body")) { Error("unexpected-end-tag"); return; }
                     mode = Mode.AfterBody;
@@ -507,8 +577,8 @@ public static class HtmlParser
                     {
                         // Spec: html; https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody (end tag "form").
                         var node = formPointer;
-                        formPointer = null;
                         if (node is null || !InScope("form")) { Error("unexpected-form-end-tag"); return; }
+                        formPointer = null;
                         FlushText();
                         while (open[^1] != node && open[^1].LocalName is "dd" or "dt" or "li" or "p") { open.RemoveAt(open.Count - 1); }
                         if (open[^1] != node)
@@ -1028,6 +1098,91 @@ public static class HtmlParser
             }
         }
 
+        private bool TemplateToken(HtmlToken token)
+        {
+            if (token is HtmlCharacters or HtmlComment or HtmlProcessingInstruction or HtmlDoctype)
+            {
+                BodyToken(token);
+                return false;
+            }
+
+            if (token is HtmlEndOfFile)
+            {
+                var templateIndex = open.FindLastIndex(element => element.LocalName == "template");
+                if (templateIndex < 0) { return false; }
+
+                Error("eof-in-template");
+                open.RemoveRange(templateIndex, open.Count - templateIndex);
+                templateModes.RemoveAt(templateModes.Count - 1);
+                ResetInsertionModeAppropriately();
+                return true;
+            }
+
+            if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in template."); }
+            if (tag.IsEndTag)
+            {
+                if (tag.Name == "template") { CloseTemplate(); }
+                else { Error("unexpected-end-tag-in-template"); }
+
+                return false;
+            }
+
+            switch (tag.Name)
+            {
+                case "base" or "basefont" or "bgsound" or "link" or "meta":
+                    Insert(tag, push: false);
+                    return false;
+                case "noframes" or "style":
+                    StartText(tag, HtmlTextMode.Rawtext);
+                    return false;
+                case "script":
+                    StartText(tag, HtmlTextMode.ScriptData);
+                    return false;
+                case "title":
+                    StartText(tag, HtmlTextMode.Rcdata);
+                    return false;
+                case "template":
+                    StartTemplate(tag);
+                    return false;
+                case "caption" or "col" or "colgroup" or "tbody" or "tfoot" or "thead" or "tr" or "td" or "th":
+                    throw Unsupported("Table insertion modes inside template content are not implemented.");
+                case "select":
+                    throw Unsupported("Select insertion modes inside template content are not implemented.");
+                default:
+                    templateModes[^1] = Mode.InBody;
+                    mode = Mode.InBody;
+                    return true;
+            }
+        }
+
+        private void StartTemplate(HtmlTag tag)
+        {
+            Insert(tag);
+            templateModes.Add(Mode.InTemplate);
+            mode = Mode.InTemplate;
+        }
+
+        private void CloseTemplate()
+        {
+            var templateIndex = open.FindLastIndex(element => element.LocalName == "template");
+            if (templateIndex < 0 || !InScope("template"))
+            {
+                Error("unexpected-template-end-tag");
+                return;
+            }
+
+            GenerateImpliedEndTags();
+            if (Current is not DomElement { LocalName: "template" })
+            {
+                Error("template-end-tag-with-open-elements");
+            }
+
+            FlushText();
+            open.RemoveRange(templateIndex, open.Count - templateIndex);
+            templateModes.RemoveAt(templateModes.Count - 1);
+            ResetInsertionModeAppropriately();
+        }
+
         private void ResetInsertionModeAppropriately()
         {
             for (var index = open.Count - 1; index >= 0; index--)
@@ -1052,11 +1207,23 @@ public static class HtmlParser
                     case "table":
                         mode = Mode.InTable;
                         return;
+                    case "template":
+                        if (templateModes.Count == 0)
+                        {
+                            throw new InvalidOperationException("The template insertion-mode stack is empty.");
+                        }
+
+                        mode = templateModes[^1];
+                        return;
+                    case "head" when index > 0:
+                        mode = Mode.InHead;
+                        return;
+                    case "html" when index == 0:
+                        mode = document.Head is null ? Mode.BeforeHead : Mode.AfterHead;
+                        return;
                     case "body":
                         mode = Mode.InBody;
                         return;
-                    case "template":
-                        throw Unsupported("Template insertion mode reset is not implemented.");
                 }
 
                 if (index == 0)
@@ -1153,8 +1320,9 @@ public static class HtmlParser
             if (push && open.Count >= options.MaxDepth) { throw new HtmlLimitException("HTML element depth limit exceeded."); }
             CountNode();
             var element = document.CreateElement(token.Name);
+            if (element is DomTemplateElement) { CountNode(); }
             foreach (var (name, value) in token.Attributes) { element.SetAttributeFromParser(name, value); }
-            Current.AppendChild(element);
+            InsertionParent.AppendChild(element);
             if (push)
             {
                 open.Add(element);
@@ -1181,13 +1349,14 @@ public static class HtmlParser
         private void Text(string data)
         {
             if (data.Length == 0) { return; }
-            var text = Current.LastChild as DomText;
+            var parent = InsertionParent;
+            var text = parent.LastChild as DomText;
             if (text is null)
             {
                 FlushText();
                 CountNode();
                 text = document.CreateTextNode("");
-                Current.AppendChild(text);
+                parent.AppendChild(text);
             }
 
             if (bufferedText != text)
@@ -1410,7 +1579,6 @@ public static class HtmlParser
     private static HtmlTag Synthetic(string name) => new(name, new Dictionary<string, string>(), false, false);
     private static readonly HashSet<string> UnsupportedTags = new(StringComparer.Ordinal)
     {
-        "template",
         "svg", "math", "frameset", "frame", "noscript",
         "applet", "marquee", "object"
     };
@@ -1433,7 +1601,7 @@ public static class HtmlParser
     };
     private static readonly HashSet<string> HeadTags = new(StringComparer.Ordinal)
     {
-        "base", "basefont", "bgsound", "link", "meta", "title", "style", "script", "noframes"
+        "base", "basefont", "bgsound", "link", "meta", "title", "style", "script", "noframes", "template"
     };
     private static readonly HashSet<string> HeadingTags = new(StringComparer.Ordinal) { "h1", "h2", "h3", "h4", "h5", "h6" };
     private static readonly HashSet<string> FormattingTags = new(StringComparer.Ordinal)

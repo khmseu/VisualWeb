@@ -398,12 +398,18 @@ remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 
-- Template markup remains explicitly unsupported by the parser, although the
-  native DOM now provides stable fragment-backed template contents with inert
-  owner-document, adoption, deep-clone and bounded clone-preflight behavior.
-  General forms (only the simple form-pointer subset exists), select
-  handling requiring tree-building algorithms outside the currently supported
-  in-body subset, SVG/MathML, and other specialized parsing algorithms.
+- Document templates now parse in head/body with a bounded template
+  insertion-mode stack. Ordinary supported in-body content and nested templates
+  are constructed under each native `Content` fragment and use the inert
+  template-contents owner document; template descendants do not become ordinary
+  template children or document descendants. Insertion-mode reset returns to the
+  surrounding head/body mode, fragment nodes count toward the parser node limit,
+  and template-content scripts do not invoke the parser completion callback.
+  Table/select template contexts, SVG/MathML, fragment parsing, script-facing
+  template bindings and `innerHTML` remain unsupported. General forms (only the
+  simple form-pointer subset exists), select handling requiring tree-building
+  algorithms outside the currently supported in-body subset, and other
+  specialized parsing algorithms also remain incomplete.
 - Fragment parsing.
 - Adoption-agency/active-formatting recovery for malformed markup.
 
@@ -424,11 +430,11 @@ the three previously documented baseline findings.
 
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser APIs;
-the browser-shell form state is a separate bounded shell-owned subset.
-Native template contents are available through the C# DOM only; template markup
-still fails explicitly in the HTML parser, and script bindings/`innerHTML` remain
-deferred. This narrow DOM addition does not change the overall HTML/DOM support
-assessment or rough percentages.
+the browser-shell form state is a separate bounded shell-owned subset. Parser
+template construction remains a narrow static subset: table/select/foreign/
+fragment contexts, script bindings and `innerHTML` are deferred. This narrow
+addition does not change the overall HTML/DOM support assessment or rough
+percentages.
 
 These are compatibility blockers: unsupported constructs can reject a page.
 

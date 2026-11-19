@@ -22,6 +22,12 @@ additional quirks-layout behavior is not implied.
 `listing` parses normal markup and strips its first LF; `xmp` is RAWTEXT until
 its closing tag, and `plaintext` consumes the rest as literal text. Apparent
 links, scripts and styles in those literal modes are not DOM elements.
+Document templates in head/body use the bounded template insertion-mode stack:
+ordinary supported in-body content and nested templates build under each
+`DomTemplateElement.Content` fragment, then insertion-mode reset resumes the
+surrounding head/body mode. Template content is inert; its scripts do not invoke
+the parser completion callback. Table/select template contexts, foreign content,
+fragment parsing and broader template algorithms remain unsupported.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.

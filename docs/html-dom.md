@@ -75,6 +75,15 @@ after-after-body modes. Supported behavior includes:
 - Head metadata and title/style/script text; misplaced head content restoration.
 - Ordinary HTML body elements, correctly nested inline formatting, headings,
   paragraphs, block starts and scoped end tags.
+- Bounded document `<template>` construction in head and body. Template
+  contents use the native `Content` fragment and inert template-contents owner
+  document; nested templates stay separate from ordinary children and the
+  template insertion-mode stack resets to the surrounding head/body mode.
+  Supported content uses the ordinary in-body subset. Each implicit content
+  fragment counts toward `MaxNodes`; content descendants count toward the
+  existing node/depth/error/cancellation limits. Template-content scripts are
+  parsed as inert text and never invoke `scriptCompleted`. Table/select contexts,
+  foreign content and fragment parsing remain explicitly unsupported.
 - List-item and definition-list implied closures, pre/listing/textarea first-LF
   handling, void elements (including `<wbr>`) and ignored self-closing flags on
   non-void HTML. Layout interprets `<wbr>` as an optional line-break opportunity
@@ -135,8 +144,9 @@ as raw markup. The parser therefore guarantees that a form owner is the
 nearest ancestor `form`.
 
 Other tokens that require table foster parenting throw explicitly, as do
-unsupported table tags outside the contexts covered above. The following
-additionally throw explicitly: templates, SVG/MathML,
+unsupported table tags outside the contexts covered above. Template content
+using table or select insertion modes is also explicitly unsupported. The
+following additionally throw explicitly: SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling, framesets/frames, noscript and applet/marquee/object-specific
@@ -162,8 +172,9 @@ Native DOM creation of a template element is supported independently: it has a
 stable, fragment-backed `Content` property whose children are separate from
 the element's ordinary child list. Template contents use the document's inert
 template-contents owner document, including nested templates, and adoption and
-deep cloning preserve that separation. This does not enable parser support:
-HTML markup containing `<template>` still throws explicitly.
+deep cloning preserve that separation. The parser constructs ordinary document
+templates within the bounded subset above; parser construction does not add
+script-facing template bindings or an `innerHTML` API.
 
 ## DOM boundary and invariants
 
@@ -197,9 +208,9 @@ Child and attribute collections have read-only public views; node/data/attribute
 mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
 Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs,
-most special element behavior and full script bindings are deferred. Template
-markup remains unsupported by the HTML parser; no parser construction,
-script-facing template binding or `innerHTML` API is added here.
+most special element behavior and full script bindings are deferred. Table/select
+template insertion modes, fragment parsing, script-facing template bindings and
+`innerHTML` remain unsupported.
 The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup

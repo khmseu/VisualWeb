@@ -92,6 +92,163 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void TemplateContentUsesSeparateOwnerDocumentAndDoesNotEnterDocumentTree()
+    {
+        var result = Parse("<!doctype html><body><template><p id=inside>content</p></template><p id=outside>body</p>");
+        var body = result.Document.Body!;
+        var template = Assert.IsType<DomTemplateElement>(body.FirstChild);
+        var contentParagraph = Assert.IsType<DomElement>(Assert.Single(template.Content.ChildNodes));
+        var bodyParagraph = Assert.IsType<DomElement>(template.NextSibling);
+
+        Assert.Equal("p", contentParagraph.LocalName);
+        Assert.Equal("content", contentParagraph.TextContent);
+        Assert.Equal("body", bodyParagraph.TextContent);
+        Assert.Empty(template.ChildNodes);
+        Assert.Same(template.Content, contentParagraph.ParentNode);
+        Assert.NotSame(result.Document, contentParagraph.OwnerDocument);
+        Assert.Same(template.Content.OwnerDocument, contentParagraph.OwnerDocument);
+        Assert.Null(result.Document.GetElementById("inside"));
+        Assert.Same(bodyParagraph, result.Document.GetElementById("outside"));
+    }
+
+    [Theory]
+    [InlineData("<!--hidden-->", typeof(DomComment))]
+    [InlineData("<?build hidden?>", typeof(DomProcessingInstruction))]
+    public void TemplateMiscellaneousNodesUseInertContentFragment(string markup, Type nodeType)
+    {
+        var document = Parse($"<!doctype html><body><template>{markup}</template>").Document;
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(document.Body!.ChildNodes));
+        var node = Assert.IsAssignableFrom<DomCharacterData>(Assert.Single(template.Content.ChildNodes));
+
+        Assert.IsType(nodeType, node);
+        Assert.Equal("hidden", node.Data);
+        if (node is DomProcessingInstruction instruction) { Assert.Equal("build", instruction.Target); }
+        Assert.Empty(template.ChildNodes);
+        Assert.Same(template.Content, node.ParentNode);
+        Assert.Same(template.Content.OwnerDocument, node.OwnerDocument);
+        Assert.NotSame(document, node.OwnerDocument);
+    }
+
+    [Fact]
+    public void TemplateCommentAndProcessingInstructionAfterVoidChildUseContentFragment()
+    {
+        var document = Parse("<template><meta><!--hidden--><?build hidden?></template>").Document;
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(document.Head!.ChildNodes));
+        var nodes = template.Content.ChildNodes.ToArray();
+
+        Assert.Collection(nodes,
+            meta => Assert.Equal("meta", Assert.IsType<DomElement>(meta).LocalName),
+            comment => Assert.IsType<DomComment>(comment),
+            instruction => Assert.IsType<DomProcessingInstruction>(instruction));
+        Assert.Empty(template.ChildNodes);
+        Assert.All(nodes.Skip(1), node =>
+        {
+            Assert.Same(template.Content, node.ParentNode);
+            Assert.Same(template.Content.OwnerDocument, node.OwnerDocument);
+        });
+    }
+
+    [Fact]
+    public void NestedTemplateContentInsideOrdinaryContentRemainsSeparate()
+    {
+        var document = Parse("<body><template><div><template><p>nested</p></template><span>outer</span></div></template></body>")
+            .Document;
+        var outer = Assert.IsType<DomTemplateElement>(Assert.Single(document.Body!.ChildNodes));
+        var container = Assert.IsType<DomElement>(Assert.Single(outer.Content.ChildNodes));
+        var nested = Assert.IsType<DomTemplateElement>(container.FirstChild);
+        var nestedParagraph = Assert.IsType<DomElement>(Assert.Single(nested.Content.ChildNodes));
+        var outerSpan = Assert.IsType<DomElement>(nested.NextSibling);
+
+        Assert.Equal("nested", nestedParagraph.TextContent);
+        Assert.Equal("outer", outerSpan.TextContent);
+        Assert.Empty(nested.ChildNodes);
+        Assert.Same(outer.Content.OwnerDocument, container.OwnerDocument);
+        Assert.Same(outer.Content.OwnerDocument, nested.OwnerDocument);
+        Assert.Same(nested.Content.OwnerDocument, nestedParagraph.OwnerDocument);
+        Assert.Same(nested.Content.OwnerDocument, outer.Content.OwnerDocument);
+    }
+
+    [Fact]
+    public void ValidOrdinaryAndNestedTemplateStartsDoNotConsumeParseErrorBudget()
+    {
+        var result = Parse("<!doctype html><body><template><div><template><p>nested</p></template></div></template></body>",
+            new() { MaxErrors = 1 });
+
+        Assert.DoesNotContain(result.Errors, error => error.Code == "template-start-tag");
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void TemplateInHeadRestoresHeadModeBeforeOrdinaryBodyConstruction()
+    {
+        var document = Parse("<head><template><div>hidden</div></template><title>later</title></head><body><p>body</p></body>")
+            .Document;
+        var template = Assert.IsType<DomTemplateElement>(document.Head!.FirstChild);
+        var body = Assert.IsType<DomElement>(document.Body);
+
+        Assert.Equal("later", document.Title);
+        Assert.Equal("body", body.TextContent);
+        Assert.Equal("hidden", template.Content.TextContent);
+        Assert.Empty(template.ChildNodes);
+    }
+
+    [Fact]
+    public void TemplateAfterHeadRestoresBodyModeAfterTemplateClose()
+    {
+        var document = Parse("<head></head><template><div>hidden</div></template><p>body</p>").Document;
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(document.Head!.ChildNodes));
+
+        Assert.Equal("hidden", template.Content.TextContent);
+        Assert.Equal("body", document.Body!.TextContent);
+        Assert.Equal("p", Assert.IsType<DomElement>(document.Body.FirstChild).LocalName);
+    }
+
+    [Fact]
+    public void EofClosesTemplateStackAndReportsTemplateSpecificParseError()
+    {
+        var result = Parse("<body><template><div>content");
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(result.Document.Body!.ChildNodes));
+
+        Assert.Equal("content", template.Content.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "eof-in-template");
+    }
+
+    [Theory]
+    [InlineData("<template><table><tr><td>x</td></tr></table></template>")]
+    [InlineData("<template><select><option>x</option></select></template>")]
+    [InlineData("<template><svg><path></path></svg></template>")]
+    public void UnsupportedTemplateInsertionContextsFailExplicitly(string input) =>
+        Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Theory]
+    [InlineData("<table><template></template></table>", "Template insertion in table contexts is not implemented.")]
+    [InlineData("<select><template></template></select>", "Template insertion inside select content is not implemented.")]
+    public void TemplateStartsInUnsupportedContextsFailExplicitly(string input, string message)
+    {
+        var exception = Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+        Assert.StartsWith(message, exception.Message);
+    }
+
+    [Fact]
+    public void TemplateContentFragmentCountsTowardParserNodeBudget()
+    {
+        Assert.Throws<HtmlLimitException>(() => Parse("<body><template></template>", new() { MaxNodes = 5 }));
+        var result = Parse("<body><template></template>", new() { MaxNodes = 6 });
+        Assert.IsType<DomTemplateElement>(Assert.Single(result.Document.Body!.ChildNodes));
+    }
+
+    [Fact]
+    public void TemplateContentScriptsDoNotInvokeCompletionCallback()
+    {
+        var observed = new List<string?>();
+        HtmlParser.Parse("<template><script>inert</script></template><script>ordinary</script>",
+            options: null, cancellationToken: TestContext.Current.CancellationToken, document: new(),
+            scriptCompleted: script => observed.Add(script.TextContent));
+
+        Assert.Equal(new[] { "ordinary" }, observed);
+    }
+
+    [Fact]
     public void BodyAndRootAttributesMergeWithoutOverwritingFirstValues()
     {
         var result = Parse("<html id=a><body id=b><html id=c lang=en><body id=d class=x>");
@@ -553,7 +710,6 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<template>x")]
     [InlineData("<svg><path>")]
     [InlineData("<math>x")]
     [InlineData("<form><div></form>x")]
