@@ -22,6 +22,17 @@ Auch `dotnet test VisualWeb.slnx --no-build`, Formatverifikation und
 nicht gepusht. Der WHATWG-URL-Support bleibt ein dokumentierter Teilumfang,
 keine Vollkonformitaetsbehauptung.
 
+**URL-Fortsetzung nach Legacy-Alias (2026-11-19; KP-511):** Der genehmigte
+Umfang fuer Core-URL und browserseitige `URL`/`URLSearchParams` einschliesslich
+interface-spezifischem Web IDL ist umgesetzt und validiert, aber kein
+Vollkonformitaetsnachweis. Der gezielte Folgecheck fand keinen neuen
+spec-/WPT-belegten Produktionsfehler. Der lokale URL-Algorithmus fuer Blob-
+Origins beschraenkt den Pfad-URL-Fallback explizit auf HTTP, HTTPS und FILE;
+das bestehende opaque Verhalten fuer FTP, WS und WSS ist daher kein Defekt.
+Als dokumentierte Restbereiche bleiben der Blob-URL-Store (File API) und
+breitere Dokument-URL-Integration (HTML/DOM); eine Erweiterung dorthin ist
+nicht durch die bisherige URL-Planfreigabe entschieden. Siehe Q-039.
+
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
 Produktionsabweichung: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen
@@ -2870,6 +2881,7 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-036 | Soll der gewaehlte Modulumfang Top-Level-await ausschliessen oder begrenzt asynchron auswerten? | Beantwortet: Nutzer revidiert den Ausschluss und waehlt begrenzte asynchrone Auswertung unter Readiness-/Taskbudget | Keine unbeschraenkte Promise-Wartezeit und keine Import-/Netzwerkberechtigung; Cancellation, Fehler und Fristen muessen explizit abgedeckt sein | Nutzerwahl `support-bounded-async`; [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt), [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen) |
 | Q-037 | Welcher CSS-Color-4-Gamut-Mapping-Algorithmus soll fuer die naechste sRGB-Ausgabe-Erweiterung gewaehlt werden? | Beantwortet: Nutzer waehlt Ray Trace | In Pass 1 auf aus-gamutige `color(display-p3 ...)`-Ergebnisse anwenden; andere Farbquellen bleiben unveraendert | ausdrueckliche Nutzerwahl „3“, 2026-11-15 12:21 Europe/Berlin; [CSS Color 4](../specs/cache/css-color.html#GMA-Raytrace); [KP-380](./Kontextprotokoll.md#kp-380---ray-trace-gamut-mapping-gewaehlt) |
 | Q-038 | Bedeutet „WHATWG URL vollstaendig“ die Core/.NET-Spezifikationsalgorithmen oder auch die browserseitige JavaScript-URL-/URLSearchParams-API mit Live-Linkage und Web-IDL-Verhalten? | Beantwortet: Nutzer genehmigte Core-Algorithmen sowie browserseitige URL-/URLSearchParams-Semantik und interface-spezifisches Web IDL | Allgemeine Web-IDL-Generierung bleibt ausgeschlossen; Umsetzung folgt dem genehmigten Sechs-Phasen-Plan | Nutzerbestaetigung 2026-11-18; [Plan](../plans/whatwg-url-completion-plan.md), [Core guide](../docs/core.md#url), [URL spec cache](../specs/cache/url.html), [KP-468](./Kontextprotokoll.md#kp-468---url-planumfang-genehmigt) |
+| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Offen: Der Folgecheck fand keinen konkreten URL-Standard-Produktionsfehler; beide Bereiche ueberschreiten den derzeit dokumentierten Teilumfang | Umfangserweiterung ausdruecklich bestaetigen oder eine konkrete URL-Spec/WPT-Abweichung benennen; bis dahin keine angrenzenden Standards stillschweigend implementieren | Nutzeranweisung „continue“ am 2026-11-19; aktueller Folgecheck KP-511, [URL-Plan](../plans/whatwg-url-completion-plan.md), [URL origin algorithm](../specs/cache/url.html#concept-url-origin), [Support-Inventar](../docs/standards.md#implemented-subsets) |
 
 Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
 festgehaltene Ausschluss von Top-Level-await ist ersetzt.

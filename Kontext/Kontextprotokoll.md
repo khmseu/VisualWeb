@@ -15276,3 +15276,32 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   KP-509 gelten fuer den committed Stand; der Pre-Commit-Hook formatierte
   Kontextprotokoll und Standardsinventar und meldete keine Probleme.
 - Quelle: lokales Git-Commit `83a42d3` und dessen Hook-Ausgabe.
+
+### KP-511 - URL-Folgecheck ohne naechste belegte Produktionsabweichung
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-510; Nutzerzeit 03:30 Europe/Berlin.
+- Nutzerangabe: „continue“ zum bestehenden WHATWG-URL-Auftrag; keine
+  ausdrueckliche Erweiterung des bereits genehmigten URL-/URLSearchParams-
+  Umfangs.
+- Belegt: Die aktuelle Projekt- und Standardsdokumentation fuehrt
+  `URL`/`URLSearchParams`, die relevante Web-IDL-Semantik und den Legacy-Alias
+  als implementiert. Die Core-Tests pinnen die URL-, Domain-, Setter- und
+  URLSearchParams-Vektoren; KP-507 dokumentiert den vorherigen vollstaendigen
+  Offline-Test-/Formatter-Lauf ohne neue Produktionsabweichung. Der aktuelle
+  Folgecheck fand ebenfalls keine konkrete spec-/WPT-belegte Abweichung.
+  Insbesondere bestaetigt die lokale Origin-Algorithmuspassage, dass der
+  `blob:`-Pfad-URL-Fallback auf HTTP, HTTPS und FILE beschraenkt ist; FTP/WS/
+  WSS-Blobpfade opaque zu behandeln ist daher kein Fehler.
+- Ableitung/Offener Umfang: Der Supportkatalog nennt Blob-URL-Store und
+  breitere Dokument-URL-Integration als nicht implementiert. Diese betreffen
+  File API bzw. HTML/DOM und sind keine nachgewiesenen Fehler der bereits
+  freigegebenen URL-Schnittstelle. Q-039 fragt, ob solche angrenzenden Bereiche
+  nun Teil des Auftrags werden sollen. Bis zur Klaerung oder einem konkreten
+  URL-Spec/WPT-Gegenbeleg wurde kein Code geaendert.
+- Quellen: [WHATWG URL origin algorithm](../specs/cache/url.html#concept-url-origin),
+  [Core origin implementation](../src/Core/Core.Url/BrowserUrl.cs),
+  [Core URL tests](../tests/Core.Tests/UrlTests.cs),
+  [URL support inventory](../docs/standards.md#implemented-subsets),
+  [approved URL plan](../plans/whatwg-url-completion-plan.md), KP-507,
+  KP-509 und der aktuelle Nutzerturn.
