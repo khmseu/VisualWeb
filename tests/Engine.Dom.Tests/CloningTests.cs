@@ -119,4 +119,31 @@ public sealed class CloningTests
         Assert.Equal(new[] { "template" }, checkedTexts);
         Assert.Single(source.Content.ChildNodes);
     }
+
+    [Fact]
+    public void DeepClone_template_cancels_before_preflighting_pending_content()
+    {
+        var document = new DomDocument();
+        var parent = document.CreateElement("div");
+        var source = Assert.IsType<DomTemplateElement>(document.CreateElement("template"));
+        parent.AppendChild(source);
+        var content = source.Content;
+        var child = document.CreateTextNode("source");
+        content.AppendChild(child);
+        var checkedTexts = new List<string>();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+
+        Assert.ThrowsAny<OperationCanceledException>(() => source.CloneNode(
+            deep: true, maxNodes: 3, maxTextCharacters: 10, maxAttributes: 0,
+            text => { checkedTexts.Add(text); cancellation.Cancel(); }, cancellation.Token));
+
+        Assert.Equal(new[] { "template" }, checkedTexts);
+        Assert.Same(source, Assert.Single(parent.ChildNodes));
+        Assert.Same(parent, source.ParentNode);
+        Assert.Empty(source.ChildNodes);
+        Assert.Same(content, source.Content);
+        Assert.Same(child, Assert.Single(content.ChildNodes));
+        Assert.Same(content, child.ParentNode);
+        Assert.Equal("source", child.Data);
+    }
 }

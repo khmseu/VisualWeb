@@ -111,6 +111,20 @@ public sealed class TreeTests
         Assert.Same(bodyParagraph, result.Document.GetElementById("outside"));
     }
 
+    [Fact]
+    public void TemplateContentElementHonorsExactParserDepthLimit()
+    {
+        const string input = "<body><template><p id=inside>content</p></template>";
+        Assert.Throws<HtmlLimitException>(() => Parse(input, new() { MaxDepth = 3 }));
+
+        var document = Parse(input, new() { MaxDepth = 4 }).Document;
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(document.Body!.ChildNodes));
+        var paragraph = Assert.IsType<DomElement>(Assert.Single(template.Content.ChildNodes));
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("content", paragraph.TextContent);
+        Assert.Same(template.Content, paragraph.ParentNode);
+    }
+
     [Theory]
     [InlineData("<!--hidden-->", typeof(DomComment))]
     [InlineData("<?build hidden?>", typeof(DomProcessingInstruction))]

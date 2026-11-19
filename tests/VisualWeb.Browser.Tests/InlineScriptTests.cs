@@ -64,6 +64,43 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task TemplateContentStylesAndScriptsRemainInertOnRetainedResize(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
+        var page = Page("""
+            <!doctype html><title>Original</title>
+            <style>body{margin:0;background-color:blue}</style>
+            <template>
+                <style>body{margin:0;background-color:red}</style>
+                <div id="hidden" hidden>not in the document tree</div>
+                <script>document.title='Template script ran';</script>
+            </template>
+            <script>
+                if(document.title!=='Original'||document.getElementById('hidden')!==null
+                    ||document.querySelectorAll('style').length!==1)
+                    throw Error('template content entered the document');
+                document.title='Template content stayed inert';
+            </script>
+            """);
+        var parsed = HtmlParser.Parse(page.Html, cancellationToken: Cancellation).Document;
+        Assert.Equal(["body{margin:0;background-color:blue}"],
+            StaticPageRenderer.CollectStyles(parsed, cancellationToken: Cancellation).Select(source => source.Text));
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+
+        Assert.Equal("Template content stayed inert", rendered.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, rendered.Frame.Pixels.Span[..4].ToArray());
+        renderer.CommitDocument(page.DocumentId);
+        var retained = await renderer.RenderRetainedAsync(page, new(25, 20, 1), Cancellation);
+        Assert.Equal(rendered.Title, retained.Title);
+        Assert.Equal(new byte[] { 255, 0, 0, 255 }, retained.Frame.Pixels.Span[..4].ToArray());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task AboutBlankDocumentBaseUriAndBaseHrefUseInheritedFallback(bool process)
     {
         using IPageRenderer renderer = process
