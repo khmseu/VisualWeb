@@ -2915,6 +2915,33 @@ Commit `ea43ce9` is pushed to `main`; Linux development (`44189271100`),
 Windows confinement (`44189271150`), CodeQL (`44189270313`) and Dev Environment
 Prebuilds (`44189269907`) all pass.
 
+**Next standards selection (2026-11-19):** The current support inventory ranks
+WHATWG URL (~80%) ahead of WHATWG Encoding (~55%). The tracked bounded URL API
+gaps have since been implemented; remaining URL omissions are broader
+integration or full-conformance work without a narrower actionable Missing
+item. Under the estimate-based priority rule, continue with the next-ranked
+Encoding gap: streaming GBK/gb18030 decoding.
+
+### Pass 11: incremental GBK/gb18030 TextDecoder
+
+The cached Encoding Standard (`checkedAt: 2026-11-07`) defines GBK decoding as
+the gb18030 decoder. `WebTextDecoder` now streams both labels through that
+state machine, preserving the first, second and third pending bytes across
+chunks, reprocessing invalid sequence bytes in order, and resetting after
+flush or fatal errors. ISO-2022-JP streaming, `TextDecoderStream` and
+JavaScript/Web IDL bindings remain unsupported. The Encoding estimate remains
+~55%; this bounded decoder addition does not warrant recalculating the coarse
+estimate.
+
+The 50 focused `WebTextDecoderTests` and all 4,236 Core tests pass in Debug;
+the Core suite also passes in Release. Debug and Release solution builds pass
+with zero warnings/errors, and format verification passes. The solution-wide
+test run encountered one unrelated Engine.Scripting deadline timeout in
+`UrlComponentSettersMatchPinnedControlCharacterWptCases`; the complete
+Engine.Scripting suite passed separately (399 tests), and the complete Browser
+suite passed (1,394 tests, two conditional CPU-pressure skips). No native
+platform smoke applies to this Core.Encoding change.
+
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,
    and font handling so pages parse and remain readable instead of failing on

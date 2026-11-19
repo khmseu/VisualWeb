@@ -209,74 +209,118 @@ internal static class LegacyDecoder
 
     private static string DecodeGb(ReadOnlySpan<byte> bytes, bool fatal)
     {
+        var first = 0;
+        var second = 0;
+        var third = 0;
+        return DecodeGbChunk(bytes, fatal, ref first, ref second, ref third, flush: true);
+    }
+
+    internal static bool IsGbEncoding(string name) => name is "GBK" or "gb18030";
+
+    internal static string DecodeGbChunk(ReadOnlySpan<byte> bytes, bool fatal, ref int first, ref int second,
+        ref int third, bool flush)
+    {
         var output = new StringBuilder();
-        for (var position = 0; position < bytes.Length;)
+        foreach (var value in bytes)
         {
-            var first = bytes[position++];
-            if (first < 0x80)
-            {
-                output.Append((char)first);
-                continue;
-            }
+            DecodeGbByte(value, fatal, ref first, ref second, ref third, output);
+        }
 
-            if (first == 0x80)
-            {
-                output.Append('\u20AC');
-                continue;
-            }
-
-            if (first == 0xFF || position == bytes.Length)
-            {
-                output.Append(WebEncoding.Error(fatal));
-                continue;
-            }
-
-            var second = bytes[position++];
-            if (second is >= 0x30 and <= 0x39)
-            {
-                if (position == bytes.Length)
-                {
-                    output.Append(WebEncoding.Error(fatal));
-                    break;
-                }
-
-                if (bytes[position] is < 0x81 or > 0xFE)
-                {
-                    position--;
-                    output.Append(WebEncoding.Error(fatal));
-                    continue;
-                }
-
-                var third = bytes[position++];
-                if (position == bytes.Length)
-                {
-                    output.Append(WebEncoding.Error(fatal));
-                    break;
-                }
-
-                if (bytes[position] is < 0x30 or > 0x39)
-                {
-                    position -= 2;
-                    output.Append(WebEncoding.Error(fatal));
-                    continue;
-                }
-
-                var fourth = bytes[position++];
-                var pointer = (first - 0x81) * 12600 + (second - 0x30) * 1260 + (third - 0x81) * 10 + fourth - 0x30;
-                output.Append(GbRangeCodePoint(pointer) is { } point ? char.ConvertFromUtf32(point) : WebEncoding.Error(fatal));
-                continue;
-            }
-
-            var mapped = second is >= 0x40 and <= 0x7E or >= 0x80 and <= 0xFE
-                ? Lookup("gb18030", (first - 0x81) * 190 + second - (second < 0x7F ? 0x40 : 0x41)) : null;
-            output.Append(mapped ?? WebEncoding.Error(fatal));
-            if (mapped is null && second < 0x80)
-            {
-                position--;
-            }
+        if (flush && (first != 0 || second != 0 || third != 0))
+        {
+            first = second = third = 0;
+            output.Append(WebEncoding.Error(fatal));
         }
 
         return output.ToString();
+    }
+
+    private static void DecodeGbByte(byte value, bool fatal, ref int first, ref int second, ref int third,
+        StringBuilder output)
+    {
+        if (third != 0)
+        {
+            if (value is < 0x30 or > 0x39)
+            {
+                var secondByte = (byte)second;
+                var thirdByte = (byte)third;
+                first = second = third = 0;
+                output.Append(WebEncoding.Error(fatal));
+                DecodeGbByte(secondByte, fatal, ref first, ref second, ref third, output);
+                DecodeGbByte(thirdByte, fatal, ref first, ref second, ref third, output);
+                DecodeGbByte(value, fatal, ref first, ref second, ref third, output);
+                return;
+            }
+
+            var pointer = (first - 0x81) * 12600 + (second - 0x30) * 1260
+                + (third - 0x81) * 10 + value - 0x30;
+            first = second = third = 0;
+            output.Append(GbRangeCodePoint(pointer) is { } codePoint
+                ? char.ConvertFromUtf32(codePoint) : WebEncoding.Error(fatal));
+            return;
+        }
+
+        if (second != 0)
+        {
+            if (value is >= 0x81 and <= 0xFE)
+            {
+                third = value;
+                return;
+            }
+
+            var secondByte = (byte)second;
+            first = second = 0;
+            output.Append(WebEncoding.Error(fatal));
+            DecodeGbByte(secondByte, fatal, ref first, ref second, ref third, output);
+            DecodeGbByte(value, fatal, ref first, ref second, ref third, output);
+            return;
+        }
+
+        if (first != 0)
+        {
+            if (value is >= 0x30 and <= 0x39)
+            {
+                second = value;
+                return;
+            }
+
+            var leading = first;
+            first = 0;
+            var offset = value < 0x7F ? 0x40 : 0x41;
+            var pointer = value is >= 0x40 and <= 0x7E or >= 0x80 and <= 0xFE
+                ? (leading - 0x81) * 190 + value - offset : -1;
+            var mapped = pointer < 0 ? null : Lookup("gb18030", pointer);
+            if (mapped is not null)
+            {
+                output.Append(mapped);
+                return;
+            }
+
+            output.Append(WebEncoding.Error(fatal));
+            if (value < 0x80)
+            {
+                DecodeGbByte(value, fatal, ref first, ref second, ref third, output);
+            }
+
+            return;
+        }
+
+        if (value < 0x80)
+        {
+            output.Append((char)value);
+        }
+        else if (value == 0x80)
+        {
+            output.Append('\u20AC');
+        }
+        else if (value is >= 0x81 and <= 0xFE)
+        {
+            first = value;
+        }
+        else
+        {
+            output.Append(WebEncoding.Error(fatal));
+        }
     }
 
     private static int? GbRangeCodePoint(int pointer)

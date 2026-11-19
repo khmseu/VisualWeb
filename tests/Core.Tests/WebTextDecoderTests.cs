@@ -106,13 +106,49 @@ public sealed class WebTextDecoderTests
     public void StreamingUtf8RejectsFatalErrorsAndUnsupportedEncodings()
     {
         var fatalDecoder = new WebTextDecoder(fatal: true);
-        var multiByteDecoder = new WebTextDecoder("gbk");
+        var multiByteDecoder = new WebTextDecoder("iso-2022-jp");
 
         Assert.Equal("", fatalDecoder.Decode([0xE2], stream: true));
         Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
         Assert.Equal("A", fatalDecoder.Decode([0x41]));
         Assert.Throws<NotSupportedException>(() => multiByteDecoder.Decode([0x41], stream: true));
         Assert.Equal("A", multiByteDecoder.Decode([0x41]));
+    }
+
+    [Theory]
+    [InlineData("gbk")]
+    [InlineData("gb18030")]
+    public void StreamingGbEncodingsRetainPairAndFourByteState(string label)
+    {
+        var decoder = new WebTextDecoder(label);
+
+        Assert.Equal("", decoder.Decode([0xD6], stream: true));
+        Assert.Equal("中", decoder.Decode([0xD0], stream: true));
+        Assert.Equal("", decoder.Decode([0x94, 0x39, 0xFC], stream: true));
+        Assert.Equal("\U0001F600", decoder.Decode([0x36], stream: true));
+        Assert.Equal("", decoder.Decode());
+    }
+
+    [Fact]
+    public void StreamingGbDecoderReprocessesInvalidBytesAndFlushesPendingState()
+    {
+        var decoder = new WebTextDecoder("gb18030");
+
+        Assert.Equal("", decoder.Decode([0x81, 0x30, 0x81], stream: true));
+        Assert.Equal("\uFFFD0\uFFFD ", decoder.Decode([0x20], stream: true));
+        Assert.Equal("", decoder.Decode([0x81, 0x30, 0x81], stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode());
+        Assert.Equal("A", decoder.Decode([0x41]));
+    }
+
+    [Fact]
+    public void StreamingGbDecoderFatalErrorsResetState()
+    {
+        var decoder = new WebTextDecoder("gb18030", fatal: true);
+
+        Assert.Equal("", decoder.Decode([0x81, 0x30, 0x81], stream: true));
+        Assert.Throws<WebDecodingException>(() => decoder.Decode([0x20], stream: true));
+        Assert.Equal("A", decoder.Decode([0x41]));
     }
 
     [Fact]
