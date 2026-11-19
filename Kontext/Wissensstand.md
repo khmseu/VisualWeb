@@ -144,8 +144,22 @@ Reload, Traversal und Same-Document-History behalten den Snapshot; UI-erzeugte
 Blanks behalten opaque Origin und lokalen Fallback ohne Vererbung. Siehe
 [KP-520](./Kontextprotokoll.md#kp-520---inherited-aboutblank-basis-url). Die
 Implementierung ist lokal vollvalidiert. Feature-Commit `96d4305` enthaelt Code,
-Tests und Leitfaeden; er wurde nicht gepusht. Der Kontextnachtrag wird separat
-committet.
+Tests und Leitfaeden; Kontext-Commit `ef4d3d9` enthaelt den Kontextnachtrag.
+Beide Commits wurden nicht gepusht.
+
+**GBK/gb18030-Streaming (2026-11-19; KP-521):** `WebTextDecoder` stuetzt jetzt
+inkrementelles GBK/gb18030-Decoding gemaess dem gemeinsamen gb18030-Decoder,
+einschliesslich 4-Byte-Sequenzen, Fehler-Reconsume, Flush und fatalem Reset.
+Das folgt der Missing-Prioritaetsregel: Der begrenzte WHATWG-URL-Arbeitsvorrat
+war bereits umgesetzt; Encoding (~55%) ist die naechste actionable Luecke nach
+URL (~80%). Die grobe Encoding-Schaetzung bleibt unveraendert. Alle 4.236
+Core-Tests bestehen in Debug und Release; Debug-/Release-Solution-Build und
+Formatverifikation bestehen. Feature-Commit `b76f7e9` enthaelt Code, Tests und
+Leitfaeden; er wurde nicht gepusht. Ein paralleler `dotnet test VisualWeb.slnx
+--no-build`-Lauf hatte einen Deadline-Timeout im unveraenderten
+`UrlComponentSettersMatchPinnedControlCharacterWptCases`; isoliert bestand der
+Test und die gesamte Engine.Scripting-Suite (399). Browser (1.394) bestand mit
+zwei bedingten CPU-pressure-Skips. Siehe [KP-521](./Kontextprotokoll.md#kp-521---incremental-gbkgb18030-textdecoder).
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue

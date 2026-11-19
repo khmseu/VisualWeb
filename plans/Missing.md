@@ -2940,7 +2940,8 @@ test run encountered one unrelated Engine.Scripting deadline timeout in
 `UrlComponentSettersMatchPinnedControlCharacterWptCases`; the complete
 Engine.Scripting suite passed separately (399 tests), and the complete Browser
 suite passed (1,394 tests, two conditional CPU-pressure skips). No native
-platform smoke applies to this Core.Encoding change.
+platform smoke applies to this Core.Encoding change. Feature commit `b76f7e9`
+is local and has not been pushed.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

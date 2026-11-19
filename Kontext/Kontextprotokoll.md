@@ -15605,7 +15605,7 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   nach deren Ergaenzung bestanden fokussierte Prozess-/Timingtests und der
   vollstaendige Browser- und Solution-Lauf.
 - Status: Feature-Commit `96d4305` enthaelt Code, Tests und Leitfaeden; der
-  Kontextnachtrag wird separat committet. Kein Push.
+  Kontextnachtrag ist in Kontext-Commit `ef4d3d9` enthalten. Kein Push.
 - Standardsumfang: Die `html`-/`dom`-Beschreibungen in
   `docs/standards.md` und die PageRendering-, Browser-, HTML/DOM-, Scripting-
   sowie IPC-Guides wurden aktualisiert; grobe Prozentheuristiken blieben
@@ -15620,3 +15620,43 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [NavigationHistory](../src/Apps/VisualWeb.Browser/BrowserSession.cs),
   [RendererProtocol](../src/Ipc/Ipc.Contracts/RendererProtocol.cs) und die
   fokussierten Browser-/IPC-Tests.
+
+### KP-521 - Incremental GBK/gb18030-TextDecoder
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Fortsetzung des laufenden Implementierungsauftrags; die
+  konkrete Decoder-Auswahl wurde nicht separat vom Nutzer benannt.
+- Ableitung: Der aktuelle Supportstatus nennt WHATWG URL mit ~80% und WHATWG
+  Encoding mit ~55%. Die bereits dokumentierten, begrenzten URL-Core- und
+  Binding-Luecken wurden implementiert; im Missing-Tracker war kein kleinerer
+  offener URL-Punkt erkennbar. Daher wurde nach dessen Prioritaetsregel die
+  naechste Encoding-Luecke gewaehlt: GBK/gb18030-Streaming.
+- Belegte Spezifikation: Der lokale Encoding-Standard setzt den GBK-Decoder mit
+  dem gb18030-Decoder gleich. Der Decoder haelt bis zu drei Bytes Zustand und
+  gibt bei Fehlern bestimmte Bytes in die Eingabewarteschlange zurueck. Der
+  Manifesteintrag ist am 2026-11-07 geprueft worden, also innerhalb des
+  30-Tage-Fensters.
+- Umsetzung: `WebTextDecoder` akzeptiert Streaming fuer beide Labels und
+  bewahrt GB-Decoderzustand ueber Chunks. Ungueltige Sequenzen werden in
+  Spezifikationsreihenfolge erneut verarbeitet; Flush und fataler Fehler
+  setzen den Streamzustand zurueck. ISO-2022-JP, `TextDecoderStream` und
+  JavaScript/Web-IDL-Bindings bleiben ausstehend.
+- Verifikation: 50 fokussierte Decoderfaelle und alle 4.236 Core-Tests in Debug
+  bestanden; Core-Tests auch in Release bestanden. Debug-/Release-Solution-
+  Builds ohne Warnungen/Fehler, Formatverifikation bestanden. Der
+  Solution-Testlauf hatte einen Timeout in einem unveraenderten
+  Engine.Scripting-URL-Setter-Test; der einzelne Test und danach die gesamte
+  Engine.Scripting-Suite (399) bestanden isoliert. Die Browser-Suite bestand
+  mit 1.394 Tests und zwei bedingten CPU-pressure-Skips. Kein Native-Smoke ist
+  fuer Core.Encoding anwendbar.
+- Standardsumfang: Die Encoding-Zeile in `docs/standards.md` nennt jetzt
+  GBK/gb18030-Streaming. Die grobe ~55%-Heuristik blieb unveraendert.
+- Quellen: lokale
+  [GBK-Decoderdefinition](../specs/cache/encoding.html#gbk-decoder),
+  [gb18030-Decoder](../specs/cache/encoding.html#gb18030-decoder),
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs),
+  [LegacyDecoder](../src/Core/Core.Encoding/LegacyDecoder.cs),
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs) und
+  [Missing priority](../plans/Missing.md#recommended-priority).
+- Status: Feature-Commit `b76f7e9` enthaelt Code, Tests, Tracker und Leitfaeden;
+  der Kontextnachtrag wird separat committet. Kein Push.
