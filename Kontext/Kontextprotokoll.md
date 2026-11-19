@@ -15305,3 +15305,58 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [URL support inventory](../docs/standards.md#implemented-subsets),
   [approved URL plan](../plans/whatwg-url-completion-plan.md), KP-507,
   KP-509 und der aktuelle Nutzerturn.
+
+### KP-512 - Audit der Implemented-subsets-Eintraege
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Nutzerauftrag zur Pruefung der Standardsinventarzeilen
+  132-149; genaue Uhrzeit unbekannt.
+- Nutzerangabe: Zuerst pruefen, ob Eintraege unter „Implemented subsets“,
+  einschliesslich Prozentwerten, angepasst werden muessen.
+- Belegt: Die URL-, Unicode-IDNA/Bidi-, Encoding-, Fetch-, Cookie-, HSTS-,
+  Upgrade-Insecure-Requests-, HTML-, DOM-, Pointer-Events-, ECMAScript-,
+  Web-IDL- und UAX-14-Zeilen wurden gegen die jeweils verlinkten aktuellen
+  Guides geprueft. Die Umfaenge stimmen mit den dokumentierten Implementierungen
+  und Grenzen ueberein. Insbesondere beschreibt der URL-Eintrag bereits den
+  minimalen `window`-/`webkitURL`-Alias; die Encoding-Zeile nennt die
+  implementierten Streaming-Decoder; die Networking- und HTML-/DOM-Zeilen
+  spiegeln ihre expliziten Policies und Teilalgorithmen wider.
+- Prozentwerte: Sie sind im Inventar ausdruecklich grobe Prioritaetsheuristiken,
+  keine Konformitaetsmessung. Die Pruefung fand keine neue quantifizierbare
+  Abdeckung oder standardisierte Metrik, die eine Zahlenaenderung rechtfertigt.
+  Alle Werte, auch WHATWG URL ~80%, bleiben daher unveraendert.
+- Ergebnis: `docs/standards.md` wurde nicht geaendert; es wurde kein
+  Widerspruch zwischen den geprueften Eintraegen und den owning guides
+  festgestellt.
+- Quellen: [Standards inventory](../docs/standards.md#implemented-subsets),
+  [Core](../docs/core.md), [Networking](../docs/networking.md),
+  [HTML/DOM](../docs/html-dom.md), [CSS](../docs/css.md),
+  [Text/layout](../docs/text-layout.md), [Scripting](../docs/scripting.md),
+  [Browser shell](../docs/browser-shell.md) und aktueller Nutzerturn.
+
+### KP-513 - Readonly Document-URL-Attribute fuer Page-Scripts
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Nach der Pruefung von `Implemented subsets` sollen als
+  Naechstes HTML/DOM-bezogene Aenderungen erfolgen.
+- Abgrenzung/Umsetzung: Der erste Teil bindet im explizit opt-in-faehigen
+  PageRendering-Host die finale `LoadedPage.Url` an readonly
+  `document.URL` und `document.documentURI`. Andere Hosts ohne URL bleiben
+  unveraendert. `Node.baseURI`, frozen/dynamische `<base>`-Semantik und
+  HTMLAnchorElement/HTMLAreaElement-URL-Reflection wurden bewusst nicht
+  approximiert; sie bleiben Folgeumfang. Der Blob-URL-Store wurde nicht
+  gewaehlt. Die DOM-Umfangsbeschreibung ist aktualisiert; die ungefaehre
+  Prozentheuristik blieb unveraendert.
+- Verifikation: Die neue Browser-Regression schlug vor der Implementierung
+  mit `false` fehl und besteht danach. Die 393 Engine.Scripting- und 1.376
+  VisualWeb.Browser-Tests bestehen; zwei bedingte CPU-Druckfaelle melden
+  Umgebungs-Skips. `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen/
+  Fehlern, `dotnet test VisualWeb.slnx --no-build` besteht fuer alle
+  Testprojekte, und Formatverifikation besteht.
+- Quellen: aktuelle Nutzeranweisung und vorhandene
+  [DOM-URL-Attribute](../specs/cache/dom.html#dom-document-url),
+  [HTML-Basis-URL-Regeln](../specs/cache/html.html#document-base-urls),
+  [V8ScriptHost](../src/Engine/Engine.Scripting/V8ScriptHost.cs),
+  [InlinePageScripts](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [HTML/DOM-Leitfaden](../docs/html-dom.md) und
+  [Scripting-Leitfaden](../docs/scripting.md).

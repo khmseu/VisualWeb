@@ -1,3 +1,4 @@
+using VisualWeb.Core.Url;
 using VisualWeb.Engine.Dom;
 using Xunit;
 
@@ -38,6 +39,26 @@ public sealed class DomBindingTests
         Assert.Equal("native update", host.Evaluate("document.title", Cancellation).Text);
         Assert.Equal("native text", host.Evaluate("child.textContent", Cancellation).Text);
     }
+
+    [Fact]
+    public void DocumentUrlPropertiesAreReadonlyAndBoundOnlyWhenAUrlIsProvided()
+    {
+        const string url = "https://example.test/path?query=value#section";
+        using var host = new V8ScriptHost(document: Document(), documentUrl: BrowserUrl.Parse(url));
+
+        Assert.True(host.Evaluate("document.URL===document.documentURI&&document.URL==='" + url + "'", Cancellation).Boolean);
+        Assert.Equal(ScriptValueKind.String, host.Evaluate("document.URL", Cancellation).Kind);
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("'use strict'; document.URL = 'https://changed.test/';", Cancellation));
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic(
+            "Object.getOwnPropertyDescriptor(document, 'documentURI').get.call({})", Cancellation));
+        Assert.Equal(url, host.Evaluate("document.documentURI", Cancellation).Text);
+
+        using var unbound = new V8ScriptHost(document: Document());
+        Assert.Equal("undefined", unbound.Evaluate("typeof document.URL", Cancellation).Text);
+        Assert.Equal("undefined", unbound.Evaluate("typeof document.documentURI", Cancellation).Text);
+        Assert.Throws<ArgumentException>(() => new V8ScriptHost(documentUrl: BrowserUrl.Parse(url)));
+    }
+
     [Fact]
     public void RemovedNodesRemainLiveButLookupUsesConnectedTreeOrder()
     {

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.JavaScript;
 using Microsoft.ClearScript.V8;
+using VisualWeb.Core.Url;
 using VisualWeb.Engine.Dom;
 
 namespace VisualWeb.Engine.Scripting;
@@ -48,13 +49,21 @@ public sealed class V8ScriptHost : IDisposable
     private bool poisoned;
     private bool disposed;
 
+    /// <summary>Creates a bounded V8 host with optional document and page globals.</summary>
+    /// <param name="documentUrl">The associated loaded-page URL exposed by the read-only Document URL attributes.</param>
+    /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-document-url">Document.URL</see> and
+    /// <see href="https://dom.spec.whatwg.org/#dom-document-documenturi">Document.documentURI</see>.
+    /// Local spec ID: dom.</remarks>
     public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false,
-        bool enableEvents = false, bool enableDocumentLifecycle = false, bool enableWindow = false)
+        bool enableEvents = false, bool enableDocumentLifecycle = false, bool enableWindow = false,
+        BrowserUrl? documentUrl = null)
     {
         if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
         { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }
         if (enableWindow && document is null)
         { throw new ArgumentException("Window globals require a bound document."); }
+        if (documentUrl is not null && document is null)
+        { throw new ArgumentException("A document URL requires a bound document.", nameof(documentUrl)); }
         documentLifecycle = enableDocumentLifecycle;
         urls = new UrlBindings();
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
@@ -110,7 +119,7 @@ public sealed class V8ScriptHost : IDisposable
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 using var installDom = (ScriptObject)engine.Evaluate(DomBindings.Bootstrap);
                 using var installClasses = (ScriptObject)engine.Evaluate(ClassTokenBindings.Bootstrap);
-                wrapNode = installDom.InvokeAsFunction(events, documentLifecycle, installClasses) as ScriptObject
+                wrapNode = installDom.InvokeAsFunction(events, documentLifecycle, installClasses, documentUrl?.Href) as ScriptObject
                     ?? throw new InvalidOperationException("DOM bootstrap did not return its private wrapper lookup.");
             }
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }

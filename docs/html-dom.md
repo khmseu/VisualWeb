@@ -193,6 +193,10 @@ browser-brokered external classics execute in parser order before parsing
 continues, so later input is not yet in the DOM. This is a finite subset, not
 the complete HTML script preparation, render-blocking stylesheet, scheduling
 or error-reporting algorithms; without opt-in, scripts remain inert.
+Loaded-page script hosts also expose readonly `document.URL` and
+`document.documentURI`, both serialized from the final page URL. This does not
+implement `Node.baseURI`, dynamic document-base URL behavior, or HTML anchor and
+area URL reflection.
 Phase 11w queues inline `type="module"` sources at the same parser boundary,
 then executes them in source order after parsing and after the `interactive`
 readiness transition, before `DOMContentLoaded`. Top-level `await` must settle

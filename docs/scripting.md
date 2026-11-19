@@ -452,8 +452,15 @@ Web IDL sequence conversion. Each accepted constructor pair converts up to
 reset per host execution.
 JavaScript conversion hooks run under the normal host deadline and cancellation.
 URL support does not enable page-script execution, add network access, or
-change the existing explicit inline-script policy. Broader URL/Web IDL coverage,
-automatic document URL integration and generated Web IDL remain deferred.
+change the existing explicit inline-script policy. In explicitly opted-in
+PageRendering hosts for loaded pages, readonly `document.URL` and
+`document.documentURI` expose the final page URL; hosts without an associated
+page URL omit these attributes. This does not implement `Node.baseURI`, dynamic
+HTML document-base URL behavior, HTML anchor/area URL reflection, broader
+URL/Web IDL coverage or generated Web IDL
+([DOM `Document.URL`](https://dom.spec.whatwg.org/#dom-document-url),
+[DOM `Document.documentURI`](https://dom.spec.whatwg.org/#dom-document-documenturi);
+local spec ID `dom`).
 PageRendering's explicitly opted-in page-script hosts enable a minimal Window
 global: `window` is the same object as `globalThis`, and `webkitURL` references
 the `URL` constructor as required by the URL IDL's `LegacyWindowAlias`.

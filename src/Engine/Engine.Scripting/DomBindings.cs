@@ -30,6 +30,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-isequalnode">isEqualNode</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-nodename">nodeName</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-ownerdocument">ownerDocument</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-document-url">Document.URL</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-document-documenturi">Document.documentURI</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-tagname">Element names</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-getattributenames">attribute name snapshots</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-hasattributes">attribute presence</see>,
@@ -640,7 +642,7 @@ internal sealed class DomBindings : IDisposable
     }
 
     internal const string Bootstrap = """
-        ((events, lifecycle, installClasses) => {
+        ((events, lifecycle, installClasses, documentUrl) => {
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
@@ -987,6 +989,12 @@ internal sealed class DomBindings : IDisposable
                 get() { documentBrand(this); return call('title-get', 0); },
                 set(value) { documentBrand(this); call('title-set', 0, `${value}`); }
             });
+            if (documentUrl !== null) {
+                for (const property of ['URL', 'documentURI']) define(document, property, {
+                    enumerable: true,
+                    get() { documentBrand(this); return documentUrl; }
+                });
+            }
             define(document, 'getElementById', {
                 enumerable: true,
                 value: function(id) {

@@ -29,9 +29,27 @@ Vollkonformitaetsnachweis. Der gezielte Folgecheck fand keinen neuen
 spec-/WPT-belegten Produktionsfehler. Der lokale URL-Algorithmus fuer Blob-
 Origins beschraenkt den Pfad-URL-Fallback explizit auf HTTP, HTTPS und FILE;
 das bestehende opaque Verhalten fuer FTP, WS und WSS ist daher kein Defekt.
-Als dokumentierte Restbereiche bleiben der Blob-URL-Store (File API) und
-breitere Dokument-URL-Integration (HTML/DOM); eine Erweiterung dorthin ist
-nicht durch die bisherige URL-Planfreigabe entschieden. Siehe Q-039.
+Als dokumentierte Restbereiche bleiben der Blob-URL-Store (File API) sowie
+`Node.baseURI`, dynamische Dokument-Basis-URL-/`<base>`-Semantik und HTML-
+Anchor/Area-URL-Integration. Der Nutzer waehlte HTML/DOM-bezogene Folgearbeit;
+der erste kleine Schritt ist in KP-513 festgehalten. Siehe Q-039.
+
+**Standardsinventar-Pruefung (2026-11-19; KP-512):** Die Eintraege unter
+„Implemented subsets“ wurden gegen die aktuellen Core-, Networking-, HTML/DOM-,
+CSS-, Text/Layout-, Scripting- und Browser-Shell-Leitfaeden geprueft. In den
+beschriebenen Umfaengen wurde kein veralteter Implementierungsanspruch
+festgestellt; daher bleibt `docs/standards.md` unveraendert. Auch die groben
+Prozentwerte wurden beibehalten: Der Audit lieferte keine standardisierte
+Messmethode oder neue quantifizierbare Evidenz fuer eine Neuberechnung. Der
+URL-Legacy-Alias aus `83a42d3` ist bereits korrekt im URL-Eintrag enthalten.
+
+**DOM-Dokument-URL (2026-11-19; KP-513):** Opt-in PageRendering-Script-
+Hosts erhalten jetzt die finale `LoadedPage.Url` als readonly
+`document.URL` und `document.documentURI`. Plain Hosts ohne gebundene URL
+bleiben unveraendert. `Node.baseURI`, HTML-`<base>`-Aufloesung und
+Anchor/Area-URL-Reflection sind nicht Teil dieses Inkrements. Die
+`dom`-Scopebeschreibung wurde angepasst; die grobe Prozentheuristik blieb
+unveraendert.
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
@@ -2881,7 +2899,7 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-036 | Soll der gewaehlte Modulumfang Top-Level-await ausschliessen oder begrenzt asynchron auswerten? | Beantwortet: Nutzer revidiert den Ausschluss und waehlt begrenzte asynchrone Auswertung unter Readiness-/Taskbudget | Keine unbeschraenkte Promise-Wartezeit und keine Import-/Netzwerkberechtigung; Cancellation, Fehler und Fristen muessen explizit abgedeckt sein | Nutzerwahl `support-bounded-async`; [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt), [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen) |
 | Q-037 | Welcher CSS-Color-4-Gamut-Mapping-Algorithmus soll fuer die naechste sRGB-Ausgabe-Erweiterung gewaehlt werden? | Beantwortet: Nutzer waehlt Ray Trace | In Pass 1 auf aus-gamutige `color(display-p3 ...)`-Ergebnisse anwenden; andere Farbquellen bleiben unveraendert | ausdrueckliche Nutzerwahl „3“, 2026-11-15 12:21 Europe/Berlin; [CSS Color 4](../specs/cache/css-color.html#GMA-Raytrace); [KP-380](./Kontextprotokoll.md#kp-380---ray-trace-gamut-mapping-gewaehlt) |
 | Q-038 | Bedeutet „WHATWG URL vollstaendig“ die Core/.NET-Spezifikationsalgorithmen oder auch die browserseitige JavaScript-URL-/URLSearchParams-API mit Live-Linkage und Web-IDL-Verhalten? | Beantwortet: Nutzer genehmigte Core-Algorithmen sowie browserseitige URL-/URLSearchParams-Semantik und interface-spezifisches Web IDL | Allgemeine Web-IDL-Generierung bleibt ausgeschlossen; Umsetzung folgt dem genehmigten Sechs-Phasen-Plan | Nutzerbestaetigung 2026-11-18; [Plan](../plans/whatwg-url-completion-plan.md), [Core guide](../docs/core.md#url), [URL spec cache](../specs/cache/url.html), [KP-468](./Kontextprotokoll.md#kp-468---url-planumfang-genehmigt) |
-| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Offen: Der Folgecheck fand keinen konkreten URL-Standard-Produktionsfehler; beide Bereiche ueberschreiten den derzeit dokumentierten Teilumfang | Umfangserweiterung ausdruecklich bestaetigen oder eine konkrete URL-Spec/WPT-Abweichung benennen; bis dahin keine angrenzenden Standards stillschweigend implementieren | Nutzeranweisung „continue“ am 2026-11-19; aktueller Folgecheck KP-511, [URL-Plan](../plans/whatwg-url-completion-plan.md), [URL origin algorithm](../specs/cache/url.html#concept-url-origin), [Support-Inventar](../docs/standards.md#implemented-subsets) |
+| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Der erste Schritt bindet readonly `document.URL`/`document.documentURI` in PageRendering ein; `Node.baseURI` und dynamische `<base>`-Semantik bleiben offen | Weitere HTML/DOM-Integration einzeln abgrenzen; keine Vollintegration oder Prozentsteigerung aus diesem ersten Teilumfang ableiten | Nutzeranweisung „let's do the html/dom related changes next“; KP-513, [HTML/DOM](../docs/html-dom.md), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Support-Inventar](../docs/standards.md#implemented-subsets) |
 
 Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
 festgehaltene Ausschluss von Top-Level-await ist ersetzt.

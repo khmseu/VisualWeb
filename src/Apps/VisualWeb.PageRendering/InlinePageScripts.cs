@@ -84,7 +84,7 @@ public static class InlinePageScripts
     {
         var document = new DomDocument();
         var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true,
-            enableDocumentLifecycle: true, enableWindow: true);
+            enableDocumentLifecycle: true, enableWindow: true, documentUrl: pageUrl);
         HtmlParseResult? parsed = null;
         var scripts = 0;
         try

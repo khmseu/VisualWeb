@@ -1015,6 +1015,20 @@ public sealed class InlineScriptTests
     }
 
     [Fact]
+    public void OptedInPageScriptDocumentUrlPropertiesExposeFinalPageUrl()
+    {
+        const string url = "https://example.test/final/page?query=value#section";
+        using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse(url),
+            $"<!doctype html><title>before</title><script>document.title=String(document.URL==='{url}'&&document.documentURI===document.URL)</script>",
+            200, []);
+
+        var rendered = renderer.Render(page, Viewport, Cancellation);
+
+        Assert.Equal("true", rendered.Title);
+    }
+
+    [Fact]
     public async Task ParserBlockingScriptResolvesAgainstTheBaseAvailableAtItsPosition()
     {
         using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
