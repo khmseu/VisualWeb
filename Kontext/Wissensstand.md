@@ -18,9 +18,9 @@ erforderliche Paarlaenge von zwei validiert; nur die ersten zwei konvertierten
 Werte werden gespeichert. Commit `6550f5e` (`fix(engine.scripting): convert
 URL sequence pairs fully`) ist lokal committed. Engine.Scripting.Tests (390),
 Solution-Build (0 Warnungen/Fehler), Solution-Volltest (zwei bedingte
-CPU-Druck-Skips) und Formatverifikation bestehen. `main` liegt drei Commits vor
-`origin/main`; kein Push in diesem Arbeitsschritt. Vollkonformitaet bleibt
-unbelegt.
+CPU-Druck-Skips) und Formatverifikation bestehen. Der Kontextnachtrag ist als
+`843c9ad` committed. `main` liegt vier Commits vor `origin/main`; kein Push in
+diesem Arbeitsschritt. Vollkonformitaet bleibt unbelegt.
 
 **Fortsetzung (2026-11-19; KP-502):** Beim weiteren URL-Web-IDL-Abgleich
 wurde festgestellt, dass `URL.prototype` und `URLSearchParams.prototype` an den
