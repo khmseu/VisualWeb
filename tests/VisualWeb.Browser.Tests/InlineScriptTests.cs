@@ -1051,6 +1051,38 @@ public sealed class InlineScriptTests
         Assert.Equal("true", rendered.Title);
     }
 
+    [Fact]
+    public void OptedInPageScriptAnchorAndAreaHrefUseTheLiveDocumentBase()
+    {
+        using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/dir/page"), """
+            <!doctype html><head><base href="/first/sub/"></head><body>
+            <a id="link" href="../start">link</a>
+            <area id="area">
+            <script>
+            const link = document.getElementById('link');
+            const area = document.getElementById('area');
+            const initial = link.href === 'https://example.test/first/start' &&
+                link.toString() === link.href && area.href === '';
+            document.querySelector('base').setAttribute('href', '/changed/');
+            const updated = link.href === 'https://example.test/start';
+            link.href = '../next';
+            const reflected = link.getAttribute('href') === '../next';
+            link.protocol = 'http:';
+            link.port = '8080';
+            link.pathname = '/updated path';
+            link.search = '?q=1';
+            link.hash = '#done';
+            document.title = String(initial && updated && reflected &&
+                link.href === 'http://example.test:8080/updated%20path?q=1#done');
+            </script></body>
+            """, 200, []);
+
+        var rendered = renderer.Render(page, Viewport, Cancellation);
+
+        Assert.Equal("true", rendered.Title);
+    }
+
     [Theory]
     [InlineData("", null)]
     [InlineData("<base href=\"http://[\"><base href=\"/later/\">", null)]

@@ -460,12 +460,19 @@ recomputed on access from the current first HTML `<base href>` in tree order
 and the browser-approved base URL. A changed `href` that does not match an
 approved base falls back to the final page URL.
 Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle,
-HTML anchor/area URL reflection, broader URL/Web IDL coverage and generated Web IDL
-remain deferred. References:
+other link properties, broader URL/Web IDL coverage and generated Web IDL
+remain deferred. In opted-in loaded-page hosts, `<a>` and `<area>` expose the
+`href` stringifier, `toString()`, and the URL components `origin`, `protocol`,
+`username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, and
+`hash`. URL getters resolve against the current bounded document base URL;
+component setters use Core URL component mutation and reflect the serialized
+URL to `href`. `href` writes reflect a `USVString`; `origin` is readonly.
+References:
 [DOM `Document.URL`](https://dom.spec.whatwg.org/#dom-document-url),
 [DOM `Document.documentURI`](https://dom.spec.whatwg.org/#dom-document-documenturi),
 [DOM `Node.baseURI`](https://dom.spec.whatwg.org/#dom-node-baseuri),
-[HTML document base URLs](https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls);
+[HTML document base URLs](https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls),
+[HTML hyperlink URL API](https://html.spec.whatwg.org/multipage/links.html#api-for-hyperlink-elements);
 local spec IDs `dom` and `html`.
 PageRendering's explicitly opted-in page-script hosts enable a minimal Window
 global: `window` is the same object as `globalThis`, and `webkitURL` references

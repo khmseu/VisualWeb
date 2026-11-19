@@ -15396,3 +15396,43 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [InlinePageScripts](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
   [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
   [Scripting](../docs/scripting.md) und [Standardsinventar](../docs/standards.md).
+
+### KP-515 - Begrenzte Hyperlink-URL-API fuer a und area
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Die gewaehlte Arbeitsrichtung bleibt HTML/DOM-bezogene
+  URL-Integration. Die Auswahl der naechsten konkreten API ist eine Ableitung
+  aus Q-039 und den lokal gecachten HTML-Algorithmen, keine ausdrueckliche
+  Nutzerfestlegung auf ausschliesslich dieses Feature.
+- Belegte Grundlage: HTML definiert fuer `a`/`area` die Stringifier-
+  Eigenschaften `href`/`toString()` sowie `origin`, `protocol`, `username`,
+  `password`, `host`, `hostname`, `port`, `pathname`, `search` und `hash`.
+  Core.Url stellt die mutierbaren URL-Komponenten bereits bereit.
+- Umsetzung: Nur in opt-in PageRendering-Hosts mit geladener Dokument-URL
+  erhalten `a`-/`area`-Wrappers ein eigenes gebrandetes Hyperlink-Prototyp.
+  `href` wird gegen die begrenzte aktuelle Dokumentbasis geparst; bei
+  Parsefehlern bleibt der Attributrohwert sichtbar. Komponenten lesen den
+  geparsten URL-Wert; ihre Setter verwenden Core-Komponentenmutation und
+  reflektieren die serialisierte URL im `href`-Attribut. `href` und die
+  Komponentensetter erhalten Web-IDL-USVString-Behandlung; `origin` ist
+  readonly. Andere Elemente erhalten diese Properties nicht.
+- Abgrenzung: Das deckt nicht das vollstaendige HTML-URL-Set-the-url-/
+  Insertion-/Frozen-base-Modell, inherited `about:blank`/`srcdoc`, sonstige
+  Linkattribute oder generiertes Web IDL ab. Die DOM-Basis bleibt die bereits
+  dokumentierte dynamische, browserpolicy-beschraenkte Teilimplementierung.
+  Die Prozentwerte `html` (~20%) und `dom` (~20%) bleiben mangels
+  quantifizierbarer Konformitaetsmetrik unveraendert.
+- Verifikation vor Commit: `dotnet build VisualWeb.slnx` besteht mit 0
+  Warnungen/Fehlern; Engine.Scripting besteht mit 395 Tests; VisualWeb.Browser
+  besteht mit 1.381 Tests, wobei zwei CPU-pressure-Faelle als uebersprungen
+  gemeldet werden; `dotnet test VisualWeb.slnx --no-build`,
+  `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
+  Hyperlink-Test bestand ebenfalls.
+- Quellen: lokale
+  [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements),
+  [HTML hyperlink href](../specs/cache/html.html#dom-hyperlink-href),
+  [Core URL guide](../docs/core.md#url),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
+  [Scripting guide](../docs/scripting.md) und
+  [Standards inventory](../docs/standards.md#implemented-subsets).

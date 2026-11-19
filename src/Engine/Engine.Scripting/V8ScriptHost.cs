@@ -51,7 +51,7 @@ public sealed class V8ScriptHost : IDisposable
 
     /// <summary>Creates a bounded V8 host with optional document and page globals.</summary>
     /// <param name="documentUrl">The associated loaded-page URL exposed by the read-only Document URL attributes.</param>
-    /// <param name="documentBaseUrlProvider">The live document base URL resolver used by Node.baseURI.</param>
+    /// <param name="documentBaseUrlProvider">The live document base URL resolver used by Node.baseURI and hyperlink URL properties.</param>
     /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-document-url">Document.URL</see> and
     /// <see href="https://dom.spec.whatwg.org/#dom-document-documenturi">Document.documentURI</see>.
     /// <see href="https://dom.spec.whatwg.org/#dom-node-baseuri">Node.baseURI</see> and the HTML document base URL
@@ -59,7 +59,8 @@ public sealed class V8ScriptHost : IDisposable
     /// Local spec IDs: dom, html.</remarks>
     public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false,
         bool enableEvents = false, bool enableDocumentLifecycle = false, bool enableWindow = false,
-        BrowserUrl? documentUrl = null, Func<CancellationToken, BrowserUrl?>? documentBaseUrlProvider = null)
+        BrowserUrl? documentUrl = null,
+        Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider = null)
     {
         if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
         { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }

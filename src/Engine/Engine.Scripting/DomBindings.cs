@@ -35,6 +35,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-document-documenturi">Document.documentURI</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-node-baseuri">Node.baseURI</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls">HTML document base URLs</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/links.html#api-for-hyperlink-elements">hyperlink URL components</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-href">hyperlink href</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-tagname">Element names</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-getattributenames">attribute name snapshots</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-hasattributes">attribute presence</see>,
@@ -51,7 +53,7 @@ internal sealed class DomBindings : IDisposable
     private static readonly ConditionalWeakTable<DomDocument, DomBindings> Owners = new();
     private readonly DomDocument document;
     private readonly BrowserUrl? documentUrl;
-    private readonly Func<CancellationToken, BrowserUrl?>? documentBaseUrlProvider;
+    private readonly Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider;
     private readonly Dictionary<DomNode, int> identities = [];
     private readonly List<DomNode> nodes = [];
     private int calls;
@@ -67,7 +69,7 @@ internal sealed class DomBindings : IDisposable
     };
 
     internal DomBindings(DomDocument document, BrowserUrl? documentUrl,
-        Func<CancellationToken, BrowserUrl?>? documentBaseUrlProvider)
+        Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider)
     {
         this.document = document;
         this.documentUrl = documentUrl;
@@ -114,6 +116,10 @@ internal sealed class DomBindings : IDisposable
                 "attribute-set" => SetAttribute(Element(handle), name, value),
                 "attribute-remove" => RemoveAttribute(Element(handle), name),
                 "attribute-toggle" => ToggleAttribute(Element(handle), name, value),
+                "hyperlink-href-get" => HyperlinkHref(handle),
+                "hyperlink-href-set" => SetHyperlinkHref(handle, value),
+                "hyperlink-url-get" => HyperlinkUrlComponent(handle, name),
+                "hyperlink-url-set" => SetHyperlinkUrlComponent(handle, name, value),
                 "class-input" => CheckClassInput(handle),
                 "create-element" => Create("element", value),
                 "create-text" => Create("text", value),
@@ -172,9 +178,80 @@ internal sealed class DomBindings : IDisposable
     private string BaseUri(int handle)
     {
         _ = Node(handle);
-        var url = documentBaseUrlProvider?.Invoke(cancellation) ?? documentUrl
+        var url = documentBaseUrlProvider?.Invoke(cancellation, Budget) ?? documentUrl
             ?? throw new InvalidOperationException("Document base URL is unavailable.");
         return Observe(url.Href)!;
+    }
+    private DomElement HyperlinkElement(int handle)
+    {
+        var element = Element(handle);
+        if (element.NamespaceUri != DomElement.HtmlNamespace || element.LocalName is not ("a" or "area"))
+        { throw new InvalidOperationException("Illegal HTMLHyperlinkElementUtils receiver."); }
+        return element;
+    }
+    private string HyperlinkHref(int handle)
+    {
+        var element = HyperlinkElement(handle);
+        var href = element.GetAttribute("href");
+        if (href is null) { return Observe("")!; }
+        var url = HyperlinkUrl(element, href);
+        return Observe(url?.Href ?? href)!;
+    }
+    private string SetHyperlinkHref(int handle, string value)
+        => SetAttribute(HyperlinkElement(handle), "href", value);
+    private string HyperlinkUrlComponent(int handle, string name)
+    {
+        var element = HyperlinkElement(handle);
+        var href = element.GetAttribute("href");
+        var url = href is null ? null : HyperlinkUrl(element, href);
+        var value = name switch
+        {
+            "origin" => url?.SerializedOrigin ?? "",
+            "protocol" => url?.Protocol ?? ":",
+            "username" => url?.Username ?? "",
+            "password" => url?.Password ?? "",
+            "host" => url?.Host ?? "",
+            "hostname" => url?.Hostname ?? "",
+            "port" => url?.Port ?? "",
+            "pathname" => url?.Pathname ?? "",
+            "search" => url is { Search.Length: > 1 } ? url.Search : "",
+            "hash" => url is { Hash.Length: > 1 } ? url.Hash : "",
+            _ => throw new InvalidOperationException("Unknown hyperlink URL component.")
+        };
+        return Observe(value)!;
+    }
+    private string SetHyperlinkUrlComponent(int handle, string name, string value)
+    {
+        var element = HyperlinkElement(handle);
+        var href = element.GetAttribute("href");
+        if (href is null) { return ""; }
+        var url = HyperlinkUrl(element, href);
+        if (url is null) { return ""; }
+        var mutable = new MutableBrowserUrl(url);
+        switch (name)
+        {
+            case "protocol": mutable.Protocol = value; break;
+            case "username": mutable.Username = value; break;
+            case "password": mutable.Password = value; break;
+            case "host": mutable.Host = value; break;
+            case "hostname": mutable.Hostname = value; break;
+            case "port": mutable.Port = value; break;
+            case "pathname": mutable.Pathname = value; break;
+            case "search": mutable.Search = value; break;
+            case "hash": mutable.Hash = value; break;
+            default: throw new InvalidOperationException("Unknown writable hyperlink URL component.");
+        }
+        var updatedHref = mutable.Snapshot.Href;
+        return updatedHref == url.Href ? "" : SetAttribute(element, "href", updatedHref);
+    }
+    private BrowserUrl? HyperlinkUrl(DomElement element, string href)
+    {
+        if (href.Length > MaxTextCharacters) { throw new ScriptLimitException("DOM hyperlink href input limit exceeded."); }
+        Budget(href);
+        var baseUrl = documentBaseUrlProvider?.Invoke(cancellation, Budget) ?? documentUrl
+            ?? throw new InvalidOperationException("Document URL is unavailable.");
+        Budget(baseUrl.Href);
+        return BrowserUrl.ParseResult(href, baseUrl).Url;
     }
 
     private void Budget(string value)
@@ -231,8 +308,8 @@ internal sealed class DomBindings : IDisposable
         if (nodes.Count + added.Count > MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
         var next = nodes.Count;
         var reserved = added.ToDictionary(element => element, _ => ++next);
-        var text = string.Join(",", result.Select(element => (identities.TryGetValue(element, out var id) ? id : reserved[element])
-            .ToString(CultureInfo.InvariantCulture) + ":1"));
+        var text = string.Join(",", result.Select(element =>
+            WrapperIdentity(identities.TryGetValue(element, out var id) ? id : reserved[element], element)));
         Budget(text);
         foreach (var element in added) { nodes.Add(element); identities.Add(element, nodes.Count); }
         return text;
@@ -267,7 +344,7 @@ internal sealed class DomBindings : IDisposable
         if (node.OwnerDocument != document) { throw new InvalidOperationException("DOM node belongs to another document."); }
         var known = identities.TryGetValue(node, out var identity);
         if (!known && nodes.Count >= MaxHandles) { throw new ScriptLimitException("DOM wrapper identity limit exceeded."); }
-        var result = (known ? identity : nodes.Count + 1).ToString(CultureInfo.InvariantCulture) + ":" + (int)node.NodeType;
+        var result = WrapperIdentity(known ? identity : nodes.Count + 1, node);
         Budget(result);
         if (!known)
         {
@@ -275,6 +352,10 @@ internal sealed class DomBindings : IDisposable
         }
         return result;
     }
+    private static string WrapperIdentity(int identity, DomNode node)
+        => identity.ToString(CultureInfo.InvariantCulture) + ":" + (node is DomElement { NamespaceUri: DomElement.HtmlNamespace, LocalName: "a" } ? 12
+            : node is DomElement { NamespaceUri: DomElement.HtmlNamespace, LocalName: "area" } ? 13
+            : (int)node.NodeType).ToString(CultureInfo.InvariantCulture);
     private DomNode Node(int handle)
     {
         if (handle == 0) { return document; }
@@ -664,14 +745,16 @@ internal sealed class DomBindings : IDisposable
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
             const slice = String.prototype.slice, indexOf = String.prototype.indexOf;
+            const string = String, charCodeAt = String.prototype.charCodeAt;
             const TypeErrorCtor = TypeError, SyntaxErrorCtor = SyntaxError;
             const create = Object.create, define = Object.defineProperty, freeze = Object.freeze;
             const map = new Map(), brands = new WeakMap(), elementBrands = new WeakMap(), parentBrands = new WeakMap(),
                 characterBrands = new WeakMap(), textBrands = new WeakMap(), instructionBrands = new WeakMap(),
-                childBrands = new WeakMap(), doctypeBrands = new WeakMap();
+                childBrands = new WeakMap(), doctypeBrands = new WeakMap(), hyperlinkBrands = new WeakMap();
             const mapGet = Map.prototype.get, mapSet = Map.prototype.set;
             const brandGet = WeakMap.prototype.get, brandSet = WeakMap.prototype.set;
-            const document = create(null), prototype = create(null), nodePrototype = create(null);
+            const document = create(null), prototype = create(null), nodePrototype = create(null),
+                hyperlinkPrototype = create(prototype);
             apply(brandSet, brands, document, 0);
             apply(brandSet, parentBrands, document, 0);
             const call = (operation, handle, value = '', other = -1, reference = -1, name = '') => {
@@ -693,6 +776,31 @@ internal sealed class DomBindings : IDisposable
                 const id = apply(brandGet, elementBrands, receiver);
                 if (id === undefined) throw new TypeErrorCtor('Illegal Element receiver');
                 return id;
+            };
+            const hyperlinkBrand = receiver => {
+                const id = apply(brandGet, hyperlinkBrands, receiver);
+                if (id === undefined) throw new TypeErrorCtor('Illegal HTMLHyperlinkElementUtils receiver');
+                return id;
+            };
+            const usv = value => {
+                if (typeof value === 'symbol') throw new TypeErrorCtor('Cannot convert a Symbol value to a string');
+                const text = string(value);
+                let result = '';
+                for (let i=0;i<text.length;++i) {
+                    const first = apply(charCodeAt, text, i);
+                    if (first >= 0xD800 && first <= 0xDBFF) {
+                        if (i + 1 < text.length) {
+                            const second = apply(charCodeAt, text, i + 1);
+                            if (second >= 0xDC00 && second <= 0xDFFF) {
+                                result += text[i] + text[++i]; continue;
+                            }
+                        }
+                        result += '\uFFFD';
+                    } else if (first >= 0xDC00 && first <= 0xDFFF) result += '\uFFFD';
+                    else result += text[i];
+                }
+                if (result.length > 65536) throw new TypeErrorCtor('DOM string limit exceeded');
+                return result;
             };
             const parentBrand = receiver => {
                 const id = apply(brandGet, parentBrands, receiver);
@@ -737,15 +845,16 @@ internal sealed class DomBindings : IDisposable
                 let wrapper = apply(mapGet, map, handle);
                 if (!wrapper) {
                     const type = +apply(slice, value, separator + 1);
-                    wrapper = create(type === 1 ? prototype : nodePrototype);
+                    wrapper = create(type === 12 || type === 13 ? hyperlinkPrototype : type === 1 ? prototype : nodePrototype);
                     apply(brandSet, brands, wrapper, handle);
-                    if (type === 1) apply(brandSet, elementBrands, wrapper, handle);
-                    if (type === 1 || type === 11) apply(brandSet, parentBrands, wrapper, handle);
+                    if (type === 1 || type === 12 || type === 13) apply(brandSet, elementBrands, wrapper, handle);
+                    if (type === 12 || type === 13) apply(brandSet, hyperlinkBrands, wrapper, handle);
+                    if (type === 1 || type === 11 || type === 12 || type === 13) apply(brandSet, parentBrands, wrapper, handle);
                     if (type === 3 || type === 7 || type === 8) apply(brandSet, characterBrands, wrapper, handle);
                     if (type === 3) apply(brandSet, textBrands, wrapper, handle);
                     if (type === 7) apply(brandSet, instructionBrands, wrapper, handle);
                     if (type === 10) apply(brandSet, doctypeBrands, wrapper, handle);
-                    if (type === 1 || type === 3 || type === 7 || type === 8 || type === 10)
+                    if (type === 1 || type === 3 || type === 7 || type === 8 || type === 10 || type === 12 || type === 13)
                         apply(brandSet, childBrands, wrapper, handle);
                     apply(mapSet, map, handle, wrapper);
                     if (events) events('register', wrapper, () => wrap(call('parent', handle)), () => call('node-type', handle));
@@ -1004,7 +1113,28 @@ internal sealed class DomBindings : IDisposable
                 set(value) {const id = elementBrand(this);call('attribute-set', id, `${value}`, -1, -1, 'id');}
             });
             installClasses(prototype, elementBrand, call);
+            if (documentUrl !== null) {
+                define(hyperlinkPrototype, 'href', {enumerable: true,
+                    get() {return call('hyperlink-href-get', hyperlinkBrand(this));},
+                    set(value) {call('hyperlink-href-set', hyperlinkBrand(this), usv(value));}
+                });
+                define(hyperlinkPrototype, 'toString', {enumerable: true, value: function() {
+                    return call('hyperlink-href-get', hyperlinkBrand(this));
+                }});
+                for (const property of [
+                    'origin', 'protocol', 'username', 'password', 'host', 'hostname', 'port', 'pathname', 'search', 'hash'
+                ]) {
+                    const descriptor = {enumerable: true,
+                        get() {return call('hyperlink-url-get', hyperlinkBrand(this), '', -1, -1, property);}
+                    };
+                    if (property !== 'origin') descriptor.set = function(value) {
+                        call('hyperlink-url-set', hyperlinkBrand(this), usv(value), -1, -1, property);
+                    };
+                    define(hyperlinkPrototype, property, descriptor);
+                }
+            }
             freeze(prototype); freeze(nodePrototype);
+            freeze(hyperlinkPrototype);
             define(document, 'title', {
                 enumerable: true,
                 get() { documentBrand(this); return call('title-get', 0); },

@@ -61,7 +61,7 @@ public sealed class DomBindingTests
 
         const string baseUrl = "https://example.test/base/";
         using var withBase = new V8ScriptHost(document: Document(), documentUrl: BrowserUrl.Parse(url),
-            documentBaseUrlProvider: _ => BrowserUrl.Parse(baseUrl));
+            documentBaseUrlProvider: (_, _) => BrowserUrl.Parse(baseUrl));
         Assert.True(withBase.Evaluate(
             "document.baseURI===document.getElementById('child').baseURI&&document.baseURI==='" + baseUrl + "'",
             Cancellation).Boolean);
@@ -70,6 +70,107 @@ public sealed class DomBindingTests
         Assert.Throws<ScriptExecutionException>(() => withBase.ExecuteClassic(
             "Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.getElementById('child')), 'baseURI').get.call({})",
             Cancellation));
+    }
+
+    [Fact]
+    public void AnchorAndAreaHrefPropertiesResolveAndReflectAgainstTheDocumentBase()
+    {
+        var document = Document();
+        var anchor = document.CreateElement("a");
+        anchor.SetAttribute("id", "anchor");
+        anchor.SetAttribute("href", "../start?query=value#section");
+        document.Body!.AppendChild(anchor);
+        var area = document.CreateElement("area");
+        area.SetAttribute("id", "area");
+        document.Body.AppendChild(area);
+        var invalid = document.CreateElement("a");
+        invalid.SetAttribute("id", "invalid");
+        invalid.SetAttribute("href", "http://[");
+        document.Body.AppendChild(invalid);
+        const string pageUrl = "https://example.test/page";
+        var baseUrl = BrowserUrl.Parse("https://example.test/first/sub/");
+        using var host = new V8ScriptHost(document: document, documentUrl: BrowserUrl.Parse(pageUrl),
+            documentBaseUrlProvider: (_, _) => baseUrl);
+
+        Assert.True(host.Evaluate("""
+            (() => {
+                const anchor = document.getElementById('anchor');
+                const area = document.getElementById('area');
+                const invalid = document.getElementById('invalid');
+                const div = document.getElementById('parent');
+                return anchor.href === 'https://example.test/first/start?query=value#section' &&
+                    anchor.toString() === anchor.href &&
+                    document.querySelectorAll('a')[0].href === anchor.href &&
+                    anchor.origin === 'https://example.test' &&
+                    anchor.protocol === 'https:' &&
+                    anchor.username === '' && anchor.password === '' &&
+                    anchor.host === 'example.test' && anchor.hostname === 'example.test' &&
+                    anchor.port === '' && anchor.pathname === '/first/start' &&
+                    anchor.search === '?query=value' && anchor.hash === '#section' &&
+                    area.href === '' &&
+                    area.origin === '' && area.protocol === ':' &&
+                    area.username === '' && area.pathname === '' &&
+                    invalid.href === 'http://[' &&
+                    invalid.protocol === ':' && invalid.pathname === '' &&
+                    typeof div.href === 'undefined';
+            })()
+            """, Cancellation).Boolean);
+
+        baseUrl = BrowserUrl.Parse("https://example.test/changed/");
+        Assert.True(host.Evaluate("""
+            (() => {
+                const anchor = document.getElementById('anchor');
+                return anchor.href === 'https://example.test/start?query=value#section';
+            })()
+            """, Cancellation).Boolean);
+
+        host.ExecuteClassic("""
+            (() => {
+                const anchor = document.getElementById('anchor');
+                const area = document.getElementById('area');
+                anchor.href = '../next\uD800';
+                area.href = 'https://area.example.test/map';
+            })();
+            """, Cancellation);
+        Assert.Equal("../next\uFFFD", anchor.GetAttribute("href"));
+        Assert.Equal("https://area.example.test/map", area.GetAttribute("href"));
+        host.ExecuteClassic("""
+            (() => {
+                const anchor = document.getElementById('anchor');
+                anchor.protocol = 'http:';
+                anchor.username = 'user';
+                anchor.password = 'pass';
+                anchor.host = 'cdn.example.test:8443';
+                anchor.pathname = '/new path';
+                anchor.search = '?next=1';
+                anchor.hash = '#done';
+            })();
+            """, Cancellation);
+        Assert.Equal("http://user:pass@cdn.example.test:8443/new%20path?next=1#done", anchor.GetAttribute("href"));
+        Assert.Equal("http://user:pass@cdn.example.test:8443/new%20path?next=1#done",
+            host.Evaluate("document.getElementById('anchor').toString()", Cancellation).Text);
+
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("""
+            Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.getElementById('anchor')), 'href').get
+                .call(document.getElementById('parent'));
+            """, Cancellation));
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic(
+            "'use strict'; document.getElementById('anchor').origin = 'https://changed.example';", Cancellation));
+    }
+
+    [Fact]
+    public void RepeatedHyperlinkComponentReadsShareTheDomTextBudget()
+    {
+        using var host = new V8ScriptHost(document: Document(),
+            documentUrl: BrowserUrl.Parse("https://example.test/"));
+
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("""
+            (() => {
+                const link = document.createElement('a');
+                link.href = 'https://example.test/' + 'x'.repeat(60000);
+                for (let i = 0; i < 8; ++i) void link.protocol;
+            })();
+            """, Cancellation));
     }
 
     [Fact]

@@ -31,11 +31,11 @@ Origins beschraenkt den Pfad-URL-Fallback explizit auf HTTP, HTTPS und FILE;
 das bestehende opaque Verhalten fuer FTP, WS und WSS ist daher kein Defekt.
 Als dokumentierte Restbereiche bleiben der Blob-URL-Store (File API), die
 vollstaendige Dokument-Basis-URL-Algorithmik (insbesondere inherited
-`about:blank`/`srcdoc` und der volle frozen-base lifecycle) sowie
-HTML-Anchor/Area-URL-Integration. Opt-in PageRendering-Hosts stellen die
-begrenzten `document.URL`/`documentURI`- und `Node.baseURI`-Teilbereiche aus
-KP-513/KP-514. Der DOM-Prozentwert bleibt eine grobe, unveraenderte Heuristik.
-Siehe Q-039.
+`about:blank`/`srcdoc` und der volle frozen-base lifecycle) sowie weitere
+HTML-Linkeigenschaften und vollstaendiges Web IDL. Opt-in PageRendering-Hosts
+stellen die begrenzten `document.URL`/`documentURI`, `Node.baseURI` und
+`<a>`/`<area>`-URL-Komponenten aus KP-513 bis KP-515 bereit. Die groben
+HTML-/DOM-Prozentwerte bleiben unveraenderte Heuristiken. Siehe Q-039.
 
 **Standardsinventar-Pruefung (2026-11-19; KP-512):** Die Eintraege unter
 „Implemented subsets“ wurden gegen die aktuellen Core-, Networking-, HTML/DOM-,
@@ -62,8 +62,30 @@ gegen die finale Seiten-URL neu und wendet die Browser-Freigabe an; bei einem
 nicht passenden freigegebenen Ziel faellt er auf die Seiten-URL zurueck.
 Unterstuetzte href-Mutationen sind beim naechsten Zugriff sichtbar. Volle
 frozen-base, inherited `about:blank`/`srcdoc`- und Anchor/Area-Algorithmen
-bleiben offen. Die DOM-Teilbereichsbeschreibung wurde erweitert; der grobe
-Prozentwert blieb unveraendert.
+blieben zu diesem Zeitpunkt offen.
+Commit `8e131e8` enthaelt die Aenderung. Die DOM-Teilbereichsbeschreibung wurde
+erweitert; der grobe Prozentwert blieb unveraendert.
+
+**HTML-Hyperlink-URL-API (2026-11-19; KP-515):** Die HTML/DOM-Fortsetzung
+ergaenzt fuer die explizit opt-in-faehigen PageRendering-Hosts eine begrenzte
+`HTMLAnchorElement`-/`HTMLAreaElement`-URL-Oberflaeche: `href` als
+USVString-Stringifier, `toString()`, readonly `origin` sowie `protocol`,
+`username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`
+und `hash`.
+Getter reparsen das aktuelle `href` gegen die bereits begrenzte dynamische
+Dokumentbasis; beim Fehler gibt `href` den Rohwert und Komponenten geben ihre
+standardgemaessen Leer-/Defaultwerte zurueck. Setters spiegeln gueltige
+Core-URL-Komponentenmutation zurueck in das `href`-Attribut. Das vollstaendige
+HTML-`set the url`-/frozen-base-Lebenszyklusmodell, weitere Linkattribute und
+generiertes Web IDL bleiben ausserhalb des Umfangs. Der HTML- und DOM-
+Prozentwert wurde mangels neuer Messgrundlage nicht geaendert.
+**Verifikation vor Commit:** Solution-Build ohne Warnungen/Fehler, Engine.Scripting
+(395 Tests), VisualWeb.Browser (1.381 Tests; zwei CPU-pressure-Faelle als
+uebersprungen gemeldet), kompletter Solution-Testlauf, Formatverifikation und
+`git diff --check` bestanden; auch der gezielte PageRendering-Hyperlink-Test
+bestand. Siehe [KP-515](./Kontextprotokoll.md#kp-515---begrenzte-hyperlink-url-api-fuer-a-und-area).
+Quellen: lokale [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements),
+[Core URL](../docs/core.md#url) und [Standardsinventar](../docs/standards.md#implemented-subsets).
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
@@ -2913,7 +2935,7 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-036 | Soll der gewaehlte Modulumfang Top-Level-await ausschliessen oder begrenzt asynchron auswerten? | Beantwortet: Nutzer revidiert den Ausschluss und waehlt begrenzte asynchrone Auswertung unter Readiness-/Taskbudget | Keine unbeschraenkte Promise-Wartezeit und keine Import-/Netzwerkberechtigung; Cancellation, Fehler und Fristen muessen explizit abgedeckt sein | Nutzerwahl `support-bounded-async`; [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt), [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen) |
 | Q-037 | Welcher CSS-Color-4-Gamut-Mapping-Algorithmus soll fuer die naechste sRGB-Ausgabe-Erweiterung gewaehlt werden? | Beantwortet: Nutzer waehlt Ray Trace | In Pass 1 auf aus-gamutige `color(display-p3 ...)`-Ergebnisse anwenden; andere Farbquellen bleiben unveraendert | ausdrueckliche Nutzerwahl „3“, 2026-11-15 12:21 Europe/Berlin; [CSS Color 4](../specs/cache/css-color.html#GMA-Raytrace); [KP-380](./Kontextprotokoll.md#kp-380---ray-trace-gamut-mapping-gewaehlt) |
 | Q-038 | Bedeutet „WHATWG URL vollstaendig“ die Core/.NET-Spezifikationsalgorithmen oder auch die browserseitige JavaScript-URL-/URLSearchParams-API mit Live-Linkage und Web-IDL-Verhalten? | Beantwortet: Nutzer genehmigte Core-Algorithmen sowie browserseitige URL-/URLSearchParams-Semantik und interface-spezifisches Web IDL | Allgemeine Web-IDL-Generierung bleibt ausgeschlossen; Umsetzung folgt dem genehmigten Sechs-Phasen-Plan | Nutzerbestaetigung 2026-11-18; [Plan](../plans/whatwg-url-completion-plan.md), [Core guide](../docs/core.md#url), [URL spec cache](../specs/cache/url.html), [KP-468](./Kontextprotokoll.md#kp-468---url-planumfang-genehmigt) |
-| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Umgesetzt sind begrenzte PageRendering-Bindungen fuer readonly `document.URL`, `document.documentURI` und `Node.baseURI`; vollstaendige frozen-base-/inherited-base-Semantik und Anchor/Area-URL-Integration bleiben offen | Weitere HTML/DOM-Integration und Blob-URL-Store separat abgrenzen; keine Vollintegration oder Prozentsteigerung aus den begrenzten Teilumfaengen ableiten | Nutzeranweisung „let's do the html/dom related changes next“; KP-513/KP-514, [HTML/DOM](../docs/html-dom.md), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Node.baseURI](../specs/cache/dom.html#dom-node-baseuri), [Support-Inventar](../docs/standards.md#implemented-subsets) |
+| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Umgesetzt sind begrenzte PageRendering-Bindungen fuer readonly `document.URL`, `document.documentURI`, `Node.baseURI` und die URL-Komponenten von `<a>`/`<area>`. Vollstaendige frozen-base-/inherited-base-Semantik, weitere Hyperlink-Attribute und File-API-Blob-Store bleiben offen | Restliche HTML/DOM-URL-Integration und Blob-URL-Store separat abgrenzen; keine Vollintegration oder Prozentsteigerung aus den begrenzten Teilumfaengen ableiten | Nutzeranweisung „let's do the html/dom related changes next“; KP-513 bis KP-515, [HTML/DOM](../docs/html-dom.md), [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Support-Inventar](../docs/standards.md#implemented-subsets) |
 
 Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
 festgehaltene Ausschluss von Top-Level-await ist ersetzt.

@@ -200,8 +200,17 @@ is recomputed from the current first HTML `<base href>` in tree order, resolved
 against the final page URL, with the browser-approved base URL policy applied.
 The current value is recomputed on each access; a changed `href` that does not
 match a browser-approved base falls back to the final page URL.
-Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle, and
-HTML anchor/area URL reflection remain unsupported.
+Inherited `about:blank`/`srcdoc` base URLs and the full frozen-base lifecycle
+remain unsupported. In opted-in loaded-page script hosts, `<a>` and `<area>`
+facades expose the `href` stringifier and the bounded `HyperlinkElementUtils`
+URL components (`origin`, `protocol`, `username`, `password`, `host`,
+`hostname`, `port`, `pathname`, `search`, and `hash`). URL getters reparse the
+current content attribute against the bounded document base URL; a failed
+`href` parse returns the raw attribute, while component getters return the
+specified empty/default values. Setters use Core URL component mutation and
+write the serialized URL back to `href`; `origin` is readonly. `toString()`
+returns the same value as `href`. Other link properties and complete Web IDL
+behavior remain unsupported.
 Phase 11w queues inline `type="module"` sources at the same parser boundary,
 then executes them in source order after parsing and after the `interactive`
 readiness transition, before `DOMContentLoaded`. Top-level `await` must settle

@@ -86,8 +86,8 @@ public static class InlinePageScripts
         var document = new DomDocument();
         var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true,
             enableDocumentLifecycle: true, enableWindow: true, documentUrl: pageUrl,
-            documentBaseUrlProvider: cancellation => CurrentDocumentBaseUrl(document, pageUrl, baseUrl,
-                options.MaxNodes, cancellation));
+            documentBaseUrlProvider: (cancellation, charge) => CurrentDocumentBaseUrl(document, pageUrl, baseUrl,
+                options.MaxNodes, cancellation, charge));
         HtmlParseResult? parsed = null;
         var scripts = 0;
         try
@@ -191,7 +191,7 @@ public static class InlinePageScripts
     }
 
     private static BrowserUrl? CurrentDocumentBaseUrl(DomDocument document, BrowserUrl pageUrl,
-        BrowserUrl? approvedBaseUrl, int maxNodes, CancellationToken cancellationToken)
+        BrowserUrl? approvedBaseUrl, int maxNodes, CancellationToken cancellationToken, Action<string> charge)
     {
         var count = 0;
         foreach (var node in document.Descendants())
@@ -202,6 +202,7 @@ public static class InlinePageScripts
                 || element.GetAttribute("href") is not { } href) { continue; }
             if (href.Length > RendererProtocol.MaxTextCharacters)
             { throw new InvalidOperationException("Document base URL input limit exceeded."); }
+            charge(href);
             var parsed = BrowserUrl.ParseResult(href, pageUrl).Url;
             if (approvedBaseUrl is null) { return parsed ?? pageUrl; }
             return parsed?.Href == approvedBaseUrl.Href ? approvedBaseUrl : pageUrl;
