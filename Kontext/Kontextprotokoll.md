@@ -15071,3 +15071,43 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   [Scripting guide](../docs/scripting.md#url-interfaces) und lokale
   Validierungsausgaben.
+
+### KP-504 - Primitive URLSearchParams-Paare ablehnen
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-503; genaue Uhrzeit unbekannt.
+- Erfassungsart: lokaler Web-IDL-Standard, URL-Initialisierungsalgorithmus,
+  Regression, Implementierung und Validierung.
+- Nutzerangabe: Fortsetzung des Auftrags zur WHATWG-URL-Implementierung; keine
+  Umfangsaenderung.
+- Belegt: Beim weiteren Web-IDL-Sequenzaudit zeigte sich, dass
+  URLSearchParams-Paarwerte direkt mit JavaScript-`for...of` verarbeitet
+  wurden. Dadurch wurde ein primitiver String als Zeichenfolge iteriert und
+  beispielsweise `"ab"` irrtuemlich als Paar akzeptiert. Web IDL `sequence<T>`
+  verlangt vor `GetMethod(%Symbol.iterator%)`, dass der Wert ein ECMAScript-
+  Objekt ist; Funktionen sind dabei Objekte, primitive Strings nicht.
+  `UrlBindings` weist nun primitive Paarwerte mit TypeError zurueck. Ein
+  iterierbares `String`-Objekt bleibt gueltig und wird weiterhin in seine zwei
+  Zeichen konvertiert. Die fokussierte Regression schlug vor dem Fix fehl.
+- Belegt: Engine.Scripting.Tests (390), Solution-Build (null
+  Warnungen/Fehler), Solution-Volltest (alle Tests; zwei bedingte
+  CPU-Drucktests uebersprungen), Formatverifikation, lokaler V8Smoke und
+  Diff-Check bestehen.
+- Status: Implementierung, Regression und [Scripting-Dokumentation](../docs/scripting.md#url-interfaces)
+  wurden als `7d9dc93` (`fix(engine.scripting): reject primitive URL pairs`)
+  committed; der Git-Hook meldete fuer drei geaenderte Dateien keine Probleme.
+  Bei Wiederaufnahme zeigte `main` auf `0eb5bf0` gleich `origin/main`, womit
+  die in KP-503/Wissensstand enthaltene Angabe von vier Commits Vorsprung
+  ueberholt war. Nach dem Codecommit ist `main` einen Commit voraus; kein Push
+  in diesem Arbeitsschritt.
+- Ableitung/naechster Schritt: Die bestaetigte Teilabweichung fuer innere
+  Sequenzwerte ist geschlossen. Weitere URL-spezifische Algorithmus- und
+  Web-IDL-Luecken koennen fortgesetzt werden. Allgemeine Web-IDL-Generierung,
+  HTML-Anchor-/Area-Integration und vollstaendige WHATWG-URL-Konformitaet
+  bleiben unbelegt bzw. ausserhalb dieses Inkrements.
+- Quellen: [Web IDL sequence conversion](../specs/cache/webidl.html#js-to-sequence),
+  [URLSearchParams initialization](../specs/cache/url.html#urlsearchparams-initialize),
+  [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  [Scripting guide](../docs/scripting.md#url-interfaces) und lokale
+  Validierungsausgaben.

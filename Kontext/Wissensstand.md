@@ -8,6 +8,21 @@
 
 ## Aktueller Wissensstand
 
+**Fortsetzung (2026-11-19; KP-504):** Die URLSearchParams-Sequenzbindung
+akzeptierte primitive innere Paarwerte: `for...of` iterierte etwa einen
+String in seine Zeichen, obwohl die Web-IDL-Konvertierung von `sequence<T>`
+zuerst ein ECMAScript-Objekt verlangt. `UrlBindings` weist primitive Paare nun
+mit TypeError zurueck; iterierbare String-Objekte bleiben gueltig. Die
+Regression prueft beide Faelle und bestand nach vorherigem Fehlschlag.
+Implementierung, Test und Scripting-Dokumentation sind als `7d9dc93`
+(`fix(engine.scripting): reject primitive URL pairs`) committed.
+Engine.Scripting.Tests (390), Solution-Build (0 Warnungen/Fehler),
+Solution-Volltest (zwei bedingte CPU-Druck-Skips), Formatverifikation,
+lokaler V8Smoke und Diff-Check bestehen. Bei Wiederaufnahme stand `main` auf
+`0eb5bf0` gleich `origin/main`; die fruehere Angabe von vier Commits Vorsprung
+war ueberholt. Nach dem Codecommit ist `main` einen Commit voraus, der
+Arbeitsbaum sauber, kein Push erfolgt. Vollkonformitaet bleibt unbelegt.
+
 **Fortsetzung (2026-11-19; KP-503):** Die URLSearchParams-Sequence-
 Initialisierung konvertierte bei einem zu langen inneren Paar hoechstens drei
 Werte und brach vor weiteren Web-IDL-USVString-Konvertierungen ab. Eine
@@ -19,8 +34,8 @@ Werte werden gespeichert. Commit `6550f5e` (`fix(engine.scripting): convert
 URL sequence pairs fully`) ist lokal committed. Engine.Scripting.Tests (390),
 Solution-Build (0 Warnungen/Fehler), Solution-Volltest (zwei bedingte
 CPU-Druck-Skips) und Formatverifikation bestehen. Der Kontextnachtrag ist als
-`843c9ad` committed. `main` liegt vier Commits vor `origin/main`; kein Push in
-diesem Arbeitsschritt. Vollkonformitaet bleibt unbelegt.
+`843c9ad` committed. Die damalige Branch-Ahead-Angabe ist durch KP-504 als
+ueberholt markiert. Vollkonformitaet bleibt unbelegt.
 
 **Fortsetzung (2026-11-19; KP-502):** Beim weiteren URL-Web-IDL-Abgleich
 wurde festgestellt, dass `URL.prototype` und `URLSearchParams.prototype` an den
