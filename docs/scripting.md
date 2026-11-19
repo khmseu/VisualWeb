@@ -467,6 +467,9 @@ frozen-base URL state remains unsupported.
 HTML `base` facades also reflect the `target` content attribute as a `DOMString`,
 even without an associated page URL; this does not update shell hyperlink
 targeting metadata already collected for the page.
+Document-bound hosts also reflect `<a>`/`<area>` `target` as a `DOMString`
+without requiring a page URL; mutations after shell link metadata is collected
+do not update that snapshot.
 Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle,
 other link properties, broader URL/Web IDL coverage and generated Web IDL
 remain deferred. In opted-in loaded-page hosts, `<a>` and `<area>` expose the

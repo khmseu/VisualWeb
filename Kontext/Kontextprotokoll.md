@@ -15537,3 +15537,33 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [DomBindingTests](../tests/Engine.Scripting.Tests/DomBindingTests.cs),
   [HTML/DOM guide](../docs/html-dom.md) und
   [Scripting guide](../docs/scripting.md).
+- Commit: `5bf30c1` (`feat(scripting): reflect HTMLBaseElement target`), nicht
+  gepusht.
+
+### KP-519 - Begrenzte Hyperlink-target-Reflexion
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „continue“ nach `5bf30c1`.
+- Ableitung: Als naechster begrenzter HTML/DOM-Schritt wurde die
+  `target`-Reflexion fuer `<a>` und `<area>` gewaehlt. Der Nutzer hat diese
+  konkrete Eigenschaft nicht separat benannt.
+- Belegte Spezifikation: Die gemeinsame `HTMLHyperlinkElementUtils.target`-
+  Eigenschaft reflektiert `target` als `DOMString`. Die lokale HTML-Quelle
+  wurde am 2026-11-07 geprueft und ist juenger als 30 Tage.
+- Umsetzung: Gebrandete Anchor-/Area-Facades stellen das Feld auch ohne
+  Dokument-URL bereit. Getter/Setter nutzen die bestehende primitive
+  Attributbruecke; fehlende Attribute ergeben `""`, und DOMString-Codeeinheiten
+  bleiben erhalten. Spaetere Mutationen aendern nicht die bereits erhobenen
+  Shell-Linkmetadaten.
+- Verifikation: Neue Regression schlug vor der Bindung fehl; fokussierter
+  Test, alle 399 Engine.Scripting-Tests, Solution-Build (0 Warnungen/Fehler),
+  Formatverifikation und alle 17.226 Solution-Tests bestanden. Zwei
+  CPU-pressure-Varianten wurden als uebersprungen protokolliert.
+- Scope: HTML-Zeile in `docs/standards.md` aktualisiert; die grobe
+  Prozentheuristik bleibt unveraendert.
+- Quellen: lokale
+  [HTMLHyperlinkElementUtils target](../specs/cache/html.html#dom-a-target),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
+  [DomBindingTests](../tests/Engine.Scripting.Tests/DomBindingTests.cs),
+  [HTML/DOM guide](../docs/html-dom.md) und
+  [Scripting guide](../docs/scripting.md).

@@ -113,6 +113,8 @@ final page URL and reflects USVString writes, without modeling frozen base
 state.
 `HTMLBaseElement.target` reflects the content attribute as a bounded `DOMString`,
 without changing shell navigation metadata already collected for a page.
+Bound document hosts also reflect `target` on `<a>` and `<area>` facades
+independently of page URL binding.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

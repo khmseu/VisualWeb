@@ -122,6 +122,27 @@ grobe HTML-Coverage-Heuristik blieb unveraendert. 398 Engine.Scripting-Tests,
 Solution-Build, Formatverifikation und 17.225 Solution-Tests bestehen; zwei
 CPU-pressure-Varianten wurden uebersprungen. Details:
 [KP-518](./Kontextprotokoll.md#kp-518---begrenzte-htmlbaseelementtarget-reflexion).
+Commit `5bf30c1` enthaelt diese Aenderung; er wurde nicht gepusht.
+
+**Hyperlink target (KP-519; DOMString-Reflexion):** Dokumentgebundene
+Script-Hosts exponieren `target` auf `<a>` und `<area>` unabhaengig von einer
+Dokument-URL. Fehlende Attribute lesen sich als leerer String; DOMString-
+Codeeinheiten bleiben erhalten. Spaetere Skriptmutationen aktualisieren nicht
+die bereits gesammelten Shell-Linkmetadaten. Die grobe HTML-Coverage-Heuristik
+blieb unveraendert. 399 Engine.Scripting-Tests, Solution-Build,
+Formatverifikation und 17.226 Solution-Tests bestehen; zwei CPU-pressure-
+Varianten wurden uebersprungen. Details:
+[KP-519](./Kontextprotokoll.md#kp-519---begrenzte-hyperlink-target-reflexion).
+
+**Offen - inherited `about:blank`-Basis-URL:** Die HTML-Spezifikation verlangt
+eine Momentaufnahme der effektiven Basis-URL des Initiators. Der Browser
+vererbt derzeit nur dessen Origin; `LoadedPage.BaseUrl` ist ein CSP-gepruefter
+Override und nicht allgemein die aktuelle effektive Basis. Aus der finalen
+Dokument-URL allein abzuleiten waere falsch; eine korrekte Erweiterung muss
+die Basis-URL durch Browser-/Rendererzustand und History tragen. Siehe
+[HTML about base URL](../specs/cache/html.html#concept-document-about-base-url),
+[BrowserController](../src/Apps/VisualWeb.Browser/BrowserController.cs) und
+[LoadedPage](../src/Apps/VisualWeb.PageRendering/PageModels.cs).
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue

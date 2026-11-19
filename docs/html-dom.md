@@ -217,7 +217,10 @@ URL components (`origin`, `protocol`, `username`, `password`, `host`,
 `hostname`, `port`, `pathname`, `search`, and `hash`). URL getters reparse the
 current content attribute against the bounded document base URL; a failed
 `href` parse returns the raw attribute, while component getters return the
-specified empty/default values. Setters use Core URL component mutation and
+specified empty/default values. Document-bound hosts also reflect the
+`target` content attribute as a `DOMString` on both elements, independently of
+page URL binding; script mutations after shell link metadata collection do not
+update that snapshot. Setters use Core URL component mutation and
 write the serialized URL back to `href`; `origin` is readonly. `toString()`
 returns the same value as `href`. Other link properties and complete Web IDL
 behavior remain unsupported.

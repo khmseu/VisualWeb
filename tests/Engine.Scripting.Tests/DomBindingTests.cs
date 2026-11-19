@@ -159,6 +159,53 @@ public sealed class DomBindingTests
     }
 
     [Fact]
+    public void AnchorAndAreaTargetPropertiesReflectDomStringWithoutAPageUrl()
+    {
+        var document = Document();
+        var anchor = document.CreateElement("a");
+        anchor.SetAttribute("id", "anchor");
+        document.Body!.AppendChild(anchor);
+        var area = document.CreateElement("area");
+        area.SetAttribute("id", "area");
+        document.Body.AppendChild(area);
+        using var host = new V8ScriptHost(document: document);
+
+        Assert.True(host.Evaluate("""
+            (() => {
+                const anchor = document.getElementById('anchor');
+                const area = document.getElementById('area');
+                return anchor.target === '' && area.target === '' &&
+                    Object.getPrototypeOf(anchor) === Object.getPrototypeOf(area);
+            })()
+            """, Cancellation).Boolean);
+
+        host.ExecuteClassic("""
+            (() => {
+                const anchor = document.getElementById('anchor');
+                const area = document.getElementById('area');
+                anchor.target = '_blank';
+                area.target = 'map';
+                if (anchor.target !== '_blank' || area.target !== 'map')
+                    throw new Error('target did not reflect DOMString');
+                anchor.target = '\uD800';
+                if (anchor.target.length !== 1 || anchor.target.charCodeAt(0) !== 0xD800)
+                    throw new Error('target did not preserve its DOMString code unit');
+                area.removeAttribute('target');
+                if (area.target !== '') throw new Error('missing target did not return an empty string');
+            })();
+            """, Cancellation);
+        Assert.Equal("\uD800", anchor.GetAttribute("target"));
+        Assert.Null(area.GetAttribute("target"));
+
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("""
+            Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.getElementById('anchor')), 'target').get
+                .call(document.getElementById('parent'));
+            """, Cancellation));
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic(
+            "document.getElementById('area').target = Symbol();", Cancellation));
+    }
+
+    [Fact]
     public void BaseHrefPropertyUsesTheFallbackBaseAndReflectsUsvString()
     {
         var document = Document();
