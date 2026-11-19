@@ -511,6 +511,21 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlSearchParamsSequenceConvertsPairValuesBeforeLengthValidation()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                let converted = false, rejected = false;
+                const extra = {toString() { converted = true; return 'extra'; }};
+                try { new URLSearchParams([['name', 'value', 'third', extra]]); }
+                catch (error) { rejected = error instanceof TypeError; }
+                return converted && rejected;
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void UrlSearchParamsRecordConversionIncludesEnumerableSymbolsAndNormalizesDuplicateKeys()
     {
         using var host = new V8ScriptHost();

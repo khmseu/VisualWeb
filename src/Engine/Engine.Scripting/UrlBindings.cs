@@ -453,12 +453,14 @@ internal sealed class UrlBindings
                         for (const pair of iterable) {
                             if (pairs.length >= 1024) throw new TypeErrorCtor('URLSearchParams entry limit exceeded');
                             if (pair === null || pair === undefined) throw new TypeErrorCtor('Invalid URLSearchParams pair');
-                            const values = [];
+                            const values = []; let pairLength = 0;
                             for (const value of pair) {
-                                if (values.length >= 3) throw new TypeErrorCtor('Each URLSearchParams pair must contain exactly two values');
-                                push(values, usv(value));
+                                if (pairLength >= 1024) throw new RangeErrorCtor('URLSearchParams pair limit exceeded');
+                                const converted = usv(value);
+                                if (pairLength < 2) push(values, converted);
+                                ++pairLength;
                             }
-                            if (values.length !== 2) throw new TypeErrorCtor('Each URLSearchParams pair must contain exactly two values');
+                            if (pairLength !== 2) throw new TypeErrorCtor('Each URLSearchParams pair must contain exactly two values');
                             push(pairs, values);
                         }
                         return {type:'pairs', value:pairs};

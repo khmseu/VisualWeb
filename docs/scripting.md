@@ -445,7 +445,9 @@ They expose native iterator result objects and observe list mutations between
 Handles are capped at 1,024; each execution permits 4,096 bridge calls and
 262,144 aggregate bridge input/output UTF-16 characters, with at most 65,536
 characters in one callback value, 1,024 URLSearchParams entries and 65,536
-serialized query characters. These counters reset per host execution.
+serialized query characters. Each constructor pair converts up to 1,024
+sequence items before enforcing the required pair length. Bridge counters reset
+per host execution.
 JavaScript conversion hooks run under the normal host deadline and cancellation.
 URL support does not enable page-script execution, add network access, or
 change the existing explicit inline-script policy. Broader URL/Web IDL coverage,
