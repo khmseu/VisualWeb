@@ -18,8 +18,9 @@ Browser-APIs und Window/load-Verhalten sind nicht implementiert. Belegt sind
 der Solution-Build (0 Warnungen/Fehler), 392 Engine.Scripting-Tests und 1.375
 VisualWeb.Browser-Tests; zwei CPU-Drucktests wurden bedingt uebersprungen.
 Auch `dotnet test VisualWeb.slnx --no-build`, Formatverifikation und
-`git diff --check` bestanden. Der WHATWG-URL-Support bleibt ein dokumentierter
-Teilumfang, keine Vollkonformitaetsbehauptung.
+`git diff --check` bestanden. Commit `83a42d3` enthaelt die Aenderung; er wurde
+nicht gepusht. Der WHATWG-URL-Support bleibt ein dokumentierter Teilumfang,
+keine Vollkonformitaetsbehauptung.
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
