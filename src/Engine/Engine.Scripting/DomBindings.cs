@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using VisualWeb.Core.Url;
 using VisualWeb.Engine.Css;
 using VisualWeb.Engine.Dom;
 
@@ -32,6 +33,8 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://dom.spec.whatwg.org/#dom-node-ownerdocument">ownerDocument</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-url">Document.URL</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-document-documenturi">Document.documentURI</see>,
+/// <see href="https://dom.spec.whatwg.org/#dom-node-baseuri">Node.baseURI</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls">HTML document base URLs</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-tagname">Element names</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-getattributenames">attribute name snapshots</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-hasattributes">attribute presence</see>,
@@ -47,6 +50,8 @@ internal sealed class DomBindings : IDisposable
     internal const int MaxAttributes = 128;
     private static readonly ConditionalWeakTable<DomDocument, DomBindings> Owners = new();
     private readonly DomDocument document;
+    private readonly BrowserUrl? documentUrl;
+    private readonly Func<CancellationToken, BrowserUrl?>? documentBaseUrlProvider;
     private readonly Dictionary<DomNode, int> identities = [];
     private readonly List<DomNode> nodes = [];
     private int calls;
@@ -61,9 +66,12 @@ internal sealed class DomBindings : IDisposable
         MaxMatchOperations = 65536
     };
 
-    internal DomBindings(DomDocument document)
+    internal DomBindings(DomDocument document, BrowserUrl? documentUrl,
+        Func<CancellationToken, BrowserUrl?>? documentBaseUrlProvider)
     {
         this.document = document;
+        this.documentUrl = documentUrl;
+        this.documentBaseUrlProvider = documentBaseUrlProvider;
         lock (Owners)
         {
             if (Owners.TryGetValue(document, out _)) { throw new InvalidOperationException("Document already belongs to a V8 host."); }
@@ -136,6 +144,7 @@ internal sealed class DomBindings : IDisposable
                 "next-sibling" => Sibling(Node(handle), previous: false),
                 "node-type" => Observe(((int)Node(handle).NodeType).ToString(CultureInfo.InvariantCulture)),
                 "node-name" => NodeName(Node(handle)),
+                "base-uri" => BaseUri(handle),
                 "owner-document" => Identity(Node(handle).OwnerDocument),
                 "local-name" => Observe(Element(handle).LocalName),
                 "tag-name" => NodeName(Element(handle)),
@@ -160,6 +169,14 @@ internal sealed class DomBindings : IDisposable
     }
 
     private string? Observe(string? value) { if (value is not null) { Budget(value); } return value; }
+    private string BaseUri(int handle)
+    {
+        _ = Node(handle);
+        var url = documentBaseUrlProvider?.Invoke(cancellation) ?? documentUrl
+            ?? throw new InvalidOperationException("Document base URL is unavailable.");
+        return Observe(url.Href)!;
+    }
+
     private void Budget(string value)
     {
         if (value.Length > MaxTextCharacters || (characters += value.Length) > 4 * MaxTextCharacters)
@@ -642,7 +659,7 @@ internal sealed class DomBindings : IDisposable
     }
 
     internal const string Bootstrap = """
-        ((events, lifecycle, installClasses, documentUrl) => {
+        ((events, lifecycle, installClasses, documentUrl, hasBaseUrlProvider) => {
             const bridge = globalThis.__visualwebDom;
             delete globalThis.__visualwebDom;
             const apply = Function.prototype.call.bind(Function.prototype.call);
@@ -821,6 +838,10 @@ internal sealed class DomBindings : IDisposable
                 define(target, 'nodeType', {enumerable: true, get() {return +call('node-type', brand(this)); }});
                 define(target, 'nodeName', {enumerable: true, get() {return call('node-name', brand(this));}});
                 define(target, 'ownerDocument', {enumerable: true, get() {return wrap(call('owner-document', brand(this)));}});
+                if (hasBaseUrlProvider) define(target, 'baseURI', {
+                    enumerable: true,
+                    get() {return call('base-uri', brand(this));}
+                });
                 define(target, 'isConnected', {enumerable: true, get() {return call('connected', brand(this)) === 'true'; }});
                 define(target, 'hasChildNodes', {enumerable: true, value: function() {
                     return call('has-children', brand(this)) === 'true';

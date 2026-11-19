@@ -15360,3 +15360,39 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [InlinePageScripts](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
   [HTML/DOM-Leitfaden](../docs/html-dom.md) und
   [Scripting-Leitfaden](../docs/scripting.md).
+
+### KP-514 - Begrenzte Node.baseURI-Bindung
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Die gewaehlte naechste Arbeitsrichtung bleibt HTML/DOM-
+  Integration; keine ausdrueckliche Freigabe fuer Blob-URL-Store oder
+  Vollkonformitaet des base-URL-Algorithmus.
+- Belegte Grundlage: DOM `Node.baseURI` liefert die Dokumentbasis-URL; HTML
+  waehlt zuerst das erste descendant `base[href]` in Baumreihenfolge und
+  beschreibt frozen-base, base-override und inherited-base Regeln. Vorhandene
+  PageRendering-Logik erkannte bereits `<base href>` und browserseitige
+  Freigabe fuer Stylesheets und parser-blockierende Scripts.
+- Umsetzung: PageRendering-Hosts koennen fuer die private DOM-Bridge einen
+  cancellation-gebundenen Base-URL-Resolver liefern. Der readonly
+  `Node.baseURI`-Getter berechnet fuer Document-/Node-Facades auf Zugriff den
+  ersten base href neu, nutzt `BrowserUrl.ParseResult`, beachtet die
+  browserfreigegebene `BaseUrl` und faellt bei nicht freigegebenen Zielen auf
+  die finale Seiten-URL zurueck. Tree- und Eingabegrenzen sowie der bestehende
+  Cancellation-/DOM-Callbackbudgetpfad bleiben wirksam. Dies deckt kein
+  vollstaendiges frozen-base-Lebenszyklusmodell ab; inherited
+  `about:blank`/`srcdoc`, Anchor/Area-URL-Reflection und der Blob-URL-Store
+  bleiben deferred.
+- Verifikation: Die neue Browser-Regression schlug vor der Implementierung
+  fehl und prueft dynamische href-Aenderungen, invaliden ersten base-Eintrag,
+  fehlende Basis und browserseitig nicht freigegebenes Ziel. Die
+  Engine.Scripting-Suite (393) und VisualWeb.Browser-Suite (1.380) bestehen;
+  zwei bedingte CPU-Druckfaelle melden Umgebungs-Skips. Solution-Build
+  (0 Warnungen/Fehler), `dotnet test VisualWeb.slnx --no-build`,
+  Formatverifikation und `git diff --check` bestehen.
+- Quellen: lokale
+  [DOM baseURI-Definition](../specs/cache/dom.html#dom-node-baseuri),
+  [HTML document base URL](../specs/cache/html.html#document-base-urls),
+  [LinkedStylesheets](../src/Apps/VisualWeb.PageRendering/LinkedStylesheets.cs),
+  [InlinePageScripts](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
+  [Scripting](../docs/scripting.md) und [Standardsinventar](../docs/standards.md).

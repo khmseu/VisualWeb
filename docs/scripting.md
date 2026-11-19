@@ -455,12 +455,18 @@ URL support does not enable page-script execution, add network access, or
 change the existing explicit inline-script policy. In explicitly opted-in
 PageRendering hosts for loaded pages, readonly `document.URL` and
 `document.documentURI` expose the final page URL; hosts without an associated
-page URL omit these attributes. This does not implement `Node.baseURI`, dynamic
-HTML document-base URL behavior, HTML anchor/area URL reflection, broader
-URL/Web IDL coverage or generated Web IDL
-([DOM `Document.URL`](https://dom.spec.whatwg.org/#dom-document-url),
-[DOM `Document.documentURI`](https://dom.spec.whatwg.org/#dom-document-documenturi);
-local spec ID `dom`).
+page URL omit these attributes. Those page hosts also expose `Node.baseURI`,
+recomputed on access from the current first HTML `<base href>` in tree order
+and the browser-approved base URL. A changed `href` that does not match an
+approved base falls back to the final page URL.
+Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle,
+HTML anchor/area URL reflection, broader URL/Web IDL coverage and generated Web IDL
+remain deferred. References:
+[DOM `Document.URL`](https://dom.spec.whatwg.org/#dom-document-url),
+[DOM `Document.documentURI`](https://dom.spec.whatwg.org/#dom-document-documenturi),
+[DOM `Node.baseURI`](https://dom.spec.whatwg.org/#dom-node-baseuri),
+[HTML document base URLs](https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls);
+local spec IDs `dom` and `html`.
 PageRendering's explicitly opted-in page-script hosts enable a minimal Window
 global: `window` is the same object as `globalThis`, and `webkitURL` references
 the `URL` constructor as required by the URL IDL's `LegacyWindowAlias`.

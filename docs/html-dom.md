@@ -195,8 +195,13 @@ the complete HTML script preparation, render-blocking stylesheet, scheduling
 or error-reporting algorithms; without opt-in, scripts remain inert.
 Loaded-page script hosts also expose readonly `document.URL` and
 `document.documentURI`, both serialized from the final page URL. This does not
-implement `Node.baseURI`, dynamic document-base URL behavior, or HTML anchor and
-area URL reflection.
+implement the complete document-base URL model. In these hosts, `Node.baseURI`
+is recomputed from the current first HTML `<base href>` in tree order, resolved
+against the final page URL, with the browser-approved base URL policy applied.
+The current value is recomputed on each access; a changed `href` that does not
+match a browser-approved base falls back to the final page URL.
+Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle, and
+HTML anchor/area URL reflection remain unsupported.
 Phase 11w queues inline `type="module"` sources at the same parser boundary,
 then executes them in source order after parsing and after the `interactive`
 readiness transition, before `DOMContentLoaded`. Top-level `await` must settle

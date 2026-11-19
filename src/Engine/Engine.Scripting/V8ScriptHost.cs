@@ -51,12 +51,15 @@ public sealed class V8ScriptHost : IDisposable
 
     /// <summary>Creates a bounded V8 host with optional document and page globals.</summary>
     /// <param name="documentUrl">The associated loaded-page URL exposed by the read-only Document URL attributes.</param>
+    /// <param name="documentBaseUrlProvider">The live document base URL resolver used by Node.baseURI.</param>
     /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#dom-document-url">Document.URL</see> and
     /// <see href="https://dom.spec.whatwg.org/#dom-document-documenturi">Document.documentURI</see>.
-    /// Local spec ID: dom.</remarks>
+    /// <see href="https://dom.spec.whatwg.org/#dom-node-baseuri">Node.baseURI</see> and the HTML document base URL
+    /// algorithm (<see href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls">document base URLs</see>).
+    /// Local spec IDs: dom, html.</remarks>
     public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false,
         bool enableEvents = false, bool enableDocumentLifecycle = false, bool enableWindow = false,
-        BrowserUrl? documentUrl = null)
+        BrowserUrl? documentUrl = null, Func<CancellationToken, BrowserUrl?>? documentBaseUrlProvider = null)
     {
         if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
         { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }
@@ -64,6 +67,8 @@ public sealed class V8ScriptHost : IDisposable
         { throw new ArgumentException("Window globals require a bound document."); }
         if (documentUrl is not null && document is null)
         { throw new ArgumentException("A document URL requires a bound document.", nameof(documentUrl)); }
+        if (documentBaseUrlProvider is not null && (document is null || documentUrl is null))
+        { throw new ArgumentException("A document base URL provider requires a bound document URL.", nameof(documentBaseUrlProvider)); }
         documentLifecycle = enableDocumentLifecycle;
         urls = new UrlBindings();
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
@@ -115,11 +120,12 @@ public sealed class V8ScriptHost : IDisposable
             if (enableEvents) { events = (ScriptObject)engine.Evaluate(EventBindings.Bootstrap); }
             if (document is not null)
             {
-                dom = new(document);
+                dom = new(document, documentUrl, documentBaseUrlProvider);
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 using var installDom = (ScriptObject)engine.Evaluate(DomBindings.Bootstrap);
                 using var installClasses = (ScriptObject)engine.Evaluate(ClassTokenBindings.Bootstrap);
-                wrapNode = installDom.InvokeAsFunction(events, documentLifecycle, installClasses, documentUrl?.Href) as ScriptObject
+                wrapNode = installDom.InvokeAsFunction(events, documentLifecycle, installClasses, documentUrl?.Href,
+                    documentBaseUrlProvider is not null) as ScriptObject
                     ?? throw new InvalidOperationException("DOM bootstrap did not return its private wrapper lookup.");
             }
             if (enableMicrotasks) { microtasks = (ScriptObject)engine.Evaluate(MicrotaskBindings.Bootstrap); }

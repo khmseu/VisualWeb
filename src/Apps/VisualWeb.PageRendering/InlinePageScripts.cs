@@ -2,6 +2,7 @@ using VisualWeb.Core.Url;
 using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Html;
 using VisualWeb.Engine.Scripting;
+using VisualWeb.Ipc.Contracts;
 
 namespace VisualWeb.PageRendering;
 
@@ -84,7 +85,9 @@ public static class InlinePageScripts
     {
         var document = new DomDocument();
         var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true,
-            enableDocumentLifecycle: true, enableWindow: true, documentUrl: pageUrl);
+            enableDocumentLifecycle: true, enableWindow: true, documentUrl: pageUrl,
+            documentBaseUrlProvider: cancellation => CurrentDocumentBaseUrl(document, pageUrl, baseUrl,
+                options.MaxNodes, cancellation));
         HtmlParseResult? parsed = null;
         var scripts = 0;
         try
@@ -185,5 +188,24 @@ public static class InlinePageScripts
         var parsedBaseUrl = LinkedStylesheets.BaseHrefUrl(document, pageUrl, cancellationToken);
         if (approvedBaseUrl is null) { return parsedBaseUrl ?? pageUrl; }
         return parsedBaseUrl?.Href == approvedBaseUrl.Href ? approvedBaseUrl : pageUrl;
+    }
+
+    private static BrowserUrl? CurrentDocumentBaseUrl(DomDocument document, BrowserUrl pageUrl,
+        BrowserUrl? approvedBaseUrl, int maxNodes, CancellationToken cancellationToken)
+    {
+        var count = 0;
+        foreach (var node in document.Descendants())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (++count > maxNodes) { throw new InvalidOperationException("Document base URL traversal limit exceeded."); }
+            if (node is not DomElement { LocalName: "base", NamespaceUri: DomElement.HtmlNamespace } element
+                || element.GetAttribute("href") is not { } href) { continue; }
+            if (href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new InvalidOperationException("Document base URL input limit exceeded."); }
+            var parsed = BrowserUrl.ParseResult(href, pageUrl).Url;
+            if (approvedBaseUrl is null) { return parsed ?? pageUrl; }
+            return parsed?.Href == approvedBaseUrl.Href ? approvedBaseUrl : pageUrl;
+        }
+        return approvedBaseUrl ?? pageUrl;
     }
 }

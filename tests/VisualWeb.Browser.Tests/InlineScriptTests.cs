@@ -1029,6 +1029,50 @@ public sealed class InlineScriptTests
     }
 
     [Fact]
+    public void OptedInPageScriptBaseUriUsesAndTracksTheFirstBaseHref()
+    {
+        using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/dir/page"), """
+            <!doctype html><head>
+            <base href="/first/">
+            <script>
+            const base = document.querySelector('base');
+            const initial = document.baseURI === 'https://example.test/first/' &&
+                base.baseURI === document.baseURI;
+            base.setAttribute('href', '/changed/');
+            document.title = String(initial && document.baseURI === 'https://example.test/changed/' &&
+                base.baseURI === document.baseURI);
+            </script>
+            </head>
+            """, 200, []);
+
+        var rendered = renderer.Render(page, Viewport, Cancellation);
+
+        Assert.Equal("true", rendered.Title);
+    }
+
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("<base href=\"http://[\"><base href=\"/later/\">", null)]
+    [InlineData("<base href=\"https://cdn.example.test/assets/\">", "https://example.test/dir/page")]
+    public void OptedInPageScriptBaseUriUsesFallbackForInvalidOrUnapprovedBase(string baseMarkup,
+        string? approvedBaseUrl)
+    {
+        const string pageUrl = "https://example.test/dir/page";
+        using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse(pageUrl),
+            $"<!doctype html><head>{baseMarkup}<script>document.title=String(document.baseURI==='{pageUrl}')</script></head>",
+            200, [])
+        {
+            BaseUrl = approvedBaseUrl is null ? null : BrowserUrl.Parse(approvedBaseUrl)
+        };
+
+        var rendered = renderer.Render(page, Viewport, Cancellation);
+
+        Assert.Equal("true", rendered.Title);
+    }
+
+    [Fact]
     public async Task ParserBlockingScriptResolvesAgainstTheBaseAvailableAtItsPosition()
     {
         using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);

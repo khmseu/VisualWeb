@@ -56,7 +56,20 @@ public sealed class DomBindingTests
         using var unbound = new V8ScriptHost(document: Document());
         Assert.Equal("undefined", unbound.Evaluate("typeof document.URL", Cancellation).Text);
         Assert.Equal("undefined", unbound.Evaluate("typeof document.documentURI", Cancellation).Text);
+        Assert.Equal("undefined", unbound.Evaluate("typeof document.baseURI", Cancellation).Text);
         Assert.Throws<ArgumentException>(() => new V8ScriptHost(documentUrl: BrowserUrl.Parse(url)));
+
+        const string baseUrl = "https://example.test/base/";
+        using var withBase = new V8ScriptHost(document: Document(), documentUrl: BrowserUrl.Parse(url),
+            documentBaseUrlProvider: _ => BrowserUrl.Parse(baseUrl));
+        Assert.True(withBase.Evaluate(
+            "document.baseURI===document.getElementById('child').baseURI&&document.baseURI==='" + baseUrl + "'",
+            Cancellation).Boolean);
+        Assert.Throws<ScriptExecutionException>(() =>
+            withBase.ExecuteClassic("'use strict'; document.baseURI = 'https://changed.test/';", Cancellation));
+        Assert.Throws<ScriptExecutionException>(() => withBase.ExecuteClassic(
+            "Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.getElementById('child')), 'baseURI').get.call({})",
+            Cancellation));
     }
 
     [Fact]
