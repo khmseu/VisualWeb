@@ -51,7 +51,8 @@ capture/target/bubble dispatch, without automatic browser events or live hosts
 after initial execution.
 Phase 11h adds finite readonly document readiness and private readystatechange/
 DOMContentLoaded dispatch/checkpoints under the same navigation task budgets,
-without Window/load or persistent V8.
+without the full Window interface, Window/load or persistent V8. Opted-in
+page-script hosts expose only a minimal `window` global for URL's legacy alias.
 Phase 11i adds bounded DOM queries and static NodeList snapshots, sharing the
 existing first-party CSS selector parser and native Node wrapper identities.
 Phase 11j adds className and live bounded classList, including ordered token

@@ -1002,6 +1002,19 @@ public sealed class InlineScriptTests
     }
 
     [Fact]
+    public void OptedInPageScriptGlobalExposesWindowAndUrlLegacyAlias()
+    {
+        using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("https://example.test/page"),
+            "<!doctype html><title>before</title><script>document.title=String(window===globalThis&&window.document===document&&window.webkitURL===URL&&webkitURL===URL)</script>",
+            200, []);
+
+        var rendered = renderer.Render(page, Viewport, Cancellation);
+
+        Assert.Equal("true", rendered.Title);
+    }
+
+    [Fact]
     public async Task ParserBlockingScriptResolvesAgainstTheBaseAvailableAtItsPosition()
     {
         using var renderer = new StaticPageRenderer(FontPath, 1000, executeInlineScripts: true);

@@ -878,7 +878,7 @@ and readystatechange events before paint, with native checkpoints between
 stages and shared navigation budgets. Listener failures preserve the published
 page; retained resize never repeats lifecycle. The initial scripts are
 parser-blocking, but this finite lifecycle remains an approximation, not the
-complete HTML scheduling model or Window/load support.
+complete HTML scheduling model, a full Window interface, or Window/load support.
 Phase 11i exposes bounded querySelector/querySelectorAll and Element
 matches/closest. Static list wrappers retain node identity; query-driven
 lifecycle style/title changes participate in paint and retained resize.

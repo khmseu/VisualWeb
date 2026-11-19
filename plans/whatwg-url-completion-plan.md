@@ -38,3 +38,11 @@ Extend VisualWeb's current bounded URL support toward the WHATWG URL Standard wi
 **Open Questions**
 
 1. None for the approved scope: the user approved Core URL completion plus browser-facing `URL`/`URLSearchParams` behavior and interface-specific Web IDL semantics, excluding general Web IDL.
+
+## Approved follow-on scope and implementation: URL Window alias
+
+On 2026-11-19, the user approved the minimal Window-global integration needed
+for the URL IDL's `[LegacyWindowAlias=webkitURL]`. Opted-in page-script hosts
+now expose `window === globalThis` and `webkitURL === URL`; plain hosts and
+hosts with only a bound document remain unchanged. The full Window interface,
+its other members and load-event behavior remain out of scope.

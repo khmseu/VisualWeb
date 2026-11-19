@@ -29,8 +29,10 @@ Phase 11g adds native-JavaScript listener/Event identities and synchronous
 synthetic DOM propagation with snapshotted paths; callbacks never cross IPC or
 enter the native DOM. Listeners are disposed before retained repaint.
 Phase 11h adds one-shot finite document readiness, private lifecycle events and
-verified stage checkpoints under the initial batch deadline; no Window/load
-or persistent renderer event loop is implied.
+verified stage checkpoints under the initial batch deadline; it does not add
+the full Window interface, Window/load or a persistent renderer event loop.
+Opted-in page-script hosts expose only a minimal `window === globalThis` and
+the URL `webkitURL` legacy alias.
 Phase 11i adds bounded query/matches/closest facades and static NodeList snapshots.
 Engine.Scripting references Engine.Css for selector matching and Core.Url for
 the bounded URL facades; there is no platform/chrome/network dependency or

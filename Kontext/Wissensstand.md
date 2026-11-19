@@ -8,15 +8,18 @@
 
 ## Aktueller Wissensstand
 
-**URL-IDL-Flaeche (2026-11-19; KP-508):** Der Abgleich des lokalen URL-IDL
-mit der Bindung fand als verbleibende globale Integrationsflaeche
-`[LegacyWindowAlias=webkitURL]`. Web IDL verlangt dafuer eine Eigenschaft auf
-dem `Window`-Interface; `V8ScriptHost` implementiert kein `Window` und
-exponiert nur `URL`/`URLSearchParams` auf `globalThis`. Der Alias wurde deshalb
-nicht losgeloest auf beliebigen Globals ergaenzt. Die URL- und Scripting-
-Leitfaeden benennen diese Grenze nun explizit. Eine Umsetzung gehoert zu einer
-separaten Window-Integration, nicht zum existierenden URL-Parser/Core-
-Verhalten. Allgemeine WHATWG-URL-Vollkonformitaet bleibt unbelegt.
+**URL-IDL-Legacy-Alias (2026-11-19; KP-509; Beschluss umgesetzt):** Der
+Nutzer stimmte der minimalen Window-Global-Integration fuer
+`[LegacyWindowAlias=webkitURL]` zu. Nur die explizit aktivierten
+PageRendering-Seitenhosts setzen `window === globalThis` und
+`webkitURL === URL`; Hosts ohne Opt-in und Hosts mit bloss gebundenem Dokument
+bleiben unveraendert. Das vollstaendige `Window`-Interface, weitere globale
+Browser-APIs und Window/load-Verhalten sind nicht implementiert. Belegt sind
+der Solution-Build (0 Warnungen/Fehler), 392 Engine.Scripting-Tests und 1.375
+VisualWeb.Browser-Tests; zwei CPU-Drucktests wurden bedingt uebersprungen.
+Auch `dotnet test VisualWeb.slnx --no-build`, Formatverifikation und
+`git diff --check` bestanden. Der WHATWG-URL-Support bleibt ein dokumentierter
+Teilumfang, keine Vollkonformitaetsbehauptung.
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue

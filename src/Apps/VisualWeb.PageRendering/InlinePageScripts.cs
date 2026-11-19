@@ -68,7 +68,8 @@ public static class InlinePageScripts
     internal static (V8ScriptHost Host, int Scripts) Execute(DomDocument document, CancellationToken cancellationToken)
     {
         var sources = Collect(document, cancellationToken);
-        var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true, enableDocumentLifecycle: true);
+        var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true,
+            enableDocumentLifecycle: true, enableWindow: true);
         try
         {
             host.ExecuteInitialDocumentBatch(sources, cancellationToken);
@@ -82,7 +83,8 @@ public static class InlinePageScripts
         CancellationToken cancellationToken)
     {
         var document = new DomDocument();
-        var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true, enableDocumentLifecycle: true);
+        var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true,
+            enableDocumentLifecycle: true, enableWindow: true);
         HtmlParseResult? parsed = null;
         var scripts = 0;
         try

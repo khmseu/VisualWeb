@@ -453,9 +453,12 @@ reset per host execution.
 JavaScript conversion hooks run under the normal host deadline and cancellation.
 URL support does not enable page-script execution, add network access, or
 change the existing explicit inline-script policy. Broader URL/Web IDL coverage,
-automatic document URL integration and generated Web IDL remain deferred. The
-URL IDL also declares the legacy `webkitURL` alias for the `Window` interface;
-this host does not expose `Window`, so it does not provide that alias
+automatic document URL integration and generated Web IDL remain deferred.
+PageRendering's explicitly opted-in page-script hosts enable a minimal Window
+global: `window` is the same object as `globalThis`, and `webkitURL` references
+the `URL` constructor as required by the URL IDL's `LegacyWindowAlias`.
+Plain hosts and hosts with only a bound document do not expose these globals.
+This does not implement the Window interface or its broader APIs
 ([URL IDL](https://url.spec.whatwg.org/#url-class),
 [Web IDL `LegacyWindowAlias`](https://webidl.spec.whatwg.org/#LegacyWindowAlias)).
 
@@ -1146,8 +1149,10 @@ resize fails with an explicit reload requirement instead of silently executing
 scripts again. Reload/new navigation may create a replacement worker/context.
 Static-mode resize behavior is unchanged. Retained DOM never crosses IPC.
 
-There is still no Window/global browser API, automatic event-handler dispatch,
-timer, module loader, origin/CSP enforcement or script-visible network/storage.
+There is no full Window interface or general browser API; the page global only
+has the minimal self-referential `window` needed for the URL alias. Automatic
+event-handler dispatch, timers, a module loader, origin/CSP enforcement and
+script-visible network/storage are also absent.
 Finite native microtask checkpoints and bounded top-level-await completion are
 not an HTML event-loop scheduler; no module task or pending promise is retained
 after initial execution. Do not use this mode for hostile content, even with OS
@@ -1417,10 +1422,11 @@ DOMContentLoaded-driven title/pixels and tab/history/window lifecycle.
 Formatting, editor diagnostics and whitespace checks are clean; no owned
 workers/resource scopes remain. All **58 official references** are independently
 cached/fresh without network refresh. Windows/ARM still require native target
-evidence. This remains a finite post-parse approximation: Window/load, input
-events, timers, external scripts at this phase's validation, ordinary Promise
-rejection reporting and a persistent event loop are deferred. Phase 11d later
-adds only the bounded parser-blocking classic subset.
+evidence. This remains a finite post-parse approximation: the full Window
+interface and Window/load, input events, timers, external scripts at this
+phase's validation, ordinary Promise rejection reporting and a persistent event
+loop are deferred. Phase 11d later adds only the bounded parser-blocking
+classic subset.
 
 ## Phase-11i validation outcome
 

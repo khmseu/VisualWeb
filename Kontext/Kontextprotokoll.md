@@ -15229,3 +15229,37 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [URL-Bindung](../src/Engine/Engine.Scripting/UrlBindings.cs),
   [Engine.Scripting README](../src/Engine/Engine.Scripting/README.md) und
   [Scripting guide](../docs/scripting.md#url-interfaces).
+
+### KP-509 - Minimales Window-Global fuer URL-Alias integriert
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-508; genaue Uhrzeit unbekannt.
+- Nutzerangabe: „yes“ zur vorgeschlagenen minimalen Window-Integration fuer
+  den URL-Legacy-Alias; der umfassendere WHATWG-URL-Abschlussauftrag bleibt
+  bestehen.
+- Belegt: Die URL-IDL definiert `[LegacyWindowAlias=webkitURL]`
+  (`url.html#url-class`). Opt-in-Hosts der PageRendering-Seite definieren nun
+  `window === globalThis` und `webkitURL === URL`. Normale Hosts sowie Hosts,
+  denen nur ein Dokument gebunden wurde, exponieren diese Globals nicht; das
+  Aktivieren ohne Dokument wirft `ArgumentException`. Die Integration fuehrt
+  kein vollstaendiges Window-Interface, weitere Browser-Globals oder
+  Window/load-Dispatch ein.
+- Entscheidung: Umsetzung nur in den beiden expliziten
+  PageRendering-Seitenhostpfaden, nicht pauschal in allen `V8ScriptHost`-
+  Instanzen. Der Konstruktor-Opt-in bleibt dokumentgebunden und standardmaessig
+  deaktiviert.
+- Verifikation: `dotnet build VisualWeb.slnx` erfolgreich, 0 Warnungen und
+  Fehler. Alle 392 Engine.Scripting-Tests und 1.375 VisualWeb.Browser-Tests
+  erfolgreich; zwei CPU-Drucktests wurden bedingt uebersprungen. Der fokussierte
+  URL-Binding-Testlauf bestand (30 Tests); ebenso `dotnet test VisualWeb.slnx
+--no-build`, `dotnet format VisualWeb.slnx --verify-no-changes --no-restore
+--exclude third_party` und `git diff --check`.
+- Status: Code, Regressionstests, direkt betroffene Dokumentation und
+  Kontextprotokoll aktualisiert; noch nicht committed oder gepusht.
+- Quellen: aktueller Chat (Nutzerfreigabe „yes“), [URL IDL](../specs/cache/url.html#url-class),
+  [Web IDL LegacyWindowAlias](../specs/cache/webidl.html#LegacyWindowAlias),
+  [V8ScriptHost](../src/Engine/Engine.Scripting/V8ScriptHost.cs),
+  [PageRendering](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
+  [URL-Bindungstests](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  [Inline-Script-Tests](../tests/VisualWeb.Browser.Tests/InlineScriptTests.cs)
+  und [URL-Abschlussplan](../plans/whatwg-url-completion-plan.md).

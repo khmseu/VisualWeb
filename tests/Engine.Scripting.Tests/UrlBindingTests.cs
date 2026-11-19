@@ -1,3 +1,4 @@
+using VisualWeb.Engine.Dom;
 using VisualWeb.Engine.Scripting;
 using Xunit;
 
@@ -110,6 +111,27 @@ public sealed class UrlBindingTests
                         return descriptor.get.name === `get ${name}`
                             && (!descriptor.set || descriptor.set.name === `set ${name}`);
                     });
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
+    public void WindowGlobalExposesUrlLegacyAliasOnlyWhenEnabled()
+    {
+        using var plain = new V8ScriptHost();
+        Assert.True(plain.Evaluate(
+            "typeof window === 'undefined' && typeof webkitURL === 'undefined'", Cancellation).Boolean);
+        using var documentOnly = new V8ScriptHost(document: new DomDocument());
+        Assert.True(documentOnly.Evaluate(
+            "typeof window === 'undefined' && typeof webkitURL === 'undefined'", Cancellation).Boolean);
+        Assert.Throws<ArgumentException>(() => new V8ScriptHost(enableWindow: true));
+
+        using var page = new V8ScriptHost(document: new DomDocument(), enableWindow: true);
+        Assert.True(page.Evaluate("""
+            (() => {
+                return window === globalThis && window.URL === URL && window.webkitURL === URL
+                    && window.document === document && webkitURL === URL
+                    && Object.getOwnPropertyDescriptor(globalThis, 'webkitURL').value === URL;
             })()
             """, Cancellation).Boolean);
     }

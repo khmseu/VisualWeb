@@ -31,7 +31,10 @@ Phase 11h optionally enables readonly document readiness and a one-shot
 ExecuteInitialDocumentBatch with interactive/DOMContentLoaded/complete events,
 private trusted dispatch and native checkpoints between stages. Requires
 document/events/microtasks; all stages share the initial task budgets.
-This finite post-parse approximation does not add Window/load or retain V8.
+This finite post-parse approximation does not add the full Window interface,
+Window/load or retain V8. PageRendering's opted-in page-script hosts install
+only `window === globalThis` and the URL `webkitURL` legacy alias; plain and
+document-only hosts remain unchanged.
 Phase 11w adds import-free inline module evaluation after parsing and after the
 interactive transition, before DOMContentLoaded. A private native-JavaScript
 monitor waits for module-evaluation promises and top-level await under the same

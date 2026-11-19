@@ -8,7 +8,7 @@ using VisualWeb.Engine.Dom;
 
 namespace VisualWeb.Engine.Scripting;
 
-/// <summary>One thread's private V8 context, optionally with minimal primitive-only DOM facades.</summary>
+/// <summary>One thread's private V8 context with optional bounded DOM and page-global facades.</summary>
 /// <remarks>References: clearscript-v8; <see href="https://github.com/microsoft/ClearScript">ClearScript</see>.
 /// Spec: ecmascript; <see href="https://tc39.es/ecma262/#sec-ecmascript-language-scripts-and-modules">scripts</see>.
 /// Deadlines and heap monitoring supplement, not replace, renderer OS resource limits.</remarks>
@@ -37,15 +37,24 @@ public sealed class V8ScriptHost : IDisposable
     private readonly ScriptObject? moduleCompletion;
     private readonly ScriptObject? wrapNode;
     private readonly bool documentLifecycle;
+    private const string PageWindowBootstrap = """
+        (() => {
+            const global = globalThis;
+            Object.defineProperty(global, 'window', {value:global, writable:true, configurable:true});
+            Object.defineProperty(global, 'webkitURL', {value:global.URL, writable:true, configurable:true});
+        })()
+        """;
     private bool initialDocumentExecuted;
     private bool poisoned;
     private bool disposed;
 
     public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false,
-        bool enableEvents = false, bool enableDocumentLifecycle = false)
+        bool enableEvents = false, bool enableDocumentLifecycle = false, bool enableWindow = false)
     {
         if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
         { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }
+        if (enableWindow && document is null)
+        { throw new ArgumentException("Window globals require a bound document."); }
         documentLifecycle = enableDocumentLifecycle;
         urls = new UrlBindings();
         this.timeout = timeout ?? TimeSpan.FromSeconds(2);
@@ -74,6 +83,7 @@ public sealed class V8ScriptHost : IDisposable
             engine.Execute("delete globalThis.SharedArrayBuffer; delete globalThis.Atomics; delete globalThis.WebAssembly;");
             engine.AddHostObject("__visualwebUrl", new Func<string, int, string, string>(urls.Invoke));
             engine.Execute(UrlBindings.Bootstrap);
+            if (enableWindow) { engine.Execute(PageWindowBootstrap); }
             // Capture pristine intrinsics before scripts can replace global functions.
             evaluate = (ScriptObject)engine.Evaluate("""
                 (() => {
@@ -134,7 +144,8 @@ public sealed class V8ScriptHost : IDisposable
 
     /// <summary>Execute initial inline classics and finite document readiness events under one task budget.</summary>
     /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/#the-end">the end</see>.
-    /// Post-parse approximation only: no parser-blocking scripts, Window/load or persistent event loop.</remarks>
+    /// Post-parse approximation only: no parser-blocking scripts, full Window
+    /// interface, Window/load or persistent event loop.</remarks>
     public void ExecuteInitialDocumentBatch(IReadOnlyList<string> sources, CancellationToken cancellationToken = default)
     {
         CheckUsable();
