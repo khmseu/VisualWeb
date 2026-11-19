@@ -15072,6 +15072,36 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Scripting guide](../docs/scripting.md#url-interfaces) und lokale
   Validierungsausgaben.
 
+### KP-505 - URL Web-IDL-Aufrufreihenfolge geprueft
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-504; genaue Uhrzeit unbekannt.
+- Erfassungsart: lokaler Web-IDL-Standard, Implementierungspruefung und
+  vorhandene Regressionen.
+- Nutzerangabe: Fortsetzung des URL-Auftrags; keine Umfangsaenderung.
+- Belegt: Die Web-IDL-Erzeugungsalgorithmen pruefen bei regulaeren
+  Instanzoperationen zuerst, ob `this` die Zielinterface implementiert, und
+  ermitteln/konvertieren Argumente erst danach. Attributsetter pruefen ebenfalls
+  den Receiver vor der Konvertierung des Werts. `UrlBindings` prueft
+  `paramsBrand(this)` bzw. `urlBrand(this)` vor Pflichtargument-/USVString-
+  Verarbeitung. Die Web-IDL-Record-Konvertierung normalisiert den Key vor
+  `Get(O, key)`; auch die vorhandene Reihenfolge stimmt damit ueberein. Fuer
+  zwei verschiedene JS-Property-Keys, die nach USVString-Konvertierung
+  kollidieren, behandelt Core die spaetere Zuweisung als Map-Update an der
+  urspruenglichen Listenposition. Der bestehende Test
+  `UrlSearchParamsRecordConversionIncludesEnumerableSymbolsAndNormalizesDuplicateKeys`
+  deckt Kollision, Reihenfolge und Symbol-Keys ab.
+- Ergebnis: In diesem begrenzten Receiver-/Record-Audit wurde keine neue
+  Abweichung und daher keine Codeaenderung festgestellt. Dies beweist keine
+  allgemeine Web-IDL- oder WHATWG-URL-Konformitaet. Der lokale Branch war zu
+  Beginn dieses Audits zwei Commits vor `origin/main`; kein Push.
+- Quellen: [Web IDL operation function](../specs/cache/webidl.html#dfn-create-operation-function),
+  [Web IDL attribute setter](../specs/cache/webidl.html#dfn-attribute-setter),
+  [Web IDL record conversion](../specs/cache/webidl.html#js-to-record),
+  [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [URL-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs) und
+  [Core.Record-Konstruktor](../src/Core/Core.Url/UrlSearchParams.cs).
+
 ### KP-504 - Primitive URLSearchParams-Paare ablehnen
 
 - Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).

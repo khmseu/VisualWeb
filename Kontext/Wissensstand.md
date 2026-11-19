@@ -8,6 +8,19 @@
 
 ## Aktueller Wissensstand
 
+**URL-Web-IDL-Audit (2026-11-19; KP-505):** Die aktuelle
+Argumentkonvertierungsreihenfolge ist fuer die geprueften Faelle korrekt:
+Web-IDL prueft bei Instanzoperationen zuerst den Receiver, bevor es Argumente
+konvertiert; Attributsetter pruefen ebenfalls den Receiver vor USVString-
+Konvertierung. `UrlBindings` tut dies bereits. Die JavaScript-Record-
+Konvertierung konvertiert den Property-Key vor dem Getterzugriff; auch das
+entspricht der vorhandenen Bindung. Der URLSearchParams-Record-Konstruktor
+behandelt nach USVString-Normalisierung kollidierende Keys bereits als Map-
+Updates; `UrlSearchParamsRecordConversionIncludesEnumerableSymbolsAndNormalizesDuplicateKeys`
+deckt dies ab. In diesem Audit ergab sich keine weitere Codeaenderung.
+Quellen sind die lokalen Web-IDL-Algorithmen und der genannten Test; allgemeine
+Web-IDL-Konformitaet bleibt unbelegt.
+
 **Fortsetzung (2026-11-19; KP-504):** Die URLSearchParams-Sequenzbindung
 akzeptierte primitive innere Paarwerte: `for...of` iterierte etwa einen
 String in seine Zeichen, obwohl die Web-IDL-Konvertierung von `sequence<T>`
