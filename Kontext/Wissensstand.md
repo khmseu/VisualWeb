@@ -133,6 +133,7 @@ blieb unveraendert. 399 Engine.Scripting-Tests, Solution-Build,
 Formatverifikation und 17.226 Solution-Tests bestehen; zwei CPU-pressure-
 Varianten wurden uebersprungen. Details:
 [KP-519](./Kontextprotokoll.md#kp-519---begrenzte-hyperlink-target-reflexion).
+Commit `35a0890` enthaelt diese Aenderung; er wurde nicht gepusht.
 
 **Offen - inherited `about:blank`-Basis-URL:** Die HTML-Spezifikation verlangt
 eine Momentaufnahme der effektiven Basis-URL des Initiators. Der Browser

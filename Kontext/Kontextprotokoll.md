@@ -15567,3 +15567,5 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [DomBindingTests](../tests/Engine.Scripting.Tests/DomBindingTests.cs),
   [HTML/DOM guide](../docs/html-dom.md) und
   [Scripting guide](../docs/scripting.md).
+- Commit: `35a0890` (`feat(scripting): reflect hyperlink target`), nicht
+  gepusht.
