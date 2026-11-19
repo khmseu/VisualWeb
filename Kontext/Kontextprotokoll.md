@@ -15034,3 +15034,40 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   [Scripting-Dokumentation](../docs/scripting.md#url-interfaces) und lokale
   Validierungsausgaben.
+
+### KP-503 - URLSearchParams-Paar vollstaendig konvertieren
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-502; genaue Uhrzeit unbekannt.
+- Erfassungsart: lokaler Web-IDL-Standard, URL-Initialisierungsalgorithmus,
+  Regression, Implementierung und Validierung.
+- Nutzerangabe: „continue“; keine Umfangsaenderung.
+- Belegt: Beim Vergleich der URLSearchParams-Konstruktorsequenz mit dem
+  Web-IDL-Algorithmus fuer `sequence<T>` (Werte der Reihe nach konvertieren)
+  und den URLSearchParams-Initialisierungsschritten (innere Sequenz erst
+  danach auf Laenge zwei pruefen) wurde eine Abweichung festgestellt. Die
+  Implementierung brach bisher vor Konvertierung des vierten Werts ab. Eine
+  Regression mit beobachtbarer `toString()`-Nebenwirkung scheiterte vorher
+  und besteht jetzt. `UrlBindings` konvertiert nun die Elemente bis zum
+  begrenzten 1.024-Item-Limit pro innerer Sequenz; nur die ersten zwei
+  konvertierten Werte werden gespeichert. Danach wird die Paarlaenge geprueft.
+  Das Limit und der Konvertierungsschritt sind in
+  [Scripting](../docs/scripting.md#url-interfaces) beschrieben.
+- Belegt: Fokustest, Engine.Scripting.Tests (390), Solution-Build (null
+  Warnungen/Fehler), Solution-Volltest (alle Tests; zwei bedingte
+  CPU-Drucktests uebersprungen), Formatverifikation und Diff-Check bestehen.
+- Status: Code, Regression und Dokumentation wurden als `6550f5e`
+  (`fix(engine.scripting): convert URL sequence pairs fully`) committed; der
+  Hook meldete fuer drei Dateien keine Probleme. Kontextnachtrag ist noch
+  uncommitted. `main` liegt drei Commits vor `origin/main`; kein Push in diesem
+  Arbeitsschritt.
+- Ableitung/naechster Schritt: Die beobachtbare Konvertierungsreihenfolge fuer
+  ueberlange, aber begrenzte Paare ist korrigiert. Der lokale Test ist
+  spec-derived; keine vollstaendige Web-IDL- oder WHATWG-URL-Konformitaet ist
+  daraus abgeleitet.
+- Quellen: [Web IDL sequence conversion](../specs/cache/webidl.html#js-to-sequence),
+  [URLSearchParams initialization](../specs/cache/url.html#urlsearchparams-initialize),
+  [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  [Scripting guide](../docs/scripting.md#url-interfaces) und lokale
+  Validierungsausgaben.
