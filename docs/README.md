@@ -37,7 +37,8 @@ Phase 11c adds minimal live title/ID/textContent DOM facades and binding probes,
 without enabling browser page scripts.
 Phase 11d adds explicit opt-in parser-blocking classic execution for inline and
 browser-brokered external scripts, transactional publication and retained
-scripted DOM repainting. IPC v49 carries bounded script source request/response
+scripted DOM repainting. IPC v50 carries bounded inherited about-base requests,
+effective document base-URL frame metadata, and script source request/response
 data only. Phase 11w adds import-free inline modules; module `defer` is ignored,
 while module `async`, classic async/defer scheduling and persistent event loops
 remain deferred.

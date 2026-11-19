@@ -287,7 +287,7 @@ schemes, including `javascript:`, fail visibly. URL/count/
 metadata limits and malformed hrefs fail visibly during rendering. Failed
 navigation keeps the old frame, link targets, scroll position, origin and history.
 Relative and fragment URL components are preserved. Same-document fragment
-links update the URL-only history entry and scroll the retained document to a
+links append a same-document history entry and scroll the retained document to a
 rendered element with the matching decoded `id`, or to rendered geometry of an
 `a[name]` legacy anchor when no ID matches; an empty fragment scrolls to the top.
 Inline form widgets, and inline ancestors with only widget geometry, contribute
@@ -307,9 +307,10 @@ resolve to the current tab because nested browsing contexts are absent. The firs
 `<base target>` supplies the fallback for links without their own target, for
 these same keywords. Other ASCII target names are scoped to the current window:
 the browser reuses a matching named tab or creates one when absent. The first `<base href>` resolves hyperlink
-URLs; an invalid, `data:`, or `javascript:` base URL falls back to the final
-response URL. Form actions and browser-discovered linked stylesheets use the same
-first-base resolution and fallback. Sequential focus ordering honors valid
+URLs; an invalid, `data:`, or `javascript:` base URL falls back to the document
+fallback base URL (normally the final response URL, or the inherited snapshot
+for page-created `about:blank`). Form actions and browser-discovered linked
+stylesheets use the same first-base resolution and fallback. Sequential focus ordering honors valid
 signed-32-bit `tabindex` values on these links and the supported visible,
 enabled form controls: positive values sort first in ascending order, ties and
 zero/default values retain tree order, and negative values are skipped. Invalid
@@ -581,7 +582,7 @@ empty action defaults to the final document URL. A selected submit button's
 `formaction` overrides the form action and resolves against the same base URL;
 an empty override uses the final document URL. Invalid or unsupported overrides
 fail visibly only when that submitter is activated. An invalid, `data:`, or
-`javascript:` base URL falls back to that document URL. The resulting destination still
+`javascript:` base URL falls back to that document's fallback base URL. The resulting destination still
 passes the browser's same-origin, local-file, opaque-origin, HSTS and downgrade
 checks before any form values are serialized. `_self`, `_parent`, and `_top`
 (including the first `<base target>` fallback) use the current tab; `_blank`
@@ -763,9 +764,18 @@ until a fresh load succeeds. The origin is never derived from the worker. This
 is identity only: it does not authorize requests. Page-initiated URLs matching
 `about:blank` inherit the initiating committed origin; browser-UI `about:blank`
 loads get a fresh opaque origin. The selected origin is stored with the bounded
-history entry and retained across reload/traversal. Sandbox-origin selection,
-other inherited contexts, same-origin/CORS/CSP enforcement, site isolation and
-production navigation policy remain unimplemented; explicitly selected
+history entry and retained across reload/traversal. Page-created blank
+documents also snapshot the initiator renderer's effective document base URL;
+the browser carries that distinct `AboutBaseUrl` through navigation, history,
+reload and traversal. The renderer reports its effective base (including a
+first usable `<base href>` and bounded parser-script changes) to both local and
+process callers. Missing renderer metadata blocks the page-initiated blank
+navigation rather than guessing from the response URL. Address-bar/UI blank
+navigation retains its opaque-origin behavior and has no inherited base
+snapshot. Same-document fragment entries retain the blank document's snapshot.
+Sandbox-origin selection, other inherited contexts, same-origin/CORS/CSP
+enforcement, site isolation and production navigation policy remain
+unimplemented; explicitly selected
 development navigation is unchanged.
 
 **Origin-isolated navigation renderers.** `BrowserController` accepts an
@@ -984,7 +994,7 @@ coordinates, not physical framebuffer coordinates.
 | ------------------------------------------------------- | --------: |
 | Windows                                                 |         8 |
 | Total tabs                                              |        32 |
-| URL-only history entries per tab                        |       128 |
+| History entries per tab                                 |       128 |
 | Typed address UTF-16 characters                         |      8192 |
 | Pending loads, including canceled ones not yet finished |        64 |
 | Frame pixels per page/window                            | 4,194,304 |

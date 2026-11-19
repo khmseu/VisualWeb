@@ -82,7 +82,7 @@ explicit development opt-outs. Controls and page support are unchanged; see the
 The worker's main thread performs native rendering and font disposal.
 Browser-side chrome remains a separate main-thread native owner.
 
-## Private stream protocol v49
+## Private stream protocol v50
 
 Each tab has its own inherited stdin/stdout pipe pair. There is no public
 socket, shared multiplexed channel or page-selected endpoint. Stdout carries
@@ -111,7 +111,7 @@ UTF-8 JSON metadata follows, then optional raw tightly packed opaque BGRA.
 
 | Bound                                                            |                                                     Value |
 | ---------------------------------------------------------------- | --------------------------------------------------------: |
-| Protocol version                                                 |           48, explicitly present; v1 through v47 rejected |
+| Protocol version                                                 |           50, explicitly present; v1 through v49 rejected |
 | Metadata bytes                                                   |                                                    32 MiB |
 | JSON nesting                                                     |                                                        16 |
 | Decoded HTML UTF-16 characters                                   |                                                      4 Mi |
@@ -190,6 +190,15 @@ document/request identities and a bounded request sequence; the browser applies
 its navigation deadline and script loader policy, then returns bounded source
 text or an explicit error. No renderer fetch capability or response headers
 cross IPC, and request/response identity must match exactly.
+
+Version 50 adds an optional bounded canonical `AboutBaseUrl` to render
+requests, carrying the initiating document's effective base URL only for
+page-created `about:blank` fallback. It remains separate from the CSP-approved
+`BaseUrl` override. Frame replies carry the renderer's required canonical
+`DocumentBaseUrl`, including its selected `<base href>` and bounded
+parser-script mutations. Both fields are scoped to their render-request/frame
+message kinds and contain URL strings only; DOM, origin identity, CSP policy,
+and fetch capabilities remain browser/renderer-local.
 
 Forms require `OpenInNewTab` and nullable `TargetError`, separate from other form
 errors so a selected submitter can override the form/base target. Controls require

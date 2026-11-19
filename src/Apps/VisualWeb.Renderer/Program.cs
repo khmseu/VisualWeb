@@ -163,7 +163,8 @@ try
                 {
                     DocumentId = request.DocumentId,
                     Stylesheets = request.Stylesheets!,
-                    BaseUrl = request.BaseUrl is null ? null : BrowserUrl.Parse(request.BaseUrl)
+                    BaseUrl = request.BaseUrl is null ? null : BrowserUrl.Parse(request.BaseUrl),
+                    AboutBaseUrl = request.AboutBaseUrl is null ? null : BrowserUrl.Parse(request.AboutBaseUrl)
                 };
                 var scriptRequestId = 0;
                 string FetchScript(BrowserUrl url, CancellationToken token)
@@ -216,6 +217,7 @@ try
                     Status = Bounded(rendered.Status),
                     ScrollHeight = rendered.ScrollHeight,
                     ScrollWidth = rendered.ScrollWidth,
+                    DocumentBaseUrl = rendered.DocumentBaseUrl?.Href,
                     LinkTargets = rendered.LinkTargets.ToArray(),
                     FragmentTargets = rendered.FragmentTargets.ToArray(),
                     Forms = rendered.Forms.ToArray(),

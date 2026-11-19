@@ -60,7 +60,8 @@ public sealed class V8ScriptHost : IDisposable
     public V8ScriptHost(TimeSpan? timeout = null, DomDocument? document = null, bool enableMicrotasks = false,
         bool enableEvents = false, bool enableDocumentLifecycle = false, bool enableWindow = false,
         BrowserUrl? documentUrl = null,
-        Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider = null)
+        Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider = null,
+        BrowserUrl? documentFallbackBaseUrl = null)
     {
         if (enableDocumentLifecycle && (document is null || !enableEvents || !enableMicrotasks))
         { throw new ArgumentException("Document lifecycle requires a bound document, events and microtasks."); }
@@ -121,7 +122,8 @@ public sealed class V8ScriptHost : IDisposable
             if (enableEvents) { events = (ScriptObject)engine.Evaluate(EventBindings.Bootstrap); }
             if (document is not null)
             {
-                dom = new(document, documentUrl, documentBaseUrlProvider);
+                dom = new(document, documentUrl, documentBaseUrlProvider,
+                    documentFallbackBaseUrl ?? documentUrl);
                 engine.AddHostObject("__visualwebDom", new Func<string, int, int, int, string, string, string>(dom.Invoke));
                 using var installDom = (ScriptObject)engine.Evaluate(DomBindings.Bootstrap);
                 using var installClasses = (ScriptObject)engine.Evaluate(ClassTokenBindings.Bootstrap);

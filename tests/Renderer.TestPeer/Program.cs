@@ -59,6 +59,7 @@ if (args is ["--windows-sandbox-worker", "--font", _])
         {
             Kind = "frame",
             Id = message.Id,
+            DocumentBaseUrl = message.AboutBaseUrl ?? message.BaseUrl ?? message.Url!,
             Width = message.Width,
             Height = message.Height,
             Scale = message.Scale,
@@ -101,6 +102,7 @@ if (args is ["--linux-sandbox-worker", "--font", _])
             Kind = "frame",
             ScrollHeight = message.Height,
             ScrollWidth = message.Width,
+            DocumentBaseUrl = message.AboutBaseUrl ?? message.BaseUrl ?? message.Url!,
             Width = message.Width,
             Height = message.Height,
             Scale = message.Scale,
@@ -241,6 +243,7 @@ var reply = new RendererMessage
     Title = "Test peer",
     ScrollHeight = scenario == "wrong-scroll-height" ? 0 : request.Height,
     ScrollWidth = request.Width,
+    DocumentBaseUrl = request.AboutBaseUrl ?? request.BaseUrl ?? request.Url!,
     Status = "Fixture"
 };
 if (scenario == "wrong-link-bounds")

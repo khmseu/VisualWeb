@@ -80,14 +80,16 @@ public static class InlinePageScripts
     }
 
     internal static (HtmlParseResult Parsed, V8ScriptHost Host, int Scripts) ParseAndExecute(string html,
-        BrowserUrl pageUrl, BrowserUrl? baseUrl, HtmlParserOptions options, PageScriptResourceLoader? scriptLoader,
+        BrowserUrl pageUrl, BrowserUrl fallbackBaseUrl, BrowserUrl? baseUrl, HtmlParserOptions options,
+        PageScriptResourceLoader? scriptLoader,
         CancellationToken cancellationToken)
     {
         var document = new DomDocument();
         var host = new V8ScriptHost(document: document, enableMicrotasks: true, enableEvents: true,
             enableDocumentLifecycle: true, enableWindow: true, documentUrl: pageUrl,
-            documentBaseUrlProvider: (cancellation, charge) => CurrentDocumentBaseUrl(document, pageUrl, baseUrl,
-                options.MaxNodes, cancellation, charge));
+            documentBaseUrlProvider: (cancellation, charge) => CurrentDocumentBaseUrl(document, fallbackBaseUrl, baseUrl,
+                options.MaxNodes, cancellation, charge),
+            documentFallbackBaseUrl: fallbackBaseUrl);
         HtmlParseResult? parsed = null;
         var scripts = 0;
         try
@@ -106,7 +108,7 @@ public static class InlinePageScripts
                         scripts++;
                         return;
                     }
-                    var effectiveBase = ParserBaseUrl(document, pageUrl, baseUrl, taskToken);
+                    var effectiveBase = ParserBaseUrl(document, fallbackBaseUrl, baseUrl, taskToken);
                     var source = ReadClassicSource(element, pageUrl, effectiveBase, scriptLoader, taskToken);
                     if (source.Length == 0) { return; }
                     execute(source);
@@ -182,15 +184,15 @@ public static class InlinePageScripts
         return string.Concat(element.ChildNodes.OfType<DomText>().Select(node => node.Data));
     }
 
-    private static BrowserUrl ParserBaseUrl(DomDocument document, BrowserUrl pageUrl, BrowserUrl? approvedBaseUrl,
+    private static BrowserUrl ParserBaseUrl(DomDocument document, BrowserUrl fallbackBaseUrl, BrowserUrl? approvedBaseUrl,
         CancellationToken cancellationToken)
     {
-        var parsedBaseUrl = LinkedStylesheets.BaseHrefUrl(document, pageUrl, cancellationToken);
-        if (approvedBaseUrl is null) { return parsedBaseUrl ?? pageUrl; }
-        return parsedBaseUrl?.Href == approvedBaseUrl.Href ? approvedBaseUrl : pageUrl;
+        var parsedBaseUrl = LinkedStylesheets.BaseHrefUrl(document, fallbackBaseUrl, cancellationToken);
+        if (approvedBaseUrl is null) { return parsedBaseUrl ?? fallbackBaseUrl; }
+        return parsedBaseUrl?.Href == approvedBaseUrl.Href ? approvedBaseUrl : fallbackBaseUrl;
     }
 
-    private static BrowserUrl? CurrentDocumentBaseUrl(DomDocument document, BrowserUrl pageUrl,
+    private static BrowserUrl? CurrentDocumentBaseUrl(DomDocument document, BrowserUrl fallbackBaseUrl,
         BrowserUrl? approvedBaseUrl, int maxNodes, CancellationToken cancellationToken, Action<string> charge)
     {
         var count = 0;
@@ -203,10 +205,10 @@ public static class InlinePageScripts
             if (href.Length > RendererProtocol.MaxTextCharacters)
             { throw new InvalidOperationException("Document base URL input limit exceeded."); }
             charge(href);
-            var parsed = LinkedStylesheets.ParseBaseHrefUrl(href, pageUrl);
-            if (approvedBaseUrl is null) { return parsed ?? pageUrl; }
-            return parsed?.Href == approvedBaseUrl.Href ? approvedBaseUrl : pageUrl;
+            var parsed = LinkedStylesheets.ParseBaseHrefUrl(href, fallbackBaseUrl);
+            if (approvedBaseUrl is null) { return parsed ?? fallbackBaseUrl; }
+            return parsed?.Href == approvedBaseUrl.Href ? approvedBaseUrl : fallbackBaseUrl;
         }
-        return approvedBaseUrl ?? pageUrl;
+        return approvedBaseUrl ?? fallbackBaseUrl;
     }
 }

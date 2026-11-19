@@ -30,6 +30,21 @@ public sealed class SessionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => history.Commit(Url("bad"), traversalIndex: 5));
         Assert.Equal(2, history.Index);
     }
+
+    [Fact]
+    public void SameDocumentHistoryEntriesRetainInheritedAboutBaseSnapshot()
+    {
+        var history = new NavigationHistory();
+        var blank = BrowserUrl.Parse("about:blank?source=page");
+        var inheritedBase = BrowserUrl.Parse("https://example.test/creator/base/");
+        history.Commit(blank, SecurityOrigin.CreateOpaque(), aboutBaseUrl: inheritedBase);
+
+        history.CommitSameDocument(BrowserUrl.Parse("about:blank?source=page#section"));
+
+        Assert.Equal(inheritedBase.Href, history.AboutBaseUrlAt(0)?.Href);
+        Assert.Equal(inheritedBase.Href, history.AboutBaseUrlAt(1)?.Href);
+    }
+
     [Fact]
     public void HistoryLimitEvictsOldestEntryExactly()
     {

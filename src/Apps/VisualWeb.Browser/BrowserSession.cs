@@ -34,6 +34,7 @@ public sealed class NavigationHistory
     private readonly List<BrowserUrl> entries = [];
     private readonly List<long> documentIds = [];
     private readonly List<SecurityOrigin> origins = [];
+    private readonly List<BrowserUrl?> aboutBaseUrls = [];
     private readonly List<double> scrollPositions = [];
     private readonly List<double> horizontalScrollPositions = [];
     private readonly int maximum;
@@ -54,7 +55,8 @@ public sealed class NavigationHistory
         ArgumentNullException.ThrowIfNull(url);
         Commit(url, url.Origin, traversalIndex, replace);
     }
-    internal void Commit(BrowserUrl url, SecurityOrigin origin, int? traversalIndex = null, bool replace = false)
+    internal void Commit(BrowserUrl url, SecurityOrigin origin, int? traversalIndex = null, bool replace = false,
+        BrowserUrl? aboutBaseUrl = null)
     {
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(origin);
@@ -63,16 +65,22 @@ public sealed class NavigationHistory
             if (target < 0 || target >= entries.Count) { throw new ArgumentOutOfRangeException(nameof(traversalIndex)); }
             entries[target] = url;
             origins[target] = origin;
+            aboutBaseUrls[target] = aboutBaseUrl;
             Index = target;
         }
-        else if (replace && Index >= 0) { entries[Index] = url; origins[Index] = origin; }
-        else { Append(url, origin, checked(++nextDocumentId)); }
+        else if (replace && Index >= 0)
+        {
+            entries[Index] = url;
+            origins[Index] = origin;
+            aboutBaseUrls[Index] = aboutBaseUrl;
+        }
+        else { Append(url, origin, checked(++nextDocumentId), aboutBaseUrl); }
     }
     internal void CommitSameDocument(BrowserUrl url)
     {
         ArgumentNullException.ThrowIfNull(url);
         if (Index < 0) { throw new InvalidOperationException("Cannot add a same-document entry before the first document."); }
-        Append(url, origins[Index], documentIds[Index]);
+        Append(url, origins[Index], documentIds[Index], aboutBaseUrls[Index]);
     }
     internal bool IsSameDocumentAsCurrent(int index)
     {
@@ -94,6 +102,11 @@ public sealed class NavigationHistory
         if (index < 0 || index >= origins.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
         return origins[index];
     }
+    internal BrowserUrl? AboutBaseUrlAt(int index)
+    {
+        if (index < 0 || index >= aboutBaseUrls.Count) { throw new ArgumentOutOfRangeException(nameof(index)); }
+        return aboutBaseUrls[index];
+    }
     internal void SetCurrentScrollPosition(double position)
     {
         if (!double.IsFinite(position) || position < 0) { throw new ArgumentOutOfRangeException(nameof(position)); }
@@ -104,7 +117,7 @@ public sealed class NavigationHistory
         if (!double.IsFinite(position) || position < 0) { throw new ArgumentOutOfRangeException(nameof(position)); }
         if (Index >= 0) { horizontalScrollPositions[Index] = position; }
     }
-    private void Append(BrowserUrl url, SecurityOrigin origin, long documentId)
+    private void Append(BrowserUrl url, SecurityOrigin origin, long documentId, BrowserUrl? aboutBaseUrl)
     {
         var forwardCount = entries.Count - Index - 1;
         if (forwardCount > 0)
@@ -112,12 +125,14 @@ public sealed class NavigationHistory
             entries.RemoveRange(Index + 1, forwardCount);
             documentIds.RemoveRange(Index + 1, forwardCount);
             origins.RemoveRange(Index + 1, forwardCount);
+            aboutBaseUrls.RemoveRange(Index + 1, forwardCount);
             scrollPositions.RemoveRange(Index + 1, forwardCount);
             horizontalScrollPositions.RemoveRange(Index + 1, forwardCount);
         }
         entries.Add(url);
         documentIds.Add(documentId);
         origins.Add(origin);
+        aboutBaseUrls.Add(aboutBaseUrl);
         scrollPositions.Add(0);
         horizontalScrollPositions.Add(0);
         if (entries.Count > maximum)
@@ -125,6 +140,7 @@ public sealed class NavigationHistory
             entries.RemoveAt(0);
             documentIds.RemoveAt(0);
             origins.RemoveAt(0);
+            aboutBaseUrls.RemoveAt(0);
             scrollPositions.RemoveAt(0);
             horizontalScrollPositions.RemoveAt(0);
         }

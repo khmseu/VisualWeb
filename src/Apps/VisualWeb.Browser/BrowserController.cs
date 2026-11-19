@@ -1753,6 +1753,14 @@ public sealed class BrowserController : IDisposable
         {
             return true;
         }
+        BrowserUrl? inheritedAboutBaseUrl = null;
+        if (url.IsAboutBlank)
+        {
+            if (sourceDocument is null)
+            { throw new PageNavigationException("Page-initiated about:blank navigation requires a committed source document."); }
+            inheritedAboutBaseUrl = content[id].Page?.DocumentBaseUrl
+                ?? throw new PageNavigationException("The source renderer did not provide an effective document base URL.");
+        }
         if (url.Protocol == "file:")
         { throw new PageNavigationException("Page-initiated file navigation is blocked; enter local file URLs in the address bar."); }
         if (url.Protocol == "data:")
@@ -1812,7 +1820,9 @@ public sealed class BrowserController : IDisposable
                 preserveAddressWhileLoading: preserveAddressWhileLoading
                     || authorizeRedirects && pageNavigationAuthorizer is not null,
                 authorizationSourceOrigin: sourceDocument?.Origin,
-                rewriteDestination: rewriteDestination);
+                rewriteDestination: rewriteDestination,
+                aboutBlankOrigin: aboutBlankOrigin,
+                aboutBaseUrl: inheritedAboutBaseUrl);
         }
         catch
         {
@@ -2005,7 +2015,8 @@ public sealed class BrowserController : IDisposable
         StartHistoryNavigation(tab, destination, index, false, useShellConfirmation,
             restoreScrollY: tab.History.ScrollPositionAt(index),
             restoreScrollX: tab.History.HorizontalScrollPositionAt(index),
-            aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
+            aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null,
+            aboutBaseUrl: destination.IsAboutBlank ? tab.History.AboutBaseUrlAt(index) : null);
     }
     public void Forward(TabId id) => Forward(id, useShellConfirmation: false);
     public void ForwardWithShellConfirmation(TabId id) => Forward(id, useShellConfirmation: true);
@@ -2020,7 +2031,8 @@ public sealed class BrowserController : IDisposable
         StartHistoryNavigation(tab, destination, index, false, useShellConfirmation,
             restoreScrollY: tab.History.ScrollPositionAt(index),
             restoreScrollX: tab.History.HorizontalScrollPositionAt(index),
-            aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null);
+            aboutBlankOrigin: destination.IsAboutBlank ? tab.History.OriginAt(index) : null,
+            aboutBaseUrl: destination.IsAboutBlank ? tab.History.AboutBaseUrlAt(index) : null);
     }
     public void Reload(TabId id) => Reload(id, useShellConfirmation: false);
     public void ReloadWithShellConfirmation(TabId id) => Reload(id, useShellConfirmation: true);
@@ -2030,11 +2042,12 @@ public sealed class BrowserController : IDisposable
         var tab = Session.Tab(id);
         var current = tab.History.Current ?? throw new InvalidOperationException("No committed page to reload.");
         StartHistoryNavigation(tab, current, null, true, useShellConfirmation,
-            aboutBlankOrigin: current.IsAboutBlank ? tab.History.OriginAt(tab.History.Index) : null);
+            aboutBlankOrigin: current.IsAboutBlank ? tab.History.OriginAt(tab.History.Index) : null,
+            aboutBaseUrl: current.IsAboutBlank ? tab.History.AboutBaseUrlAt(tab.History.Index) : null);
     }
     private void StartHistoryNavigation(BrowserTab tab, BrowserUrl url, int? traversal, bool replace,
         bool useShellConfirmation, double restoreScrollY = 0, double restoreScrollX = 0,
-        SecurityOrigin? aboutBlankOrigin = null)
+        SecurityOrigin? aboutBlankOrigin = null, BrowserUrl? aboutBaseUrl = null)
     {
         var document = content[tab.Id].Document;
         if (useShellConfirmation && pageNavigationAuthorizer is not null
@@ -2047,17 +2060,20 @@ public sealed class BrowserController : IDisposable
                 authorizeRedirects: true,
                 preserveAddressWhileLoading: true,
                 authorizationSourceOrigin: document?.Origin,
-                aboutBlankOrigin: aboutBlankOrigin);
+                aboutBlankOrigin: aboutBlankOrigin,
+                aboutBaseUrl: aboutBaseUrl);
             return;
         }
         Start(tab, url, traversal, replace, restoreScrollY: restoreScrollY,
-            restoreScrollX: restoreScrollX, aboutBlankOrigin: aboutBlankOrigin);
+            restoreScrollX: restoreScrollX, aboutBlankOrigin: aboutBlankOrigin,
+            aboutBaseUrl: aboutBaseUrl);
     }
     private void Start(BrowserTab tab, BrowserUrl url, int? traversal, bool replace, bool preventHttpsDowngrade = false,
         SecurityOrigin? sameOriginRedirectOrigin = null, double restoreScrollY = 0, double restoreScrollX = 0,
         bool authorizeRedirects = false,
         bool preserveAddressWhileLoading = false, SecurityOrigin? authorizationSourceOrigin = null,
-        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, SecurityOrigin? aboutBlankOrigin = null)
+        Func<BrowserUrl, BrowserUrl>? rewriteDestination = null, SecurityOrigin? aboutBlankOrigin = null,
+        BrowserUrl? aboutBaseUrl = null)
     {
         Limit();
         Cancel(tab.Id, preserveFocusEvents: true);
@@ -2072,7 +2088,7 @@ public sealed class BrowserController : IDisposable
         {
             var selectedAboutBlankOrigin = aboutBlankOrigin ?? authorizationSourceOrigin;
             task = url.IsAboutBlank && selectedAboutBlankOrigin is not null
-                ? Task.FromResult(LoadedPage.CreateAboutBlank(url, selectedAboutBlankOrigin))
+                ? Task.FromResult(LoadedPage.CreateAboutBlank(url, selectedAboutBlankOrigin, aboutBaseUrl))
                 : authorizeRedirects && pageNavigationAuthorizer is not null
                 ? LoadShellAuthorizedNavigationAsync(tab.Id, url, authorizationSourceOrigin,
                     cancellation.Token, preventHttpsDowngrade, rewriteDestination)
@@ -2367,7 +2383,11 @@ public sealed class BrowserController : IDisposable
             var tab = Session.Tab(operation.Tab);
             // Throwing steps precede publication so a rejected commit leaves renderer, document, origin and history intact.
             operation.Renderer!.CommitDocument(document.DocumentId);
-            if (!operation.Resize) { tab.History.Commit(document.Url, document.Origin, operation.Traversal, operation.Replace); }
+            if (!operation.Resize)
+            {
+                tab.History.Commit(document.Url, document.Origin, operation.Traversal, operation.Replace,
+                    document.AboutBaseUrl);
+            }
             var previous = owner.Renderer;
             if (operation.Candidate is { } candidate)
             {

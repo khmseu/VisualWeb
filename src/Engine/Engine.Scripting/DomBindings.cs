@@ -56,6 +56,7 @@ internal sealed class DomBindings : IDisposable
     private static readonly ConditionalWeakTable<DomDocument, DomBindings> Owners = new();
     private readonly DomDocument document;
     private readonly BrowserUrl? documentUrl;
+    private readonly BrowserUrl? documentFallbackBaseUrl;
     private readonly Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider;
     private readonly Dictionary<DomNode, int> identities = [];
     private readonly List<DomNode> nodes = [];
@@ -72,10 +73,12 @@ internal sealed class DomBindings : IDisposable
     };
 
     internal DomBindings(DomDocument document, BrowserUrl? documentUrl,
-        Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider)
+        Func<CancellationToken, Action<string>, BrowserUrl?>? documentBaseUrlProvider,
+        BrowserUrl? documentFallbackBaseUrl)
     {
         this.document = document;
         this.documentUrl = documentUrl;
+        this.documentFallbackBaseUrl = documentFallbackBaseUrl;
         this.documentBaseUrlProvider = documentBaseUrlProvider;
         lock (Owners)
         {
@@ -207,7 +210,8 @@ internal sealed class DomBindings : IDisposable
         var href = element.GetAttribute("href") ?? "";
         if (href.Length > MaxTextCharacters) { throw new ScriptLimitException("DOM base href input limit exceeded."); }
         Budget(href);
-        var fallbackUrl = documentUrl ?? throw new InvalidOperationException("Document URL is unavailable.");
+        var fallbackUrl = documentFallbackBaseUrl ?? documentUrl
+            ?? throw new InvalidOperationException("Document fallback base URL is unavailable.");
         Budget(fallbackUrl.Href);
         var url = BrowserUrl.ParseResult(href, fallbackUrl).Url;
         return Observe(url?.Href ?? href)!;

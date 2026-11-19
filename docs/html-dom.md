@@ -197,21 +197,26 @@ Loaded-page script hosts also expose readonly `document.URL` and
 `document.documentURI`, both serialized from the final page URL. This does not
 implement the complete document-base URL model. In these hosts, `Node.baseURI`
 is recomputed from the current first HTML `<base href>` in tree order, resolved
-against the final page URL, with the browser-approved base URL policy applied.
+against the fallback base URL (the final page URL ordinarily, or the inherited
+snapshot for a page-created `about:blank`), with the browser-approved base URL
+policy applied.
 The current value is recomputed on each access; a changed `href` that does not
-match a browser-approved base falls back to the final page URL.
-Invalid base URLs and `data:`/`javascript:` bases also fall back to the final
-page URL, consistently with stylesheet discovery.
+match a browser-approved base falls back to the document fallback base URL.
+Invalid base URLs and `data:`/`javascript:` bases also fall back to that URL,
+consistently with stylesheet discovery.
 The opted-in loaded-page facade also exposes `HTMLBaseElement.href`: it
-resolves the content attribute against the final page URL, returns the raw
-attribute when parsing fails, and reflects USVString writes. This URL
-reflection does not implement the frozen-base lifecycle.
+resolves the content attribute against the document fallback base URL, returns the raw
+attribute when parsing fails, and reflects USVString writes. Its URL parser uses
+the document's fallback base URL, so an `about:blank` base element uses the
+initiating document's inherited snapshot. This URL reflection does not implement
+the frozen-base lifecycle.
 See the [HTMLBaseElement href algorithm](https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href).
 The script facade also reflects `HTMLBaseElement.target` as a `DOMString`,
 including when no page URL is associated with the host. This property binding
 does not update the shell's already-collected hyperlink targeting metadata.
-Inherited `about:blank`/`srcdoc` base URLs and the full frozen-base lifecycle
-remain unsupported. In opted-in loaded-page script hosts, `<a>` and `<area>`
+Page-created `about:blank` has a bounded inherited fallback-base snapshot;
+browser-UI-created blank documents do not. `srcdoc` and the full frozen-base
+lifecycle remain unsupported. In opted-in loaded-page script hosts, `<a>` and `<area>`
 facades expose the `href` stringifier and the bounded `HyperlinkElementUtils`
 URL components (`origin`, `protocol`, `username`, `password`, `host`,
 `hostname`, `port`, `pathname`, `search`, and `hash`). URL getters reparse the

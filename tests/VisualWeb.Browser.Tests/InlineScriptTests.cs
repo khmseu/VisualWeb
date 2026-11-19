@@ -64,6 +64,54 @@ public sealed class InlineScriptTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task AboutBlankDocumentBaseUriAndBaseHrefUseInheritedFallback(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("about:blank"), """
+            <!doctype html><base id="base" href="ignored/">
+            <script>
+                const base = document.getElementById('base');
+                base.href = '../assets/';
+                document.title = document.baseURI + '|' + base.href;
+            </script>
+            """, 200, [])
+        {
+            AboutBaseUrl = BrowserUrl.Parse("https://example.test/dir/sub/")
+        };
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+
+        Assert.Equal("https://example.test/dir/assets/|https://example.test/dir/assets/", rendered.Title);
+        Assert.Equal("https://example.test/dir/assets/", rendered.DocumentBaseUrl?.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AboutBlankDocumentBaseUriFallsBackToInheritedBaseWithoutHref(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath, executeInlineScripts: true)
+            : new StaticPageRenderer(FontPath, 100000, executeInlineScripts: true);
+        var page = new LoadedPage(BrowserUrl.Parse("about:blank"), """
+            <!doctype html><base id="base">
+            <script>document.title = document.baseURI + '|' + document.getElementById('base').href;</script>
+            """, 200, [])
+        {
+            AboutBaseUrl = BrowserUrl.Parse("https://example.test/dir/sub/")
+        };
+
+        var rendered = await renderer.RenderAsync(page, Viewport, Cancellation);
+
+        Assert.Equal("https://example.test/dir/sub/|https://example.test/dir/sub/", rendered.Title);
+        Assert.Equal("https://example.test/dir/sub/", rendered.DocumentBaseUrl?.Href);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task DoctypeMetadataGuidesLifecyclePaintWithTransactionalResize(bool process)
     {
         using IPageRenderer renderer = process

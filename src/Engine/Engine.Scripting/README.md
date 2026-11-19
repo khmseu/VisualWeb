@@ -109,8 +109,10 @@ and integer handles. This is interface-specific behavior, not generated
 Web IDL. Opted-in loaded-page hosts also expose the bounded `href` stringifier
 and URL component properties on `<a>`/`<area>` facades; broader URL/document
 integration remains deferred. `HTMLBaseElement.href` resolves against the
-final page URL and reflects USVString writes, without modeling frozen base
-state.
+document fallback base URL (the final page URL ordinarily, or the inherited
+snapshot in a page-created `about:blank`) and reflects USVString writes, without
+modeling frozen base state. Browser-UI-created blank documents have no inherited
+base snapshot; `srcdoc` remains unsupported.
 `HTMLBaseElement.target` reflects the content attribute as a bounded `DOMString`,
 without changing shell navigation metadata already collected for a page.
 Bound document hosts also reflect `target` on `<a>` and `<area>` facades

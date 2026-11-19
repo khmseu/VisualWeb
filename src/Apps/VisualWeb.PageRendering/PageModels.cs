@@ -38,12 +38,14 @@ public sealed record LoadedPage
     /// This explicit factory is limited to <c>about:blank</c>. Callers must supply the committed creator origin
     /// only for supported page-initiated creation; browser-UI navigation passes no creator and remains opaque.
     /// This does not implement sandbox flags or nested browsing contexts.</remarks>
-    public static LoadedPage CreateAboutBlank(BrowserUrl url, SecurityOrigin? creatorOrigin = null)
+    public static LoadedPage CreateAboutBlank(BrowserUrl url, SecurityOrigin? creatorOrigin = null,
+        BrowserUrl? aboutBaseUrl = null)
     {
         ArgumentNullException.ThrowIfNull(url);
         if (!url.IsAboutBlank) { throw new ArgumentException("The URL must match about:blank.", nameof(url)); }
         return new(url, "<!doctype html><html><head></head><body></body></html>", 200, Array.Empty<string>(),
-            creatorOrigin ?? SecurityOrigin.CreateOpaque());
+            creatorOrigin ?? SecurityOrigin.CreateOpaque())
+        { AboutBaseUrl = aboutBaseUrl };
     }
 
     public BrowserUrl Url { get; }
@@ -54,6 +56,11 @@ public sealed record LoadedPage
     /// <see href="https://www.w3.org/TR/CSP3/#directive-base-uri">base-uri</see>.
     /// Data only; null preserves renderer-side base discovery.</remarks>
     public BrowserUrl? BaseUrl { get; init; }
+    /// <summary>Snapshot of the initiating document's effective base URL for a page-created about:blank document.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls"/>.
+    /// Distinct from <see cref="BaseUrl"/>, which represents a browser-approved CSP base-uri override. Null preserves
+    /// the existing UI-created blank fallback to its own URL.</remarks>
+    public BrowserUrl? AboutBaseUrl { get; init; }
     public string Html { get; init; }
     public int StatusCode { get; init; }
     public IReadOnlyList<string> Diagnostics { get; init; }
@@ -117,6 +124,10 @@ public delegate Task<string> PageScriptResourceLoader(BrowserUrl url, Cancellati
 
 public sealed record BrowserPage(RasterFrame Frame, string Title, string Status)
 {
+    /// <summary>The renderer's effective document base URL after parsing and any bounded parser-script mutations.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls"/>.
+    /// This is renderer output, not a browser-approved base-uri override.</remarks>
+    public BrowserUrl? DocumentBaseUrl { get; init; }
     public IReadOnlyList<PageLinkTarget> LinkTargets { get; init; } = Array.Empty<PageLinkTarget>();
     /// <summary>Rendered element IDs and named-anchor targets with document-space vertical offsets for browser-owned fragment scrolling.</summary>
     public IReadOnlyList<PageFragmentTarget> FragmentTargets { get; init; } = Array.Empty<PageFragmentTarget>();

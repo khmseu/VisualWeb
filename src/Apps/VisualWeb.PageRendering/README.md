@@ -6,8 +6,8 @@ configuration, embedded and linked stylesheet discovery and offline Engine.Conte
 `LoadedPage.Stylesheets` is a bounded immutable data collection (request URL,
 final response base URL and decoded CSS) validated by the shared IPC contract.
 `DiscoverStylesheets` gives the
-browser the supported classic `link rel=stylesheet` URLs (resolved against the first
-`<base href>`, with the final document URL as fallback) from the same parser options;
+browser the supported classic `link rel=stylesheet` URLs (resolved against the
+first `<base href>` and the final response URL fallback) from the same parser options;
 leading `@import` rules are discovered for embedded and linked sources and
 `CollectStyles` expands them at their cascade positions in document order.
 Optional media lists containing exact `all`, `screen`, and `print` media types are
@@ -77,7 +77,9 @@ anchors and non-text anchors without a non-empty rendered block box remain
 unsupported. IPC v37 adds the vertical offset without exposing renderer DOM identity;
 IPC v47 adds the horizontal offset and bounded root scroll width. IPC v48 adds
 unique bounded focus-target IDs to rendered links and eligible controls and
-strictly scoped focus/blur requests; no DOM handles cross the channel.
+strictly scoped focus/blur requests; IPC v50 carries inherited about-base input
+and renderer-computed document-base output as bounded URL strings; no DOM
+handles cross the channel.
 `_blank` opens a new tab; `_self`,
 `_parent`, and `_top` use the current tab, including the first `<base target>`
 fallback. Other ASCII names are preserved as current-window browsing-context
@@ -168,15 +170,27 @@ optional `LoadedPage.BaseUrl` pins a browser-approved base URL across local and
 process rendering when response `base-uri` policy is present; null preserves
 renderer-side base discovery. Script changes to `<base href>` do not update this
 bounded snapshot.
+`LoadedPage.AboutBaseUrl` is a separate optional fallback snapshot for
+page-created `about:blank`: it carries the initiator's effective document base
+URL without treating it as a base-URL override, so the blank document's own
+first usable `<base href>` can still override it. A renderer reports its
+effective `BrowserPage.DocumentBaseUrl` after parsing and the bounded
+parser-script mutations; local and process rendering use the same value.
+Renderer-side base resolution, including embedded stylesheet imports, uses this
+fallback. Browser stylesheet discovery remains a pre-script response-loading
+step and does not fetch resources for page-created blank documents.
 four-argument constructor and deconstruction remain supported, but `Url` and
 `Origin` are get-only: replace a URL by constructing a new document, not by `with`.
 The browser publishes this origin as `BrowserTab.Origin` only with a committed
 document. The browser may construct a page-initiated `about:blank` with its
-creator's committed origin; browser-UI blank pages remain fresh opaque origins.
+creator's committed origin and effective base-URL snapshot; browser-UI blank
+pages remain fresh opaque origins with no inherited base snapshot.
 Sandbox selection and other inherited-origin contexts remain unsupported. This
-identity is not same-origin enforcement, CORS or CSP. IPC remains unchanged;
-worker reconstruction has a local identity, not a transmitted browser opaque
-principal.
+identity is not same-origin enforcement, CORS or CSP. The bounded IPC v50
+request carries inherited about-base metadata, and frame replies carry the
+renderer-discovered effective base URL; neither exposes DOM or policy
+capabilities. Worker reconstruction has a local identity, not a transmitted
+browser opaque principal.
 
 No networking (linked stylesheet text is supplied by the browser), window backend or browser chrome dependencies. Unsupported page
 features fail explicitly. See the [shell guide](../../../docs/browser-shell.md)

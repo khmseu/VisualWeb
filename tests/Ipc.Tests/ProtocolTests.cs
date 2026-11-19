@@ -51,7 +51,8 @@ public sealed class ProtocolTests
             Title = "",
             Status = "",
             ScrollHeight = height,
-            ScrollWidth = 1
+            ScrollWidth = 1,
+            DocumentBaseUrl = "https://example.com/"
         }, 4));
 
     [Theory]
@@ -78,13 +79,14 @@ public sealed class ProtocolTests
             Title = "",
             Status = "",
             ScrollHeight = 1,
-            ScrollWidth = width
+            ScrollWidth = width,
+            DocumentBaseUrl = "https://example.com/"
         }, 4));
 
     [Fact]
     public void ScrollFieldsRoundTripAndRemainScopedToTheirMessageKinds()
     {
-        Assert.Equal(49, RendererProtocol.Version);
+        Assert.Equal(50, RendererProtocol.Version);
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", Version = 47 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with { Version = 43 }, 0));
@@ -151,7 +153,8 @@ public sealed class ProtocolTests
             Title = "",
             Status = "",
             ScrollHeight = 1,
-            ScrollWidth = 1
+            ScrollWidth = 1,
+            DocumentBaseUrl = "https://example.com/"
         }, 8));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollY = 1 }, 0));
         Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new() { Kind = "hello", ScrollX = 1 }, 0));
@@ -172,6 +175,7 @@ public sealed class ProtocolTests
         Stride = 8,
         Title = "",
         Status = "",
+        DocumentBaseUrl = "https://example.com/",
         ScrollHeight = 2,
         ScrollWidth = 2,
         LinkTargets = [new PageLinkTarget(0, 0, 2, 2, "https://example.com/path#part") { TabIndex = 2, FocusTargetId = 1 }],
@@ -883,9 +887,60 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public async Task AboutBaseUrlAndDocumentBaseUrlRoundTripWithStrictMessageScoping()
+    {
+        var request = Request with
+        {
+            Url = "about:blank?source=page",
+            AboutBaseUrl = "https://example.com/inherited/"
+        };
+        RendererProtocol.Validate(request, 0);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with
+        { AboutBaseUrl = "https://example.com/inherited/" }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(request with
+        { AboutBaseUrl = "/relative/" }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(request with
+        { AboutBaseUrl = "https://example.com/" + new string('a', RendererProtocol.MaxTextCharacters) }, 0));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(new()
+        { Kind = "frame", Id = 1, AboutBaseUrl = "https://example.com/" }, 0));
+        var frame = LinkFrame with { DocumentBaseUrl = "https://example.com/effective/" };
+        RendererProtocol.Validate(frame, 16);
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        { DocumentBaseUrl = "/relative/" }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        { DocumentBaseUrl = null }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame with
+        { DocumentBaseUrl = "https://example.com/" + new string('a', RendererProtocol.MaxTextCharacters) }, 16));
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(Request with
+        { DocumentBaseUrl = "https://example.com/" }, 0));
+
+        using var wire = new MemoryStream();
+        await new RendererChannel(Stream.Null, wire).WriteAsync(request, cancellationToken: Cancellation);
+        byte[] pixels = [0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255];
+        await new RendererChannel(Stream.Null, wire).WriteAsync(frame, pixels, Cancellation);
+        wire.Position = 0;
+        var reader = new RendererChannel(wire, Stream.Null);
+        Assert.Equal(request.AboutBaseUrl, (await reader.ReadAsync(Cancellation))!.Message.AboutBaseUrl);
+        Assert.Equal(frame.DocumentBaseUrl, (await reader.ReadAsync(Cancellation))!.Message.DocumentBaseUrl);
+    }
+
+    [Fact]
+    public void EffectiveBaseFieldIsRequiredOnlyForFrameReplies()
+    {
+        var hello = JsonSerializer.Deserialize<RendererMessage>(
+            """{"Version":50,"Kind":"hello","Id":0}""")!;
+        RendererProtocol.Validate(hello, 0);
+
+        var json = JsonNode.Parse(JsonSerializer.Serialize(LinkFrame))!.AsObject();
+        json.Remove(nameof(RendererMessage.DocumentBaseUrl));
+        var frame = JsonSerializer.Deserialize<RendererMessage>(json.ToJsonString())!;
+        Assert.Throws<IpcProtocolException>(() => RendererProtocol.Validate(frame, 16));
+    }
+
+    [Fact]
     public void GroupedLinkRectsAreRequiredBoundedAndDataOnly()
     {
-        Assert.Equal(49, RendererProtocol.Version);
+        Assert.Equal(50, RendererProtocol.Version);
         Assert.Equal(64, RendererProtocol.MaxLinkRects);
         var link = LinkFrame.LinkTargets![0];
         var rect = link.Rects[0];
@@ -1202,7 +1257,9 @@ public sealed class ProtocolTests
             CommittedDocumentId = Request.DocumentId,
             ScrollY = 48,
             ScrollX = 12,
+            Url = "about:blank?source=page",
             BaseUrl = "https://example.com/base/",
+            AboutBaseUrl = "https://example.com/inherited/",
             Stylesheets = [new("https://example.com/a.css", "p{content:\"café <&>\"}")
                 { BaseUrl = "https://example.com/assets/a.css" }]
         };
@@ -1226,7 +1283,8 @@ public sealed class ProtocolTests
             Title = "café",
             Status = "Ready",
             ScrollHeight = 100,
-            ScrollWidth = 20
+            ScrollWidth = 20,
+            DocumentBaseUrl = "https://example.com/effective/"
         };
         await writer.WriteAsync(reply, pixels, Cancellation);
         await writer.WriteAsync(new() { Kind = "error", Id = 2, Error = "Unsupported page" }, cancellationToken: Cancellation);
@@ -1236,7 +1294,7 @@ public sealed class ProtocolTests
         Assert.Equal("hello", handshake.Kind);
         Assert.Equal("linux-bwrap-seccomp-cgroup-v2", handshake.SandboxProfile);
         var request = (await reader.ReadAsync(Cancellation))!.Message;
-        Assert.Equal(Request.Html, request.Html); Assert.Equal(Request.Url, request.Url);
+        Assert.Equal(input.Html, request.Html); Assert.Equal(input.Url, request.Url);
         Assert.Equal(Request.Diagnostics, request.Diagnostics);
         Assert.Equal(Request.DocumentId, request.DocumentId);
         Assert.Equal(input.CommittedDocumentId, request.CommittedDocumentId);
@@ -1244,12 +1302,14 @@ public sealed class ProtocolTests
         Assert.Equal(input.ScrollY, request.ScrollY);
         Assert.Equal(input.ScrollX, request.ScrollX);
         Assert.Equal(input.BaseUrl, request.BaseUrl);
+        Assert.Equal(input.AboutBaseUrl, request.AboutBaseUrl);
         Assert.Equal(input.Stylesheets, request.Stylesheets);
         Assert.Equal("https://example.com/assets/a.css", Assert.Single(request.Stylesheets!).BaseUrl);
         var frame = (await reader.ReadAsync(Cancellation))!;
         Assert.Equal(pixels, frame.Pixels); Assert.Equal(reply.Title, frame.Message.Title);
         Assert.Equal(reply.ScrollHeight, frame.Message.ScrollHeight);
         Assert.Equal(reply.ScrollWidth, frame.Message.ScrollWidth);
+        Assert.Equal(reply.DocumentBaseUrl, frame.Message.DocumentBaseUrl);
         Assert.Equal("error", (await reader.ReadAsync(Cancellation))!.Message.Kind);
         Assert.Null(await reader.ReadAsync(Cancellation));
     }

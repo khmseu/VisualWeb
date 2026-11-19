@@ -509,6 +509,10 @@ public sealed record RendererMessage
     public long Id { get; init; }
     public string? Url { get; init; }
     public string? BaseUrl { get; init; }
+    /// <summary>Render requests only: inherited fallback base URL snapshot for page-created about:blank.</summary>
+    public string? AboutBaseUrl { get; init; }
+    /// <summary>Frame replies only: effective document base URL discovered by the renderer.</summary>
+    public string? DocumentBaseUrl { get; init; }
     public string? Html { get; init; }
     public int StatusCode { get; init; }
     public string[]? Diagnostics { get; init; }
@@ -572,7 +576,7 @@ public static class RendererProtocol
     private const string ClickEventType = "click";
     private const string AuxClickEventType = "auxclick";
 
-    public const int Version = 49;
+    public const int Version = 50;
     public const double MaxScrollHeight = 10_000_000;
     public const int MaxHeaderBytes = 32 * 1024 * 1024;
     public const int MaxPixels = 4_194_304;
@@ -627,6 +631,10 @@ public static class RendererProtocol
         { throw new IpcProtocolException("Linked stylesheets belong only to render requests."); }
         if (message.Kind != RenderKind && message.BaseUrl is not null)
         { throw new IpcProtocolException("Base URL overrides belong only to render requests."); }
+        if (message.Kind != RenderKind && message.AboutBaseUrl is not null)
+        { throw new IpcProtocolException("Inherited about base URLs belong only to render requests."); }
+        if (message.Kind != FrameKind && message.DocumentBaseUrl is not null)
+        { throw new IpcProtocolException("Effective document base URLs belong only to frame replies."); }
         if (message.Kind != RenderKind && message.ScrollOffsets is not null)
         { throw new IpcProtocolException("Nested scroll offsets belong only to render requests."); }
         if (message.Kind is not (ScriptRequestKind or ScriptResponseKind)
@@ -666,6 +674,7 @@ public static class RendererProtocol
                 if (payloadLength != 0 || message.DocumentId == Guid.Empty || message.Html is null || message.Html.Length > MaxHtmlCharacters
                     || string.IsNullOrEmpty(message.Url) || message.Url.Length > MaxTextCharacters
                     || message.BaseUrl is { Length: 0 or > MaxTextCharacters }
+                    || message.AboutBaseUrl is { Length: 0 or > MaxTextCharacters }
                     || message.StatusCode is < 100 or > 599 || message.Diagnostics is null || message.Diagnostics.Length > 64
                     || message.Diagnostics.Any(d => d is null || d.Length > MaxTextCharacters))
                 {
@@ -673,6 +682,12 @@ public static class RendererProtocol
                 }
                 if (message.BaseUrl is { } baseUrl && BrowserUrl.ParseResult(baseUrl).Url?.Href != baseUrl)
                 { throw new IpcProtocolException("Base URL override must be serialized and absolute."); }
+                if (message.AboutBaseUrl is { } aboutBaseUrl
+                    && BrowserUrl.ParseResult(aboutBaseUrl).Url?.Href != aboutBaseUrl)
+                { throw new IpcProtocolException("Inherited about base URL must be serialized and absolute."); }
+                if (message.AboutBaseUrl is not null
+                    && BrowserUrl.ParseResult(message.Url!).Url?.IsAboutBlank != true)
+                { throw new IpcProtocolException("Inherited about base URL is valid only for about:blank documents."); }
                 ValidateStylesheets(message.Stylesheets);
                 ValidateScrollOffsets(message.ScrollOffsets);
                 Dimensions(message.Width, message.Height, message.Scale);
@@ -689,10 +704,14 @@ public static class RendererProtocol
                     || (long)message.PixelWidth * 4 != message.Stride
                     || (long)message.Stride * message.PixelHeight != payloadLength
                     || message.Title is null || message.Title.Length > MaxTextCharacters
-                    || message.Status is null || message.Status.Length > MaxTextCharacters)
+                    || message.Status is null || message.Status.Length > MaxTextCharacters
+                    || string.IsNullOrEmpty(message.DocumentBaseUrl)
+                    || message.DocumentBaseUrl.Length > MaxTextCharacters)
                 {
                     throw new IpcProtocolException("Invalid renderer frame dimensions, stride, text or bytes.");
                 }
+                if (BrowserUrl.ParseResult(message.DocumentBaseUrl).Url?.Href != message.DocumentBaseUrl)
+                { throw new IpcProtocolException("Effective document base URL must be serialized and absolute."); }
                 if (!double.IsFinite(message.ScrollHeight) || message.ScrollHeight < 0 || message.ScrollHeight > MaxScrollHeight)
                 { throw new IpcProtocolException("Invalid renderer scroll height."); }
                 if (!double.IsFinite(message.ScrollWidth) || message.ScrollWidth < 0 || message.ScrollWidth > MaxScrollHeight)

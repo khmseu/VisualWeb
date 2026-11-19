@@ -1,6 +1,6 @@
 # Ipc.Contracts
 
-Version-48 data-only hello/render/frame/error messages, confirmed sandbox
+Version-50 data-only hello/render/frame/error messages, confirmed sandbox
 profile handshake and exact
 viewport/text/frame budgets. No DOM, V8, native handles or broker capabilities.
 Each private channel serves one tab with monotonically increasing request IDs.
@@ -29,7 +29,7 @@ and error are mutually exclusive and restricted to submit buttons. Target errors
 remain separate from other form errors.
 
 These are internal contracts, not a web standard. See the
-[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v48).
+[private stream protocol and wire-format limits](../../../docs/renderer-processes.md#private-stream-protocol-v50).
 Every control requires nullable `Dirname` metadata. Non-null names must be
 nonempty, at most 8192 UTF-16 code units, and restricted to text/search/email/tel/url/password
 or textarea; their JSON counts toward the aggregate form budget. The renderer
@@ -40,6 +40,11 @@ Render requests may carry a serialized absolute `BaseUrl` override (at most
 8192 characters) for the browser-approved document base URL; the worker uses it
 for stylesheet, link and form resolution without receiving response policies or
 fetch capabilities.
+Render requests may separately carry a serialized absolute `AboutBaseUrl`
+fallback for page-created `about:blank`; it does not pin or replace the blank
+document's own `<base href>`. Frame replies require the renderer-discovered
+effective `DocumentBaseUrl`, bounded to 8192 characters. Each field is
+restricted to its matching message kind.
 Render requests require a `Stylesheets` array (rejected on other kinds): at most
 32 unique absolute serialized URLs (8192 characters each) with decoded CSS text of
 at most 256 Ki characters each and a 1 MiB UTF-8 JSON budget for the whole array.
@@ -58,4 +63,4 @@ Version 48 adds unique bounded opaque per-document focus-target identities for
 links and eligible controls plus strictly scoped trusted focus/blur requests.
 These IDs are not DOM identifiers or handles; focus replies contain no page data.
 The browser and worker validate identity uniqueness and the aggregate target
-limit. See the [protocol limits](../../../docs/renderer-processes.md#private-stream-protocol-v48).
+limit. See the [protocol limits](../../../docs/renderer-processes.md#private-stream-protocol-v50).

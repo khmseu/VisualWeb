@@ -169,7 +169,10 @@ public sealed class OriginIsolationTests
         {
             PageFactory = viewport => Blank(viewport, "Origin")
                 with
-            { LinkTargets = [new PageLinkTarget(0, 0, 10, 10, "about:blank?source=page")] }
+            {
+                DocumentBaseUrl = BrowserUrl.Parse("https://creator.example/effective/base/"),
+                LinkTargets = [new PageLinkTarget(0, 0, 10, 10, "about:blank?source=page")]
+            }
         };
         var tab = harness.Tab();
         var creator = harness.Complete(tab, "https://creator.example/", "https://creator.example/");
@@ -181,11 +184,13 @@ public sealed class OriginIsolationTests
         var inheritedOrigin = tab.Origin;
         Assert.Same(creator.Origin, inheritedOrigin);
         Assert.Equal("about:blank?source=page", tab.History.Current!.Href);
+        Assert.Equal("https://creator.example/effective/base/", creatorRenderer.Pages[^1].AboutBaseUrl?.Href);
         Assert.Single(harness.Renderers);
         Assert.Equal(2, creatorRenderer.Pages.Count);
 
         harness.Controller.Reload(tab.Id);
         harness.Controller.Pump(_ => Viewport);
+        Assert.Equal("https://creator.example/effective/base/", creatorRenderer.Pages[^1].AboutBaseUrl?.Href);
         Assert.Same(inheritedOrigin, tab.Origin);
         Assert.Equal(2, tab.History.Entries.Count);
 
@@ -195,7 +200,20 @@ public sealed class OriginIsolationTests
         harness.Controller.Pump(_ => Viewport);
         Assert.Equal(1, tab.History.Index);
         Assert.Same(inheritedOrigin, tab.Origin);
+        Assert.Equal("https://creator.example/effective/base/", harness.Renderers[^1].Pages[^1].AboutBaseUrl?.Href);
         Assert.Equal(3, harness.Renderers.Count);
+
+        harness.Controller.Back(tab.Id);
+        var creatorHistory = harness.SourceOf(tab).Requests[^1];
+        creatorHistory.Completion.SetResult(new LoadedPage(BrowserUrl.Parse("https://creator.example/"),
+            "<!doctype html>", 200, []));
+        harness.Controller.Pump(_ => Viewport);
+        Assert.Equal(0, tab.History.Index);
+
+        harness.Controller.Forward(tab.Id);
+        harness.Controller.Pump(_ => Viewport);
+        Assert.Equal(1, tab.History.Index);
+        Assert.Equal("https://creator.example/effective/base/", harness.Renderers[^1].Pages[^1].AboutBaseUrl?.Href);
 
         harness.Controller.Forward(tab.Id);
         var forward = harness.SourceOf(tab).Requests[^1];
@@ -206,9 +224,61 @@ public sealed class OriginIsolationTests
 
         harness.Controller.Navigate(tab.Id, "about:blank");
         var uiBlank = harness.Finish(tab, "about:blank");
+        Assert.Null(uiBlank.AboutBaseUrl);
         Assert.True(tab.Origin!.IsOpaque);
         Assert.False(tab.Origin.IsSameOrigin(inheritedOrigin));
         Assert.False(uiBlank.Origin.IsSameOrigin(inheritedOrigin));
+    }
+
+    [Fact]
+    public void MissingEffectiveBaseMetadataBlocksPageInitiatedAboutBlank()
+    {
+        using var harness = new Harness();
+        harness.NextRenderer = () => new FakeRenderer
+        {
+            PageFactory = viewport => Blank(viewport, "No base metadata")
+                with
+            { LinkTargets = [new PageLinkTarget(0, 0, 10, 10, "about:blank")] }
+        };
+        var tab = harness.Tab();
+        harness.Complete(tab, "https://creator.example/", "https://creator.example/");
+
+        var exception = Assert.Throws<PageNavigationException>(() =>
+            harness.Controller.ActivateLink(tab.Id, 1, 1, Viewport));
+
+        Assert.Contains("effective document base URL", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(tab.History.Entries);
+    }
+
+    [Fact]
+    public void AboutBlankTargetModesSnapshotTheCommittedEffectiveBase()
+    {
+        using var harness = new Harness();
+        harness.NextRenderer = () => new FakeRenderer
+        {
+            PageFactory = viewport => Blank(viewport, "Targets")
+                with
+            {
+                DocumentBaseUrl = BrowserUrl.Parse("https://creator.example/base/"),
+                LinkTargets =
+                [
+                    new PageLinkTarget(0, 0, 10, 10, "about:blank?target=blank") { OpenInNewTab = true },
+                    new PageLinkTarget(10, 0, 10, 10, "about:blank?target=named") { TargetName = "named-context" }
+                ]
+            }
+        };
+        var sourceTab = harness.Tab();
+        harness.Complete(sourceTab, "https://creator.example/", "https://creator.example/");
+
+        Assert.True(harness.Controller.ActivateLink(sourceTab.Id, 1, 1, Viewport));
+        harness.Controller.Pump(_ => Viewport);
+        Assert.True(harness.Controller.ActivateLink(sourceTab.Id, 11, 1, Viewport));
+        harness.Controller.Pump(_ => Viewport);
+
+        var inheritedBlanks = harness.Renderers.SelectMany(renderer => renderer.Pages)
+            .Where(page => page.Url.IsAboutBlank).ToArray();
+        Assert.Equal(2, inheritedBlanks.Length);
+        Assert.All(inheritedBlanks, page => Assert.Equal("https://creator.example/base/", page.AboutBaseUrl?.Href));
     }
 
     [Fact]

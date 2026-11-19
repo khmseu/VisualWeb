@@ -457,12 +457,14 @@ PageRendering hosts for loaded pages, readonly `document.URL` and
 `document.documentURI` expose the final page URL; hosts without an associated
 page URL omit these attributes. Those page hosts also expose `Node.baseURI`,
 recomputed on access from the current first HTML `<base href>` in tree order
-and the browser-approved base URL. A changed `href` that does not match an
-approved base falls back to the final page URL.
-Invalid, `data:`, and `javascript:` base candidates also fall back to the final
-page URL, matching stylesheet base discovery.
-`HTMLBaseElement.href` resolves its content attribute against the final page
-URL, returns invalid raw input unchanged, and reflects USVString writes;
+and the browser-approved base URL. The fallback is ordinarily the final page
+URL and is the inherited base snapshot in a page-created `about:blank`
+document. A changed `href` that does not match an approved base falls back to
+that document fallback URL.
+Invalid, `data:`, and `javascript:` base candidates also fall back to the
+document fallback URL, matching stylesheet base discovery.
+`HTMLBaseElement.href` resolves its content attribute against the document
+fallback base URL, returns invalid raw input unchanged, and reflects USVString writes;
 frozen-base URL state remains unsupported.
 HTML `base` facades also reflect the `target` content attribute as a `DOMString`,
 even without an associated page URL; this does not update shell hyperlink
@@ -470,7 +472,8 @@ targeting metadata already collected for the page.
 Document-bound hosts also reflect `<a>`/`<area>` `target` as a `DOMString`
 without requiring a page URL; mutations after shell link metadata is collected
 do not update that snapshot.
-Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle,
+Page-created `about:blank` documents inherit a bounded fallback-base snapshot;
+browser-UI-created blanks do not. `srcdoc`, the full frozen-base lifecycle,
 other link properties, broader URL/Web IDL coverage and generated Web IDL
 remain deferred. In opted-in loaded-page hosts, `<a>` and `<area>` expose the
 `href` stringifier, `toString()`, and the URL components `origin`, `protocol`,

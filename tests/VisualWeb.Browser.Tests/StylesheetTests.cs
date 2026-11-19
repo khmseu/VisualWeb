@@ -675,6 +675,51 @@ public sealed class StylesheetTests
         Assert.Equal("https://example.test/safe/submit", Assert.Single(rendered.Forms).Action);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AboutBlankUsesInheritedBaseAsFallbackButAllowsBaseHrefOverride(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var page = new LoadedPage(BrowserUrl.Parse("about:blank"), """
+            <!doctype html><base href="../assets/">
+            <a href="next">Next</a><form action="submit"><button>Go</button></form>
+            """, 200, [])
+        {
+            AboutBaseUrl = BrowserUrl.Parse("https://example.test/dir/sub/")
+        };
+
+        var rendered = await renderer.RenderAsync(page, new(100, 50, 1), Cancellation);
+
+        Assert.Equal("https://example.test/dir/assets/", rendered.DocumentBaseUrl?.Href);
+        Assert.Equal("https://example.test/dir/assets/next", Assert.Single(rendered.LinkTargets).Url);
+        Assert.Equal("https://example.test/dir/assets/submit", Assert.Single(rendered.Forms).Action);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AboutBlankUsesInheritedBaseWhenNoBaseElementExists(bool process)
+    {
+        using IPageRenderer renderer = process
+            ? new ProcessPageRenderer(RendererPath, FontPath)
+            : new StaticPageRenderer(FontPath, 100000);
+        var page = new LoadedPage(BrowserUrl.Parse("about:blank"), """
+            <!doctype html><a href="next">Next</a><form action="submit"><button>Go</button></form>
+            """, 200, [])
+        {
+            AboutBaseUrl = BrowserUrl.Parse("https://example.test/dir/sub/")
+        };
+
+        var rendered = await renderer.RenderAsync(page, new(100, 50, 1), Cancellation);
+
+        Assert.Equal("https://example.test/dir/sub/", rendered.DocumentBaseUrl?.Href);
+        Assert.Equal("https://example.test/dir/sub/next", Assert.Single(rendered.LinkTargets).Url);
+        Assert.Equal("https://example.test/dir/sub/submit", Assert.Single(rendered.Forms).Action);
+    }
+
     [Fact]
     public async Task LocalAndProcessFramesAreByteIdentical()
     {

@@ -134,6 +134,7 @@ public sealed class StaticPageRenderer : IPageRenderer
                 : throw new PageNavigationException("Retained document was lost; reload explicitly rather than reparsing or rerunning scripts.");
             if (state.Source.Html != page.Html || state.Source.Url.Href != page.Url.Href
                 || state.Source.BaseUrl?.Href != page.BaseUrl?.Href
+                || state.Source.AboutBaseUrl?.Href != page.AboutBaseUrl?.Href
                 || !state.Source.Stylesheets.SequenceEqual(page.Stylesheets))
             { throw new PageNavigationException("Retained document identity does not match its source."); }
             if (state.Failure is { } failure) { throw new PageNavigationException(failure); }
@@ -142,7 +143,8 @@ public sealed class StaticPageRenderer : IPageRenderer
         {
             if (executeInlineScripts)
             {
-                var (parsed, host, scripts) = InlinePageScripts.ParseAndExecute(page.Html, page.Url, page.BaseUrl,
+                var (parsed, host, scripts) = InlinePageScripts.ParseAndExecute(page.Html, page.Url,
+                    page.AboutBaseUrl ?? page.Url, page.BaseUrl,
                     options.Html, scriptLoader, cancellationToken);
                 state = new(page, parsed, scripts, host);
             }
@@ -285,8 +287,10 @@ public sealed class StaticPageRenderer : IPageRenderer
         bool reuseDocument)
     {
         var parsed = state.Parsed;
+        var effectiveBaseUrl = EffectiveDocumentBaseUrl(parsed.Document,
+            page.AboutBaseUrl ?? page.Url, page.BaseUrl, cancellationToken);
         var sources = CollectStyles(parsed.Document, options.Css, cancellationToken, state.Source.Url,
-            state.Source.Stylesheets, state.Source.BaseUrl);
+            state.Source.Stylesheets, effectiveBaseUrl);
         var styles = CssStyleEngine.Compute(parsed.Document, sources, options.IncludeUserAgentStyle, options.Css, cancellationToken);
         if (styles.Diagnostics.Count > 0)
         {
@@ -317,11 +321,11 @@ public sealed class StaticPageRenderer : IPageRenderer
         var frame = CpuRasterizer.Render(display, paint, viewport.Scale, options: options.Paint,
             cancellationToken: cancellationToken, scrollY: clampedRootScroll, scrollX: clampedRootScrollX);
         var (links, anchors, controlGeometry, labelGeometry, textTargets) = CollectLinks(parsed.Document, layout, page.Url,
-            clampedRootScrollX, clampedRootScroll, cancellationToken, page.BaseUrl, scrollContainers, state.FocusTargetId);
+            clampedRootScrollX, clampedRootScroll, cancellationToken, effectiveBaseUrl, scrollContainers, state.FocusTargetId);
         var nestedScrollContainers = CollectScrollContainers(layout.Root, scrollContainers, viewport.Width, viewport.Height,
             clampedRootScrollX, clampedRootScroll);
         var (forms, controls) = PageForms.Collect(parsed.Document, styles, page.Url, controlGeometry, labelGeometry, links.Count,
-            layout.ViewportWidth, layout.ViewportHeight, cancellationToken, state.FocusTargetId, page.BaseUrl);
+            layout.ViewportWidth, layout.ViewportHeight, cancellationToken, state.FocusTargetId, effectiveBaseUrl);
         var title = executeInlineScripts ? parsed.Document.Title
             : parsed.Document.Descendants().OfType<DomElement>().FirstOrDefault(e => e.LocalName == "title")?.TextContent;
         var status = $"Response {page.StatusCode}; HTML diagnostics: {parsed.Errors.Count}. " + string.Join(" ", page.Diagnostics);
@@ -334,6 +338,7 @@ public sealed class StaticPageRenderer : IPageRenderer
             + options.Layout.MaxShapedGlyphs + options.Layout.MaxLines + options.Css.MaxElements + 1);
         var result = new BrowserPage(frame, string.IsNullOrWhiteSpace(title) ? page.Url.Href : title, status)
         {
+            DocumentBaseUrl = effectiveBaseUrl,
             ScrollWidth = scrollWidth,
             ScrollHeight = scrollHeight,
             LinkTargets = links,
@@ -701,7 +706,33 @@ public sealed class StaticPageRenderer : IPageRenderer
             { throw new PageNavigationException("Renderer base URL limit exceeded."); }
             return parsed;
         }
+
         return fallback;
+    }
+
+    private static BrowserUrl EffectiveDocumentBaseUrl(DomDocument document, BrowserUrl fallbackBaseUrl,
+        BrowserUrl? approvedBaseUrl, CancellationToken cancellationToken)
+    {
+        var hasBaseHref = false;
+        BrowserUrl? parsedBaseUrl = null;
+        foreach (var element in document.Descendants().OfType<DomElement>())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (element is not { LocalName: "base", NamespaceUri: DomElement.HtmlNamespace }
+                || element.GetAttribute("href") is not { } href) { continue; }
+            if (href.Length > RendererProtocol.MaxTextCharacters)
+            { throw new PageNavigationException("HTML base URL limit exceeded."); }
+            hasBaseHref = true;
+            parsedBaseUrl = LinkedStylesheets.ParseBaseHrefUrl(href, fallbackBaseUrl);
+            break;
+        }
+        var effective = approvedBaseUrl is null
+            ? parsedBaseUrl ?? fallbackBaseUrl
+            : !hasBaseHref || parsedBaseUrl?.Href == approvedBaseUrl.Href
+                ? approvedBaseUrl : fallbackBaseUrl;
+        if (effective.Href.Length > RendererProtocol.MaxTextCharacters)
+        { throw new PageNavigationException("Effective document base URL limit exceeded."); }
+        return effective;
     }
 
     private static IReadOnlyList<ScrollContainerState> ResolveScrollContainers(LayoutResult layout, CssStyleResult styles,

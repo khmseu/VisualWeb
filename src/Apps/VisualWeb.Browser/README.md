@@ -42,7 +42,7 @@ fields, including textareas, support scalar-safe Shift+Arrow/Home/End range sele
 selection follows measured visual lines; selected text is highlighted and
 Ctrl+C copies it, while typing, paste, Backspace and Delete replace the range.
 The `_blank` target keyword opens an active tab in the source window. Same-document
-fragment links and their Back/Forward traversal update URL-only history and scroll
+fragment links and their Back/Forward traversal append same-document history entries and scroll
 to bounded rendered element IDs or text-bearing legacy `<a name>` anchors without a new load. Other ASCII
 target names are scoped to the current window and reuse a matching named tab or
 create one when absent. DOM input events remain unsupported. A narrow forms subset adds shell-edited text/search/email/tel/url/password/date/time/datetime-local/month/week/number fields (password values are masked in browser chrome), checkboxes, radio groups,
@@ -93,6 +93,13 @@ The bounded response `base-uri` subset checks the first usable `<base href>`
 without `default-src` fallback. A blocked base uses the final document URL for
 browser stylesheet/import discovery and renderer link/form resolution; the
 effective base snapshot crosses IPC as data only.
+For page-initiated `about:blank`, the controller snapshots the committed
+renderer page's effective `DocumentBaseUrl` into `LoadedPage.AboutBaseUrl`,
+separately from this CSP override. This inherited fallback flows through
+`_blank`/named targets, bounded history, reload and traversal, while the blank
+document may still select its own first usable `<base href>`. The UI-created
+blank path continues to use its own URL fallback and fresh opaque origin; a
+missing renderer base snapshot blocks page-created blank navigation visibly.
 Supported CSP source lists include the bare `*` source (HTTP(S) plus the
 protected document's scheme), HTTP(S) DNS hosts, and wildcard subdomain hosts
 such as `https://*.example.test`; wildcard subdomain sources do not match the

@@ -353,6 +353,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
             Id = 1,
             Url = page.Url.Href,
             BaseUrl = page.BaseUrl?.Href,
+            AboutBaseUrl = page.AboutBaseUrl?.Href,
             Html = page.Html,
             StatusCode = page.StatusCode,
             Diagnostics = page.Diagnostics.ToArray(),
@@ -381,6 +382,7 @@ public sealed class ProcessPageRenderer : IPageRenderer
                 new(packet.Message.PixelWidth, packet.Message.PixelHeight), packet.Message.Stride);
             return new BrowserPage(frame, packet.Message.Title!, packet.Message.Status!)
             {
+                DocumentBaseUrl = BrowserUrl.Parse(packet.Message.DocumentBaseUrl!),
                 ScrollHeight = packet.Message.ScrollHeight,
                 ScrollWidth = packet.Message.ScrollWidth,
                 LinkTargets = Array.AsReadOnly(packet.Message.LinkTargets!),
