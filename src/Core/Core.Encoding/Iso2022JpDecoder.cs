@@ -4,39 +4,75 @@ namespace VisualWeb.Core.Encoding;
 
 internal static class Iso2022JpDecoder
 {
-    private enum State { Ascii, Roman, Katakana, Leading, Trailing, EscapeStart, Escape }
+    internal enum State { Ascii, Roman, Katakana, Leading, Trailing, EscapeStart, Escape }
+
+    internal struct DecoderState
+    {
+        public State State;
+        public State OutputState;
+        public int Leading;
+        public bool OutputFlag;
+    }
 
     public static string Decode(ReadOnlySpan<byte> bytes, bool fatal)
     {
+        var state = default(DecoderState);
+        return DecodeChunk(bytes, fatal, ref state, flush: true);
+    }
+
+    public static string DecodeChunk(ReadOnlySpan<byte> bytes, bool fatal, ref DecoderState decoder, bool flush)
+    {
         var output = new StringBuilder();
-        var state = State.Ascii;
-        var outputState = State.Ascii;
-        var leading = 0;
-        var outputFlag = false;
-        for (var position = 0; position <= bytes.Length;)
+        Span<int> reconsume = stackalloc int[2];
+        var reconsumeCount = 0;
+        var position = 0;
+        while (true)
         {
-            var b = position == bytes.Length ? -1 : bytes[position++];
-            switch (state)
+            int b;
+            if (reconsumeCount > 0)
+            {
+                b = reconsume[0];
+                if (reconsumeCount == 2)
+                {
+                    reconsume[0] = reconsume[1];
+                }
+
+                reconsumeCount--;
+            }
+            else if (position < bytes.Length)
+            {
+                b = bytes[position++];
+            }
+            else if (flush)
+            {
+                b = -1;
+            }
+            else
+            {
+                break;
+            }
+
+            switch (decoder.State)
             {
                 case State.EscapeStart:
                     if (b is 0x24 or 0x28)
                     {
-                        leading = b;
-                        state = State.Escape;
+                        decoder.Leading = b;
+                        decoder.State = State.Escape;
                         continue;
                     }
 
                     if (b != -1)
                     {
-                        position--;
+                        Prepend(reconsume, b, ref reconsumeCount);
                     }
 
-                    state = outputState;
-                    outputFlag = false;
+                    decoder.State = decoder.OutputState;
+                    decoder.OutputFlag = false;
                     output.Append(WebEncoding.Error(fatal));
                     continue;
                 case State.Escape:
-                    var target = (leading, b) switch
+                    var target = (decoder.Leading, b) switch
                     {
                         (0x28, 0x42) => State.Ascii,
                         (0x28, 0x4A) => State.Roman,
@@ -44,56 +80,66 @@ internal static class Iso2022JpDecoder
                         (0x24, 0x40 or 0x42) => State.Leading,
                         _ => (State?)null
                     };
+                    var leading = decoder.Leading;
+                    decoder.Leading = 0;
                     if (target is { } next)
                     {
-                        state = outputState = next;
-                        if (outputFlag)
+                        decoder.State = decoder.OutputState = next;
+                        if (decoder.OutputFlag)
                         {
                             output.Append(WebEncoding.Error(fatal));
                         }
 
-                        outputFlag = true;
+                        decoder.OutputFlag = true;
                     }
                     else
                     {
-                        position -= b == -1 ? 1 : 2;
-                        state = outputState;
-                        outputFlag = false;
+                        if (b == -1)
+                        {
+                            Prepend(reconsume, leading, ref reconsumeCount);
+                        }
+                        else
+                        {
+                            Prepend(reconsume, b, ref reconsumeCount);
+                            Prepend(reconsume, leading, ref reconsumeCount);
+                        }
+
+                        decoder.State = decoder.OutputState;
+                        decoder.OutputFlag = false;
                         output.Append(WebEncoding.Error(fatal));
                     }
 
-                    leading = 0;
                     continue;
                 case State.Trailing:
-                    state = b == 0x1B ? State.EscapeStart : State.Leading;
+                    decoder.State = b == 0x1B ? State.EscapeStart : State.Leading;
                     var mapped = b is >= 0x21 and <= 0x7E
-                        ? LegacyDecoder.Lookup("jis0208", (leading - 0x21) * 94 + b - 0x21) : null;
+                        ? LegacyDecoder.Lookup("jis0208", (decoder.Leading - 0x21) * 94 + b - 0x21) : null;
                     output.Append(mapped ?? WebEncoding.Error(fatal));
                     if (b == -1)
                     {
-                        return output.ToString();
+                        break;
                     }
 
                     continue;
                 default:
                     if (b == -1)
                     {
-                        return output.ToString();
+                        break;
                     }
 
                     if (b == 0x1B)
                     {
-                        state = State.EscapeStart;
+                        decoder.State = State.EscapeStart;
                         continue;
                     }
 
-                    outputFlag = false;
-                    switch (state)
+                    decoder.OutputFlag = false;
+                    switch (decoder.State)
                     {
                         case State.Ascii or State.Roman:
                             if (b < 0x80 && b is not (0x0E or 0x0F))
                             {
-                                output.Append((char)(state == State.Roman ? b switch
+                                output.Append((char)(decoder.State == State.Roman ? b switch
                                 {
                                     0x5C => 0xA5,
                                     0x7E => 0x203E,
@@ -113,8 +159,8 @@ internal static class Iso2022JpDecoder
                         case State.Leading:
                             if (b is >= 0x21 and <= 0x7E)
                             {
-                                leading = b;
-                                state = State.Trailing;
+                                decoder.Leading = b;
+                                decoder.State = State.Trailing;
                             }
                             else
                             {
@@ -126,8 +172,29 @@ internal static class Iso2022JpDecoder
 
                     break;
             }
+
+            if (b == -1)
+            {
+                break;
+            }
         }
 
         return output.ToString();
+    }
+
+    private static void Prepend(Span<int> pending, int value, ref int count)
+    {
+        if (count == pending.Length)
+        {
+            throw new InvalidOperationException("ISO-2022-JP reconsume queue exceeded its bound.");
+        }
+
+        if (count == 1)
+        {
+            pending[1] = pending[0];
+        }
+
+        pending[0] = value;
+        count++;
     }
 }

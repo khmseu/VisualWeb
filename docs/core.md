@@ -152,8 +152,9 @@ Its `stream` option retains UTF-8 and UTF-16LE/BE decoder and BOM state across
 chunks; stateless single-byte encodings and the pair-based Big5, Shift_JIS and
 EUC-KR decoders, plus EUC-JP, also accept chunked input, preserving each
 decoder's invalid-trail consumption and ASCII reprocessing rules. GBK/gb18030
-share the incremental gb18030 decoder state machine. ISO-2022-JP consumes
-complete buffers.
+share the incremental gb18030 decoder state machine. ISO-2022-JP retains its
+mode, escape, lead/trail and output-flag state across chunks, including
+specification-defined reconsume and final-flush behavior.
 `TextDecoderStream` and JavaScript/Web IDL bindings remain deferred.
 
 ### HTML charset prescan and sniffing subset
@@ -181,9 +182,7 @@ remembered per-page encodings, frequency-analysis autodetection, locale defaults
 and the parser's "change the encoding" reparse. There are no pinned html5lib
 `encoding/` fixtures; tests are spec-derived cases.
 
-Streaming for ISO-2022-JP, `TextEncoderStream` and JavaScript/Web IDL bindings
-remain later work; callers must collect a complete buffer when using those
-one-shot decoding paths.
+`TextEncoderStream` and JavaScript/Web IDL bindings remain later work.
 
 ## MIME
 

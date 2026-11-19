@@ -26,6 +26,18 @@ public sealed class EncodingTests
         Assert.Equal(expected, WebEncoding.ForLabel("ISO-2022-JP").Decode(bytes));
     }
 
+    [Theory]
+    [MemberData(nameof(Iso2022Vectors))]
+    public void StreamingIso2022JpMatchesOfficialVectorsAtEverySplit(byte[] bytes, string expected, string description)
+    {
+        for (var split = 0; split <= bytes.Length; split++)
+        {
+            var decoder = new WebTextDecoder("ISO-2022-JP");
+            var actual = decoder.Decode(bytes.AsSpan(0, split), stream: true) + decoder.Decode(bytes.AsSpan(split));
+            Assert.True(expected == actual, $"{description} at byte split {split}: expected {expected}, got {actual}");
+        }
+    }
+
     [Fact]
     public void EveryOfficialLabelResolvesToItsCanonicalEncoding()
     {

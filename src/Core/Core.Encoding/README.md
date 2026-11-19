@@ -12,7 +12,8 @@ single-byte encodings and the pair-based Big5, Shift_JIS and EUC-KR decoders
 also support chunk-by-chunk decoding. EUC-JP streaming retains its lead and
 JIS0212 state across chunks. Legacy decoders preserve invalid-trail consumption
 and ASCII trail reprocessing. GBK and gb18030 share the incremental gb18030
-decoder state machine; ISO-2022-JP remains one-shot.
+decoder state machine. ISO-2022-JP streaming retains shift, escape and
+lead/trail state across chunks and applies the standard's final-flush rules.
 JavaScript bindings are not provided.
 
 `WebTextEncoder.Encode` and `EncodeInto` implement the UTF-8
@@ -28,9 +29,9 @@ bytes, `meta` charset/pragma, UTF-16 `<?x` prefix, XML-declaration fallback).
 supported transport charset, prescan, then the caller's default. Neither depends
 on Engine.Html.
 
-Tables are [pinned official data](Data/README.md). The ISO-2022-JP streaming
-decoder, `TextEncoderStream`, JavaScript/Web IDL bindings, statistical/locale
-sniffing and parser-time encoding changes are not implemented.
+Tables are [pinned official data](Data/README.md). `TextEncoderStream`,
+JavaScript/Web IDL bindings, statistical/locale sniffing and parser-time
+encoding changes are not implemented.
 See the [core guide](../../../docs/core.md) for details and tests.
 
 Official sources: <https://encoding.spec.whatwg.org/> (ID `encoding`) and

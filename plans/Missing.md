@@ -1777,8 +1777,8 @@ estimates in [standards.md](../docs/standards.md#support-status). Rank only
 partially implemented WHATWG standards and select a bounded, testable,
 actionable gap for the standard or standards with the highest current estimate
 between 0% and 100%; treat tied estimates equally and recalculate at the next
-feature selection. In the current inventory, WHATWG URL and WHATWG Encoding
-are tied highest at ~30%. If the highest-ranked WHATWG standard has no
+feature selection. At the 2026-11-15 inventory, WHATWG URL and WHATWG Encoding
+were tied highest at ~30%. If the highest-ranked WHATWG standard has no
 actionable Missing item, consider the next-highest partial WHATWG estimate.
 Other standards, including ECMAScript and CSS standards, are not candidates
 under this rule. These estimates are rough ordering heuristics, not conformance
@@ -2942,6 +2942,32 @@ Engine.Scripting suite passed separately (399 tests), and the complete Browser
 suite passed (1,394 tests, two conditional CPU-pressure skips). No native
 platform smoke applies to this Core.Encoding change. Feature commit `b76f7e9`
 is local and has not been pushed.
+
+**Next standards selection (2026-11-19, after Pass 11):** The support inventory
+still ranks URL (~80%) above Encoding (~55%). The tracked bounded URL API gaps
+are implemented; its remaining omissions are broader integration or
+full-conformance work without a narrower actionable Missing item. The next
+bounded Encoding gap is ISO-2022-JP streaming.
+
+### Pass 12: incremental ISO-2022-JP TextDecoder
+
+`WebTextDecoder` now preserves the ISO-2022-JP decoder mode, output mode,
+escape, lead/trail and output-flag state across chunks. Non-final chunks do not
+act as end-of-queue; final flush applies the standard's incomplete-state and
+reconsume rules. Fatal errors and final flush reset the stream. `TextDecoderStream`
+and JavaScript/Web IDL bindings remain unsupported. The Encoding estimate
+remains ~55%; this bounded decoder addition does not warrant recalculating it.
+
+Focused coverage exercises split escapes and JIS characters, output-flag
+behavior, invalid-escape reconsume, final flush and fatal reset. Every pinned
+ISO-2022-JP decoder vector is also checked at every byte split.
+
+All 53 `WebTextDecoderTests` and 4,260 Core tests pass in Debug; the Core suite
+also passes in Release. Debug and Release solution builds pass with zero
+warnings/errors, and the complete Debug and Release solution test suites pass.
+The Browser suite reports 1,394 passed and two conditional CPU-pressure skips.
+Formatting verification and `git diff --check` pass. No native platform smoke
+applies to this Core.Encoding change.
 
 1. **HTML recovery and ordinary rendering** for simple static pages. Prioritize
    common markup, lists, basic tables, common CSS, ordinary block/inline layout,

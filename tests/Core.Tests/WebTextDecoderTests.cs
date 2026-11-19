@@ -103,16 +103,54 @@ public sealed class WebTextDecoderTests
     }
 
     [Fact]
-    public void StreamingUtf8RejectsFatalErrorsAndUnsupportedEncodings()
+    public void StreamingUtf8RejectsFatalErrorsAndResetsDecoderState()
     {
         var fatalDecoder = new WebTextDecoder(fatal: true);
-        var multiByteDecoder = new WebTextDecoder("iso-2022-jp");
 
         Assert.Equal("", fatalDecoder.Decode([0xE2], stream: true));
         Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
         Assert.Equal("A", fatalDecoder.Decode([0x41]));
-        Assert.Throws<NotSupportedException>(() => multiByteDecoder.Decode([0x41], stream: true));
-        Assert.Equal("A", multiByteDecoder.Decode([0x41]));
+    }
+
+    [Fact]
+    public void StreamingIso2022JpRetainsEscapeAndCharacterStateAcrossChunks()
+    {
+        var decoder = new WebTextDecoder("iso-2022-jp");
+
+        Assert.Equal("", decoder.Decode([0x1B], stream: true));
+        Assert.Equal("", decoder.Decode([0x24], stream: true));
+        Assert.Equal("", decoder.Decode([0x42, 0x24], stream: true));
+        Assert.Equal("\u3042", decoder.Decode([0x22, 0x1B, 0x28], stream: true));
+        Assert.Equal("A", decoder.Decode([0x42, 0x41]));
+    }
+
+    [Fact]
+    public void StreamingIso2022JpPreservesOutputFlagAndReconsumesInvalidEscapeBytes()
+    {
+        var decoder = new WebTextDecoder("iso-2022-jp");
+        var reconsumeDecoder = new WebTextDecoder("iso-2022-jp");
+
+        Assert.Equal("", decoder.Decode([0x1B, 0x24, 0x42], stream: true));
+        Assert.Equal("\uFFFD", decoder.Decode([0x1B, 0x28, 0x42], stream: true));
+        Assert.Equal("A", decoder.Decode([0x41]));
+
+        Assert.Equal("", reconsumeDecoder.Decode([0x1B], stream: true));
+        Assert.Equal("\uFFFDX", reconsumeDecoder.Decode([0x58]));
+    }
+
+    [Fact]
+    public void StreamingIso2022JpFlushesIncompleteSequencesAndResets()
+    {
+        var decoder = new WebTextDecoder("iso-2022-jp");
+        var fatalDecoder = new WebTextDecoder("iso-2022-jp", fatal: true);
+
+        Assert.Equal("", decoder.Decode([0x1B], stream: true));
+        Assert.Equal("\uFFFD$", decoder.Decode([0x24]));
+        Assert.Equal("A", decoder.Decode([0x41]));
+
+        Assert.Equal("", fatalDecoder.Decode([0x1B, 0x24], stream: true));
+        Assert.Throws<WebDecodingException>(() => fatalDecoder.Decode());
+        Assert.Equal("A", fatalDecoder.Decode([0x41]));
     }
 
     [Theory]
