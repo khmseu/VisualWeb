@@ -8,6 +8,18 @@
 
 ## Aktueller Wissensstand
 
+**URL-Web-IDL-Regressionsabdeckung (2026-11-19; KP-506):** Ergaenzt wurde
+eine Regression fuer die bereits korrekte Receiver-vor-Argument-
+Konvertierungsreihenfolge bei geborgten URLSearchParams-Operationen und
+URL-Attributsettern. Ungueltige bzw. interface-fremde Receiver muessen mit
+TypeError abgewiesen werden, ohne `Symbol.toPrimitive` der Argumente
+aufzurufen. Die Regression und alle 391 Engine.Scripting-Tests bestehen;
+Formatverifikation und Diff-Check bestehen. Commit `bb44ff5`
+(`test(engine.scripting): verify URL receiver conversion order`) enthaelt
+nur den Test. Bei Wiederaufnahme zeigte `origin/main` auf `08fcc31`, denselben
+Stand wie `main`; nach dem Testcommit liegt `main` einen Commit voraus. Kein
+Push durch diesen Arbeitsschritt; Vollkonformitaet bleibt unbelegt.
+
 **URL-Web-IDL-Audit (2026-11-19; KP-505):** Die aktuelle
 Argumentkonvertierungsreihenfolge ist fuer die geprueften Faelle korrekt:
 Web-IDL prueft bei Instanzoperationen zuerst den Receiver, bevor es Argumente

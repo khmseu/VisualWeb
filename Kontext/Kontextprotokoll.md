@@ -15072,36 +15072,6 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Scripting guide](../docs/scripting.md#url-interfaces) und lokale
   Validierungsausgaben.
 
-### KP-505 - URL Web-IDL-Aufrufreihenfolge geprueft
-
-- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
-- Ereignisdatum: Fortsetzung nach KP-504; genaue Uhrzeit unbekannt.
-- Erfassungsart: lokaler Web-IDL-Standard, Implementierungspruefung und
-  vorhandene Regressionen.
-- Nutzerangabe: Fortsetzung des URL-Auftrags; keine Umfangsaenderung.
-- Belegt: Die Web-IDL-Erzeugungsalgorithmen pruefen bei regulaeren
-  Instanzoperationen zuerst, ob `this` die Zielinterface implementiert, und
-  ermitteln/konvertieren Argumente erst danach. Attributsetter pruefen ebenfalls
-  den Receiver vor der Konvertierung des Werts. `UrlBindings` prueft
-  `paramsBrand(this)` bzw. `urlBrand(this)` vor Pflichtargument-/USVString-
-  Verarbeitung. Die Web-IDL-Record-Konvertierung normalisiert den Key vor
-  `Get(O, key)`; auch die vorhandene Reihenfolge stimmt damit ueberein. Fuer
-  zwei verschiedene JS-Property-Keys, die nach USVString-Konvertierung
-  kollidieren, behandelt Core die spaetere Zuweisung als Map-Update an der
-  urspruenglichen Listenposition. Der bestehende Test
-  `UrlSearchParamsRecordConversionIncludesEnumerableSymbolsAndNormalizesDuplicateKeys`
-  deckt Kollision, Reihenfolge und Symbol-Keys ab.
-- Ergebnis: In diesem begrenzten Receiver-/Record-Audit wurde keine neue
-  Abweichung und daher keine Codeaenderung festgestellt. Dies beweist keine
-  allgemeine Web-IDL- oder WHATWG-URL-Konformitaet. Der lokale Branch war zu
-  Beginn dieses Audits zwei Commits vor `origin/main`; kein Push.
-- Quellen: [Web IDL operation function](../specs/cache/webidl.html#dfn-create-operation-function),
-  [Web IDL attribute setter](../specs/cache/webidl.html#dfn-attribute-setter),
-  [Web IDL record conversion](../specs/cache/webidl.html#js-to-record),
-  [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
-  [URL-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs) und
-  [Core.Record-Konstruktor](../src/Core/Core.Url/UrlSearchParams.cs).
-
 ### KP-504 - Primitive URLSearchParams-Paare ablehnen
 
 - Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
@@ -15140,4 +15110,63 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
   [Regression](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   [Scripting guide](../docs/scripting.md#url-interfaces) und lokale
+  Validierungsausgaben.
+
+### KP-505 - URL Web-IDL-Aufrufreihenfolge geprueft
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-504; genaue Uhrzeit unbekannt.
+- Erfassungsart: lokaler Web-IDL-Standard, Implementierungspruefung und
+  vorhandene Regressionen.
+- Nutzerangabe: Fortsetzung des URL-Auftrags; keine Umfangsaenderung.
+- Belegt: Die Web-IDL-Erzeugungsalgorithmen pruefen bei regulaeren
+  Instanzoperationen zuerst, ob `this` die Zielinterface implementiert, und
+  ermitteln/konvertieren Argumente erst danach. Attributsetter pruefen ebenfalls
+  den Receiver vor der Konvertierung des Werts. `UrlBindings` prueft
+  `paramsBrand(this)` bzw. `urlBrand(this)` vor Pflichtargument-/USVString-
+  Verarbeitung. Die Web-IDL-Record-Konvertierung normalisiert den Key vor
+  `Get(O, key)`; auch die vorhandene Reihenfolge stimmt damit ueberein. Fuer
+  zwei verschiedene JS-Property-Keys, die nach USVString-Konvertierung
+  kollidieren, behandelt Core die spaetere Zuweisung als Map-Update an der
+  urspruenglichen Listenposition. Der bestehende Test
+  `UrlSearchParamsRecordConversionIncludesEnumerableSymbolsAndNormalizesDuplicateKeys`
+  deckt Kollision, Reihenfolge und Symbol-Keys ab.
+- Ergebnis: In diesem begrenzten Receiver-/Record-Audit wurde keine neue
+  Abweichung und daher keine Codeaenderung festgestellt. Dies beweist keine
+  allgemeine Web-IDL- oder WHATWG-URL-Konformitaet. Der lokale Branch war zu
+  Beginn dieses Audits zwei Commits vor `origin/main`; kein Push.
+- Quellen: [Web IDL operation function](../specs/cache/webidl.html#dfn-create-operation-function),
+  [Web IDL attribute setter](../specs/cache/webidl.html#dfn-attribute-setter),
+  [Web IDL record conversion](../specs/cache/webidl.html#js-to-record),
+  [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs),
+  [URL-Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs) und
+  [Core.Record-Konstruktor](../src/Core/Core.Url/UrlSearchParams.cs).
+
+### KP-506 - Receiver-vor-Argument-Regression fuer URL
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-505; genaue Uhrzeit unbekannt.
+- Erfassungsart: Web-IDL-Aufrufalgorithmus, zusaetzliche Regression und
+  lokale Test-/Format-Ausgaben.
+- Nutzerangabe: „continue“; keine Umfangsaenderung.
+- Belegt: Eine neue JavaScript-Regression prueft, dass geborgte
+  `URLSearchParams.append`- und `get`-Methoden sowie der `URL.href`-Setter
+  ungueltige bzw. interface-fremde Receiver mit TypeError ablehnen, bevor sie
+  Argumente mit `Symbol.toPrimitive` stringifizieren. Das bestehende
+  `UrlBindings` entsprach bereits der Web-IDL-Reihenfolge; Produktionscode
+  wurde nicht geaendert. Der Einzelfall und Engine.Scripting.Tests (391)
+  bestehen; Formatverifikation und Diff-Check bestehen.
+- Status: Test-only commit `bb44ff5` (`test(engine.scripting): verify URL receiver conversion order`).
+  Der Commit-Hook meldete „Found no applicable linters for changes on your branch“.
+  Zu Beginn dieses Arbeitsschritts zeigten `main` und `origin/main` beide auf
+  `08fcc31`; danach lag `main` einen Commit voraus. Kein Push durch diesen
+  Arbeitsschritt.
+- Ableitung/naechster Schritt: Die beobachtbare Receiver-/Argumentreihenfolge
+  ist jetzt direkt regressionsgeschuetzt. Weitere URL-Luecken nur bei
+  konkretem spec/WPT-Nachweis aendern; vollstaendige Konformitaet bleibt
+  unbelegt.
+- Quellen: [Web IDL operation function](../specs/cache/webidl.html#dfn-create-operation-function),
+  [Web IDL attribute setter](../specs/cache/webidl.html#dfn-attribute-setter),
+  [Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
+  [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs) und lokale
   Validierungsausgaben.
