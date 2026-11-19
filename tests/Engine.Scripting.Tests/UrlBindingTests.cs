@@ -455,6 +455,29 @@ public sealed class UrlBindingTests
     }
 
     [Fact]
+    public void UrlBorrowedOperationsCheckReceiverBeforeConvertingArguments()
+    {
+        using var host = new V8ScriptHost();
+        Assert.True(host.Evaluate("""
+            (() => {
+                let conversions = 0, rejected = 0;
+                const value = {
+                    [Symbol.toPrimitive]() { ++conversions; return 'value'; }
+                };
+                try { URLSearchParams.prototype.append.call({}, value, value); }
+                catch (error) { if (error instanceof TypeError) ++rejected; }
+                try {
+                    Object.getOwnPropertyDescriptor(URL.prototype, 'href')
+                        .set.call({}, value);
+                } catch (error) { if (error instanceof TypeError) ++rejected; }
+                try { URLSearchParams.prototype.get.call(new URL('https://example.test/'), value); }
+                catch (error) { if (error instanceof TypeError) ++rejected; }
+                return rejected === 3 && conversions === 0;
+            })()
+            """, Cancellation).Boolean);
+    }
+
+    [Fact]
     public void StringConversionUsesWebIdlStringHintAndRejectsSymbols()
     {
         using var host = new V8ScriptHost();
