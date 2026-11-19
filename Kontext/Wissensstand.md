@@ -30,8 +30,8 @@ spec-/WPT-belegten Produktionsfehler. Der lokale URL-Algorithmus fuer Blob-
 Origins beschraenkt den Pfad-URL-Fallback explizit auf HTTP, HTTPS und FILE;
 das bestehende opaque Verhalten fuer FTP, WS und WSS ist daher kein Defekt.
 Als dokumentierte Restbereiche bleiben der Blob-URL-Store (File API), die
-vollstaendige Dokument-Basis-URL-Algorithmik (insbesondere inherited
-`about:blank`/`srcdoc` und der volle frozen-base lifecycle) sowie weitere
+vollstaendige Dokument-Basis-URL-Algorithmik (insbesondere `srcdoc` und der
+volle frozen-base lifecycle) sowie weitere
 HTML-Linkeigenschaften und vollstaendiges Web IDL. Opt-in PageRendering-Hosts
 stellen die begrenzten `document.URL`/`documentURI`, `Node.baseURI` und
 `<a>`/`<area>`-URL-Komponenten aus KP-513 bis KP-515 bereit. Die groben
@@ -135,15 +135,17 @@ Varianten wurden uebersprungen. Details:
 [KP-519](./Kontextprotokoll.md#kp-519---begrenzte-hyperlink-target-reflexion).
 Commit `35a0890` enthaelt diese Aenderung; er wurde nicht gepusht.
 
-**Offen - inherited `about:blank`-Basis-URL:** Die HTML-Spezifikation verlangt
-eine Momentaufnahme der effektiven Basis-URL des Initiators. Der Browser
-vererbt derzeit nur dessen Origin; `LoadedPage.BaseUrl` ist ein CSP-gepruefter
-Override und nicht allgemein die aktuelle effektive Basis. Aus der finalen
-Dokument-URL allein abzuleiten waere falsch; eine korrekte Erweiterung muss
-die Basis-URL durch Browser-/Rendererzustand und History tragen. Siehe
-[HTML about base URL](../specs/cache/html.html#concept-document-about-base-url),
-[BrowserController](../src/Apps/VisualWeb.Browser/BrowserController.cs) und
-[LoadedPage](../src/Apps/VisualWeb.PageRendering/PageModels.cs).
+**Inherited `about:blank`-Basis-URL umgesetzt (2026-11-19; KP-520):**
+Page-created Blank-Dokumente tragen jetzt die effektive Basis-URL des
+Initiators getrennt vom CSP-Override `LoadedPage.BaseUrl`. Renderer geben die
+effektive Basis einschliesslich `<base href>` und begrenzter Parser-Script-
+Mutationen lokal sowie ueber IPC v50 zurueck. Browsernavigation, Zielmodi,
+Reload, Traversal und Same-Document-History behalten den Snapshot; UI-erzeugte
+Blanks behalten opaque Origin und lokalen Fallback ohne Vererbung. Siehe
+[KP-520](./Kontextprotokoll.md#kp-520---inherited-aboutblank-basis-url). Die
+Implementierung ist lokal vollvalidiert. Feature-Commit `96d4305` enthaelt Code,
+Tests und Leitfaeden; er wurde nicht gepusht. Der Kontextnachtrag wird separat
+committet.
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
