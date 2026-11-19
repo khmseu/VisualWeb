@@ -22,20 +22,34 @@ public abstract partial class DomNode
             sources.Add(source);
             ValidatePayload(source);
             if (!deep) { continue; }
-            if (pending.Count + (long)source.ChildNodes.Count + sources.Count > maxNodes)
+            var templateContentCount = source is DomTemplateElement ? 1 : 0;
+            if (pending.Count + (long)source.ChildNodes.Count + templateContentCount + sources.Count > maxNodes)
             { throw new InvalidOperationException("DOM clone traversal limit exceeded."); }
+            if (source is DomTemplateElement template)
+            {
+                pending.Push(template.Content);
+            }
             for (var index = source.ChildNodes.Count - 1; index >= 0; index--)
             { pending.Push(source.ChildNodes[index]); }
         }
 
         var clones = new Dictionary<DomNode, DomNode>(sources.Count);
         var cloneOwner = this is DomDocument ? (DomDocument)CloneShallow(this, null) : NodeDocument;
+        var ownerDocuments = new Dictionary<DomDocument, DomDocument> { [NodeDocument] = cloneOwner };
         if (this is DomDocument) { clones.Add(this, cloneOwner); }
         foreach (var source in sources)
         {
             if (clones.ContainsKey(source)) { continue; }
             cancellationToken.ThrowIfCancellationRequested();
-            clones.Add(source, CloneShallow(source, cloneOwner));
+            var sourceOwner = source.OwnerDocument!;
+            var destinationOwner = ownerDocuments.GetValueOrDefault(sourceOwner, sourceOwner);
+            var clone = CloneShallow(source, destinationOwner);
+            clones.Add(source, clone);
+            if (source is DomTemplateElement template && clone is DomTemplateElement copiedTemplate)
+            {
+                clones.Add(template.Content, copiedTemplate.Content);
+                ownerDocuments[template.Content.OwnerDocument!] = copiedTemplate.Content.OwnerDocument!;
+            }
         }
         if (deep)
         {
@@ -85,6 +99,7 @@ public abstract partial class DomNode
         {
             DomDocument document => new DomDocument { Mode = document.Mode },
             DomDocumentFragment => new DomDocumentFragment(owner!),
+            DomTemplateElement template => CloneTemplate(template, owner!),
             DomElement element => CloneElement(element, owner!),
             DomText text => new DomText(owner!, text.Data),
             DomComment comment => new DomComment(owner!, comment.Data),
@@ -99,6 +114,13 @@ public abstract partial class DomNode
     private static DomElement CloneElement(DomElement source, DomDocument owner)
     {
         var clone = new DomElement(owner, source.LocalName);
+        foreach (var attribute in source.Attributes) { clone.SetAttributeFromParser(attribute.Key, attribute.Value); }
+        return clone;
+    }
+
+    private static DomTemplateElement CloneTemplate(DomTemplateElement source, DomDocument owner)
+    {
+        var clone = new DomTemplateElement(owner, source.LocalName);
         foreach (var attribute in source.Attributes) { clone.SetAttributeFromParser(attribute.Key, attribute.Value); }
         return clone;
     }

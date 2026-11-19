@@ -53,4 +53,70 @@ public sealed class CloningTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.ThrowsAny<OperationCanceledException>(() => doctype.CloneNode(cancellationToken: canceled.Token));
     }
+
+    [Fact]
+    public void ShallowClone_template_has_empty_distinct_content()
+    {
+        var document = new DomDocument();
+        var source = Assert.IsType<DomTemplateElement>(document.CreateElement("template"));
+        source.Content.AppendChild(document.CreateTextNode("source"));
+
+        var clone = Assert.IsType<DomTemplateElement>(source.CloneNode(cancellationToken: Cancellation));
+
+        Assert.NotSame(source, clone);
+        Assert.NotSame(source.Content, clone.Content);
+        Assert.Empty(clone.ChildNodes);
+        Assert.Empty(clone.Content.ChildNodes);
+        Assert.Same(source.OwnerDocument, clone.OwnerDocument);
+        Assert.Same(source.Content.OwnerDocument, clone.Content.OwnerDocument);
+    }
+
+    [Fact]
+    public void DeepClone_template_copies_content_without_element_children()
+    {
+        var document = new DomDocument();
+        var source = Assert.IsType<DomTemplateElement>(document.CreateElement("template"));
+        var child = document.CreateElement("div");
+        child.AppendChild(document.CreateTextNode("source"));
+        source.Content.AppendChild(child);
+        var nested = Assert.IsType<DomTemplateElement>(source.Content.OwnerDocument!.CreateElement("template"));
+        Assert.Same(source.Content.OwnerDocument, nested.Content.OwnerDocument);
+        nested.Content.AppendChild(nested.Content.OwnerDocument!.CreateTextNode("nested"));
+        source.Content.AppendChild(nested);
+
+        var clone = Assert.IsType<DomTemplateElement>(source.CloneNode(deep: true, cancellationToken: Cancellation));
+        var clonedChild = Assert.IsType<DomElement>(clone.Content.ChildNodes[0]);
+        var nestedClone = Assert.IsType<DomTemplateElement>(clone.Content.ChildNodes[1]);
+
+        Assert.Empty(source.ChildNodes);
+        Assert.Empty(clone.ChildNodes);
+        Assert.DoesNotContain(child, source.Descendants());
+        Assert.NotSame(source.Content, clone.Content);
+        Assert.NotSame(child, clonedChild);
+        Assert.Equal("source", clonedChild.TextContent);
+        Assert.Same(clone.Content.OwnerDocument, clonedChild.OwnerDocument);
+        Assert.NotSame(nested, nestedClone);
+        Assert.NotSame(nested.Content, nestedClone.Content);
+        Assert.Equal("nested", nestedClone.Content.TextContent);
+        Assert.Same(clone.Content.OwnerDocument, nestedClone.OwnerDocument);
+        Assert.Same(clone.Content.OwnerDocument, nestedClone.Content.OwnerDocument);
+        Assert.Same(nestedClone.Content.OwnerDocument, nestedClone.Content.FirstChild!.OwnerDocument);
+        Assert.Same(source.Content.FirstChild, child);
+    }
+
+    [Fact]
+    public void DeepClone_template_preflights_content_node_limits()
+    {
+        var document = new DomDocument();
+        var source = Assert.IsType<DomTemplateElement>(document.CreateElement("template"));
+        source.Content.AppendChild(document.CreateTextNode("x"));
+        var checkedTexts = new List<string>();
+
+        Assert.Throws<InvalidOperationException>(() => source.CloneNode(
+            deep: true, maxNodes: 2, maxTextCharacters: 10, maxAttributes: 0,
+            text => { checkedTexts.Add(text); }, Cancellation));
+
+        Assert.Equal(new[] { "template" }, checkedTexts);
+        Assert.Single(source.Content.ChildNodes);
+    }
 }

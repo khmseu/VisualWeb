@@ -5,7 +5,7 @@ namespace VisualWeb.Engine.Dom;
 /// <summary>An HTML-namespace element with ordered, case-insensitive attribute names.</summary>
 /// <remarks>Spec: dom; <see href="https://dom.spec.whatwg.org/#interface-element">Element</see>.
 /// Namespace-aware attributes and element-specific behavior are deferred.</remarks>
-public sealed class DomElement : DomNode
+public class DomElement : DomNode
 {
     public const string HtmlNamespace = "http://www.w3.org/1999/xhtml";
     private readonly OrderedDictionary<string, string> attributes = new(StringComparer.Ordinal);

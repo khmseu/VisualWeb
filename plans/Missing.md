@@ -398,7 +398,10 @@ remain explicitly unsupported; rendering supports only the
 [basic automatic table subset](../docs/text-layout.md#basic-automatic-tables). Other remaining
 parser work includes:
 
-- Templates, general forms (only the simple form-pointer subset exists), select
+- Template markup remains explicitly unsupported by the parser, although the
+  native DOM now provides stable fragment-backed template contents with inert
+  owner-document, adoption, deep-clone and bounded clone-preflight behavior.
+  General forms (only the simple form-pointer subset exists), select
   handling requiring tree-building algorithms outside the currently supported
   in-body subset, SVG/MathML, and other specialized parsing algorithms.
 - Fragment parsing.
@@ -422,6 +425,10 @@ the three previously documented baseline findings.
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser APIs;
 the browser-shell form state is a separate bounded shell-owned subset.
+Native template contents are available through the C# DOM only; template markup
+still fails explicitly in the HTML parser, and script bindings/`innerHTML` remain
+deferred. This narrow DOM addition does not change the overall HTML/DOM support
+assessment or rough percentages.
 
 These are compatibility blockers: unsupported constructs can reject a page.
 

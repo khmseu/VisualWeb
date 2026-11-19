@@ -153,10 +153,17 @@ srcdoc/parser-mode-lock flags. Mode selection does not add legacy CSS sizing,
 table/image-baseline quirks or other unsupported rendering algorithms.
 
 `DomFormControls` exposes only `input type` and `button type` keyword
-normalization. There are no specialized HTML element classes, custom-element reactions,
+normalization. Apart from the bounded native template element described below,
+there are no specialized HTML element classes, custom-element reactions,
 DOM form state, form-associated custom elements, constraint-validation APIs, stylesheet application, navigation or V8 integration.
 Well-formed unsupported tags are still unsupported; this is a finite static
 subset, not general browser HTML tree-construction conformance.
+Native DOM creation of a template element is supported independently: it has a
+stable, fragment-backed `Content` property whose children are separate from
+the element's ordinary child list. Template contents use the document's inert
+template-contents owner document, including nested templates, and adoption and
+deep cloning preserve that separation. This does not enable parser support:
+HTML markup containing `<template>` still throws explicitly.
 
 ## DOM boundary and invariants
 
@@ -172,6 +179,14 @@ Moving a node adopts every descendant into the destination document.
 Fragments transfer their children and become empty. Removal preserves ownership
 but clears parent/sibling connectivity.
 
+`DomDocument.CreateElement("template")` returns a native
+`DomTemplateElement`. Its stable `Content` fragment is not a child or descendant
+of the template; its owner document is the document's inert template-contents
+owner document. Adopting a template also rehomes its contents and any nested
+template contents. Shallow clone creates a fresh empty content fragment; deep
+clone copies that separate subtree, and bounded clone preflight includes each
+template fragment and its contents.
+
 HTML factories validate element/attribute local names with their distinct DOM
 rules. Processing-instruction targets use XML Name validation. HTML parser
 recovery can emit malformed attribute names that a public DOM setter rejects;
@@ -181,8 +196,10 @@ weakening the public API. Node/attribute case folding is ASCII-only.
 Child and attribute collections have read-only public views; node/data/attribute
 mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
-Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs, cloning,
-most special element behavior and full script bindings are deferred.
+Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs,
+most special element behavior and full script bindings are deferred. Template
+markup remains unsupported by the HTML parser; no parser construction,
+script-facing template binding or `innerHTML` API is added here.
 The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup

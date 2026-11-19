@@ -7,6 +7,14 @@ namespace VisualWeb.Engine.Dom;
 /// HTML-only element and attribute names; namespace APIs are deferred.</remarks>
 public sealed class DomDocument() : DomNode(null)
 {
+    private readonly bool isTemplateContentsOwnerDocument;
+    private DomDocument? templateContentsOwnerDocument;
+
+    internal DomDocument(bool isTemplateContentsOwnerDocument) : this()
+    {
+        this.isTemplateContentsOwnerDocument = isTemplateContentsOwnerDocument;
+    }
+
     public override DomNodeType NodeType => DomNodeType.Document;
     public override string NodeName => "#document";
     public DomElement? DocumentElement => ChildNodes.OfType<DomElement>().FirstOrDefault();
@@ -41,8 +49,14 @@ public sealed class DomDocument() : DomNode(null)
     public DomElement CreateElement(string localName)
     {
         ValidateName(localName);
-        return new(this, AsciiLower(localName));
+        var normalized = AsciiLower(localName);
+        return normalized == "template"
+            ? new DomTemplateElement(this, normalized)
+            : new DomElement(this, normalized);
     }
+
+    internal DomDocument TemplateContentsOwnerDocument =>
+        isTemplateContentsOwnerDocument ? this : templateContentsOwnerDocument ??= new DomDocument(true);
 
     public DomText CreateTextNode(string data) => new(this, data);
     /// <summary>Create a detached comment with raw UTF-16 data.</summary>

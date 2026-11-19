@@ -5,6 +5,11 @@ instruction and doctype nodes. Tree insertion/replacement validates cycles,
 parent constraints and document shape before detaching anything. Insertions
 adopt entire subtrees; fragment insertion transfers its children.
 
+Native `template` elements expose a stable, separate `Content` fragment. The
+fragment and its descendants use the document's inert template-contents owner
+document; adoption and deep cloning include nested template contents. HTML
+parser construction of template markup remains deferred and unsupported.
+
 Child/attribute collections have read-only public views. Attribute names and
 HTML node names fold ASCII only. Text content, sibling links, connection status,
 ID lookup, HTML document title and explicit adoption are available.

@@ -158,10 +158,25 @@ public abstract partial class DomNode
     internal void Adopt(DomDocument document)
     {
         ParentNode?.RemoveChild(this);
-        OwnerDocument = document;
-        foreach (var descendant in Descendants())
+        AdoptSubtree(this, document);
+    }
+
+    private static void AdoptSubtree(DomNode node, DomDocument document)
+    {
+        var pending = new Stack<(DomNode Node, DomDocument Document)>();
+        pending.Push((node, document));
+        while (pending.TryPop(out var entry))
         {
-            descendant.OwnerDocument = document;
+            entry.Node.OwnerDocument = entry.Document;
+            for (var index = entry.Node.children.Count - 1; index >= 0; index--)
+            {
+                pending.Push((entry.Node.children[index], entry.Document));
+            }
+
+            if (entry.Node is DomTemplateElement template)
+            {
+                pending.Push((template.Content, entry.Document.TemplateContentsOwnerDocument));
+            }
         }
     }
 
