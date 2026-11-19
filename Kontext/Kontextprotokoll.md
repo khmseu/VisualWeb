@@ -15703,3 +15703,210 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   gepusht. Bei Wiederaufnahme stand `HEAD` und `origin/main` auf `c20ba6a`,
   das `b76f7e9` und `c20ba6a` umfasst; Zeitpunkt und Urheber dieser
   Remote-Aktualisierung sind nicht belegt.
+
+### KP-523 - WHATWG HTML und DOM als neuer Schwerpunkt
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „complete WHATWH html and dom (in parallel where features
+  correspond).“ Die Schreibweise wurde als WHATWG interpretiert. Der Nutzer
+  setzt HTML/DOM ausdruecklich als naechsten Schwerpunkt und moechte
+  korrespondierende Features parallel bearbeiten.
+- Belegte Ausgangslage: `plans/Missing.md` ordnet nach der aktuellen
+  Heuristik WHATWG URL (~80%) vor HTML/DOM (~20%) ein. Die Nutzeranweisung
+  priorisiert nun explizit HTML/DOM. Der HTML- und DOM-Manifesteintrag hat
+  `checkedAt: 2026-11-07` und ist am Dokumentationsdatum innerhalb von
+  30 Tagen. [Engine.Html](../src/Engine/Engine.Html/) dokumentiert
+  Fragmentparsing als nicht angeboten; [Engine.Dom](../src/Engine/Engine.Dom/)
+  besitzt bereits `DocumentFragment` und gepruefte Baumoperationen.
+- Weitere Artefaktpruefung: Die
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs) lehnen `<template>`
+  unter `UnsupportedTreeAlgorithmsFailExplicitly` explizit ab; der Guide
+  nennt Templates als offene Parserarbeit. Das DOM deckt
+  [Fragment-Insertion](../tests/Engine.Dom.Tests/DomTests.cs) bereits ab.
+  Die Oracle-Recherche empfiehlt `<template>`-Contents als Fragment-backed
+  HTML-/DOM-Einstieg und danach separat kontextbezogenes Fragmentparsing.
+- Ableitung: „Vervollstaendigen“ kann wegen des breiten Standards und des
+  explizit endlichen Projektumfangs nicht als einzelnes Inkrement verstanden
+  werden. Ein gestufter, bounded Auftrag benoetigt eine erste Featuregrenze.
+- Vorschlag, noch nicht beschlossen: HTML-Fragmentparsing in ein vorhandenes
+  `DocumentFragment` oder HTML-`<template>`-Contents als Fragment-backed
+  DOM-Modell samt begrenzter HTML-Tree-Construction. Die erste Option aendert
+  primaer Engine.Html, die zweite bildet die engere HTML-/DOM-Korrespondenz.
+  Scriptseitiges `innerHTML` ist im genehmigten Phase-11e-Roadmapumfang
+  ausdruecklich ausgeschlossen; eine Aufnahme erforderte eine eigene
+  Roadmapfreigabe. Andere Features koennen stattdessen gewaehlt werden.
+- Offen: Umfang und Abnahmekriterium fuer „vollstaendig“, erstes
+  zusammengehoeriges Inkrement und Fortsetzungsmodus (Q-040). Keine
+  Implementierung begonnen.
+- Verifikation dieses Eintrags: Git-Status zu Beginn sauber, Branch
+  `main` zwei Commits vor `origin/main`; HTML/DOM-Guide, Projekt-READMEs,
+  Standardsinventar, Manifest und relevante Tracker-/Roadmap-Abschnitte
+  gelesen. Keine Tests ausgefuehrt.
+- Quellen: [Missing priority](../plans/Missing.md#recommended-priority),
+  [HTML/DOM compatibility](../plans/Missing.md#4-general-html-and-dom-compatibility),
+  [HTML/DOM guide](../docs/html-dom.md),
+  [Engine.Html](../src/Engine/Engine.Html/),
+  [Engine.Dom](../src/Engine/Engine.Dom/),
+  [Tree tests](../tests/Engine.Html.Tests/TreeTests.cs),
+  [DOM fragment tests](../tests/Engine.Dom.Tests/DomTests.cs),
+  [approved roadmap](../plans/browser-foundation-plan.md#post-mvp-roadmap),
+  [standards inventory](../docs/standards.md#implemented-subsets),
+  `specs/manifest.json` entries `html` and `dom`.
+
+### KP-524 - Template-first HTML/DOM-Plan genehmigt
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe/Entscheidung: Nutzer genehmigte den vorgeschlagenen
+  Template-first Mehrphasenansatz nach vorheriger Klaerung der ersten
+  gepaarten HTML-/DOM-Arbeit.
+- Beschlossener Umfang: Phase 1 native template contents als
+  `DocumentFragment` mit inertem Template-contents owner document sowie
+  Adoption und deep cloning; Phase 2 begrenzte Parser-Tree-Construction;
+  Phase 3 subsystemuebergreifende Inertheit und Limits. Scriptseitiges
+  `innerHTML`, Template-Scriptbindings und Vollkonformitaet sind nicht Teil
+  dieses Plans. Der vollstaendige Standard-Abschluss bleibt nicht definiert.
+- Beleg: [Genehmigter Plan](../plans/whatwg-html-dom-completion-plan.md);
+  HTML- und DOM-Caches `checkedAt: 2026-11-07`, frisch am Dokumentationsdatum.
+- Status: Phase 1 wurde an den Implementierungsagenten uebergeben; Code- und
+  Testresultate folgen der Review. Keine Phase-1-Tests als bestanden
+  protokolliert.
+
+### KP-525 - Native Template Contents validiert
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Belegt: Phase 1 implementiert native `DomTemplateElement.Content`-Fragmente
+  ausserhalb der normalen Kinderliste. Template-Inhalte verwenden ein
+  wiederverwendetes inertes Template-contents owner document, auch bei
+  verschachtelten Templates; Adoption und Deep Clone erhalten die Trennung.
+  Shallow Clone erstellt ein eigenes leeres Fragment. Clone-Preflight zaehlt
+  Fragment und Inhalt gegen das bestehende Limit.
+- Review: Eine erste Review-Runde fand heraus, dass verschachtelte Templates
+  faelschlich je ein neues inertes Owner Document bekamen. Die Implementierung
+  wurde angepasst und mit gezielten Tests ergaenzt; die Folgereview genehmigte
+  die Korrektur.
+- Verifikation: Engine.Dom.Tests 63/63 und Engine.Html.Tests 7.279/7.279;
+  `dotnet build VisualWeb.slnx` und Formatverifikation bestanden;
+  `dotnet test VisualWeb.slnx --no-build` bestand seriell mit 17.272
+  erfolgreichen Tests und zwei bedingten Skips. `git diff --check` besteht.
+  Ein frueher vollstaendiger Testlauf ueberschnitt sich mit einem Build und
+  scheiterte an fehlenden Browser-Renderer-Fixtures; er ist kein
+  Produktregressionsnachweis und wurde durch den erfolgreichen seriellen
+  Folgelauf abgeloest.
+- Beleg und Grenzen: [Phase-1-Abschluss](../plans/whatwg-html-dom-completion-phase-1-complete.md),
+  [Engine.Dom](../src/Engine/Engine.Dom/README.md),
+  [HTML/DOM-Leitfaden](../docs/html-dom.md),
+  [Standardsinventar](../docs/standards.md). Der HTML-Parser lehnt
+  Template-Markup weiterhin explizit ab; Scriptbindings und `innerHTML`
+  bleiben deferred.
+- Status: Phase 1 abgeschlossen, nicht committet oder gepusht. Phase 2 bleibt
+  bis zum Commit der Phase 1 und einer ausdruecklichen Fortsetzungsbestaetigung
+  pausiert.
+
+### KP-526 - Bounded Template Tree Construction
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Nach Phase 1 bat der Nutzer um den Commit und die Fortsetzung.
+  Phase 1 wurde daraufhin als `3a02cca` (`feat(dom): add native template
+content model`) committed; die vorbestehenden staged Kontextaenderungen
+  wurden nicht in diesen Feature-Commit aufgenommen.
+- Belegt: Phase 2 unterstuetzt Dokument-Templates in Head/Body mit dem
+  bestehenden bounded In-Body-Inhalt und verschachtelten Templates. Inhalte
+  werden in native `Content`-Fragmente mit inertem Owner Document eingefuegt;
+  Kommentar- und ProcessingInstruction-Knoten bleiben ebenfalls dort.
+  Template-Insertion-Mode-Reset setzt den umgebenden Head/Body-Modus fort.
+  Content-Fragmente zaehlen gegen `MaxNodes`; Scriptinhalte in Templates
+  loesen `scriptCompleted` nicht aus. Tabellen-/Select-Insertion-Kontexte,
+  SVG/MathML, Fragment Parsing und breitere Template-Algorithmen bleiben
+  explizit unsupported.
+- Review: Eine erste Review beanstandete einen falschen Parse-Error fuer
+  gueltige Template-Starttags und einen veralteten DOM-README-Anspruch; beides
+  wurde korrigiert. Eine direkte Codepruefung fand zusaetzlich falsch
+  platzierte Kommentare/ProcessingInstructions, die in der finalen
+  `InsertionParent`-Logik korrigiert und mit einem Regressionstest auch nach
+  einem Void-Element abgedeckt wurden. Die Folgereview genehmigte Phase 2.
+- Verifikation: Engine.Html.Tests 7.294/7.294; `dotnet build
+VisualWeb.slnx` ohne Warnungen oder Fehler; `dotnet test VisualWeb.slnx
+--no-build` seriell mit 17.287 Erfolgen und zwei bedingten Skips;
+  Formatverifikation und `git diff --check` bestanden.
+- Belege: [Phase-2-Abschluss](../plans/whatwg-html-dom-completion-phase-2-complete.md),
+  [HTML/DOM-Leitfaden](../docs/html-dom.md),
+  [Engine.Html](../src/Engine/Engine.Html/README.md),
+  [Engine.Dom](../src/Engine/Engine.Dom/README.md),
+  [Standardsinventar](../docs/standards.md),
+  [Missing-Tracker](../plans/Missing.md).
+- Status: Phase 2 abgeschlossen, noch nicht committed. Phase 3 ist nicht
+  begonnen und bleibt bis zum Commit der Phase 2 und einer ausdruecklichen
+  Fortsetzungsbestaetigung pausiert.
+
+### KP-527 - Template-Inertheit und Grenzwerte verifiziert
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Belegt: Phase 3 ergaenzt drei Testdateien, ohne Produktionscode zu aendern.
+  `TreeTests` prueft die exakte Parser-`MaxDepth`-Grenze fuer einen
+  Template-Inhalt. `InlineScriptTests` prueft statisches und Prozess-Rendering:
+  Template-Styles und -Scripts gelangen nicht in Dokumenttraversierung,
+  Stylesammlung oder Scriptplanung; der committed DOM bleibt beim Resize
+  erhalten. `CloningTests` bricht das Deep-Clone-Preflight nach Pruefung des
+  Template-Elements ab, waehrend dessen Content-Fragment noch auf dem
+  Traversierungsstack liegt, und bestaetigt die Unveraendertheit des Quellbaums.
+- Verifikation: Engine.Dom.Tests 64/64, Engine.Html.Tests 7.295/7.295 und
+  VisualWeb.Browser.Tests 1.396/1.396; `dotnet test VisualWeb.slnx --no-build`
+  und `dotnet format VisualWeb.slnx --verify-no-changes --no-restore --exclude
+third_party` bestanden; `git diff --check` bestanden. Ein erster
+  Volltestlauf traf im bestehenden
+  `TreeInspectionFindsLiveElementsDuringLifecycleAndPreservesFailedNavigation`
+  Prozess-Test einen V8-Deadline-Timeout (1 Fehler, 1.395 Browser-Tests
+  bestanden). Der isolierte Wiederholungslauf bestand 2/2 und der
+  anschliessende vollstaendige Loesungslauf bestand.
+- Belege: [Phase-3-Abschluss](../plans/whatwg-html-dom-completion-phase-3-complete.md),
+  [TreeTests](../tests/Engine.Html.Tests/TreeTests.cs),
+  [InlineScriptTests](../tests/VisualWeb.Browser.Tests/InlineScriptTests.cs),
+  [CloningTests](../tests/Engine.Dom.Tests/CloningTests.cs).
+- Status: Phase 3 abgeschlossen und validiert, aber noch nicht committed.
+  Nutzeranweisungen „commit, then continue“ wurden fuer die Phasen 1 und 2
+  erfuellt; fuer Phase 3 steht der Commit noch aus. Kontextdateien bleiben
+  ausserhalb des Feature-Commits.
+
+### KP-528 - Template-Plan committed und abgeschlossen
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „commit, then continue“ autorisiert den Commit von Phase 3
+  und die Fortsetzung mit dem Abschluss des genehmigten Plans.
+- Belegt: Commit `5752d3b` enthaelt ausschliesslich die drei Phase-3-Testdateien
+  und die Phase-3-Abschlussnotiz. Die bereits gestagten Kontextdateien wurden
+  mit `git commit --only` aus dem Feature-Commit ausgeschlossen und blieben
+  gestagt. Der Gesamtabschluss ist in
+  [whatwg-html-dom-completion-complete.md](../plans/whatwg-html-dom-completion-complete.md)
+  festgehalten.
+- Verifikation: Engine.Dom.Tests 64/64, Engine.Html.Tests 7.295/7.295,
+  VisualWeb.Browser.Tests 1.396/1.396, vollstaendiger
+  `dotnet test VisualWeb.slnx --no-build`-Lauf, Formatverifikation und
+  `git diff --check` bestanden.
+- Status: Alle drei Phasen des bounded Template-Plans sind abgeschlossen und
+  committed (`3a02cca`, `a752387`, `5752d3b`). Das ist keine Behauptung
+  vollstaendiger WHATWG-HTML/DOM-Konformitaet. Der naechste Umfang ist separat
+  festzulegen. Die neuen Kontext-/Gesamtabschlussnotizen nach diesem Commit
+  sind nicht Teil von `5752d3b`.
+
+### KP-529 - Fragment Parsing als naechster Trackerpunkt offen
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: Nach dem Phase-3-Commit bat der Nutzer um Fortsetzung; der
+  zuvor genehmigte Template-Plan definiert jedoch keinen Folgeumfang.
+- Belegt: Abschnitt 4 in [Missing.md](../plans/Missing.md#4-general-html-and-dom-compatibility)
+  fuehrt Fragment Parsing vor Adoption-agency/active-formatting recovery als
+  naechste offene Parser-Luecke auf. `HtmlParser` bietet nur Dokument-Parsing;
+  `TreeTests.Cases` schliesst `#document-fragment`-Fixture-Faelle explizit aus.
+  Der lokale WHATWG-HTML-Abschnitt 13.4 verlangt einen Kontext und waehlt davon
+  abhaengig Tokenizer-Zustand und Einfuegemodus. Manifest `html.checkedAt` ist
+  `2026-11-07T09:34:04.8278357+00:00`, also innerhalb von 30 Tagen am
+  Dokumentationsdatum.
+- Vorschlag: Ein bounded `HtmlParser.ParseFragment`-Inkrement ohne
+  Script-Bindings oder `innerHTML`. Entscheidung offen zwischen erstens
+  body-artigen Kontexten mit bestehendem In-Body-Subset und expliziter
+  Ablehnung spezieller Kontexte, zweitens allen bereits unterstuetzten
+  Dokument-Kontexten einschliesslich Table/Select/Template/Text-Modi oder
+  drittens dem Blockieren weiterer Arbeit bis zur Entscheidung.
+- Status: Nicht beschlossen und nicht implementiert. Die Optionen wurden dem
+  Nutzer vorgelegt; keine Folgeplanung oder Codeaenderung beginnt, bis eine
+  Wahl eingeht.

@@ -8,6 +8,40 @@
 
 ## Aktueller Wissensstand
 
+**WHATWG-HTML/DOM-Auftrag (2026-11-19; KP-523 bis KP-529; begrenzter Plan beschlossen):**
+Der Nutzer setzt HTML/DOM als Schwerpunkt und moechte zusammengehoerige
+Features parallel bearbeiten. Beschlossen ist ein gestufter Template-Start:
+Phase 1 fuehrt native template contents als `DocumentFragment` mit inertem
+Template-Owner-Document sowie Adoptions-/Clone-Semantik ein; Phase 2 ergaenzt
+einen begrenzten HTML-Parserumfang; Phase 3 prueft subsystemuebergreifende
+Inertheit und Grenzen. Scriptseitiges `innerHTML`, Scriptbindings und
+Vollkonformitaet sind ausgeschlossen. Spaetere Inkremente bleiben separat zu
+waehlen. Die heuristische Ranking-Reihenfolge (URL ~80%, Encoding ~55%,
+HTML/DOM je ~20%) wird durch die ausdrueckliche Nutzerprioritaet uebersteuert.
+Die lokalen HTML-/DOM-Caches haben `checkedAt: 2026-11-07` und sind am
+2026-11-19 frisch. Der begrenzte Plan ist mit `3a02cca` (native DOM),
+`a752387` (Parser-Subset) und `5752d3b` (Inertheit/Grenztests) abgeschlossen.
+Phase 2 baut Templates in Head/Body mit begrenztem In-Body-Inhalt und
+verschachtelten Templates in getrennten inert-owner-Dokumenten;
+Content-Fragmente zaehlen gegen `MaxNodes`, Scripts loesen keinen
+Parser-Completion-Callback aus. Tabellen-/Select-Kontexte, Foreign Content
+und Fragment Parsing bleiben unsupported. Phase 3 ergaenzt ausschliesslich
+Regressionsabdeckung: exakte Template-`MaxDepth`-Grenze, Inertheit von Inhalt,
+Styles und Scripts bei statischem/Prozess-Rendering einschliesslich retained
+Resize sowie Clone-Abbruch waehrend des Preflights des Template-Inhalts.
+Engine.Dom: 64 Tests; Engine.Html: 7.295; Browser: 1.396. Der abschliessende
+`dotnet test VisualWeb.slnx --no-build`-Lauf besteht; Formatverifikation und
+`git diff --check` bestehen. Ein vorheriger Volltestlauf hatte einen Timeout
+im bestehenden Prozess-Lifecycle-Test; dessen isolierter Lauf (2/2) und der
+anschliessende Volltest bestanden. Dies schliesst nur den genehmigten
+Template-Plan ab, nicht die WHATWG-HTML/DOM-Vollkonformitaet. Siehe
+[Plan](../plans/whatwg-html-dom-completion-plan.md),
+[Phase 1](../plans/whatwg-html-dom-completion-phase-1-complete.md),
+[Phase 2](../plans/whatwg-html-dom-completion-phase-2-complete.md),
+[Phase 3](../plans/whatwg-html-dom-completion-phase-3-complete.md),
+[Gesamtabschluss](../plans/whatwg-html-dom-completion-complete.md) und
+[KP-528](./Kontextprotokoll.md#kp-528---template-plan-committed-und-abgeschlossen).
+
 **URL-IDL-Legacy-Alias (2026-11-19; KP-509; Beschluss umgesetzt):** Der
 Nutzer stimmte der minimalen Window-Global-Integration fuer
 `[LegacyWindowAlias=webkitURL]` zu. Nur die explizit aktivierten
@@ -3023,7 +3057,9 @@ Scheduling-Arten und vollstaendige HTML-Vorbereitung bleiben offen (KP-333).
 | Q-036 | Soll der gewaehlte Modulumfang Top-Level-await ausschliessen oder begrenzt asynchron auswerten? | Beantwortet: Nutzer revidiert den Ausschluss und waehlt begrenzte asynchrone Auswertung unter Readiness-/Taskbudget | Keine unbeschraenkte Promise-Wartezeit und keine Import-/Netzwerkberechtigung; Cancellation, Fehler und Fristen muessen explizit abgedeckt sein | Nutzerwahl `support-bounded-async`; [KP-336](./Kontextprotokoll.md#kp-336---begrenzte-top-level-await-auswertung-gewaehlt), [KP-335](./Kontextprotokoll.md#kp-335---ecmascript-module-umfang-offen) |
 | Q-037 | Welcher CSS-Color-4-Gamut-Mapping-Algorithmus soll fuer die naechste sRGB-Ausgabe-Erweiterung gewaehlt werden? | Beantwortet: Nutzer waehlt Ray Trace | In Pass 1 auf aus-gamutige `color(display-p3 ...)`-Ergebnisse anwenden; andere Farbquellen bleiben unveraendert | ausdrueckliche Nutzerwahl „3“, 2026-11-15 12:21 Europe/Berlin; [CSS Color 4](../specs/cache/css-color.html#GMA-Raytrace); [KP-380](./Kontextprotokoll.md#kp-380---ray-trace-gamut-mapping-gewaehlt) |
 | Q-038 | Bedeutet „WHATWG URL vollstaendig“ die Core/.NET-Spezifikationsalgorithmen oder auch die browserseitige JavaScript-URL-/URLSearchParams-API mit Live-Linkage und Web-IDL-Verhalten? | Beantwortet: Nutzer genehmigte Core-Algorithmen sowie browserseitige URL-/URLSearchParams-Semantik und interface-spezifisches Web IDL | Allgemeine Web-IDL-Generierung bleibt ausgeschlossen; Umsetzung folgt dem genehmigten Sechs-Phasen-Plan | Nutzerbestaetigung 2026-11-18; [Plan](../plans/whatwg-url-completion-plan.md), [Core guide](../docs/core.md#url), [URL spec cache](../specs/cache/url.html), [KP-468](./Kontextprotokoll.md#kp-468---url-planumfang-genehmigt) |
-| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Umgesetzt sind begrenzte PageRendering-Bindungen fuer readonly `document.URL`, `document.documentURI`, `Node.baseURI` und die URL-Komponenten von `<a>`/`<area>`. Vollstaendige frozen-base-/inherited-base-Semantik, weitere Hyperlink-Attribute und File-API-Blob-Store bleiben offen | Restliche HTML/DOM-URL-Integration und Blob-URL-Store separat abgrenzen; keine Vollintegration oder Prozentsteigerung aus den begrenzten Teilumfaengen ableiten | Nutzeranweisung „let's do the html/dom related changes next“; KP-513 bis KP-515, [HTML/DOM](../docs/html-dom.md), [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Support-Inventar](../docs/standards.md#implemented-subsets) |
+| Q-039 | Soll die Fortsetzung ueber die genehmigte URL-/URLSearchParams-Oberflaeche hinaus in den File-API-Blob-URL-Store oder HTML/DOM-Dokument-URL-Integration gehen? | Teilweise beantwortet: Nutzer waehlt HTML/DOM-bezogene Folgearbeit; Blob-URL-Store bleibt ungewaehlt. Umgesetzt sind begrenzte PageRendering-Bindungen fuer readonly `document.URL`, `document.documentURI`, `Node.baseURI` und die URL-Komponenten von `<a>`/`<area>`. Die Nutzeranweisung vom 2026-11-19 erweitert das Ziel auf breitere HTML/DOM-Folgearbeit, waehlt aber noch kein erstes Inkrement | Keine Vollintegration oder Prozentsteigerung aus den begrenzten Teilumfaengen ableiten; mit Q-040 die Reichweite des neuen Auftrags klaeren | Nutzeranweisung „let's do the html/dom related changes next“ und „complete WHATWH html and dom“; KP-513 bis KP-515, KP-523, [HTML/DOM](../docs/html-dom.md), [HTML HyperlinkElementUtils](../specs/cache/html.html#api-for-hyperlink-elements), [DOM URL attributes](../specs/cache/dom.html#dom-document-url), [Support-Inventar](../docs/standards.md#implemented-subsets) |
+| Q-040 | Was bedeutet der Auftrag, WHATWG HTML und DOM zu „vervollstaendigen“, und welches erste zusammengehoerige HTML-/DOM-Inkrement ist gemeint? | Beantwortet fuer den ersten mehrphasigen Template-Umfang: Nutzer genehmigte bounded Template-Contents, Parser-Subset und Inertheits-/Limitintegration. Ein vollstaendiger HTML/DOM-Abschlussendpunkt ist weiterhin nicht definiert | Phase 1-3 des [Plans](../plans/whatwg-html-dom-completion-plan.md) in separaten, getesteten Phasen ausfuehren; danach den naechsten Inkrementumfang anhand des aktualisierten Trackers waehlen | Ausdrueckliche Nutzerfreigabe 2026-11-19; KP-524; [HTML/DOM guide](../docs/html-dom.md), [approved plan](../plans/whatwg-html-dom-completion-plan.md) |
+| Q-041 | Welchen Umfang soll die naechste HTML/DOM-Arbeit nach dem Template-Plan haben? | Offen; naechster Trackerpunkt ist Fragment Parsing, aber der Kontextumfang ist nicht gewaehlt | Option 1: oeffentlichen `HtmlParser.ParseFragment` fuer body-artige Kontexte aus dem bestehenden In-Body-Subset einfuehren und spezielle Kontexte explizit ablehnen. Option 2: Fragment Parsing in allen bereits unterstuetzten Dokument-Kontexten (einschliesslich Table/Select/Template/Text-Modi) als groesseren Inkrementumfang. Option 3: weitere Arbeit blockieren, bis diese Entscheidung getroffen ist. In allen Varianten keine Script-Bindings oder `innerHTML` hinzufuegen | Aktueller Nutzerauftrag „commit, then continue“; [Missing.md](../plans/Missing.md#4-general-html-and-dom-compatibility), [HTML fragment parsing](../specs/cache/html.html#parsing-html-fragments), [html-parser-guide](../docs/html-dom.md#static-document-tree-subset), [KP-529](./Kontextprotokoll.md#kp-529---fragment-parsing-als-naechster-trackerpunkt-offen) |
 
 Q-035 ist durch die spaetere Nutzerentscheidung Q-036 beantwortet; der zuvor
 festgehaltene Ausschluss von Top-Level-await ist ersetzt.
@@ -3121,6 +3157,24 @@ festgehaltene Ausschluss von Top-Level-await ist ersetzt.
   geprueft. Externe GitHub-Links sind Quellenverweise, keine Browser-Abnahmetests.
 
 ## Naechste Schritte
+
+**Aktueller Einstieg (2026-11-19; KP-528):** Der genehmigte bounded
+Template-Plan ist abgeschlossen und seine drei Phasen sind mit `3a02cca`,
+`a752387` und `5752d3b` committed. Die Abschlussnotiz
+[whatwg-html-dom-completion-complete.md](../plans/whatwg-html-dom-completion-complete.md)
+ist angelegt. Der groessere Nutzerwunsch „WHATWG HTML und DOM vervollstaendigen“
+hat weiterhin keinen vollstaendigen Konformitaetsendpunkt; die uebrigen
+Standardsluecken bleiben offen. Naechster Schritt ist, ein neues, bounded
+HTML/DOM-Inkrement separat zu waehlen und zu genehmigen. Naechster
+Trackerpunkt ist Fragment Parsing: `HtmlParser` hat keine
+`ParseFragment`-Schnittstelle, und `TreeTests.Cases` ueberspringt
+`#document-fragment`-Fixtures. Offen ist, ob zuerst nur body-artige Kontexte
+im vorhandenen In-Body-Subset oder alle bereits unterstuetzten Parser-Kontexte
+abgedeckt werden sollen; siehe Q-041 und
+[KP-529](./Kontextprotokoll.md#kp-529---fragment-parsing-als-naechster-trackerpunkt-offen).
+Vor dieser Wahl keine Implementierung beginnen. Script-Bindings,
+`innerHTML`, Foreign Content und unimplementierte Parser-Modi bleiben
+ausgeschlossen oder deferred.
 
 **Aktueller Einstieg (2026-11-07):** Ein neuer Zehn-Passen-Auftrag laeuft.
 Pass 1 erweitert den in Pass 5 bewusst top-only gehaltenen Caption-Umfang als
