@@ -15660,3 +15660,46 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [Missing priority](../plans/Missing.md#recommended-priority).
 - Status: Feature-Commit `b76f7e9` enthaelt Code, Tests, Tracker und Leitfaeden;
   der Kontextnachtrag wird separat committet. Kein Push.
+
+### KP-522 - ISO-2022-JP-TextDecoder-Streaming
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „continue“ zum laufenden standardsbasierten Implementierungsauftrag;
+  eine konkrete Funktion wurde nicht vorgegeben.
+- Ableitung: Die aktuelle Inventur ordnet WHATWG URL mit ~80% vor WHATWG
+  Encoding mit ~55% ein. Fuer URL fand der Missing-Tracker keine kleinere
+  actionable Luecke; die naechste bounded Encoding-Luecke nach GBK/gb18030 war
+  ISO-2022-JP-Streaming. Das Encoding-Prozent bleibt als grobe Heuristik gleich.
+- Belegte Spezifikation: Der lokale Encoding-Standard definiert ISO-2022-JP-
+  Decoderzustand fuer Modus, Output-Modus, Fuehrungsbyte und Output-Flag. Die
+  Escape-, Fuehrungs-, Folgebyte- und End-of-Queue-Schritte definieren
+  Reconsume-Faelle. Der Manifestwert `checkedAt` ist `2026-11-07`, innerhalb
+  des 30-Tage-Fensters; der lokale Abschnitt
+  [`iso-2022-jp-decoder`](../specs/cache/encoding.html#iso-2022-jp-decoder)
+  wurde konsultiert.
+- Umsetzung: `WebTextDecoder` behaelt diesen Zustand ueber Chunks. Ein
+  Nicht-Final-Chunk ist kein End-of-Queue; finaler Flush wendet die
+  Spezifikationsregeln an. Ein inkrementeller Decoder ersetzt den bisherigen
+  One-Shot-Pfad, ohne die bestehende Whole-Buffer-Schnittstelle zu aendern.
+  `TextDecoderStream` und JavaScript/Web-IDL-Bindings bleiben ausstehend.
+- Verifikation: Die neuen Tests scheiterten vor der Implementierung wie
+  erwartet. Danach bestanden alle 53 `WebTextDecoderTests`, 21 offizielle
+  ISO-2022-JP-Decodervektoren ueber jede Byte-Splitposition und alle 4.260
+  Core-Tests in Debug und Release. Debug-/Release-Solution-Builds haben null
+  Warnungen/Fehler; vollstaendige Debug-/Release-Solution-Tests und
+  Formatverifikation bestehen. Die Browser-Suite meldet 1.394 bestanden und
+  zwei bedingte CPU-pressure-Skips. `git diff --check` besteht. Kein Native-
+  Smoke gilt fuer diese Core-Aenderung.
+- Standardsumfang: `docs/standards.md` und Core-Encoding-Leitfaeden fuehren
+  ISO-2022-JP-Streaming jetzt als implementiert; ~55% bleibt unveraendert.
+- Quellen:
+  [ISO-2022-JP decoder](../specs/cache/encoding.html#iso-2022-jp-decoder),
+  [WebTextDecoder](../src/Core/Core.Encoding/WebTextDecoder.cs),
+  [Iso2022JpDecoder](../src/Core/Core.Encoding/Iso2022JpDecoder.cs),
+  [EncodingTests](../tests/Core.Tests/EncodingTests.cs),
+  [WebTextDecoderTests](../tests/Core.Tests/WebTextDecoderTests.cs) und
+  [Missing priority](../plans/Missing.md#recommended-priority).
+- Status: Feature-Commit `33bfe90` ist lokal und noch nicht auf den Remote
+  gepusht. Bei Wiederaufnahme stand `HEAD` und `origin/main` auf `c20ba6a`,
+  das `b76f7e9` und `c20ba6a` umfasst; Zeitpunkt und Urheber dieser
+  Remote-Aktualisierung sind nicht belegt.

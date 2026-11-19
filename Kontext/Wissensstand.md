@@ -161,6 +161,20 @@ Leitfaeden; er wurde nicht gepusht. Ein paralleler `dotnet test VisualWeb.slnx
 Test und die gesamte Engine.Scripting-Suite (399). Browser (1.394) bestand mit
 zwei bedingten CPU-pressure-Skips. Siehe [KP-521](./Kontextprotokoll.md#kp-521---incremental-gbkgb18030-textdecoder).
 
+**ISO-2022-JP-TextDecoder-Streaming (2026-11-19; KP-522):** `WebTextDecoder`
+bewahrt jetzt ISO-2022-JP-Modus, Escape-, Lead/Trail- und Output-Flag-Zustand
+ueber Chunks. Nur der finale Flush verarbeitet End-of-Queue und die
+spezifizierten Reconsume-Faelle; Fehler oder Flush setzen den Stream zurueck.
+Der Encoding-Standard ist laut Manifest am 2026-11-07 geprueft worden. Die
+grobe Encoding-Schaetzung bleibt ~55%. 53 fokussierte Decoderfaelle,
+alle 4.260 Core-Tests in Debug und Release sowie Debug-/Release-
+Solution-Builds bestehen; beide vollstaendigen Solution-Testlaeufe bestehen
+ebenfalls. Die Browser-Suite hat 1.394 Tests und zwei bedingte
+CPU-pressure-Skips. Formatverifikation und Diff-Check bestehen. Kein Native-
+Smoke ist fuer Core.Encoding anwendbar. Feature-Commit `33bfe90` ist lokal;
+`origin/main` steht auf `c20ba6a`; der Feature-Commit ist nicht gepusht. Siehe
+[KP-522](./Kontextprotokoll.md#kp-522---iso-2022-jp-textdecoder-streaming).
+
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
 Produktionsabweichung: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen
