@@ -213,6 +213,47 @@ public sealed class DomBindingTests
     }
 
     [Fact]
+    public void BaseTargetPropertyReflectsDomStringWithoutRequiringAPageUrl()
+    {
+        var document = Document();
+        var baseElement = document.CreateElement("base");
+        baseElement.SetAttribute("id", "base");
+        document.Body!.AppendChild(baseElement);
+        using var host = new V8ScriptHost(document: document);
+
+        Assert.True(host.Evaluate("""
+            (() => {
+                const base = document.getElementById('base');
+                return typeof base.target === 'string' &&
+                    base.target === '' &&
+                    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(base), 'target').enumerable &&
+                    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(base), 'target').set !== undefined;
+            })()
+            """, Cancellation).Boolean);
+
+        host.ExecuteClassic("""
+            (() => {
+                const base = document.getElementById('base');
+                base.target = 42;
+                if (base.target !== '42') throw new Error('target did not reflect DOMString');
+                base.target = '\uD800';
+                if (base.target.length !== 1 || base.target.charCodeAt(0) !== 0xD800)
+                    throw new Error('target did not preserve its DOMString code unit');
+                base.removeAttribute('target');
+                if (base.target !== '') throw new Error('missing target did not return an empty string');
+            })();
+            """, Cancellation);
+        Assert.Null(baseElement.GetAttribute("target"));
+
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("""
+            Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.getElementById('base')), 'target').get
+                .call(document.getElementById('parent'));
+            """, Cancellation));
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic(
+            "document.getElementById('base').target = Symbol();", Cancellation));
+    }
+
+    [Fact]
     public void RepeatedBaseHrefReadsShareTheDomTextBudget()
     {
         var document = Document();

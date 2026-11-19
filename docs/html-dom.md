@@ -207,6 +207,9 @@ resolves the content attribute against the final page URL, returns the raw
 attribute when parsing fails, and reflects USVString writes. This URL
 reflection does not implement the frozen-base lifecycle.
 See the [HTMLBaseElement href algorithm](https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href).
+The script facade also reflects `HTMLBaseElement.target` as a `DOMString`,
+including when no page URL is associated with the host. This property binding
+does not update the shell's already-collected hyperlink targeting metadata.
 Inherited `about:blank`/`srcdoc` base URLs and the full frozen-base lifecycle
 remain unsupported. In opted-in loaded-page script hosts, `<a>` and `<area>`
 facades expose the `href` stringifier and the bounded `HyperlinkElementUtils`

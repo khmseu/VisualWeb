@@ -112,6 +112,16 @@ belasteter Scripting-Lauf hatte einen Deadline-Timeout in einem URL-Control-
 Case; Einzeltest und kompletter Folgelauf bestanden. Zwei CPU-pressure-
 Varianten wurden als uebersprungen protokolliert. Details:
 [KP-517](./Kontextprotokoll.md#kp-517---begrenzte-htmlbaseelementhref-bindung).
+Commit `460cec9` enthaelt diese Aenderung; er wurde nicht gepusht.
+
+**HTMLBaseElement.target (KP-518; bounded reflection):** Gebrandete HTML-
+`base`-Facades reflektieren `target` als `DOMString`, auch ohne zugeordnete
+Dokument-URL; ein fehlendes Attribut liest sich als leerer String. Dies
+aktualisiert nicht die bereits erfassten Shell-Navigationsmetadaten. Die
+grobe HTML-Coverage-Heuristik blieb unveraendert. 398 Engine.Scripting-Tests,
+Solution-Build, Formatverifikation und 17.225 Solution-Tests bestehen; zwei
+CPU-pressure-Varianten wurden uebersprungen. Details:
+[KP-518](./Kontextprotokoll.md#kp-518---begrenzte-htmlbaseelementtarget-reflexion).
 
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue

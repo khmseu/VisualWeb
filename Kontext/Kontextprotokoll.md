@@ -15508,3 +15508,32 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [DomBindingTests](../tests/Engine.Scripting.Tests/DomBindingTests.cs),
   [Scripting guide](../docs/scripting.md) und
   [standards inventory](../docs/standards.md#implemented-subsets).
+- Commit: `460cec9` (`feat(scripting): expose HTMLBaseElement href`), nicht
+  gepusht.
+
+### KP-518 - Begrenzte HTMLBaseElement.target-Reflexion
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „continue“ nach `460cec9`; die HTML/DOM-bezogene
+  URL-Fortsetzung soll weitergehen.
+- Ableitung: Als kleiner Folgeschritt wurde die lokale
+  `HTMLBaseElement.target`-Reflexion ausgewaehlt; der Nutzer hat diese konkrete
+  Eigenschaft nicht separat benannt.
+- Belegte Spezifikation: `target` ist ein reflektiertes `DOMString`-Attribut
+  und benoetigt keine Dokument-URL. Die lokale HTML-Quelle wurde am
+  2026-11-07 geprueft und ist juenger als 30 Tage.
+- Umsetzung: Gebrandete `base`-Facades lesen/schreiben `target` ueber die
+  bestehende begrenzte Attributbruecke. Fehlendes Attribut wird als leerer
+  String exponiert; DOMString-Codeeinheiten bleiben erhalten. Die Reflexion
+  aktualisiert nicht die bereits gesammelten Shell-Navigationsmetadaten.
+- Verifikation: Neue Regression schlug vor der Bindung fehl; fokussierter
+  Test, alle 398 Engine.Scripting-Tests, Solution-Build (0 Warnungen/Fehler),
+  Formatverifikation und alle 17.225 Solution-Tests bestanden. Zwei
+  CPU-pressure-Varianten wurden als uebersprungen protokolliert.
+- Scope: HTML-Zeile in `docs/standards.md` aktualisiert; die grobe
+  Prozentheuristik bleibt unveraendert.
+- Quellen: lokale [HTMLBaseElement target](../specs/cache/html.html#dom-base-target),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
+  [DomBindingTests](../tests/Engine.Scripting.Tests/DomBindingTests.cs),
+  [HTML/DOM guide](../docs/html-dom.md) und
+  [Scripting guide](../docs/scripting.md).

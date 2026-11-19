@@ -111,6 +111,8 @@ and URL component properties on `<a>`/`<area>` facades; broader URL/document
 integration remains deferred. `HTMLBaseElement.href` resolves against the
 final page URL and reflects USVString writes, without modeling frozen base
 state.
+`HTMLBaseElement.target` reflects the content attribute as a bounded `DOMString`,
+without changing shell navigation metadata already collected for a page.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

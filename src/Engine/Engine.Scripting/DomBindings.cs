@@ -38,6 +38,7 @@ namespace VisualWeb.Engine.Scripting;
 /// <see href="https://html.spec.whatwg.org/multipage/links.html#api-for-hyperlink-elements">hyperlink URL components</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-href">hyperlink href</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href">base href</see>,
+/// <see href="https://html.spec.whatwg.org/multipage/semantics.html#dom-base-target">base target</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-tagname">Element names</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-getattributenames">attribute name snapshots</see>,
 /// <see href="https://dom.spec.whatwg.org/#dom-element-hasattributes">attribute presence</see>,
@@ -1148,6 +1149,10 @@ internal sealed class DomBindings : IDisposable
                 set(value) {const id = elementBrand(this);call('attribute-set', id, `${value}`, -1, -1, 'id');}
             });
             installClasses(prototype, elementBrand, call);
+            define(basePrototype, 'target', {enumerable: true,
+                get() {return call('attribute-get', baseBrand(this), '', -1, -1, 'target') ?? '';},
+                set(value) {const id = baseBrand(this);call('attribute-set', id, `${value}`, -1, -1, 'target');}
+            });
             if (documentUrl !== null) {
                 define(basePrototype, 'href', {enumerable: true,
                     get() {return call('base-href-get', baseBrand(this));},
