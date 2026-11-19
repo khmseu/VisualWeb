@@ -15170,3 +15170,33 @@ VisualWeb.slnx` (null Warnungen/Fehler), `dotnet test VisualWeb.slnx
   [Regressionen](../tests/Engine.Scripting.Tests/UrlBindingTests.cs),
   [Implementierung](../src/Engine/Engine.Scripting/UrlBindings.cs) und lokale
   Validierungsausgaben.
+
+### KP-507 - WHATWG-URL-Abschlusspruefung ohne neue Abweichung
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Ereignisdatum: Fortsetzung nach KP-506; genaue Uhrzeit unbekannt.
+- Erfassungsart: freigegebener URL-Plan, aktuelle Subsystemdokumentation,
+  Implementierungs-/Regressioneninventar und lokale Validierung.
+- Nutzerangabe: Fortsetzung des Auftrags „complete the implementation of
+  WHATWG URL“; keine Umfangsaenderung.
+- Belegt: Die URL-Abschlusspruefung las die approved URL-Roadmap, Core- und
+  Scripting-Umfang sowie die URL-Bindungsregressionen. Der Solution-Build
+  bestand (0 Warnungen/Fehler); Core.Tests: 4.232 bestanden;
+  Engine.Scripting.Tests: 391 bestanden; der gesamte Solution-Testlauf
+  bestand, einschliesslich zweier bedingter CPU-Druck-Skips in
+  VisualWeb.Browser.Tests; Formatverifikation bestand. In dieser Pruefung
+  wurde keine weitere konkrete Produktionsabweichung belegt und kein Code
+  geaendert. Dies ist begrenzte Offline-Evidenz, kein Nachweis der
+  WHATWG-URL-Vollkonformitaet.
+- Status: Vor dem Kontextnachtrag war `main` zwei Commits vor `origin/main`;
+  nach dem Kontextcommit drei Commits voraus. Kein Push.
+- Ableitung/naechster Schritt: Die bisherigen dokumentierten Ausnahmen und
+  Teilumfaenge bleiben bestehen. Weitere Implementierung braucht einen
+  konkreten spec-/WPT-Gegenbeleg; fehlende Integrationen und allgemeine
+  Vollkonformitaet duerfen nicht als erledigt dargestellt werden.
+- Quellen: [URL-Abschlussplan](../plans/whatwg-url-completion-plan.md),
+  [Core-URL-Leitfaden](../docs/core.md#url),
+  [Scripting-Leitfaden](../docs/scripting.md#url-interfaces),
+  [Standardsinventar](../docs/standards.md#support-status),
+  [Core-Tests](../tests/Core.Tests/) und
+  [Scripting-URL-Tests](../tests/Engine.Scripting.Tests/UrlBindingTests.cs).

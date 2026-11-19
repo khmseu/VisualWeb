@@ -8,6 +8,17 @@
 
 ## Aktueller Wissensstand
 
+**URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
+Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
+Produktionsabweichung: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen
+und Fehlern; Core.Tests (4.232) und Engine.Scripting.Tests (391) bestehen;
+`dotnet test VisualWeb.slnx --no-build` besteht mit zwei bedingten Skips in
+VisualWeb.Browser.Tests; Formatverifikation besteht. Der Arbeitsbaum war
+sauber. Der URL-Support bleibt ein dokumentierter Teilumfang, keine
+WHATWG-Vollkonformitaet. Bei Beginn dieses Arbeitsschritts lag `main` zwei
+Commits vor `origin/main`; der Kontextnachtrag wird als dritter lokaler
+Commit hinzukommen. Kein Push.
+
 **URL-Web-IDL-Regressionsabdeckung (2026-11-19; KP-506):** Ergaenzt wurde
 eine Regression fuer die bereits korrekte Receiver-vor-Argument-
 Konvertierungsreihenfolge bei geborgten URLSearchParams-Operationen und
