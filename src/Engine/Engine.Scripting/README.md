@@ -108,7 +108,9 @@ and bounded iterable/forEach behavior. The private bridge carries only strings
 and integer handles. This is interface-specific behavior, not generated
 Web IDL. Opted-in loaded-page hosts also expose the bounded `href` stringifier
 and URL component properties on `<a>`/`<area>` facades; broader URL/document
-integration remains deferred.
+integration remains deferred. `HTMLBaseElement.href` resolves against the
+final page URL and reflects USVString writes, without modeling frozen base
+state.
 Per-tab V8 isolates supplement, not replace, renderer process confinement.
 See the [scripting guide](../../../docs/scripting.md) for exact scope and deployment.
 

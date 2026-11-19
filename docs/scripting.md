@@ -461,6 +461,9 @@ and the browser-approved base URL. A changed `href` that does not match an
 approved base falls back to the final page URL.
 Invalid, `data:`, and `javascript:` base candidates also fall back to the final
 page URL, matching stylesheet base discovery.
+`HTMLBaseElement.href` resolves its content attribute against the final page
+URL, returns invalid raw input unchanged, and reflects USVString writes;
+frozen-base URL state remains unsupported.
 Inherited `about:blank`/`srcdoc` base URLs, the full frozen-base lifecycle,
 other link properties, broader URL/Web IDL coverage and generated Web IDL
 remain deferred. In opted-in loaded-page hosts, `<a>` and `<area>` expose the
@@ -474,6 +477,7 @@ References:
 [DOM `Document.documentURI`](https://dom.spec.whatwg.org/#dom-document-documenturi),
 [DOM `Node.baseURI`](https://dom.spec.whatwg.org/#dom-node-baseuri),
 [HTML document base URLs](https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-urls),
+[HTMLBaseElement `href`](https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href),
 [HTML hyperlink URL API](https://html.spec.whatwg.org/multipage/links.html#api-for-hyperlink-elements);
 local spec IDs `dom` and `html`.
 PageRendering's explicitly opted-in page-script hosts enable a minimal Window

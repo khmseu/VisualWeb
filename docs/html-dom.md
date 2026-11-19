@@ -202,6 +202,11 @@ The current value is recomputed on each access; a changed `href` that does not
 match a browser-approved base falls back to the final page URL.
 Invalid base URLs and `data:`/`javascript:` bases also fall back to the final
 page URL, consistently with stylesheet discovery.
+The opted-in loaded-page facade also exposes `HTMLBaseElement.href`: it
+resolves the content attribute against the final page URL, returns the raw
+attribute when parsing fails, and reflects USVString writes. This URL
+reflection does not implement the frozen-base lifecycle.
+See the [HTMLBaseElement href algorithm](https://html.spec.whatwg.org/multipage/semantics.html#dom-base-href).
 Inherited `about:blank`/`srcdoc` base URLs and the full frozen-base lifecycle
 remain unsupported. In opted-in loaded-page script hosts, `<a>` and `<area>`
 facades expose the `href` stringifier and the bounded `HyperlinkElementUtils`

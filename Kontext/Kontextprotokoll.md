@@ -15476,3 +15476,35 @@ third_party` und `git diff --check` bestehen. Der gezielte PageRendering-
   [InlinePageScripts](../src/Apps/VisualWeb.PageRendering/InlinePageScripts.cs),
   [HTML/DOM guide](../docs/html-dom.md) und
   [standards inventory](../docs/standards.md#implemented-subsets).
+
+### KP-517 - Begrenzte HTMLBaseElement.href-Bindung
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe: „continue“ nach Commit `c0eea48`; die HTML/DOM-bezogene
+  URL-Fortsetzung soll weitergehen.
+- Ableitung: Als naechster begrenzter Schritt wurde die lokal dokumentierte
+  `HTMLBaseElement.href`-IDL-Eigenschaft gewaehlt. Das ist keine gesonderte
+  Nutzerauswahl dieser konkreten Eigenschaft.
+- Belegte Spezifikation: Der Getter parst das href-Attribut gegen die
+  Fallback-Basis-URL des Dokuments, gibt bei Parsefehler den Rohwert zurueck
+  und serialisiert sonst die URL; der Setter reflektiert `USVString`.
+  Lokaler HTML-Cache, geprueft 2026-11-07, ist juenger als 30 Tage.
+- Umsetzung: In Hosts mit geladener Dokument-URL erhalten nur HTML-`base`-
+  Facades ein gebrandetes `href`. Der Getter nutzt die finale Seiten-URL als
+  Fallback, nicht die aktuelle dynamische Dokumentbasis; ungueltige Werte
+  bleiben roh sichtbar. Setter spiegeln USVString in das Attribut. Getter
+  belasten den gemeinsamen DOM-Textbudget; frozen-base lifecycle wird nicht
+  implementiert.
+- Verifikation: gezielte Tests (2), kompletter Engine.Scripting-Lauf (397),
+  `dotnet test VisualWeb.slnx --no-build` (17.224), Solution-Build (0
+  Warnungen/Fehler) und Formatverifikation bestanden. Ein erster parallel
+  belasteter Engine.Scripting-Lauf hatte einen Deadline-Timeout in einem
+  URL-Control-Case; der Einzeltest und der komplette Folgelauf bestanden.
+  Zwei CPU-pressure-Varianten im Browserlauf wurden als uebersprungen
+  protokolliert.
+- Quellen: lokale
+  [HTMLBaseElement href](../specs/cache/html.html#dom-base-href),
+  [DomBindings](../src/Engine/Engine.Scripting/DomBindings.cs),
+  [DomBindingTests](../tests/Engine.Scripting.Tests/DomBindingTests.cs),
+  [Scripting guide](../docs/scripting.md) und
+  [standards inventory](../docs/standards.md#implemented-subsets).

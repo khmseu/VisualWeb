@@ -159,6 +159,77 @@ public sealed class DomBindingTests
     }
 
     [Fact]
+    public void BaseHrefPropertyUsesTheFallbackBaseAndReflectsUsvString()
+    {
+        var document = Document();
+        var baseElement = document.CreateElement("base");
+        baseElement.SetAttribute("id", "base");
+        baseElement.SetAttribute("href", "assets/");
+        document.Body!.AppendChild(baseElement);
+        var missing = document.CreateElement("base");
+        missing.SetAttribute("id", "missing");
+        document.Body.AppendChild(missing);
+        var invalid = document.CreateElement("base");
+        invalid.SetAttribute("id", "invalid");
+        invalid.SetAttribute("href", "http://[");
+        document.Body.AppendChild(invalid);
+        var data = document.CreateElement("base");
+        data.SetAttribute("id", "data");
+        data.SetAttribute("href", "data:text/html,example");
+        document.Body.AppendChild(data);
+        const string pageUrl = "https://example.test/dir/page";
+        using var host = new V8ScriptHost(document: document, documentUrl: BrowserUrl.Parse(pageUrl),
+            documentBaseUrlProvider: (_, _) => BrowserUrl.Parse("https://example.test/current/"));
+
+        Assert.True(host.Evaluate("""
+            (() => {
+                const base = document.getElementById('base');
+                return base.href === 'https://example.test/dir/assets/' &&
+                    document.getElementById('missing').href === 'https://example.test/dir/page' &&
+                    document.getElementById('invalid').href === 'http://[' &&
+                    document.getElementById('data').href === 'data:text/html,example' &&
+                    typeof document.getElementById('parent').href === 'undefined' &&
+                    document.baseURI === 'https://example.test/current/';
+            })()
+            """, Cancellation).Boolean);
+
+        host.ExecuteClassic("document.getElementById('base').href = '../changed\\uD800';", Cancellation);
+        Assert.Equal("../changed\uFFFD", baseElement.GetAttribute("href"));
+        Assert.Equal("https://example.test/changed%EF%BF%BD",
+            host.Evaluate("document.getElementById('base').href", Cancellation).Text);
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("""
+            Object.getOwnPropertyDescriptor(Object.getPrototypeOf(document.getElementById('base')), 'href').get
+                .call(document.getElementById('parent'));
+            """, Cancellation));
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic(
+            "document.getElementById('base').href = Symbol();", Cancellation));
+
+        var unboundDocument = Document();
+        var unboundBase = unboundDocument.CreateElement("base");
+        unboundBase.SetAttribute("id", "base");
+        unboundDocument.Body!.AppendChild(unboundBase);
+        using var unbound = new V8ScriptHost(document: unboundDocument);
+        Assert.Equal("undefined", unbound.Evaluate("typeof document.getElementById('base').href", Cancellation).Text);
+    }
+
+    [Fact]
+    public void RepeatedBaseHrefReadsShareTheDomTextBudget()
+    {
+        var document = Document();
+        var baseElement = document.CreateElement("base");
+        baseElement.SetAttribute("href", new string('x', 60000));
+        document.Body!.AppendChild(baseElement);
+        using var host = new V8ScriptHost(document: document, documentUrl: BrowserUrl.Parse("https://example.test/"));
+
+        Assert.Throws<ScriptExecutionException>(() => host.ExecuteClassic("""
+            (() => {
+                const base = document.querySelector('base');
+                for (let i = 0; i < 3; ++i) void base.href;
+            })();
+            """, Cancellation));
+    }
+
+    [Fact]
     public void RepeatedHyperlinkComponentReadsShareTheDomTextBudget()
     {
         using var host = new V8ScriptHost(document: Document(),

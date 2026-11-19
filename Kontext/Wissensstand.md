@@ -100,6 +100,19 @@ Browser-Tests und 17.222 Solution-Tests bestanden; zwei CPU-pressure-Varianten
 wurden als uebersprungen protokolliert.
 Siehe [KP-516](./Kontextprotokoll.md#kp-516---html-base-url-aufloesung-angleichen).
 
+**HTMLBaseElement.href (KP-517; begrenzte Bindung):** Geladene Hosts mit
+Dokument-URL exponieren die Property nur auf HTML-`base`-Facades. Der Getter
+parst das Attribut gegen die finale Seiten-URL (nicht die dynamische
+Dokumentbasis), gibt bei Parsefehlern den Rohwert zurueck und liefert sonst
+die serialisierte URL. Der Setter reflektiert USVString; wiederholte Reads
+teilen das DOM-Textbudget. Frozen-base state und inherited-base-URL-Verhalten
+bleiben deferred. Fokussierte Tests, 397 Engine.Scripting-Tests, Build und
+Formatierung sowie alle 17.224 Solution-Tests bestehen. Ein erster parallel
+belasteter Scripting-Lauf hatte einen Deadline-Timeout in einem URL-Control-
+Case; Einzeltest und kompletter Folgelauf bestanden. Zwei CPU-pressure-
+Varianten wurden als uebersprungen protokolliert. Details:
+[KP-517](./Kontextprotokoll.md#kp-517---begrenzte-htmlbaseelementhref-bindung).
+
 **URL-Abschlusspruefung (2026-11-19; KP-507):** Der finale Offline-
 Validierungslauf bestaetigt den aktuellen Stand, findet aber keine neue
 Produktionsabweichung: `dotnet build VisualWeb.slnx` besteht mit 0 Warnungen
