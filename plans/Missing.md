@@ -421,7 +421,13 @@ parser work includes:
   `noscript` and other unsupported contexts fail explicitly. This does not add
   `innerHTML`, script bindings, general table/select algorithms or full fragment
   parsing conformance; unsupported tree-construction algorithms remain deferred.
-- Adoption-agency/active-formatting recovery for malformed markup.
+- Active formatting now retains token attribute snapshots, applies the
+  order-independent three-entry Noah's Ark rule, reconstructs entries and
+  respects template/caption/cell markers. Formatting end tags implement the
+  no-furthest-block adoption-agency branch, including later reconstruction of
+  active descendants. Furthest-block reparenting, nested anchors/nobr and
+  table-text foster parenting requiring reconstruction still fail explicitly;
+  this is not full adoption-agency or HTML conformance.
 
 Fragment parsing validation: 32 focused cases and all 7,327 Engine.Html tests
 pass. The final solution build has zero warnings/errors; the full solution test

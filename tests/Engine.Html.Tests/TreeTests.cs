@@ -730,12 +730,134 @@ public sealed class TreeTests
     [InlineData("<div><form></div><input>")]
     [InlineData("<dl><dd><form></dl>x")]
     [InlineData("<noscript>x")]
-    [InlineData("<p><b>x</p>y")]
-    [InlineData("<b><i>x</b>y</i>")]
     [InlineData("<a><a>x")]
     [InlineData("<nobr><nobr>x")]
+    [InlineData("<b><div>x</b>")]
+    [InlineData("<p><a>x</p><a>y")]
+    [InlineData("<p><b>x</p><table>y</table>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
+
+    [Fact]
+    public void FormattingEndTagReconstructsRemainingDescendantWithTokenAttributes()
+    {
+        var body = Parse("<!doctype html><b><i id=x class=y>one</b>two</i>three").Document.Body!;
+        Assert.Equal(3, body.ChildNodes.Count);
+        var bold = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var original = Assert.IsType<DomElement>(Assert.Single(bold.ChildNodes));
+        var rebuilt = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("b", bold.LocalName);
+        Assert.Equal("i", original.LocalName);
+        Assert.Equal("one", original.TextContent);
+        Assert.Equal("i", rebuilt.LocalName);
+        Assert.Equal("two", rebuilt.TextContent);
+        Assert.Equal("x", rebuilt.GetAttribute("id"));
+        Assert.Equal("y", rebuilt.GetAttribute("class"));
+        Assert.NotSame(original, rebuilt);
+        Assert.Equal("three", Assert.IsType<DomText>(body.ChildNodes[2]).Data);
+    }
+
+    [Fact]
+    public void ReconstructionUsesOriginalTokenRatherThanMutatedElementAttributes()
+    {
+        var result = HtmlParser.Parse("<!doctype html><b><i id=original><script></script>one</b>two", null,
+            TestContext.Current.CancellationToken, new DomDocument(),
+            script => Assert.IsType<DomElement>(script.ParentNode).SetAttribute("id", "changed"));
+        var body = result.Document.Body!;
+        var original = Assert.IsType<DomElement>(Assert.IsType<DomElement>(body.ChildNodes[0]).FirstChild);
+        var rebuilt = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("changed", original.GetAttribute("id"));
+        Assert.Equal("original", rebuilt.GetAttribute("id"));
+    }
+
+    [Fact]
+    public void NoahsArkComparesAttributeSetsRegardlessOfOrder()
+    {
+        var body = Parse("<!doctype html><p><b a=1 b=2><b b=2 a=1><b a=1 b=2><b b=2 a=1>x</p>y").Document.Body!;
+        var node = body.ChildNodes[1];
+        for (var index = 0; index < 3; index++)
+        {
+            var bold = Assert.IsType<DomElement>(node);
+            Assert.Equal("b", bold.LocalName);
+            Assert.Equal("1", bold.GetAttribute("a"));
+            Assert.Equal("2", bold.GetAttribute("b"));
+            node = Assert.Single(bold.ChildNodes);
+        }
+
+        Assert.Equal("y", Assert.IsType<DomText>(node).Data);
+    }
+
+    [Fact]
+    public void CellAndCaptionMarkersPreventFormattingLeakage()
+    {
+        var body = Parse("<!doctype html><table><caption><i>caption</caption><tr><td><b>one</td><td>two</td></tr></table>after").Document.Body!;
+        var table = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var caption = Assert.IsType<DomElement>(table.ChildNodes[0]);
+        Assert.Equal("i", Assert.IsType<DomElement>(caption.FirstChild).LocalName);
+        var section = Assert.IsType<DomElement>(table.ChildNodes[1]);
+        var row = Assert.IsType<DomElement>(section.FirstChild);
+        var first = Assert.IsType<DomElement>(row.ChildNodes[0]);
+        var second = Assert.IsType<DomElement>(row.ChildNodes[1]);
+        Assert.Equal("b", Assert.IsType<DomElement>(first.FirstChild).LocalName);
+        Assert.Equal("two", Assert.IsType<DomText>(Assert.Single(second.ChildNodes)).Data);
+        Assert.Equal("after", Assert.IsType<DomText>(body.ChildNodes[1]).Data);
+    }
+
+    [Fact]
+    public void TemplateMarkerSeparatesFormattingAndRestoresOuterEntries()
+    {
+        var body = Parse("<!doctype html><p><b>outer</p><template><i>inner</template>after").Document.Body!;
+        var template = Assert.IsType<DomTemplateElement>(body.ChildNodes[1]);
+        var inner = Assert.IsType<DomElement>(Assert.Single(template.Content.ChildNodes));
+        Assert.Equal("i", inner.LocalName);
+        Assert.Equal("inner", inner.TextContent);
+        var rebuilt = Assert.IsType<DomElement>(body.ChildNodes[2]);
+        Assert.Equal("b", rebuilt.LocalName);
+        Assert.Equal("after", rebuilt.TextContent);
+    }
+
+    [Fact]
+    public void FormattingReconstructsOnInlineStart()
+    {
+        var body = Parse("<!doctype html><p><b>x</p><span>y</span>").Document.Body!;
+        var rebuilt = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("b", rebuilt.LocalName);
+        Assert.Equal("span", Assert.IsType<DomElement>(rebuilt.FirstChild).LocalName);
+        Assert.Equal("y", rebuilt.TextContent);
+    }
+
+    [Fact]
+    public void FormattingReconstructsForWhitespaceAfterBody()
+    {
+        var body = Parse("<!doctype html><p><b>x</p></body> ").Document.Body!;
+        var rebuilt = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("b", rebuilt.LocalName);
+        Assert.Equal(" ", rebuilt.TextContent);
+    }
+
+    [Fact]
+    public void FormattingEndTagRemovesStaleEntryBeforeReconstruction()
+    {
+        var result = Parse("<!doctype html><p><b>x</p></b>plain");
+        Assert.Equal("plain", Assert.IsType<DomText>(result.Document.Body!.ChildNodes[1]).Data);
+        Assert.Contains(result.Errors, error => error.Code == "formatting-element-not-open");
+    }
+
+    [Fact]
+    public void FormattingRecoveryStillEnforcesErrorLimit()
+    {
+        Assert.Throws<HtmlLimitException>(() =>
+            Parse("<!doctype html><b><i>x</b></i>", new() { MaxErrors = 1 }));
+    }
+
+    [Fact]
+    public void FormattingEndTagRespectsTableScope()
+    {
+        var result = Parse("<!doctype html><b><table><tr><td></b>x</td></tr></table>y");
+        var bold = Assert.IsType<DomElement>(Assert.Single(result.Document.Body!.ChildNodes));
+        Assert.Equal("xy", bold.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
 
     [Fact]
     public void SimpleFormsUseFormPointerAndKeepControlsVoid()

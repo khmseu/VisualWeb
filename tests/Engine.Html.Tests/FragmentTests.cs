@@ -6,6 +6,25 @@ namespace VisualWeb.Engine.Html.Tests;
 public sealed class FragmentTests
 {
     [Fact]
+    public void FragmentFormattingReconstructionPreservesOwnershipAndCountsNodes()
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement("div");
+        const string input = "<b><i>one</b>two";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxNodes = 5 },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, result.Fragment.ChildNodes.Count);
+        Assert.Equal("i", Assert.IsType<DomElement>(result.Fragment.ChildNodes[1]).LocalName);
+        Assert.Equal("two", result.Fragment.ChildNodes[1].TextContent);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxNodes = 4 },
+            TestContext.Current.CancellationToken));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxDepth = 1 },
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ParseFragment_bodyContextReturnsOnlyFragmentNodesOwnedByContextDocument()
     {
         var document = new DomDocument();

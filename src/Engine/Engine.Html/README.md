@@ -19,6 +19,12 @@ public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and
 additional quirks-layout behavior is not implied.
+The active-formatting list uses token attribute snapshots, the
+order-independent three-entry Noah's Ark rule, reconstruction and
+template/caption/cell markers. Formatting end tags support the adoption-agency
+no-furthest-block branch; furthest-block reparenting, nested anchors/nobr and
+table-text foster parenting requiring reconstruction throw explicitly. This is
+not the full adoption-agency algorithm.
 `listing` parses normal markup and strips its first LF; `xmp` is RAWTEXT until
 its closing tag, and `plaintext` consumes the rest as literal text. Apparent
 links, scripts and styles in those literal modes are not DOM elements.

@@ -73,8 +73,12 @@ after-after-body modes. Supported behavior includes:
   `invalid-doctype` instead of aborting. DTD identifiers never cause fetching.
 - Comments/processing instructions at the appropriate document/tree locations.
 - Head metadata and title/style/script text; misplaced head content restoration.
-- Ordinary HTML body elements, correctly nested inline formatting, headings,
-  paragraphs, block starts and scoped end tags.
+- Ordinary HTML body elements, headings, paragraphs, block starts and scoped
+  end tags. The active-formatting list retains token attribute snapshots,
+  applies the three-equivalent-entry Noah's Ark rule (attribute order
+  independent), reconstructs entries and observes template/caption/cell
+  markers. Formatting end tags implement the adoption-agency cases through
+  the no-furthest-block branch, including later reconstruction of descendants.
 - Bounded document `<template>` construction in head and body. Template
   contents use the native `Content` fragment and inert template-contents owner
   document; nested templates stay separate from ordinary children and the
@@ -161,9 +165,10 @@ unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling; foreign content; framesets/frames; noscript and applet/marquee/object
 specific algorithms. Fragment contexts outside the supported parser subset are
-rejected. Nested anchors/nobr, misnested
-formatting and closures requiring active-formatting reconstruction/adoption
-agency throw instead of returning an incorrect tree.
+rejected. Nested anchors/nobr and adoption-agency cases requiring furthest-block
+reparenting throw instead of returning an incorrect tree. Table text requiring
+both foster parenting and formatting reconstruction also throws. This is not
+full adoption-agency or HTML tree-construction conformance.
 
 Doctype classification follows the cached
 [initial insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode)

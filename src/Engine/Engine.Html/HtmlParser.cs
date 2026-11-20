@@ -20,7 +20,7 @@ namespace VisualWeb.Engine.Html;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
 /// other foster-parenting cases, nested tables in captions, table/select template content, unsupported fragment contexts, scripting,
-/// active-formatting reconstruction and adoption agency are not implemented.</remarks>
+/// and the furthest-block adoption-agency branch are not implemented.</remarks>
 public static class HtmlParser
 {
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
@@ -60,6 +60,7 @@ public static class HtmlParser
         private readonly DomDocument document;
         private readonly DomDocument ownerDocument;
         private readonly List<DomElement> open = [];
+        private readonly List<FormattingEntry?> formatting = [];
         private readonly List<Mode> templateModes = [];
         private readonly List<HtmlParseError> errors = [];
         private readonly HtmlParserOptions options;
@@ -78,6 +79,8 @@ public static class HtmlParser
         private DomText? bufferedText;
         private readonly StringBuilder textBuffer = new();
         private readonly StringBuilder tableTextBuffer = new();
+
+        private sealed record FormattingEntry(DomElement Element, HtmlTag Token);
 
         public Builder(string input, HtmlParserOptions options, CancellationToken cancellationToken,
             DomDocument? document = null, Action<DomElement>? scriptCompleted = null, DomElement? fragmentContext = null)
@@ -455,7 +458,7 @@ public static class HtmlParser
 
                         throw new InvalidOperationException("Text tokenizer emitted an unexpected token.");
                     case Mode.AfterBody:
-                        if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
+                        if (IsWhitespace(token)) { BodyToken(token); return; }
                         if (Miscellaneous(token, FragmentOrDocumentElement)) { return; }
                         if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
                         if (token is HtmlTag { IsEndTag: false, Name: "html" } afterBodyHtml) { Merge(document.DocumentElement!, afterBodyHtml); return; }
@@ -473,7 +476,7 @@ public static class HtmlParser
                     case Mode.AfterAfterBody:
                         if (Miscellaneous(token, (DomNode?)fragment ?? document)) { return; }
                         if (token is HtmlEndOfFile) { return; }
-                        if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
+                        if (IsWhitespace(token)) { BodyToken(token); return; }
                         if (token is HtmlTag { IsEndTag: false, Name: "html" } finalHtml) { Merge(document.DocumentElement!, finalHtml); return; }
                         Error("content-after-html");
                         mode = Mode.InBody;
@@ -520,7 +523,14 @@ public static class HtmlParser
             if (token is HtmlCharacters text)
             {
                 if (text.Data.Contains('\0')) { Error("null-in-body"); }
-                Text(text.Data.Replace("\0", "", StringComparison.Ordinal));
+                var data = text.Data.Replace("\0", "", StringComparison.Ordinal);
+                if (data.Length > 0 && !fromSelectContext && fragmentContext?.LocalName != "select"
+                    && !open.Any(element => element.LocalName == "select"))
+                {
+                    ReconstructFormatting();
+                }
+
+                Text(data);
                 return;
             }
 
@@ -577,6 +587,7 @@ public static class HtmlParser
                     case "textarea": StartTextarea(tag); return;
                     case "xmp":
                         CloseParagraph();
+                        ReconstructFormatting();
                         StartText(tag, HtmlTextMode.Rawtext);
                         return;
                     case "iframe" or "noembed":
@@ -620,10 +631,12 @@ public static class HtmlParser
                         return;
                     case "button":
                         if (InScope("button")) { Error("nested-button"); Close("button"); }
+                        ReconstructFormatting();
                         Insert(tag);
                         return;
                     case "select":
                         if (InScope("select")) { throw Unsupported("Nested select elements are not implemented."); }
+                        ReconstructFormatting();
                         Insert(tag);
                         return;
                     case "rb":
@@ -654,12 +667,14 @@ public static class HtmlParser
                         return;
                     case "image":
                         Error("image-start-tag");
+                        ReconstructFormatting();
                         Insert(tag with { Name = "img" }, push: false);
                         return;
                     case "a":
-                        if (open.Any(e => e.LocalName == "a")) { throw Unsupported("Nested anchor adoption is not implemented."); }
+                        if (FindFormatting("a") >= 0) { throw Unsupported("Nested anchor adoption is not implemented."); }
                         break;
                     case "nobr":
+                        ReconstructFormatting();
                         if (InScope("nobr")) { throw Unsupported("Nested nobr adoption is not implemented."); }
                         break;
                 }
@@ -669,6 +684,20 @@ public static class HtmlParser
                 {
                     Error("nested-heading");
                     open.RemoveAt(open.Count - 1);
+                }
+
+                if (FormattingTags.Contains(tag.Name))
+                {
+                    ReconstructFormatting();
+                    var element = Insert(tag);
+                    PushFormatting(element, tag);
+                    return;
+                }
+
+                if (!BlockTags.Contains(tag.Name) && tag.Name is not ("rb" or "rtc" or "rp" or "rt"
+                    or "param" or "source" or "track"))
+                {
+                    ReconstructFormatting();
                 }
 
                 Insert(tag, push: !VoidTags.Contains(tag.Name));
@@ -715,8 +744,15 @@ public static class HtmlParser
                     }
                 case "br":
                     Error("br-end-tag");
+                    ReconstructFormatting();
                     Insert(Synthetic("br"), push: false);
                     return;
+            }
+
+            if (FormattingTags.Contains(tag.Name))
+            {
+                AdoptionEndTag(tag.Name);
+                return;
             }
 
             if (BlockTags.Contains(tag.Name) || tag.Name == "button")
@@ -734,15 +770,15 @@ public static class HtmlParser
                 return;
             }
 
+            AnyOtherEndTag(tag.Name);
+        }
+
+        private void AnyOtherEndTag(string name)
+        {
             for (var index = open.Count - 1; index >= 0; index--)
             {
-                if (open[index].LocalName == tag.Name)
+                if (open[index].LocalName == name)
                 {
-                    if (FormattingTags.Contains(tag.Name) && index != open.Count - 1)
-                    {
-                        throw Unsupported("Misnested formatting requires the adoption agency algorithm.");
-                    }
-
                     CloseAt(index);
                     return;
                 }
@@ -751,6 +787,135 @@ public static class HtmlParser
             }
 
             Error("unexpected-end-tag");
+        }
+
+        private int FindFormatting(string name)
+        {
+            for (var index = formatting.Count - 1; index >= 0; index--)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var entry = formatting[index];
+                if (entry is null) { break; }
+                if (entry.Token.Name == name) { return index; }
+            }
+
+            return -1;
+        }
+
+        private bool IsFormattingElement(DomElement element)
+        {
+            for (var index = formatting.Count - 1; index >= 0; index--)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (formatting[index]?.Element == element) { return true; }
+            }
+
+            return false;
+        }
+
+        private void PushFormatting(DomElement element, HtmlTag token)
+        {
+            var snapshot = token with
+            {
+                Attributes = new Dictionary<string, string>(token.Attributes, StringComparer.Ordinal),
+                SelfClosing = false
+            };
+            var count = 0;
+            var earliest = -1;
+            for (var index = formatting.Count - 1; index >= 0; index--)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var entry = formatting[index];
+                if (entry is null) { break; }
+                if (entry.Token.Name == snapshot.Name && entry.Token.Attributes.Count == snapshot.Attributes.Count
+                    && entry.Token.Attributes.All(attribute => snapshot.Attributes.TryGetValue(attribute.Key, out var value)
+                        && value == attribute.Value))
+                {
+                    earliest = index;
+                    if (++count == 3) { break; }
+                }
+            }
+
+            if (earliest >= 0 && count == 3) { formatting.RemoveAt(earliest); }
+            formatting.Add(new(element, snapshot));
+        }
+
+        private void ReconstructFormatting()
+        {
+            var index = formatting.Count - 1;
+            if (index < 0 || formatting[index] is not { } last || open.Contains(last.Element)) { return; }
+            while (index > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var previous = formatting[index - 1];
+                if (previous is null || open.Contains(previous.Element)) { break; }
+                index--;
+            }
+
+            for (; index < formatting.Count; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var entry = formatting[index] ?? throw new InvalidOperationException("Unexpected formatting marker.");
+                formatting[index] = entry with { Element = Insert(entry.Token) };
+            }
+        }
+
+        private void ClearFormattingToMarker()
+        {
+            for (var index = formatting.Count - 1; index >= 0; index--)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var isMarker = formatting[index] is null;
+                formatting.RemoveAt(index);
+                if (isMarker) { return; }
+            }
+        }
+
+        private void AdoptionEndTag(string name)
+        {
+            if (open.Count > 0 && open[^1].LocalName == name
+                && !IsFormattingElement(open[^1]))
+            {
+                FlushText();
+                open.RemoveAt(open.Count - 1);
+                return;
+            }
+
+            var entryIndex = FindFormatting(name);
+            if (entryIndex < 0)
+            {
+                AnyOtherEndTag(name);
+                return;
+            }
+
+            var element = formatting[entryIndex]!.Element;
+            var stackIndex = open.IndexOf(element);
+            if (stackIndex < 0)
+            {
+                Error("formatting-element-not-open");
+                formatting.RemoveAt(entryIndex);
+                return;
+            }
+
+            for (var index = open.Count - 1; index > stackIndex; index--)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (open[index].LocalName is "html" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template")
+                {
+                    Error("formatting-element-not-in-scope");
+                    return;
+                }
+            }
+
+            if (stackIndex != open.Count - 1) { Error("misnested-formatting-end-tag"); }
+            if (open.Skip(stackIndex + 1).Any(candidate => SpecialTags.Contains(candidate.LocalName)))
+            {
+                throw Unsupported("Adoption agency furthest-block reparenting is not implemented.");
+            }
+
+            FlushText();
+            open.RemoveRange(stackIndex, open.Count - stackIndex);
+            formatting.RemoveAt(entryIndex);
         }
 
         private void TableToken(HtmlToken token)
@@ -794,6 +959,7 @@ public static class HtmlParser
                         return;
                     case "caption":
                         ClearStackToTableContext();
+                        formatting.Add(null);
                         Insert(tag);
                         mode = Mode.InCaption;
                         return;
@@ -908,6 +1074,7 @@ public static class HtmlParser
 
             GenerateImpliedEndTags();
             CloseAt(captionIndex);
+            ClearFormattingToMarker();
             mode = Mode.InTable;
             return true;
         }
@@ -949,6 +1116,11 @@ public static class HtmlParser
 
         private void FosterTableText(string data)
         {
+            if (formatting.LastOrDefault() is { } entry && !open.Contains(entry.Element))
+            {
+                throw Unsupported("Foster parenting requiring active-formatting reconstruction is not implemented.");
+            }
+
             var tableIndex = open.FindLastIndex(element => element.LocalName == "table");
             if (tableIndex < 0 && fragmentRoot is not null)
             {
@@ -1109,6 +1281,7 @@ public static class HtmlParser
             {
                 ClearStackToTableRowContext();
                 Insert(cell);
+                formatting.Add(null);
                 mode = Mode.InCell;
                 return;
             }
@@ -1202,6 +1375,7 @@ public static class HtmlParser
             }
 
             CloseAt(cellIndex);
+            ClearFormattingToMarker();
             mode = Mode.InRow;
         }
 
@@ -1252,6 +1426,7 @@ public static class HtmlParser
 
                 Error("eof-in-template");
                 open.RemoveRange(templateIndex, open.Count - templateIndex);
+                ClearFormattingToMarker();
                 templateModes.RemoveAt(templateModes.Count - 1);
                 ResetInsertionModeAppropriately();
                 return true;
@@ -1297,6 +1472,7 @@ public static class HtmlParser
         private void StartTemplate(HtmlTag tag)
         {
             Insert(tag);
+            formatting.Add(null);
             templateModes.Add(Mode.InTemplate);
             mode = Mode.InTemplate;
         }
@@ -1318,6 +1494,7 @@ public static class HtmlParser
 
             FlushText();
             open.RemoveRange(templateIndex, open.Count - templateIndex);
+            ClearFormattingToMarker();
             templateModes.RemoveAt(templateModes.Count - 1);
             ResetInsertionModeAppropriately();
         }
@@ -1591,11 +1768,6 @@ public static class HtmlParser
         private void CloseAt(int index)
         {
             FlushText();
-            if (open.Skip(index + 1).Any(e => FormattingTags.Contains(e.LocalName)))
-            {
-                throw Unsupported("Closing this element requires active-formatting reconstruction.");
-            }
-
             if (formPointer is not null && open.Skip(index).Contains(formPointer))
             {
                 throw Unsupported("Implicitly closing an open form would split form ownership from tree ancestry.");
@@ -1774,7 +1946,7 @@ public static class HtmlParser
     };
     private static readonly HashSet<string> SpecialTags = new(BlockTags.Where(name => name != "dialog").Concat(VoidTags).Concat(UnsupportedTags).Concat(TableTags)
         .Concat(["html", "head", "body", "p", "li", "dd", "dt", "button", "form", "textarea", "title", "script",
-            "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "option"]), StringComparer.Ordinal);
+            "style", "xmp", "plaintext", "iframe", "noembed", "noframes", "select", "template"]), StringComparer.Ordinal);
     private static readonly HashSet<string> ImplicitlyClosable = new(StringComparer.Ordinal)
     {
         "html", "body", "p", "li", "dd", "dt"
