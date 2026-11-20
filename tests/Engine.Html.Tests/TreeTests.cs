@@ -829,6 +829,54 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void SpanStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<span id=fostered>content</span>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var span = Assert.IsType<DomElement>(node);
+                Assert.Equal("span", span.LocalName);
+                Assert.Equal("fostered", span.GetAttribute("id"));
+                Assert.Equal("content", span.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-span-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-span-end-in-table");
+    }
+
+    [Fact]
+    public void SpanInTemplateTableModeIsFosteredWithinTemplateContent()
+    {
+        var result = Parse("<template><table><span>content</span><tbody><tr><td>cell</td></tr></tbody></table></template>");
+        var template = Assert.IsType<DomTemplateElement>(
+            Assert.Single(Descendants(result.Document), element => element.LocalName == "template"));
+        var span = Assert.IsType<DomElement>(template.Content.FirstChild);
+        var table = Assert.IsType<DomElement>(template.Content.LastChild);
+
+        Assert.Equal("span", span.LocalName);
+        Assert.Same(template.Content, span.ParentNode);
+        Assert.Equal("content", span.TextContent);
+        Assert.Equal("table", table.LocalName);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-span-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-span-end-in-table");
+    }
+
+    [Fact]
+    public void OtherFormattingElementsInTableModesRemainExplicitlyUnsupported() =>
+        Assert.Throws<UnsupportedHtmlException>(() => Parse("<table><strong>content</strong></table>"));
+
+    [Theory]
     [InlineData("<input id=plain>", "plain")]
     [InlineData("<input type=text id=text>", "text")]
     [InlineData("<input type=h\u0131dden id=unicode>", "unicode")]

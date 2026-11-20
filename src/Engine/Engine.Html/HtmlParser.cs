@@ -19,10 +19,13 @@ namespace VisualWeb.Engine.Html;
 /// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, non-hidden inputs,
 /// <c>br</c>/<c>hr</c> starts, the <c>image</c> alias, supported void-element start/end tokens, and
 /// supported block/list-item start/end tags in table, table-body, and row modes with
-/// bounded foster-parent insertion are supported;
+/// bounded foster-parent insertion are supported. <c>span</c> start/end tags also use bounded foster-parent
+/// insertion in table, column-group, table-body, and row modes; other formatting-element adoption algorithms
+/// in those modes remain unsupported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
-/// merging for in-table <c>html</c> starts are supported;
-/// other foster-parenting cases, nested tables in captions, table/select template content, unsupported fragment contexts, scripting,
+/// merging for in-table <c>html</c> starts are supported; bounded table insertion modes apply within template
+/// content, including template EOF recovery;
+/// other foster-parenting cases, nested tables in captions, select template content, unsupported fragment contexts, scripting,
 /// and adoption-agency reparenting requiring table foster parenting are unsupported.</remarks>
 public static class HtmlParser
 {
@@ -1075,7 +1078,7 @@ public static class HtmlParser
             {
                 if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
                     || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title"
-                        or "iframe" or "noembed" or "noframes" or "xmp")
+                        or "iframe" or "noembed" or "noframes" or "xmp" or "span")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1159,7 +1162,7 @@ public static class HtmlParser
 
             if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
                 || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title"
-                    or "iframe" or "noembed" or "noframes" or "xmp")
+                    or "iframe" or "noembed" or "noframes" or "xmp" or "span")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;

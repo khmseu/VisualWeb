@@ -189,7 +189,10 @@ after-after-body modes. Supported behavior includes:
   `dialog`, `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`, `header`,
   `hgroup`, `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary` and
   `ul`) in those modes use in-body handling with bounded foster-parent
-  insertion. Character tokens are buffered as table text only when the current
+  insertion. `span` start and end tags in table, column-group, table-body and
+  row modes use the same in-body foster-parent path; this does not enable the
+  other formatting-element adoption algorithms there. Character tokens are
+  buffered as table text only when the current
   node is `table`, `tbody`, `template`, `tfoot`, `thead` or `tr`; otherwise
   they use in-body handling, preserving text inside a fostered element.
   `pre` and `listing` retain the in-body initial-line-feed suppression. This

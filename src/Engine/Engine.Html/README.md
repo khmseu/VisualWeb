@@ -20,7 +20,8 @@ recovery;
 only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
-exception, root-attribute merging for in-table `html` starts, and template
+exception, `span` foster parenting in table/column-group/table-body/row modes,
+root-attribute merging for in-table `html` starts, and template
 start/end processing in table, table-body and row modes.
 Other tokens requiring table foster parenting remain unsupported. Legacy
 doctypes preserve public/system identifiers and recover
