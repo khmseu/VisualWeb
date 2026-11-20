@@ -190,6 +190,10 @@ public static class HtmlParser
         }
 
         private DomNode Current => open.Count == 0 ? document : open[^1];
+        private DomNode AdjustedCurrentNode =>
+            fragmentRoot is not null && Current == fragmentRoot
+                ? fragmentContext ?? throw new InvalidOperationException("The fragment context is not set.")
+                : Current;
         private DomElement HeadElement => headElementPointer ?? document.Head
             ?? throw new InvalidOperationException("The parser head element pointer is not set.");
         private DomNode FragmentOrDocumentElement => (DomNode?)fragment ?? document.DocumentElement!;
@@ -1049,6 +1053,13 @@ public static class HtmlParser
         {
             if (token is HtmlCharacters characters)
             {
+                if (AdjustedCurrentNode is not DomElement
+                    { LocalName: "table" or "tbody" or "template" or "tfoot" or "thead" or "tr" })
+                {
+                    ProcessFosterParentedBodyToken(characters, "unexpected-character-in-table");
+                    return;
+                }
+
                 originalMode = mode;
                 mode = Mode.InTableText;
                 Process(characters);
@@ -1178,12 +1189,12 @@ public static class HtmlParser
             throw Unsupported("Foster parenting for table content is not implemented.");
         }
 
-        private void ProcessFosterParentedBodyToken(HtmlTag tag, string errorCode)
+        private void ProcessFosterParentedBodyToken(HtmlToken token, string errorCode)
         {
             Error(errorCode);
             var previousFosterParenting = fosterParenting;
             fosterParenting = true;
-            try { BodyToken(tag); }
+            try { BodyToken(token); }
             finally { fosterParenting = previousFosterParenting; }
         }
 

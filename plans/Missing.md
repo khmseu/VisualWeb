@@ -381,7 +381,11 @@ static table subset now builds `colgroup`/`col`, table sections, rows and cells,
 including implied `colgroup`/`tbody`/`tr` wrappers and scoped closure. Captions
 use the existing in-body content subset and reprocess table tokens that close
 them. Non-whitespace table-character runs, including adjacent whitespace, are
-foster-parented before the nearest table; whitespace-only runs remain in place.
+foster-parented before the nearest table when the current node is
+table-related; whitespace-only runs remain in place. Character tokens use
+in-body handling when the current node is not `table`, `tbody`, `template`,
+`tfoot`, `thead` or `tr`, so text following a fostered element start stays
+inside that element.
 In-table `script`/`style` start tags use script-data/raw-text parsing and return
 to their original table insertion mode; script content remains inert.
 `type=hidden` inputs are inserted as void table children with a parse-error

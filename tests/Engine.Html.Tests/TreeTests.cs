@@ -818,9 +818,8 @@ public sealed class TreeTests
                 var element = Assert.IsType<DomElement>(node);
                 Assert.Equal(tagName, element.LocalName);
                 Assert.Equal("fostered", element.GetAttribute("id"));
-                Assert.Empty(element.ChildNodes);
+                Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
             },
-            node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
             node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
             node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
         Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
@@ -848,9 +847,8 @@ public sealed class TreeTests
                 var element = Assert.IsType<DomElement>(node);
                 Assert.Equal(tagName, element.LocalName);
                 Assert.Equal("fostered", element.GetAttribute("id"));
-                Assert.Empty(element.ChildNodes);
+                Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
             },
-            node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
             node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
             node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
         Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
@@ -903,9 +901,8 @@ public sealed class TreeTests
                     var element = Assert.IsType<DomElement>(node);
                     Assert.Equal(tagName, element.LocalName);
                     Assert.Equal("fostered", element.GetAttribute("id"));
-                    Assert.Empty(element.ChildNodes);
+                    Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
                 },
-                node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
                 node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
                 node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
             Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
@@ -939,9 +936,8 @@ public sealed class TreeTests
                     var element = Assert.IsType<DomElement>(node);
                     Assert.Equal(tagName, element.LocalName);
                     Assert.Equal("fostered", element.GetAttribute("id"));
-                    Assert.Empty(element.ChildNodes);
+                    Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
                 },
-                node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
                 node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
                 node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
             Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
@@ -972,13 +968,43 @@ public sealed class TreeTests
                     var element = Assert.IsType<DomElement>(node);
                     Assert.Equal("button", element.LocalName);
                     Assert.Equal("fostered", element.GetAttribute("id"));
-                    Assert.Empty(element.ChildNodes);
+                    Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
                 },
-                node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
                 node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
                 node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
             Assert.Contains(result.Errors, error => error.Code == "fostered-button-start-in-table");
             Assert.Contains(result.Errors, error => error.Code == "fostered-button-end-in-table");
+        }
+    }
+
+    [Fact]
+    public void TextAfterFosteredButtonStartIsInsertedIntoTheButton()
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + "<button id=fostered>content</button>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node =>
+                {
+                    var element = Assert.IsType<DomElement>(node);
+                    Assert.Equal("button", element.LocalName);
+                    Assert.Equal("fostered", element.GetAttribute("id"));
+                    Assert.Equal("content", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
+                },
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == "unexpected-character-in-table");
         }
     }
 

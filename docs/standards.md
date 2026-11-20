@@ -162,7 +162,12 @@ suppression. `iframe`, `noembed` and `noframes` starts and unmatched end tags
 also use that route with RAWTEXT tokenization; no browsing context or resource
 loading is added. `xmp` starts and unmatched end tags also use the route,
 retaining its in-body paragraph/formatting handling before RAWTEXT. `pre` and
-`listing` retain initial-line-feed suppression.
+`listing` retain initial-line-feed suppression. Character tokens are buffered
+as table text only when the current node is `table`, `tbody`, `template`,
+`tfoot`, `thead` or `tr`; otherwise they use in-body handling, preserving text
+inside a fostered element. Non-whitespace table-character runs (including
+adjacent whitespace) are foster-parented before the nearest table when the
+current node is table-related; whitespace-only runs stay in the table.
 Adoption reparenting that requires table foster parenting and table-text foster
 parenting requiring reconstruction remain explicitly unsupported; this
 increment does not change the coarse HTML percentage below. Other table tokens

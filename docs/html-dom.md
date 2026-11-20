@@ -177,12 +177,15 @@ after-after-body modes. Supported behavior includes:
   `dialog`, `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`, `header`,
   `hgroup`, `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary` and
   `ul`) in those modes use in-body handling with bounded foster-parent
-  insertion.
+  insertion. Character tokens are buffered as table text only when the current
+  node is `table`, `tbody`, `template`, `tfoot`, `thead` or `tr`; otherwise
+  they use in-body handling, preserving text inside a fostered element.
   `pre` and `listing` retain the in-body initial-line-feed suppression. This
   does not implement foster parenting for other table tokens.
   Contiguous non-whitespace table-character runs (including their adjacent
-  whitespace) are foster-parented before the nearest table; whitespace-only
-  runs stay in the table. Rendering is separate:
+  whitespace) are foster-parented before the nearest table when the current
+  node is table-related; whitespace-only runs stay in the table. Rendering is
+  separate:
   `Engine.Layout` supports a [bounded automatic table subset](text-layout.md#basic-automatic-tables);
   parser support for captions/columns does not imply layout support.
 
