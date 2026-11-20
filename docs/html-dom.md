@@ -83,7 +83,17 @@ after-after-body modes. Supported behavior includes:
   fragment counts toward `MaxNodes`; content descendants count toward the
   existing node/depth/error/cancellation limits. Template-content scripts are
   parsed as inert text and never invoke `scriptCompleted`. Table/select contexts,
-  foreign content and fragment parsing remain explicitly unsupported.
+  foreign content and broader template algorithms remain explicitly unsupported.
+- `HtmlParser.ParseFragment` returns a context-document-owned `DocumentFragment`.
+  It selects the bounded insertion mode for supported in-body, table, select and
+  template contexts plus the `html` context's before-head mode, and starts
+  RCDATA, RAWTEXT, ScriptData or PLAINTEXT tokenization where applicable.
+  Text-mode fragments have no appropriate end tag, so matching-looking markup
+  remains text through EOF. Synthetic parser-root
+  nodes are not returned; the bounded form pointer comes from the context's
+  ancestor chain, and fragment nodes are covered by parser limits and
+  cancellation. SVG, MathML,
+  frameset/frame, `noscript` and other unsupported contexts fail explicitly.
 - List-item and definition-list implied closures, pre/listing/textarea first-LF
   handling, void elements (including `<wbr>`) and ignored self-closing flags on
   non-void HTML. Layout interprets `<wbr>` as an optional line-break opportunity
@@ -149,8 +159,9 @@ using table or select insertion modes is also explicitly unsupported. The
 following additionally throw explicitly: SVG/MathML,
 unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
-handling, framesets/frames, noscript and applet/marquee/object-specific
-algorithms. Fragment parsing is not offered. Nested anchors/nobr, misnested
+handling; foreign content; framesets/frames; noscript and applet/marquee/object
+specific algorithms. Fragment contexts outside the supported parser subset are
+rejected. Nested anchors/nobr, misnested
 formatting and closures requiring active-formatting reconstruction/adoption
 agency throw instead of returning an incorrect tree.
 
@@ -209,8 +220,9 @@ mutations remain explicit. These objects are **not thread-safe** and must not be
 shared between tabs, passed over IPC or treated as security principals.
 Mutation observers, native event machinery, ranges, shadow DOM, namespace-aware APIs,
 most special element behavior and full script bindings are deferred. Table/select
-template insertion modes, fragment parsing, script-facing template bindings and
-`innerHTML` remain unsupported.
+template insertion modes, script-facing template bindings and `innerHTML` remain
+unsupported. The static fragment parser is not exposed as a script-facing
+`innerHTML` API.
 The native document title property follows first-title tree order and ASCII
 whitespace normalization; its setter creates a title only with an existing head.
 The optional [V8 binding foundation](scripting.md) exposes live title, ID lookup

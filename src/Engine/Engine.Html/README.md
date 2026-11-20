@@ -27,7 +27,17 @@ ordinary supported in-body content and nested templates build under each
 `DomTemplateElement.Content` fragment, then insertion-mode reset resumes the
 surrounding head/body mode. Template content is inert; its scripts do not invoke
 the parser completion callback. Table/select template contexts, foreign content,
-fragment parsing and broader template algorithms remain unsupported.
+and broader template algorithms remain unsupported.
+
+`HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
+element's document and parses with the supported in-body, table, select,
+template, `html`-context before-head, RCDATA, RAWTEXT, ScriptData or PLAINTEXT
+behavior. Fragment text contexts have no appropriate end tag, so their
+tokenizer state consumes matching-looking markup as text through the end of
+input. Fragment content uses
+the configured input, node, depth, error and cancellation limits.
+Unsupported contexts (including SVG, MathML, `noscript` and `frameset`) fail
+explicitly; unsupported tree-construction algorithms remain unsupported.
 Advanced features throw `UnsupportedHtmlException`; safety limits throw
 `HtmlLimitException`. Results contain a renderer-local DOM and diagnostics.
 Scripts are tokenized as text, never executed.

@@ -19,12 +19,27 @@ namespace VisualWeb.Engine.Html;
 /// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
-/// other foster-parenting cases, nested tables in captions, table/select template content, foreign content, frames, fragment parsing, scripting,
+/// other foster-parenting cases, nested tables in captions, table/select template content, unsupported fragment contexts, scripting,
 /// active-formatting reconstruction and adoption agency are not implemented.</remarks>
 public static class HtmlParser
 {
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
         new Builder(input, options ?? new(), cancellationToken).Run();
+
+    /// <summary>Parses an HTML fragment using the context element's supported insertion mode.</summary>
+    /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#html-fragment-parsing-algorithm">HTML fragment parsing algorithm</see>.</remarks>
+    public static HtmlFragmentParseResult ParseFragment(string input, DomElement contextElement,
+        HtmlParserOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(contextElement);
+        if (UnsupportedFragmentContexts.Contains(contextElement.LocalName))
+        {
+            throw new UnsupportedHtmlException($"Fragment parsing for <{contextElement.LocalName}> contexts is not implemented.");
+        }
+
+        return new Builder(input, options ?? new(), cancellationToken, fragmentContext: contextElement).RunFragment();
+    }
 
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options, CancellationToken cancellationToken,
         DomDocument document, Action<DomElement>? scriptCompleted)
@@ -43,6 +58,7 @@ public static class HtmlParser
     private sealed class Builder
     {
         private readonly DomDocument document;
+        private readonly DomDocument ownerDocument;
         private readonly List<DomElement> open = [];
         private readonly List<Mode> templateModes = [];
         private readonly List<HtmlParseError> errors = [];
@@ -50,27 +66,78 @@ public static class HtmlParser
         private readonly HtmlTokenizer tokenizer;
         private readonly CancellationToken cancellationToken;
         private readonly Action<DomElement>? scriptCompleted;
+        private readonly DomElement? fragmentContext;
+        private readonly DomDocumentFragment? fragment;
+        private DomElement? fragmentRoot;
         private Mode mode;
         private Mode originalMode;
         private int nodes = 1;
         private bool ignoreNextLineFeed;
         private DomElement? formPointer;
+        private DomElement? headElementPointer;
         private DomText? bufferedText;
         private readonly StringBuilder textBuffer = new();
         private readonly StringBuilder tableTextBuffer = new();
 
         public Builder(string input, HtmlParserOptions options, CancellationToken cancellationToken,
-            DomDocument? document = null, Action<DomElement>? scriptCompleted = null)
+            DomDocument? document = null, Action<DomElement>? scriptCompleted = null, DomElement? fragmentContext = null)
         {
             options.Validate();
             this.options = options;
             this.cancellationToken = cancellationToken;
-            this.document = document ?? new DomDocument();
+            this.fragmentContext = fragmentContext;
+            if (fragmentContext is null)
+            {
+                this.document = document ?? new DomDocument();
+                ownerDocument = this.document;
+                tokenizer = new(input, options: options, cancellationToken: cancellationToken);
+            }
+            else
+            {
+                var contextDocument = fragmentContext.OwnerDocument
+                    ?? throw new ArgumentException("The fragment context must have an owner document.", nameof(fragmentContext));
+                ownerDocument = contextDocument;
+                this.document = new DomDocument { Mode = contextDocument.Mode };
+                fragment = ownerDocument.CreateDocumentFragment();
+                nodes = 0;
+                tokenizer = new(input, InitialFragmentTextMode(fragmentContext.LocalName),
+                    options: options, cancellationToken: cancellationToken);
+                for (DomNode? ancestor = fragmentContext; ancestor is not null; ancestor = ancestor.ParentNode)
+                {
+                    if (ancestor is DomElement { LocalName: "form" } form)
+                    {
+                        formPointer = form;
+                        break;
+                    }
+                }
+            }
+
             this.scriptCompleted = scriptCompleted;
-            tokenizer = new(input, options: options, cancellationToken: cancellationToken);
         }
 
         public HtmlParseResult Run()
+        {
+            RunTokens();
+            return new(document, AllErrors());
+        }
+
+        public HtmlFragmentParseResult RunFragment()
+        {
+            if (fragmentContext is null || fragment is null)
+            {
+                throw new InvalidOperationException("The builder was not initialized for fragment parsing.");
+            }
+
+            fragmentRoot = document.CreateElement("html");
+            document.AppendChild(fragmentRoot);
+            open.Add(fragmentRoot);
+            if (fragmentContext.LocalName == "template") { templateModes.Add(Mode.InTemplate); }
+            mode = FragmentInsertionMode(fragmentContext.LocalName);
+            RunTokens();
+            return new(fragment, AllErrors());
+        }
+
+        private void RunTokens()
         {
             while (true)
             {
@@ -110,17 +177,46 @@ public static class HtmlParser
                 if (token is HtmlEndOfFile)
                 {
                     FlushText();
-                    var allErrors = tokenizer.Errors.Concat(errors).OrderBy(e => e.Offset).ToList().AsReadOnly();
-                    return new(document, allErrors);
+                    return;
                 }
             }
         }
 
         private DomNode Current => open.Count == 0 ? document : open[^1];
-        private DomNode InsertionParent => Current is DomTemplateElement template ? template.Content : Current;
+        private DomElement HeadElement => headElementPointer ?? document.Head
+            ?? throw new InvalidOperationException("The parser head element pointer is not set.");
+        private DomNode FragmentOrDocumentElement => (DomNode?)fragment ?? document.DocumentElement!;
+        private DomNode InsertionParent => fragmentRoot is not null && Current == fragmentRoot
+            ? fragment! : Current is DomTemplateElement template ? template.Content : Current;
+        private bool IsFragment => fragment is not null;
+        private IReadOnlyList<HtmlParseError> AllErrors() =>
+            tokenizer.Errors.Concat(errors).OrderBy(error => error.Offset).ToList().AsReadOnly();
+
+        private static HtmlTextMode InitialFragmentTextMode(string contextName) => contextName switch
+        {
+            "title" or "textarea" => HtmlTextMode.Rcdata,
+            "style" or "xmp" or "iframe" or "noembed" or "noframes" => HtmlTextMode.Rawtext,
+            "script" => HtmlTextMode.ScriptData,
+            "plaintext" => HtmlTextMode.Plaintext,
+            _ => HtmlTextMode.Data
+        };
+
+        private Mode FragmentInsertionMode(string contextName) => contextName switch
+        {
+            "html" => headElementPointer is null ? Mode.BeforeHead : Mode.AfterHead,
+            "table" => Mode.InTable,
+            "caption" => Mode.InCaption,
+            "colgroup" => Mode.InColumnGroup,
+            "tbody" or "thead" or "tfoot" => Mode.InTableBody,
+            "tr" => Mode.InRow,
+            "td" or "th" => Mode.InCell,
+            "template" => Mode.InTemplate,
+            _ => Mode.InBody
+        };
+
         private void CompleteScript()
         {
-            if (!open.Any(element => element.LocalName == "template")
+            if (!IsFragment && !open.Any(element => element.LocalName == "template")
                 && Current is DomElement { LocalName: "script" } script)
             {
                 scriptCompleted?.Invoke(script);
@@ -218,7 +314,7 @@ public static class HtmlParser
                         continue;
                     case Mode.BeforeHead:
                         if (IsWhitespace(token)) { return; }
-                        if (Miscellaneous(token, Current)) { return; }
+                        if (Miscellaneous(token, InsertionParent)) { return; }
                         if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
                         if (token is HtmlTag { IsEndTag: false, Name: "html" } beforeHeadHtml)
                         {
@@ -228,7 +324,7 @@ public static class HtmlParser
 
                         if (token is HtmlTag { IsEndTag: false, Name: "head" } head)
                         {
-                            Insert(head);
+                            headElementPointer = Insert(head);
                             mode = Mode.InHead;
                             return;
                         }
@@ -239,7 +335,7 @@ public static class HtmlParser
                             return;
                         }
 
-                        Insert(Synthetic("head"));
+                        headElementPointer = Insert(Synthetic("head"));
                         mode = Mode.InHead;
                         continue;
                     case Mode.InHead:
@@ -286,7 +382,7 @@ public static class HtmlParser
                         continue;
                     case Mode.AfterHead:
                         if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
-                        if (Miscellaneous(token, Current)) { return; }
+                        if (Miscellaneous(token, InsertionParent)) { return; }
                         if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
                         if (token is HtmlTag { IsEndTag: false } afterHeadStart)
                         {
@@ -296,7 +392,7 @@ public static class HtmlParser
                             if (HeadTags.Contains(afterHeadStart.Name))
                             {
                                 Error("head-content-after-head");
-                                open.Add(document.Head!);
+                                open.Add(HeadElement);
                                 mode = Mode.InHead;
                                 Process(token);
                                 if (mode == Mode.Text)
@@ -305,11 +401,11 @@ public static class HtmlParser
                                 }
                                 else if (mode == Mode.InTemplate)
                                 {
-                                    open.Remove(document.Head!);
+                                    open.Remove(HeadElement);
                                 }
                                 else
                                 {
-                                    open.Remove(document.Head!);
+                                    open.Remove(HeadElement);
                                     mode = Mode.AfterHead;
                                 }
 
@@ -342,7 +438,7 @@ public static class HtmlParser
                             FlushText();
                             CompleteScript();
                             open.RemoveAt(open.Count - 1);
-                            if (originalMode == Mode.AfterHead) { open.Remove(document.Head!); }
+                            if (originalMode == Mode.AfterHead) { open.Remove(HeadElement); }
                             mode = originalMode;
                             continue;
                         }
@@ -352,7 +448,7 @@ public static class HtmlParser
                             FlushText();
                             CompleteScript();
                             open.RemoveAt(open.Count - 1);
-                            if (originalMode == Mode.AfterHead) { open.Remove(document.Head!); }
+                            if (originalMode == Mode.AfterHead) { open.Remove(HeadElement); }
                             mode = originalMode;
                             return;
                         }
@@ -360,16 +456,22 @@ public static class HtmlParser
                         throw new InvalidOperationException("Text tokenizer emitted an unexpected token.");
                     case Mode.AfterBody:
                         if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
-                        if (Miscellaneous(token, document.DocumentElement!)) { return; }
+                        if (Miscellaneous(token, FragmentOrDocumentElement)) { return; }
                         if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
                         if (token is HtmlTag { IsEndTag: false, Name: "html" } afterBodyHtml) { Merge(document.DocumentElement!, afterBodyHtml); return; }
-                        if (token is HtmlTag { IsEndTag: true, Name: "html" }) { mode = Mode.AfterAfterBody; return; }
+                        if (token is HtmlTag { IsEndTag: true, Name: "html" })
+                        {
+                            if (fragmentContext is not null) { Error("unexpected-html-end-tag"); }
+                            else { mode = Mode.AfterAfterBody; }
+
+                            return;
+                        }
                         if (token is HtmlEndOfFile) { return; }
                         Error("content-after-body");
                         mode = Mode.InBody;
                         continue;
                     case Mode.AfterAfterBody:
-                        if (Miscellaneous(token, document)) { return; }
+                        if (Miscellaneous(token, (DomNode?)fragment ?? document)) { return; }
                         if (token is HtmlEndOfFile) { return; }
                         if (IsWhitespace(token)) { Text(((HtmlCharacters)token).Data); return; }
                         if (token is HtmlTag { IsEndTag: false, Name: "html" } finalHtml) { Merge(document.DocumentElement!, finalHtml); return; }
@@ -428,7 +530,17 @@ public static class HtmlParser
             {
                 var selectIndexAtEof = open.FindLastIndex(element => element.LocalName == "select");
                 if (!fromSelectContext && selectIndexAtEof >= 0) { SelectToken(token, selectIndexAtEof); return; }
-                if (open.Any(e => !ImplicitlyClosable.Contains(e.LocalName))) { Error("unclosed-elements-at-eof"); }
+                if (!fromSelectContext && fragmentContext?.LocalName == "select")
+                {
+                    SelectToken(token, -1);
+                    return;
+                }
+
+                if (!IsFragment && open.Any(e => !ImplicitlyClosable.Contains(e.LocalName)))
+                {
+                    Error("unclosed-elements-at-eof");
+                }
+
                 return;
             }
 
@@ -439,12 +551,24 @@ public static class HtmlParser
                 SelectToken(token, selectIndex);
                 return;
             }
+            if (!fromSelectContext && fragmentContext?.LocalName == "select")
+            {
+                SelectToken(token, -1);
+                return;
+            }
+
             if (!tag.IsEndTag)
             {
                 switch (tag.Name)
                 {
-                    case "html": Merge(document.DocumentElement!, tag); Error("html-start-in-body"); return;
-                    case "body": Merge(document.Body!, tag); Error("body-start-in-body"); return;
+                    case "html":
+                        if (document.DocumentElement is { } root) { Merge(root, tag); }
+                        Error("html-start-in-body");
+                        return;
+                    case "body":
+                        if (document.Body is { } body) { Merge(body, tag); }
+                        Error("body-start-in-body");
+                        return;
                     case "head": Error("unexpected-head-start-tag"); return;
                     case "title": StartText(tag, HtmlTextMode.Rcdata); return;
                     case "style" or "noframes": StartText(tag, HtmlTextMode.Rawtext); return;
@@ -639,7 +763,7 @@ public static class HtmlParser
                 return;
             }
 
-            if (Miscellaneous(token, Current)) { return; }
+            if (Miscellaneous(token, InsertionParent)) { return; }
             if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
             if (token is HtmlEndOfFile) { BodyToken(token); return; }
 
@@ -826,6 +950,21 @@ public static class HtmlParser
         private void FosterTableText(string data)
         {
             var tableIndex = open.FindLastIndex(element => element.LocalName == "table");
+            if (tableIndex < 0 && fragmentRoot is not null)
+            {
+                FlushText();
+                var fragmentText = fragment!.LastChild as DomText;
+                if (fragmentText is not null)
+                {
+                    fragmentText.Data += data;
+                    return;
+                }
+
+                CountNode();
+                fragment.AppendChild(ownerDocument.CreateTextNode(data));
+                return;
+            }
+
             if (tableIndex < 0 || open[tableIndex].ParentNode is not { } parent || parent is DomDocument)
             {
                 throw Unsupported("The foster-parent insertion location for this table is not implemented.");
@@ -840,7 +979,7 @@ public static class HtmlParser
             }
 
             CountNode();
-            parent.InsertBefore(document.CreateTextNode(data), table);
+            parent.InsertBefore(ownerDocument.CreateTextNode(data), table);
         }
 
         private void ColumnGroupToken(HtmlToken token)
@@ -866,7 +1005,7 @@ public static class HtmlParser
                 return;
             }
 
-            if (Miscellaneous(token, Current)) { return; }
+            if (Miscellaneous(token, InsertionParent)) { return; }
             if (token is HtmlDoctype) { Error("unexpected-doctype"); return; }
             if (token is HtmlEndOfFile) { BodyToken(token); return; }
             if (token is HtmlTag { IsEndTag: false, Name: "html" }) { BodyToken(token); return; }
@@ -1218,8 +1357,13 @@ public static class HtmlParser
                     case "head" when index > 0:
                         mode = Mode.InHead;
                         return;
+                    case "html" when index == 0 && fragmentContext is not null:
+                        mode = fragmentContext.LocalName == "template" && templateModes.Count > 0
+                            ? templateModes[^1]
+                            : FragmentInsertionMode(fragmentContext.LocalName);
+                        return;
                     case "html" when index == 0:
-                        mode = document.Head is null ? Mode.BeforeHead : Mode.AfterHead;
+                        mode = headElementPointer is null && document.Head is null ? Mode.BeforeHead : Mode.AfterHead;
                         return;
                     case "body":
                         mode = Mode.InBody;
@@ -1250,22 +1394,30 @@ public static class HtmlParser
             if (Miscellaneous(token, Current)) { return; }
             if (token is HtmlEndOfFile)
             {
-                Error("unclosed-select");
-                open.RemoveRange(selectIndex, open.Count - selectIndex);
+                if (selectIndex >= 0)
+                {
+                    Error("unclosed-select");
+                    open.RemoveRange(selectIndex, open.Count - selectIndex);
+                }
+
                 return;
             }
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in select."); }
             if (!tag.IsEndTag && tag.Name == "input")
             {
                 Error("input-start-tag-in-select");
-                CloseAt(selectIndex);
-                BodyToken(tag);
+                if (selectIndex >= 0)
+                {
+                    CloseAt(selectIndex);
+                    BodyToken(tag);
+                }
+
                 return;
             }
             if (!tag.IsEndTag && tag.Name == "select")
             {
                 Error("nested-select-start-tag");
-                CloseAt(selectIndex);
+                if (selectIndex >= 0) { CloseAt(selectIndex); }
                 return;
             }
             if (!tag.IsEndTag && tag.Name == "hr")
@@ -1308,7 +1460,8 @@ public static class HtmlParser
             }
             if (tag.IsEndTag && tag.Name == "select")
             {
-                CloseAt(selectIndex);
+                if (selectIndex >= 0) { CloseAt(selectIndex); }
+                else { Error("unexpected-select-end-tag"); }
                 return;
             }
             BodyToken(token, fromSelectContext: true);
@@ -1317,9 +1470,10 @@ public static class HtmlParser
         private DomElement Insert(HtmlTag token, bool push = true)
         {
             FlushText();
-            if (push && open.Count >= options.MaxDepth) { throw new HtmlLimitException("HTML element depth limit exceeded."); }
+            var depth = open.Count - (fragmentRoot is null ? 0 : 1);
+            if (push && depth >= options.MaxDepth) { throw new HtmlLimitException("HTML element depth limit exceeded."); }
             CountNode();
-            var element = document.CreateElement(token.Name);
+            var element = ownerDocument.CreateElement(token.Name);
             if (element is DomTemplateElement) { CountNode(); }
             foreach (var (name, value) in token.Attributes) { element.SetAttributeFromParser(name, value); }
             InsertionParent.AppendChild(element);
@@ -1355,7 +1509,7 @@ public static class HtmlParser
             {
                 FlushText();
                 CountNode();
-                text = document.CreateTextNode("");
+                text = ownerDocument.CreateTextNode("");
                 parent.AppendChild(text);
             }
 
@@ -1383,7 +1537,7 @@ public static class HtmlParser
             {
                 FlushText();
                 CountNode();
-                parent.AppendChild(document.CreateComment(comment.Data));
+                parent.AppendChild(ownerDocument.CreateComment(comment.Data));
                 return true;
             }
 
@@ -1391,7 +1545,7 @@ public static class HtmlParser
             {
                 FlushText();
                 CountNode();
-                parent.AppendChild(document.CreateProcessingInstruction(instruction.Target, instruction.Data));
+                parent.AppendChild(ownerDocument.CreateProcessingInstruction(instruction.Target, instruction.Data));
                 return true;
             }
 
@@ -1582,6 +1736,10 @@ public static class HtmlParser
         "svg", "math", "frameset", "frame", "noscript",
         "applet", "marquee", "object"
     };
+    private static readonly HashSet<string> UnsupportedFragmentContexts = new(StringComparer.Ordinal)
+    {
+        "svg", "math", "frameset", "frame", "noscript", "applet", "marquee", "object"
+    };
     private static readonly HashSet<string> TableTags = new(StringComparer.Ordinal)
     {
         "table", "caption", "colgroup", "col", "tbody", "thead", "tfoot", "tr", "td", "th"
@@ -1627,3 +1785,7 @@ public static class HtmlParser
 /// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#parse-errors">parse errors</see>.
 /// Unsupported algorithms and limits throw instead of returning a success-shaped partial tree.</remarks>
 public sealed record HtmlParseResult(DomDocument Document, IReadOnlyList<HtmlParseError> Errors);
+
+/// <summary>A bounded, context-sensitive HTML fragment and its recoverable parse diagnostics.</summary>
+/// <remarks>Spec: html; <see href="https://html.spec.whatwg.org/multipage/parsing.html#html-fragment-parsing-algorithm">fragment parsing</see>.</remarks>
+public sealed record HtmlFragmentParseResult(DomDocumentFragment Fragment, IReadOnlyList<HtmlParseError> Errors);

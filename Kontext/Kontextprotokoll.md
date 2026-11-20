@@ -15907,6 +15907,39 @@ third_party` bestanden; `git diff --check` bestanden. Ein erster
   Ablehnung spezieller Kontexte, zweitens allen bereits unterstuetzten
   Dokument-Kontexten einschliesslich Table/Select/Template/Text-Modi oder
   drittens dem Blockieren weiterer Arbeit bis zur Entscheidung.
-- Status: Nicht beschlossen und nicht implementiert. Die Optionen wurden dem
-  Nutzer vorgelegt; keine Folgeplanung oder Codeaenderung beginnt, bis eine
-  Wahl eingeht.
+- Status bei Dokumentation dieses Eintrags: Die Optionen wurden dem Nutzer
+  vorgelegt; spaetere Entscheidung siehe KP-530.
+
+### KP-530 - Fragment Parsing Umfang beschlossen
+
+- Dokumentiert am: 2026-11-19, Europe/Berlin (UTC+01:00).
+- Nutzerangabe/Entscheidung: Die Antwort „2“ waehlt die zweite vorgelegte
+  Option: Fragment Parsing in allen bereits unterstuetzten Kontexten,
+  einschliesslich Table-, Select-, Template- und Text-Modi. SVG/MathML,
+  `noscript` und `frameset` sollen explizit abgelehnt werden.
+- Beschluss: Begrenzte statische Parser-API ohne Script-Bindings,
+  `innerHTML` oder Konformitaetsbehauptung. Nicht unterstuetzte
+  Kontextalgorithmen muessen sichtbar scheitern.
+- Belegt: Der anfuehrende gezielte Testlauf scheiterte erwartungsgemaess beim
+  Kompilieren, weil `HtmlParser.ParseFragment` fehlte. Danach wurde die API
+  implementiert und um Tests zu Form-Ancestors, Tabellen-Foster-Text,
+  virtuellen Select-Kontexten, Template-Inhalten, Textmodi ohne passendes
+  End-Tag, Ownership, Grenzen und Cancellation ergaenzt.
+- Belegt: Die Abschlusspruefung des `html`-Kontexts korrigierte die
+  fragment-spezifische AfterBody-Behandlung: `</html>` wird ignoriert und
+  fuehrt nicht in den Dokumentmodus AfterAfterBody. Ein fokussierter
+  Regressionstest deckt Folgeinhalt im Body ab.
+- Verifikation: 32 Fragment-Faelle; Engine.Html.Tests 7.327/7.327;
+  `dotnet build VisualWeb.slnx` ohne Warnungen/Fehler; gesamter
+  `dotnet test VisualWeb.slnx --no-build`-Lauf 17.323 bestanden, 2 bedingte
+  Browserfaelle uebersprungen; `dotnet format VisualWeb.slnx --verify-no-changes
+--no-restore --exclude third_party` bestanden.
+- Quelle: Nutzerentscheidung in dieser Unterhaltung und test-first Artefakt
+  `tests/Engine.Html.Tests/FragmentTests.cs`.
+- Status bei Dokumentation: Implementiert und validiert; Commit- und
+  Push-Ausgang waren zu diesem Zeitpunkt noch offen. Der support status in
+  `docs/standards.md`, der subsystem guide und `plans/Missing.md` sind aktualisiert.
+- Dieser Eintrag bewahrt Umfang und Verifikationsprovenienz; den spaeteren
+  Commit-/Push-Status belegt die Repository-Historie.
+- Naechster Schritt: weitere WHATWG-HTML/DOM-Luecken bleiben offen und werden
+  als separate Inkremente behandelt.

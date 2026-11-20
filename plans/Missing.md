@@ -405,13 +405,28 @@ parser work includes:
   template children or document descendants. Insertion-mode reset returns to the
   surrounding head/body mode, fragment nodes count toward the parser node limit,
   and template-content scripts do not invoke the parser completion callback.
-  Table/select template contexts, SVG/MathML, fragment parsing, script-facing
-  template bindings and `innerHTML` remain unsupported. General forms (only the
+  Table/select template contexts, SVG/MathML, script-facing template bindings
+  and `innerHTML` remain unsupported. General forms (only the
   simple form-pointer subset exists), select handling requiring tree-building
   algorithms outside the currently supported in-body subset, and other
   specialized parsing algorithms also remain incomplete.
-- Fragment parsing.
+- Bounded `HtmlParser.ParseFragment` now returns a context-document-owned
+  `DocumentFragment` for existing in-body, table, select and template insertion
+  modes plus the `html` context's before-head mode, and initializes RCDATA,
+  RAWTEXT, ScriptData and PLAINTEXT states from supported text contexts without
+  an appropriate end tag; it also seeds the
+  bounded form pointer from the context ancestry. The synthetic parser root is
+  omitted from the result; fragment nodes honor parser limits and cancellation.
+  SVG/MathML, frameset/frame,
+  `noscript` and other unsupported contexts fail explicitly. This does not add
+  `innerHTML`, script bindings, general table/select algorithms or full fragment
+  parsing conformance; unsupported tree-construction algorithms remain deferred.
 - Adoption-agency/active-formatting recovery for malformed markup.
+
+Fragment parsing validation: 32 focused cases and all 7,327 Engine.Html tests
+pass. The final solution build has zero warnings/errors; the full solution test
+run passes 17,323 tests with two conditionally skipped browser cases, and
+solution format verification passes.
 
 Ruby annotation elements now have bounded `rb`/`rtc`/`rp`/`rt` start-tag
 construction and implied-end-tag handling; ruby-specific styling and layout
@@ -431,10 +446,10 @@ the three previously documented baseline findings.
 The DOM also lacks full Web IDL bindings, specialized HTML element behavior,
 script-visible form state and APIs, custom-element reactions, and other browser APIs;
 the browser-shell form state is a separate bounded shell-owned subset. Parser
-template construction remains a narrow static subset: table/select/foreign/
-fragment contexts, script bindings and `innerHTML` are deferred. This narrow
-addition does not change the overall HTML/DOM support assessment or rough
-percentages.
+template construction remains a narrow static subset: table/select template
+insertion modes, foreign content, script bindings and `innerHTML` are deferred.
+The bounded static fragment API does not change the overall HTML/DOM support
+assessment or rough percentages.
 
 These are compatibility blockers: unsupported constructs can reject a page.
 

@@ -42,6 +42,23 @@ Template-Plan ab, nicht die WHATWG-HTML/DOM-Vollkonformitaet. Siehe
 [Gesamtabschluss](../plans/whatwg-html-dom-completion-complete.md) und
 [KP-528](./Kontextprotokoll.md#kp-528---template-plan-committed-und-abgeschlossen).
 
+**HTML/DOM-Fragment Parsing (2026-11-19; KP-530; implementiert und validiert):**
+Der Nutzer waehlte fuer Fragment Parsing alle derzeit unterstuetzten
+Dokument-Kontexte einschliesslich Table-, Select-, Template- und Text-Modi;
+SVG/MathML, `noscript` und `frameset` bleiben explizit unsupported.
+Script-Bindings, `innerHTML` und Vollkonformitaet sind nicht Teil dieses
+Inkrements. `HtmlParser.ParseFragment` liefert ein kontextdokument-eigenes
+`DocumentFragment`, setzt die bestehenden begrenzten Einfuegemodi und
+Texttokenizerzustaende um und uebernimmt den Form-Pointer aus der Kontext-
+Ancestor-Kette. Das `html`-Fragment ignoriert `</html>` im AfterBody-Modus,
+statt in den Dokumentmodus AfterAfterBody zu wechseln. 32 fokussierte Faelle;
+Engine.Html 7.327/7.327; gesamter
+Solution-Testlauf 17.323 bestanden und 2 bedingte Browserfaelle uebersprungen.
+Solution-Build (0 Warnungen/Fehler), Formatverifikation und `git diff --check`
+bestanden. Siehe
+[HTML/DOM-Guide](../docs/html-dom.md), [Missing.md](../plans/Missing.md) und
+[KP-530](./Kontextprotokoll.md#kp-530---fragment-parsing-umfang-beschlossen).
+
 **URL-IDL-Legacy-Alias (2026-11-19; KP-509; Beschluss umgesetzt):** Der
 Nutzer stimmte der minimalen Window-Global-Integration fuer
 `[LegacyWindowAlias=webkitURL]` zu. Nur die explizit aktivierten
