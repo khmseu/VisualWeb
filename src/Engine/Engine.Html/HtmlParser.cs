@@ -17,7 +17,7 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
 /// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, non-hidden inputs,
-/// <c>br</c>/<c>hr</c> starts and <c>div</c> start/end tags in table, table-body, and row modes with bounded
+/// <c>br</c>/<c>hr</c> starts and <c>div</c>/<c>p</c> start/end tags in table, table-body, and row modes with bounded
 /// foster-parent insertion are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
@@ -1120,8 +1120,8 @@ public static class HtmlParser
                     case "br" or "hr":
                         ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-in-table");
                         return;
-                    case "div":
-                        ProcessFosterParentedBodyToken(tag, "fostered-div-start-in-table");
+                    case "div" or "p":
+                        ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                         return;
                     case "form":
                         Error("form-start-in-table");
@@ -1140,9 +1140,9 @@ public static class HtmlParser
                 }
             }
 
-            if (tag.Name == "div")
+            if (tag.Name is "div" or "p")
             {
-                ProcessFosterParentedBodyToken(tag, "fostered-div-end-in-table");
+                ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;
             }
 

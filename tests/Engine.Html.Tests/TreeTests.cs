@@ -780,13 +780,17 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
-    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
-    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
-    public void DivStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    [InlineData("div", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("div", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("div", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("p", "<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("p", "<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("p", "<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    public void DivAndParagraphStartAndEndInTableModesUseFosterParenting(
+        string tagName, string tableStart, string tableEnd)
     {
         var result = Parse("<!doctype html><div id=host>before" + tableStart
-            + "<div id=fostered>content</div>" + tableEnd + "after</div>");
+            + $"<{tagName} id=fostered>content</{tagName}>" + tableEnd + "after</div>");
         var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
 
         Assert.Collection(host.ChildNodes,
@@ -794,14 +798,15 @@ public sealed class TreeTests
             node =>
             {
                 var element = Assert.IsType<DomElement>(node);
+                Assert.Equal(tagName, element.LocalName);
                 Assert.Equal("fostered", element.GetAttribute("id"));
                 Assert.Empty(element.ChildNodes);
             },
             node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
             node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
             node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
-        Assert.Contains(result.Errors, error => error.Code == "fostered-div-start-in-table");
-        Assert.Contains(result.Errors, error => error.Code == "fostered-div-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-end-in-table");
     }
 
     [Theory]
