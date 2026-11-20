@@ -1094,6 +1094,68 @@ public sealed class TreeTests
         }
     }
 
+    [Theory]
+    [InlineData("iframe")]
+    [InlineData("noembed")]
+    [InlineData("noframes")]
+    public void RawTextElementsInTableModesUseFosteredInsertion(string tagName)
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + $"<{tagName} id=fostered>\nA&amp;<b>B</b></{tagName}>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node =>
+                {
+                    var element = Assert.IsType<DomElement>(node);
+                    Assert.Equal(tagName, element.LocalName);
+                    Assert.Equal("fostered", element.GetAttribute("id"));
+                    Assert.Equal("\nA&amp;<b>B</b>", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
+                },
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
+        }
+    }
+
+    [Theory]
+    [InlineData("iframe")]
+    [InlineData("noembed")]
+    [InlineData("noframes")]
+    public void UnmatchedRawTextEndTagsInTableModesUseFosteredInBodyRecovery(string tagName)
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + $"</{tagName}>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-end-in-table");
+            Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+        }
+    }
+
     [Fact]
     public void ImageStartInTableModesUsesFosterParenting()
     {

@@ -397,7 +397,9 @@ unmatched end tags in those modes also use fostered in-body handling; starts
 enter RCDATA with initial-line-feed suppression, and the matching end tag
 restores the table insertion mode. `title` starts and unmatched end tags use
 the same route, entering RCDATA without initial-line-feed suppression.
-Block-element starts
+`iframe`, `noembed` and `noframes` starts and unmatched end tags also use
+that route with RAWTEXT tokenization; this adds no browsing contexts or
+resource loading. Block-element starts
 and end tags in those modes use the same path: `div`, `p`,
 `pre`, `listing`, `h1`-`h6`, `li`, `dd`,
 `dt`, `button`, `address`, `article`, `aside`, `blockquote`, `center`,

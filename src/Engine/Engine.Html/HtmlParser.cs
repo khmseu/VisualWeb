@@ -1063,7 +1063,8 @@ public static class HtmlParser
             if (!tag.IsEndTag)
             {
                 if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
-                    || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title")
+                    || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title"
+                        or "iframe" or "noembed" or "noframes")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1146,7 +1147,8 @@ public static class HtmlParser
             }
 
             if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
-                || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title")
+                || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "image" or "wbr" or "textarea" or "title"
+                    or "iframe" or "noembed" or "noframes")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;

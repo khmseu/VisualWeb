@@ -163,6 +163,9 @@ after-after-body modes. Supported behavior includes:
   tag restores the originating table insertion mode.
   `title` starts and unmatched end tags follow the same path; starts enter
   RCDATA without `textarea`'s initial-line-feed suppression.
+  `iframe`, `noembed` and `noframes` starts and unmatched end tags also follow
+  the same path, with RAWTEXT tokenization; their content is text, not an
+  embedded browsing context or resource load.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,
   `param`, `source` and `track` starts and end tags use the same bounded path;
   this does not add resource loading.

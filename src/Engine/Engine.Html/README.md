@@ -14,8 +14,9 @@ caption/column-group/section/row/cell subset, inert in-table `script`/`style`
 text, table `type=hidden` inputs, non-hidden input and `br`/`hr` starts in
 table/table-body/row modes with bounded foster-parent insertion, `img` and
 `wbr` start/end tags, the `image` start-tag alias, and other supported
-void-element tokens in those modes, `textarea` and `title` starts and unmatched
-end tags with RCDATA; only `textarea` suppresses an initial LF. Text-only table
+void-element tokens in those modes, `textarea`/`title` RCDATA and
+`iframe`/`noembed`/`noframes` RAWTEXT starts with unmatched end-tag recovery;
+only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
 exception, and root-attribute merging for in-table `html` starts.
