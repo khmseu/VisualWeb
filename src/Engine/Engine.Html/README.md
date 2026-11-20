@@ -11,8 +11,9 @@ select/optgroup parsing with ordinary in-body handling for the supported
 content subset, bounded textarea RCDATA handling, and `hr`/`input`/nested
 `select` recovery, bounded ruby annotation start-tag recovery, a simple table
 caption/column-group/section/row/cell subset, inert in-table `script`/`style`
-text, table `type=hidden` inputs and text-only table foster parenting, bounded
-nested-table recovery and the in-table form-pointer exception, and
+text, table `type=hidden` inputs, non-hidden input starts in table/table-body/row
+modes with bounded foster-parent insertion, text-only table foster parenting,
+bounded nested-table recovery and the in-table form-pointer exception, and
 root-attribute merging for in-table `html` starts. Other tokens requiring
 table foster parenting remain unsupported. Legacy doctypes preserve
 public/system identifiers and recover

@@ -16,7 +16,8 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
-/// Basic captions, table sections, rows, cells, column groups and text-only foster parenting are supported;
+/// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, and non-hidden input
+/// starts in table, table-body, and row modes using bounded foster-parent insertion are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
 /// other foster-parenting cases, nested tables in captions, table/select template content, unsupported fragment contexts, scripting,
@@ -74,6 +75,7 @@ public static class HtmlParser
         private Mode originalMode;
         private int nodes = 1;
         private bool ignoreNextLineFeed;
+        private bool fosterParenting;
         private DomElement? formPointer;
         private DomElement? headElementPointer;
         private DomText? bufferedText;
@@ -966,7 +968,6 @@ public static class HtmlParser
                 var commonAncestor = open[stackIndex - 1];
                 if (commonAncestor.LocalName is "table" or "tbody" or "tfoot" or "thead" or "tr")
                 {
-                    // Table-content starts requiring foster parenting are rejected before this path.
                     throw Unsupported("Adoption-agency reparenting would require table foster parenting.");
                 }
 
@@ -1108,7 +1109,12 @@ public static class HtmlParser
                         if (!tag.Attributes.TryGetValue("type", out var inputType)
                             || !AsciiEqualsIgnoreCase(inputType, "hidden"))
                         {
-                            throw Unsupported("Non-hidden input tokens in table content require foster parenting.");
+                            Error("non-hidden-input-in-table");
+                            var previousFosterParenting = fosterParenting;
+                            fosterParenting = true;
+                            try { BodyToken(tag); }
+                            finally { fosterParenting = previousFosterParenting; }
+                            return;
                         }
 
                         Error("hidden-input-in-table");
@@ -1774,7 +1780,15 @@ public static class HtmlParser
             var depth = open.Count - (fragmentRoot is null ? 0 : 1);
             if (push && depth >= options.MaxDepth) { throw new HtmlLimitException("HTML element depth limit exceeded."); }
             var element = CreateElementFromToken(token);
-            InsertionParent.AppendChild(element);
+            if (fosterParenting && Current is DomElement { LocalName: "table" or "tbody" or "tfoot" or "thead" or "tr" })
+            {
+                InsertAtFosterParent(element);
+            }
+            else
+            {
+                InsertionParent.AppendChild(element);
+            }
+
             if (push)
             {
                 open.Add(element);
@@ -1782,6 +1796,33 @@ public static class HtmlParser
             }
 
             return element;
+        }
+
+        private void InsertAtFosterParent(DomElement element)
+        {
+            var targetIndex = open.FindLastIndex(candidate => candidate.LocalName is "table" or "template");
+            if (targetIndex < 0)
+            {
+                if (open.Count == 0) { throw new InvalidOperationException("The foster-parent insertion stack is empty."); }
+                AdjustedInsertionParent(open[0]).AppendChild(element);
+                return;
+            }
+
+            var target = open[targetIndex];
+            if (target.LocalName == "template")
+            {
+                AdjustedInsertionParent(target).AppendChild(element);
+                return;
+            }
+
+            if (target.ParentNode is { } parent && parent is not DomDocument)
+            {
+                parent.InsertBefore(element, target);
+                return;
+            }
+
+            if (targetIndex == 0) { throw Unsupported("The foster-parent insertion location for this table is not implemented."); }
+            AdjustedInsertionParent(open[targetIndex - 1]).AppendChild(element);
         }
 
         private DomElement CreateElementFromToken(HtmlTag token)

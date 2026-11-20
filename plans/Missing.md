@@ -385,7 +385,10 @@ foster-parented before the nearest table; whitespace-only runs remain in place.
 In-table `script`/`style` start tags use script-data/raw-text parsing and return
 to their original table insertion mode; script content remains inert.
 `type=hidden` inputs are inserted as void table children with a parse-error
-diagnostic; other input types remain unsupported in table content.
+diagnostic. Non-hidden input start tags in table, table-body and row modes use
+in-body handling with bounded foster-parent insertion; inputs in cells use
+ordinary in-body insertion. Other table tokens requiring foster parenting
+remain unsupported.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and
 restore cell insertion mode when closed. In-table form starts follow the

@@ -708,11 +708,55 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("<input id=plain>", "plain")]
+    [InlineData("<input type=text id=text>", "text")]
+    [InlineData("<input type=h\u0131dden id=unicode>", "unicode")]
+    public void NonHiddenInputsInTableAreFosterParentedBeforeTheTable(string input, string expectedId)
+    {
+        var result = Parse("<!doctype html><div id=host>before<table>" + input
+            + "<tr><td>cell</td></tr></table>after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal("input", element.LocalName);
+                Assert.Empty(element.ChildNodes);
+                Assert.Equal(expectedId, element.GetAttribute("id"));
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == "non-hidden-input-in-table");
+    }
+
+    [Theory]
+    [InlineData("<tbody><tr><input id=row-input><td>cell</td></tr></tbody>", "row-input")]
+    [InlineData("<tbody><input id=section-input><tr><td>cell</td></tr></tbody>", "section-input")]
+    public void NonHiddenInputsInTableSectionsAndRowsAreFosterParentedBeforeTheTable(string content, string expectedId)
+    {
+        var result = Parse("<!doctype html><div id=host><table>" + content + "</table></div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Equal(expectedId, Assert.IsType<DomElement>(host.FirstChild).GetAttribute("id"));
+        Assert.Equal("table", Assert.IsType<DomElement>(host.LastChild).LocalName);
+        Assert.Contains(result.Errors, error => error.Code == "non-hidden-input-in-table");
+    }
+
+    [Fact]
+    public void NonHiddenInputsInsideCellsRemainInTheCell()
+    {
+        var result = Parse("<!doctype html><table><tr><td><input id=cell-input></td></tr></table>");
+        var cell = Assert.Single(Descendants(result.Document), element => element.LocalName == "td");
+
+        Assert.Equal("cell-input", Assert.IsType<DomElement>(cell.FirstChild).GetAttribute("id"));
+        Assert.DoesNotContain(result.Errors, error => error.Code == "non-hidden-input-in-table");
+    }
+
+    [Theory]
     [InlineData("<table><div>unsupported</div></table>")]
     [InlineData("<table><caption>x<table></table></caption></table>")]
-    [InlineData("<table><input></table>")]
-    [InlineData("<table><input type=text></table>")]
-    [InlineData("<table><input type=h\u0131dden></table>")]
     [InlineData("<table><b><p>x</b></table>")]
     [InlineData("<a><table><a>x")]
     [InlineData("<nobr><table><nobr>x")]
