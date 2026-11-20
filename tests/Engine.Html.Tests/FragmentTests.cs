@@ -25,6 +25,27 @@ public sealed class FragmentTests
     }
 
     [Fact]
+    public void FragmentAdoptionAgencyUsesFragmentAdjustedInsertionParent()
+    {
+        var document = new DomDocument();
+        var context = document.CreateElement("div");
+        const string input = "<b>before<p>inside</b>after</p>";
+        var result = HtmlParser.ParseFragment(input, context, new() { MaxNodes = 6 },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, result.Fragment.ChildNodes.Count);
+        var originalBold = Assert.IsType<DomElement>(result.Fragment.FirstChild);
+        var paragraph = Assert.IsType<DomElement>(result.Fragment.LastChild);
+        Assert.Equal("before", originalBold.TextContent);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("b", Assert.IsType<DomElement>(paragraph.FirstChild).LocalName);
+        Assert.Equal("after", Assert.IsType<DomText>(paragraph.LastChild).Data);
+        Assert.All(result.Fragment.Descendants(), node => Assert.Same(document, node.OwnerDocument));
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.ParseFragment(input, context, new() { MaxNodes = 5 },
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ParseFragment_bodyContextReturnsOnlyFragmentNodesOwnedByContextDocument()
     {
         var document = new DomDocument();

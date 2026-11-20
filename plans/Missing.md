@@ -424,10 +424,18 @@ parser work includes:
 - Active formatting now retains token attribute snapshots, applies the
   order-independent three-entry Noah's Ark rule, reconstructs entries and
   respects template/caption/cell markers. Formatting end tags implement the
-  no-furthest-block adoption-agency branch, including later reconstruction of
-  active descendants. Furthest-block reparenting, nested anchors/nobr and
-  table-text foster parenting requiring reconstruction still fail explicitly;
-  this is not full adoption-agency or HTML conformance.
+  no-furthest-block branch and bounded furthest-block adoption-agency recovery:
+  the inner loop clones formatting entries and removes non-formatting entries,
+  including the after-three-entry removal rule; bookmark/index shifts,
+  formatting-list replacement, furthest-block child reparenting and open-stack
+  ordering are handled. Clones count toward `MaxNodes`; fragment roots and
+  template content use adjusted insertion parents. The outer loop is capped at
+  eight iterations, inner-list removal follows the after-three-iterations rule,
+  and cancellation/open-stack depth checks remain active during recovery.
+  Nested anchors/nobr, adoption reparenting that needs table foster parenting,
+  and table-text foster parenting requiring formatting reconstruction still
+  fail explicitly. The adoption algorithm and overall tree construction remain
+  bounded subsets, not full HTML conformance.
 
 Fragment parsing validation: 32 focused cases and all 7,327 Engine.Html tests
 pass. The final solution build has zero warnings/errors; the full solution test

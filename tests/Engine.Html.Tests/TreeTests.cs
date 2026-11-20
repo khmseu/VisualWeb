@@ -713,6 +713,7 @@ public sealed class TreeTests
     [InlineData("<table><input></table>")]
     [InlineData("<table><input type=text></table>")]
     [InlineData("<table><input type=h\u0131dden></table>")]
+    [InlineData("<table><b><p>x</b></table>")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
@@ -732,7 +733,6 @@ public sealed class TreeTests
     [InlineData("<noscript>x")]
     [InlineData("<a><a>x")]
     [InlineData("<nobr><nobr>x")]
-    [InlineData("<b><div>x</b>")]
     [InlineData("<p><a>x</p><a>y")]
     [InlineData("<p><b>x</p><table>y</table>")]
     public void UnsupportedTreeAlgorithmsFailExplicitly(string input) =>
@@ -755,6 +755,106 @@ public sealed class TreeTests
         Assert.Equal("y", rebuilt.GetAttribute("class"));
         Assert.NotSame(original, rebuilt);
         Assert.Equal("three", Assert.IsType<DomText>(body.ChildNodes[2]).Data);
+    }
+
+    [Fact]
+    public void FormattingEndTagReparentsFurthestBlockAndRecreatesFormattingElement()
+    {
+        var result = Parse("<!doctype html><b>one<p>two</b>three</p>");
+        var body = result.Document.Body!;
+        Assert.Equal(2, body.ChildNodes.Count);
+
+        var originalBold = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var paragraph = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        Assert.Equal("b", originalBold.LocalName);
+        Assert.Equal("one", originalBold.TextContent);
+        var recreatedBold = Assert.IsType<DomElement>(paragraph.ChildNodes[0]);
+        Assert.Equal("b", recreatedBold.LocalName);
+        Assert.Single(recreatedBold.ChildNodes);
+        Assert.Equal("two", recreatedBold.TextContent);
+        Assert.Equal("three", Assert.IsType<DomText>(paragraph.ChildNodes[1]).Data);
+        Assert.Contains(result.Errors, error => error.Code == "misnested-formatting-end-tag");
+    }
+
+    [Fact]
+    public void FormattingEndTagReparentsDivFurthestBlock()
+    {
+        var body = Parse("<b>before<div>inside</b>after</div>").Document.Body!;
+        var originalBold = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var div = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        var recreatedBold = Assert.IsType<DomElement>(div.FirstChild);
+        Assert.Equal("before", originalBold.TextContent);
+        Assert.Equal("div", div.LocalName);
+        Assert.Equal("b", recreatedBold.LocalName);
+        Assert.Equal("inside", recreatedBold.TextContent);
+        Assert.Equal("after", Assert.IsType<DomText>(div.LastChild).Data);
+    }
+
+    [Fact]
+    public void FormattingEndTagRemovesNonFormattingNodesFromStackDuringReparenting()
+    {
+        var body = Parse("<b><span><p>inside</b>after</p>").Document.Body!;
+        var originalBold = Assert.IsType<DomElement>(body.ChildNodes[0]);
+        var originalSpan = Assert.IsType<DomElement>(originalBold.FirstChild);
+        var paragraph = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        var recreatedBold = Assert.IsType<DomElement>(paragraph.FirstChild);
+
+        Assert.Equal("span", originalSpan.LocalName);
+        Assert.Empty(originalSpan.ChildNodes);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("b", recreatedBold.LocalName);
+        Assert.Equal("inside", recreatedBold.TextContent);
+        Assert.Equal("after", Assert.IsType<DomText>(paragraph.LastChild).Data);
+    }
+
+    [Fact]
+    public void FormattingEndTagBoundsInnerCloningAndMaintainsStackOrder()
+    {
+        var body = Parse("<b><i><u><em><strong><p>x</b></p>y").Document.Body!;
+        var paragraph = Assert.IsType<DomElement>(Descendants(body.ChildNodes[1])
+            .Single(element => element.LocalName == "p"));
+        var recreatedBold = Assert.IsType<DomElement>(paragraph.FirstChild);
+        Assert.Equal("b", recreatedBold.LocalName);
+        Assert.Equal("x", recreatedBold.TextContent);
+
+        var clonedUnderline = Assert.IsType<DomElement>(body.ChildNodes[1]);
+        var clonedEmphasis = Assert.IsType<DomElement>(clonedUnderline.FirstChild);
+        var clonedStrong = Assert.IsType<DomElement>(clonedEmphasis.FirstChild);
+        Assert.Equal("u", clonedUnderline.LocalName);
+        Assert.Equal("em", clonedEmphasis.LocalName);
+        Assert.Equal("strong", clonedStrong.LocalName);
+        Assert.Same(paragraph, clonedStrong.FirstChild);
+        Assert.Equal("y", Assert.IsType<DomText>(clonedStrong.LastChild).Data);
+        Assert.Equal(2, Descendants(body).Append(body).Count(element => element.LocalName == "b"));
+    }
+
+    [Fact]
+    public void FormattingEndTagCountsRecreatedElementsAgainstNodeLimit()
+    {
+        const string input = "<b><p>x</b>";
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.Parse(input, new() { MaxNodes = 7 },
+            TestContext.Current.CancellationToken));
+        var result = HtmlParser.Parse(input, new() { MaxNodes = 8 }, TestContext.Current.CancellationToken);
+        Assert.Equal("x", result.Document.Body!.TextContent);
+        Assert.Throws<HtmlLimitException>(() => HtmlParser.Parse(input, new() { MaxDepth = 3 },
+            TestContext.Current.CancellationToken));
+        Assert.Equal("x", HtmlParser.Parse(input, new() { MaxDepth = 4 },
+            TestContext.Current.CancellationToken).Document.Body!.TextContent);
+    }
+
+    [Fact]
+    public void FormattingEndTagUsesAdjustedTemplateInsertionParent()
+    {
+        var document = Parse("<template><b><p>x</b>y</p></template>").Document;
+        var template = Assert.IsType<DomTemplateElement>(Assert.Single(Descendants(document),
+            element => element is DomTemplateElement));
+        Assert.Empty(template.ChildNodes);
+        var originalBold = Assert.IsType<DomElement>(template.Content.FirstChild);
+        var paragraph = Assert.IsType<DomElement>(template.Content.LastChild);
+        Assert.Equal("b", originalBold.LocalName);
+        Assert.Equal("p", paragraph.LocalName);
+        Assert.Equal("b", Assert.IsType<DomElement>(paragraph.FirstChild).LocalName);
+        Assert.Equal("y", Assert.IsType<DomText>(paragraph.LastChild).Data);
     }
 
     [Fact]
@@ -990,7 +1090,7 @@ public sealed class TreeTests
         using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cancelled.Cancel();
         Assert.ThrowsAny<OperationCanceledException>(() =>
-            HtmlParser.Parse("<p>hello", cancellationToken: cancelled.Token));
+            HtmlParser.Parse("<b><i><u><em><strong><p>x</b>", cancellationToken: cancelled.Token));
     }
 
     [Fact]

@@ -20,7 +20,7 @@ namespace VisualWeb.Engine.Html;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
 /// other foster-parenting cases, nested tables in captions, table/select template content, unsupported fragment contexts, scripting,
-/// and the furthest-block adoption-agency branch are not implemented.</remarks>
+/// and adoption-agency reparenting requiring table foster parenting are unsupported.</remarks>
 public static class HtmlParser
 {
     public static HtmlParseResult Parse(string input, HtmlParserOptions? options = null, CancellationToken cancellationToken = default) =>
@@ -189,8 +189,10 @@ public static class HtmlParser
         private DomElement HeadElement => headElementPointer ?? document.Head
             ?? throw new InvalidOperationException("The parser head element pointer is not set.");
         private DomNode FragmentOrDocumentElement => (DomNode?)fragment ?? document.DocumentElement!;
-        private DomNode InsertionParent => fragmentRoot is not null && Current == fragmentRoot
-            ? fragment! : Current is DomTemplateElement template ? template.Content : Current;
+        private DomNode InsertionParent => AdjustedInsertionParent(Current);
+        private DomNode AdjustedInsertionParent(DomNode intendedParent) =>
+            fragmentRoot is not null && intendedParent == fragmentRoot
+                ? fragment! : intendedParent is DomTemplateElement template ? template.Content : intendedParent;
         private bool IsFragment => fragment is not null;
         private IReadOnlyList<HtmlParseError> AllErrors() =>
             tokenizer.Errors.Concat(errors).OrderBy(error => error.Offset).ToList().AsReadOnly();
@@ -804,13 +806,18 @@ public static class HtmlParser
 
         private bool IsFormattingElement(DomElement element)
         {
+            return FindFormattingElementIndex(element) >= 0;
+        }
+
+        private int FindFormattingElementIndex(DomElement element)
+        {
             for (var index = formatting.Count - 1; index >= 0; index--)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (formatting[index]?.Element == element) { return true; }
+                if (formatting[index]?.Element == element) { return index; }
             }
 
-            return false;
+            return -1;
         }
 
         private void PushFormatting(DomElement element, HtmlTag token)
@@ -881,41 +888,139 @@ public static class HtmlParser
                 return;
             }
 
-            var entryIndex = FindFormatting(name);
-            if (entryIndex < 0)
-            {
-                AnyOtherEndTag(name);
-                return;
-            }
-
-            var element = formatting[entryIndex]!.Element;
-            var stackIndex = open.IndexOf(element);
-            if (stackIndex < 0)
-            {
-                Error("formatting-element-not-open");
-                formatting.RemoveAt(entryIndex);
-                return;
-            }
-
-            for (var index = open.Count - 1; index > stackIndex; index--)
+            for (var outerLoopCounter = 0; outerLoopCounter < 8; outerLoopCounter++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (open[index].LocalName is "html" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template")
+                var entryIndex = FindFormatting(name);
+                if (entryIndex < 0)
                 {
-                    Error("formatting-element-not-in-scope");
+                    AnyOtherEndTag(name);
                     return;
                 }
-            }
 
-            if (stackIndex != open.Count - 1) { Error("misnested-formatting-end-tag"); }
-            if (open.Skip(stackIndex + 1).Any(candidate => SpecialTags.Contains(candidate.LocalName)))
-            {
-                throw Unsupported("Adoption agency furthest-block reparenting is not implemented.");
-            }
+                var formattingEntry = formatting[entryIndex]!;
+                var formattingElement = formattingEntry.Element;
+                var stackIndex = open.IndexOf(formattingElement);
+                if (stackIndex < 0)
+                {
+                    Error("formatting-element-not-open");
+                    formatting.RemoveAt(entryIndex);
+                    return;
+                }
 
-            FlushText();
-            open.RemoveRange(stackIndex, open.Count - stackIndex);
-            formatting.RemoveAt(entryIndex);
+                for (var index = open.Count - 1; index > stackIndex; index--)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (open[index].LocalName is "html" or "table" or "td" or "th" or "marquee" or "object" or "applet" or "template")
+                    {
+                        Error("formatting-element-not-in-scope");
+                        return;
+                    }
+                }
+
+                if (stackIndex != open.Count - 1) { Error("misnested-formatting-end-tag"); }
+                var furthestBlockIndex = -1;
+                for (var index = open.Count - 1; index > stackIndex; index--)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (SpecialTags.Contains(open[index].LocalName))
+                    {
+                        furthestBlockIndex = index;
+                        break;
+                    }
+                }
+
+                if (furthestBlockIndex < 0)
+                {
+                    if (formPointer is not null && open.Skip(stackIndex).Contains(formPointer))
+                    {
+                        throw Unsupported("Adoption agency would remove the active form pointer from the open-element stack.");
+                    }
+
+                    FlushText();
+                    open.RemoveRange(stackIndex, open.Count - stackIndex);
+                    formatting.RemoveAt(entryIndex);
+                    return;
+                }
+
+                if (stackIndex == 0) { throw new InvalidOperationException("A formatting element has no common ancestor."); }
+                var commonAncestor = open[stackIndex - 1];
+                if (commonAncestor.LocalName is "table" or "tbody" or "tfoot" or "thead" or "tr")
+                {
+                    // Table-content starts requiring foster parenting are rejected before this path.
+                    throw Unsupported("Adoption-agency reparenting would require table foster parenting.");
+                }
+
+                FlushText();
+                var bookmark = entryIndex;
+                var nodeIndex = furthestBlockIndex;
+                var furthestBlock = open[furthestBlockIndex];
+                DomElement lastNode = furthestBlock;
+                var innerLoopCounter = 0;
+                var bookmarkMoved = false;
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    nodeIndex--;
+                    var node = open[nodeIndex];
+                    if (node == formattingElement) { break; }
+
+                    innerLoopCounter++;
+                    var nodeEntryIndex = FindFormattingElementIndex(node);
+                    if (innerLoopCounter > 3 && nodeEntryIndex >= 0)
+                    {
+                        if (nodeEntryIndex < bookmark) { bookmark--; }
+                        formatting.RemoveAt(nodeEntryIndex);
+                        nodeEntryIndex = -1;
+                    }
+
+                    if (nodeEntryIndex < 0)
+                    {
+                        if (node == formPointer)
+                        {
+                            throw Unsupported("Adoption agency would remove the active form pointer from the open-element stack.");
+                        }
+
+                        open.RemoveAt(nodeIndex);
+                        continue;
+                    }
+
+                    var nodeEntry = formatting[nodeEntryIndex]!;
+                    var newNode = CreateElementFromToken(nodeEntry.Token);
+                    formatting[nodeEntryIndex] = nodeEntry with { Element = newNode };
+                    open[nodeIndex] = newNode;
+                    if (!bookmarkMoved)
+                    {
+                        bookmark = nodeEntryIndex + 1;
+                        bookmarkMoved = true;
+                    }
+
+                    newNode.AppendChild(lastNode);
+                    lastNode = newNode;
+                }
+
+                AdjustedInsertionParent(commonAncestor).AppendChild(lastNode);
+                var newFormattingElement = CreateElementFromToken(formattingEntry.Token);
+                while (furthestBlock.FirstChild is { } child)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    newFormattingElement.AppendChild(child);
+                }
+
+                furthestBlock.AppendChild(newFormattingElement);
+
+                entryIndex = FindFormattingElementIndex(formattingElement);
+                if (entryIndex < 0) { throw new InvalidOperationException("The formatting element disappeared during adoption."); }
+                if (entryIndex < bookmark) { bookmark--; }
+                formatting.RemoveAt(entryIndex);
+                bookmark = Math.Clamp(bookmark, 0, formatting.Count);
+                formatting.Insert(bookmark, new(newFormattingElement, formattingEntry.Token));
+
+                open.RemoveAt(stackIndex);
+                var updatedFurthestBlockIndex = open.IndexOf(furthestBlock);
+                if (updatedFurthestBlockIndex < 0) { throw new InvalidOperationException("The furthest block disappeared during adoption."); }
+                open.Insert(updatedFurthestBlockIndex + 1, newFormattingElement);
+            }
         }
 
         private void TableToken(HtmlToken token)
@@ -1649,10 +1754,7 @@ public static class HtmlParser
             FlushText();
             var depth = open.Count - (fragmentRoot is null ? 0 : 1);
             if (push && depth >= options.MaxDepth) { throw new HtmlLimitException("HTML element depth limit exceeded."); }
-            CountNode();
-            var element = ownerDocument.CreateElement(token.Name);
-            if (element is DomTemplateElement) { CountNode(); }
-            foreach (var (name, value) in token.Attributes) { element.SetAttributeFromParser(name, value); }
+            var element = CreateElementFromToken(token);
             InsertionParent.AppendChild(element);
             if (push)
             {
@@ -1660,6 +1762,15 @@ public static class HtmlParser
                 if (token.SelfClosing) { Error("non-void-html-element-start-tag-with-trailing-solidus"); }
             }
 
+            return element;
+        }
+
+        private DomElement CreateElementFromToken(HtmlTag token)
+        {
+            CountNode();
+            var element = ownerDocument.CreateElement(token.Name);
+            if (element is DomTemplateElement) { CountNode(); }
+            foreach (var (name, value) in token.Attributes) { element.SetAttributeFromParser(name, value); }
             return element;
         }
 

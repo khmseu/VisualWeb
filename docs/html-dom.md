@@ -77,8 +77,14 @@ after-after-body modes. Supported behavior includes:
   end tags. The active-formatting list retains token attribute snapshots,
   applies the three-equivalent-entry Noah's Ark rule (attribute order
   independent), reconstructs entries and observes template/caption/cell
-  markers. Formatting end tags implement the adoption-agency cases through
-  the no-furthest-block branch, including later reconstruction of descendants.
+  markers. Formatting end tags implement the no-furthest-block branch and a
+  bounded furthest-block adoption-agency recovery: inner-loop formatting
+  clones/removals, bookmark/list-index adjustment, block reparenting, and
+  open-stack/list replacement are supported. Generated elements count toward
+  `MaxNodes`; the outer loop is capped at eight iterations and the inner-loop
+  removal rule applies after its third iteration. Cancellation checks and the
+  existing open-stack `MaxDepth` limit remain in force. Adjusted insertion
+  parents route through template contents and fragment roots.
 - Bounded document `<template>` construction in head and body. Template
   contents use the native `Content` fragment and inert template-contents owner
   document; nested templates stay separate from ordinary children and the
@@ -165,10 +171,11 @@ unsupported select contents whose ordinary in-body processing requires
 unimplemented algorithms; textarea-specific form semantics beyond first-LF
 handling; foreign content; framesets/frames; noscript and applet/marquee/object
 specific algorithms. Fragment contexts outside the supported parser subset are
-rejected. Nested anchors/nobr and adoption-agency cases requiring furthest-block
-reparenting throw instead of returning an incorrect tree. Table text requiring
-both foster parenting and formatting reconstruction also throws. This is not
-full adoption-agency or HTML tree-construction conformance.
+rejected. Nested anchors/nobr, adoption-agency reparenting whose common ancestor
+requires table foster parenting, and table text requiring both foster parenting
+and formatting reconstruction throw instead of returning an incorrect tree.
+The adoption agency remains a bounded subset, not full HTML tree-construction
+conformance.
 
 Doctype classification follows the cached
 [initial insertion mode](https://html.spec.whatwg.org/multipage/parsing.html#the-initial-insertion-mode)
