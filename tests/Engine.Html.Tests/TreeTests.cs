@@ -983,6 +983,62 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void TextareaInTableModesUsesFosterParentingAndRestoresTableMode()
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + "<textarea id=fostered>\nalpha<b>beta</b></textarea>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node =>
+                {
+                    var element = Assert.IsType<DomElement>(node);
+                    Assert.Equal("textarea", element.LocalName);
+                    Assert.Equal("fostered", element.GetAttribute("id"));
+                    Assert.Equal("alpha<b>beta</b>", Assert.IsType<DomText>(Assert.Single(element.ChildNodes)).Data);
+                },
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == "fostered-textarea-start-in-table");
+        }
+    }
+
+    [Fact]
+    public void UnmatchedTextareaEndTagInTableModesUsesFosteredInBodyRecovery()
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + "</textarea>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == "fostered-textarea-end-in-table");
+            Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+        }
+    }
+
+    [Fact]
     public void ImageStartInTableModesUsesFosterParenting()
     {
         var tableModes = new[]

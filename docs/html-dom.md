@@ -158,6 +158,9 @@ after-after-body modes. Supported behavior includes:
   in those modes also use in-body handling with bounded foster-parent insertion.
   `image` start and end tokens use the same path; the start-tag alias is
   recovered as `img`.
+  `textarea` starts and unmatched end tags use the same fostered in-body path;
+  starts enter RCDATA with initial-line-feed suppression, and the matching end
+  tag restores the originating table insertion mode.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,
   `param`, `source` and `track` starts and end tags use the same bounded path;
   this does not add resource loading.

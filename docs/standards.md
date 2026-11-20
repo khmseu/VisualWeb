@@ -154,7 +154,9 @@ covers the `image` alias, `img` and `wbr` start and end tokens, `div`, `p`,
 `menu`, `nav`, `ol`, `search`, `section`, `summary` and `ul`. Other supported
 void-element tokens (`area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`,
 `link`, `meta`, `param`, `source` and `track`) use the same bounded route;
-resource loading is not implied. `pre` and
+resource loading is not implied. `textarea` starts and unmatched end tags use
+the same route; starts enter RCDATA with initial-line-feed suppression, and the
+matching end tag restores the original table insertion mode. `pre` and
 `listing` retain initial-line-feed suppression.
 Adoption reparenting that requires table foster parenting and table-text foster
 parenting requiring reconstruction remain explicitly unsupported; this

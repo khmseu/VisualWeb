@@ -392,7 +392,10 @@ also use in-body handling with bounded foster-parent insertion. Block-element
 starts and end tags in those modes also use in-body handling with bounded
 foster-parent insertion. `img` and `wbr` starts and end tags in those modes also use in-body handling
 with bounded foster-parent insertion. `image` start and end tokens use the
-same path; the start-tag alias is recovered as `img`. Block-element starts
+same path; the start-tag alias is recovered as `img`. `textarea` starts and
+unmatched end tags in those modes also use fostered in-body handling; starts
+enter RCDATA with initial-line-feed suppression, and the matching end tag
+restores the table insertion mode. Block-element starts
 and end tags in those modes use the same path: `div`, `p`,
 `pre`, `listing`, `h1`-`h6`, `li`, `dd`,
 `dt`, `button`, `address`, `article`, `aside`, `blockquote`, `center`,
