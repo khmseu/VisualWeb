@@ -191,8 +191,10 @@ after-after-body modes. Supported behavior includes:
   `ul`) in those modes use in-body handling with bounded foster-parent
   insertion. `span` start and end tags in table, column-group, table-body and
   row modes use the same in-body foster-parent path; this does not enable the
-  other formatting-element adoption algorithms there. Character tokens are
-  buffered as table text only when the current
+  other formatting-element adoption algorithms there. `plaintext` starts and
+  unmatched end tags in those modes use the fostered in-body path; a start
+  switches to PLAINTEXT so the rest of the input is literal text. Character
+  tokens are buffered as table text only when the current
   node is `table`, `tbody`, `template`, `tfoot`, `thead` or `tr`; otherwise
   they use in-body handling, preserving text inside a fostered element.
   `pre` and `listing` retain the in-body initial-line-feed suppression. This

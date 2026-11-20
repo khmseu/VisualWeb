@@ -877,6 +877,63 @@ public sealed class TreeTests
         Assert.Throws<UnsupportedHtmlException>(() => Parse("<table><strong>content</strong></table>"));
 
     [Theory]
+    [InlineData("<table>")]
+    [InlineData("<table><tbody>")]
+    [InlineData("<table><tbody><tr>")]
+    [InlineData("<table><colgroup>")]
+    public void PlaintextStartInTableModesIsFosteredAndConsumesTheRemainder(string tableStart)
+    {
+        const string remainder = "literal <b>markup</b></plaintext></table>after</div>";
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<plaintext id=fostered>" + remainder);
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var plaintext = Assert.IsType<DomElement>(node);
+                Assert.Equal("plaintext", plaintext.LocalName);
+                Assert.Equal("fostered", plaintext.GetAttribute("id"));
+                Assert.Equal(remainder, plaintext.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-plaintext-start-in-table");
+        Assert.DoesNotContain(Descendants(result.Document), element => element.LocalName == "b");
+    }
+
+    [Fact]
+    public void PlaintextStartInTemplateTableModeIsFosteredWithinTemplateContent()
+    {
+        const string remainder = "literal <b>markup</b></plaintext></table>";
+        var result = Parse("<template><table><plaintext id=fostered>" + remainder);
+        var template = Assert.IsType<DomTemplateElement>(
+            Assert.Single(Descendants(result.Document), element => element.LocalName == "template"));
+
+        Assert.Collection(template.Content.ChildNodes,
+            node =>
+            {
+                var plaintext = Assert.IsType<DomElement>(node);
+                Assert.Equal("plaintext", plaintext.LocalName);
+                Assert.Same(template.Content, plaintext.ParentNode);
+                Assert.Equal("fostered", plaintext.GetAttribute("id"));
+                Assert.Equal(remainder, plaintext.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-plaintext-start-in-table");
+    }
+
+    [Fact]
+    public void UnmatchedPlaintextEndTagInTableModeUsesFosteredInBodyRecovery()
+    {
+        var result = Parse("<table></plaintext><tr><td>cell</td></tr></table>");
+
+        Assert.Equal("cell", Assert.Single(Descendants(result.Document), element => element.LocalName == "td").TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-plaintext-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+    }
+
+    [Theory]
     [InlineData("<input id=plain>", "plain")]
     [InlineData("<input type=text id=text>", "text")]
     [InlineData("<input type=h\u0131dden id=unicode>", "unicode")]

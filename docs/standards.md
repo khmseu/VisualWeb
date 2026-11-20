@@ -169,8 +169,10 @@ bounded table modes for supported caption/column/section, row and cell starts;
 select and other unsupported table algorithms within template content remain
 unsupported. `span` start and end tags use in-body foster parenting in table,
 column-group, table-body and row modes. Other formatting-element adoption
-algorithms there remain unsupported. Character tokens are buffered
-as table text only when the current node is `table`, `tbody`, `template`,
+algorithms there remain unsupported. `plaintext` starts and unmatched end tags
+use in-body foster parenting in those modes; a start switches to PLAINTEXT and
+consumes the remainder of the input as literal text. Character tokens are
+buffered as table text only when the current node is `table`, `tbody`, `template`,
 `tfoot`, `thead` or `tr`; otherwise they use in-body handling, preserving text
 inside a fostered element. Non-whitespace table-character runs (including
 adjacent whitespace) are foster-parented before the nearest table when the
