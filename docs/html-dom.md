@@ -161,6 +161,8 @@ after-after-body modes. Supported behavior includes:
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.
+  `title` starts and unmatched end tags follow the same path; starts enter
+  RCDATA without `textarea`'s initial-line-feed suppression.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,
   `param`, `source` and `track` starts and end tags use the same bounded path;
   this does not add resource loading.

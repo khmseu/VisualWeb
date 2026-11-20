@@ -156,7 +156,9 @@ void-element tokens (`area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`,
 `link`, `meta`, `param`, `source` and `track`) use the same bounded route;
 resource loading is not implied. `textarea` starts and unmatched end tags use
 the same route; starts enter RCDATA with initial-line-feed suppression, and the
-matching end tag restores the original table insertion mode. `pre` and
+matching end tag restores the original table insertion mode. `title` starts
+and unmatched end tags use the same route, entering RCDATA without initial-LF
+suppression. `pre` and
 `listing` retain initial-line-feed suppression.
 Adoption reparenting that requires table foster parenting and table-text foster
 parenting requiring reconstruction remain explicitly unsupported; this
