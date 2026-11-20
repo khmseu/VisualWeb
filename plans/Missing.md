@@ -388,11 +388,14 @@ to their original table insertion mode; script content remains inert.
 diagnostic. Non-hidden input start tags in table, table-body and row modes use
 in-body handling with bounded foster-parent insertion; inputs in cells use
 ordinary in-body insertion. `br` and `hr` start tags in those table modes
-also use in-body handling with bounded foster-parent insertion. `div`, `p`,
-`pre`, `listing` and `h1`-`h6` start and end tags in those modes also use
-in-body handling with bounded foster-parent insertion; `pre` and `listing`
-retain initial-line-feed suppression. Other table tokens requiring foster
-parenting remain unsupported.
+also use in-body handling with bounded foster-parent insertion. Block-element
+starts and end tags in those modes also use in-body handling with bounded
+foster-parent insertion: `div`, `p`, `pre`, `listing`, `h1`-`h6`, `address`,
+`article`, `aside`, `blockquote`, `center`, `details`, `dialog`, `dir`, `dl`,
+`fieldset`, `figcaption`, `figure`, `footer`, `header`, `hgroup`, `main`,
+`menu`, `nav`, `ol`, `search`, `section`, `summary` and `ul`. `pre` and
+`listing` retain initial-line-feed suppression. Other table tokens requiring
+foster parenting remain unsupported.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and
 restore cell insertion mode when closed. In-table form starts follow the
