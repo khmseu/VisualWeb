@@ -192,8 +192,9 @@ after-after-body modes. Supported behavior includes:
   `hgroup`, `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary` and
   `ul`) in those modes use in-body handling with bounded foster-parent
   insertion. `span` start and end tags in table, column-group, table-body and
-  row modes use the same in-body foster-parent path; this does not enable the
-  other formatting-element adoption algorithms there. `plaintext` starts and
+  row modes use the same in-body foster-parent path; `option` and `optgroup`
+  starts and ends use that path in the same modes. Other formatting-element
+  adoption algorithms there remain unsupported. `plaintext` starts and
   unmatched end tags in those modes use the fostered in-body path; a start
   switches to PLAINTEXT so the rest of the input is literal text. Character
   tokens are buffered as table text only when the current

@@ -415,9 +415,10 @@ supported void elements `area`, `base`, `basefont`, `bgsound`, `embed`,
 `keygen`, `link`, `meta`, `param`, `source` and `track` also use the bounded
 foster-parented in-body path; this does not add resource loading. `span` start
 and end tags also use bounded in-body foster parenting in table, column-group,
-table-body and row modes. `plaintext` starts and unmatched end tags in those
-modes use the same path; a start switches to the PLAINTEXT tokenizer state, so
-the rest of the input remains literal text. Other table tokens requiring foster
+table-body and row modes. `option` and `optgroup` starts and ends use the same
+bounded in-body foster-parent path in those modes. `plaintext` starts and
+unmatched end tags in those modes use the same path; a start switches to the
+PLAINTEXT tokenizer state, so the rest of the input remains literal text. Other table tokens requiring foster
 parenting remain unsupported. Template starts
 and matching ends in table, table-body and row modes use in-head/template
 processing and restore the table insertion mode on close. Template content uses

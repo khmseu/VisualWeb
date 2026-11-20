@@ -891,6 +891,44 @@ public sealed class TreeTests
         Assert.Contains(result.Errors, error => error.Code == "fostered-span-end-in-table");
     }
 
+    [Theory]
+    [InlineData("<table>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void OptionAndOptgroupStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<optgroup id=group label=group><option id=option value=item>item</option></optgroup>"
+            + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var group = Assert.IsType<DomElement>(host.ChildNodes[1]);
+        var option = Assert.IsType<DomElement>(Assert.Single(group.ChildNodes));
+        var table = Assert.IsType<DomElement>(host.ChildNodes[2]);
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal("optgroup", element.LocalName);
+                Assert.Equal("group", element.GetAttribute("id"));
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Equal("group", group.GetAttribute("label"));
+        Assert.Equal("option", option.LocalName);
+        Assert.Equal("option", option.GetAttribute("id"));
+        Assert.Equal("item", option.GetAttribute("value"));
+        Assert.Equal("item", option.TextContent);
+        Assert.Same(group, option.ParentNode);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-optgroup-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-option-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-option-end-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-optgroup-end-in-table");
+    }
+
     [Fact]
     public void SpanInTemplateTableModeIsFosteredWithinTemplateContent()
     {
