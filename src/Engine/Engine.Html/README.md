@@ -15,7 +15,8 @@ text, table `type=hidden` inputs, non-hidden input and `br`/`hr` starts in
 table/table-body/row modes with bounded foster-parent insertion, `img` and
 `wbr` start/end tags, the `image` start-tag alias, and other supported
 void-element tokens in those modes, `textarea`/`title` RCDATA and
-`iframe`/`noembed`/`noframes` RAWTEXT starts with unmatched end-tag recovery;
+`iframe`/`noembed`/`noframes`/`xmp` RAWTEXT starts with unmatched end-tag
+recovery;
 only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer

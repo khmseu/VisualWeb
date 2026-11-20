@@ -399,7 +399,8 @@ restores the table insertion mode. `title` starts and unmatched end tags use
 the same route, entering RCDATA without initial-line-feed suppression.
 `iframe`, `noembed` and `noframes` starts and unmatched end tags also use
 that route with RAWTEXT tokenization; this adds no browsing contexts or
-resource loading. Block-element starts
+resource loading. `xmp` starts and unmatched end tags use the same route
+after the in-body paragraph/formatting handling. Block-element starts
 and end tags in those modes use the same path: `div`, `p`,
 `pre`, `listing`, `h1`-`h6`, `li`, `dd`,
 `dt`, `button`, `address`, `article`, `aside`, `blockquote`, `center`,

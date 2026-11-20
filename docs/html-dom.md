@@ -166,6 +166,8 @@ after-after-body modes. Supported behavior includes:
   `iframe`, `noembed` and `noframes` starts and unmatched end tags also follow
   the same path, with RAWTEXT tokenization; their content is text, not an
   embedded browsing context or resource load.
+  `xmp` starts and unmatched end tags use the same path and preserve the
+  existing in-body paragraph/formatting handling before entering RAWTEXT.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,
   `param`, `source` and `track` starts and end tags use the same bounded path;
   this does not add resource loading.

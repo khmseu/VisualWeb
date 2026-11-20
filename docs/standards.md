@@ -160,7 +160,8 @@ matching end tag restores the original table insertion mode. `title` starts
 and unmatched end tags use the same route, entering RCDATA without initial-LF
 suppression. `iframe`, `noembed` and `noframes` starts and unmatched end tags
 also use that route with RAWTEXT tokenization; no browsing context or resource
-loading is added. `pre` and
+loading is added. `xmp` starts and unmatched end tags also use the route,
+retaining its in-body paragraph/formatting handling before RAWTEXT. `pre` and
 `listing` retain initial-line-feed suppression.
 Adoption reparenting that requires table foster parenting and table-text foster
 parenting requiring reconstruction remain explicitly unsupported; this
