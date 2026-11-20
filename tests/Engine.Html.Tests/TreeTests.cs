@@ -1014,6 +1014,38 @@ public sealed class TreeTests
         }
     }
 
+    [Fact]
+    public void WbrStartInTableModesUsesFosterParenting()
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + "<wbr id=fostered></wbr>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node =>
+                {
+                    var element = Assert.IsType<DomElement>(node);
+                    Assert.Equal("wbr", element.LocalName);
+                    Assert.Equal("fostered", element.GetAttribute("id"));
+                    Assert.Empty(element.ChildNodes);
+                },
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == "fostered-wbr-start-in-table");
+            Assert.Contains(result.Errors, error => error.Code == "fostered-wbr-end-in-table");
+        }
+    }
+
     [Theory]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]

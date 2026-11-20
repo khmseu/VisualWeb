@@ -17,7 +17,8 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
 /// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, non-hidden inputs,
-/// <c>br</c>/<c>hr</c>/<c>img</c> starts and supported block/list-item start/end tags in table, table-body, and row modes with
+/// <c>br</c>/<c>hr</c> starts, <c>img</c>/<c>wbr</c> start/end tokens, and
+/// supported block/list-item start/end tags in table, table-body, and row modes with
 /// bounded foster-parent insertion are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
@@ -1061,7 +1062,7 @@ public static class HtmlParser
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in table."); }
             if (!tag.IsEndTag)
             {
-                if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img")
+                if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "wbr")
                 {
                     ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-start-in-table");
                     return;
@@ -1143,7 +1144,7 @@ public static class HtmlParser
                 }
             }
 
-            if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img")
+            if (BlockTags.Contains(tag.Name) || tag.Name is "p" or "li" or "dd" or "dt" or "button" or "img" or "wbr")
             {
                 ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-end-in-table");
                 return;

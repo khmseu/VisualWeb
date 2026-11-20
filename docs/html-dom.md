@@ -154,8 +154,9 @@ after-after-body modes. Supported behavior includes:
   table's adjusted insertion location and report a parse error. Inputs inside
   cells use ordinary in-body insertion. `br` and `hr` start tags in table,
   table-body and row modes also use in-body handling with bounded foster-parent
-  insertion and a parse-error diagnostic. `img` starts in those modes also
-  use in-body handling with bounded foster-parent insertion. `div`, `p`, `pre`, `listing`,
+  insertion and a parse-error diagnostic. `img` and `wbr` starts and end tags
+  in those modes also use in-body handling with bounded foster-parent insertion.
+  `div`, `p`, `pre`, `listing`,
   `h1`-`h6`, `li`, `dd`, `dt`, `button` and the other supported in-body block
   elements (`address`, `article`, `aside`, `blockquote`, `center`, `details`,
   `dialog`, `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`, `header`,
