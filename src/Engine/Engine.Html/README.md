@@ -20,12 +20,13 @@ recovery;
 only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
-exception, `span` and `option`/`optgroup` foster parenting in
+exception, `a`, `span` and `option`/`optgroup` foster parenting in
 table/column-group/table-body/row modes, `plaintext` starts and unmatched end
 tags in those modes, root-attribute merging for in-table `html` starts, and
 template start/end processing in table, table-body and row modes.
 `plaintext` starts switch to the literal-text tokenizer state for the remainder
-of the input. Other tokens requiring table foster parenting remain unsupported.
+of the input. Adoption reparenting requiring table foster parenting and other
+tokens requiring table foster parenting remain unsupported.
 Legacy doctypes preserve public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
 no-quirks/limited-quirks/quirks classification. No DTD resources are loaded and

@@ -896,6 +896,63 @@ public sealed class TreeTests
     [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
     [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
     [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    public void AnchorStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<a id=link href=/next>linked</a>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var anchor = Assert.IsType<DomElement>(host.ChildNodes[1]);
+        var table = Assert.IsType<DomElement>(host.ChildNodes[2]);
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal("a", element.LocalName);
+                Assert.Equal("link", element.GetAttribute("id"));
+                Assert.Equal("/next", element.GetAttribute("href"));
+                Assert.Equal("linked", element.TextContent);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Same(host, anchor.ParentNode);
+        Assert.Equal("cell", table.TextContent);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-a-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-a-end-in-table");
+    }
+
+    [Fact]
+    public void AnchorAdoptionRequiringTableFosterParentingRemainsUnsupported()
+    {
+        Assert.Throws<UnsupportedHtmlException>(() =>
+            Parse("<!doctype html><div><table><a><div>content</a></div></table></div>"));
+    }
+
+    [Fact]
+    public void NestedAnchorInsideTableUsesBoundedFosteredInBodyRecovery()
+    {
+        var result = Parse("<!doctype html><div id=host><a id=outer><table><a id=inner>text");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+        var outer = Assert.IsType<DomElement>(Assert.Single(host.ChildNodes));
+        var inner = Assert.IsType<DomElement>(outer.FirstChild);
+        var table = Assert.IsType<DomElement>(outer.LastChild);
+
+        Assert.Equal("a", outer.LocalName);
+        Assert.Equal("outer", outer.GetAttribute("id"));
+        Assert.Equal("a", inner.LocalName);
+        Assert.Equal("inner", inner.GetAttribute("id"));
+        Assert.Equal("text", inner.TextContent);
+        Assert.Equal("table", table.LocalName);
+        Assert.Contains(result.Errors, error => error.Code == "fostered-a-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "nested-a-start-tag");
+    }
+
+    [Theory]
+    [InlineData("<table>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><colgroup>", "<tbody><tr><td>cell</td></tr></tbody></table>")]
     public void OptionAndOptgroupStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
     {
         var result = Parse("<!doctype html><div id=host>before" + tableStart
@@ -1683,7 +1740,6 @@ public sealed class TreeTests
     [Theory]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]
-    [InlineData("<a><table><a>x")]
     [InlineData("<nobr><table><nobr>x")]
     public void UnsupportedTableRecoveryFailsExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
