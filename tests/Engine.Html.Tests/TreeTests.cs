@@ -914,6 +914,42 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("li")]
+    [InlineData("dd")]
+    [InlineData("dt")]
+    public void ListItemStartAndEndTagsInTableModesUseFosterParenting(string tagName)
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + $"<{tagName} id=fostered>content</{tagName}>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node =>
+                {
+                    var element = Assert.IsType<DomElement>(node);
+                    Assert.Equal(tagName, element.LocalName);
+                    Assert.Equal("fostered", element.GetAttribute("id"));
+                    Assert.Empty(element.ChildNodes);
+                },
+                node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-start-in-table");
+            Assert.Contains(result.Errors, error => error.Code == $"fostered-{tagName}-end-in-table");
+        }
+    }
+
+    [Theory]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]
     [InlineData("<a><table><a>x")]

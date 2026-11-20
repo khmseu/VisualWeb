@@ -155,11 +155,11 @@ after-after-body modes. Supported behavior includes:
   cells use ordinary in-body insertion. `br` and `hr` start tags in table,
   table-body and row modes also use in-body handling with bounded foster-parent
   insertion and a parse-error diagnostic. `div`, `p`, `pre`, `listing`,
-  `h1`-`h6` and the other supported in-body block elements (`address`,
-  `article`, `aside`, `blockquote`, `center`, `details`, `dialog`, `dir`,
-  `dl`, `fieldset`, `figcaption`, `figure`, `footer`, `header`, `hgroup`,
-  `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary` and `ul`) in
-  those modes use in-body handling with bounded foster-parent insertion.
+  `h1`-`h6`, `li`, `dd`, `dt` and the other supported in-body block elements
+  (`address`, `article`, `aside`, `blockquote`, `center`, `details`, `dialog`,
+  `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`, `header`, `hgroup`,
+  `main`, `menu`, `nav`, `ol`, `search`, `section`, `summary` and `ul`) in those
+  modes use in-body handling with bounded foster-parent insertion.
   `pre` and `listing` retain the in-body initial-line-feed suppression. This
   does not implement foster parenting for other table tokens.
   Contiguous non-whitespace table-character runs (including their adjacent
