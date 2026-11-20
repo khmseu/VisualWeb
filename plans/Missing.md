@@ -390,8 +390,10 @@ in-body handling with bounded foster-parent insertion; inputs in cells use
 ordinary in-body insertion. `br` and `hr` start tags in those table modes
 also use in-body handling with bounded foster-parent insertion. Block-element
 starts and end tags in those modes also use in-body handling with bounded
-foster-parent insertion. `img` and `wbr` starts and end tags in those modes
-also use in-body handling with bounded foster-parent insertion: `div`, `p`,
+foster-parent insertion. `img` and `wbr` starts and end tags in those modes also use in-body handling
+with bounded foster-parent insertion. `image` start and end tokens use the
+same path; the start-tag alias is recovered as `img`. Block-element starts
+and end tags in those modes use the same path: `div`, `p`,
 `pre`, `listing`, `h1`-`h6`, `li`, `dd`,
 `dt`, `button`, `address`, `article`, `aside`, `blockquote`, `center`,
 `details`, `dialog`, `dir`, `dl`, `fieldset`, `figcaption`, `figure`, `footer`,

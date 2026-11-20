@@ -156,6 +156,8 @@ after-after-body modes. Supported behavior includes:
   table-body and row modes also use in-body handling with bounded foster-parent
   insertion and a parse-error diagnostic. `img` and `wbr` starts and end tags
   in those modes also use in-body handling with bounded foster-parent insertion.
+  `image` start and end tokens use the same path; the start-tag alias is
+  recovered as `img`.
   `area`, `base`, `basefont`, `bgsound`, `embed`, `keygen`, `link`, `meta`,
   `param`, `source` and `track` starts and end tags use the same bounded path;
   this does not add resource loading.

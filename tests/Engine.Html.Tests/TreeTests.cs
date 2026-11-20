@@ -1015,6 +1015,40 @@ public sealed class TreeTests
     }
 
     [Fact]
+    public void ImageAliasInTableModesUsesFosterParenting()
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")
+        };
+
+        foreach (var (tableStart, tableEnd) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>before" + tableStart
+                + "<image id=fostered></image>" + tableEnd + "after</div>");
+            var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+            Assert.Collection(host.ChildNodes,
+                node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+                node =>
+                {
+                    var element = Assert.IsType<DomElement>(node);
+                    Assert.Equal("img", element.LocalName);
+                    Assert.Equal("fostered", element.GetAttribute("id"));
+                    Assert.Empty(element.ChildNodes);
+                },
+                node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+                node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+            Assert.Contains(result.Errors, error => error.Code == "fostered-image-start-in-table");
+            Assert.Contains(result.Errors, error => error.Code == "image-start-tag");
+            Assert.Contains(result.Errors, error => error.Code == "fostered-image-end-in-table");
+            Assert.Contains(result.Errors, error => error.Code == "unexpected-end-tag");
+        }
+    }
+
+    [Fact]
     public void WbrStartInTableModesUsesFosterParenting()
     {
         var tableModes = new[]
