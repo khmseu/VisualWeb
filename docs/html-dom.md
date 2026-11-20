@@ -152,8 +152,10 @@ after-after-body modes. Supported behavior includes:
   a parse-error diagnostic. Non-hidden input start tags in table, table-body and
   row modes follow in-body handling with bounded foster-parent insertion at the
   table's adjusted insertion location and report a parse error. Inputs inside
-  cells use ordinary in-body insertion. This does not implement foster parenting
-  for other table tokens.
+  cells use ordinary in-body insertion. `br` and `hr` start tags in table,
+  table-body and row modes also use in-body handling with bounded foster-parent
+  insertion and a parse-error diagnostic. This does not implement foster
+  parenting for other table tokens.
   Contiguous non-whitespace table-character runs (including their adjacent
   whitespace) are foster-parented before the nearest table; whitespace-only
   runs stay in the table. Rendering is separate:

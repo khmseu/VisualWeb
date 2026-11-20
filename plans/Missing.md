@@ -387,8 +387,9 @@ to their original table insertion mode; script content remains inert.
 `type=hidden` inputs are inserted as void table children with a parse-error
 diagnostic. Non-hidden input start tags in table, table-body and row modes use
 in-body handling with bounded foster-parent insertion; inputs in cells use
-ordinary in-body insertion. Other table tokens requiring foster parenting
-remain unsupported.
+ordinary in-body insertion. `br` and `hr` start tags in those table modes
+also use in-body handling with bounded foster-parent insertion. Other table
+tokens requiring foster parenting remain unsupported.
 In table mode, a nested table start closes the current in-scope table and
 reprocesses the token; nested tables inside cells remain cell descendants and
 restore cell insertion mode when closed. In-table form starts follow the

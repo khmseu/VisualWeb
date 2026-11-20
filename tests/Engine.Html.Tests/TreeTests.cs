@@ -755,6 +755,31 @@ public sealed class TreeTests
     }
 
     [Theory]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>", "<br id=break>", "br", "break")]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>", "<hr id=rule>", "hr", "rule")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>", "<br id=break>", "br", "break")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>", "<hr id=rule>", "hr", "rule")]
+    public void BrAndHrInTableModesAreFosterParentedBeforeTheTable(
+        string tableStart, string tableEnd, string token, string expectedName, string expectedId)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart + token + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal(expectedName, element.LocalName);
+                Assert.Equal(expectedId, element.GetAttribute("id"));
+                Assert.Empty(element.ChildNodes);
+            },
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == $"fostered-{expectedName}-in-table");
+    }
+
+    [Theory]
     [InlineData("<table><div>unsupported</div></table>")]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]

@@ -16,8 +16,8 @@ namespace VisualWeb.Engine.Html;
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intr">in row</see>,
 /// <see href="https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intd">in cell</see>,
 /// and <see href="https://html.spec.whatwg.org/multipage/parsing.html#reset-the-insertion-mode-appropriately">insertion-mode reset</see>.
-/// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, and non-hidden input
-/// starts in table, table-body, and row modes using bounded foster-parent insertion are supported;
+/// Basic captions, table sections, rows, cells, column groups, text-only foster parenting, non-hidden inputs, and
+/// <c>br</c>/<c>hr</c> starts in table, table-body, and row modes with bounded foster-parent insertion are supported;
 /// nested table starts, nested tables in cells, the in-table form-pointer exception and root-attribute
 /// merging for in-table <c>html</c> starts are supported;
 /// other foster-parenting cases, nested tables in captions, table/select template content, unsupported fragment contexts, scripting,
@@ -1109,16 +1109,15 @@ public static class HtmlParser
                         if (!tag.Attributes.TryGetValue("type", out var inputType)
                             || !AsciiEqualsIgnoreCase(inputType, "hidden"))
                         {
-                            Error("non-hidden-input-in-table");
-                            var previousFosterParenting = fosterParenting;
-                            fosterParenting = true;
-                            try { BodyToken(tag); }
-                            finally { fosterParenting = previousFosterParenting; }
+                            ProcessFosterParentedBodyToken(tag, "non-hidden-input-in-table");
                             return;
                         }
 
                         Error("hidden-input-in-table");
                         Insert(tag, push: false);
+                        return;
+                    case "br" or "hr":
+                        ProcessFosterParentedBodyToken(tag, $"fostered-{tag.Name}-in-table");
                         return;
                     case "form":
                         Error("form-start-in-table");
@@ -1159,6 +1158,15 @@ public static class HtmlParser
             }
 
             throw Unsupported("Foster parenting for table content is not implemented.");
+        }
+
+        private void ProcessFosterParentedBodyToken(HtmlTag tag, string errorCode)
+        {
+            Error(errorCode);
+            var previousFosterParenting = fosterParenting;
+            fosterParenting = true;
+            try { BodyToken(tag); }
+            finally { fosterParenting = previousFosterParenting; }
         }
 
         private void CaptionToken(HtmlToken token)
