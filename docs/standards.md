@@ -146,7 +146,7 @@ foster-parent insertion; inputs in cells use ordinary in-body insertion.
 `br` and `hr` starts in those table modes also follow in-body handling with
 bounded foster-parent insertion. Block-element starts and end tags in those
 modes also follow in-body handling with bounded foster-parent insertion. This
-covers `div`, `p`, `pre`, `listing`, `h1`-`h6`, `li`, `dd`, `dt`, `button`,
+covers the `img` start tag, `div`, `p`, `pre`, `listing`, `h1`-`h6`, `li`, `dd`, `dt`, `button`,
 `address`, `article`, `aside`, `blockquote`, `center`, `details`, `dialog`,
 `dir`, `dl`,
 `fieldset`, `figcaption`, `figure`, `footer`, `header`, `hgroup`, `main`,
