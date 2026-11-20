@@ -234,8 +234,51 @@ public sealed class TreeTests
     public void UnsupportedTemplateInsertionContextsFailExplicitly(string input) =>
         Assert.Throws<UnsupportedHtmlException>(() => Parse(input));
 
+    [Fact]
+    public void TemplateStartAndEndInTableModesUseTemplateContentAndRestoreTableMode()
+    {
+        var tableModes = new[]
+        {
+            ("<table>", "<tr><td>cell</td></tr></table>", "table"),
+            ("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>", "tbody"),
+            ("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>", "tr")
+        };
+
+        foreach (var (tableStart, tableEnd, expectedParent) in tableModes)
+        {
+            var result = Parse("<!doctype html><div id=host>" + tableStart
+                + "<template id=template><p>hidden</p></template>" + tableEnd + "</div>");
+            var table = Assert.Single(Descendants(result.Document), element => element.LocalName == "table");
+            var template = Assert.IsType<DomTemplateElement>(
+                Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "template"));
+
+            Assert.Equal("hidden", template.Content.TextContent);
+            Assert.Empty(template.ChildNodes);
+            Assert.Equal(expectedParent, Assert.IsType<DomElement>(template.ParentNode).LocalName);
+            Assert.Equal("cell", table.TextContent);
+            Assert.DoesNotContain(result.Errors, error => error.Code == "unexpected-template-end-tag");
+        }
+    }
+
+    [Fact]
+    public void TemplateInTableFragmentRestoresTheFragmentInsertionMode()
+    {
+        var document = new DomDocument();
+        var result = HtmlParser.ParseFragment(
+            "<template><p>hidden</p></template><tr><td>cell</td></tr>",
+            document.CreateElement("table"),
+            cancellationToken: TestContext.Current.CancellationToken);
+        var template = Assert.IsType<DomTemplateElement>(result.Fragment.FirstChild);
+        var body = Assert.IsType<DomElement>(result.Fragment.LastChild);
+
+        Assert.Equal("template", template.LocalName);
+        Assert.Same(result.Fragment, template.ParentNode);
+        Assert.Equal("hidden", template.Content.TextContent);
+        Assert.Equal("tbody", body.LocalName);
+        Assert.Equal("cell", body.TextContent);
+    }
+
     [Theory]
-    [InlineData("<table><template></template></table>", "Template insertion in table contexts is not implemented.")]
     [InlineData("<select><template></template></select>", "Template insertion inside select content is not implemented.")]
     public void TemplateStartsInUnsupportedContextsFailExplicitly(string input, string message)
     {

@@ -20,7 +20,8 @@ recovery;
 only `textarea` suppresses an initial LF. Text-only table
 foster parenting, bounded foster-parent insertion for block, list-item
 and button start/end tags, nested-table recovery, the in-table form-pointer
-exception, and root-attribute merging for in-table `html` starts.
+exception, root-attribute merging for in-table `html` starts, and template
+start/end processing in table, table-body and row modes.
 Other tokens requiring table foster parenting remain unsupported. Legacy
 doctypes preserve public/system identifiers and recover
 with explicit diagnostics, using the complete HTML initial-mode tables for
@@ -49,8 +50,10 @@ Document templates in head/body use the bounded template insertion-mode stack:
 ordinary supported in-body content and nested templates build under each
 `DomTemplateElement.Content` fragment, then insertion-mode reset resumes the
 surrounding head/body mode. Template content is inert; its scripts do not invoke
-the parser completion callback. Table/select template contexts, foreign content,
-and broader template algorithms remain unsupported.
+the parser completion callback. Table/select insertion modes within template
+content, foreign content and broader template algorithms remain unsupported.
+Template starts and matching ends in table, table-body and row modes use
+in-head/template processing and restore the table insertion mode.
 
 `HtmlParser.ParseFragment` returns a `DocumentFragment` owned by the context
 element's document and parses with the supported in-body, table, select,

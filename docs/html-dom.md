@@ -99,8 +99,11 @@ after-after-body modes. Supported behavior includes:
   Supported content uses the ordinary in-body subset. Each implicit content
   fragment counts toward `MaxNodes`; content descendants count toward the
   existing node/depth/error/cancellation limits. Template-content scripts are
-  parsed as inert text and never invoke `scriptCompleted`. Table/select contexts,
-  foreign content and broader template algorithms remain explicitly unsupported.
+  parsed as inert text and never invoke `scriptCompleted`. Template starts and
+  matching ends in table, table-body and row modes use the same in-head/template
+  processing and restore the table insertion mode on close. Table/select
+  insertion modes within template content, foreign content and broader template
+  algorithms remain explicitly unsupported.
 - `HtmlParser.ParseFragment` returns a context-document-owned `DocumentFragment`.
   It selects the bounded insertion mode for supported in-body, table, select and
   template contexts plus the `html` context's before-head mode, and starts
@@ -158,6 +161,9 @@ after-after-body modes. Supported behavior includes:
   in those modes also use in-body handling with bounded foster-parent insertion.
   `image` start and end tokens use the same path; the start-tag alias is
   recovered as `img`.
+  Template starts and matching ends in table, table-body and row modes use
+  in-head/template processing and restore the originating table mode on close.
+  Table/select insertion modes within template content remain unsupported.
   `textarea` starts and unmatched end tags use the same fostered in-body path;
   starts enter RCDATA with initial-line-feed suppression, and the matching end
   tag restores the originating table insertion mode.

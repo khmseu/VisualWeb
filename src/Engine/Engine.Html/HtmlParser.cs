@@ -249,11 +249,6 @@ public static class HtmlParser
 
                 if (token is HtmlTag contextTag)
                 {
-                    if (contextTag.Name == "template" && IsTableMode(mode))
-                    {
-                        throw Unsupported("Template insertion in table contexts is not implemented.");
-                    }
-
                     if (open.Any(element => element.LocalName == "template"))
                     {
                         if (TableTags.Contains(contextTag.Name))
@@ -1071,6 +1066,14 @@ public static class HtmlParser
             if (token is HtmlEndOfFile) { BodyToken(token); return; }
 
             if (token is not HtmlTag tag) { throw new InvalidOperationException("Unknown HTML token in table."); }
+            if (tag.Name == "template")
+            {
+                if (tag.IsEndTag) { CloseTemplate(); }
+                else { StartTemplate(tag); }
+
+                return;
+            }
+
             if (!tag.IsEndTag)
             {
                 if (FosterParentedVoidTags.Contains(tag.Name) || BlockTags.Contains(tag.Name)
