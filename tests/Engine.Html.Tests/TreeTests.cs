@@ -780,7 +780,31 @@ public sealed class TreeTests
     }
 
     [Theory]
-    [InlineData("<table><div>unsupported</div></table>")]
+    [InlineData("<table>", "<tr><td>cell</td></tr></table>")]
+    [InlineData("<table><tbody>", "<tr><td>cell</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr>", "<td>cell</td></tr></tbody></table>")]
+    public void DivStartAndEndInTableModesUseFosterParenting(string tableStart, string tableEnd)
+    {
+        var result = Parse("<!doctype html><div id=host>before" + tableStart
+            + "<div id=fostered>content</div>" + tableEnd + "after</div>");
+        var host = Assert.Single(Descendants(result.Document), element => element.GetAttribute("id") == "host");
+
+        Assert.Collection(host.ChildNodes,
+            node => Assert.Equal("before", Assert.IsType<DomText>(node).Data),
+            node =>
+            {
+                var element = Assert.IsType<DomElement>(node);
+                Assert.Equal("fostered", element.GetAttribute("id"));
+                Assert.Empty(element.ChildNodes);
+            },
+            node => Assert.Equal("content", Assert.IsType<DomText>(node).Data),
+            node => Assert.Equal("table", Assert.IsType<DomElement>(node).LocalName),
+            node => Assert.Equal("after", Assert.IsType<DomText>(node).Data));
+        Assert.Contains(result.Errors, error => error.Code == "fostered-div-start-in-table");
+        Assert.Contains(result.Errors, error => error.Code == "fostered-div-end-in-table");
+    }
+
+    [Theory]
     [InlineData("<table><caption>x<table></table></caption></table>")]
     [InlineData("<table><b><p>x</b></table>")]
     [InlineData("<a><table><a>x")]

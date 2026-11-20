@@ -13,7 +13,8 @@ content subset, bounded textarea RCDATA handling, and `hr`/`input`/nested
 caption/column-group/section/row/cell subset, inert in-table `script`/`style`
 text, table `type=hidden` inputs, non-hidden input and `br`/`hr` starts in
 table/table-body/row modes with bounded foster-parent insertion, text-only
-table foster parenting, bounded nested-table recovery, the in-table
+table foster parenting, bounded div start/end foster-parent insertion and
+nested-table recovery, the in-table
 form-pointer exception, and root-attribute merging for in-table `html` starts.
 Other tokens requiring table foster parenting remain unsupported. Legacy
 doctypes preserve public/system identifiers and recover
